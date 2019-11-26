@@ -35,7 +35,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * A Policy responsability is to choose the next action given a state
  */
-public abstract class Policy<O extends Encodable, A> implements IPolicy<O, A> {
+public abstract class Policy<O, A> implements IPolicy<O, A> {
 
     public abstract NeuralNet getNeuralNet();
 

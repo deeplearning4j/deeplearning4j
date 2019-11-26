@@ -3,6 +3,7 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorit
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.support.MockDQN;
 import org.deeplearning4j.rl4j.learning.sync.support.MockTargetQNetworkSource;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -24,12 +25,12 @@ public class StandardDQNTest {
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
-                add(new Transition<Integer>(new INDArray[]{Nd4j.create(new double[]{1.1, 2.2})}, 0, 1.0, true, Nd4j.create(new double[]{11.0, 22.0})));
+                add(new Transition<Integer>(buildObservation(new double[]{1.1, 2.2}),
+                        0, 1.0, true, buildObservation(new double[]{11.0, 22.0})));
             }
         };
 
         StandardDQN sut = new StandardDQN(targetQNetworkSource, 0.5);
-        sut.setNShape(new int[] { 1, 2 });
 
         // Act
         DataSet result = sut.computeTDTargets(transitions);
@@ -50,12 +51,12 @@ public class StandardDQNTest {
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
-                add(new Transition<Integer>(new INDArray[]{Nd4j.create(new double[]{1.1, 2.2})}, 0, 1.0, false, Nd4j.create(new double[]{11.0, 22.0})));
+                add(new Transition<Integer>(buildObservation(new double[]{1.1, 2.2}),
+                        0, 1.0, false, buildObservation(new double[]{11.0, 22.0})));
             }
         };
 
         StandardDQN sut = new StandardDQN(targetQNetworkSource, 0.5);
-        sut.setNShape(new int[] { 1, 2 });
 
         // Act
         DataSet result = sut.computeTDTargets(transitions);
@@ -76,14 +77,16 @@ public class StandardDQNTest {
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
-                add(new Transition<Integer>(new INDArray[]{Nd4j.create(new double[]{1.1, 2.2})}, 0, 1.0, false, Nd4j.create(new double[]{11.0, 22.0})));
-                add(new Transition<Integer>(new INDArray[]{Nd4j.create(new double[]{3.3, 4.4})}, 1, 2.0, false, Nd4j.create(new double[]{33.0, 44.0})));
-                add(new Transition<Integer>(new INDArray[]{Nd4j.create(new double[]{5.5, 6.6})}, 0, 3.0, true, Nd4j.create(new double[]{55.0, 66.0})));
+                add(new Transition<Integer>(buildObservation(new double[]{1.1, 2.2}),
+                        0, 1.0, false, buildObservation(new double[]{11.0, 22.0})));
+                add(new Transition<Integer>(buildObservation(new double[]{3.3, 4.4}),
+                        1, 2.0, false, buildObservation(new double[]{33.0, 44.0})));
+                add(new Transition<Integer>(buildObservation(new double[]{5.5, 6.6}),
+                        0, 3.0, true, buildObservation(new double[]{55.0, 66.0})));
             }
         };
 
         StandardDQN sut = new StandardDQN(targetQNetworkSource, 0.5);
-        sut.setNShape(new int[] { 3, 2 });
 
         // Act
         DataSet result = sut.computeTDTargets(transitions);
@@ -99,6 +102,10 @@ public class StandardDQNTest {
         assertEquals(3.0, evaluatedQValues.getDouble(2, 0), 0.0001); // terminal: reward only
         assertEquals(6.6, evaluatedQValues.getDouble(2, 1), 0.0001);
 
+    }
+
+    private Observation buildObservation(double[] data) {
+        return new Observation(new INDArray[]{Nd4j.create(data).reshape(1, 2)});
     }
 
 }

@@ -40,7 +40,7 @@ public class QLearningDiscreteTest {
             new int[] { 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 });
         MockMDP mdp = new MockMDP(observationSpace, random);
 
-        QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 0, 0, 5, 1, 0,
+        QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 24, 0, 5, 1, 1000,
                 0, 1.0, 0, 0, 0, 0, true);
         MockDataManager dataManager = new MockDataManager(false);
         MockExpReplay expReplay = new MockExpReplay();
@@ -48,15 +48,10 @@ public class QLearningDiscreteTest {
         IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
         MockHistoryProcessor hp = new MockHistoryProcessor(hpConf);
         sut.setHistoryProcessor(hp);
-        MockEncodable obs = new MockEncodable(-100);
         List<QLearning.QLStepReturn<MockEncodable>> results = new ArrayList<>();
 
         // Act
-        sut.initMdp();
-        for(int step = 0; step < 16; ++step) {
-            results.add(sut.trainStep(obs));
-            sut.incrementStep();
-        }
+        IDataManager.StatEntry result = sut.trainEpoch();
 
         // Assert
         // HistoryProcessor calls
@@ -65,7 +60,11 @@ public class QLearningDiscreteTest {
         for(int i = 0; i < expectedRecords.length; ++i) {
             assertEquals(expectedRecords[i], hp.recordCalls.get(i).getDouble(0), 0.0001);
         }
-        assertEquals(13, hp.addCallCount);
+        double[] expectedAdds = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0 };
+        assertEquals(expectedAdds.length, hp.addCalls.size());
+        for(int i = 0; i < expectedAdds.length; ++i) {
+            assertEquals(expectedAdds[i], 255.0 * hp.addCalls.get(i).getDouble(0), 0.0001);
+        }
         assertEquals(0, hp.startMonitorCallCount);
         assertEquals(0, hp.stopMonitorCallCount);
 
@@ -75,14 +74,14 @@ public class QLearningDiscreteTest {
         assertEquals(234.0, dqn.fitParams.get(0).getSecond().getDouble(0), 0.001);
         assertEquals(14, dqn.outputParams.size());
         double[][] expectedDQNOutput = new double[][] {
-                new double[] { 0.0, 2.0, 4.0, 6.0, -100.0 },
-                new double[] { 2.0, 4.0, 6.0, -100.0, 9.0 },
-                new double[] { 2.0, 4.0, 6.0, -100.0, 9.0 },
-                new double[] { 4.0, 6.0, -100.0, 9.0, 11.0 },
-                new double[] { 6.0, -100.0, 9.0, 11.0, 13.0 },
-                new double[] { 6.0, -100.0, 9.0, 11.0, 13.0 },
-                new double[] { -100.0, 9.0, 11.0, 13.0, 15.0 },
-                new double[] { -100.0, 9.0, 11.0, 13.0, 15.0 },
+                new double[] { 0.0, 2.0, 4.0, 6.0, 8.0 },
+                new double[] { 2.0, 4.0, 6.0, 8.0, 9.0 },
+                new double[] { 2.0, 4.0, 6.0, 8.0, 9.0 },
+                new double[] { 4.0, 6.0, 8.0, 9.0, 11.0 },
+                new double[] { 6.0, 8.0, 9.0, 11.0, 13.0 },
+                new double[] { 6.0, 8.0, 9.0, 11.0, 13.0 },
+                new double[] { 8.0, 9.0, 11.0, 13.0, 15.0 },
+                new double[] { 8.0, 9.0, 11.0, 13.0, 15.0 },
                 new double[] { 9.0, 11.0, 13.0, 15.0, 17.0 },
                 new double[] { 9.0, 11.0, 13.0, 15.0, 17.0 },
                 new double[] { 11.0, 13.0, 15.0, 17.0, 19.0 },
@@ -108,13 +107,13 @@ public class QLearningDiscreteTest {
         // ExpReplay calls
         double[] expectedTrRewards = new double[] { 9.0, 21.0, 25.0, 29.0, 33.0, 37.0, 41.0, 45.0 };
         int[] expectedTrActions = new int[] { 1, 4, 2, 4, 4, 4, 4, 4 };
-        double[] expectedTrNextObservation = new double[] { 2.0, 4.0, 6.0, -100.0, 9.0, 11.0, 13.0, 15.0 };
+        double[] expectedTrNextObservation = new double[] { 2.0, 4.0, 6.0, 8.0, 9.0, 11.0, 13.0, 15.0 };
         double[][] expectedTrObservations = new double[][] {
-                new double[] { 0.0, 2.0, 4.0, 6.0, -100.0 },
-                new double[] { 2.0, 4.0, 6.0, -100.0, 9.0 },
-                new double[] { 4.0, 6.0, -100.0, 9.0, 11.0 },
-                new double[] { 6.0, -100.0, 9.0, 11.0, 13.0 },
-                new double[] { -100.0, 9.0, 11.0, 13.0, 15.0 },
+                new double[] { 0.0, 2.0, 4.0, 6.0, 8.0 },
+                new double[] { 2.0, 4.0, 6.0, 8.0, 9.0 },
+                new double[] { 4.0, 6.0, 8.0, 9.0, 11.0 },
+                new double[] { 6.0, 8.0, 9.0, 11.0, 13.0 },
+                new double[] { 8.0, 9.0, 11.0, 13.0, 15.0 },
                 new double[] { 9.0, 11.0, 13.0, 15.0, 17.0 },
                 new double[] { 11.0, 13.0, 15.0, 17.0, 19.0 },
                 new double[] { 13.0, 15.0, 17.0, 19.0, 21.0 },
@@ -123,26 +122,15 @@ public class QLearningDiscreteTest {
             Transition tr = expReplay.transitions.get(i);
             assertEquals(expectedTrRewards[i], tr.getReward(), 0.0001);
             assertEquals(expectedTrActions[i], tr.getAction());
-            assertEquals(expectedTrNextObservation[i], tr.getNextObservation().getDouble(0), 0.0001);
+            assertEquals(expectedTrNextObservation[i], 255.0 * tr.getNextObservation().getDouble(0), 0.0001);
             for(int j = 0; j < expectedTrObservations[i].length; ++j) {
-                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], tr.getObservation()[j].getDouble(0), 0.0001);
+                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], 255.0 * tr.getObservation().getData().getDouble(j, 0), 0.0001);
             }
         }
 
-        // trainStep results
-        assertEquals(16, results.size());
-        double[] expectedMaxQ = new double[] { 6.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0 };
-        double[] expectedRewards = new double[] { 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0 };
-        for(int i=0; i < 16; ++i) {
-            QLearning.QLStepReturn<MockEncodable> result = results.get(i);
-            if(i % 2 == 0) {
-                assertEquals(expectedMaxQ[i/2], 255.0 * result.getMaxQ(), 0.001);
-                assertEquals(expectedRewards[i/2], result.getStepReply().getReward(), 0.001);
-            }
-            else {
-                assertTrue(result.getMaxQ().isNaN());
-            }
-        }
+        // trainEpoch result
+        assertEquals(16, result.getStepCounter());
+        assertEquals(300.0, result.getReward(), 0.00001);
     }
 
     public static class TestQLearningDiscrete extends QLearningDiscrete<MockEncodable> {
@@ -163,5 +151,9 @@ public class QLearningDiscreteTest {
             this.expReplay = exp;
         }
 
+        @Override
+        public IDataManager.StatEntry trainEpoch() {
+            return super.trainEpoch();
+        }
     }
 }

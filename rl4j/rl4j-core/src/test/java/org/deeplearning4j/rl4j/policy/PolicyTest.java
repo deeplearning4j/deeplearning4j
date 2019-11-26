@@ -197,7 +197,7 @@ public class PolicyTest {
         assertEquals(465.0, totalReward, 0.0001);
 
         // HistoryProcessor
-        assertEquals(27, hp.addCallCount);
+        assertEquals(27, hp.addCalls.size());
         assertEquals(31, hp.recordCalls.size());
         for(int i=0; i <= 30; ++i) {
             assertEquals((double)i, hp.recordCalls.get(i).getDouble(0), 0.0001);

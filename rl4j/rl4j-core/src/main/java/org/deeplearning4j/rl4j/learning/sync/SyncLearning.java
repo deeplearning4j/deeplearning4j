@@ -36,7 +36,7 @@ import org.deeplearning4j.rl4j.util.IDataManager;
  * @author Alexandre Boulanger
  */
 @Slf4j
-public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+public abstract class SyncLearning<O, A, AS extends ActionSpace<A>, NN extends NeuralNet>
         extends Learning<O, A, AS, NN> implements IEpochTrainer {
 
     private final TrainingListenerList listeners = new TrainingListenerList();

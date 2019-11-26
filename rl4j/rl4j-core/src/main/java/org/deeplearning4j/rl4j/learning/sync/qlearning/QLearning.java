@@ -21,15 +21,20 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager.StatEntry;
+import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.rng.Random;
 
@@ -52,6 +57,8 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     @Getter
     @Setter(AccessLevel.PROTECTED)
     protected IExpReplay<A> expReplay;
+
+    protected abstract LegacyMDPWrapper<O, A, AS> getLegacyMDPWrapper();
 
     public QLearning(QLConfiguration conf) {
         this(conf, getSeededRandom(conf.getSeed()));
@@ -95,11 +102,11 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     protected abstract void postEpoch();
 
-    protected abstract QLStepReturn<O> trainStep(O obs);
+    protected abstract QLStepReturn<Observation> trainStep(Observation obs);
 
     protected StatEntry trainEpoch() {
-        InitMdp<O> initMdp = initMdp();
-        O obs = initMdp.getLastObs();
+        InitMdp<Observation> initMdp = refacInitMdp();
+        Observation obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();
         int step = initMdp.getSteps();
@@ -114,7 +121,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
                 updateTargetNetwork();
             }
 
-            QLStepReturn<O> stepR = trainStep(obs);
+            QLStepReturn<Observation> stepR = trainStep(obs);
 
             if (!stepR.getMaxQ().isNaN()) {
                 if (startQ.isNaN())
@@ -139,6 +146,36 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
                         getEgPolicy().getEpsilon(), startQ, meanQ);
 
         return statEntry;
+
+    }
+
+    private InitMdp<Observation> refacInitMdp() {
+        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
+        IHistoryProcessor hp = getHistoryProcessor();
+
+        Observation observation = mdp.reset();
+
+        int step = 0;
+        double reward = 0;
+
+        boolean isHistoryProcessor = hp != null;
+
+        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
+        int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
+
+        while (step < requiredFrame && !mdp.isDone()) {
+
+            A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
+
+            StepReply<Observation> stepReply = mdp.step(action);
+            reward += stepReply.getReward();
+            observation = stepReply.getObservation();
+
+            step++;
+
+        }
+
+        return new InitMdp(step, observation, reward);
 
     }
 

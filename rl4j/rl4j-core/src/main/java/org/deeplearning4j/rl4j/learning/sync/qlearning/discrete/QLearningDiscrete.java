@@ -26,10 +26,12 @@ import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.*;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -51,8 +53,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     @Getter
     final private QLConfiguration configuration;
-    @Getter
-    final private MDP<O, Integer, DiscreteSpace> mdp;
+    private final LegacyMDPWrapper<O, Integer, DiscreteSpace> mdp;
     @Getter
     private DQNPolicy<O> policy;
     @Getter
@@ -65,10 +66,13 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     private IDQN targetQNetwork;
 
     private int lastAction;
-    private INDArray[] history = null;
     private double accuReward = 0;
 
     ITDTargetAlgorithm tdTargetAlgorithm;
+
+    protected LegacyMDPWrapper<O, Integer, DiscreteSpace> getLegacyMDPWrapper() {
+        return mdp;
+    }
 
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                              int epsilonNbStep) {
@@ -79,7 +83,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                              int epsilonNbStep, Random random) {
         super(conf);
         this.configuration = conf;
-        this.mdp = mdp;
+        this.mdp = new LegacyMDPWrapper<O, Integer, DiscreteSpace>(mdp, this);
         qNetwork = dqn;
         targetQNetwork = dqn.clone();
         policy = new DQNPolicy(getQNetwork());
@@ -92,6 +96,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     }
 
+    public MDP<O, Integer, DiscreteSpace> getMdp() {
+        return mdp.getWrappedMDP();
+    }
+
     public void postEpoch() {
 
         if (getHistoryProcessor() != null)
@@ -100,7 +108,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     }
 
     public void preEpoch() {
-        history = null;
         lastAction = 0;
         accuReward = 0;
     }
@@ -110,10 +117,9 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
      * @param obs last obs
      * @return relevant info for next step
      */
-    protected QLStepReturn<O> trainStep(O obs) {
+    protected QLStepReturn<Observation> trainStep(Observation obs) {
 
         Integer action;
-        INDArray input = getInput(obs);
         boolean isHistoryProcessor = getHistoryProcessor() != null;
 
 
@@ -128,50 +134,25 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         if (getStepCounter() % skipFrame != 0) {
             action = lastAction;
         } else {
-            if (history == null) {
-                if (isHistoryProcessor) {
-                    getHistoryProcessor().add(input);
-                    history = getHistoryProcessor().getHistory();
-                } else
-                    history = new INDArray[] {input};
-            }
-            //concat the history into a single INDArray input
-            INDArray hstack = Transition.concat(Transition.dup(history));
-            if (isHistoryProcessor) {
-                hstack.muli(1.0 / getHistoryProcessor().getScale());
-            }
-
-            //if input is not 2d, you have to append that the batch is 1 length high
-            if (hstack.shape().length > 2)
-                hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape())));
-
-            INDArray qs = getQNetwork().output(hstack);
+            INDArray qs = getQNetwork().output(obs);
             int maxAction = Learning.getMaxAction(qs);
-
             maxQ = qs.getDouble(maxAction);
-            action = getEgPolicy().nextAction(hstack);
+
+            action = getEgPolicy().nextAction(obs);
         }
 
         lastAction = action;
 
-        StepReply<O> stepReply = getMdp().step(action);
+        StepReply<Observation> stepReply = mdp.step(action);
 
-        INDArray ninput = getInput(stepReply.getObservation());
-
-        if (isHistoryProcessor)
-            getHistoryProcessor().record(ninput);
+        Observation nextObservation = stepReply.getObservation();
 
         accuReward += stepReply.getReward() * configuration.getRewardFactor();
 
         //if it's not a skipped frame, you can do a step of training
         if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
 
-            if (isHistoryProcessor)
-                getHistoryProcessor().add(ninput);
-
-            INDArray[] nhistory = isHistoryProcessor ? getHistoryProcessor().getHistory() : new INDArray[] {ninput};
-
-            Transition<Integer> trans = new Transition(history, action, accuReward, stepReply.isDone(), nhistory[0]);
+            Transition<Integer> trans = new Transition(obs, action, accuReward, stepReply.isDone(), nextObservation);
             getExpReplay().store(trans);
 
             if (getStepCounter() > updateStart) {
@@ -179,26 +160,15 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 getQNetwork().fit(targets.getFeatures(), targets.getLabels());
             }
 
-            history = nhistory;
             accuReward = 0;
         }
 
-        return new QLStepReturn<O>(maxQ, getQNetwork().getLatestScore(), stepReply);
+        return new QLStepReturn<Observation>(maxQ, getQNetwork().getLatestScore(), stepReply);
     }
 
     protected DataSet setTarget(ArrayList<Transition<Integer>> transitions) {
         if (transitions.size() == 0)
             throw new IllegalArgumentException("too few transitions");
-
-        // TODO: Remove once we use DataSets in observations
-        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
-                : getHistoryProcessor().getConf().getShape();
-        ((BaseTDTargetAlgorithm) tdTargetAlgorithm).setNShape(makeShape(transitions.size(), shape));
-
-        // TODO: Remove once we use DataSets in observations
-        if(getHistoryProcessor() != null) {
-            ((BaseTDTargetAlgorithm) tdTargetAlgorithm).setScale(getHistoryProcessor().getScale());
-        }
 
         return tdTargetAlgorithm.computeTDTargets(transitions);
     }

@@ -18,6 +18,7 @@ package org.deeplearning4j.rl4j.network.dqn;
 
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -37,6 +38,7 @@ public interface IDQN<NN extends IDQN> extends NeuralNet<NN> {
     void fit(INDArray input, INDArray[] labels);
 	
     INDArray output(INDArray batch);
+    INDArray output(Observation observation);
 
     INDArray[] outputAll(INDArray batch);
 

@@ -16,14 +16,10 @@
 
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
 
-import lombok.Setter;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QNetworkSource;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.List;
 
@@ -39,11 +35,6 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
 
     private final double errorClamp;
     private final boolean isClamped;
-
-    @Setter
-    private int[] nShape; // TODO: Remove once we use DataSets in observations
-    @Setter
-    private double scale = 1.0; // TODO: Remove once we use DataSets in observations
 
     /**
      *
@@ -93,37 +84,8 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
 
         int size = transitions.size();
 
-        INDArray observations = Nd4j.create(nShape);
-        INDArray nextObservations = Nd4j.create(nShape);
-
-        // TODO: Remove once we use DataSets in observations
-        for (int i = 0; i < size; i++) {
-            Transition<Integer> trans = transitions.get(i);
-
-            INDArray[] obsArray = trans.getObservation();
-            if (observations.rank() == 2) {
-                observations.putRow(i, obsArray[0]);
-            } else {
-                for (int j = 0; j < obsArray.length; j++) {
-                    observations.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, obsArray[j]);
-                }
-            }
-
-            INDArray[] nextObsArray = Transition.append(trans.getObservation(), trans.getNextObservation());
-            if (nextObservations.rank() == 2) {
-                nextObservations.putRow(i, nextObsArray[0]);
-            } else {
-                for (int j = 0; j < nextObsArray.length; j++) {
-                    nextObservations.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, nextObsArray[j]);
-                }
-            }
-        }
-
-        // TODO: Remove once we use DataSets in observations
-        if(scale != 1.0) {
-            observations.muli(1.0 / scale);
-            nextObservations.muli(1.0 / scale);
-        }
+        INDArray observations = Transition.buildStackedObservations(transitions);
+        INDArray nextObservations = Transition.buildStackedNextObservations(transitions);
 
         initComputation(observations, nextObservations);
 
