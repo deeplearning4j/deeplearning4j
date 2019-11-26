@@ -62,7 +62,7 @@ TEST_F(DeclarableOpsTests2, gather_2) {
 
     nd4j::ops::gather op;
 
-    auto result = op.execute({&input}, {}, {1, 0,1, 2,2, 1,2});
+    auto result = op.execute({&input}, {}, {1, 0,1, 2,2, 1,2}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -125,7 +125,7 @@ TEST_F(DeclarableOpsTests2, gather_5) {
 
     nd4j::ops::gather op;
 
-    auto result = op.execute({&input, &indices}, {}, {1});
+    auto result = op.execute({&input, &indices}, {}, {1}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -294,7 +294,7 @@ TEST_F(DeclarableOpsTests2, gather_13) {
 
     nd4j::ops::gather op;
 
-    auto result = op.execute({&input, &indices}, {}, {2});
+    auto result = op.execute({&input, &indices}, {}, {2}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -304,6 +304,30 @@ TEST_F(DeclarableOpsTests2, gather_13) {
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, gather_14) {
+
+    NDArray input   ('c', {2,3,4},   {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray indices ('c', {2,3},     {0, 10, 2, 20, 1,2}, nd4j::DataType::INT32);
+    NDArray output('c', {2,2,3,4});
+
+    nd4j::ops::gather op;
+
+    ASSERT_ANY_THROW(op.execute({&input, &indices}, {&output}, {}, {1}, {true}));
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests2, gather_15) {
+
+    NDArray input   ('c', {2,3,4,5}, nd4j::DataType::DOUBLE);
+    NDArray indices ('c', {2,3,4}, {0, 10, 2, 3, 0, 1, 20, 3, 0, 1, 2, 3,0, 1, 2, 3, 0, 1, 2, 30, 0, 1, 2, 3}, nd4j::DataType::INT32);
+    NDArray output('c', {2,3,  2,3,4,  5});
+
+    nd4j::ops::gather op;
+
+    ASSERT_ANY_THROW(op.execute({&input, &indices}, {&output}, {}, {2}, {true}));
 }
 
 TEST_F(DeclarableOpsTests2, BroadcastGradientArgs_1) {

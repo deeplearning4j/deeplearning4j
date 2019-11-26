@@ -704,7 +704,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test2) {
     auto expected = NDArrayFactory::create<double>('c', {2,2,2}, {23, 24, 11, 12, 3,  4, 3,  4});
 
     nd4j::ops::gather_nd op;
-    auto results = op.execute({&input, &indices}, {}, {});
+    auto results = op.execute({&input, &indices}, {}, {}, {true});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -798,7 +798,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test7) {
     auto expected = NDArrayFactory::create<double>('c', {3,3}, {3,5,5,8,5,10,2,2,14});
 
     nd4j::ops::gather_nd op;
-    auto results = op.execute({&input, &indices}, {}, {});
+    auto results = op.execute({&input, &indices}, {}, {}, {true});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -823,6 +823,52 @@ TEST_F(DeclarableOpsTests5, gatherNd_test8) {
     ASSERT_EQ(e, *z);
 
     delete result;
+}
+
+TEST_F(DeclarableOpsTests5, gatherNd_test9) {
+    auto x = NDArrayFactory::create<double>('c', {2, 4, 2, 2});
+    auto indices = NDArrayFactory::create<int>('c', {3, 3}, {0,2,1, 0,1,0, 1,3,1});
+    auto exp = NDArrayFactory::create<double>('c', {3,2}, {11.f, 12.f, 5.f, 6.f, 31.f, 32.f});
+    x.linspace(1);
+
+    nd4j::ops::gather_nd op;
+    auto result = op.execute({&x, &indices}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    //z->printIndexedBuffer();
+    //z->printShapeInfo("z shape");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test10) {
+
+    auto input = NDArrayFactory::create<double>('c', {4, 3, 2});
+    auto indices = NDArrayFactory::create<int>('c', {2,2,2}, {30,20,1,2, 0,10,0,1});
+
+    auto output = NDArrayFactory::create<double>('c', {2,2,2});
+
+    nd4j::ops::gather_nd op;
+
+    ASSERT_ANY_THROW(op.execute({&input, &indices}, {&output}, {}, {}, {true}));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test11) {
+
+    auto input = NDArrayFactory::create<double>('c', {4, 4});
+    auto indices = NDArrayFactory::create<int>('c', {3,3,2}, {0,2,1, 0,10,0, 1,30,1, 0,20,1, 0,1,0, 1,30,1});
+    auto output = NDArrayFactory::create<double>('c', {3,3});
+
+    nd4j::ops::gather_nd op;
+
+    ASSERT_ANY_THROW(op.execute({&input, &indices}, {&output}, {}, {}, {true}));
 }
 
 //////////////////////////////////////////////////////////////////////

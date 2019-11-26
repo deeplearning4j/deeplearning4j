@@ -27,6 +27,49 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
+///////////////////////////////////////////////////////////////////
+// x - indices, z - input/output
+template<typename T>
+Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output, const int axis) {
+
+    std::atomic<int64_t> numOfBadIndx{0};
+
+    const auto x = indices.bufferAsT<T>();
+
+    const auto xShapeInfo = indices.getShapeInfo();
+    const auto zShapeInfo = output.getShapeInfo();
+
+    const auto xRank = indices.rankOf();
+
+    auto func = PRAGMA_THREADS_FOR {
+
+        Nd4jLong xCoords[MAX_RANK];
+
+        for (auto i = start; i < stop; i += increment) {
+
+            shape::index2coords(i, xShapeInfo, xCoords);
+
+            const Nd4jLong currentInd = x[shape::getOffset(xShapeInfo, xCoords)];
+
+            if(currentInd >= shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank-1] : axis)) {
+                printf("checkIndices: out of range element %lld at index %ld \n", currentInd,  i);
+                ++numOfBadIndx;
+            }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, indices.lengthOf());
+
+    return numOfBadIndx;
+}
+
+///////////////////////////////////////////////////////////////////
+Nd4jLong checkIndices(nd4j::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
+
+    BUILD_SINGLE_SELECTOR(indices.dataType(), return checkIndices_, (indices, output, axis), INDEXING_TYPES);
+}
+
+///////////////////////////////////////////////////////////////////
 void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const int outRank = output.rankOf();

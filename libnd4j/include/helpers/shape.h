@@ -533,7 +533,7 @@ namespace shape {
  * the given shape info buffer
  * represents a scalar shape
  */
-    ND4J_EXPORT _CUDA_HD int isScalar(Nd4jLong *info);
+    ND4J_EXPORT _CUDA_HD int isScalar(const Nd4jLong *info);
 
 /**
  * Returns whether
@@ -904,6 +904,7 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const Nd4jLong *shapeInfo,  int *coords);
     ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const Nd4jLong *shapeInfo,  uint *coords);
     ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const int rank, const Nd4jLong *shape, Nd4jLong *coords);
+    ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const int rank, const Nd4jLong *shape, int *coords);
     /**
     * take into account only dimensions stored in tadDims, tadDims must be sorted in increasing order!
     */
@@ -2706,7 +2707,7 @@ INLINEDEF _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeIn
  * the given shape info buffer
  * represents a scalar shape
  */
-    INLINEDEF _CUDA_HD int isScalar(Nd4jLong *info) {
+    INLINEDEF _CUDA_HD int isScalar(const Nd4jLong *info) {
 
         const int rank = shape::rank(info);
 
@@ -2715,9 +2716,9 @@ INLINEDEF _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeIn
         if(rank == 0)
             return 1;
         if(rank == 1)
-            return shape::shapeOf(info)[0] == 1;
+            return shape::shapeOf(const_cast<Nd4jLong*>(info))[0] == 1;
         if(rank == 2)
-            return shape::shapeOf(info)[0] == 1 && shape::shapeOf(info)[1] == 1;
+            return shape::shapeOf(const_cast<Nd4jLong*>(info))[0] == 1 && shape::shapeOf(const_cast<Nd4jLong*>(info))[1] == 1;
 
         return 0;
     }
@@ -4785,6 +4786,16 @@ INLINEDEF void _CUDA_HD index2coords(Nd4jLong index, const Nd4jLong *shapeInfo, 
 
 //////////////////////////////////////////////////////////////////////
 INLINEDEF void _CUDA_HD index2coords(Nd4jLong index, const int rank, const Nd4jLong *shape, Nd4jLong *coords) {
+
+    for(uint i = rank - 1; i > 0; --i) {
+        coords[i] = index % shape[i];
+        index /= shape[i];
+    }
+    coords[0] = index;      // last iteration
+}
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF void _CUDA_HD index2coords(Nd4jLong index, const int rank, const Nd4jLong *shape, int *coords) {
 
     for(uint i = rank - 1; i > 0; --i) {
         coords[i] = index % shape[i];
