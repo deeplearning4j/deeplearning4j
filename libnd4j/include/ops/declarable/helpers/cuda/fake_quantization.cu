@@ -100,7 +100,7 @@ namespace helpers {
                     val = nudgedMax;
                 }
                 output[shape::getIndexOffset(b * channels + i, outputShape)] =
-                        (math::nd4j_floor<T, T>((val - nudgedMin) / scale + T(0.5)) * scale + nudgedMin);
+                        (math::nd4j_floor<T, T>((val - nudgedMin) / scale + T(0.5f)) * scale + nudgedMin);
             };
         }
     }
