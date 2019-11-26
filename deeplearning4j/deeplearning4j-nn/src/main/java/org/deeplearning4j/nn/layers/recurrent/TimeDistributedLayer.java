@@ -1,10 +1,12 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -106,5 +108,31 @@ public class TimeDistributedLayer extends BaseWrapperLayer {
 
         INDArray permuted = reshaped.permute(permute);
         return permuted;
+    }
+
+    @Override
+    public void setMaskArray(INDArray maskArray) {
+        if(maskArray == null){
+            underlying.setMaskArray(null);
+        } else {
+            INDArray reshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.ACTIVATIONS);
+            underlying.setMaskArray(reshaped);
+        }
+    }
+
+    @Override
+    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+        if(maskArray == null){
+            return underlying.feedForwardMaskArray(null, currentMaskState, minibatchSize);
+        } else {
+            INDArray reshaped = TimeSeriesUtils.reshapeTimeSeriesMaskToVector(maskArray, LayerWorkspaceMgr.noWorkspaces(), ArrayType.ACTIVATIONS);
+            Pair<INDArray, MaskState> p = underlying.feedForwardMaskArray(reshaped, currentMaskState, minibatchSize);
+            if(p == null || p.getFirst() == null){
+                return p;
+            }
+            INDArray reshaped2 = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(p.getFirst(), (int)maskArray.size(0));
+            p.setFirst(reshaped2);
+            return p;
+        }
     }
 }
