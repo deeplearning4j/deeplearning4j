@@ -126,7 +126,10 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "fake_quant/min_max_args_per_channel.*",
 
             // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8403
-            "resize_bilinear/int32.*"
+            "resize_bilinear/int32.*",
+
+            // Suggesting TF 1.15 bug - see https://github.com/eclipse/deeplearning4j/issues/8449
+            "non_max_suppression_v2/float16.*"
     };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have
