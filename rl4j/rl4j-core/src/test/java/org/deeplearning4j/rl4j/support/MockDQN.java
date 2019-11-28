@@ -15,6 +15,7 @@ import java.util.List;
 
 public class MockDQN implements IDQN {
 
+    public boolean hasBeenReset = false;
     public final List<INDArray> outputParams = new ArrayList<>();
     public final List<Pair<INDArray, INDArray>> fitParams = new ArrayList<>();
 
@@ -30,7 +31,7 @@ public class MockDQN implements IDQN {
 
     @Override
     public void reset() {
-
+        hasBeenReset = true;
     }
 
     @Override
@@ -61,7 +62,10 @@ public class MockDQN implements IDQN {
 
     @Override
     public IDQN clone() {
-        return null;
+        MockDQN clone = new MockDQN();
+        clone.hasBeenReset = hasBeenReset;
+
+        return clone;
     }
 
     @Override
