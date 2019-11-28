@@ -77,7 +77,13 @@ namespace helpers {
             }
         }
     }
-
+//
+//const auto clamped = inputs.cwiseMin(nudged_max).cwiseMax(nudged_min);
+//    const auto clamped_shifted = clamped - nudged_min;
+//    outputs.device(d) = (clamped_shifted / nudged_scale_repl + 0.5f).floor() *
+//                            nudged_scale_repl +
+//                        nudged_min;
+//
     template <typename T>
     void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
         int lowIntBound = narrowed ? 1 : 0;
@@ -95,7 +101,8 @@ namespace helpers {
             else if (val > nudgedMax)
                 val = nudgedMax;
             // converse value with scale and shifted with nudged min
-            return (nd4j::math::nd4j_floor<T,T>((val - nudgedMin)/scale + T(0.5)) * scale + nudgedMin);
+            val -= nudgedMin;
+            return (nd4j::math::nd4j_floor<T,T>(val / scale + T(0.5f)) * scale + nudgedMin);
         };
 
         input->applyLambda<T>(fakeQuantizationWithMinMax, output);

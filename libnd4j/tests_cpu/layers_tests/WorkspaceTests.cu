@@ -39,7 +39,7 @@ TEST_F(CudaWorkspaceTests, Basic_Tests_1) {
     ctx.setWorkspace(&workspace);
     auto array = NDArrayFactory::create<float>('c', {5, 5}, &ctx);
 
-    ASSERT_EQ(100, workspace.getCurrentOffset());
+    ASSERT_EQ(108, workspace.getCurrentOffset());
     ASSERT_EQ(0, workspace.getCurrentSecondaryOffset());
 
     array.e<int>(0);
@@ -55,6 +55,6 @@ TEST_F(CudaWorkspaceTests, Basic_Tests_2) {
     ctx.setWorkspace(&workspace);
     auto array = NDArrayFactory::create<float>('c', {5, 5}, {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}, &ctx);
 
-    ASSERT_EQ(100, workspace.getCurrentOffset());
+    ASSERT_EQ(108, workspace.getCurrentOffset());
     ASSERT_EQ(0, workspace.getCurrentSecondaryOffset());
 }

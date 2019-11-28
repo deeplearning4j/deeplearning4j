@@ -28,6 +28,8 @@ namespace helpers {
 
     void nonMaxSuppression(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize,
             double overlapThreshold, double scoreThreshold, NDArray* output);
+    Nd4jLong nonMaxSuppressionV3(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize,
+                           double overlapThreshold, double scoreThreshold, NDArray* output);
     Nd4jLong nonMaxSuppressionGeneric(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                              double overlapThreshold, double scoreThreshold, NDArray* output);
 

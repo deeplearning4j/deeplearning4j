@@ -35,127 +35,84 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T, typename I>
-    static __global__ void segmentProdLinearKernel(void* input, Nd4jLong* inputShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
-        __shared__ T* val;
-        __shared__ Nd4jLong xLen, zLen, segment, zIndex;
+    static __global__ void segmentProdLinearKernel(void* input, Nd4jLong* inputShape, int* starts, int* lengths,
+            Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
+
+        __shared__ Nd4jLong xLen, zLen;
         __shared__ T* x;
         __shared__ T* z;
-        __shared__ int threadsPerSegment, start, finish;
 
         if (threadIdx.x == 0) {
-            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-            segment = blockIdx.x / threadsPerSegment;
             x = reinterpret_cast<T*>(input);
             z = reinterpret_cast<T*>(output);
-            extern __shared__ unsigned char shmem[];
-            val = reinterpret_cast<T*>(shmem);
             xLen = shape::length(inputShape);
             zLen = shape::length(outputShape);
+        }
+        __syncthreads();
 
-            if (segment < numOfClasses) {
-                zIndex = shape::getIndexOffset(segment, outputShape);
-                start = starts[segment];
-                finish = start + lengths[segment];
-                //val[segment] = ;
-                z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
-                val[segment] = z[zIndex];
+        for(auto segment = blockIdx.x; segment < numOfClasses; segment += gridDim.x) {
+            auto zIndex = shape::getIndexOffset(segment, outputShape);
+            auto start = starts[segment];
+            auto finish = start + lengths[segment];
+            if (lengths[segment] == 0) {
+                continue;
             }
-
+            for (auto e = start + threadIdx.x; e < finish; e += blockDim.x) {
+                auto xIndex = shape::getIndexOffset(e, inputShape);
+                nd4j::math::atomics::nd4j_atomicMul(&z[segment], x[xIndex]);
+            }
         }
-        __syncthreads();
-//         auto tid = threadIdx.x + blockIdx.x * blockDim.x;
-//         auto step = blockDim.x * gridDim.x;
 
-        for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
-            auto xIndex = shape::getIndexOffset(e, inputShape);
-            nd4j::math::atomics::nd4j_atomicMul(&val[segment], x[xIndex]);
-        }
-        __syncthreads();
-
-        if (threadIdx.x == 0) {
-            z[zIndex] = val[segment];
-        }
-        __syncthreads();
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    static __global__ void unsortedSegmentProdLinearKernel(void* input, Nd4jLong* inputShape, void* indices, Nd4jLong* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
-        __shared__ T* val;
-        __shared__ Nd4jLong xLen, zLen, segment, zIndex;
-        __shared__ T* x;
-        __shared__ T* z;
-        __shared__ I* y; //int threadsPerSegment, start, finish;
+    static __global__ void unsortedSegmentProdLinearKernel(T* input, Nd4jLong* inputShape, I* indices, Nd4jLong* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, T* output, Nd4jLong* outputShape) {
+        __shared__ Nd4jLong xLen, zLen;
 
         if (threadIdx.x == 0) {
-//            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-            segment = blockIdx.x;// / threadsPerSegment;
-            x = reinterpret_cast<T*>(input);
-            z = reinterpret_cast<T*>(output);
-            y = reinterpret_cast<I*>(indices);
-//            extern __shared__ unsigned char shmem[];
-//            val = reinterpret_cast<T*>(shmem);
             xLen = shape::length(inputShape);
             zLen = shape::length(outputShape);
-
-//            if (segment < numOfClasses) {
-            zIndex = shape::getIndexOffset(segment, outputShape);
-            //start = starts[segment];
-            //finish = start + lengths[segment];
-            if (lengths[segment] > 0)
-                z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape)];
-            else
-                z[zIndex] = 0; //DataTypeUtils::max<T>();
-//                val[segment] = z[zIndex];
-//            }
-
         }
         __syncthreads();
-        if (lengths[segment] > 0)
-            for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
-                auto xIndex = shape::getIndexOffset(e, inputShape);
-                auto yIndex = shape::getIndexOffset(e, indicesShape);
-                if (y[yIndex] == segment && e != starts[segment]) {
-                    nd4j::math::atomics::nd4j_atomicMul(&z[zIndex], x[xIndex]);
-                }
+        auto start = threadIdx.x + blockIdx.x * blockDim.x;
+        auto step = blockDim.x * gridDim.x;
+        for (auto idx = start; idx < xLen; idx += step) {
+            auto xIndex = shape::getIndexOffset(idx, inputShape);
+            auto yIndex = shape::getIndexOffset(idx, indicesShape);
+            auto segment = indices[yIndex];
+            auto zIndex = shape::getIndexOffset(segment, outputShape);
+            if (lengths[segment] == 0) {
+                continue;
             }
+            nd4j::math::atomics::nd4j_atomicMul(&output[zIndex], input[xIndex]);
+        }
     }
     // -------------------------------------------------------------------------------------------------------------- //
     // SegmentProd kernel
     template <typename T, typename I>
-    static __global__ void segmentProdTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
-        __shared__ T* val;
-        __shared__ Nd4jLong len, segment, zIndex, total;
-        __shared__ T* z;
-        __shared__ int threadsPerSegment, start, finish;
+    static __global__ void segmentProdTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads,
+            Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf,
+            Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+
+        __shared__ Nd4jLong len, total;
 
         if (threadIdx.x == 0) {
-            segment = indices[blockIdx.x]; // / threadsPerSegment;
-            z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
-            len = shape::length(inputTads);
-            start = starts[segment];
-            finish = start + lengths[segment];
             total = shape::sizeAt(inputShape, 0);
-
+            len = shape::length(inputTads);
         }
         __syncthreads();
 
-        auto idx = blockIdx.x;
-        if (blockIdx.x <= total) {
+        for (auto idx = blockIdx.x; idx < total; idx += gridDim.x) {
             auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
-            if (blockIdx.x == start) {
-                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputTads);
-                    auto zIndex = shape::getIndexOffset(e, outputTads);
-                    nd4j::math::atomics::nd4j_atomicMul(&z[zIndex], x[xIndex]);
-                }
-            }
-            else {
-                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputTads);
-                    auto zIndex = shape::getIndexOffset(e, outputTads);
-                    if (lengths[segment] > 0)
-                        nd4j::math::atomics::nd4j_atomicMul(&z[zIndex], x[xIndex]);
-                }
+            auto segment = indices[idx]; // / threadsPerSegment;
+            auto z = reinterpret_cast<T *>(outputBuf) + outputTadOffsets[segment];
+            auto start = starts[segment];
+            auto finish = start + lengths[segment];
+            if (lengths[segment] == 0) continue;
+            for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                auto xIndex = shape::getIndexOffset(e, inputTads);
+                auto zIndex = shape::getIndexOffset(e, outputTads);
+                nd4j::math::atomics::nd4j_atomicMul(&z[zIndex], x[xIndex]);
             }
         }
     }
@@ -177,7 +134,7 @@ namespace helpers {
         int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
 
         if (input->isVector()) {
-            segmentProdLinearKernel<T,I><<<numClasses, input->lengthOf(), numClasses * 32 + 32, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
+            segmentProdLinearKernel<T,I><<<128, 256, 128, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo());
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
@@ -187,7 +144,7 @@ namespace helpers {
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
             Nd4jLong* outputTadOffsets = packZ.specialOffsets();
-            segmentProdTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
+            segmentProdTadKernel<T,I><<<128, 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
 
     }
@@ -214,12 +171,15 @@ namespace helpers {
         fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
         int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
         int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
+        output->assign(1);
 
         if (input->isVector()) {
-            unsortedSegmentProdLinearKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
+            unsortedSegmentProdLinearKernel<T,I><<<128, 256, 256, *stream>>>(
+                    input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(),
+                    indices->dataBuffer()->specialAsT<I>(), indices->specialShapeInfo(), begins, lengths, numOfClasses,
+                    output->dataBuffer()->specialAsT<T>(), output->specialShapeInfo());
         }
         else {
-            output->assign(1);
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
             auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
             auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
@@ -228,7 +188,7 @@ namespace helpers {
             Nd4jLong* outputTads = packZ.specialShapeInfo();
             Nd4jLong* outputTadOffsets = packZ.specialOffsets();
             dims.x = input->sizeAt(0);
-            segmentProdTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
+            segmentProdTadKernel<T,I><<<128, 256, 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
 
     }

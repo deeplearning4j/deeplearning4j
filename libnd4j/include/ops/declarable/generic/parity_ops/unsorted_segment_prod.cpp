@@ -61,9 +61,9 @@ namespace nd4j {
         }
         DECLARE_TYPES(unsorted_segment_prod) {
             getOpDescriptor()
-                    ->setAllowedOutputTypes({ALL_FLOATS})
-                    ->setAllowedInputTypes(0, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INDICES})
                     ->setSameMode(false);
         }
 
@@ -88,10 +88,10 @@ namespace nd4j {
         DECLARE_TYPES(unsorted_segment_prod_bp) {
             getOpDescriptor()
                     ->setAllowedOutputTypes(0, {ALL_FLOATS})
-					->setAllowedOutputTypes(1, {ALL_INTS})
+					->setAllowedOutputTypes(1, {ALL_INDICES})
                     ->setAllowedInputTypes(0, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, {ALL_INTS})
-                    ->setAllowedInputTypes(2,{ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INDICES})
+                    ->setAllowedInputTypes(2,{ALL_FLOATS, ALL_INTS})
                     ->setSameMode(false);
         }
 

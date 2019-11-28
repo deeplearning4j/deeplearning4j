@@ -20827,7 +20827,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * image.non_max_suppression op.
+         * image.non_max_suppression ops.
          * input:
          *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
          *     1 - scales - 1D-tensor with shape (num_boxes) by float type
@@ -20855,6 +20855,23 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public non_max_suppression() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+//         #if NOT_EXCLUDED(OP_image_non_max_suppression_v3)
+                @Namespace("nd4j::ops") public static class non_max_suppression_v3 extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public non_max_suppression_v3(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public non_max_suppression_v3(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public non_max_suppression_v3 position(long position) {
+                        return (non_max_suppression_v3)super.position(position);
+                    }
+                
+                                                                                    public non_max_suppression_v3() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

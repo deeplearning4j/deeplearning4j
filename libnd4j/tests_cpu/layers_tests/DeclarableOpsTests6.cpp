@@ -1523,14 +1523,12 @@ TEST_F(DeclarableOpsTests6, LogDet_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 3, 3}, {4,12,-16,12,37,-43,-16,-43,98, 4,1.2,-1.6,1.2,3.7,-4.3,-1.6,-4.3,9.8});
     auto exp = NDArrayFactory::create<double>({ 3.5835189, 4.159008});
 
-    //x.printIndexedBuffer("Input");
     nd4j::ops::logdet op;
     auto result = op.execute({&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
