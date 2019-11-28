@@ -131,6 +131,8 @@ public class QLearningDiscreteTest {
         // trainEpoch result
         assertEquals(16, result.getStepCounter());
         assertEquals(300.0, result.getReward(), 0.00001);
+        assertTrue(dqn.hasBeenReset);
+        assertTrue(((MockDQN)sut.getTargetQNetwork()).hasBeenReset);
     }
 
     public static class TestQLearningDiscrete extends QLearningDiscrete<MockEncodable> {
