@@ -292,7 +292,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_5) {
 
     auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4260467851820808160LL, 3900173902914993008LL, 3566895990128523424LL,
                                                          3314989625590692528LL});
-    x.linspace(1.);
     nd4j::ops::bitcast op;
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
@@ -311,7 +310,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_6) {
 
     auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4899988963420290048LL, 5188224837230806272LL, 5332342774136064128LL,
                                                          5476460161268730496LL});
-    x.linspace(1.);
     nd4j::ops::bitcast op;
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
@@ -329,7 +327,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
 
     auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4899988963420290048LL, 5188224837230806272LL, 5332342774136064128LL,
                                                          5476460161268730496LL});
-    x.linspace(1.);
     nd4j::ops::bitcast op;
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
