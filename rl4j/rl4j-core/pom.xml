@@ -127,7 +127,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.1</artifactId>
+                    <artifactId>nd4j-cuda-10.2</artifactId>
                     <version>${project.version}</version>
                     <scope>test</scope>
                 </dependency>
