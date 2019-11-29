@@ -37,79 +37,93 @@ namespace nd4j {
 
         class ConvolutionUtils {
         public:
-            static inline void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode) {
-                if(isSameMode > 0) {
-                    oH = (int) math::nd4j_ceil<double, double>(iH * 1. / sH);
-                    oW = (int) math::nd4j_ceil<double, double>(iW * 1. / sW);
-                }
-                else {
+            static inline void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int paddingMode) {
+
+                if(paddingMode == 0) {             // valid
                     oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
                     oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
                 }
+                else if (paddingMode == 1) {       // same
+                    oH = (int) math::nd4j_ceil<double, double>(iH * 1. / sH);
+                    oW = (int) math::nd4j_ceil<double, double>(iW * 1. / sW);
+                }
+                else {                      // causal
+                    oH = (iH - 1) / sH + 1;     // 2*pH = (kH-1)*dH
+                    oW = (iW - 1) / sW + 1;
+                }
             }
 
-            static inline void calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode) {
-                if(!isSameMode) {                                           // valid
+            static inline void calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int paddingMode) {
 
+                if(paddingMode == 0) {             // valid
                     oD = (iD - (kD + (kD - 1) * (dD - 1)) + 2 * pD) / sD + 1;
                     oH = (iH - (kH + (kH - 1) * (dH - 1)) + 2 * pH) / sH + 1;
                     oW = (iW - (kW + (kW - 1) * (dW - 1)) + 2 * pW) / sW + 1;
                 }
-                else {                                                      // same
-
+                else if(paddingMode == 1) {        // same
                     oD = (int) nd4j::math::nd4j_ceil<double, double>(iD * 1. / sD);
                     oH = (int) nd4j::math::nd4j_ceil<double, double>(iH * 1. / sH);
                     oW = (int) nd4j::math::nd4j_ceil<double, double>(iW * 1. / sW);
+
+                }
+                else {                      // causal
+                    oD = (iD - 1) / sD + 1;
+                    oH = (iH - 1) / sH + 1;     // 2*pH = (kH-1)*dH
+                    oW = (iW - 1) / sW + 1;
                 }
             }
 
-            static inline void calcPadding2D(int& pH, int& pW, int oH, int oW, int iH, int iW, int kH, int kW, int sH, int sW, int dH, int dW) {
-                int eKH, eKW;
-                if (dH == 1 && dW == 1) {
-                    eKH = kH;
-                    eKW = kW;
-                } else {
-                    eKH = (kH - 1) * dH + 1;
-                    eKW = (kW - 1) * dW + 1;
-                }
+            static inline void calcPadding2D(int& pH, int& pW, int oH, int oW, int iH, int iW, int kH, int kW, int sH, int sW, int dH, int dW, const int paddingMode = 1 /* default is same mode*/) {
 
-                pH = ((oH - 1) * sH + eKH - iH) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
-                pW = ((oW - 1) * sW + eKW - iW) / 2;
+                if(paddingMode == 0)        // valid
+                    return;
+
+                if(paddingMode == 1) {      // same
+
+                    const int eKH = (kH - 1) * dH + 1;
+                    const int eKW = (kW - 1) * dW + 1;
+
+                    pH = ((oH - 1) * sH + eKH - iH) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+                    pW = ((oW - 1) * sW + eKW - iW) / 2;
+                }
+                else {                      // causal
+                    pH = (kH - 1) * dH;
+                    pW = (kW - 1) * dW;
+                }
             }
 
-            static inline void calcPadding3D(int& pD, int& pH, int& pW, const int oD, const int oH, const int oW, const int iD, const int iH, const int iW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int dD, const int dH, const int dW) {
-                int eKD, eKH, eKW;
-                if (dD == 1 && dH == 1 && dW == 1) {
-                    eKD = kD;
-                    eKH = kH;
-                    eKW = kW;
-                } else {
-                    eKD = (kD - 1) * dD + 1;
-                    eKH = (kH - 1) * dH + 1;
-                    eKW = (kW - 1) * dW + 1;
+            static inline void calcPadding3D(int& pD, int& pH, int& pW, const int oD, const int oH, const int oW, const int iD, const int iH, const int iW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int dD, const int dH, const int dW, const int paddingMode = 1 /* default is same mode*/) {
+
+                if(paddingMode == 0)        // valid
+                    return;
+
+                if(paddingMode == 1) {      // same
+
+                    const int eKD = (kD - 1) * dD + 1;
+                    const int eKH = (kH - 1) * dH + 1;
+                    const int eKW = (kW - 1) * dW + 1;
+
+                    pD = ((oD - 1) * sD + eKD - iD) / 2;
+                    pH = ((oH - 1) * sH + eKH - iH) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+                    pW = ((oW - 1) * sW + eKW - iW) / 2;
                 }
-
-                pD = ((oD - 1) * sD + eKD - iD) / 2;       // Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
-                pH = ((oH - 1) * sH + eKH - iH) / 2;
-                pW = ((oW - 1) * sW + eKW - iW) / 2;
-
+                else {                      // causal
+                    pD = (kD - 1) * dD;
+                    pH = (kH - 1) * dH;
+                    pW = (kW - 1) * dW;
+                }
             }
 
             // calculation of output height and width in 2D deconvolution procedure
-            static inline void calcOutSizeDeconv2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int isSameMode) {
-                if (isSameMode) {
+            static inline void calcOutSizeDeconv2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int paddingMode) {
+
+                if (paddingMode) {
                     oH = sH * iH;
                     oW = sW * iW;
                 }
                 else {
-                    int ekH, ekW;
-                    if (dH == 1 && dW == 1) {
-                        ekH = kH;
-                        ekW = kW;
-                    } else {
-                        ekH = (kH - 1) * dH + 1;
-                        ekW = (kW - 1) * dW + 1;
-                    }
+                    const int ekH = (kH - 1) * dH + 1;
+                    const int ekW = (kW - 1) * dW + 1;
 
                     oH = sH * (iH - 1) + ekH - 2 * pH;
                     oW = sW * (iW - 1) + ekW - 2 * pW;
@@ -117,24 +131,19 @@ namespace nd4j {
             }
 
             // calculation of output height and width in 3D deconvolution procedure
-            static inline void calcOutSizeDeconv3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int isSameMode) {
-                if (isSameMode) {
+            static inline void calcOutSizeDeconv3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int paddingMode) {
+
+                if (paddingMode) {
                     oD = sD * iD;
                     oH = sH * iH;
                     oW = sW * iW;
                 }
                 else {
-                    int ekD, ekH, ekW;
-                    if (dD == 1 && dH == 1 && dW == 1) {
-                        ekD = kD;
-                        ekH = kH;
-                        ekW = kW;
-                    }
-                    else {
-                        ekD = (kD - 1) * dD + 1;
-                        ekH = (kH - 1) * dH + 1;
-                        ekW = (kW - 1) * dW + 1;
-                    }
+
+                    const int ekD = (kD - 1) * dD + 1;
+                    const int ekH = (kH - 1) * dH + 1;
+                    const int ekW = (kW - 1) * dW + 1;
+
                     oD = sD * (iD - 1) + ekD - 2 * pD;
                     oH = sH * (iH - 1) + ekH - 2 * pH;
                     oW = sW * (iW - 1) + ekW - 2 * pW;
@@ -194,10 +203,10 @@ namespace nd4j {
 
             }
 
-            // static inline void calcPaddingAndDilationForConv2DMKL(const int iH, const int iW, const int oH, const int oW, const int kH, const int kW, const int sH, const int sW, const int isSameMode, int& pH, int& pW, int& dH, int& dW) {
+            // static inline void calcPaddingAndDilationForConv2DMKL(const int iH, const int iW, const int oH, const int oW, const int kH, const int kW, const int sH, const int sW, const int paddingMode, int& pH, int& pW, int& dH, int& dW) {
 
             //     if(kH != 1) {
-            //         if(isSameMode) {
+            //         if(paddingMode) {
             //             pH = (oH - 1) * sH - iH + kH - pH;
             //             dH = dH - 1;
             //         }
@@ -205,7 +214,7 @@ namespace nd4j {
             //             dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
             //     }
             //     if(kW != 1) {
-            //         if(isSameMode) {
+            //         if(paddingMode) {
             //             pW = (oW - 1) * sW - iW + kW - pW;
             //             dW = dW - 1;
             //         }
@@ -214,10 +223,10 @@ namespace nd4j {
             //     }
             // }
 
-            // static inline void calcPaddingAndDilationForConv3DMKL(const int iD, const int iH, const int iW, const int oD, const int oH, const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int isSameMode, int& pD, int& pH, int& pW, int& dD, int& dH, int& dW) {
+            // static inline void calcPaddingAndDilationForConv3DMKL(const int iD, const int iH, const int iW, const int oD, const int oH, const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int paddingMode, int& pD, int& pH, int& pW, int& dD, int& dH, int& dW) {
 
             //     if(kD != 1) {
-            //         if(isSameMode) {
+            //         if(paddingMode) {
             //             pD = (oD - 1) * sD - iD + kD - pD;
             //             dD = dD - 1;
             //         }
@@ -225,7 +234,7 @@ namespace nd4j {
             //             dD = (iD + 2*pD - (oD - 1) * sD - kD) / (kD - 1);
             //     }
             //     if(kH != 1) {
-            //         if(isSameMode) {
+            //         if(paddingMode) {
             //             pH = (oH - 1) * sH - iH + kH - pH;
             //             dH = dH - 1;
             //         }
@@ -233,7 +242,7 @@ namespace nd4j {
             //             dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
             //     }
             //     if(kW != 1) {
-            //         if(isSameMode) {
+            //         if(paddingMode) {
             //             pW = (oW - 1) * sW - iW + kW - pW;
             //             dW = dW - 1;
             //         }
@@ -242,19 +251,19 @@ namespace nd4j {
             //     }
             // }
 
-            static void conv2d(nd4j::graph::Context  &context, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
+            static void conv2d(nd4j::graph::Context  &context, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW);
 
             // static void conv2d(nd4j::graph::Context & block, const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs);
 
             // static void conv2dBP(nd4j::graph::Context & block, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const std::vector<int>& intArgs);
 
-            static void conv2dBP(nd4j::graph::Context & block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
+            static void conv2dBP(nd4j::graph::Context & block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW);
 
-            static void depthwiseConv2d(nd4j::graph::Context & block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
+            static void depthwiseConv2d(nd4j::graph::Context & block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW);
 
-            static void depthwiseConv2dBP(nd4j::graph::Context & block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
+            static void depthwiseConv2dBP(nd4j::graph::Context & block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW);
 
-            static void sconv2d(nd4j::graph::Context & block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
+            static void sconv2d(nd4j::graph::Context & block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW);
 
             static void vol2col(nd4j::graph::Context & block, const NDArray& vol, NDArray& col, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW);
 

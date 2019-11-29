@@ -31,6 +31,7 @@
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <PointersManager.h>
+#include <GradCheck.h>
 
 #ifdef HAVE_MKLDNN
 #include <ops/declarable/platform/mkldnn/mkldnnUtils.h>
@@ -771,7 +772,7 @@ TYPED_TEST(TypedConvolutionTests1, Test_Conv1D_ff_1) {
     bias.linspace(1);
 
     nd4j::ops::conv1d op;
-    auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0, 0});
+    auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0, 1, 0, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result_FF->status());
 
@@ -785,7 +786,7 @@ TYPED_TEST(TypedConvolutionTests1, Test_Conv1D_ff_1) {
     auto epsilonNxt = z->dup();
     epsilonNxt->linspace(1);
 
-    auto result_BP = op_bp.execute({&input, &weights, &bias, epsilonNxt}, {}, {2, 1, 0, 0});
+    auto result_BP = op_bp.execute({&input, &weights, &bias, epsilonNxt}, {}, {2, 1, 0, 1, 0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result_BP->status());
 
     auto eps = result_BP->at(0);
@@ -813,13 +814,226 @@ TYPED_TEST(TypedConvolutionTests1, Test_Conv1D_ff_2) {
     input.linspace(1);
 
     nd4j::ops::conv1d op;
-    auto result = op.execute({&input, &weights}, {}, {2, 1, 0, 1});
+    auto result = op.execute({&input, &weights}, {}, {2, 1, 0, 1, 1,0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
 
     delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv1d_causal_1) {
+
+    int bS=2, iW=3,  iC=4,oC=3,  kW=2,  sW=1,  pW=0,  dW=1;
+    int oW = (iW-1)/sW + 1;
+    int paddingMode = 2;             // CAUSAL
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iW, iC});
+    NDArray weights('c', {kW, iC, oC});
+    NDArray bias('c', {oC}, {-1,-2,-3});
+
+    NDArray expOutput('c', {bS, oW, oC}, {18. ,  18. ,  18. , 53. ,  55.6,  58.2, 89.8,  95.6, 101.4, 102. , 106.8, 111.6, 163.4, 175.6, 187.8, 200.2, 215.6, 231.});
+
+    input.linspace(1., 1.);
+    weights.linspace(0.1, 0.1);
+
+    nd4j::ops::conv1d op;
+    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW,  paddingMode, dataFormat});
+    auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv1d_causal_2) {
+
+    int bS=2, iW=16,  iC=3,oC=4,  kW=2,  sW=2,  pW=0,  dW=1;
+    int oW = (iW-1)/sW + 1;
+    int paddingMode = 2;             // CAUSAL
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iW, iC});
+    NDArray weights('c', {kW, iC, oC});
+    NDArray bias('c', {oC}, {-1,-2,-3,-4});
+
+    NDArray expOutput('c', {bS, oW, oC}, { 10. ,   9.6,   9.2,   8.8, 48.9,  51.8,  54.7,  57.6, 88.5,  95. , 101.5, 108. , 128.1, 138.2, 148.3, 158.4,
+                                           167.7, 181.4, 195.1, 208.8, 207.3, 224.6, 241.9, 259.2, 246.9, 267.8, 288.7, 309.6, 286.5, 311. , 335.5, 360. ,
+                                           254.8, 268.8, 282.8, 296.8, 365.7, 397.4, 429.1, 460.8, 405.3, 440.6, 475.9, 511.2, 444.9, 483.8, 522.7, 561.6,
+                                           484.5, 527. , 569.5, 612. , 524.1, 570.2, 616.3, 662.4, 563.7, 613.4, 663.1, 712.8, 603.3, 656.6, 709.9, 763.2});
+
+    input.linspace(1., 1.);
+    weights.linspace(0.1, 0.1);
+
+    nd4j::ops::conv1d op;
+    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv1d_causal_3) {
+
+    int bS=2, iW=16,  iC=3,oC=4,  kW=3,  sW=3,  pW=0,  dW=1;
+    int oW = (iW-1)/sW + 1;
+    int paddingMode = 2;             // CAUSAL
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iW, iC});
+    NDArray weights('c', {kW, iC, oC});
+    NDArray bias('c', {oC}, {-1,-2,-3,-4});
+
+    NDArray expOutput('c', {bS, oW, oC}, {17.2,   16.8,   16.4,   16.,145.4,  151.6,  157.8,  164.,283.1,  297.4,  311.7,  326.,  420.8,  443.2,  465.6,  488.,
+                                558.5,  589.,  619.5,  650.,696.2001,  734.8,  773.4,  812.,  434.8,  448.8,  462.8,  476.8,   879.8,  929.2,  978.6, 1028.,
+                                1017.5, 1075., 1132.5, 1190.,1155.2001, 1220.8, 1286.4, 1352.,1292.8999, 1366.6, 1440.3, 1514.,  1430.6001, 1512.4, 1594.2, 1676.});
+
+    input.linspace(1., 1.);
+    weights.linspace(0.1, 0.1);
+
+    nd4j::ops::conv1d op;
+    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv1d_causal_4) {
+
+    int bS=2, iW=8,  iC=3,oC=4,  kW=3,  sW=1,  pW=0,  dW=3;
+    int oW = (iW-1)/sW + 1;
+    int paddingMode = 2;             // CAUSAL
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iW, iC});
+    NDArray weights('c', {kW, iC, oC});
+    NDArray bias('c', {oC}, {-1,-2,-3,-4});
+
+    NDArray expOutput('c', {bS, oW, oC}, {17.2,  16.8,  16.4,  16. ,43.3,  43.8,  44.3,  44.8,69.4,  70.8,  72.2,  73.6,106.5, 109.4, 112.3, 115.2,147.9, 152.6, 157.3, 162. ,189.3, 195.8, 202.3,
+                                        208.8,234.5, 243.4, 252.3, 261.2,280.4, 292. , 303.6, 315.2, 226. , 232.8, 239.6, 246.4,  252.1, 259.8, 267.5, 275.2,278.2, 286.8, 295.4, 304. ,437.7,
+                                        455. , 472.3, 489.6,479.1, 498.2, 517.3, 536.4,520.5, 541.4, 562.3, 583.2,  601.7, 632.2, 662.7, 693.2, 647.6, 680.8, 714. , 747.2});
+
+    input.linspace(1., 1.);
+    weights.linspace(0.1, 0.1);
+
+    nd4j::ops::conv1d op;
+    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv1d_causal_5) {
+
+    int bS=2, iW=8,  iC=3,oC=4,  kW=3,  sW=1,  pW=0,  dW=3;
+    int oW = (iW-1)/sW + 1;
+    int paddingMode = 2;             // CAUSAL
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iC, iW});
+    NDArray weights('c', {kW, iC, oC});
+    NDArray bias('c', {oC}, {-1,-2,-3,-4});
+
+    NDArray expOutput('c', {bS, oC, oW}, { 83.7,  92.4, 101.1, 162.1, 175.9, 189.7, 223.4, 238.7,85.4,  94.4, 103.4, 167.4, 181.8, 196.2, 233.2, 249.4,87.1,  96.4, 105.7, 172.7, 187.7, 202.7, 243. , 260.1,
+                         88.8,  98.4, 108. , 178. , 193.6, 209.2, 252.8, 270.8, 292.5, 301.2, 309.9, 493.3, 507.1, 520.9, 590.6, 605.9,  301.4, 310.4, 319.4, 513. , 527.4, 541.8, 622. , 638.2,
+                        310.3, 319.6, 328.9, 532.7, 547.7, 562.7, 653.4, 670.5,  319.2, 328.8, 338.4, 552.4, 568. , 583.6, 684.8, 702.8});
+
+    input.linspace(1., 1.);
+    weights.linspace(0.1, 0.1);
+
+    nd4j::ops::conv1d op;
+    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv1d_causal_6) {
+
+    int bS=2, iW=16,  iC=3,oC=4,  kW=3,  sW=3,  pW=0,  dW=1;
+    int oW = (iW-1)/sW + 1;
+    int paddingMode = 2;             // CAUSAL
+    int dataFormat  = 0;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iC, iW});
+    NDArray weights('c', {kW, iC, oC});
+    NDArray bias('c', {oC}, {-1,-2,-3,-4});
+
+    NDArray expOutput('c', {bS, oC, oW}, {159.7,335.3,381.2,427.1,473. ,518.9,163.8,351.4,400. ,448.6,497.2,545.8,167.9,367.5,418.8,470.1,521.4,572.7,172. ,383.6,437.6,491.6,545.6,599.6,
+                                577.3, 1069.7, 1115.6, 1161.5, 1207.4, 1253.3,595.8, 1129. , 1177.6, 1226.2, 1274.8, 1323.4,614.3, 1188.3, 1239.6, 1290.9, 1342.2, 1393.5,
+                                632.8, 1247.6, 1301.6, 1355.6, 1409.6, 1463.6});
+
+    input.linspace(1., 1.);
+    weights.linspace(0.1, 0.1);
+
+    nd4j::ops::conv1d op;
+    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv1d_causal_bp_1) {
+
+    int bS=2, iW=3,  iC=4,oC=3,  kW=2,  sW=1,  pW=0,  dW=1;
+    int oW = (iW-1)/sW + 1;
+    int paddingMode = 2;             // CAUSAL
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iW, iC});
+    NDArray weights('c', {kW, iC, oC});
+    NDArray bias('c', {oC}, {-1,-2,-3});
+    NDArray gradO('c', {bS, oW, oC});
+
+    input.linspace(1., 1.);
+    weights.linspace(0.1, 0.1);
+    gradO.linspace(-1.5, 0.1);
+
+    const OpArgsHolder argsHolderFF({&input, &weights, &bias}, {}, {kW, sW, pW, dW,  paddingMode, dataFormat});
+    const OpArgsHolder argsHolderBP({&input, &weights, &bias, &gradO}, {}, {kW, sW, pW, dW,  paddingMode, dataFormat});
+
+    nd4j::ops::conv1d opFF;
+    nd4j::ops::conv1d_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
 }
 
 TEST_F(ConvolutionTests1, Test_Dilation2D_1) {

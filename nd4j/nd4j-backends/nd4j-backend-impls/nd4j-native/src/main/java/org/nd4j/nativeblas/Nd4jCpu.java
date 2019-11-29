@@ -14592,11 +14592,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * 1D temporal convolution implementation
-         * Expected input: 
+         * Expected input:
          * x: 3D array
          * weight: 3D Array
          * bias: optional vector
-         * 
+         *
          * Int args:
          * 0: kernel
          * 1: stride
@@ -14637,11 +14637,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * 2D convolution implementation
-         * Expected input: 
+         * Expected input:
          * x: 4D array
          * weight: 4D Array
          * bias: optional vector, length of outputChannels
-         * 
+         *
          * IntArgs:
          * 0: kernel height
          * 1: kernel width
@@ -14745,7 +14745,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * 2D deconvolution implementation
-         * 
+         *
          * IntArgs:
          * 0: kernel height
          * 1: kernel width
@@ -14792,7 +14792,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * 3D deconvolution implementation
-         * 
+         *
          * IntArgs:
          * 0:  filter(kernel) depth
          * 1:  filter(kernel) height
@@ -14992,7 +14992,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * This op implements im2col algorithm, widely used in convolution neural networks
          * Input: 4D input expected
-         * 
+         *
          * Int args:
          * 0: kernel height
          * 1: kernel width
@@ -15040,7 +15040,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * This op implements col2im algorithm, widely used in convolution neural networks
          * Input: 6D input expected (like output of im2col op)
-         * 
+         *
          * Int args:
          * 0: stride height
          * 1: stride width
@@ -15071,7 +15071,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * Expected input: 4D array
-         * 
+         *
          * IntArgs:
          * 0: scale factor for rows (height)
          * 1: scale factor for columns (width)
@@ -15112,7 +15112,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * Expected input: 4D array
-         * 
+         *
          * IntArgs:
          * 0: scale factor for depth
          * 1: scale factor for rows (height)
@@ -15149,13 +15149,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public upsampling3d_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }    
+                                                                                }
 //         #endif
 
         /**
          * This op produces binary matrix wrt to target dimension.
          * Maximum value within each TAD is replaced with 1, other values are set to true.
-         * 
+         *
          * Int args:
          * 0: axis
          */
@@ -15179,7 +15179,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * Dilation2D op
-         * 
+         *
          * Int args:
          * 0: isSameMode
          */
@@ -15307,7 +15307,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Output:
          *     0 - 4D tensor as input
          *     1 - 4D tensor with max value indexes
-         *     
+         *
          * Int params:
          *   9 int with 2x4 vectors and 1 bool value
          */

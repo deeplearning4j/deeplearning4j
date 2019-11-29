@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -24,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -33,36 +32,44 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 
 /**
- * Conv2D operation
+ * Conv1D Backprop operation
+ *
+ * @author Alex Black
  */
 @Slf4j
 @Getter
 @NoArgsConstructor
-public class Conv1D extends DynamicCustomOp {
+public class Conv1DDerivative extends DynamicCustomOp {
 
     protected Conv1DConfig config;
     private static final String INVALID_CONFIGURATION = "Invalid Conv1D configuration : s = %s p = %s ";
 
-    @Builder(builderMethodName = "sameDiffBuilder")
-    public Conv1D(SameDiff sameDiff,
-                  SDVariable[] inputFunctions,
-                  Conv1DConfig config) {
-        super(sameDiff, inputFunctions);
+    public Conv1DDerivative(@NonNull SameDiff sameDiff,
+                            @NonNull SDVariable[] inputs,
+                            @NonNull Conv1DConfig config) {
+        super(sameDiff, inputs);
         initConfig(config);
     }
 
-    public Conv1D(INDArray[] inputs, INDArray[] outputs, Conv1DConfig config){
+    public Conv1DDerivative(@NonNull SameDiff sd, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, SDVariable gradOut, @NonNull Conv1DConfig config){
+        this(sd, wrapFilterNull(input, weights, bias, gradOut), config);
+    }
+
+    public Conv1DDerivative(INDArray[] inputs, INDArray[] outputs, Conv1DConfig config){
         super(inputs, outputs);
 
         initConfig(config);
     }
 
-    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv1DConfig config){
-        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
+    public Conv1DDerivative(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, @NonNull INDArray gradOut, INDArray output, @NonNull Conv1DConfig config){
+        this(wrapFilterNull(input, weights, bias, gradOut), wrapOrNull(output), config);
     }
 
     private void initConfig(Conv1DConfig config){
@@ -124,23 +131,22 @@ public class Conv1D extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "conv1d";
+        return "conv1d_bp";
+    }
+
+    @Override
+    public int getNumOutputs(){
+        if(args().length == 4){
+            return 3;   //Includes bias
+        } else {
+            return 2;   //No bias - only input + weight grads
+        }
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        return Collections.singletonList(inputDataTypes.get(0));
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> grads){
-        List<SDVariable> args = new ArrayList<>();
-        Collections.addAll(args, args());
-        args.add(grads.get(0));
-
-        Conv1DDerivative gradFn = new Conv1DDerivative(sameDiff, args.toArray(new SDVariable[0]), config);
-        return Arrays.asList(gradFn.outputVariables());
+        return new ArrayList<>(inputDataTypes.subList(0, inputDataTypes.size()-1)); //All except gradient input variable
     }
 }
