@@ -282,6 +282,60 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_4) {
 
 }
 
+
+TEST_F(DeclarableOpsTests15, Test_BitCast_5) {
+    auto x = NDArrayFactory::create<float16>('c', {4, 4}, {
+        0.4922f,    0.2969f,    0.6172f,    0.8906f,
+        0.9297f,    0.0859f,    0.2344f,    0.3828f,
+        0.5781f,    0.7969f,    0.0391f,    0.1719f,
+        0.8359f,    0.9297f,    0.3438f,    0.0938f});
+
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4260467851820808160LL, 3900173902914993008LL, 3566895990128523424LL,
+                                                         3314989625590692528LL});
+    nd4j::ops::bitcast op;
+    auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    auto res = result->at(0);
+//    res->printIndexedBuffer("BITCAST5");
+    ASSERT_TRUE(e.equalsTo(res));
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests15, Test_BitCast_6) {
+    auto x = NDArrayFactory::create<float16>('c', {4, 4}, {
+            1.f,    2.f,    3.f,    4.f,
+            5.f,    6.f,    7.f,    8.f,
+            9.f,   10.f,   11.f,   12.f,
+           13.f,   14.f,   15.f,   16.f});
+
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4899988963420290048LL, 5188224837230806272LL, 5332342774136064128LL,
+                                                         5476460161268730496LL});
+    nd4j::ops::bitcast op;
+    auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    auto res = result->at(0);
+//    res->printIndexedBuffer("BITCAST6");
+    ASSERT_TRUE(e.equalsTo(res));
+    delete result;
+}
+TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
+    auto x = NDArrayFactory::create<float16>('c', {4, 4}, {
+            1.1f,    2.2f,    3.3f,    4.4f,
+            5.1f,    6.2f,    7.3f,    8.4f,
+            9.1f,   10.2f,   11.3f,   12.4f,
+            13.f,   14.2f,   15.3f,   16.4f});
+
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {
+        4928700072476425318LL, 5202580391758873882LL, 5346698272827918477LL,  5483778673873668736LL});
+    nd4j::ops::bitcast op;
+    auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    auto res = result->at(0);
+//    res->printIndexedBuffer("BITCAST7");
+    ASSERT_TRUE(e.equalsTo(res));
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests15, Test_depthwise_bp_1) {
     auto in = NDArrayFactory::create<float>('c', {4, 8, 64, 64});
     auto w = NDArrayFactory::create<float>('c', {2, 2, 8, 2});
