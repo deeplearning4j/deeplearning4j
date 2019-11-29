@@ -108,7 +108,7 @@ void DataBuffer::memcpy(const DataBuffer &dst, const DataBuffer &src) {
         cudaMemcpy(dst._specialBuffer, src._primaryBuffer, dst.getLenInBytes(), cudaMemcpyHostToDevice);
     }
 
-    dst.readSpecial();
+    dst.writeSpecial();
 }
 
 ////////////////////////////////////////////////////////////////////////
