@@ -104,11 +104,11 @@ void DataBuffer::memcpy(const DataBuffer &dst, const DataBuffer &src) {
 
     if (src.isSpecialActual()) {
         cudaMemcpy(dst._specialBuffer, src._specialBuffer, dst.getLenInBytes(), cudaMemcpyDeviceToDevice);
-        dst.readSpecial();
     } else if (src.isPrimaryActual()) {
-        std::memcpy(dst._primaryBuffer, src._primaryBuffer, dst._lenInBytes);
-        dst.readPrimary();
+        cudaMemcpy(dst._specialBuffer, src._primaryBuffer, dst.getLenInBytes(), cudaMemcpyHostToDevice);
     }
+
+    dst.readSpecial();
 }
 
 ////////////////////////////////////////////////////////////////////////
