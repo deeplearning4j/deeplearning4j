@@ -39,6 +39,7 @@ namespace nd4j {
                 output->assign(input);
 
             const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
+            const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);
 
             const int inRank  = input->rankOf();
             const int indRank = indices->rankOf();
@@ -70,9 +71,15 @@ namespace nd4j {
                 REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_DIV OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
             }
 
-            if (!indices->isEmpty())
-                // ScatterHelper<T>::template scatterApply<simdOps::Divide<T>>(output, indices, updates);
+            if (!indices->isEmpty()) {
+
+                if(checkIndices) {
+                    const Nd4jLong numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *output, 0);
+                    REQUIRE_TRUE(numOfBadIndx == 0, 0, "SCATTER_DIV OP: please check elements of indices-array, total number of wrong elements is %lld!", numOfBadIndx);
+                }
+
                 helpers::scatter(block.launchContext(), pairwise::Divide, *indices, *updates, *output, lock);
+            }
 
             return Status::OK();
         }

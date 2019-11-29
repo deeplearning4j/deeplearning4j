@@ -45,9 +45,9 @@ namespace nd4j {
                 REQUIRE_TRUE(output->isEmpty(), 0, "BITCAST: If input is empty, output array must also be empty.");
                 return Status::OK();
             }
-            // buffers for both input and output should be equals
-            DataBuffer buf(input->buffer(), input->specialBuffer(), input->lengthOf() * input->sizeOfT(), input->dataType());
-            *(output->dataBuffer()) = buf;
+
+            // just memcpy data
+            output->dataBuffer()->copyBufferFrom(*input->dataBuffer());
 
             return Status::OK();
         }

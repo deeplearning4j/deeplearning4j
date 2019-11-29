@@ -32,12 +32,12 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public class NonMaxSuppression extends DynamicCustomOp {
+public class NonMaxSuppressionV3 extends DynamicCustomOp {
 
-    public NonMaxSuppression() {}
+    public NonMaxSuppressionV3() {}
 
-    public NonMaxSuppression(SameDiff sameDiff, @NonNull SDVariable boxes, @NonNull SDVariable scores, @NonNull SDVariable maxOutSize,
-                             @NonNull SDVariable iouThreshold, @NonNull SDVariable scoreThreshold) {
+    public NonMaxSuppressionV3(SameDiff sameDiff, @NonNull SDVariable boxes, @NonNull SDVariable scores, @NonNull SDVariable maxOutSize,
+                               @NonNull SDVariable iouThreshold, @NonNull SDVariable scoreThreshold) {
         super(null, sameDiff, new SDVariable[]{boxes, scores, maxOutSize, iouThreshold, scoreThreshold}, false);
     }
 
@@ -48,17 +48,17 @@ public class NonMaxSuppression extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "NonMaxSuppression";
+        return "NonMaxSuppressionV3";
     }
 
     @Override
     public String[] tensorflowNames() {
-        return new String[]{"NonMaxSuppression", "NonMaxSuppressionV2"};
+        return new String[]{"NonMaxSuppressionV3","NonMaxSuppressionV4"};
     }
 
     @Override
     public String opName() {
-        return "non_max_suppression";
+        return "non_max_suppression_v3";
     }
 
     @Override

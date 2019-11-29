@@ -1446,35 +1446,63 @@ inline __device__ unsigned char nd4j_atomicMul<unsigned char>(unsigned char* add
     return (uint8_t)old;
 }
 
-template <>
-inline __device__ int16_t nd4j_atomicMul<int16_t>(int16_t* address, int16_t val) {
+template <typename T>
+static inline __device__ T internal_16bit_atomicMul(T* address, int16_t val) {
     size_t shift = ((size_t)address & 2);
     int *base_address = (int *)((char*)address - shift);
-    int old = val, assumed;
-    //printf("%u %x", *base_address);
-    do {
 
-        assumed = old;
-        old = atomicCAS(base_address, assumed, (old * val));
-    } while (assumed != old);
+    union I16PAIR {
+        struct {
+            T H;
+            T L;
+        } B;
+        int W;
 
-    return (int16_t)old;
+        __host__ __device__
+        I16PAIR() {};
+
+		__host__ __device__
+		~I16PAIR() {};
+    };
+
+    I16PAIR pairNew, pairOld, pairAssumed;
+
+    pairOld.W = (int) val;
+    if (reinterpret_cast<int*>(address) == base_address) {
+        do {
+
+            pairNew.B.L = pairOld.B.L;
+            pairNew.B.H = pairOld.B.H * val;
+            pairAssumed.W = pairOld.W;
+
+            pairOld.W = atomicCAS(base_address, pairAssumed.W, pairNew.W);
+        } while (pairAssumed.W != pairOld.W);
+
+        return (T) pairOld.B.H;
+    } else {
+        do {
+
+            pairNew.B.H = pairOld.B.H;
+            pairNew.B.L = pairOld.B.L * val;
+            pairAssumed.W = pairOld.W;
+            pairOld.W = atomicCAS(base_address, pairAssumed.W, pairNew.W);
+
+        } while (pairAssumed.W != pairOld.W);
+
+        return (T) pairOld.B.L;
+    }
+
+}
+
+
+template <>
+inline __device__ int16_t nd4j_atomicMul<int16_t>(int16_t* address, int16_t val) {
+    return internal_16bit_atomicMul<int16_t>(address, val);
 }
 
 template <>
 inline __device__ uint16_t nd4j_atomicMul<uint16_t>(uint16_t* address, uint16_t val) {
-    size_t shift = ((size_t)address & 2);
-    unsigned int *base_address = (unsigned int *)((char*)address - shift);
-    unsigned int old = val, assumed;
-    //printf("%u %x", *base_address);
-    do {
-
-        assumed = old;
-        old = atomicCAS(base_address, assumed, (old * val));
-    } while (assumed != old);
-
-    return (uint16_t)old;
-
+    return internal_16bit_atomicMul<uint16_t>(address, val);
 }
 
 template <>
@@ -1547,105 +1575,27 @@ inline __device__ Nd4jLong nd4j_atomicMul<Nd4jLong>(Nd4jLong* address, Nd4jLong 
 
 template <>
 inline __device__ bfloat16 nd4j_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {
-	auto address_as_ull = (int*) address;
-
-	long addr = (long)(address);
-	bool misaligned = addr & 0x3;
-
-	if (misaligned)
-		address_as_ull = (int *) (address - 1);
-
-	BPAIR old, assumed, fresh;
-
-	old.W = *address_as_ull;
-	do {
-
-		if (!misaligned) {
-			bfloat16 res = old.B.H * val;
-			fresh.B.H = res;
-			fresh.B.L = old.B.L;
-		} else {
-			bfloat16 res = old.B.L * val;
-			fresh.B.L = res;
-			fresh.B.H = old.B.H;
-		}
-
-		assumed.W = old.W;
-		old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
-	} while (assumed.W != old.W);
-
-	if (!misaligned) return old.B.H;
-	else return old.B.L;
+	return internal_16bit_atomicMul<bfloat16>(address, val);
 }
 
 template <>
 inline __device__ float16 nd4j_atomicMul<float16>(float16* address, float16 val) {
-	auto address_as_ull = (int*) address;
-
-	long addr = (long)(address);
-	bool misaligned = addr & 0x3;
-
-	if (misaligned)
-		address_as_ull = (int *) (address - 1);
-
-	BPAIR old, assumed, fresh;
-
-	old.W = *address_as_ull;
-	do {
-
-		if (!misaligned) {
-			bfloat16 res = old.B.H * val;
-			fresh.B.H = res;
-			fresh.B.L = old.B.L;
-		} else {
-			bfloat16 res = old.B.L * val;
-			fresh.B.L = res;
-			fresh.B.H = old.B.H;
-		}
-
-		assumed.W = old.W;
-		old.W = atomicCAS(address_as_ull, assumed.W, fresh.W);
-	} while (assumed.W != old.W);
-
-	if (!misaligned) return old.B.H;
-	else return old.B.L;
+	return internal_16bit_atomicMul<float16>(address, val);
 }
 
 template <>
 inline __device__ float nd4j_atomicDiv<float>(float* address, float val) {
-	int* address_as_ull =
-			(int*)address;
-	int old = *address_as_ull, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(address_as_ull, assumed, __float_as_int(__int_as_float(assumed) / val ));
-	} while (assumed != old);
-	return __int_as_float(old);
+	return nd4j_atomicMul<float>(address, (float) 1.f / val);
 }
 
 template <>
 inline __device__ float16 nd4j_atomicDiv<float16>(float16* address, float16 val) {
-	int* address_as_ull =
-			(int*)address;
-	int old = *address_as_ull, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(address_as_ull, assumed, __float_as_int(val *
-				__float_as_int(assumed)));
-	} while (assumed != old);
-	return __int_as_float(old);
+	return nd4j_atomicMul<float16>(address, (float16) 1.f / val);
 }
+
 template <>
 inline __device__ bfloat16 nd4j_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val) {
-	int* address_as_ull =
-			(int*)address;
-	int old = *address_as_ull, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(address_as_ull, assumed, __float_as_int(val *
-				__float_as_int(assumed)));
-	} while (assumed != old);
-	return __int_as_float(old);
+	return nd4j_atomicMul<bfloat16>(address, (bfloat16) 1.f / val);
 }
 }
 #endif

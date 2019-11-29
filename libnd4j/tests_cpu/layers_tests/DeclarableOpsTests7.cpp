@@ -1813,8 +1813,8 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSqrtN_5) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentSum_1) {
-    auto x = NDArrayFactory::create<double>({1.8, 2.5,4.,  9., 2.1, 2.4,3.,9., 2.1, 2.1,0.7, 0.1, 3., 4.2, 2.2, 1.    });
-    auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4});
+    auto x = NDArrayFactory::create<double>({1.8, 2.5, 4.,  9., 2.1, 2.4, 3., 9., 2.1, 2.1, 0.7, 0.1, 3., 4.2, 2.2, 1.    });
+    auto idx = NDArrayFactory::create<int>({   0,   0, 1,   1,    1,   1, 2,  3,    3,   3,   4,   4, 4,    4,   4, 4});
     auto exp = NDArrayFactory::create<double>({4.3,  17.5,  3.,  13.2,  11.2});
 
     nd4j::ops::segment_sum op;
@@ -2231,6 +2231,27 @@ TEST_F(DeclarableOpsTests7, TestSegmentProd_05) {
 
     auto result = op.execute({&x, &idx}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
+    auto res = result->at(0);
+//    res->printIndexedBuffer("Segment prod 05");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentProd_05_1) {
+    auto x = NDArrayFactory::create<int>({1,2,3,4,5,6,7,8 });
+
+// ----------------------------------------------------------------
+
+    auto idx = NDArrayFactory::create<int>({0,0,1,2,2,2,3,3});
+    auto exp = NDArrayFactory::create<int>({ 2,   3, 120,  56});
+
+    nd4j::ops::segment_prod op;
+
+    auto result = op.execute({&x, &idx}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    auto res = result->at(0);
+//    res->printIndexedBuffer("Segment prod 05_1");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
     delete result;
@@ -2261,6 +2282,23 @@ TEST_F(DeclarableOpsTests7, TestSegmentProd_07) {
 
     auto idx = NDArrayFactory::create<int>({0,0,1,2,2,2,3,3});
     auto exp = NDArrayFactory::create<uint8_t>({ 2,   3, 120,  56});
+    nd4j::ops::segment_prod op;
+
+    auto result = op.execute({&x, &idx}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestSegmentProd_08) {
+    auto x = NDArrayFactory::create<int>({'\x1','\x2','\x3','\x4','\x5','\x6','\x7','\x8', '\x9', '\xA' });
+
+// ----------------------------------------------------------------
+
+    auto idx = NDArrayFactory::create<int>({0,0,2,2,2,2,3,3,3,3});
+    auto exp = NDArrayFactory::create<int>({ 2, 1,360, 5040});
     nd4j::ops::segment_prod op;
 
     auto result = op.execute({&x, &idx}, {}, {});
@@ -2341,6 +2379,22 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_12) {
 
     delete result;
 }
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_08) {
+    auto x = NDArrayFactory::create<int>({'\x1','\x2','\x3','\x4','\x5','\x6','\x7','\x8', '\x9', '\xA' });
+
+// ----------------------------------------------------------------
+
+    auto idx = NDArrayFactory::create<int>({0,0,2,2,2,2,3,3,3,3});
+    auto exp = NDArrayFactory::create<int>({ 2, 1,360, 5040});
+    nd4j::ops::unsorted_segment_prod op;
+
+    auto result = op.execute({&x, &idx}, {}, {4});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_3) {
@@ -2391,6 +2445,41 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_4) {
     nd4j::ops::unsorted_segment_prod op;
 
     auto result = op.execute({&x, &idx}, {}, {3});
+    ASSERT_EQ(result->status(), Status::OK());
+    //result->at(0)->printIndexedBuffer("Output");
+//    result->at(0)->printShapeInfo("Out Shape");
+    //exp.printIndexedBuffer("Expect");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentProd_5) {
+    auto x = NDArrayFactory::create<double>('c', {8, 15});
+
+// ----------------------------------------------------------------
+
+    auto idx = NDArrayFactory::create<int>({3, 1, 2, 1, 2, 3, 2, 1});
+    auto exp = NDArrayFactory::create<double>('c', {4, 15}, {
+                 1.,      1.,      1.,      1.,      1.,
+                 1.,      1.,      1.,      1.,      1.,
+                 1.,      1.,      1.,      1.,      1.,
+             78016.,  85493.,  93312., 101479., 110000.,
+            118881., 128128., 137747., 147744., 158125.,
+            168896., 180063., 191632., 203609., 216000.,
+            172081., 182528., 193347., 204544., 216125.,
+            228096., 240463., 253232., 266409., 280000.,
+            294011., 308448., 323317., 338624., 354375.,
+                76.,    154.,    234.,    316.,    400.,
+               486.,    574.,    664.,    756.,    850.,
+               946.,   1044.,   1144.,   1246.,   1350.});
+    x.linspace(1.);
+
+    nd4j::ops::unsorted_segment_prod op;
+
+    auto result = op.execute({&x, &idx}, {}, {4});
     ASSERT_EQ(result->status(), Status::OK());
     //result->at(0)->printIndexedBuffer("Output");
 //    result->at(0)->printShapeInfo("Out Shape");

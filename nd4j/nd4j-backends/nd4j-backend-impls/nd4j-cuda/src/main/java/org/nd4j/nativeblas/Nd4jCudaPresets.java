@@ -16,6 +16,10 @@
 
 package org.nd4j.nativeblas;
 
+import java.util.List;
+import org.bytedeco.javacpp.ClassProperties;
+import org.bytedeco.javacpp.LoadEnabled;
+import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.Info;
@@ -111,7 +115,42 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                 @Platform(value = "linux-arm64", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}) })
-public class Nd4jCudaPresets implements InfoMapper {
+public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
+
+    @Override public void init(ClassProperties properties) {
+        String platform = properties.getProperty("platform");
+        List<String> preloads = properties.get("platform.preload");
+        List<String> resources = properties.get("platform.preloadresource");
+
+        // Only apply this at load time since we don't want to copy the CUDA libraries here
+        if (!Loader.isLoadLibraries()) {
+            return;
+        }
+        int i = 0;
+        String[] libs = {"cudart", "cublasLt", "cublas", "cusolver", "cusparse", "cudnn"};
+        for (String lib : libs) {
+            switch (platform) {
+                case "linux-arm64":
+                case "linux-ppc64le":
+                case "linux-x86_64":
+                case "macosx-x86_64":
+                    lib += lib.equals("cudnn") ? "@.7" : lib.equals("cudart") ? "@.10.2" : "@.10";
+                    break;
+                case "windows-x86_64":
+                    lib += lib.equals("cudnn") ? "64_7" : lib.equals("cudart") ? "64_102" : "64_10";
+                    break;
+                default:
+                    continue; // no CUDA
+            }
+            if (!preloads.contains(lib)) {
+                preloads.add(i++, lib);
+            }
+        }
+        if (i > 0) {
+            resources.add("/org/bytedeco/cuda/");
+        }
+    }
+
     @Override
     public void map(InfoMap infoMap) {
         infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",

@@ -116,6 +116,8 @@ class ND4J_EXPORT DataBuffer {
         void setToZeroBuffers(const bool both = false);
 
         void copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes = 0, const Nd4jLong offsetThis = 0, const Nd4jLong offsetOther = 0);
+
+        static void memcpy(const DataBuffer &dst, const DataBuffer &src);
 };
 
 

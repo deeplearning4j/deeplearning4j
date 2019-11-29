@@ -7630,9 +7630,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * the given shape info buffer
  * represents a scalar shape
  */
-    @Namespace("shape") public static native int isScalar(@Cast("Nd4jLong*") LongPointer info);
-    @Namespace("shape") public static native int isScalar(@Cast("Nd4jLong*") LongBuffer info);
-    @Namespace("shape") public static native int isScalar(@Cast("Nd4jLong*") long[] info);
+    @Namespace("shape") public static native int isScalar(@Cast("const Nd4jLong*") LongPointer info);
+    @Namespace("shape") public static native int isScalar(@Cast("const Nd4jLong*") LongBuffer info);
+    @Namespace("shape") public static native int isScalar(@Cast("const Nd4jLong*") long[] info);
 
 /**
  * Returns whether
@@ -8036,6 +8036,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer coords);
     @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer coords);
     @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] coords);
+    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongPointer shape, IntPointer coords);
+    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongBuffer shape, IntBuffer coords);
+    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") long[] shape, int[] coords);
     /**
     * take into account only dimensions stored in tadDims, tadDims must be sorted in increasing order!
     */
@@ -9105,6 +9108,8 @@ public static final int PREALLOC_SIZE = 33554432;
     //////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
 
@@ -20827,7 +20832,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * image.non_max_suppression op.
+         * image.non_max_suppression ops.
          * input:
          *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
          *     1 - scales - 1D-tensor with shape (num_boxes) by float type
@@ -20855,6 +20860,23 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public non_max_suppression() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+//         #if NOT_EXCLUDED(OP_image_non_max_suppression_v3)
+                @Namespace("nd4j::ops") public static class non_max_suppression_v3 extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public non_max_suppression_v3(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public non_max_suppression_v3(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public non_max_suppression_v3 position(long position) {
+                        return (non_max_suppression_v3)super.position(position);
+                    }
+                
+                                                                                    public non_max_suppression_v3() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

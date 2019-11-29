@@ -64,7 +64,7 @@
 
     <properties>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
-        <cuda.version>10.1</cuda.version>
+        <cuda.version>10.2</cuda.version>
         <cudnn.version>7.6</cudnn.version>
         <libnd4j.build>release</libnd4j.build>
         <libnd4j.chip>cpu</libnd4j.chip>

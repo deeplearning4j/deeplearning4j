@@ -97,6 +97,19 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
     _readPrimary.store(other._writeSpecial);
     _readSpecial.store(other._writePrimary);
 }
+////////////////////////////////////////////////////////////////////////
+void DataBuffer::memcpy(const DataBuffer &dst, const DataBuffer &src) {
+    if (src._lenInBytes < dst._lenInBytes)
+        throw std::runtime_error("DataBuffer::memcpy: Source data buffer is smaller than destination");
+
+    if (src.isSpecialActual()) {
+        cudaMemcpy(dst._specialBuffer, src._specialBuffer, dst.getLenInBytes(), cudaMemcpyDeviceToDevice);
+        dst.readSpecial();
+    } else if (src.isPrimaryActual()) {
+        std::memcpy(dst._primaryBuffer, src._primaryBuffer, dst._lenInBytes);
+        dst.readPrimary();
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinBytes, const Nd4jLong offsetThis, const Nd4jLong offsetOther) {     // copies only to special buffer

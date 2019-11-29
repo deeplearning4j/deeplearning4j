@@ -106,7 +106,7 @@ namespace nd4j {
                     const auto xOffset = shape::getOffset(xShapeInfo, xCoordStart);
 
                     z[zOffset] = x[xOffset];
-                    printf("z[%lld] = x[%lld] = %f\n", zOffset, xOffset, (float) z[zOffset]);
+                    // printf("z[%lld] = x[%lld] = %f\n", zOffset, xOffset, (float) z[zOffset]);
                 }
             }
 

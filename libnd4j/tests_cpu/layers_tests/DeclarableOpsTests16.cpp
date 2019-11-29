@@ -76,6 +76,16 @@ TEST_F(DeclarableOpsTests16, scatter_upd_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests16, scatter_upd_3) {
+
+    NDArray x('c', {10, 3}, nd4j::DataType::FLOAT32);
+    NDArray indices('c', {2}, {20,5}, nd4j::DataType::INT32);
+    NDArray updates('c', {2, 3}, {100,101,102,  200,201,202}, nd4j::DataType::FLOAT32);
+    NDArray output('c', {10, 3}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::scatter_upd op;
+    ASSERT_ANY_THROW(op.execute({&x, &indices, &updates}, {&output}, {}, {}, {true, true}));
+}
 
 TEST_F(DeclarableOpsTests16, test_size_dtype_1) {
     auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});

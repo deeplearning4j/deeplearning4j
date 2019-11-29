@@ -1723,7 +1723,7 @@ namespace nd4j {
         #endif
 
         /**
-         * image.non_max_suppression op.
+         * image.non_max_suppression ops.
          * input:
          *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
          *     1 - scales - 1D-tensor with shape (num_boxes) by float type
@@ -1740,6 +1740,9 @@ namespace nd4j {
          * */
         #if NOT_EXCLUDED(OP_image_non_max_suppression)
         DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_image_non_max_suppression_v3)
+                DECLARE_CUSTOM_OP(non_max_suppression_v3, 2, 1, false, 0, 0);
         #endif
 
         /*
