@@ -296,7 +296,7 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_5) {
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto res = result->at(0);
-    res->printIndexedBuffer("BITCAST5");
+//    res->printIndexedBuffer("BITCAST5");
     ASSERT_TRUE(e.equalsTo(res));
     delete result;
 }
@@ -314,7 +314,7 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_6) {
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto res = result->at(0);
-    res->printIndexedBuffer("BITCAST6");
+//    res->printIndexedBuffer("BITCAST6");
     ASSERT_TRUE(e.equalsTo(res));
     delete result;
 }
@@ -325,13 +325,13 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
             9.1f,   10.2f,   11.3f,   12.4f,
             13.f,   14.2f,   15.3f,   16.4f});
 
-    auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4899988963420290048LL, 5188224837230806272LL, 5332342774136064128LL,
-                                                         5476460161268730496LL});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {
+        4928700072476425318LL, 5202580391758873882LL, 5346698272827918477LL,  5483778673873668736LL});
     nd4j::ops::bitcast op;
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto res = result->at(0);
-    res->printIndexedBuffer("BITCAST7");
+//    res->printIndexedBuffer("BITCAST7");
     ASSERT_TRUE(e.equalsTo(res));
     delete result;
 }
