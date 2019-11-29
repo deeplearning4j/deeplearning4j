@@ -296,7 +296,7 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_5) {
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto res = result->at(0);
-    res->printIndexedBuffer("BITCAST5");
+//    res->printIndexedBuffer("BITCAST5");
     ASSERT_TRUE(e.equalsTo(res));
     delete result;
 }
@@ -314,7 +314,7 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_6) {
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto res = result->at(0);
-    res->printIndexedBuffer("BITCAST6");
+//    res->printIndexedBuffer("BITCAST6");
     ASSERT_TRUE(e.equalsTo(res));
     delete result;
 }
@@ -331,7 +331,7 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
     auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto res = result->at(0);
-    res->printIndexedBuffer("BITCAST7");
+//    res->printIndexedBuffer("BITCAST7");
     ASSERT_TRUE(e.equalsTo(res));
     delete result;
 }
