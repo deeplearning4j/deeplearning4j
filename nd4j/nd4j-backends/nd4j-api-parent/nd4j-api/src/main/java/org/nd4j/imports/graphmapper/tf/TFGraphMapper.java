@@ -56,6 +56,14 @@ import java.util.*;
 public class TFGraphMapper {
 
     /**
+     * @deprecated Use static methods - {@link #importGraph(File)} etc
+     */
+    @Deprecated
+    public static TFGraphMapper getInstance(){
+        return new TFGraphMapper();
+    }
+
+    /**
      * Import a frozen TensorFlow protobuf (.pb) file from the specified file
      *
      * @param f Frozen TensorFlow model pb file to import
