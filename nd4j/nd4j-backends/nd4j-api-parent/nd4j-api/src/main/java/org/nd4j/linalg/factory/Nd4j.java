@@ -16,6 +16,10 @@
 
 package org.nd4j.linalg.factory;
 
+import org.nd4j.linalg.factory.ops.NDBitwise;
+import org.nd4j.linalg.factory.ops.NDMath;
+import org.nd4j.linalg.factory.ops.NDNN;
+import org.nd4j.linalg.factory.ops.NDRandom;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -113,6 +117,51 @@ import java.util.logging.Logger;
  * @author Adam Gibson
  */
 public class Nd4j {
+
+    /**
+     * Bitwise namespace - operations related to bitwise manipulation of arrays
+     */
+    public static final NDBitwise bitwise = new NDBitwise();
+    /**
+     * Math namespace - general mathematical operations
+     */
+    public static final NDMath math = new NDMath();
+    /**
+     * Random namespace - (pseudo) random number generation methods
+     */
+    public static final NDRandom random = new NDRandom();
+    /**
+     * Neural network namespace - operations related to neural networks
+     */
+    public static final NDNN nn = new NDNN();
+
+    /**
+     * Bitwise namespace - operations related to bitwise manipulation of arrays
+     */
+    public static NDBitwise bitwise() {
+        return bitwise;
+    }
+
+    /**
+     * Math namespace - general mathematical operations
+     */
+    public static NDMath math() {
+        return math;
+    }
+
+    /**
+     * Random namespace - (pseudo) random number generation methods
+     */
+    public static NDRandom random() {
+        return random;
+    }
+
+    /**
+     * Neural network namespace - operations related to neural networks
+     */
+    public static NDNN nn() {
+        return nn;
+    }
 
     private final static String DATA_BUFFER_OPS = "databufferfactory";
     private final static String CONVOLUTION_OPS = "convops";
@@ -2638,7 +2687,7 @@ public class Nd4j {
         INDArray ret;
         if(x.isVectorOrScalar() || x.isRowVector() || x.isColumnVector()) {
             ret = Nd4j.create(x.dataType(), x.length(), x.length());
-            Nd4j.getExecutioner().execAndReturn(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+            Nd4j.getExecutioner().execAndReturn(new Diag(x, ret));
         } else {
             ret = Nd4j.createUninitialized(x.dataType(), Math.min(x.size(0), x.size(1)));
             Nd4j.getExecutioner().execAndReturn(new DiagPart(x,ret));

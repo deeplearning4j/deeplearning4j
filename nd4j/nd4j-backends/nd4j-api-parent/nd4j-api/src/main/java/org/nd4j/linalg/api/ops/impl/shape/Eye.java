@@ -16,11 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.shade.guava.base.Preconditions;
 
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +58,23 @@ public class Eye extends DynamicCustomOp {
     public Eye() {
     }
 
+    public Eye(@NonNull INDArray rows){
+        this(rows.getInt(0));
+        Preconditions.checkArgument(rows.isScalar(), "Rows INDArray must be a scalar");
+    }
+
+    public Eye(@NonNull INDArray rows, @NonNull INDArray columns){
+        this(rows.getInt(0), columns.getInt(0));
+        Preconditions.checkArgument(rows.isScalar(), "Rows INDArray must be a scalar");
+        Preconditions.checkArgument(columns.isScalar(), "Columns INDArray must be a scalar");
+    }
+
+    public Eye(int rows){
+        this.numRows = rows;
+        this.numCols = rows;
+        addArgs();
+    }
+
     public Eye(SameDiff sameDiff, SDVariable numRows){
         super(null, sameDiff, new SDVariable[] {numRows}, false);
     }
@@ -66,10 +86,7 @@ public class Eye extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {numRows, numCols, batch_shape}, false);
     }
     public Eye(SameDiff sameDiff,  int numRows) {
-        super(null, sameDiff, new SDVariable[] {}, false);
-        this.numRows = numRows;
-        this.numCols = numRows;
-        addArgs();
+        this(sameDiff, numRows, numRows);
     }
 
     public Eye(SameDiff sameDiff,  int numRows, int numCols) {
@@ -77,11 +94,23 @@ public class Eye extends DynamicCustomOp {
     }
 
     public Eye(SameDiff sameDiff,  int numRows, int numCols, DataType dataType) {
-        super(null, sameDiff, new SDVariable[] {}, false);
+        this(sameDiff, numRows, numCols, dataType, null);
+    }
+
+    public Eye(int numRows, int numCols, DataType dataType, int[] batchDimension) {
         this.numRows = numRows;
         this.numCols = numCols;
+        this.batchDimension = batchDimension;
         this.dataType = dataType;
         addArgs();
+    }
+
+    public Eye(int numRows, int numCols) {
+        this(numRows, numCols, DEFAULT_DTYPE);
+    }
+
+    public Eye(int numRows, int numCols, DataType dataType) {
+        this(numRows, numCols, dataType, null);
     }
 
     public Eye(SameDiff sameDiff,  int numRows, int numCols, DataType dataType, int[] batchDimension) {

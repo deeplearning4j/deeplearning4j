@@ -1620,11 +1620,11 @@ public class SameDiffTests extends BaseNd4jTest {
             switch (i) {
                 case 0:
                     t = sd.math().isNonDecreasing(in1);
-                    Nd4j.exec(new IsNonDecreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    Nd4j.exec(new IsNonDecreasing(ia, expOut));
                     break;
                 case 1:
                     t = sd.math().isStrictlyIncreasing(in1);
-                    Nd4j.exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    Nd4j.exec(new IsStrictlyIncreasing(ia, expOut));
                     break;
                 case 2:
                     t = sd.isNumericTensor(in1);
@@ -1650,7 +1650,7 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray ia = Nd4j.randn(minibatch, nOut);
         INDArray expOut = Nd4j.create(DataType.BOOL, ia.shape());
 
-        Nd4j.exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+        Nd4j.exec(new IsStrictlyIncreasing(ia, expOut));
         System.out.println(expOut);
     }
 

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -40,8 +41,12 @@ public class IsNonDecreasing extends DynamicCustomOp {
         super(null, sameDiff, args, inPlace);
     }
 
-    public IsNonDecreasing(INDArray[] inputs, INDArray[] outputs) {
-        super(null, inputs, outputs);
+    public IsNonDecreasing(@NonNull INDArray input){
+        this(input, null);
+    }
+
+    public IsNonDecreasing(@NonNull INDArray input, INDArray output) {
+        super(null, new INDArray[]{input}, wrapOrNull(output));
     }
 
 

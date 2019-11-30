@@ -76,6 +76,15 @@ public class BatchNorm extends DynamicCustomOp {
         addArgs();
     }
 
+    public BatchNorm(INDArray input, INDArray mean, INDArray variance, INDArray gamma, INDArray beta, double epsilon, int... axis){
+        super(wrapFilterNull(input, mean, variance, gamma, beta), null);
+        this.jaxis = axis;
+        this.applyBeta = beta != null;
+        this.applyGamma = gamma != null;
+        this.epsilon = epsilon;
+        addArgs();
+    }
+
     public void addArgs() {
         addIArgument(ArrayUtil.fromBoolean(applyGamma));
         addIArgument(ArrayUtil.fromBoolean(applyBeta));

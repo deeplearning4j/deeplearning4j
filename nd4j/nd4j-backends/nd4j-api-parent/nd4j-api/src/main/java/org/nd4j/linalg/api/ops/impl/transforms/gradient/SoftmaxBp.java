@@ -42,6 +42,10 @@ public class SoftmaxBp extends DynamicCustomOp {
             addIArgument(dimension);
     }
 
+    public SoftmaxBp(@NonNull INDArray input, @NonNull INDArray grad, Integer dimension){
+        this(input, grad, null, dimension);
+    }
+
     public SoftmaxBp(@NonNull INDArray input, @NonNull INDArray grad, INDArray output, Integer dimension){
         super(new INDArray[]{input, grad}, wrapOrNull(output));
         if(dimension != null)

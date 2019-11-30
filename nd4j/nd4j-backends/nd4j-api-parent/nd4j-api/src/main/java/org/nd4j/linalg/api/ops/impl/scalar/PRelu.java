@@ -45,6 +45,10 @@ public class PRelu extends DynamicCustomOp {
         addIArgument(sharedAxes);
     }
 
+    public PRelu(@NonNull INDArray x, @NonNull INDArray alpha, @NonNull int... sharedAxes) {
+        this(x, null, alpha, sharedAxes);
+    }
+
     public PRelu(@NonNull INDArray x, INDArray z, @NonNull INDArray alpha, @NonNull int... sharedAxes) {
         super(new INDArray[]{x, alpha}, new INDArray[]{z});
         this.sharedAxes = sharedAxes;

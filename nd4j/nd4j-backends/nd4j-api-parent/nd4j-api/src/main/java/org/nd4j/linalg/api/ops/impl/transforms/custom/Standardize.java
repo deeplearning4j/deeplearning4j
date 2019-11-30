@@ -34,8 +34,12 @@ public class Standardize extends DynamicCustomOp {
         setDimensions(dimensions);
     }
 
+    public Standardize(INDArray input, int... dimensions){
+        this(input, null, dimensions);
+    }
+
     public Standardize(INDArray input, INDArray result, int... dimensions){
-        super("standardize", new INDArray[]{input}, new INDArray[]{result});
+        super("standardize", new INDArray[]{input},wrapOrNull(result));
         setDimensions(dimensions);
     }
 

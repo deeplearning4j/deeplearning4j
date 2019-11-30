@@ -46,7 +46,14 @@ public class XwPlusB extends DynamicCustomOp {
 
     public XwPlusB(SameDiff sameDiff, SDVariable input, SDVariable weights, SDVariable bias) {
         super(null, sameDiff, new SDVariable[] {input, weights, bias}, false);
+    }
 
+    public XwPlusB(INDArray input, INDArray weights, INDArray bias) {
+        super(new INDArray[] {input, weights, bias}, null);
+    }
+
+    public XwPlusB(INDArray[] inputs, INDArray output){
+        super(inputs, wrapOrNull(output));
     }
 
     @Override

@@ -52,6 +52,11 @@ public class LogSoftMax extends DynamicCustomOp {
         this(x, x);
     }
 
+    public LogSoftMax(INDArray x, int dimension) {
+        this(x, null);
+        this.dimension = dimension;
+    }
+
     public LogSoftMax(SameDiff sameDiff, SDVariable i_v, int dimension) {
         this(sameDiff, i_v);
         this.dimension = dimension;

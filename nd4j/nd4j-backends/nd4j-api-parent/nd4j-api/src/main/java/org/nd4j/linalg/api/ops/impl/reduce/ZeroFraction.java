@@ -17,11 +17,13 @@
 package org.nd4j.linalg.api.ops.impl.reduce;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
@@ -36,8 +38,11 @@ import java.util.List;
 public class ZeroFraction extends DynamicCustomOp {
 
     public ZeroFraction(SameDiff sameDiff, SDVariable input) {
-
         super(null, sameDiff, new SDVariable[] {input}, false);
+    }
+
+    public ZeroFraction(@NonNull INDArray input){
+        super(new INDArray[]{input}, null);
     }
 
     @Override

@@ -54,7 +54,12 @@ public class FirstIndex extends BaseIndexAccumulation {
 
 
     public FirstIndex(INDArray x, @NonNull Condition condition, int... dimension) {
+        this(x, condition, false, dimension);
+    }
+
+    public FirstIndex(INDArray x, @NonNull Condition condition, boolean keepDims, int... dimension) {
         this(x, condition, Nd4j.EPS_THRESHOLD, dimension);
+        this.keepDims = keepDims;
     }
 
     public FirstIndex(INDArray x, @NonNull Condition condition, double eps, int... dimension) {

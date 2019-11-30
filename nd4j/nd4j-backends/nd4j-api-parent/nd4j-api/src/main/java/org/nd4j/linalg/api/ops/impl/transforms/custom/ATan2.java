@@ -46,8 +46,17 @@ public class ATan2 extends BaseDynamicTransformOp {
      * and are reversed when compared to OldATan2.
      * See {@link Transforms#atan2(org.nd4j.linalg.api.ndarray.INDArray, org.nd4j.linalg.api.ndarray.INDArray)}
      */
+    public ATan2(INDArray x, INDArray y) {
+        this(x,y,null);
+    }
+
+    /**
+     * Note that the order of x and y match {@link java.lang.Math#atan2(double, double)},
+     * and are reversed when compared to OldATan2.
+     * See {@link Transforms#atan2(org.nd4j.linalg.api.ndarray.INDArray, org.nd4j.linalg.api.ndarray.INDArray)}
+     */
     public ATan2(INDArray x, INDArray y, INDArray z) {
-        super(new INDArray[]{x, y}, new INDArray[]{ z });
+        super(new INDArray[]{x, y}, wrapOrNull(z));
     }
 
     public ATan2() {}

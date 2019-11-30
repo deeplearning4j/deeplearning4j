@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NonNull;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -44,8 +45,12 @@ public class Diag extends DynamicCustomOp {
     public Diag() {
     }
 
-    public Diag(INDArray[] inputs, INDArray[] outputs) {
-        super(null, inputs, outputs);
+    public Diag(@NonNull INDArray input) {
+        this(input, null);
+    }
+
+    public Diag(@NonNull INDArray input, @NonNull INDArray output){
+        super(null, new INDArray[]{input}, wrapOrNull(output));
     }
 
     public Diag(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {

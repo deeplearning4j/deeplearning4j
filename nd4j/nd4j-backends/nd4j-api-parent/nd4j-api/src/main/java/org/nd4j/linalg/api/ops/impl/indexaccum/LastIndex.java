@@ -58,6 +58,11 @@ public class LastIndex extends BaseIndexAccumulation {
         this(x, condition, Nd4j.EPS_THRESHOLD, dimensions);
     }
 
+    public LastIndex(INDArray x, @NonNull Condition condition, boolean keepDim, int... dimensions) {
+        this(x, condition, Nd4j.EPS_THRESHOLD, dimensions);
+        this.keepDims = keepDim;
+    }
+
     public LastIndex(INDArray x, @NonNull Condition condition, double eps, int... dimensions) {
         super(x,null, dimensions);
         this.condition = condition;

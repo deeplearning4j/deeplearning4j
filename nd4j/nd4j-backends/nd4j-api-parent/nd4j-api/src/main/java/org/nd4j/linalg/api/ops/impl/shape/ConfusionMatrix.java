@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NonNull;
 import lombok.val;
 import org.apache.commons.lang3.NotImplementedException;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -23,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -41,6 +43,35 @@ public class ConfusionMatrix extends DynamicCustomOp {
     public ConfusionMatrix(){
     }
 
+    public ConfusionMatrix(@NonNull INDArray labels, @NonNull INDArray predicted, @NonNull DataType dataType){
+        super(new INDArray[]{labels, predicted}, null);
+        this.outputType = dataType;
+    }
+
+    public ConfusionMatrix(@NonNull INDArray labels, @NonNull INDArray predicted, int numClasses){
+        this(labels, predicted, numClasses, DEFAULT_DTYPE);
+    }
+
+    public ConfusionMatrix(@NonNull INDArray labels, @NonNull INDArray predicted, INDArray weights) {
+        this(labels, predicted, weights, null);
+    }
+
+    public ConfusionMatrix(@NonNull INDArray labels, @NonNull INDArray predicted, INDArray weights, Integer numClasses) {
+        this(labels, predicted, weights, numClasses, DEFAULT_DTYPE);
+    }
+
+    public ConfusionMatrix(@NonNull INDArray labels, @NonNull INDArray predicted, Integer numClasses, @NonNull DataType dataType) {
+        this(labels, predicted, null, numClasses, dataType);
+    }
+
+    public ConfusionMatrix(@NonNull INDArray labels, @NonNull INDArray predicted, INDArray weights, Integer numClasses, @NonNull DataType dataType) {
+        super(wrapFilterNull(labels, predicted, weights), null);
+        this.outputType = dataType;
+        if(numClasses != null) {
+            addIArgument(numClasses);
+        }
+    }
+
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, DataType dataType){
         super(null, sameDiff, new SDVariable[]{labels, pred});
         this.outputType = dataType;
@@ -57,7 +88,9 @@ public class ConfusionMatrix extends DynamicCustomOp {
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, Integer numClasses, SDVariable weights){
         super(null, sameDiff, new SDVariable[]{labels, pred, weights});
-        addIArgument(numClasses);
+        if(numClasses != null) {
+            addIArgument(numClasses);
+        }
     }
 
     @Override
