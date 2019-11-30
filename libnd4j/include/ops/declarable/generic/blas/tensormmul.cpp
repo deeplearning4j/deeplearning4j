@@ -31,7 +31,9 @@ namespace nd4j {
             auto a = INPUT_VARIABLE(0);
             auto b = INPUT_VARIABLE(1);
 
-            auto c = OUTPUT_VARIABLE(0);                //
+            auto c = OUTPUT_VARIABLE(0); //
+
+            REQUIRE_TRUE(a->dataType() == b->dataType(), 0, "tensormmul: A, B and C data types must be the same");
 
             // building axes
             int axe0_size = INT_ARG(0);
@@ -54,7 +56,10 @@ namespace nd4j {
         DECLARE_SHAPE_FN(tensormmul) {               
         
             auto aShapeInfo = inputShape->at(0);
-            auto bShapeInfo = inputShape->at(1);  
+            auto bShapeInfo = inputShape->at(1);
+
+            REQUIRE_TRUE(ArrayOptions::dataType(aShapeInfo) == ArrayOptions::dataType(bShapeInfo), 0, "tensormmul: A and B data types must be the same");
+
             // building axes
             int axe0_size = INT_ARG(0);
             int axe1_size = INT_ARG(axe0_size+1);
@@ -70,7 +75,7 @@ namespace nd4j {
             std::vector<Nd4jLong> shapeAt, shapeBt;
             auto outShape = nd4j::ShapeUtils::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(block.dataType(), 'c', outShape)));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(aShapeInfo), 'c', outShape)));
         }
 
         DECLARE_TYPES(tensormmul) {

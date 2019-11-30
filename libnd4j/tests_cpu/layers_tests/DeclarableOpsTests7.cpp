@@ -1097,9 +1097,9 @@ TEST_F(DeclarableOpsTests7, TestSegmentMin_01) {
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMin_02) {
-    auto x = NDArrayFactory::create<float>({1.8, -2.5,4.,  -9., 2.1, 2.4,-3.,-9., 2.1, 2.1,0.7, 0.1, 3., -4.2, 2.2, 1.});
+    auto x = NDArrayFactory::create<float>({1.8f, -2.5f, 4.f,  -9.f, 2.1f, 2.4f, -3.f, -9.f, 2.1f, 2.1f,0.7f, 0.1f, 3.f, -4.2f, 2.2f, 1.f});
     auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 1, 1, 2, 3, 3, 3, 4, 4, 4, 4, 4, 4});
-    auto exp = NDArrayFactory::create<float>({-2.5, -9, -3.,  -9, -4.2});
+    auto exp = NDArrayFactory::create<float>({-2.5f, -9.f, -3.f,  -9.f, -4.2f});
 
     nd4j::ops::segment_min op;
 
@@ -1432,7 +1432,7 @@ TEST_F(DeclarableOpsTests7, TestSegmentMean_02) {
 TEST_F(DeclarableOpsTests7, TestSegmentMean_021) {
     auto x = NDArrayFactory::create<float>('c', {6, 3});//, {1, 2,  3., 4., 5., 6.,  7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18.});
     auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 2,2});
-    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {    2.5, 3.5, 4.5,      8.5, 9.5, 10.5,   14.5, 15.5,  16.5});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {    2.5f, 3.5f, 4.5f,      8.5f, 9.5f, 10.5f,   14.5f, 15.5f,  16.5f});
 
     nd4j::ops::segment_mean op;
     x.linspace(1.);
@@ -1448,7 +1448,7 @@ TEST_F(DeclarableOpsTests7, TestSegmentMean_022) {
     auto x = NDArrayFactory::create<float>('c', {6, 3});//, {1, 2,  3., 4., 5., 6.,  7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18.});
     auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 2,2});
     auto z = NDArrayFactory::create<float>('c', {3, 3}); //, {    2.5, 3.5, 4.5,      8.5, 9.5, 10.5,   14.5, 15.5,  16.5});
-    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {    2.5, 3.5, 4.5,      8.5, 9.5, 10.5,   14.5, 15.5,  16.5});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {    2.5f, 3.5f, 4.5f,      8.5f, 9.5f, 10.5f,   14.5f, 15.5f,  16.5f});
 
     nd4j::ops::segment_mean op;
     x.linspace(1.);
@@ -3897,9 +3897,9 @@ TEST_F(DeclarableOpsTests7, rectifiedtanh_test2) {
 
 TEST_F(DeclarableOpsTests7, RealDiv_1) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2, 4});
-    NDArray y = NDArrayFactory::create<float>('c', {1, 2}, {1,2});
-    NDArray e = NDArrayFactory::create<float>('c', {1, 2, 2}, {2, 1, 4, 2});
+    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2.f, 4.f});
+    NDArray y = NDArrayFactory::create<float>('c', {1, 2}, {1.f,2.f});
+    NDArray e = NDArrayFactory::create<float>('c', {1, 2, 2}, {2.f, 1.f, 4.f, 2.f});
 
     nd4j::ops::realdiv op;
     auto result = op.execute({&x, &y}, {}, {});
@@ -3917,11 +3917,11 @@ TEST_F(DeclarableOpsTests7, RealDiv_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, RealDiv_BP_1) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2, 4});
-    NDArray y = NDArrayFactory::create<float>('c', {1, 2}, {1,2});
-    NDArray e0 = NDArrayFactory::create<float>('c', {1, 2, 1}, {2, 5});
-    NDArray e1 = NDArrayFactory::create<float>('c', {1, 2}, {-14, -5});
-    NDArray eps = NDArrayFactory::create<float>('c', {1, 2, 2}, {1, 2, 3, 4});
+    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2.f, 4.f});
+    NDArray y = NDArrayFactory::create<float>('c', {1, 2}, {1.f, 2.f});
+    NDArray e0 = NDArrayFactory::create<float>('c', {1, 2, 1}, {2.f, 5.f});
+    NDArray e1 = NDArrayFactory::create<float>('c', {1, 2}, {-14.f, -5.f});
+    NDArray eps = NDArrayFactory::create<float>('c', {1, 2, 2}, {1.f, 2.f, 3.f, 4.f});
 
     nd4j::ops::realdiv_bp op;
     auto result = op.execute({&x, &y, &eps}, {}, {});
@@ -3944,7 +3944,7 @@ TEST_F(DeclarableOpsTests7, RealDiv_BP_1) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, ShapesOf_1) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2, 4});
+    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2.f, 4.f});
 //    NDArray y = NDArrayFactory::create<float>('c', {1, 2}, {1,2});
     NDArray e = NDArrayFactory::create<Nd4jLong>({1, 2, 1});
 
@@ -3964,8 +3964,8 @@ TEST_F(DeclarableOpsTests7, ShapesOf_1) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, ShapesOf_2) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2, 4});
-    NDArray y = NDArrayFactory::create<float>('c', {1, 2}, {1,2});
+    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2.f, 4.f});
+    NDArray y = NDArrayFactory::create<float>('c', {1, 2}, {1.f, 2.f});
     NDArray e0 = NDArrayFactory::create<Nd4jLong>({1, 2, 1});
     NDArray e1 = NDArrayFactory::create<Nd4jLong>({1, 2});
 
@@ -3987,8 +3987,8 @@ TEST_F(DeclarableOpsTests7, ShapesOf_2) {
 
 TEST_F(DeclarableOpsTests7, Size_1) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2, 4});
-    NDArray y = NDArrayFactory::create<float>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
+    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2.f, 4.f});
+    NDArray y = NDArrayFactory::create<float>('c', {5, 2}, {1.f, 2.f, 3.f, 4.f, 5.f, 7.f, 9.f, 10.f, 10.f, 11.f});
     NDArray e = NDArrayFactory::create<Nd4jLong>(2);
 
     nd4j::ops::size op;
@@ -4006,8 +4006,8 @@ TEST_F(DeclarableOpsTests7, Size_1) {
 
 TEST_F(DeclarableOpsTests7, Size_2) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {1, 2, 1}, {2, 4});
-    NDArray y = NDArrayFactory::create<float>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
+    NDArray x = NDArrayFactory::create<double>('c', {1, 2, 1}, {2, 4});
+    NDArray y = NDArrayFactory::create<double>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
     NDArray e = NDArrayFactory::create<Nd4jLong>(10);
 
     nd4j::ops::size op;
@@ -4025,8 +4025,8 @@ TEST_F(DeclarableOpsTests7, Size_2) {
 
 TEST_F(DeclarableOpsTests7, Softplus_1) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
-    NDArray e = NDArrayFactory::create<float>('c', {5, 2}, {1.3132616,  2.126928, 3.0485873, 4.01815, 5.0067153, 7.0009117, 9.000123, 10.000046, 10.000046, 11.000016});
+    NDArray x = NDArrayFactory::create<double>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
+    NDArray e = NDArrayFactory::create<double>('c', {5, 2}, {1.3132616,  2.126928, 3.0485873, 4.01815, 5.0067153, 7.0009117, 9.000123, 10.000046, 10.000046, 11.000016});
 
     nd4j::ops::softplus op;
     auto result = op.execute({&x}, {}, {});
@@ -4065,8 +4065,8 @@ TEST_F(DeclarableOpsTests7, Softplus_BP_1) {
 
 TEST_F(DeclarableOpsTests7, Softsign_1) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
-    NDArray e = NDArrayFactory::create<float>('c', {5, 2}, {0.5, 0.6666667, 0.75, 0.8, 0.8333333, 0.875, 0.9, 0.90909094, 0.90909094, 0.9166667});
+    NDArray x = NDArrayFactory::create<double>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
+    NDArray e = NDArrayFactory::create<double>('c', {5, 2}, {0.5, 0.6666667, 0.75, 0.8, 0.8333333, 0.875, 0.9, 0.90909094, 0.90909094, 0.9166667});
 
     nd4j::ops::softsign op;
     auto result = op.execute({&x}, {}, {});
@@ -4213,7 +4213,7 @@ TEST_F(DeclarableOpsTests7, TypesConversion_test1) {
     NDArray x = NDArrayFactory::create<double >('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
     NDArray expI = NDArrayFactory::create<int>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
     NDArray expL = NDArrayFactory::create<Nd4jLong>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
-    NDArray expF = NDArrayFactory::create<float>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
+    NDArray expF = NDArrayFactory::create<float>('c', {5, 2}, {1.f,2.f,3.f,4.f,5.f,7.f,9.f,10.f, 10.f, 11.f});
     NDArray expF16 = NDArrayFactory::create<float16>('c', {5, 2}, {1.f,2.f,3.f,4.f,5.f,7.f,9.f,10.f, 10.f, 11.f});
 
     nd4j::ops::to_int32 op32;
@@ -4239,7 +4239,7 @@ TEST_F(DeclarableOpsTests7, TypesConversion_test1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TypesConversion_test2) {
     NDArray x = NDArrayFactory::create<double >('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
-    NDArray expF = NDArrayFactory::create<float>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
+    NDArray expF = NDArrayFactory::create<float>('c', {5, 2}, {1.f,2.f,3.f,4.f,5.f,7.f,9.f,10.f, 10.f, 11.f});
     NDArray expH = NDArrayFactory::create<float16>('c', {5, 2}, {1.f,2.f,3.f,4.f,5.f,7.f,9.f,10.f, 10.f, 11.f});
 
     nd4j::ops::to_float32 op32;
@@ -4291,7 +4291,7 @@ TEST_F(DeclarableOpsTests7, TypesConversion_test3) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TypesConversion_test4) {
     NDArray x = NDArrayFactory::create<Nd4jLong>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
-    NDArray exp32 = NDArrayFactory::create<float>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
+    NDArray exp32 = NDArrayFactory::create<float>('c', {5, 2}, {1.f,2.f,3.f,4.f,5.f,7.f,9.f,10.f, 10.f, 11.f});
     NDArray exp64 = NDArrayFactory::create<double>('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
 
     nd4j::ops::to_float32 op32;
@@ -4968,8 +4968,8 @@ TEST_F(DeclarableOpsTests7, Test_Matmul_Once_Again) {
 }
 
 TYPED_TEST(TypedDeclarableOpsTests7, Test_Pnorm_Once_Again) {
-    auto input = NDArrayFactory::create<TypeParam>('c', {1, 1, 5, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0});
-    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 5, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0});
+    auto input = NDArrayFactory::create<TypeParam>('c', {1, 1, 5, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 5, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f});
 
     nd4j::ops::pnormpool2d op;
     auto result = op.execute({&input}, {}, {1,1,  1,1,  0,0,  1,1,1,  3,  0});

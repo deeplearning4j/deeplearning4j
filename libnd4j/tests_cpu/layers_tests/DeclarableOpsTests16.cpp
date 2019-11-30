@@ -40,7 +40,7 @@ public:
 };
 
 TEST_F(DeclarableOpsTests16, scatter_upd_1) {
-    auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});
+    auto x = NDArrayFactory::create<float>('c', {3}, {1.f, 1.f, 1.f});
     auto y = NDArrayFactory::create<int>(0);
     auto w = NDArrayFactory::create<float>(3.0f);
     auto e = NDArrayFactory::create<float>('c', {3}, {3.f, 1.f, 1.f});

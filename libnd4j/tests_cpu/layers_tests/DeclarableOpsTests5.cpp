@@ -242,10 +242,10 @@ TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
 }
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterMul_test1) {
-    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
     NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
-    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
-    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10, 2, 3, 4});
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10.f, 2.f, 3.f, 4.f});
 
     nd4j::ops::scatter_mul op;
     auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
@@ -260,10 +260,10 @@ TEST_F(DeclarableOpsTests5, scatterMul_test1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
-    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
     NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
-    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
-    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.10, 2, 3, 4});
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.10f, 2.f, 3.f, 4.f});
 
     nd4j::ops::scatter_div op;
     auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
@@ -278,10 +278,10 @@ TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterSub_test1) {
-    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
     NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
-    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
-    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-9, 1, 3, 4});
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-9.f, 1.f, 3.f, 4.f});
 
     nd4j::ops::scatter_sub op;
     auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
@@ -296,8 +296,8 @@ TEST_F(DeclarableOpsTests5, scatterSub_test1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, hardsigmoid_test1) {
-    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.7, 0.9, 1, 1});
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.7f, 0.9f, 1.f, 1.f});
 
     nd4j::ops::hardsigmoid op;
     auto result = op.execute({&matrix}, {}, {}, {});
@@ -311,9 +311,9 @@ TEST_F(DeclarableOpsTests5, hardsigmoid_test1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, hardsigmoid_test2) {
-    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto eps = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.2, 0.4, 0, 0});
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
+    auto eps = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.2f, 0.4f, 0.f, 0.f});
 
     nd4j::ops::hardsigmoid_bp op;
     auto result = op.execute({&matrix, &eps}, {}, {}, {});
@@ -327,8 +327,8 @@ TEST_F(DeclarableOpsTests5, hardsigmoid_test2) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, hardtanh_test1) {
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
-    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {-1, -1, -1, -1, 0, 1, 1, 1, 1});
+    auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {3, 3}, {-1, -1, -1, -1, 0, 1, 1, 1, 1});
 
     nd4j::ops::hardtanh op;
     auto result = op.execute({&matrix}, {}, {}, {});
@@ -342,9 +342,9 @@ TEST_F(DeclarableOpsTests5, hardtanh_test1) {
 }
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, hardtanh_test2) {
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
-    auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
-    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {0, 0, 0, 4, 5, 6, 0, 0, 0});
+    auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto eps = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto exp = NDArrayFactory::create<double>('c', {3, 3}, {0, 0, 0, 4, 5, 6, 0, 0, 0});
 
     nd4j::ops::hardtanh_bp op;
     auto result = op.execute({&matrix, &eps}, {}, {}, {});
@@ -389,7 +389,7 @@ TEST_F(DeclarableOpsTests5, histogram_test2) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Identity_test1) {
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f});
 //    auto exp = NDArrayFactory::create<Nd4jLong>('c', {3, 3}, {3, 3, 3});
 
     nd4j::ops::identity op;
@@ -404,8 +404,8 @@ TEST_F(DeclarableOpsTests5, Identity_test1) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Identity_test2) {
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
-    auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
+    auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto eps = NDArrayFactory::create<double>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
 //    auto exp = NDArrayFactory::create<float>('c', {3,3});
     nd4j::ops::identity_bp op;
     auto result = op.execute({&matrix, &eps}, {}, {}, {});
@@ -418,8 +418,8 @@ TEST_F(DeclarableOpsTests5, Identity_test2) {
 }
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Log1p_test1) {
-    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {4, 3, 2, 1, 0, 1, 2, 3, 4});
-    auto y = NDArrayFactory::create<float>('c', {3,3}, {5,4,3,2,1,2,3,4,5});
+    auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {4, 3, 2, 1, 0, 1, 2, 3, 4});
+    auto y = NDArrayFactory::create<double>('c', {3,3}, {5,4,3,2,1,2,3,4,5});
     //  auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
 //    auto exp = NDArrayFactory::create<float>('c', {3,3});
     nd4j::ops::Log1p op;
@@ -599,7 +599,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, eye_test1) {
 
-    auto expected = NDArrayFactory::create<float>('c', {3, 3}, {1, 0, 0, 0, 1, 0, 0, 0, 1});
+    auto expected = NDArrayFactory::create<float>('c', {3, 3}, {1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f});
 
     nd4j::ops::eye op;
     auto results = op.execute({}, {}, {-99, 3});
@@ -616,7 +616,7 @@ TEST_F(DeclarableOpsTests5, eye_test1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, eye_test2) {
 
-    auto expected = NDArrayFactory::create<float>('c', {3, 4}, {1,  0,  0,  0, 0,  1,  0,  0, 0,  0,  1,  0});
+    auto expected = NDArrayFactory::create<float>('c', {3, 4}, {1.f,  0.f,  0.f,  0.f, 0.f,  1.f,  0.f,  0.f, 0.f,  0.f,  1.f,  0.f});
 
     nd4j::ops::eye op;
     auto results = op.execute({}, {}, {-99, 3, 4});

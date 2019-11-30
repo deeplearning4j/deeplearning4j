@@ -201,7 +201,7 @@ TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_10) {
 
 TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_11) {
     auto x = NDArrayFactory::create<TypeParam>('c', {1, 1, 3, 3});
-    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 2, 2}, {3, 4, 6, 7});
+    auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 2, 2}, {3.f, 4.f, 6.f, 7.f});
 
     x.linspace(1);
 
@@ -1582,17 +1582,17 @@ TEST_F(DeclarableOpsTests4, relu6_bp_test1) {
 ////////////////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_1) {
 
-    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, { 5.5, 0., 0.3, 5.5,
-                                            8.6, 0.,  0., 0.4,
-                                            1.5, 1., 1.3, 1.5,
-                                            2.6, 2.,  3., 1.4}
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, { 5.5f, 0.f, 0.3f, 5.5f,
+                                            8.6f, 0.f,  0.f, 0.4f,
+                                            1.5f, 1.f, 1.3f, 1.5f,
+                                            2.6f, 2.f,  3.f, 1.4f}
     );
 
     auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {
-                                            0.98386997,        0.,  0.05358852,  0.9824562,
-                                            0.99330735,        0.,          0., 0.37139067,
-                                            0.72760683, 0.4850712,   0.5848977, 0.67488194,
-                                            0.7581754,  0.58321184, 0.86747235, 0.4048204}
+                                            0.98386997f,        0.f,  0.05358852f,  0.9824562f,
+                                            0.99330735f,        0.f,          0.f, 0.37139067f,
+                                            0.72760683f, 0.4850712f,   0.5848977f, 0.67488194f,
+                                            0.7581754f,  0.58321184f, 0.86747235f, 0.4048204f}
     );
 
     nd4j::ops::lrn op;
@@ -1612,16 +1612,16 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_2) {
 
-    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, { 5.5, 0., 0.3, 5.5,
-                                            8.6, 0.,  0., 0.4,
-                                            1.5, 1., 1.3, 1.5,
-                                            2.6, 2.,  3., 1.4});
+    auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, { 5.5f, 0.f, 0.3f, 5.5f,
+                                            8.6f, 0.f,  0.f, 0.4f,
+                                            1.5f, 1.f, 1.3f, 1.5f,
+                                            2.6f, 2.f,  3.f, 1.4f});
 
     auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 2}, {
-                                            0.98386997,        0.,  0.05358852,  0.9824562,
-                                            0.99330735,        0.,          0., 0.37139067,
-                                            0.72760683, 0.4850712,   0.5848977, 0.67488194,
-                                            0.7581754,  0.58321184, 0.86747235, 0.4048204});
+                                            0.98386997f,        0.f,  0.05358852f,  0.9824562f,
+                                            0.99330735f,        0.f,          0.f, 0.37139067f,
+                                            0.72760683f, 0.4850712f,   0.5848977f, 0.67488194f,
+                                            0.7581754f,  0.58321184f, 0.86747235f, 0.4048204f});
 
     nd4j::ops::lrn op;
     auto  results = op.execute({&x}, {1.0, 1.0, 0.5}, {2}, {}, false, nd4j::DataType::DOUBLE);
@@ -1641,25 +1641,25 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_3) {
 
     auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
 
-                5.5, 0., 0.3, 5.5,
-                1.5, 0., 1.3, 6.5,
-                8.6, 0.,  0., 0.4,
-                2.5, 1., 0.3, 4.5,
-                1.5, 1., 1.3, 1.5,
-                3.5, 0., 1.3, 2.5,
-                2.6, 2.,  3., 1.4,
-                4.5, 1., 0.3, 0.5}
+                5.5f, 0.f, 0.3f, 5.5f,
+                1.5f, 0.f, 1.3f, 6.5f,
+                8.6f, 0.f,  0.f, 0.4f,
+                2.5f, 1.f, 0.3f, 4.5f,
+                1.5f, 1.f, 1.3f, 1.5f,
+                3.5f, 0.f, 1.3f, 2.5f,
+                2.6f, 2.f,  3.f, 1.4f,
+                4.5f, 1.f, 0.3f, 0.5f}
     );
 
     auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
-                     0.9824562,          0., 0.03822664, 0.9824562,
-                    0.67488194,          0., 0.18924236, 0.96960944,
-                    0.99330735,          0.,         0., 0.37139067,
-                    0.86567914,  0.18702209, 0.05610663, 0.9520745,
-                     0.6154575,  0.34942827, 0.45425674, 0.6154575,
-                      0.905509,  0.        ,  0.2824086, 0.8361251,
-                    0.57063663,  0.41959068,   0.629386, 0.3504383,
-                     0.9520745,  0.21039814, 0.06311944, 0.3268602 }
+                     0.9824562f, 0.f, 0.03822664f, 0.9824562f, 
+                    0.67488194f, 0.f, 0.18924236f, 0.96960944f, 
+                    0.99330735f, 0.f, 0.f, 0.37139067f, 
+                    0.86567914f, 0.18702209f, 0.05610663f, 0.9520745f, 
+                     0.6154575f, 0.34942827f, 0.45425674f, 0.6154575f, 
+                      0.905509f, 0.f, 0.2824086f, 0.8361251f, 
+                    0.57063663f, 0.41959068f, 0.629386f, 0.3504383f, 
+                     0.9520745f, 0.21039814f, 0.06311944f, 0.3268602f }
     );
 
     nd4j::ops::lrn op;
@@ -1680,25 +1680,25 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_4) {
 
     auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
 
-                    5.5, 0., 0.3, 5.5,
-                    1.5, 0., 1.3, 6.5,
-                    8.6, 0.,  0., 0.4,
-                    2.5, 1., 0.3, 4.5,
-                    1.5, 1., 1.3, 1.5,
-                    3.5, 0., 1.3, 2.5,
-                    2.6, 2.,  3., 1.4,
-                    4.5, 1., 0.3, 0.5}
+                    5.5f, 0.f, 0.3f, 5.5f, 
+                    1.5f, 0.f, 1.3f, 6.5f, 
+                    8.6f, 0.f, 0.f, 0.4f, 
+                    2.5f, 1.f, 0.3f, 4.5f, 
+                    1.5f, 1.f, 1.3f, 1.5f, 
+                    3.5f, 0.f, 1.3f, 2.5f, 
+                    2.6f, 2.f, 3.f, 1.4f, 
+                    4.5f, 1.f, 0.3f, 0.5f}
     );
 
     auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
-                    0.70082176,         0., 0.03822664, 0.70082176,
-                    0.21835658,         0., 0.18924236,  0.9462118,
-                     0.9922489,         0.,         0., 0.04615111,
-                    0.46755522, 0.18702209, 0.05610663,  0.8415994,
-                     0.5241424, 0.34942827, 0.45425674,  0.5241424,
-                    0.76033086,         0.,  0.2824086, 0.54309344,
-                    0.54546785, 0.41959068,   0.629386, 0.29371348,
-                    0.94679165, 0.21039814, 0.06311944, 0.10519907}
+                    0.70082176f, 0.f, 0.03822664f, 0.70082176f, 
+                    0.21835658f, 0.f, 0.18924236f, 0.9462118f, 
+                     0.9922489f, 0.f, 0.f, 0.04615111f, 
+                    0.46755522f, 0.18702209f, 0.05610663f, 0.8415994f, 
+                     0.5241424f, 0.34942827f, 0.45425674f, 0.5241424f, 
+                    0.76033086f, 0.f, 0.2824086f, 0.54309344f, 
+                    0.54546785f, 0.41959068f, 0.629386f, 0.29371348f, 
+                    0.94679165f, 0.21039814f, 0.06311944f, 0.10519907f}
     );
 
     nd4j::ops::lrn op;
@@ -1719,29 +1719,29 @@ TYPED_TEST(TypedDeclarableOpsTests4, LrnTest_5) {
 
     auto x = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
 
-                5.5,0., 0.3, 5.5,
-                1.5,0., 1.3, 6.5,
-                8.6,0.,  0., 0.4,
-                2.5,1., 0.3, 4.5,
-                1.5,1., 1.3, 1.5,
-                3.5,0., 1.3, 2.5,
-                2.6,2.,  3., 1.4,
-                4.5,1., 0.3, 0.5}
+                5.5f, 0.f, 0.3f, 5.5f, 
+                1.5f, 0.f, 1.3f, 6.5f, 
+                8.6f, 0.f, 0.f, 0.4f, 
+                2.5f, 1.f, 0.3f, 4.5f, 
+                1.5f, 1.f, 1.3f, 1.5f, 
+                3.5f, 0.f, 1.3f, 2.5f, 
+                2.6f, 2.f, 3.f, 1.4f, 
+                4.5f, 1.f, 0.3f, 0.5f}
     );
 
     auto eps = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4}, {
-                0.70082176, 0.,         0.03822664, 0.70082176,
-                0.21835658, 0.,         0.18924236,  0.9462118,
+                0.70082176f, 0.f, 0.03822664f, 0.70082176f, 
+                0.21835658f, 0.f, 0.18924236f, 0.9462118f, 
 
-                0.9922489,  0.,         0.        , 0.04615111,
-                0.46755522, 0.18702209, 0.05610663,  0.8415994,
+                0.9922489f, 0.f, 0.f, 0.04615111f, 
+                0.46755522f, 0.18702209f, 0.05610663f, 0.8415994f, 
 
 
-                0.5241424,  0.34942827, 0.45425674,  0.5241424,
-                0.76033086, 0.,         0.2824086 , 0.54309344,
+                0.5241424f, 0.34942827f, 0.45425674f, 0.5241424f, 
+                0.76033086f, 0.f, 0.2824086f, 0.54309344f, 
 
-                0.54546785, 0.41959068, 0.629386  , 0.29371348,
-                0.94679165, 0.21039814, 0.06311944, 0.10519907}
+                0.54546785f, 0.41959068f, 0.629386f, 0.29371348f, 
+                0.94679165f, 0.21039814f, 0.06311944f, 0.10519907f}
     );
 
     auto exp = NDArrayFactory::create<TypeParam>('c', {2, 2, 2, 4});
@@ -1766,7 +1766,7 @@ TEST_F(DeclarableOpsTests4, tri_test1) {
     const int rows = 3;
     const int cols = 5;
 
-    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0});
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 1.f, 1.f, 0.f, 0.f});
 
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols});
@@ -1789,7 +1789,7 @@ TEST_F(DeclarableOpsTests4, tri_test2) {
     const int cols = 5;
     const int diag = 2;
 
-    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1});
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f, 1.f, 0.f, 1.f, 1.f, 1.f, 1.f, 1.f});
 
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
@@ -1810,7 +1810,7 @@ TEST_F(DeclarableOpsTests4, tri_test3) {
     const int cols = 5;
     const int diag = -1;
 
-    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0});
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
@@ -1831,7 +1831,7 @@ TEST_F(DeclarableOpsTests4, tri_test4) {
     const int cols = 5;
     const int diag = -2;
 
-    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0});
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
@@ -1850,7 +1850,7 @@ TEST_F(DeclarableOpsTests4, tri_test5) {
 
     const int rows = 5;
 
-    auto expected = NDArrayFactory::create<float>('c', {rows, rows}, {1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1});
+    auto expected = NDArrayFactory::create<float>('c', {rows, rows}, {1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 1.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f, 1.f, 0.f, 1.f, 1.f, 1.f, 1.f, 1.f});
 
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows});
@@ -1871,7 +1871,7 @@ TEST_F(DeclarableOpsTests4, tri_test6) {
     const int cols = 5;
     const int diag = -20;
 
-    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});
@@ -1892,7 +1892,7 @@ TEST_F(DeclarableOpsTests4, tri_test7) {
     const int cols = 5;
     const int diag = 20;
 
-    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+    auto expected = NDArrayFactory::create<float>('c', {rows, cols}, {1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f, 1.f});
 
     nd4j::ops::tri op;
     auto results = op.execute({}, {}, {rows, cols, diag});

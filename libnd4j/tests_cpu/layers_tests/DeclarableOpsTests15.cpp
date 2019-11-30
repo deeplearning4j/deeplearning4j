@@ -178,10 +178,10 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_1) {
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_2) {
     auto x = NDArrayFactory::create<float>('c', {1, 4,4,3});
     auto e = NDArrayFactory::create<float>('c', {1, 4,4,3}, {
-            -21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
-            2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
-            26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
-            50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
+            -21.5f, -20.5f, -19.5f,  -15.5f, -14.5f, -13.5f,  -9.5f,  -8.5f,  -7.5f,  -3.5f,  -2.5f,  -1.5f,
+            2.5f,   3.5f,   4.5f,    8.5f,   9.5f,  10.5f,  14.5f,  15.5f,  16.5f,  20.5f,  21.5f,  22.5f,
+            26.5f,  27.5f,  28.5f,   32.5f,  33.5f,  34.5f,  38.5f,  39.5f,  40.5f,  44.5f,  45.5f,  46.5f,
+            50.5f,  51.5f,  52.5f,   56.5f,  57.5f,  58.5f,  62.5f,  63.5f,  64.5f,  68.5f,  69.5f,  70.5f
     });
     x.linspace(1.);
     nd4j::ops::adjust_contrast op;
@@ -196,10 +196,10 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_2) {
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_3) {
     auto x = NDArrayFactory::create<float>('c', {1, 4,4,3});
     auto e = NDArrayFactory::create<float>('c', {1, 4,4,3}, {
-            -21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
-            2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
-            26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
-            50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
+            -21.5f, -20.5f, -19.5f,  -15.5f, -14.5f, -13.5f,  -9.5f,  -8.5f,  -7.5f,  -3.5f,  -2.5f,  -1.5f,
+            2.5f,   3.5f,   4.5f,    8.5f,   9.5f,  10.5f,  14.5f,  15.5f,  16.5f,  20.5f,  21.5f,  22.5f,
+            26.5f,  27.5f,  28.5f,   32.5f,  33.5f,  34.5f,  38.5f,  39.5f,  40.5f,  44.5f,  45.5f,  46.5f,
+            50.5f,  51.5f,  52.5f,   56.5f,  57.5f,  58.5f,  62.5f,  63.5f,  64.5f,  68.5f,  69.5f,  70.5f
     });
     x.linspace(1.);
     nd4j::ops::adjust_contrast_v2 op;
@@ -243,8 +243,8 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_1) {
 
 TEST_F(DeclarableOpsTests15, Test_BitCast_2) {
     auto x = NDArrayFactory::create<float>('c', {2, 4});
-    auto e = NDArrayFactory::create<float16>('c', {2, 4, 2}, {0, 1.875, 0, 2.,    0, 2.125, 0,  2.25,
-                                                                              0, 2.312, 0, 2.375, 0, 2.438, 0., 2.5});
+    auto e = NDArrayFactory::create<float16>('c', {2, 4, 2}, {0.f, 1.875f, 0.f, 2.f,    0.f, 2.125f, 0.f,  2.25f,
+                                                                              0.f, 2.312f, 0.f, 2.375f, 0.f, 2.438f, 0.f, 2.5f});
     x.linspace(1.);
     nd4j::ops::bitcast op;
     auto result = op.execute({&x}, {}, {nd4j::DataType::HALF}, {});
@@ -423,9 +423,9 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_3) {
 }
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
-    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto g = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
-    auto b = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
+    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto g = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto b = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
 
     nd4j::ops::layer_norm op;
     auto result = op.execute({&x, &g, &b}, {}, {0}, {false});
@@ -434,10 +434,10 @@ TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
 }
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
-    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto g = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
-    auto b = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
-    auto eps = NDArrayFactory::create<float>('c', {1, 5}, {0., 0., 0., 0., 0.});
+    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto g = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto b = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto eps = NDArrayFactory::create<float>('c', {1, 5}, {0.f, 0.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::layer_norm_bp op;
     auto result = op.execute({&x, &g, &b, &eps}, {}, {0}, {false});

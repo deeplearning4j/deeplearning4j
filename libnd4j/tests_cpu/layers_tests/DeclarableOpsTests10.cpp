@@ -2857,8 +2857,8 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_5) {
              20.07843f,   21.019608f,  21.960783f,   23.058823f,
              20.07843f,   21.019608f,  21.960783f,   23.058823f
     });
-    NDArray min = NDArrayFactory::create<float>({-20., -19., -18., -17});
-    NDArray max = NDArrayFactory::create<float>({20., 21., 22., 23});
+    NDArray min = NDArrayFactory::create<float>({-20.f, -19.f, -18.f, -17.f});
+    NDArray max = NDArrayFactory::create<float>({20.f, 21.f, 22.f, 23.f});
     x.linspace(-60.);
     nd4j::ops::fake_quant_with_min_max_vars_per_channel op;
     auto results = op.execute({&x, &min, &max}, {}, {});
@@ -3033,8 +3033,8 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test2) {
     auto gamma    = NDArrayFactory::create<TypeParam>('c', {4});
     auto beta     = NDArrayFactory::create<TypeParam>('c', {4});
 
-    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-0.52733537,-0.35763144,-0.18792751,-0.01822358, 0.15148035, 0.32118428, 0.49088821, 0.66059214, 0.83029607, 1.        , 1.16970393, 1.33940786,
-                                            1.50911179, 1.67881572, 1.84851965, 2.01822358, 2.18792751, 2.35763144, 2.52733537, 2.6970393 , 2.86674323, 3.03644717, 3.2061511 , 3.37585503});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-0.52733537f, -0.35763144f, -0.18792751f, -0.01822358f, 0.15148035f, 0.32118428f, 0.49088821f, 0.66059214f, 0.83029607f, 1.f, 1.16970393f, 1.33940786f, 
+                                            1.50911179f, 1.67881572f, 1.84851965f, 2.01822358f, 2.18792751f, 2.35763144f, 2.52733537f, 2.6970393f, 2.86674323f, 3.03644717f, 3.2061511f, 3.37585503f});
 
     input.linspace(0.1, 0.1);
     mean.assign(1.);
@@ -3061,13 +3061,13 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test2) {
 TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test3) {
 
     auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
-    auto mean     = NDArrayFactory::create<TypeParam>('c', {3}, {1.05, 1.1, 1.15});
-    auto variance = NDArrayFactory::create<TypeParam>('c', {3}, {0.5, 0.6, 0.7});
-    auto gamma    = NDArrayFactory::create<TypeParam>('c', {3}, {1.2, 1.3, 1.4});
-    auto beta     = NDArrayFactory::create<TypeParam>('c', {3}, {0.1, 0.2, 0.3});
+    auto mean     = NDArrayFactory::create<TypeParam>('c', {3}, {1.05f, 1.1f, 1.15f});
+    auto variance = NDArrayFactory::create<TypeParam>('c', {3}, {0.5f, 0.6f, 0.7f});
+    auto gamma    = NDArrayFactory::create<TypeParam>('c', {3}, {1.2f, 1.3f, 1.4f});
+    auto beta     = NDArrayFactory::create<TypeParam>('c', {3}, {0.1f, 0.2f, 0.3f});
 
-    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734,-1.34248341,-1.17277948,-1.00307555,-0.80696728,-0.6391394 ,-0.47131152,-0.30348364,-0.11832703, 0.04900378, 0.21633459, 0.38366541,
-                                            0.52425983, 0.69396376, 0.86366769, 1.03337162, 1.20696728, 1.37479516, 1.54262304, 1.71045092, 1.8896427 , 2.05697351, 2.22430432, 2.39163513,});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734f, -1.34248341f, -1.17277948f, -1.00307555f, -0.80696728f, -0.6391394f, -0.47131152f, -0.30348364f, -0.11832703f, 0.04900378f, 0.21633459f, 0.38366541f, 
+                                            0.52425983f, 0.69396376f, 0.86366769f, 1.03337162f, 1.20696728f, 1.37479516f, 1.54262304f, 1.71045092f, 1.8896427f, 2.05697351f, 2.22430432f, 2.39163513f});
 
     input.linspace(0.1, 0.1);
 
@@ -3089,13 +3089,13 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test3) {
 TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test4) {
 
     auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
-    auto mean     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4});
-    auto variance = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2});
-    auto gamma    = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9});
-    auto beta     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.1, 0.2, 0.3, 0.4, 0.5, 0.66, 0.7, 0.8});
+    auto mean     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.05f, 1.1f, 1.15f, 1.2f, 1.25f, 1.3f, 1.35f, 1.4f});
+    auto variance = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.f, 1.1f, 1.2f});
+    auto gamma    = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f});
+    auto beta     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.66f, 0.7f, 0.8f});
 
-    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734,-1.31045092,-1.12231189,-0.9416324 ,-0.83337162,-0.6391394 ,-0.45298865,-0.2708162 ,-0.1545559 , 0.03217212, 0.21633459, 0.4,
-                                            0.58432694, 0.82999915, 0.95743373, 1.14688951, 1.25894242, 1.50999575, 1.64392367, 1.84066852, 1.93355791, 2.18999235, 2.33041362, 2.53444754});
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734f, -1.31045092f, -1.12231189f, -0.9416324f, -0.83337162f, -0.6391394f, -0.45298865f, -0.2708162f, -0.1545559f, 0.03217212f, 0.21633459f, 0.4f, 
+                                            0.58432694f, 0.82999915f, 0.95743373f, 1.14688951f, 1.25894242f, 1.50999575f, 1.64392367f, 1.84066852f, 1.93355791f, 2.18999235f, 2.33041362f, 2.53444754f});
 
     input.linspace(0.1, 0.1);
 
