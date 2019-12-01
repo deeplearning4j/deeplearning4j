@@ -2,6 +2,7 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -23,6 +24,11 @@ public class MockPolicy implements IPolicy<MockEncodable, Integer> {
     @Override
     public Integer nextAction(INDArray input) {
         actionInputs.add(input);
-        return null;
+        return input.getInt(0);
+    }
+
+    @Override
+    public Integer nextAction(Observation observation) {
+        return nextAction(observation.getData());
     }
 }

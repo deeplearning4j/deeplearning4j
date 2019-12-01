@@ -8,9 +8,10 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class MockAsyncGlobal implements IAsyncGlobal {
+public class MockAsyncGlobal<NN extends NeuralNet> implements IAsyncGlobal<NN> {
 
-    private final NeuralNet current;
+    @Getter
+    private final NN current;
 
     public boolean hasBeenStarted = false;
     public boolean hasBeenTerminated = false;
@@ -27,7 +28,7 @@ public class MockAsyncGlobal implements IAsyncGlobal {
         this(null);
     }
 
-    public MockAsyncGlobal(NeuralNet current) {
+    public MockAsyncGlobal(NN current) {
         maxLoops = Integer.MAX_VALUE;
         numLoopsStopRunning = Integer.MAX_VALUE;
         this.current = current;
@@ -45,7 +46,7 @@ public class MockAsyncGlobal implements IAsyncGlobal {
 
     @Override
     public boolean isTrainingComplete() {
-        return ++currentLoop > maxLoops;
+        return currentLoop >= maxLoops;
     }
 
     @Override
@@ -59,17 +60,16 @@ public class MockAsyncGlobal implements IAsyncGlobal {
     }
 
     @Override
-    public NeuralNet getCurrent() {
-        return current;
-    }
-
-    @Override
-    public NeuralNet getTarget() {
+    public NN getTarget() {
         return current;
     }
 
     @Override
     public void enqueue(Gradient[] gradient, Integer nstep) {
         ++enqueueCallCount;
+    }
+
+    public void increaseCurrentLoop() {
+        ++currentLoop;
     }
 }

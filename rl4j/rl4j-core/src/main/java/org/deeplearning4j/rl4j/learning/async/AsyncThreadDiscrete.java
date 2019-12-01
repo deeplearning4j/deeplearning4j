@@ -40,7 +40,7 @@ import java.util.Stack;
  * Async Learning specialized for the Discrete Domain
  *
  */
-public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet>
+public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
                 extends AsyncThread<O, Integer, DiscreteSpace, NN> {
 
     @Getter
@@ -98,10 +98,10 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
 
             StepReply<O> stepReply = getMdp().step(action);
             accuReward += stepReply.getReward() * getConf().getRewardFactor();
+            obs = stepReply.getObservation();
 
             //if it's not a skipped frame, you can do a step of training
             if (i % skipFrame == 0 || lastAction == null || stepReply.isDone()) {
-                obs = stepReply.getObservation();
 
                 if (hstack == null) {
                     hstack = processHistory(input);
@@ -144,7 +144,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         return new SubEpochReturn<O>(i, obs, reward, current.getLatestScore());
     }
 
-    protected INDArray processHistory(INDArray input) {
+    private INDArray processHistory(INDArray input) {
         IHistoryProcessor hp = getHistoryProcessor();
         INDArray[] history;
         if (hp != null) {

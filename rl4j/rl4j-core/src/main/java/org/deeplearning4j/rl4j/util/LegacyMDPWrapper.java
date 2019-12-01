@@ -20,7 +20,7 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
     @Getter
     private final WrapperObservationSpace observationSpace;
     private final ILearning learning;
-    private final IHistoryProcessor historyProcessor;
+    private IHistoryProcessor historyProcessor;
     private final StepCountable stepCountable;
     private int skipFrame;
 
@@ -48,6 +48,10 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
         }
 
         return learning.getHistoryProcessor();
+    }
+
+    public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
+        this.historyProcessor = historyProcessor;
     }
 
     private int getStep() {

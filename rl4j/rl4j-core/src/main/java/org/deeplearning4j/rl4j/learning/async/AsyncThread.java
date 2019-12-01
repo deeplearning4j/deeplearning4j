@@ -43,7 +43,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alexandre Boulanger
  */
 @Slf4j
-public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Thread implements StepCountable, IEpochTrainer {
 
     @Getter
@@ -58,6 +58,8 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     private MDP<O, A, AS> mdp;
     @Getter @Setter
     private IHistoryProcessor historyProcessor;
+
+    private boolean isEpochStarted = false;
 
     private final TrainingListenerList listeners;
 
@@ -114,17 +116,23 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
         log.info("ThreadNum-" + threadNumber + " Started!");
 
-        boolean canContinue = initWork(context);
-        if (canContinue) {
-
-            while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
-                handleTraining(context);
-                if (context.epochElapsedSteps >= getConf().getMaxEpochStep() || getMdp().isDone()) {
-                    canContinue = finishEpoch(context) && startNewEpoch(context);
-                    if (!canContinue) {
-                        break;
-                    }
+        while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
+            if(!isEpochStarted) {
+                boolean canContinue = startNewEpoch(context);
+                if (!canContinue) {
+                    break;
                 }
+            }
+
+            handleTraining(context);
+
+            if (context.epochElapsedSteps >= getConf().getMaxEpochStep() || getMdp().isDone()) {
+                boolean canContinue = finishEpoch(context);
+                if (!canContinue) {
+                    break;
+                }
+
+                ++epochCounter;
             }
         }
         terminateWork();
@@ -150,20 +158,15 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         context.score = subEpochReturn.getScore();
     }
 
-    private boolean initWork(RunContext context) {
-        initNewEpoch(context);
-        preEpoch();
-        return listeners.notifyNewEpoch(this);
-    }
-
     private boolean startNewEpoch(RunContext context) {
+        isEpochStarted = true;
         initNewEpoch(context);
-        epochCounter++;
         preEpoch();
         return listeners.notifyNewEpoch(this);
     }
 
     private boolean finishEpoch(RunContext context) {
+        isEpochStarted = false;
         postEpoch();
         IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, context.epochElapsedSteps, context.score);
 
@@ -173,6 +176,10 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     }
 
     private void terminateWork() {
+        if(!isEpochStarted) {
+            return;
+        }
+
         postEpoch();
         getAsyncGlobal().terminate();
     }
@@ -206,7 +213,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         double score;
     }
 
-    private static class RunContext<O extends Encodable> {
+    private static class RunContext<O> {
         private O obs;
         private double rewards;
         private int epochElapsedSteps;

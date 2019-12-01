@@ -23,11 +23,16 @@ import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.StepCountable;
+import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
