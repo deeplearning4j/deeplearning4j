@@ -1,4 +1,3 @@
-
 /* ******************************************************************************
  * Copyright (c) 2019 Konduit K.K.
  *
@@ -27,25 +26,42 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-public class AdjustContrast extends BaseAdjustContrast {
+public class BetaInc extends DynamicCustomOp {
 
-    public AdjustContrast() {super();}
+    public BetaInc() {}
 
-    public AdjustContrast(@NonNull INDArray in, double factor, INDArray out) {
-        super(in, factor, out);
+    public BetaInc(@NonNull INDArray a_input, @NonNull INDArray b_input, @NonNull INDArray x_input,
+                   INDArray output) {
+        addInputArgument(a_input, b_input, x_input);
+        if (output != null) {
+            addOutputArgument(output);
+        }
     }
 
-    public AdjustContrast(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable factor) {
-        super(sameDiff,new SDVariable[]{in,factor});
+    public BetaInc(@NonNull INDArray a_input, @NonNull INDArray b_input, @NonNull INDArray x_input) {
+        inputArguments.add(a_input);
+        inputArguments.add(b_input);
+        inputArguments.add(x_input);
+    }
+
+    public BetaInc(@NonNull SameDiff sameDiff, @NonNull SDVariable a, @NonNull SDVariable b, @NonNull SDVariable x) {
+        super(sameDiff, new SDVariable[]{a,b,x});
     }
 
     @Override
     public String opName() {
-        return "adjust_contrast";
+        return "betainc";
     }
 
     @Override
     public String tensorflowName() {
-        return "AdjustContrast";
+        return "Betainc";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

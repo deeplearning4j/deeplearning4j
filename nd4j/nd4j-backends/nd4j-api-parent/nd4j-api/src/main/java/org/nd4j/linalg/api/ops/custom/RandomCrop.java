@@ -1,4 +1,3 @@
-
 /* ******************************************************************************
  * Copyright (c) 2019 Konduit K.K.
  *
@@ -23,29 +22,40 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.rng.Random;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class AdjustContrast extends BaseAdjustContrast {
+public class RandomCrop extends DynamicCustomOp {
 
-    public AdjustContrast() {super();}
+    public RandomCrop() {}
 
-    public AdjustContrast(@NonNull INDArray in, double factor, INDArray out) {
-        super(in, factor, out);
+    public RandomCrop(@NonNull INDArray input, @NonNull INDArray shape) {
+        Preconditions.checkArgument(shape.isVector(),"RandomCrop:Shape tensor should be a vector");
+        Preconditions.checkArgument(input.rank() == shape.length(), "RandomCrop:The length of the shape vector is not match input rank");
+        addInputArgument(input, shape);
     }
 
-    public AdjustContrast(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable factor) {
-        super(sameDiff,new SDVariable[]{in,factor});
+    public RandomCrop(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable shape) {
+            super("", sameDiff, new SDVariable[]{input, shape});
     }
 
     @Override
     public String opName() {
-        return "adjust_contrast";
+        return "random_crop";
     }
 
     @Override
     public String tensorflowName() {
-        return "AdjustContrast";
+        return "RandomCrop";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null /*&& inputDataTypes.size() == 4*/,
+                "Expected 4 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        return Collections.singletonList(DataType.FLOAT);   //TF import: always returns float32...
     }
 }

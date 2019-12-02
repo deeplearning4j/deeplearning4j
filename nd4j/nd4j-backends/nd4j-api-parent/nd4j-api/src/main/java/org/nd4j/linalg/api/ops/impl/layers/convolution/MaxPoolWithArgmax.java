@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -38,22 +39,19 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Field;
 import java.util.*;
 
-
-/**
- * Max Pooling2D operation
- */
 @Slf4j
 @Getter
-public class MaxPooling2D extends DynamicCustomOp {
+public class MaxPoolWithArgmax extends DynamicCustomOp {
 
     protected Pooling2DConfig config;
+    protected DataType outputType;
 
-    public MaxPooling2D() {
+    public MaxPoolWithArgmax() {
     }
 
     @Builder(builderMethodName = "sameDiffBuilder")
     @SuppressWarnings("Used in lombok")
-    public MaxPooling2D(SameDiff sameDiff, SDVariable input, Pooling2DConfig config) {
+    public MaxPoolWithArgmax(SameDiff sameDiff, SDVariable input, Pooling2DConfig config) {
         super(null, sameDiff, new SDVariable[]{input}, false);
 
         config.setType(Pooling2D.Pooling2DType.MAX);
@@ -61,8 +59,8 @@ public class MaxPooling2D extends DynamicCustomOp {
         addArgs();
     }
 
-    public MaxPooling2D(INDArray input, INDArray output, @NonNull Pooling2DConfig config){
-        super(null, new INDArray[]{input}, wrapOrNull(output));
+    public MaxPoolWithArgmax(INDArray input, INDArray output,INDArray outArgMax, @NonNull Pooling2DConfig config){
+        super(null, new INDArray[]{input}, new INDArray[]{output, outArgMax});
         config.setType(Pooling2D.Pooling2DType.MAX);
 
         this.config = config;
@@ -122,12 +120,6 @@ public class MaxPooling2D extends DynamicCustomOp {
     public String getPoolingPrefix() {
         return "max";
     }
-
-    @Override
-    public String opName() {
-        return getPoolingPrefix() + "pool2d";
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
@@ -209,30 +201,12 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .build();
         this.config = pooling2DConfig;
         addArgs();
+        if(attributesForNode.containsKey("argmax")) {
+            outputType = TFGraphMapper.convertType(attributesForNode.get("argmax").getType());
+        } else {
+            outputType = DataType.UINT32;
+        }
     }
-
-    @Override
-    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        val paddingVal = !attributesForNode.containsKey("auto_pad") ? "VALID" : attributesForNode.get("auto_pad").getS().toStringUtf8();
-        val isSameNode = paddingVal.equals("SAME");
-        val kernelShape = attributesForNode.get("kernel_shape").getIntsList();
-        val padding = attributesForNode.get("pads").getIntsList();
-        val strides = attributesForNode.get("strides").getIntsList();
-
-        Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
-                .sH(strides.get(0).intValue())
-                .sW(strides.size() < 2 ? strides.get(0).intValue() : strides.get(1).intValue())
-                .type(Pooling2D.Pooling2DType.MAX)
-                .isSameMode(isSameNode)
-                .kH(kernelShape.get(0).intValue())
-                .kW(kernelShape.size() < 2 ? kernelShape.get(0).intValue() : kernelShape.get(1).intValue())
-                .pH(padding.get(0).intValue())
-                .pW(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
-                .build();
-        this.config = pooling2DConfig;
-        addArgs();
-    }
-
 
     @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
@@ -281,25 +255,30 @@ public class MaxPooling2D extends DynamicCustomOp {
 
         ret.put(onnxName(), map);
         ret.put(tensorflowName(), map);
-
-
         return ret;
     }
 
-
     @Override
-    public String onnxName() {
-        return "MaxPool";
+    public String opName() {
+        return "max_pool_with_argmax";
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"MaxPool","MaxPoolV2"};
+    public String onnxName() {
+        return "MaxPoolWithArgmax";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "MaxPoolWithArgmax";
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input data type for %s, got %s", getClass(), inputDataTypes);
-        return Collections.singletonList(inputDataTypes.get(0));
+        List<DataType> result = new ArrayList<>();
+        result.add(inputDataTypes.get(0));
+        result.add(outputType == null ? DataType.UINT32 : outputType);
+        return result;
     }
 }

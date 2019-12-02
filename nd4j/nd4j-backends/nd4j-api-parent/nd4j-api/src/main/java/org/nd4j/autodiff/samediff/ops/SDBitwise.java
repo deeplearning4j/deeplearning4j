@@ -202,4 +202,16 @@ public class SDBitwise extends SDOps  {
         SDVariable ret = f().bitwiseXor(x, y);
         return updateVariableNameAndReference(ret, name);
     }
+
+    /**
+     * Flip bits
+     *
+     * @param name  Name of the output variable
+     * @param x input array
+     * @return array after flipping each input bit
+     */
+    public SDVariable toggleBits(String name, SDVariable x) {
+        SDVariable res = f().toggleBits(x);
+        return updateVariableNameAndReference(res, name);
+    }
 }

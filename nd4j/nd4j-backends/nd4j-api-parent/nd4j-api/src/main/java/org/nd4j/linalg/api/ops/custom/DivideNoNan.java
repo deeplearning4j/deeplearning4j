@@ -1,3 +1,18 @@
+/* ******************************************************************************
+ * Copyright (c) 2019 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 package org.nd4j.linalg.api.ops.custom;
 
 import org.apache.commons.math3.analysis.function.Divide;
@@ -16,9 +31,13 @@ public class DivideNoNan extends DynamicCustomOp {
     public DivideNoNan() {
     }
 
-    public DivideNoNan(INDArray in1, INDArray in2, INDArray out) {
+    public DivideNoNan(INDArray in1, INDArray in2) {
         inputArguments.add(in1);
         inputArguments.add(in2);
+    }
+
+    public DivideNoNan(INDArray in1, INDArray in2, INDArray out) {
+        this(in1,in2);
         outputArguments.add(out);
     }
 

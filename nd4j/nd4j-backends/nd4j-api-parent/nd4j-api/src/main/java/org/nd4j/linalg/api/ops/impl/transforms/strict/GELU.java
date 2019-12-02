@@ -60,19 +60,6 @@ public class GELU extends BaseTransformStrictOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName()
-    {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " + opName());
-        //return "GELU";
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable ret = f().geluDerivative(arg(), false).mul(i_v.get(0));
         return Collections.singletonList(ret);

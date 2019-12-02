@@ -68,7 +68,7 @@ public class ClipByValue extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "clipbyvalue";
+        return "ClipByValue";
     }
 
     @Override

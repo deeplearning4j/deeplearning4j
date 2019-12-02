@@ -1,4 +1,3 @@
-
 /* ******************************************************************************
  * Copyright (c) 2019 Konduit K.K.
  *
@@ -27,25 +26,39 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-public class AdjustContrast extends BaseAdjustContrast {
+public class Roll extends DynamicCustomOp {
 
-    public AdjustContrast() {super();}
+    public Roll() {}
 
-    public AdjustContrast(@NonNull INDArray in, double factor, INDArray out) {
-        super(in, factor, out);
+    public Roll(@NonNull INDArray input, @NonNull INDArray axes, @NonNull INDArray shifts) {
+        Preconditions.checkArgument(axes.rank() == shifts.rank(), "Roll: shifts and axes should be the same rank");
+        Preconditions.checkArgument(axes.length() == shifts.length(), "Roll: shifts and axes should be the same length");
+        addInputArgument(input, axes, shifts);
     }
 
-    public AdjustContrast(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable factor) {
-        super(sameDiff,new SDVariable[]{in,factor});
+    public Roll(@NonNull INDArray input, int shift) {
+        addInputArgument(input);
+        addIArgument(shift);
+    }
+
+    public Roll(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable shift) {
+        super("", sameDiff, new SDVariable[]{input,shift});
     }
 
     @Override
     public String opName() {
-        return "adjust_contrast";
+        return "roll";
     }
 
     @Override
     public String tensorflowName() {
-        return "AdjustContrast";
+        return "Roll";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

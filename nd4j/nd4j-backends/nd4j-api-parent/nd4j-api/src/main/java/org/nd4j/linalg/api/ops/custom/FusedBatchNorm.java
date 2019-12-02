@@ -26,21 +26,33 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class BaseAdjustContrast extends DynamicCustomOp {
-    public BaseAdjustContrast() {
+public class FusedBatchNorm extends DynamicCustomOp {
+
+    public FusedBatchNorm() {}
+
+    public FusedBatchNorm(@NonNull INDArray x, @NonNull INDArray scale, @NonNull INDArray offset,
+                          int dataFormat, int isTraining,
+                          INDArray yOut, INDArray batchMeanOut, INDArray batchMeanVar) {
+        addInputArgument(x, scale, offset);
+        addIArgument(dataFormat, isTraining);
+        if (yOut != null && batchMeanOut != null && batchMeanVar != null) {
+            addOutputArgument(yOut, batchMeanOut, batchMeanVar);
+        }
     }
 
-    public BaseAdjustContrast(@NonNull INDArray in, double factor, INDArray out) {
-        Preconditions.checkArgument(in.rank() >= 3,
-                "AdjustContrast: op expects rank of input array to be >= 3, but got %s instead", in.rank());
-        inputArguments.add(in);
-        outputArguments.add(out);
-
-        addTArgument(factor);
+    public FusedBatchNorm(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable scale, @NonNull SDVariable offset,
+                          @NonNull SDVariable dataFormat, @NonNull SDVariable isTraining) {
+        super("", sameDiff, new SDVariable[]{x, scale, offset, dataFormat, isTraining});
     }
 
-    public BaseAdjustContrast(@NonNull SameDiff sameDiff, @NonNull SDVariable[] vars) {
-        super("", sameDiff, vars);
+    @Override
+    public String opName() {
+        return "fused_batch_norm";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "FusedBatchNormV2";
     }
 
     @Override

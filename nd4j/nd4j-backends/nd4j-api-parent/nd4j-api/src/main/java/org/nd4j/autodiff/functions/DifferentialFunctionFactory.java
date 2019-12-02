@@ -2616,6 +2616,36 @@ public class DifferentialFunctionFactory {
         return new FakeQuantWithMinMaxVarsPerChannel(sameDiff,x,min,max).outputVariable();
     }
 
+    public SDVariable betainc( SDVariable a, SDVariable b, SDVariable x) {
+        return new BetaInc(sameDiff, a, b, x).outputVariable();
+    }
+
+    public SDVariable[] fusedBatchNorm(SDVariable x, SDVariable scale, SDVariable offset,
+                                     SDVariable dataFormat, SDVariable isTraining) {
+        return new FusedBatchNorm(sameDiff,x,scale,offset,dataFormat,isTraining).outputVariables();
+    }
+
+    public SDVariable matrixBandPart(SDVariable input, SDVariable minLower, SDVariable maxUpper) {
+        return new MatrixBandPart(sameDiff,input,minLower,maxUpper).outputVariable();
+    }
+
+    public SDVariable[] maxPoolWithArgmaxs(SDVariable x, Pooling2DConfig pooling2DConfig) {
+        return new MaxPoolWithArgmax(sameDiff, x, pooling2DConfig).outputVariables();
+    }
+
+    public SDVariable polygamma(SDVariable n, SDVariable x) {
+        return new Polygamma(sameDiff, n,x).outputVariable();
+    }
+
+    public SDVariable roll(SDVariable input, SDVariable shift) {
+        return new Roll(sameDiff, input, shift).outputVariable();
+    }
+
+    public SDVariable toggleBits(SDVariable x) {
+        return new ToggleBits(sameDiff, x).outputVariable();
+    }
+
+
     public String toString() {
         return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";
     }

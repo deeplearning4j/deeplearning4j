@@ -66,13 +66,7 @@ public class Not extends BaseTransformBoolOp {
     public String onnxName() {
         return "Not";
     }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("Tensorflow name not found for " + opName());
-        //return "Not";
-    }
-
+    
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(f().zerosLike(arg()));

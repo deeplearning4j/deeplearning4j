@@ -26,21 +26,34 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-public abstract class BaseAdjustContrast extends DynamicCustomOp {
-    public BaseAdjustContrast() {
+public class MatrixBandPart extends DynamicCustomOp {
+
+    public MatrixBandPart() {}
+
+    public MatrixBandPart(@NonNull INDArray input, int minLower, int maxUpper) {
+        Preconditions.checkArgument(input.rank() >= 2, "MatrixBandPart: Input rank should be 2 or higher");
+        long N = input.size(-2);
+        long M = input.size(-1);
+        Preconditions.checkArgument(minLower > -N && minLower < N, "MatrixBandPart: lower diagonal count %s should be less than %s",
+                minLower, N);
+        Preconditions.checkArgument(maxUpper > -M && maxUpper < M, "MatrixBandPart: upper diagonal count %s should be less than %s.",
+                maxUpper, M);
+        addInputArgument(input);
+        addIArgument(minLower, maxUpper);
     }
 
-    public BaseAdjustContrast(@NonNull INDArray in, double factor, INDArray out) {
-        Preconditions.checkArgument(in.rank() >= 3,
-                "AdjustContrast: op expects rank of input array to be >= 3, but got %s instead", in.rank());
-        inputArguments.add(in);
-        outputArguments.add(out);
-
-        addTArgument(factor);
+    public MatrixBandPart(@NonNull SameDiff sameDiff, @NonNull SDVariable input, SDVariable minLower, SDVariable maxUpper) {
+        super("", sameDiff, new SDVariable[]{input, minLower, maxUpper});
     }
 
-    public BaseAdjustContrast(@NonNull SameDiff sameDiff, @NonNull SDVariable[] vars) {
-        super("", sameDiff, vars);
+    @Override
+    public String opName() {
+        return "matrix_band_part";
+    }
+
+    @Override
+    public String tensorflowName() {
+        return "MatrixBandPart";
     }
 
     @Override

@@ -1,4 +1,3 @@
-
 /* ******************************************************************************
  * Copyright (c) 2019 Konduit K.K.
  *
@@ -27,25 +26,41 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-public class AdjustContrast extends BaseAdjustContrast {
+public class Polygamma extends DynamicCustomOp {
 
-    public AdjustContrast() {super();}
+    public Polygamma() {}
 
-    public AdjustContrast(@NonNull INDArray in, double factor, INDArray out) {
-        super(in, factor, out);
+    public Polygamma(@NonNull INDArray n, @NonNull INDArray x) {
+        Preconditions.checkArgument(n.shape() != x.shape(),
+                "Polygamma: n and x must have the same shapes");
+        addInputArgument(n,x);
     }
 
-    public AdjustContrast(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable factor) {
-        super(sameDiff,new SDVariable[]{in,factor});
+    public Polygamma(@NonNull INDArray n, @NonNull INDArray x, INDArray output) {
+        this(n,x);
+        if (output != null) {
+            addOutputArgument(output);
+        }
+    }
+
+    public Polygamma(@NonNull SameDiff sameDiff, @NonNull SDVariable n, @NonNull SDVariable x) {
+        super("", sameDiff, new SDVariable[]{n ,x});
     }
 
     @Override
     public String opName() {
-        return "adjust_contrast";
+        return "polygamma";
     }
 
     @Override
     public String tensorflowName() {
-        return "AdjustContrast";
+        return "Polygamma";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }
