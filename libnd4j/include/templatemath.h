@@ -1305,15 +1305,65 @@ inline __device__ bfloat16 nd4j_atomicAdd<bfloat16>(bfloat16* address, bfloat16 
 	else return old.B.L;
 }
 
+template <typename T>
+static inline __device__ T internal_16bit_atomicAdd(T* address, T val) {
+    size_t shift = ((size_t)address & 2);
+    int *base_address = (int *)((char*)address - shift);
+
+    union I16PAIR {
+        struct {
+            T H;
+            T L;
+        } B;
+        int W;
+
+        __host__ __device__
+        I16PAIR() {};
+
+		__host__ __device__
+		~I16PAIR() {};
+    };
+
+    I16PAIR pairNew, pairOld, pairAssumed;
+
+    if (reinterpret_cast<int*>(address) == base_address) {
+        pairOld.B.L = val;
+        do {
+
+            pairNew.B.L = pairOld.B.L;
+            pairNew.B.H = pairOld.B.H + val;
+            pairAssumed.W = pairOld.W;
+
+            pairOld.W = atomicCAS(base_address, pairAssumed.W, pairNew.W);
+        } while (pairAssumed.W != pairOld.W);
+
+        return (T) pairOld.B.H;
+    } else {
+        pairOld.B.H = val;
+        do {
+
+            pairNew.B.H = pairOld.B.H;
+            pairNew.B.L = pairOld.B.L + val;
+            pairAssumed.W = pairOld.W;
+            pairOld.W = atomicCAS(base_address, pairAssumed.W, pairNew.W);
+
+        } while (pairAssumed.W != pairOld.W);
+
+        return (T) pairOld.B.L;
+    }
+
+}
+
 template <>
 inline __device__ int16_t nd4j_atomicAdd<int16_t>(int16_t* address, int16_t val)  {
-    return nd4j_atomicAdd((bfloat16*)address, (bfloat16)val);
+    return internal_16bit_atomicAdd<int16_t>(address, val);
 }
 
 template <>
 inline __device__ uint16_t nd4j_atomicAdd<uint16_t>(uint16_t* address, uint16_t val)  {
-    return nd4j_atomicAdd((bfloat16*)address, (bfloat16)val);
+    return internal_16bit_atomicAdd<uint16_t>(address, val);
 }
+
 template <>
 inline __device__ int8_t nd4j_atomicAdd<int8_t>(int8_t* address, int8_t val)  {
     int res = *address;
@@ -1447,7 +1497,7 @@ inline __device__ unsigned char nd4j_atomicMul<unsigned char>(unsigned char* add
 }
 
 template <typename T>
-static inline __device__ T internal_16bit_atomicMul(T* address, int16_t val) {
+static inline __device__ T internal_16bit_atomicMul(T* address, T val) {
     size_t shift = ((size_t)address & 2);
     int *base_address = (int *)((char*)address - shift);
 
@@ -1467,10 +1517,9 @@ static inline __device__ T internal_16bit_atomicMul(T* address, int16_t val) {
 
     I16PAIR pairNew, pairOld, pairAssumed;
 
-    pairOld.W = (int) val;
     if (reinterpret_cast<int*>(address) == base_address) {
+        pairOld.B.L = val;
         do {
-
             pairNew.B.L = pairOld.B.L;
             pairNew.B.H = pairOld.B.H * val;
             pairAssumed.W = pairOld.W;
@@ -1480,8 +1529,8 @@ static inline __device__ T internal_16bit_atomicMul(T* address, int16_t val) {
 
         return (T) pairOld.B.H;
     } else {
+        pairOld.B.H = val;
         do {
-
             pairNew.B.H = pairOld.B.H;
             pairNew.B.L = pairOld.B.L * val;
             pairAssumed.W = pairOld.W;
@@ -1491,9 +1540,7 @@ static inline __device__ T internal_16bit_atomicMul(T* address, int16_t val) {
 
         return (T) pairOld.B.L;
     }
-
 }
-
 
 template <>
 inline __device__ int16_t nd4j_atomicMul<int16_t>(int16_t* address, int16_t val) {
@@ -1549,17 +1596,6 @@ inline __device__ uint64_t nd4j_atomicMul<uint64_t>(uint64_t* address, uint64_t 
     return (uint64_t)old;
 }
 
-//template <>
-//inline __device__ unsigned long long nd4j_atomicMul<unsigned long long>(unsigned long long* address, unsigned long long val) {
-//	unsigned long long int* res_address = address;
-//	unsigned long long int old = *res_address, assumed;
-//	do {
-//		assumed = old;
-//		old = atomicCAS(res_address, assumed, val * assumed);
-//	} while (assumed != old);
-//    return old;
-//}
-
 #if !defined(_WIN32) && !defined(_WIN64)
 template <>
 inline __device__ Nd4jLong nd4j_atomicMul<Nd4jLong>(Nd4jLong* address, Nd4jLong val) {
@@ -1585,22 +1621,21 @@ inline __device__ float16 nd4j_atomicMul<float16>(float16* address, float16 val)
 
 template <>
 inline __device__ float nd4j_atomicDiv<float>(float* address, float val) {
-	return nd4j_atomicMul<float>(address, (float) 1.f / val);
+	return nd4j_atomicMul<float>(address, 1.f / val);
 }
 
 template <>
 inline __device__ float16 nd4j_atomicDiv<float16>(float16* address, float16 val) {
-	return nd4j_atomicMul<float16>(address, (float16) 1.f / val);
+	return internal_16bit_atomicMul<float16>(address, (float16) 1.f / val);
 }
 
 template <>
 inline __device__ bfloat16 nd4j_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val) {
-	return nd4j_atomicMul<bfloat16>(address, (bfloat16) 1.f / val);
+	return internal_16bit_atomicMul<bfloat16>(address, (bfloat16) 1 / val);
 }
 }
 #endif
 	}
-
 }
 
 #ifdef _OPENMP
