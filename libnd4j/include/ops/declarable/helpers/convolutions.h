@@ -23,6 +23,7 @@
 
 #include <NDArray.h>
 #include <graph/Context.h>
+#include <dll.h>
 
 #include <execution/LaunchContext.h>
 
@@ -35,7 +36,7 @@ namespace nd4j {
             PNORM_POOL = 2,
         };
 
-        class ConvolutionUtils {
+        class ND4J_EXPORT ConvolutionUtils {
         public:
             static inline void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int paddingMode) {
 

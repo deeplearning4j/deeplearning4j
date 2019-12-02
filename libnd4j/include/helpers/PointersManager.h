@@ -30,7 +30,7 @@
 
 namespace nd4j {
 
-class PointersManager {
+class ND4J_EXPORT PointersManager {
 
     private:
 

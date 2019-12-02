@@ -28,7 +28,7 @@
 #include <climits>
 
 namespace nd4j {
-    class BitwiseUtils {
+    class ND4J_EXPORT BitwiseUtils {
     public:
 
 

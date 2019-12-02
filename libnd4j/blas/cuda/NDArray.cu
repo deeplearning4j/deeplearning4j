@@ -150,7 +150,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, const char
 
     manager.synchronize();
 }
-BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, int lower, int upper, const char direction, NDArray* target), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void NDArray::fillAsTriangular, (const float val, int lower, int upper, const char direction, NDArray* target), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>

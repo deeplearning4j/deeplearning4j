@@ -32,6 +32,10 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, -2, 0) {
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
+    // just skip op if input is empty
+    if (input->isEmpty())
+        return Status::OK();
+
     REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST: Scale factor required");
 
     const double factor = block.width() > 1 ? INPUT_VARIABLE(1)->e<double>(0) : T_ARG(0);
@@ -69,6 +73,10 @@ DECLARE_TYPES(adjust_contrast) {
         REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST_V2: Scale factor required");
 
         const double factor = block.width() > 1 ? INPUT_VARIABLE(1)->e<double>(0) : T_ARG(0);
+
+        // just skip op if input is empty
+        if (input->isEmpty())
+            return Status::OK();
 
         REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST_V2: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
         REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST_V2: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));

@@ -29,7 +29,7 @@
 #include <mutex>
 
 namespace samediff {
-    class Ticket {
+    class ND4J_EXPORT Ticket {
     private:
         bool _acquired = false;
         std::vector<BlockingQueue<CallableWithArguments*>*> _queues;

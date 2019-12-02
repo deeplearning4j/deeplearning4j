@@ -108,6 +108,9 @@ namespace nd4j {
 
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
                     x->applyPairwiseTransform(op.p, y, z, nullptr);
+                } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
+                    x->applyTrueBroadcast(op, y, z, true, extraArgs);
+                    return z;
                 } else if (!x->isScalar() && y->isScalar()) {
                     x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z);
                 } else if (x->isScalar() && !y->isScalar()) {

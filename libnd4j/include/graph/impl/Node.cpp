@@ -311,7 +311,7 @@ namespace nd4j {
             node->_dataType = DataTypeUtils::fromT<T>();
             return node;
         }
-        BUILD_SINGLE_TEMPLATE(template Node* Node::asT, (), LIBND4J_TYPES);
+        BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT Node* Node::asT, (), LIBND4J_TYPES);
 
         nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, std::initializer_list<int> input, std::initializer_list<int> output,  std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = OpType_CUSTOM;

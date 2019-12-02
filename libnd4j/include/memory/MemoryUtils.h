@@ -22,10 +22,11 @@
 #define LIBND4J_MEMORYUTILS_H
 
 #include "MemoryReport.h"
+#include <dll.h>
 
 namespace nd4j {
     namespace memory {
-        class MemoryUtils {
+        class ND4J_EXPORT MemoryUtils {
         public:
             static bool retrieveMemoryStatistics(MemoryReport& report);
         };

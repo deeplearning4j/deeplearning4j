@@ -29,7 +29,7 @@ if (CUDA_BLAS)
 
     if(WIN32)
         message("CUDA on Windows: enabling /EHsc")
-        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /FS /w")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /FS")
         SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc")
     endif()
 

@@ -27,7 +27,7 @@
 #include <op_enums.h>
 
 namespace samediff {
-    class ThreadsHelper {
+    class ND4J_EXPORT ThreadsHelper {
     public:
         static int numberOfThreads(int maxThreads, uint64_t numberOfElements);
         static int numberOfThreads2d(int maxThreads, uint64_t iters_x, uint64_t iters_y);
@@ -36,7 +36,7 @@ namespace samediff {
         static int pickLoop3d(int numThreads, uint64_t iters_x, uint64_t iters_y, uint64_t iters_z);
     };
 
-    class Span {
+    class ND4J_EXPORT Span {
     private:
         int64_t _startX, _stopX, _incX;
     public:
@@ -50,7 +50,7 @@ namespace samediff {
         static Span build(uint64_t thread_id, uint64_t num_threads, int64_t start_x, int64_t stop_x, int64_t inc_x);
     };
 
-    class Span2 {
+    class ND4J_EXPORT Span2 {
     private:
         int64_t _startX, _stopX, _incX;
         int64_t _startY, _stopY, _incY;
@@ -70,7 +70,7 @@ namespace samediff {
         static Span2 build(int loop, uint64_t thread_id, uint64_t num_threads, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y);
     };
 
-    class Span3 {
+    class ND4J_EXPORT Span3 {
     private:
         int64_t _startX, _stopX, _incX;
         int64_t _startY, _stopY, _incY;
@@ -94,7 +94,7 @@ namespace samediff {
         static Span3 build(int loop, uint64_t thread_id, uint64_t num_threads, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y, int64_t start_z, int64_t stop_z, int64_t inc_z);
     };
 
-    class Threads {
+    class ND4J_EXPORT Threads {
     public:
         /**
          * This function executes 1 dimensional loop for a given number of threads

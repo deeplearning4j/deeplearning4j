@@ -774,8 +774,27 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_2) {
     ASSERT_TRUE(z.equalsTo(e));
 }
 
-TEST_F(BroadcastableOpsTests, broadcast_2) {
+TEST_F(BroadcastableOpsTests, broadcast_bool_3) {
 
+    auto x = NDArrayFactory::create<int>(0);
+    auto y = NDArrayFactory::create<int>('c', {3}, {2, 1, 2});
+    NDArray z('c', {3}, nd4j::DataType::BOOL);
+    NDArray e('c', {3}, nd4j::DataType::BOOL);
+
+    e.assign(true);
+
+    nd4j::ops::less op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    // z.printIndexedBuffer("Z");
+
+    ASSERT_TRUE(z.isSameShape(e));
+    ASSERT_TRUE(z.equalsTo(e));
+}
+
+TEST_F(BroadcastableOpsTests, broadcast_2) {
     NDArray x('c', {3, 1, 2}, nd4j::DataType::FLOAT32);
     NDArray y('c', {2, 2}, nd4j::DataType::FLOAT32);
     NDArray z('c', {3, 2, 2}, nd4j::DataType::FLOAT32);
@@ -797,3 +816,19 @@ TEST_F(BroadcastableOpsTests, broadcast_2) {
     ASSERT_TRUE(z.equalsTo(e));
 }
 
+TEST_F(BroadcastableOpsTests, broadcast_3) {
+    auto x = NDArrayFactory::create<int>(0);
+    auto y = NDArrayFactory::create<int>('c', {3}, {2, 1, 2});
+    NDArray z('c', {3}, nd4j::DataType::INT32);
+    auto e = NDArrayFactory::create<int>('c', {3}, {2, 1, 2});
+
+    nd4j::ops::add op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    // z.printIndexedBuffer("Z");
+
+    ASSERT_TRUE(z.isSameShape(e));
+    ASSERT_TRUE(z.equalsTo(e));
+}

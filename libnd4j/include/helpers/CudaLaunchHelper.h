@@ -28,7 +28,7 @@
 #include <types/triple.h>
 
 namespace nd4j {
-    class CudaLaunchHelper {
+    class ND4J_EXPORT CudaLaunchHelper {
     public:
         static Triple getFlatLaunchParams(Nd4jLong length, int SM, int CORES, int SHARED_MEMORY);
         static int getReductionBlocks(Nd4jLong xLength, int blockSize = 512);

@@ -89,7 +89,7 @@ namespace nd4j {
         delete[] target;
 #endif
     }
-    BUILD_SINGLE_TEMPLATE(template void ExtraArguments::convertAndCopy, (Nd4jPointer pointer, Nd4jLong offset), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void ExtraArguments::convertAndCopy, (Nd4jPointer pointer, Nd4jLong offset), LIBND4J_TYPES);
 
     void* ExtraArguments::allocate(size_t length, size_t elementSize) {
 #ifdef __CUDABLAS__
@@ -119,7 +119,7 @@ namespace nd4j {
     void* ExtraArguments::argumentsAsT(Nd4jLong offset) {
         return argumentsAsT(DataTypeUtils::fromT<T>(), offset);
     }
-    BUILD_SINGLE_TEMPLATE(template void *ExtraArguments::argumentsAsT, (Nd4jLong offset), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void *ExtraArguments::argumentsAsT, (Nd4jLong offset), LIBND4J_TYPES);
 
 
     void* ExtraArguments::argumentsAsT(nd4j::DataType dataType, Nd4jLong offset) {

@@ -27,7 +27,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void col2im(nd4j::LaunchContext & context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW);
+    ND4J_EXPORT void col2im(nd4j::LaunchContext & context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW);
 
 
 }

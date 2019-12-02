@@ -22,10 +22,11 @@
 #define LIBND4J_MEMORYREPORT_H
 
 #include <pointercast.h>
+#include <dll.h>
 
 namespace nd4j {
     namespace memory {
-        class MemoryReport {
+        class ND4J_EXPORT MemoryReport {
         private:
             Nd4jLong _vm = 0;
             Nd4jLong _rss = 0;

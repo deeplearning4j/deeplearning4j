@@ -111,7 +111,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 
-    set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /EHsc ${ARCH_TUNE}")
+    set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
@@ -158,7 +158,7 @@ if(CUDA_BLAS)
 		include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
         set( CUDA_ARCHITECTURE_MINIMUM "3.0" CACHE STRING "Minimum required CUDA compute capability" )
-        SET(CUDA_VERBOSE_BUILD ON)
+        SET(CUDA_VERBOSE_BUILD OFF)
         SET(CUDA_SEPARABLE_COMPILATION OFF)
         #set(CUDA_COMPUTE_CAPABILITY "61")
         set(CUDA_COMPUTE_CAPABILITY "35")
@@ -264,24 +264,13 @@ if(CUDA_BLAS)
         file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/impl/*.cpp ../include/loops/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA false ../include/loops/*.cu)
 
-        if (NOT BUILD_TESTS)
-			CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu cuda/NativeOpExecutioner.cu cuda/BlasVersionHelper.cu Environment.cpp ${LOOPS_SOURCES_CUDA}
+
+		CUDA_ADD_LIBRARY(${LIBND4J_NAME} SHARED cuda/NativeOps.cu cuda/NativeOpExecutioner.cu cuda/BlasVersionHelper.cu Environment.cpp ${LOOPS_SOURCES_CUDA}
                 ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                 ../include/cnpy/cnpy.cpp ../include/nd4jmemset.h ../include/nd4jmalloc.h
                 cpu/GraphExecutioner.cpp cuda/NDArray.cu cpu/NDArrayFactory.cpp
                 Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
-		else()
-            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBUILD_TESTS=true")
-
-			CUDA_ADD_LIBRARY(${LIBND4J_NAME} STATIC cuda/NativeOps.cu cuda/NativeOpExecutioner.cu cuda/BlasVersionHelper.cu Environment.cpp ${LOOPS_SOURCES_CUDA}
-                ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
-                ../include/cnpy/cnpy.cpp ../include/nd4jmemset.h ../include/nd4jmalloc.h
-                cpu/GraphExecutioner.cpp cuda/NDArray.cu cpu/NDArrayFactory.cpp
-                Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
-                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
-		endif()
-
 
         if(WIN32)
             message("CUDA on Windows: enabling /EHsc")
@@ -289,11 +278,16 @@ if(CUDA_BLAS)
             SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj /std:c++14")
         endif()
 
-
 		target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY})
 	    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 
 		install(TARGETS ${LIBND4J_NAME} DESTINATION .)
+
+        add_custom_command(
+                TARGET ${LIBND4J_NAME} POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy
+                $<TARGET_FILE:${LIBND4J_NAME}>
+                ${PROJECT_BINARY_DIR}/../../tests_cpu/)
     endif(CUDA_FOUND)
 elseif(CPU_BLAS)
 

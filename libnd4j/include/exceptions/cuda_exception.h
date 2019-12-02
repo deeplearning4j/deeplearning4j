@@ -23,9 +23,17 @@
 
 #include <string>
 #include <stdexcept>
+#include <dll.h>
+
+#if defined(_MSC_VER)
+
+// we're ignoring warning about non-exportable parent class, since std::runtime_error is a part of Standard C++ Library
+#pragma warning( disable : 4275 )
+
+#endif
 
 namespace nd4j {
-    class cuda_exception : public std::runtime_error {
+    class ND4J_EXPORT cuda_exception : public std::runtime_error {
     public:
         cuda_exception(std::string message);
         ~cuda_exception() = default;

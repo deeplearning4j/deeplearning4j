@@ -33,6 +33,10 @@ CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, 1, -2) {
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
+    // just skip op if input is empty
+    if (input->isEmpty())
+        return Status::OK();
+
     const int rank     = input->rankOf();
     const int dimC     = block.getIArguments()->size() > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
     const double factor = T_ARG(0);
