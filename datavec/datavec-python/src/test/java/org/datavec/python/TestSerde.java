@@ -29,7 +29,7 @@ public class TestSerde {
     public static JsonSerializer j = new JsonSerializer();
 
     @Test(timeout = 60000L)
-    public void testBasicSerde() throws Exception{
+    public void testBasicSerde(){
         Schema schema = new Schema.Builder()
                 .addColumnInteger("col1")
                 .addColumnFloat("col2")
@@ -37,10 +37,9 @@ public class TestSerde {
                 .addColumnDouble("col4")
                 .build();
 
-        Transform t = new PythonTransform(
-                "col1+=3\ncol2+=2\ncol3+='a'\ncol4+=2.0",
-                schema
-        );
+        Transform t = PythonTransform.builder().code(
+                "col1+=3\ncol2+=2\ncol3+='a'\ncol4+=2.0"
+        ).inputSchema(schema).outputSchema(schema).build();
 
         String yaml = y.serialize(t);
         String json = j.serialize(t);
