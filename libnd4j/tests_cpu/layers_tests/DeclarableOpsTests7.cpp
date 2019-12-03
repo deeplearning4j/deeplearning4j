@@ -4549,7 +4549,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test13) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test14) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
-    auto paddings = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 0, 0, 1});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {1LL, 0LL, 0LL, 1LL});
 
     auto exp = NDArrayFactory::create<double>('c', {3, 4},    {4, 5, 6, 5, 1, 2, 3, 2, 4, 5, 6, 5});
 
@@ -4567,7 +4567,7 @@ TEST_F(DeclarableOpsTests7, mirrorPad_test14) {
 TEST_F(DeclarableOpsTests7, mirrorPad_test15) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});
-    auto paddings = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 1, 0, 0});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {1, 1, 0, 0});
 
     auto exp = NDArrayFactory::create<double>('c', {4, 3},  {1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6});
 
