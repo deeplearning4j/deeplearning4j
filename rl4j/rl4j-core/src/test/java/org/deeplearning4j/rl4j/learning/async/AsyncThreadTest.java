@@ -6,12 +6,14 @@ import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.support.*;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,11 +92,13 @@ public class AsyncThreadTest {
         // Assert
         assertEquals(numberOfEpochs, context.listener.statEntries.size());
         int[] expectedStepCounter = new int[] { 2, 4, 6, 8, 10 };
+        double expectedReward = (1.0 + 2.0 + 3.0 + 4.0 + 5.0 + 6.0 + 7.0 + 8.0) // reward from init
+            + 1.0; // Reward from trainSubEpoch()
         for(int i = 0; i < numberOfEpochs; ++i) {
             IDataManager.StatEntry statEntry = context.listener.statEntries.get(i);
             assertEquals(expectedStepCounter[i], statEntry.getStepCounter());
             assertEquals(i, statEntry.getEpochCounter());
-            assertEquals(38.0, statEntry.getReward(), 0.0001);
+            assertEquals(expectedReward, statEntry.getReward(), 0.0001);
         }
     }
 
@@ -108,16 +112,14 @@ public class AsyncThreadTest {
         context.sut.run();
 
         // Assert
-        assertEquals(context.hpConf.getSkipFrame() * numberOfEpochs, context.sut.trainSubEpochParams.size());
-        for(int i = 0; i < context.hpConf.getSkipFrame() * numberOfEpochs; ++i) {
+        assertEquals(numberOfEpochs, context.sut.trainSubEpochParams.size());
+        double[] expectedObservation = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0 };
+        for(int i = 0; i < context.sut.getEpochCounter(); ++i) {
             MockAsyncThread.TrainSubEpochParams params = context.sut.trainSubEpochParams.get(i);
-            if(i % 2 == 0) {
-                assertEquals(2, params.nstep);
-                assertEquals(8.0, params.obs.toArray()[0], 0.00001);
-            }
-            else {
-                assertEquals(1, params.nstep);
-                assertNull(params.obs);
+            assertEquals(2, params.nstep);
+            assertEquals(expectedObservation.length, params.obs.getData().shape()[0]);
+            for(int j = 0; j < expectedObservation.length; ++j){
+                assertEquals(expectedObservation[j], 255.0 * params.obs.getData().getDouble(j), 0.00001);
             }
         }
     }
@@ -136,7 +138,7 @@ public class AsyncThreadTest {
         public final MockAsyncThread sut = new MockAsyncThread(asyncGlobal, 0, neuralNet, mdp, config, listeners);
 
         public TestContext(int numEpochs) {
-            asyncGlobal.setMaxLoops(hpConf.getSkipFrame() * numEpochs);
+            asyncGlobal.setMaxLoops(numEpochs);
             listeners.add(listener);
             sut.setHistoryProcessor(historyProcessor);
         }
@@ -194,16 +196,17 @@ public class AsyncThreadTest {
         }
 
         @Override
-        protected SubEpochReturn trainSubEpoch(MockEncodable obs, int nstep) {
+        protected SubEpochReturn trainSubEpoch(Observation obs, int nstep) {
             asyncGlobal.increaseCurrentLoop();
             trainSubEpochParams.add(new TrainSubEpochParams(obs, nstep));
-            return new SubEpochReturn(1, null, 1.0, 1.0);
+            setStepCounter(getStepCounter() + nstep);
+            return new SubEpochReturn(nstep, null, 1.0, 1.0);
         }
 
         @AllArgsConstructor
         @Getter
         public static class TrainSubEpochParams {
-            Encodable obs;
+            Observation obs;
             int nstep;
         }
     }
