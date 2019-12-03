@@ -18,7 +18,7 @@
 // Created by Yurii Shyrma on 12.12.2017
 //
 
-#include<ops/declarable/helpers/polyGamma.h>
+#include<ops/declarable/helpers/gammaMathFunc.h>
 #include<ops/declarable/helpers/zeta.h>
 #include <NDArrayFactory.h>
 #include <execution/Threads.h>
@@ -42,7 +42,7 @@ static FORCEINLINE T getFactorial(const int n) {
 
 	for(int i = 2; i <= n; ++i)
 		result *= i;
-	
+
 	return result;
 }
 
@@ -50,17 +50,15 @@ static FORCEINLINE T getFactorial(const int n) {
 // implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma = (-1)^{n+1} * n! * zeta(n+1, x)
 template <typename T>
 static FORCEINLINE T polyGammaScalar(nd4j::LaunchContext * context, const int n, const T x) {
-	
-	// if (n < 0) 
+
+	// if (n < 0)
 	// 	throw("polyGamma function: n must be >= 0 !");
 
-	// if (x <= (T)0.) 
+	// if (x <= (T)0.)
 	// 	throw("polyGamma function: x must be > 0 !");
-	
-	// TODO case for n = 0 (digamma)
 
 	int sign = (n + 1) % 2  ?  -1 : 1;
-	// T factorial = (T)std::tgamma(n + 1);		
+	// T factorial = (T)std::tgamma(n + 1);
 
 	return sign * getFactorial<T>(n) * zetaScalar<T>((T)(n + 1), x);
 }
@@ -71,17 +69,18 @@ static FORCEINLINE T polyGammaScalar(nd4j::LaunchContext * context, const int n,
 template <typename T>
 static void polyGamma_(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {
 
-	NDArray& result = output;
-
-	int xLen = x.lengthOf();
-
 	auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
-            result.p(i, polyGammaScalar<T>(context, n.e<int>(i), x.e<T>(i)));
+        for (auto i = start; i < stop; i += increment) {
+        	const T order = n.e<T>(i);
+        	if(order != static_cast<int>(order))						// if order has fractional part then do not perform calculations and return NAN
+        		output.p(i, std::numeric_limits<T>::quiet_NaN());
+        	else if (order == 0)										// polygamma function of zero order is digamma function
+        		output.p(i, diGammaScalar<T>(x.e<T>(i)));
+        	else
+            	output.p(i, polyGammaScalar<T>(context, order, x.e<T>(i)));
+        }
     };
 	samediff::Threads::parallel_for(func, 0, x.lengthOf());
-
-//	return result;
 }
 
 	void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {

@@ -428,10 +428,11 @@ TEST_F(DeclarableOpsTests13, CellContains_test_1) {
 TEST_F(DeclarableOpsTests13, adjustHue_1) {
 
     NDArray input('c', {2,2,3}, {0,100,56, 17,220,5,  150,97,230, 255,2,13}, nd4j::DataType::FLOAT32);
+    NDArray factor = NDArrayFactory::create<float>(0.5);
     NDArray exp  ('c', {2,2,3}, {100,0,44, 208,5,220, 177,230,97,  2,255,244}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    auto results = op.execute({&input}, {0.5}, {2});
+    auto results = op.execute({&input, &factor}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -525,10 +526,11 @@ TEST_F(DeclarableOpsTests13, adjustHue_5) {
 TEST_F(DeclarableOpsTests13, adjustSaturation_1) {
 
     NDArray input('c', {2,2,3}, {0,100,56,  17,220,5,         150,97,230,    255,2,13}, nd4j::DataType::FLOAT32);
+    NDArray factor = NDArrayFactory::create<float>(0.5);
     NDArray exp  ('c', {2,2,3}, {50,100,78, 118.5,220,112.5,  190,163.5,230, 255,128.5,134}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_saturation op;
-    auto results = op.execute({&input}, {0.5}, {2});
+    auto results = op.execute({&input, &factor}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

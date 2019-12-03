@@ -15,14 +15,14 @@
  ******************************************************************************/
 
 //
-// @author Yurii Shyrma (iuriish@yahoo.com), created on 13.12.2017
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_polygamma)
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/polyGamma.h>
+#include <ops/declarable/helpers/gammaMathFunc.h>
 
 namespace nd4j {
 namespace ops  {
@@ -37,11 +37,11 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
 
     Nd4jLong arrLen = n->lengthOf();
     // FIXME: this shit should be single op call, not a loop!
-    auto nPositive =  n->reduceNumber(nd4j::reduce::IsPositive, nullptr);
-    auto xPositive =  x->reduceNumber(nd4j::reduce::IsPositive, nullptr);
-    bool nPositiveFlag = nPositive.e<bool>(0);
-    bool xPositiveFlag = xPositive.e<bool>(0);
-    REQUIRE_TRUE(nPositiveFlag, 0, "POLYGAMMA op: all elements of n array must be > 0 !");
+    auto nNegative = n->reduceNumber(nd4j::reduce::IsNegative, nullptr);
+    auto xPositive = x->reduceNumber(nd4j::reduce::IsPositive, nullptr);
+    bool nPositiveFlag = !nNegative.e<bool>(0);                             // require all n >= 0
+    bool xPositiveFlag = xPositive.e<bool>(0);                              // require all x > 0
+    REQUIRE_TRUE(nPositiveFlag, 0, "POLYGAMMA op: all elements of n array must be >= 0 !");
     REQUIRE_TRUE(xPositiveFlag, 0, "POLYGAMMA op: all elements of x array must be > 0 !");
 
     helpers::polyGamma(block.launchContext(), *n, *x, *output);

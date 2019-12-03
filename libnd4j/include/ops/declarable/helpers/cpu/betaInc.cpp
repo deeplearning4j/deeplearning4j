@@ -107,12 +107,12 @@ static T betaIncCore(T a, T b, T x) {
 		return x;
 
 	const T gammaPart = lgamma(a) + lgamma(b) - lgamma(a + b);
-    const T front = math::nd4j_exp<T,T>(math::nd4j_log<T, T>(x) * a + math::nd4j_log<T, T>(1 - x) * b - gammaPart) / a;
+    const T front = math::nd4j_exp<T,T>(math::nd4j_log<T, T>(x) * a + math::nd4j_log<T, T>(1.f - x) * b - gammaPart);
 
 	if (x <= (a + static_cast<T>(1)) / (a + b + static_cast<T>(2)))
-		return front * continuedFraction(a, b, x);
+		return front * continuedFraction(a, b, x) / a;
 	else // symmetry relation
-		return static_cast<T>(1) - front * continuedFraction(b, a, static_cast<T>(1) - x);
+		return static_cast<T>(1) - front * continuedFraction(b, a, static_cast<T>(1) - x) / b;
 
 }
 

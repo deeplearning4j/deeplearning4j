@@ -1775,6 +1775,28 @@ TEST_F(DeclarableOpsTests3, betainc_test10) {
 }
 
 ///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, betainc_test11) {
+
+    NDArray a('c', {4}, {0.7788f, 0.8012f, 0.7244f, 0.2309f}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {4}, {0.7717f, 0.9281f, 0.9846f, 0.4838f}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {4}, {0.9441f, 0.5957f, 0.8669f, 0.3502f}, nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {4}, {0.912156, 0.634443, 0.898314, 0.624544}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::betainc op;
+    auto results = op.execute({&a, &b, &x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, zeta_test1) {
 
     auto x= NDArrayFactory::create<float>('c', {3,3});
@@ -2092,11 +2114,49 @@ TEST_F(DeclarableOpsTests3, polygamma_test3) {
     x.linspace(10.);
 
     auto expected= NDArrayFactory::create<double>('c', {3,3}, {1.05166336e-01,-9.04983497e-03, 1.31009323e-03,-2.44459433e-04, 5.31593880e-05,-1.28049888e-05, 3.31755364e-06,-9.07408791e-07, 2.58758130e-07});
+    nd4j::ops::polygamma op;
+    auto results = op.execute({&n, &x}, {}, {});
 
-    //ASSERT_FALSE(true);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests3, polygamma_test4) {
+
+    NDArray n('c', {3,4}, {/*0.7788*/0, 0,1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::DOUBLE);
+    NDArray x('c', {3,4}, {0.7717,0.9281,0.9846,0.4838,0.6433,0.6041,0.6501,0.7612,0.7605,0.3948,0.9493,0.8600}, nd4j::DataType::DOUBLE);
+
+    NDArray expected('c', {3,4}, {/*std::numeric_limits<double>::quiet_NaN()*/-1.031918,  -7.021327e-01,  1.682743e+00, -1.851378e+01,3.604167e+01, -3.008293e+02,
+                                1.596005e+03, -4.876665e+03,4.510025e+04, -1.730340e+08,  6.110257e+05, -1.907087e+07}, nd4j::DataType::DOUBLE);
 
     nd4j::ops::polygamma op;
     auto results = op.execute({&n, &x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests3, digamma_1) {
+
+    NDArray x('c', {18}, {-25, -24.99999, -21.5, -21.2, -5.5, -4.1, -2.1, -0.5, -0.3, 0., 0.2, 1, 1.5, 2.2, 5.2, 19., 21, 22.2}, nd4j::DataType::DOUBLE);
+
+    NDArray expected('c', {18}, {std::numeric_limits<double>::infinity(), -99996.761229, 3.091129, 7.401432, 1.792911,11.196838,10.630354, 0.03649, 2.11331,
+                                 std::numeric_limits<double>::infinity(),-5.28904,-0.577216, 0.03649, 0.544293, 1.549434,2.917892, 3.020524, 3.077401}, nd4j::DataType::DOUBLE);
+
+    nd4j::ops::digamma op;
+    auto results = op.execute({&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

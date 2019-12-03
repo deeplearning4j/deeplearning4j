@@ -36,7 +36,7 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////
 static void conv2d_mkldnn(nd4j::graph::Context &block, const NDArray *input, const NDArray *weights,
                           const NDArray *bias, NDArray *output, const int kH, const int kW, const int sH,
-                          const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode,
+                          const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
                           const int isNCHW) {
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
@@ -44,8 +44,7 @@ static void conv2d_mkldnn(nd4j::graph::Context &block, const NDArray *input, con
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW,
                                                indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
-    if(isSameMode)                       // SAME
-        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+    ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
     dnnl_memory_desc_t empty;
     dnnl::memory::desc conv_src_md(empty), conv_weights_md(empty), conv_bias_md(empty), conv_dst_md(
@@ -53,7 +52,7 @@ static void conv2d_mkldnn(nd4j::graph::Context &block, const NDArray *input, con
     dnnl::memory::desc user_src_md(empty), user_weights_md(empty), user_bias_md(empty), user_dst_md(
             empty);
     dnnl::memory::dims conv_strides, conv_padding, conv_padding_r, conv_dilation;
-    mkldnnUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
+    mkldnnUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW,
                                            bS, iC, iH, iW, oC, oH, oW, input, nullptr, weights, nullptr,
                                            bias, output,
                                            &conv_src_md, nullptr, &conv_weights_md, nullptr,
@@ -115,13 +114,11 @@ static void conv2d_mkldnn(nd4j::graph::Context &block, const NDArray *input, con
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(conv2d) {
-    auto input = INPUT_VARIABLE(
-            0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto input = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, oC] always
     auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
 
-    auto output = OUTPUT_VARIABLE(
-            0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+    auto output = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
     int sH = INT_ARG(2);                                                        // strides height
     int sW = INT_ARG(3);                                                        // strides width
@@ -129,13 +126,13 @@ PLATFORM_IMPL(conv2d) {
     int pW = INT_ARG(5);                                                        // paddings width
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
-    int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
+    int paddingMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     bool isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // INT_ARG(9): 0-NCHW,  1-NHWC
 
     int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0)); // filter(kernel) height
     int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1)); // filter(kernel) width
 
-    conv2d_mkldnn(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW);
+    conv2d_mkldnn(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW);
 
     return Status::OK();
 }
@@ -155,18 +152,13 @@ PLATFORM_CHECK(conv2d) {
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(conv2d_bp) {
-    auto input = INPUT_VARIABLE(
-            0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    auto weights = INPUT_VARIABLE(
-            1);                                                // [kH, kW, iC, oC] always
+    auto input = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
-    auto gradO = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(
-            2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    auto gradO = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
-    auto gradI = OUTPUT_VARIABLE(
-            0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    auto gradW = OUTPUT_VARIABLE(
-            1);                                                 // [kH, kW, iC, oC] always
+    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC] always
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
     int kH = INT_ARG(0);                                                        // filter(kernel) height
@@ -177,7 +169,7 @@ PLATFORM_IMPL(conv2d_bp) {
     int pW = INT_ARG(5);                                                        // paddings width
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
-    int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
+    int paddingMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 0-NCHW, 1-NHWC
 
     REQUIRE_TRUE(input->rankOf() == 4, 0,
@@ -195,8 +187,7 @@ PLATFORM_IMPL(conv2d_bp) {
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC,
                                                indIiH, indWiC, indWoC, indWkH, indOoH);
 
-    if (isSameMode)                       // SAME
-        ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
+    ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
     dnnl_memory_desc_t empty;
     dnnl::memory::desc conv_src_md(empty), conv_diff_src_md(empty), conv_weights_md(empty),
@@ -204,7 +195,7 @@ PLATFORM_IMPL(conv2d_bp) {
     dnnl::memory::desc user_src_md(empty), user_diff_src_md(empty), user_weights_md(empty),
             user_diff_weights_md(empty), user_bias_md(empty), user_dst_md(empty);
     dnnl::memory::dims conv_strides, conv_padding, conv_padding_r, conv_dilation;
-    mkldnnUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
+    mkldnnUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW,
                                            bS, iC, iH, iW, oC, oH, oW, input, gradI, weights, gradW,
                                            gradB, gradO,
                                            &conv_src_md, &conv_diff_src_md, &conv_weights_md,
@@ -342,18 +333,13 @@ PLATFORM_CHECK(conv2d_bp) {
     if (::optimalLevel() < 2)
         return false;
 
-    auto input = INPUT_VARIABLE(
-            0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    auto weights = INPUT_VARIABLE(
-            1);                                                // [kH, kW, iC, oC] always
+    auto input = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
-    auto gradO = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(
-            2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
+    auto gradO = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
-    auto gradI = OUTPUT_VARIABLE(
-            0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    auto gradW = OUTPUT_VARIABLE(
-            1);                                                 // [kH, kW, iC, oC] always
+    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC] always
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
 

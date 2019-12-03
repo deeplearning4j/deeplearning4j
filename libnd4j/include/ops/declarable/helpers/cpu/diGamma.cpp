@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,27 +16,38 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 13.12.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#ifndef LIBND4J_POLYGAMMA_H
-#define LIBND4J_POLYGAMMA_H
-
-#include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include<ops/declarable/helpers/gammaMathFunc.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
+//////////////////////////////////////////////////////////////////////////
+// calculate digamma function for array elements
+template <typename T>
+static void diGamma_(const NDArray& x, NDArray& z) {
 
-	// calculate the polygamma function
-    void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output);
-    
+	auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment)
+            z.p(i, diGammaScalar<T>(x.e<T>(i)));
+    };
+	samediff::Threads::parallel_for(func, 0, x.lengthOf());
+}
+
+void diGamma(nd4j::LaunchContext* context, const NDArray& x, NDArray& z) {
+
+	BUILD_SINGLE_SELECTOR(x.dataType(), diGamma_, (x, z), FLOAT_TYPES);
+}
+
+BUILD_SINGLE_TEMPLATE(template void diGamma_, (const NDArray& x, NDArray& z), FLOAT_TYPES);
+
+
 
 }
 }
 }
 
-
-#endif //LIBND4J_POLYGAMMA_H

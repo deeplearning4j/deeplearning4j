@@ -90,20 +90,6 @@ __device__ T continuedFractionCuda(const T a, const T b, const T x) {
 }
 
 ///////////////////////////////////////////////////////////////////
-// evaluates incomplete beta function for positive a and b, and x between 0 and 1.
-template <typename T>
-__device__ T betaIncCoreCuda(T a, T b, T x) {
-
-	const T gammaPart = lgamma(a) + lgamma(b) - lgamma(a + b);
-    const T front = math::nd4j_exp<T,T>(math::nd4j_log<T, T>(x) * a + math::nd4j_log<T, T>(1 - x) * b - gammaPart) / a;
-
-	if (x <= (a + static_cast<T>(1)) / (a + b + static_cast<T>(2)))
-		return front * continuedFractionCuda(a, b, x);
-	else  // symmetry relation
-		return static_cast<T>(1) - front * continuedFractionCuda(b, a, static_cast<T>(1) - x);
-}
-
-///////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ void betaIncForArrayCuda(const void* va, const Nd4jLong* aShapeInfo,
 									const void* vb, const Nd4jLong* bShapeInfo,
@@ -115,12 +101,21 @@ __global__ void betaIncForArrayCuda(const void* va, const Nd4jLong* aShapeInfo,
 
     const Nd4jLong j = blockIdx.x;			// one block per each element
 
-    Nd4jLong len = shape::length(xShapeInfo);
+    T& z = *(reinterpret_cast<T*>(vz) + shape::getIndexOffset(j, zShapeInfo));
 
-    const T  a = *(reinterpret_cast<const T*>(va) + shape::getIndexOffset(j, aShapeInfo));
-    const T  b = *(reinterpret_cast<const T*>(vb) + shape::getIndexOffset(j, bShapeInfo));
-    const T  x = *(reinterpret_cast<const T*>(vx) + shape::getIndexOffset(j, xShapeInfo));
-    	  T& z = *(reinterpret_cast<T*>(vz) 	  + shape::getIndexOffset(j, zShapeInfo));
+    __shared__ T a, b, x;
+    __shared__ bool symmCond;
+
+    if (threadIdx.x == 0) {
+
+    	a = *(reinterpret_cast<const T*>(va) + shape::getIndexOffset(j, aShapeInfo));
+    	b = *(reinterpret_cast<const T*>(vb) + shape::getIndexOffset(j, bShapeInfo));
+    	x = *(reinterpret_cast<const T*>(vx) + shape::getIndexOffset(j, xShapeInfo));
+
+    	symmCond = x <= (a + static_cast<T>(1)) / (a + b + static_cast<T>(2));
+
+    }
+    __syncthreads();
 
     // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
    	if(a == b && x == static_cast<T>(0.5)) {
@@ -135,17 +130,31 @@ __global__ void betaIncForArrayCuda(const void* va, const Nd4jLong* aShapeInfo,
 
    	if(threadIdx.x % 2 == 0) { 	/***** even part *****/
 		const int m = threadIdx.x + 1;
-		sharedMem[threadIdx.x] = m * (b - m) * x / ((a + 2 * m - static_cast<T>(1)) * (a + 2 * m));
+		if(symmCond)
+			sharedMem[threadIdx.x] = m * (b - m) * x / ((a + 2 * m - static_cast<T>(1)) * (a + 2 * m));
+		else
+			sharedMem[threadIdx.x] = m * (a - m) * (1.f-x) / ((b + 2 * m - static_cast<T>(1)) * (b + 2 * m));
 	}
 	else {						/***** odd part *****/
 		const int m = threadIdx.x;
-		sharedMem[threadIdx.x] = -(a + m) * (a + b + m) * x / ((a + 2 * m + static_cast<T>(1)) * (a + 2 * m));
+		if(symmCond)
+			sharedMem[threadIdx.x] = -(a + m) * (a + b + m) * x / ((a + 2 * m + static_cast<T>(1)) * (a + 2 * m));
+		else
+			sharedMem[threadIdx.x] = -(b + m) * (a + b + m) * (1.f-x) / ((b + 2 * m + static_cast<T>(1)) * (b + 2 * m));
 	}
 
 	__syncthreads();
 
-	if(threadIdx.x == 0)
-		z = betaIncCoreCuda(a, b, x);
+	if(threadIdx.x == 0) {
+
+		const T gammaPart = lgamma(a) + lgamma(b) - lgamma(a + b);
+	    const T front = math::nd4j_exp<T,T>(math::nd4j_log<T, T>(x) * a + math::nd4j_log<T, T>(1.f - x) * b - gammaPart);
+
+		if (symmCond)
+			z =  front * continuedFractionCuda(a, b, x) / a;
+		else  // symmetry relation
+			z =  static_cast<T>(1) - front * continuedFractionCuda(b, a, static_cast<T>(1) - x) / b;
+	}
 }
 
 ///////////////////////////////////////////////////////////////////

@@ -159,18 +159,19 @@ TEST_F(DeclarableOpsTests15, Test_standarize_bp_1) {
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_1) {
     auto x = NDArrayFactory::create<double>('c', {4,4,3});
-    auto e = NDArrayFactory::create<double>('c', {4,4,3}, {
-        -21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
-          2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
-         26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
-         50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
-    });
+    NDArray factor = NDArrayFactory::create<double>(2.);
+    auto e = NDArrayFactory::create<double>('c', {4,4,3}, {-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
+                                     2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
+                                    26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
+                                    50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5});
+
+
     x.linspace(1.);
     nd4j::ops::adjust_contrast op;
-    auto result = op.execute({&x}, {2.}, {}, {});
+    auto result = op.execute({&x, &factor}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto out = result->at(0);
-//    out->printIndexedBuffer("Adjusted Constrast");
+
     ASSERT_TRUE(e.equalsTo(out));
     delete result;
 }
