@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.layers.RnnLossLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
@@ -96,13 +97,13 @@ public class KerasLoss extends KerasLayer {
      */
     public FeedForwardLayer getLossLayer(InputType type) throws UnsupportedKerasConfigurationException {
         if (type instanceof InputType.InputTypeFeedForward) {
-            this.layer = new LossLayer.Builder(loss).name(this.layerName).build();
+            this.layer = new LossLayer.Builder(loss).name(this.layerName).activation(Activation.IDENTITY).build();
         }
         else if (type instanceof  InputType.InputTypeRecurrent) {
-            this.layer = new RnnLossLayer.Builder(loss).name(this.layerName).build();
+            this.layer = new RnnLossLayer.Builder(loss).name(this.layerName).activation(Activation.IDENTITY).build();
         }
         else if (type instanceof InputType.InputTypeConvolutional) {
-            this.layer = new CnnLossLayer.Builder(loss).name(this.layerName).build();
+            this.layer = new CnnLossLayer.Builder(loss).name(this.layerName).activation(Activation.IDENTITY).build();
         } else {
             throw new UnsupportedKerasConfigurationException("Unsupported output layer type"
                     + "got : " + type.toString());

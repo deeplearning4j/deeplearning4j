@@ -22,11 +22,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
+import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
@@ -154,6 +156,9 @@ public class KerasSimpleRnn extends KerasLayer {
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization);
+        Integer nIn = KerasLayerUtils.getNInFromInputDim(layerConfig, conf);
+        if(nIn != null)
+            builder.setNIn(nIn);
         if (biasConstraint != null)
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
@@ -281,6 +286,19 @@ public class KerasSimpleRnn extends KerasLayer {
             String unknownParamNames = paramNames.toString();
             log.warn("Attemping to set weights for unknown parameters: "
                     + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+        }
+
+        FeedForwardLayer ffl;
+        if(this.layer instanceof BaseWrapperLayer){
+            BaseWrapperLayer bwl = (BaseWrapperLayer)this.layer;
+            ffl = (FeedForwardLayer)bwl.getUnderlying();
+        } else {
+            ffl = (FeedForwardLayer) this.layer;
+        }
+        if(ffl.getNIn() != W.rows()){
+            //Workaround/hack for ambiguous input shapes (nIn inference) for some RNN models (using NCW format but not recorded in config)
+            //We can reliably infer nIn from the shape of the weights array however
+            ffl.setNIn(W.rows());
         }
     }
 

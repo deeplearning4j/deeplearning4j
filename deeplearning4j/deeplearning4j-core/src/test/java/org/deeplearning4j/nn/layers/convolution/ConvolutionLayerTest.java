@@ -712,4 +712,73 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
             assertTrue(msg,msg.contains("Deconvolution2D") && msg.contains("input") && msg.contains("channels"));
         }
     }
+
+    @Test
+    public void testConv1dCausalAllowed(){
+        new Convolution1DLayer.Builder().convolutionMode(ConvolutionMode.Causal).kernelSize(2).build();
+        new Subsampling1DLayer.Builder().convolutionMode(ConvolutionMode.Causal).kernelSize(2).build();
+    }
+
+    @Test
+    public void testConv2dNoCausalAllowed(){
+
+        try{
+            new ConvolutionLayer.Builder().convolutionMode(ConvolutionMode.Causal).build();
+            fail("Expected exception");
+        } catch (Throwable t){
+            String m = t.getMessage().toLowerCase();
+            assertTrue(m, m.contains("causal") && m.contains("1d"));
+        }
+
+        try{
+            new Deconvolution2D.Builder().convolutionMode(ConvolutionMode.Causal).build();
+            fail("Expected exception");
+        } catch (Throwable t){
+            String m = t.getMessage().toLowerCase();
+            assertTrue(m, m.contains("causal") && m.contains("1d"));
+        }
+
+        try{
+            new DepthwiseConvolution2D.Builder().convolutionMode(ConvolutionMode.Causal).build();
+            fail("Expected exception");
+        } catch (Throwable t){
+            String m = t.getMessage().toLowerCase();
+            assertTrue(m, m.contains("causal") && m.contains("1d"));
+        }
+
+        try{
+            new SeparableConvolution2D.Builder().convolutionMode(ConvolutionMode.Causal).build();
+            fail("Expected exception");
+        } catch (Throwable t){
+            String m = t.getMessage().toLowerCase();
+            assertTrue(m, m.contains("causal") && m.contains("1d"));
+        }
+
+        try{
+            new SubsamplingLayer.Builder().convolutionMode(ConvolutionMode.Causal).build();
+            fail("Expected exception");
+        } catch (Throwable t){
+            String m = t.getMessage().toLowerCase();
+            assertTrue(m, m.contains("causal") && m.contains("1d"));
+        }
+    }
+
+    @Test
+    public void testConv3dNoCausalAllowed(){
+        try{
+            new Convolution3D.Builder().convolutionMode(ConvolutionMode.Causal).build();
+            fail("Expected exception");
+        } catch (Throwable t){
+            String m = t.getMessage().toLowerCase();
+            assertTrue(m, m.contains("causal") && m.contains("1d"));
+        }
+
+        try{
+            new Subsampling3DLayer.Builder().convolutionMode(ConvolutionMode.Causal).build();
+            fail("Expected exception");
+        } catch (Throwable t){
+            String m = t.getMessage().toLowerCase();
+            assertTrue(m, m.contains("causal") && m.contains("1d"));
+        }
+    }
 }

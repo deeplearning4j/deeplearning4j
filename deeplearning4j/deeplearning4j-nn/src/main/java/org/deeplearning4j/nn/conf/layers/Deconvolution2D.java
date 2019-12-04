@@ -133,6 +133,12 @@ public class Deconvolution2D extends ConvolutionLayer {
             super();
         }
 
+        @Override
+        protected boolean allowCausal() {
+            //Causal convolution - allowed for 1D only
+            return false;
+        }
+
         /**
          * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
          *

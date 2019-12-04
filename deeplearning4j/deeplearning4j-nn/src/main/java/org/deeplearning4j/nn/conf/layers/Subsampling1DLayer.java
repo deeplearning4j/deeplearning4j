@@ -167,6 +167,11 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             this(poolingType, DEFAULT_KERNEL, DEFAULT_STRIDE, DEFAULT_PADDING);
         }
 
+        @Override
+        protected boolean allowCausal() {
+            return true;
+        }
+
         public Builder() {
             this(DEFAULT_POOLING, DEFAULT_KERNEL, DEFAULT_STRIDE, DEFAULT_PADDING);
         }

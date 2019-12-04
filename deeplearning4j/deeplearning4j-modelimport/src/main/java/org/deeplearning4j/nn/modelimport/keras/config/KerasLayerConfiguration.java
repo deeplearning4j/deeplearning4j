@@ -233,6 +233,7 @@ public class KerasLayerConfiguration {
     private final String LAYER_BORDER_MODE_SAME = "same";
     private final String LAYER_BORDER_MODE_VALID = "valid";
     private final String LAYER_BORDER_MODE_FULL = "full";
+    private final String LAYER_BORDER_MODE_CAUSAL = "causal";
 
     /* Noise layers */
     private final String LAYER_FIELD_RATE = "rate";

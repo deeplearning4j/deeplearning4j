@@ -124,6 +124,11 @@ public class Convolution1DLayer extends ConvolutionLayer {
             this.setKernelSize((int[]) null);
         }
 
+        @Override
+        protected boolean allowCausal() {
+            return true;
+        }
+
         /**
          * @param kernelSize Kernel size
          * @param stride Stride

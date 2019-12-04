@@ -133,6 +133,12 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
             super();
         }
 
+        @Override
+        protected boolean allowCausal() {
+            //Causal convolution - allowed for 1D only
+            return false;
+        }
+
         /**
          * Set channels multiplier for depth-wise convolution
          *

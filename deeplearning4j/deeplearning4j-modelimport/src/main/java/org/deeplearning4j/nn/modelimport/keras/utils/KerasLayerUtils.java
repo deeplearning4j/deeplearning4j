@@ -505,6 +505,17 @@ public class KerasLayerUtils {
         return nOut;
     }
 
+    public static Integer getNInFromInputDim(Map<String, Object> layerConfig, KerasLayerConfiguration conf) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if(innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM())){
+            Object id = innerConfig.get(conf.getLAYER_FIELD_INPUT_DIM());
+            if(id instanceof Number){
+                return ((Number)id).intValue();
+            }
+        }
+        return null;
+    }
+
     /**
      * Get dropout from Keras layer configuration.
      *

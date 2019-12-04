@@ -121,7 +121,7 @@ public class ConvolutionUtils {
         int[] inShape = new int[]{inH, inW};
         validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
-        if (convolutionMode == ConvolutionMode.Same) {
+        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
 
             int outH = (int) Math.ceil(inH / ((double) strides[0]));
             int outW = (int) Math.ceil(inW / ((double) strides[1]));
@@ -142,7 +142,9 @@ public class ConvolutionUtils {
         int inH = inShape[0];
         int inW = inShape[1];
 
-        if (convolutionMode != ConvolutionMode.Same && (eKernel[0] <= 0 || eKernel[0] > inH + 2 * padding[0])) {
+        boolean t = (convolutionMode == ConvolutionMode.Truncate);
+
+        if (t && (eKernel[0] <= 0 || eKernel[0] > inH + 2 * padding[0])) {
             StringBuilder sb = new StringBuilder();
             sb.append("Invalid input data or configuration: ");
             if (atrous) sb.append("effective ");
@@ -158,7 +160,7 @@ public class ConvolutionUtils {
             throw new DL4JInvalidInputException(sb.toString());
         }
 
-        if (convolutionMode != ConvolutionMode.Same && (eKernel[1] <= 0 || eKernel[1] > inW + 2 * padding[1])) {
+        if (t && (eKernel[1] <= 0 || eKernel[1] > inW + 2 * padding[1])) {
             StringBuilder sb = new StringBuilder();
             sb.append("Invalid input data or configuration: ");
             if (atrous) sb.append("effective ");
@@ -175,8 +177,7 @@ public class ConvolutionUtils {
             throw new DL4JInvalidInputException(sb.toString());
         }
 
-        if (eKernel.length == 3 && convolutionMode != ConvolutionMode.Same
-                && (eKernel[2] <= 0 || eKernel[2] > inShape[2] + 2 * padding[2])) {
+        if (eKernel.length == 3 && t && (eKernel[2] <= 0 || eKernel[2] > inShape[2] + 2 * padding[2])) {
             int inD = inShape[2];
             StringBuilder sb = new StringBuilder();
             sb.append("Invalid input data or configuration: ");
@@ -615,7 +616,7 @@ public class ConvolutionUtils {
      */
     public static INDArray cnn1dMaskReduction(INDArray in, int kernel, int stride, int padding, int dilation, ConvolutionMode cm){
         Preconditions.checkState(in.rank()==2, "Rank must be 2 for cnn1d mask array - shape ", in.shape());
-        if(cm == ConvolutionMode.Same && stride == 1 ){
+        if((cm == ConvolutionMode.Same || cm == ConvolutionMode.Causal) && stride == 1 ){
             return in;
         }
 
@@ -630,7 +631,7 @@ public class ConvolutionUtils {
         int[] k = new int[]{kernel,1};
         int[] s = new int[]{stride, 1};
         int[] d = new int[]{dilation, 1};
-        if (cm == ConvolutionMode.Same) {
+        if (cm == ConvolutionMode.Same || cm == ConvolutionMode.Causal) {
             outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, null, cm, d); //Also performs validation
         } else {
             pad = new int[]{padding, 0};
@@ -645,7 +646,7 @@ public class ConvolutionUtils {
                 .sH(s[0]).sW(s[1])
                 .pH(pad == null ? 0 : pad[0]).pW(pad == null ? 0 : pad[1])
                 .dH(d[0]).dW(d[1])
-                .isSameMode(cm== ConvolutionMode.Same)
+                .isSameMode(cm == ConvolutionMode.Same || cm == ConvolutionMode.Causal)
                 .isNHWC(false)
                 .build());
 

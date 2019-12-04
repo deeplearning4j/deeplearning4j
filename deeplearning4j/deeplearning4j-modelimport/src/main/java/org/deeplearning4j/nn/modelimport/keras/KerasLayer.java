@@ -356,6 +356,10 @@ public class KerasLayer {
         return this.layer;
     }
 
+    public void setLayer(Layer layer){
+        this.layer = layer;
+    }
+
     /**
      * Whether this Keras layer maps to a DL4J Vertex.
      *

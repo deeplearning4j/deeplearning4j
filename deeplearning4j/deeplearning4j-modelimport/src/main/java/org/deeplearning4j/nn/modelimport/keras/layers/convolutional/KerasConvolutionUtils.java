@@ -264,7 +264,8 @@ public class KerasConvolutionUtils {
         } else if (borderMode.equals(conf.getLAYER_BORDER_MODE_VALID()) ||
                 borderMode.equals(conf.getLAYER_BORDER_MODE_FULL())) {
             convolutionMode = ConvolutionMode.Truncate;
-
+        } else if(borderMode.equals(conf.getLAYER_BORDER_MODE_CAUSAL())) {
+            convolutionMode = ConvolutionMode.Causal;
         } else {
             throw new UnsupportedKerasConfigurationException("Unsupported convolution border mode: " + borderMode);
         }
