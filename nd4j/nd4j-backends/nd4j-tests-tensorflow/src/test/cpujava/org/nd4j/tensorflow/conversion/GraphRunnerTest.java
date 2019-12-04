@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,6 +17,12 @@
 
 package org.nd4j.tensorflow.conversion;
 
+import junit.framework.TestCase;
+import org.apache.commons.io.FileUtils;
+import org.bytedeco.tensorflow.TF_Tensor;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.resources.Resources;
+import org.nd4j.shade.protobuf.Descriptors;
 import org.nd4j.shade.protobuf.util.JsonFormat;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
@@ -27,6 +34,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
 import org.nd4j.tensorflow.conversion.graphrunner.SavedModelConfig;
+import org.tensorflow.framework.ConfigProto;
+import org.tensorflow.framework.GPUOptions;
 
 import java.io.File;
 import java.util.Arrays;
@@ -39,12 +48,25 @@ import static org.junit.Assert.assertNotNull;
 
 public class GraphRunnerTest {
 
+    public static ConfigProto getConfig(){
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if("CUDA".equalsIgnoreCase(backend)) {
+            org.tensorflow.framework.ConfigProto configProto = org.tensorflow.framework.ConfigProto.getDefaultInstance();
+            ConfigProto.Builder b = configProto.toBuilder().addDeviceFilters(TensorflowConversion.defaultDeviceForThread());
+            return b.setGpuOptions(GPUOptions.newBuilder()
+                    .setAllowGrowth(true)
+                    .setPerProcessGpuMemoryFraction(0.5)
+                    .build()).build();
+        }
+        return null;
+    }
+
     @Test
     public void testGraphRunner() throws Exception {
         List<String> inputs = Arrays.asList("input_0","input_1");
         byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
 
-        try(GraphRunner graphRunner = new GraphRunner(content,inputs)) {
+        try(GraphRunner graphRunner = GraphRunner.builder().graphBytes(content).inputNames(inputs).sessionOptionsConfigProto(getConfig()).build()) {
             runGraphRunnerTest(graphRunner);
         }
     }
@@ -52,8 +74,9 @@ public class GraphRunnerTest {
     @Test
     public void testGraphRunnerFilePath() throws Exception {
         List<String> inputs = Arrays.asList("input_0","input_1");
-        File file = new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getFile();
-        try(GraphRunner graphRunner = new GraphRunner(file.getAbsolutePath(),inputs)) {
+        byte[] content = FileUtils.readFileToByteArray(Resources.asFile("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb"));
+
+        try(GraphRunner graphRunner = GraphRunner.builder().graphBytes(content).inputNames(inputs).sessionOptionsConfigProto(getConfig()).build()) {
             runGraphRunnerTest(graphRunner);
         }
     }
@@ -62,37 +85,42 @@ public class GraphRunnerTest {
     public void testInputOutputResolution() throws Exception {
         ClassPathResource lenetPb = new ClassPathResource("tf_graphs/lenet_frozen.pb");
         byte[] content = IOUtils.toByteArray(lenetPb.getInputStream());
-        GraphRunner graphRunner = new GraphRunner(content,Arrays.asList("Reshape/tensor"));
-        assertEquals(1,graphRunner.getInputOrder().size());
-        assertEquals(1,graphRunner.getOutputOrder().size());
+        List<String> inputs = Arrays.asList("Reshape/tensor");
+        try(GraphRunner graphRunner = GraphRunner.builder().graphBytes(content).inputNames(inputs).sessionOptionsConfigProto(getConfig()).build()) {
+            assertEquals(1, graphRunner.getInputOrder().size());
+            assertEquals(1, graphRunner.getOutputOrder().size());
+        }
     }
 
 
     @Test @Ignore   //Ignored 2019/02/05: ssd_inception_v2_coco_2019_01_28 does not exist in test resources
     public void testMultiOutputGraph() throws Exception {
-        ClassPathResource classPathResource = new ClassPathResource("/tf_graphs/examples/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.pb");
-        GraphRunner graphRunner = new GraphRunner(classPathResource.getFile().getAbsolutePath(),Arrays.asList("image_tensor"));
-        String[] outputs = new String[] { "detection_boxes", "detection_scores", "detection_classes", "num_detections"};
+        List<String> inputs = Arrays.asList("image_tensor");
+        byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/examples/ssd_inception_v2_coco_2018_01_28/frozen_inference_graph.pb").getInputStream());
+        try(GraphRunner graphRunner = GraphRunner.builder().graphBytes(content).inputNames(inputs).sessionOptionsConfigProto(getConfig()).build()) {
+            String[] outputs = new String[]{"detection_boxes", "detection_scores", "detection_classes", "num_detections"};
 
-        assertEquals(1,graphRunner.getInputOrder().size());
-        System.out.println(graphRunner.getOutputOrder());
-        assertEquals(4,graphRunner.getOutputOrder().size());
+            assertEquals(1, graphRunner.getInputOrder().size());
+            System.out.println(graphRunner.getOutputOrder());
+            assertEquals(4, graphRunner.getOutputOrder().size());
+        }
     }
 
     private void runGraphRunnerTest(GraphRunner graphRunner) throws Exception {
-
-        org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
         String json = graphRunner.sessionOptionsToJson();
-        JsonFormat.parser().merge(json,builder);
-        org.tensorflow.framework.ConfigProto build = builder.build();
-        assertEquals(build,graphRunner.getProtoBufConfigProto());
+        if( json != null ) {
+            org.tensorflow.framework.ConfigProto.Builder builder = org.tensorflow.framework.ConfigProto.newBuilder();
+            JsonFormat.parser().merge(json, builder);
+            org.tensorflow.framework.ConfigProto build = builder.build();
+            assertEquals(build,graphRunner.getSessionOptionsConfigProto());
+        }
         assertNotNull(graphRunner.getInputOrder());
         assertNotNull(graphRunner.getOutputOrder());
 
 
-        org.tensorflow.framework.ConfigProto configProto1 = GraphRunner.fromJson(json);
+        org.tensorflow.framework.ConfigProto configProto1 = json == null ? null : GraphRunner.fromJson(json);
 
-        assertEquals(graphRunner.getProtoBufConfigProto(),configProto1);
+        assertEquals(graphRunner.getSessionOptionsConfigProto(),configProto1);
         assertEquals(2,graphRunner.getInputOrder().size());
         assertEquals(1,graphRunner.getOutputOrder().size());
 
@@ -125,15 +153,31 @@ public class GraphRunnerTest {
                 .signatureKey("incr_counter_by")
                 .modelTag("serve")
                 .build();
-        try(GraphRunner graphRunner = new GraphRunner(savedModelConfig)) {
+        try(GraphRunner graphRunner = GraphRunner.builder().savedModelConfig(savedModelConfig).sessionOptionsConfigProto(getConfig()).build()) {
             INDArray delta = Nd4j.create(new float[] { 42 }, new long[0]);
             Map<String,INDArray> inputs = new LinkedHashMap<>();
-            inputs.put("delta",delta);
+            inputs.put("delta:0",delta);
             Map<String,INDArray> outputs = graphRunner.run(inputs);
             assertEquals(1, outputs.size());
-            INDArray output = outputs.get("output");
+            System.out.println(Arrays.toString(outputs.keySet().toArray(new String[0])));
+            INDArray output = outputs.values().toArray(new INDArray[0])[0];
             assertEquals(42.0, output.getDouble(0), 0.0);
         }
     }
 
+    @Test
+    public void testGraphRunnerCast() {
+        INDArray arr = Nd4j.linspace(1,4,4).castTo(DataType.FLOAT);
+        TF_Tensor tensor = TensorflowConversion.getInstance().tensorFromNDArray(arr);
+        TF_Tensor tf_tensor = GraphRunner.castTensor(tensor, TensorDataType.FLOAT,TensorDataType.DOUBLE);
+        INDArray doubleNDArray = TensorflowConversion.getInstance().ndArrayFromTensor(tf_tensor);
+        TestCase.assertEquals(DataType.DOUBLE,doubleNDArray.dataType());
+
+        arr = arr.castTo(DataType.INT);
+        tensor = TensorflowConversion.getInstance().tensorFromNDArray(arr);
+        tf_tensor = GraphRunner.castTensor(tensor, TensorDataType.fromNd4jType(DataType.INT),TensorDataType.DOUBLE);
+        doubleNDArray = TensorflowConversion.getInstance().ndArrayFromTensor(tf_tensor);
+        TestCase.assertEquals(DataType.DOUBLE,doubleNDArray.dataType());
+
+    }
 }
