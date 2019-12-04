@@ -86,7 +86,7 @@ namespace nd4j{
          * Utility methods for MKLDNN
          */
         void getMKLDNNMemoryDescConv2d(
-                int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, bool isNCHW,
+                int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, const int paddingMode, bool isNCHW,
                 int bS, int iC, int iH, int iW, int oC, int oH, int oW, const NDArray* src, const NDArray* diff_src,
                 const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
                 dnnl::memory::desc* conv_src_md, dnnl::memory::desc* conv_diff_src_md, dnnl::memory::desc* conv_weights_md,

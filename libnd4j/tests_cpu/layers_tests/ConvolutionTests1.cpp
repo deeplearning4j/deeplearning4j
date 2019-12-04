@@ -1041,6 +1041,39 @@ TEST_F(ConvolutionTests1, conv1d_causal_7) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv1d_causal_8) {
+
+    int bS=2, iW=8,  iC=3,oC=4,  kW=2,  sW=1,  pW=0,  dW=2;
+    int oW = (iW-1)/sW + 1;
+    int paddingMode = 2;             // CAUSAL
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
+
+    NDArray input('c', {bS, iW, iC}, nd4j::DataType::FLOAT32);
+    NDArray weights('c', {kW, iC, oC}, nd4j::DataType::FLOAT32);
+
+    NDArray expOutput('c', {bS, oW, oC}, {11.000000, 11.600000, 12.200000, 12.800000, 26.299999, 27.799999, 29.299999, 30.799999, 45.399998, 48.399998,
+        51.400002, 54.400005, 65.199997, 70.000000, 74.800003, 79.600006, 85.000000, 91.600006, 98.199997, 104.800003, 104.799995, 113.199997, 121.600006,
+        130.000000, 124.599998, 134.800003, 145.000000, 155.200012, 144.399994, 156.399994, 168.399994, 180.400009, 133.400009, 141.199997, 149.000000,
+        156.800003, 148.699997, 157.400009, 166.099991, 174.800003, 203.800003, 221.200012, 238.599991, 256.000000, 223.599991, 242.799988, 262.000000,
+        281.200012, 243.399994, 264.399994, 285.399994, 306.399994, 263.199982, 286.000000, 308.799988, 331.600006, 283.000000, 307.600006, 332.200012,
+        356.800018, 302.799988, 329.199982, 355.600006, 382.000000}, nd4j::DataType::FLOAT32);
+
+    input.linspace(1., 1.);
+    weights.linspace(0.1, 0.1);
+
+    nd4j::ops::conv1d op;
+    auto results = op.execute({&input, &weights}, {}, {kW, sW, pW, dW,  paddingMode, dataFormat});
+    auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    ASSERT_TRUE(expOutput.isSameShape(output));
+    ASSERT_TRUE(expOutput.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests1, conv1d_causal_bp_1) {
 
     int bS=2, iW=3,  iC=4,oC=3,  kW=2,  sW=1,  pW=0,  dW=1;
