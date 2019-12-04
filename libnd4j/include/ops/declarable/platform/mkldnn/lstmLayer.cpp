@@ -494,11 +494,6 @@ PLATFORM_IMPL(lstmLayer) {
 }
 
 PLATFORM_CHECK(lstmLayer) {
-    // we don't want to use mkldnn if cpu doesn't support avx/avx2
-    // if (::optimalLevel() < 2) {
-    //     return false;
-    // }
-
     const auto hasBiases  = B_ARG(0);   // indicates whether biases array is provided
     const auto hasInitH   = B_ARG(2);   // indicates whether initial output is provided
     const auto hasInitC   = B_ARG(3);   // indicates whether initial cell state is provided

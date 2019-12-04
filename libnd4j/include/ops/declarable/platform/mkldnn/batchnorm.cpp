@@ -736,10 +736,6 @@ PLATFORM_IMPL(batchnorm_bp) {
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(batchnorm_bp) {
-    // we don't want to use mkldnn if cpu doesn't support avx/avx2
-    // if (::optimalLevel() < 2)
-    //     return false;
-
     NDArray* input    = INPUT_VARIABLE(0);      // 2D:nc, 4D:nchw, 5D:ncdhw
     NDArray* mean     = INPUT_VARIABLE(1);      // [c]
     NDArray* variance = INPUT_VARIABLE(2);      // [c]
