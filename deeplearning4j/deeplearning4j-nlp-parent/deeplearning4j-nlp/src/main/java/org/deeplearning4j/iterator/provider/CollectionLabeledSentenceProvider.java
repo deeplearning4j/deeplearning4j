@@ -18,6 +18,7 @@ package org.deeplearning4j.iterator.provider;
 
 import lombok.NonNull;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.MathUtils;
 
@@ -40,15 +41,15 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
     private int cursor = 0;
 
     public CollectionLabeledSentenceProvider(@NonNull List<String> sentences,
-                    @NonNull List<String> labelsForSentences) {
+                                             @NonNull List<String> labelsForSentences) {
         this(sentences, labelsForSentences, new Random());
     }
 
     public CollectionLabeledSentenceProvider(@NonNull List<String> sentences, @NonNull List<String> labelsForSentences,
-                    Random rng) {
+                                             Random rng) {
         if (sentences.size() != labelsForSentences.size()) {
             throw new IllegalArgumentException("Sentences and labels must be same size (sentences size: "
-                            + sentences.size() + ", labels size: " + labelsForSentences.size() + ")");
+                    + sentences.size() + ", labels size: " + labelsForSentences.size() + ")");
         }
 
         this.sentences = sentences;
@@ -66,10 +67,7 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
         }
 
         //Collect set of unique labels for all sentences
-        Set<String> uniqueLabels = new HashSet<>();
-        for (String s : labelsForSentences) {
-            uniqueLabels.add(s);
-        }
+        Set<String> uniqueLabels = new HashSet<>(labelsForSentences);
         allLabels = new ArrayList<>(uniqueLabels);
         Collections.sort(allLabels);
     }
@@ -81,6 +79,7 @@ public class CollectionLabeledSentenceProvider implements LabeledSentenceProvide
 
     @Override
     public Pair<String, String> nextSentence() {
+        Preconditions.checkState(hasNext(), "No next element available");
         int idx;
         if (rng == null) {
             idx = cursor++;
