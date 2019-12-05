@@ -254,6 +254,9 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
+
+        String address = UIServer.getInstance().getAddress();
+        log.info("Deeplearning4j UI server started at: {}", address);
     }
 
     private List<String> extractArgsFromRoute(String path, RoutingContext rc) {
@@ -317,7 +320,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
     @Override
     public String getAddress() {
-        return "https://localhost:" + server.actualPort();
+        return "http://localhost:" + server.actualPort();
     }
 
     @Override
@@ -421,7 +424,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         }
 
         private void runHelper() throws Exception {
-            log.info("VertxUIServer.StatsEventRouterRunnable started");
+            log.trace("VertxUIServer.StatsEventRouterRunnable started");
             //Idea: collect all event stats, and route them to the appropriate modules
             while (!shutdown.get()) {
 
