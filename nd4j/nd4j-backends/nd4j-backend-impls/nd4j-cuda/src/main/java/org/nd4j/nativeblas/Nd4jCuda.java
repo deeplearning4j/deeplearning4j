@@ -4584,6 +4584,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  returns reference on array element with given index
         */
 
+
         /**
         *  returns array element with given index
         *  i - element index in array
@@ -5171,11 +5172,15 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 
 
-////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////////////////
 
+
+////////////////////////////////////////////////////////////////////////
+
+
+    
 
     
 

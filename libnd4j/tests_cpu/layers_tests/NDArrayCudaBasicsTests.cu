@@ -1163,10 +1163,10 @@ TEST_F(NDArrayCudaBasicsTests, applyReduce3_1) {
     NDArray k('c', {2,3}, {-2,3,-4,5,-2,3}, nd4j::DataType::INT32);
     NDArray k2('c', {3,2}, {-2,3,-4,5,-2,3}, nd4j::DataType::INT32);
 
-    NDArray exp1('c', {3}, {4., 20., 36.}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {2,3}, {-10., -2., 6.,14., 22., 30.}, nd4j::DataType::FLOAT32);
-    NDArray exp3('c', {4}, {38., 41., 44., 47.}, nd4j::DataType::FLOAT32);
-    NDArray exp4('c', {4}, {114., 117., 120., 123.}, nd4j::DataType::FLOAT32);
+    NDArray exp1('c', {3}, {4.f, 20.f, 36.f}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {2,3}, {-10.f, -2.f, 6.f,14.f, 22.f, 30.f}, nd4j::DataType::FLOAT32);
+    NDArray exp3('c', {4}, {38.f, 41.f, 44.f, 47.f}, nd4j::DataType::FLOAT32);
+    NDArray exp4('c', {4}, {114.f, 117.f, 120.f, 123.f}, nd4j::DataType::FLOAT32);
 
 
     NDArray* z = x.applyReduce3(nd4j::reduce3::Dot, &y, {0,2});
@@ -1271,8 +1271,10 @@ TEST_F(NDArrayCudaBasicsTests, applyAllReduce3_1) {
     NDArray x3('c', {3,2}, {1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {3,2}, {1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {3,2}, {-88., -124., 6., -2., 22., 14.}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {6,4}, {-36., -44., -52., -60.,-42., -52., -62., -72.,2., 0., -2., -4.,6., 4., 2., 0.,10., 8., 6., 4.,14., 12., 10., 8.}, nd4j::DataType::FLOAT32);
+    NDArray exp1('c', {3,2}, {-88.f, -124.f, 6.f, -2.f, 22.f, 14.f}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {6,4}, {-36.f, -44.f, -52.f, -60.f,-42.f, -52.f, -62.f, -72.f, 2.f, 0.f, -2.f,
+                              -4.f, 6.f, 4.f, 2.f, 0.f, 10.f, 8.f, 6.f, 4.f, 14.f, 12.f, 10.f, 8.f},
+            nd4j::DataType::FLOAT32);
     NDArray exp3('c', {1,1}, {31.5}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,3}, {4.5, 10.5, 16.5,4.5, 10.5, 16.5,4.5, 10.5, 16.5}, nd4j::DataType::DOUBLE);
 
@@ -1400,10 +1402,10 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test1) {
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
 
     NDArray exp1('c', {}, {2.166667}, nd4j::DataType::DOUBLE);
-    NDArray exp2('c', {2,2}, {3,4,1,0.666667}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {2,2}, {3.f,4.f,1.f,0.666667f}, nd4j::DataType::FLOAT32);
     NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::FLOAT32);
-    NDArray exp5('c', {2}, {3.5,0.833333}, nd4j::DataType::FLOAT32);
+    NDArray exp5('c', {2}, {3.5f,0.833333f}, nd4j::DataType::FLOAT32);
 
     x.reduceAlongDimension(nd4j::reduce::Mean, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
@@ -1503,7 +1505,7 @@ TEST_F(NDArrayCudaBasicsTests, EqualityTest1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test1) {
 
-    NDArray x('c', {2,3,2}, {1.5,2,3,4,5,6,7.5,8,-1,-2,-3.5,-4,}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,3,2}, {1.5f,2.f,3.f,4.f,5.f,6.f,7.5f,8.f,-1.f,-2.f,-3.5f,-4.f}, nd4j::DataType::FLOAT32);
 
     NDArray z1('c', {}, {100}, nd4j::DataType::FLOAT32);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);
@@ -1511,11 +1513,11 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test1) {
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {}, {26.5}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {2,2}, {9.5,12,3,2}, nd4j::DataType::FLOAT32);
-    NDArray exp3('c', {3}, {19,4,3.5}, nd4j::DataType::FLOAT32);
-    NDArray exp4('c', {3,2}, {9,10,2,2,1.5,2}, nd4j::DataType::FLOAT32);
-    NDArray exp5('c', {2}, {21.5,5}, nd4j::DataType::FLOAT32);
+    NDArray exp1('c', {}, {26.5f}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {2,2}, {9.5f,12.f,3.f,2.f}, nd4j::DataType::FLOAT32);
+    NDArray exp3('c', {3}, {19.f,4.f,3.5f}, nd4j::DataType::FLOAT32);
+    NDArray exp4('c', {3,2}, {9.f,10.f,2.f,2.f,1.5f,2.f}, nd4j::DataType::FLOAT32);
+    NDArray exp5('c', {2}, {21.5f,5.f}, nd4j::DataType::FLOAT32);
 
     x.reduceAlongDimension(nd4j::reduce::Sum, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
@@ -1575,17 +1577,17 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test1) {
 
     NDArray x('c', {2,3,2}, {0.5,2,3,-4,5,6,-7.5,8,-1,-0.5,-3.5,4}, nd4j::DataType::DOUBLE);
 
-    NDArray z1('c', {}, {100}, nd4j::DataType::BOOL);
-    NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::BOOL);
-    NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::BOOL);
-    NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::BOOL);
-    NDArray z5('c', {2}, {100,100}, nd4j::DataType::BOOL);
+    NDArray z1('c', {}, {true}, nd4j::DataType::BOOL);
+    NDArray z2('c', {2,2}, {true,true,true,true}, nd4j::DataType::BOOL);
+    NDArray z3('c', {3}, {true,true,true}, nd4j::DataType::BOOL);
+    NDArray z4('c', {3,2}, {true,true,true,true,true,true}, nd4j::DataType::BOOL);
+    NDArray z5('c', {2}, {true,true}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {}, {1}, nd4j::DataType::BOOL);
-    NDArray exp2('c', {2,2}, {1,1,0,1}, nd4j::DataType::BOOL);
-    NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::BOOL);
-    NDArray exp4('c', {3,2}, {1,1,1,0,1,1}, nd4j::DataType::BOOL);
-    NDArray exp5('c', {2}, {1,1}, nd4j::DataType::BOOL);
+    NDArray exp1('c', {}, {true}, nd4j::DataType::BOOL);
+    NDArray exp2('c', {2,2}, {true,true,false,true}, nd4j::DataType::BOOL);
+    NDArray exp3('c', {3}, {true,true,true}, nd4j::DataType::BOOL);
+    NDArray exp4('c', {3,2}, {true,true,true,false,true,true}, nd4j::DataType::BOOL);
+    NDArray exp5('c', {2}, {true,true}, nd4j::DataType::BOOL);
 
     x.reduceAlongDimension(nd4j::reduce::IsPositive, &z1, {0,1,2});
     ASSERT_TRUE(z1.equalsTo(&exp1));
@@ -1643,7 +1645,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test1) {
 
-    NDArray x('c', {2,3,2}, {0.5,2,3,-0,5,6,-7.5,0,-1,-0.5,-3.5,4}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,3,2}, {0.5f,2.f,3.f,-0.f,5.f,6.f,-7.5f,0.f,-1.f,-0.5f,-3.5f,4.f}, nd4j::DataType::FLOAT32);
 
     NDArray z1('c', {}, {100}, nd4j::DataType::INT64);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::INT64);
@@ -1912,7 +1914,7 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_3)
 TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_2)
 {
     double expBuff[] = {2., 3, 3., 4., 4., 5, 5., 6., 6., 7, 7., 8.};
-    NDArray a('c', {4,4}, {1.,2,3,4,5,6,7,8,9,2,3,2,1,0,4,7.}, nd4j::DataType::FLOAT32);
+    NDArray a('c', {4,4}, {1,2,3,4,5,6,7,8,9,2,3,2,1,0,4,7}, nd4j::DataType::FLOAT32);
     auto x = NDArrayFactory::create<double>('c', {3, 2, 1});
     auto y = NDArrayFactory::create<double>('c',    {1, 2});
     auto expected = NDArrayFactory::create<double>(expBuff, 'c', {3, 2, 2});
@@ -1928,7 +1930,7 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_2)
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, assign_2)
 {
-    NDArray x('c', {4}, {1.5,2.5,3.5,4.5}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {4}, {1.5f,2.5f,3.5f,4.5f}, nd4j::DataType::FLOAT32);
     NDArray y('c', {4}, nd4j::DataType::INT32);
     NDArray expected('c', {4}, {1,2,3,4}, nd4j::DataType::INT32);
 
@@ -1945,30 +1947,30 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     NDArray y('f', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, nd4j::DataType::FLOAT32);
 
     Nd4jLong shapeExpX0[] = {1, 2, 12, 8192, 1, 99};
-    float    buffExpX0[]  = {1.000000, 13.000000};
+    float    buffExpX0[]  = {1.f, 13.f};
     Nd4jLong shapeExpX1[] = {1, 2, 12, 8192, 1, 99};
-    float    buffExpX1[]  = {2.000000, 14.000000};
+    float    buffExpX1[]  = {2.f, 14.f};
     Nd4jLong shapeExpX2[] = {3, 2, 1, 1, 12, 4, 1, 8192, 1, 99};
-    float    buffExpX2[]  = {1.000000, 13.000000};
+    float    buffExpX2[]  = {1.f, 13.f};
     Nd4jLong shapeExpX3[] = {2, 2, 4, 12, 1, 8192, 1, 99};
-    float    buffExpX3[]  = {9.000000, 10.000000, 11.000000, 12.000000, 21.000000, 22.000000, 23.000000, 24.000000};
+    float    buffExpX3[]  = {9.f, 10.f, 11.f, 12.f, 21.f, 22.f, 23.f, 24.f};
     Nd4jLong shapeExpX4[] = {3, 2, 1, 4, 12, 4, 1, 8192, 1, 99};
-    float    buffExpX4[]  = {9.000000, 10.000000, 11.000000, 12.000000, 21.000000, 22.000000, 23.000000, 24.000000};
+    float    buffExpX4[]  = {9.f, 10.f, 11.f, 12.f, 21.f, 22.f, 23.f, 24.f};
     Nd4jLong shapeExpX5[] = {2, 2, 3, 12, 4, 8192, 1, 99};
-    float    buffExpX5[]  = {4.000000, 8.000000, 12.000000, 16.000000, 20.000000, 24.000000};
+    float    buffExpX5[]  = {4.f, 8.f, 12.f, 16.f, 20.f, 24.f};
 
     Nd4jLong shapeExpY0[] = {1, 2, 1, 8192, 1, 99};
-    float    buffExpY0[]  = {1.000000, 2.000000};
+    float    buffExpY0[]  = {1.f, 2.f};
     Nd4jLong shapeExpY1[] = {1, 2, 1, 8192, 1, 99};
-    float    buffExpY1[]  = {7.000000, 8.000000};
+    float    buffExpY1[]  = {7.f, 8.f};
     Nd4jLong shapeExpY2[] = {3, 2, 1, 1, 1, 2, 6, 8192, 1, 102};
-    float    buffExpY2[]  = {1.000000, 2.000000};
+    float    buffExpY2[]  = {1.f, 2.f};
     Nd4jLong shapeExpY3[] = {2, 2, 4, 1, 6, 8192, 1, 99};
-    float    buffExpY3[]  = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
+    float    buffExpY3[]  = {5.f, 11.f, 17.f, 23.f, 6.f, 12.f, 18.f, 24.f};
     Nd4jLong shapeExpY4[] = {3, 2, 1, 4, 1, 2, 6, 8192, 1, 102};
-    float    buffExpY4[]  = {5.000000, 11.000000, 17.000000, 23.000000, 6.000000, 12.000000, 18.000000, 24.000000};
+    float    buffExpY4[]  = {5.f, 11.f, 17.f, 23.f, 6.f, 12.f, 18.f, 24.f};
     Nd4jLong shapeExpY5[] = {2, 2, 3, 1, 2, 8192, 1, 99};
-    float    buffExpY5[]  = {19.000000, 21.000000, 23.000000, 20.000000, 22.000000, 24.000000};
+    float    buffExpY5[]  = {19.f, 21.f, 23.f, 20.f, 22.f, 24.f};
 
 
     NDArray x0 = x(0, {1,2});
@@ -2121,7 +2123,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
 TEST_F(NDArrayCudaBasicsTests, Test_PermuteEquality_02) {
     auto x = NDArrayFactory::linspace<float>(1.f, 60.f, 60); //('c', {1, 60});
     //x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0});
+    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f, 26.0f, 27.0f, 28.0f, 29.0f, 30.0f, 31.0f, 32.0f, 33.0f, 34.0f, 35.0f, 36.0f, 37.0f, 38.0f, 39.0f, 40.0f, 41.0f, 42.0f, 43.0f, 44.0f, 45.0f, 46.0f, 47.0f, 48.0f, 49.0f, 50.0f, 51.0f, 52.0f, 53.0f, 54.0f, 55.0f, 56.0f, 57.0f, 58.0f, 59.0f, 60.0});
     x->reshapei('c', {3, 4, 5});
 
     x->permutei({0, 1, 2});
@@ -2138,7 +2140,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PermuteEquality_02) {
 TEST_F(NDArrayCudaBasicsTests, Test_PermuteEquality_0) {
     auto x = NDArrayFactory::create<float>('c', {1, 60});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0});
+    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f, 26.0f, 27.0f, 28.0f, 29.0f, 30.0f, 31.0f, 32.0f, 33.0f, 34.0f, 35.0f, 36.0f, 37.0f, 38.0f, 39.0f, 40.0f, 41.0f, 42.0f, 43.0f, 44.0f, 45.0f, 46.0f, 47.0f, 48.0f, 49.0f, 50.0f, 51.0f, 52.0f, 53.0f, 54.0f, 55.0f, 56.0f, 57.0f, 58.0f, 59.0f, 60.0});
     x.reshapei('c', {3, 4, 5});
 
     x.permutei({0, 1, 2});
@@ -2153,7 +2155,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PermuteEquality_0) {
 TEST_F(NDArrayCudaBasicsTests, Test_PermuteEquality_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 60});
     x.linspace(1);
-    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0});
+    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f, 26.0f, 27.0f, 28.0f, 29.0f, 30.0f, 31.0f, 32.0f, 33.0f, 34.0f, 35.0f, 36.0f, 37.0f, 38.0f, 39.0f, 40.0f, 41.0f, 42.0f, 43.0f, 44.0f, 45.0f, 46.0f, 47.0f, 48.0f, 49.0f, 50.0f, 51.0f, 52.0f, 53.0f, 54.0f, 55.0f, 56.0f, 57.0f, 58.0f, 59.0f, 60.0});
     x.reshapei('c', {3, 4, 5});
 
     x.permutei({0, 1, 2});
@@ -2170,7 +2172,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PermuteEquality_2) {
     auto xx = NDArrayFactory::linspace<float>(1.f, 60.f, 60); //('c', {1, 60});
 //    auto x = *xx;
     //x.linspace(1);
-//    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0});
+//    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f, 26.0f, 27.0f, 28.0f, 29.0f, 30.0f, 31.0f, 32.0f, 33.0f, 34.0f, 35.0f, 36.0f, 37.0f, 38.0f, 39.0f, 40.0f, 41.0f, 42.0f, 43.0f, 44.0f, 45.0f, 46.0f, 47.0f, 48.0f, 49.0f, 50.0f, 51.0f, 52.0f, 53.0f, 54.0f, 55.0f, 56.0f, 57.0f, 58.0f, 59.0f, 60.0});
 //    x.reshapei('c', {3, 4, 5});
 
 //    x.permutei({0, 1, 2});
@@ -2188,7 +2190,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PermuteEquality_3) {
     //x.linspace(1);
     for (int l = 0; l < x.lengthOf(); l++)
         x.p(l, float(l + 1.f));
-    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0, 25.0, 26.0, 27.0, 28.0, 29.0, 30.0, 31.0, 32.0, 33.0, 34.0, 35.0, 36.0, 37.0, 38.0, 39.0, 40.0, 41.0, 42.0, 43.0, 44.0, 45.0, 46.0, 47.0, 48.0, 49.0, 50.0, 51.0, 52.0, 53.0, 54.0, 55.0, 56.0, 57.0, 58.0, 59.0, 60.0});
+    auto exp = NDArrayFactory::create<float>('c', {3, 4, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f, 26.0f, 27.0f, 28.0f, 29.0f, 30.0f, 31.0f, 32.0f, 33.0f, 34.0f, 35.0f, 36.0f, 37.0f, 38.0f, 39.0f, 40.0f, 41.0f, 42.0f, 43.0f, 44.0f, 45.0f, 46.0f, 47.0f, 48.0f, 49.0f, 50.0f, 51.0f, 52.0f, 53.0f, 54.0f, 55.0f, 56.0f, 57.0f, 58.0f, 59.0f, 60.0});
     x.reshapei('c', {3, 4, 5});
 
     x.permutei({0, 1, 2});

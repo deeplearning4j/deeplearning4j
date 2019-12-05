@@ -13,6 +13,20 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+/* Copyright 2016 The TensorFlow Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
 
 //
 //  @author sgazeos@gmail.com
@@ -32,6 +46,38 @@ namespace helpers {
         // https://en.wikipedia.org/wiki/Bilinear_interpolation)
         double interpolarValue;
     };
+
+// Older incorrect scaling method that causes all resizes to have a slight
+// translation leading to inconsistent results. For example, a flip then a
+// resize gives different results then a resize then a flip.
+    struct LegacyScaler {
+        _CUDA_HD LegacyScaler(){};
+        inline _CUDA_HD float operator()(const int x, const float scale) const {
+            return static_cast<float>(x) * scale;
+        }
+    };
+
+// Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
+// floating point coordinates of the top,left pixel is 0.5,0.5.
+    struct HalfPixelScaler {
+        _CUDA_HD HalfPixelScaler(){};
+        inline _CUDA_HD float operator()(const int x, const float scale) const {
+            // Note that we subtract 0.5 from the return value, as the existing bilinear
+            // sampling code etc assumes pixels are in the old coordinate system.
+            return (static_cast<float>(x) + 0.5f) * scale - 0.5f;
+        }
+    };
+
+
+    // Utility functions
+    // calculateResizeScale determines the float scaling factor.
+    inline float calculateResizeScale(Nd4jLong inSize, Nd4jLong outSize,
+                                      bool alignCorners) {
+        return (alignCorners && outSize > 1)
+               ? (inSize - 1) / static_cast<float>(outSize - 1)
+               : inSize / static_cast<float>(outSize);
+    }
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // computeInterpolationWeights kernel
 //      outSize - output length
@@ -39,6 +85,7 @@ namespace helpers {
 //      scale - input scale
 //      interporationData - result
 //
+    template <class Scaler>
     static __global__ void computeInterpolationWeights(Nd4jLong outSize,
                                               Nd4jLong inSize,
                                               double scale,
@@ -48,12 +95,18 @@ namespace helpers {
         interpolationData[outSize].topIndex = 0;
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
-
+        Scaler scaler;
         for (Nd4jLong i = outSize - tid; i >= 0; i -= step) {
-            double in = i * scale;
-            interpolationData[i].bottomIndex = static_cast<Nd4jLong>(in);
-            interpolationData[i].topIndex = nd4j::math::nd4j_min(interpolationData[i].bottomIndex + 1, inSize - 1);
-            interpolationData[i].interpolarValue = in - interpolationData[i].bottomIndex;
+            double in = scaler(i, scale);
+//            interpolationData[i].bottomIndex = static_cast<Nd4jLong>(in);
+//            interpolationData[i].topIndex = nd4j::math::nd4j_min(interpolationData[i].bottomIndex + 1, inSize - 1);
+//            interpolationData[i].interpolarValue = in - interpolationData[i].bottomIndex;
+            double const in_f = nd4j::math::p_floor<double>(in);
+            double const in_c = nd4j::math::p_ceil<double>(in);
+            interpolationData[i].bottomIndex = nd4j::math::nd4j_max(static_cast<Nd4jLong>(in_f), (Nd4jLong)0LL);//static_cast<Nd4jLong>(in);
+            interpolationData[i].topIndex = nd4j::math::nd4j_min(static_cast<Nd4jLong>(in_c), inSize - 1);
+            interpolationData[i].interpolarValue = in - in_f;
+
             if (channels) {
                 math::atomics::nd4j_atomicMul(&interpolationData[i].bottomIndex, channels);
                 math::atomics::nd4j_atomicMul(&interpolationData[i].topIndex, channels);
@@ -72,31 +125,33 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resize image with bilinear interpolation algorithm kernel
 //
-    template <typename T>
-    static __global__ void resizeImageKernel(T const* input, Nd4jLong const* inputShape, T* outputYptr, Nd4jLong* outputShape, Nd4jLong batchSize,
-                                             Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, Nd4jLong inRowSize, Nd4jLong outRowSize, Nd4jLong inBatchNumValues,
-                                             BilinearInterpolationData* xs_, BilinearInterpolationData* ys_) {
+    template <typename T, typename Z>
+    static __global__ void resizeImageKernel(T const* input, Nd4jLong const* inputShape, Z* outputYptr,
+            Nd4jLong* outputShape, Nd4jLong batchSize, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels,
+            Nd4jLong inRowSize, Nd4jLong outRowSize, Nd4jLong inBatchNumValues,
+            BilinearInterpolationData* xs_, BilinearInterpolationData* ys_) {
 
         for (auto batch = blockIdx.x; batch < batchSize; batch += gridDim.x ) { // blockIdx.x as batch index
             auto pX = input + batch * inBatchNumValues;
             for (Nd4jLong y = threadIdx.x; y < outHeight; y += blockDim.x) {
-                const T *ys_input_lower_ptr = pX + ys_[y].bottomIndex * inRowSize;
-                const T *ys_input_upper_ptr = pX + ys_[y].topIndex * inRowSize;
+                const T* ys_input_lower_ptr = pX + ys_[y].bottomIndex * inRowSize;
+                const T* ys_input_upper_ptr = pX + ys_[y].topIndex * inRowSize;
                 double yVal = ys_[y].interpolarValue;
                 auto pZ = outputYptr + (batch * outHeight + y) * outRowSize;
-                for (Nd4jLong x = threadIdx.y; x < outWidth; x += blockDim.y) {
+                for (Nd4jLong x = 0; x < outWidth; x++) {
                     auto xsBottom = xs_[x].bottomIndex;
                     auto xsTop = xs_[x].topIndex;
                     auto xVal = xs_[x].interpolarValue;
                     // process interpolation for all channels
-                    for (int c = threadIdx.z; c < channels; c += blockDim.z) {
-                        double topLeft(ys_input_lower_ptr[xsBottom + c]);
-                        double topRight(ys_input_lower_ptr[xsTop + c]);
-                        double bottomLeft(ys_input_upper_ptr[xsBottom + c]);
-                        double bottomRight(ys_input_upper_ptr[xsTop + c]);
-                        double top = topLeft + (topRight - topLeft) * xVal;
-                        double bottom = bottomLeft + (bottomRight - bottomLeft) * xVal;
-                        pZ[x * channels + c] = T(top + (bottom - top) * yVal);
+                    for (int c = 0; c < channels; c++) {
+                        Z topLeft(ys_input_lower_ptr[xsBottom + c]);
+                        Z topRight(ys_input_lower_ptr[xsTop + c]);
+                        Z bottomLeft(ys_input_upper_ptr[xsBottom + c]);
+                        Z bottomRight(ys_input_upper_ptr[xsTop + c]);
+                        Z top = topLeft + (topRight - topLeft) * xVal;
+                        Z bottom = bottomLeft + (bottomRight - bottomLeft) * xVal;
+                        Z resVal = Z(top + (bottom - top) * yVal);
+                        pZ[x * channels + c] = resVal;
                     }
                 }
             }
@@ -105,7 +160,7 @@ namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // resize image with
-    template <typename T>
+    template <typename T, typename F>
     static void resizeImage_(nd4j::LaunchContext* context, NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
                      Nd4jLong outWidth, Nd4jLong channels,
                      BilinearInterpolationData* xs_,
@@ -115,12 +170,13 @@ namespace helpers {
         Nd4jLong inBatchNumValues = inHeight * inRowSize;
         Nd4jLong outRowSize = outWidth * channels;
         auto stream = context->getCudaStream();
-        T const *input_b_ptr = reinterpret_cast<T const *>(images->getSpecialBuffer()); // this works only with 'c' direction
-        T *output_y_ptr = reinterpret_cast<T *>(output->specialBuffer());
+        T const* pInput = images->getDataBuffer()->specialAsT<T>(); //reinterpret_cast<T const *>(images->getSpecialBuffer()); // this works only with 'c' direction
+        F* pOutput = output->dataBuffer()->specialAsT<F>();//reinterpret_cast<F *>(output->specialBuffer());
         dim3 batchSizeBlock(batchSize, 1, 1);
         dim3 pictureBlock(outHeight, outWidth, channels);
-        resizeImageKernel<T><<<256, pictureBlock, 256, *stream>>>(input_b_ptr, images->getSpecialShapeInfo(), output_y_ptr, output->specialShapeInfo(), batchSize,
-                outWidth, outHeight, channels, inRowSize, outRowSize, inBatchNumValues, xs_, ys_);
+        resizeImageKernel<T,F><<<256, 256, 256, *stream>>>(pInput, images->getSpecialShapeInfo(), pOutput,
+                output->specialShapeInfo(), batchSize, outWidth, outHeight, channels, inRowSize, outRowSize,
+                inBatchNumValues, xs_, ys_);
 
         auto err = cudaStreamSynchronize(*stream);
         if (err != 0) {
@@ -129,8 +185,9 @@ namespace helpers {
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        template <typename T>
-    static int resizeBilinearFunctor_(nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
+    template <typename T, typename F>
+    static int resizeBilinearFunctor_(nd4j::LaunchContext* context, NDArray const* images, int const width,
+            int const height, bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight = images->sizeAt(1);
         const Nd4jLong inWidth = images->sizeAt(2);
@@ -145,19 +202,8 @@ namespace helpers {
             return ND4J_STATUS_OK;
         }
 
-        // Special case for TF compatibility
-        if((center && inHeight < 2) || (center && inWidth < 2)){
-            center = false;
-        }
-
-        if ((center && inHeight < 2) || (inHeight < 1) || (outHeight < 1) || (center && outHeight < 2) ||
-            (center && inWidth < 2) || (inWidth < 1) || (outWidth < 1) || (center && outWidth < 2)) {
-            // wrong input data
-            nd4j_printf("image.resize_bilinear: Wrong input or output size to resize\n", "");
-            return ND4J_STATUS_BAD_ARGUMENTS;
-        }
-        float heightScale = center ? (inHeight - 1.f) / double(outHeight - 1.f) : (inHeight / float(outHeight));
-        float widthScale = center ? (inWidth - 1.f) / double(outWidth - 1.f) : (inWidth / float(outWidth));
+        float heightScale = calculateResizeScale(inHeight, outHeight, alignCorners);
+        float widthScale = calculateResizeScale(inWidth, outWidth, alignCorners);
 
         BilinearInterpolationData* xs_;// = xs.data();
         BilinearInterpolationData* ys_;// = xs.data();
@@ -173,12 +219,24 @@ namespace helpers {
         }
         auto stream = context->getCudaStream();
         // Compute the cached interpolation weights on the x and y dimensions.
-        computeInterpolationWeights<<<256, 512, 512, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
-        computeInterpolationWeights<<<256, 512, 512, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
-
+        if (halfPixelCenter) {
+            computeInterpolationWeights <
+            HalfPixelScaler ><<<256, 512, 512, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
+            computeInterpolationWeights <
+            HalfPixelScaler ><<<256, 512, 512, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
+        }
+        else {
+            computeInterpolationWeights <
+            LegacyScaler ><<<256, 512, 512, *stream>>>(outHeight, inHeight, heightScale, 0, ys_);
+            computeInterpolationWeights <
+            LegacyScaler ><<<256, 512, 512, *stream>>>(outWidth, inWidth, widthScale, channels, xs_);
+        }
+        printf("Input is %dx%d, Output is %dx%d\n", inHeight, inWidth, outHeight, outWidth);
         NDArray::prepareSpecialUse({output}, {images});
-        resizeImage(context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs_, ys_, output);
+        resizeImage_<T,F>(context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs_, ys_, output);
+        err = cudaStreamSynchronize(*stream);
         NDArray::registerSpecialUse({output}, {images});
+
         err = cudaFree(xs_);
         if (err != 0) {
             throw cuda_exception::build("helpers::resize_image: Cannot deallocate memory for vertical parts rectangulars", err);
@@ -197,20 +255,28 @@ namespace helpers {
 //
     template <typename T>
     static __global__ void resizeNeighborKernel(T const* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape,
-            Nd4jLong batchSize, Nd4jLong inWidth, Nd4jLong inHeight, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, double widthScale, double heightScale, bool center) {
+            Nd4jLong batchSize, Nd4jLong inWidth, Nd4jLong inHeight, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, double widthScale, double heightScale, bool alignCorners, bool halfPixelCenters) {
 
         //for (int b = blockIdx.x; b < batchSize; b += gridDim.x)
         if (blockIdx.x < batchSize)
         {
             auto b = blockIdx.x;
             for (int y = threadIdx.x; y < outHeight; y += blockDim.x) {
-                Nd4jLong inY = nd4j::math::nd4j_min(
-                        (center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(y * heightScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(
-                                y * heightScale)), inHeight - 1);
+                auto posY = alignCorners ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(halfPixelCenters?((float)y + 0.5f) * heightScale:(float)y * heightScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(
+                        halfPixelCenters?((float)y + 0.5f) * heightScale:(float)y * heightScale));
+                Nd4jLong inY = nd4j::math::nd4j_min(posY, inHeight - 1);
+                if (halfPixelCenters) {
+                    inY = nd4j::math::nd4j_max(0LL, inY);
+                }
+
                 for (int x = threadIdx.y; x < outWidth; x += blockDim.y) {
-                    Nd4jLong inX = nd4j::math::nd4j_min(
-                            (center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(x * widthScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(
-                                    x * widthScale)), inWidth - 1);
+                    auto posX = alignCorners ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(halfPixelCenters?((float)x + 0.5f) * widthScale:(float)x * widthScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(
+                            halfPixelCenters?((float)x + 0.5f) * widthScale:(float)x * widthScale));
+                    Nd4jLong inX = nd4j::math::nd4j_min(posX, inWidth - 1);
+                    if (halfPixelCenters) {
+                        inX = nd4j::math::nd4j_max(0LL, inX);
+                    }
+
                     auto start = blockIdx.z * blockDim.z + threadIdx.z;
                     auto step = blockDim.z * gridDim.z;
 
@@ -231,7 +297,8 @@ namespace helpers {
 // resizeNeighborFunctor - main algorithm by nearest neighbor
 //
     template <typename T>
-    int resizeNeighborFunctor_(nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
+    int resizeNeighborFunctor_(nd4j::LaunchContext* context, NDArray const* images, int const width, int const height,
+            bool const alignCorners, bool const halfPixelCenters, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight = images->sizeAt(1);
         const Nd4jLong inWidth = images->sizeAt(2);
@@ -246,25 +313,24 @@ namespace helpers {
             return ND4J_STATUS_OK;
         }
 
-        if ((center && inHeight < 2) || (inHeight < 1) || (outHeight < 1) || (center && outHeight < 2) ||
-            (center && inWidth < 2) || (inWidth < 1) || (outWidth < 1) || (center && outWidth < 2)) {
-            // wrong input data
-            nd4j_printf("image.resize_nearest_neighbor: Wrong input or output size to resize\n", "");
-            return ND4J_STATUS_BAD_ARGUMENTS;
-        }
-        double heightScale = center ? (inHeight - 1.) / double(outHeight - 1.0) : (inHeight / double(outHeight));
-        double widthScale = center ? (inWidth - 1.) / double(outWidth - 1.0) : (inWidth / double(outWidth));
-        auto imagesBuffer = reinterpret_cast<T const*>(images->getSpecialBuffer());
-        auto outputBuffer = reinterpret_cast<T*>(output->specialBuffer());
+//        if ((alignCorners && inHeight < 2) || (inHeight < 1) || (outHeight < 1) || (alignCorners && outHeight < 2) ||
+//            (alignCorners && inWidth < 2) || (inWidth < 1) || (outWidth < 1) || (center && outWidth < 2)) {
+//            // wrong input data
+//            nd4j_printf("image.resize_nearest_neighbor: Wrong input or output size to resize\n", "");
+//            return ND4J_STATUS_BAD_ARGUMENTS;
+//        }
+//        float heightScale = alignCorners ? (inHeight - 1.f) / float(outHeight - 1.f) : (inHeight / float(outHeight));
+//        float widthScale = alignCorners ? (inWidth - 1.f) / float(outWidth - 1.f) : (inWidth / float(outWidth));
+        float heightScale = calculateResizeScale(inHeight, outHeight, alignCorners);
+        float widthScale = calculateResizeScale(inWidth, outWidth, alignCorners);
+
+        auto imagesBuffer = images->getDataBuffer()->specialAsT<T>();//reinterpret_cast<T const*>(images->getSpecialBuffer());
+        auto outputBuffer = output->dataBuffer()->specialAsT<T>();//reinterpret_cast<T*>(output->specialBuffer());
         auto stream = context->getCudaStream();
 
-        //T const* input, Nd4jLong const* inputShape, T* output, Nd4jLong* outputShape,
-        //            Nd4jLong batchSize, Nd4jLong inWidth, Nd4jLong inHeight, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, double widthScale, double heightScale, bool center
-        //input, inputShape, output, outputShape,
-        //            batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, center
         NDArray::prepareSpecialUse({output}, {images});
         resizeNeighborKernel<T><<<batchSize, outHeight * outWidth, 512, *stream>>>(imagesBuffer, images->getSpecialShapeInfo(), outputBuffer, output->specialShapeInfo(),
-                batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, center);
+                batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, alignCorners, halfPixelCenters);
         NDArray::registerSpecialUse({output}, {images});
 
         return Status::OK();
@@ -275,39 +341,38 @@ namespace helpers {
     void resizeImage(nd4j::LaunchContext* context, NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight,
             Nd4jLong inWidth, Nd4jLong outHeight, Nd4jLong outWidth, Nd4jLong channels, BilinearInterpolationData* xs_,
             BilinearInterpolationData* ys_, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(images->dataType(), resizeImage_, (context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs_, ys_, output), LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(),
+                resizeImage_, (context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels,
+                        xs_, ys_, output), NUMERIC_TYPES, FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void resizeImage_,(nd4j::LaunchContext* context, NDArray const* images,
+    BUILD_DOUBLE_TEMPLATE(template void resizeImage_,(nd4j::LaunchContext* context, NDArray const* images,
             Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight, Nd4jLong outWidth,
-            Nd4jLong channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_, NDArray* output), LIBND4J_TYPES);
+            Nd4jLong channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_, NDArray* output),
+            NUMERIC_TYPES, FLOAT_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    int resizeBilinearFunctor(nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeBilinearFunctor_, (context, images, width, height, center, output), LIBND4J_TYPES);
+    int resizeBilinearFunctor(nd4j::LaunchContext* context, NDArray const* images, int width, int height,
+            bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
+        BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_, (context, images,
+                width, height, alignCorners, halfPixelCenter, output), NUMERIC_TYPES, FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int resizeBilinearFunctor_, (nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
+//    BUILD_SINGLE_TEMPLATE(template int resizeBilinearFunctor_, (nd4j::LaunchContext* context,
+//            NDArray const* images, int const width, int const height, bool const alignCorners,
+//            bool const halfPixelCenter, NDArray* output), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    int resizeNeighborFunctor(nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (context, images, width, height, center, output), LIBND4J_TYPES);
+    int resizeNeighborFunctor(nd4j::LaunchContext* context, NDArray const* images, int const width, int const height,
+            bool const alignCorners, bool const halfPixelCenter, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_,
+                (context, images, width, height, alignCorners, halfPixelCenter, output), LIBND4J_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (nd4j::LaunchContext* context, NDArray const* images,
-            int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
+//    BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (nd4j::LaunchContext* context, NDArray const* images,
+//            int width, int height, bool const alignCorners, bool const halfPixelCenter, NDArray* output), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // Bicubic interpolation
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// Utility functions and classes
-
-    // calculateResizeScale determines the float scaling factor.
-    inline float calculateResizeScale(Nd4jLong inSize, Nd4jLong outSize,
-                                      bool alignCorners) {
-        return (alignCorners && outSize > 1)
-               ? (inSize - 1) / static_cast<float>(outSize - 1)
-               : inSize / static_cast<float>(outSize);
-    }
-
     struct ImageResizerState {
         explicit ImageResizerState(bool alignCorners, bool halfPixelCenters)
                 : _alignCorners(alignCorners),
@@ -360,17 +425,6 @@ namespace helpers {
     private:
         bool _alignCorners;
         bool _halfPixelCenters;
-    };
-
-    // Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
-// floating point coordinates of the top,left pixel is 0.5,0.5.
-    struct HalfPixelScaler {
-        _CUDA_HD HalfPixelScaler(){};
-        inline _CUDA_HD float operator()(const int x, const float scale) const {
-            // Note that we subtract 0.5 from the return value, as the existing bilinear
-            // sampling code etc assumes pixels are in the old coordinate system.
-            return (static_cast<float>(x) + 0.5f) * scale - 0.5f;
-        }
     };
 
     struct WeightsAndIndices {
@@ -546,16 +600,6 @@ namespace helpers {
             out->_index3 = bound(in_loc + 2, limit);
         }
     }
-
-// Older incorrect scaling method that causes all resizes to have a slight
-// translation leading to inconsistent results. For example, a flip then a
-// resize gives different results then a resize then a flip.
-    struct LegacyScaler {
-        _CUDA_HD LegacyScaler(){};
-        inline _CUDA_HD float operator()(const int x, const float scale) const {
-            return static_cast<float>(x) * scale;
-        }
-    };
 
     static __global__ void accumulateChannelsKernel(WeightsAndIndices* pXWais, Nd4jLong outWidth, Nd4jLong channels) {
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -906,8 +950,8 @@ namespace helpers {
     int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
                       ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output) {
         switch (method) {
-            case kResizeBilinear: return resizeBilinearFunctor(context, image, width, height, false, output); break;
-            case kResizeNearest:  return resizeNeighborFunctor(context, image, width, height, true, output); break;
+            case kResizeBilinear: return resizeBilinearFunctor(context, image, width, height, false, false, output); break;
+            case kResizeNearest:  return resizeNeighborFunctor(context, image, width, height, false, false, output); break;
             case kResizeBicubic:  return resizeBicubicFunctor(context, image, width, height, preserveAspectRatio, antialias, output); break;
             case kResizeLanczos5:
             case kResizeGaussian:

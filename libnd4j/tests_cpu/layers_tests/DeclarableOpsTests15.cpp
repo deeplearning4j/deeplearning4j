@@ -148,8 +148,8 @@ TEST_F(DeclarableOpsTests15, Test_standarize_1) {
 }
 
 TEST_F(DeclarableOpsTests15, Test_standarize_bp_1) {
-    auto x = NDArrayFactory::create<float>('c', {5}, {1., 1., 1., 1., 1.});
-    auto eps = NDArrayFactory::create<float>('c', {5}, {0., 0., 0., 0., 0.});
+    auto x = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto eps = NDArrayFactory::create<float>('c', {5}, {0.f, 0.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::standardize_bp op;
     auto result = op.execute({&x, &eps}, {}, {0}, {});

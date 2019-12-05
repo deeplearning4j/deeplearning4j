@@ -1594,7 +1594,7 @@ TEST_F(DeclarableOpsTests1, TestGemv1) {
 
     auto z = NDArrayFactory::create_<float>('f', {5, 1});
 
-    auto expBuffer = new float[5]{28.00,64.00,100.00,136.00,172.00};
+    auto expBuffer = new float[5]{28.00f,64.00f,100.00f,136.00f,172.00f};
     auto exp = new NDArray(expBuffer, z->getShapeInfo());
 
      nd4j::blas::GEMV<float, float, float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
@@ -3606,7 +3606,9 @@ TEST_F(DeclarableOpsTests1, Reverse_11 ) {
 
 
     auto input = NDArrayFactory::create<float>('c', {2,3,4});
-    auto expected = NDArrayFactory::create<float>('c', {2,3,4}, {24., 23., 22., 21., 20., 19., 18., 17., 16., 15., 14., 13., 12., 11., 10., 9., 8., 7., 6., 5., 4., 3., 2., 1.});
+    auto expected = NDArrayFactory::create<float>('c', {2,3,4}, {24.f, 23.f, 22.f, 21.f, 20.f, 19.f, 18.f, 17.f, 16.f,
+                                                                 15.f, 14.f, 13.f, 12.f, 11.f, 10.f,  9.f,  8.f,  7.f,
+                                                                  6.f,  5.f,  4.f,  3.f,  2.f,  1.f});
 
     input.linspace(1);
     nd4j::ops::reverse op;

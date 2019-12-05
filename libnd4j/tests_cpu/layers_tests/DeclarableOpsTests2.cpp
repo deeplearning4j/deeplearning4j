@@ -1591,7 +1591,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test6) {
     auto *result = results->at(0);
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE(result->e<float>(0) == -71.);
+    ASSERT_TRUE(result->e<float>(0) == -71.f);
 
     delete results;
 
@@ -1616,7 +1616,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test7) {
     auto *result = results->at(0);
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE(result->e<float>(0) == -69.);
+    ASSERT_TRUE(result->e<float>(0) == -69.f);
 
     delete results;
 
@@ -1630,8 +1630,8 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test8) {
     auto weights = NDArrayFactory::create<float>('c', {2,3,1});
 
     labels.linspace(1);
-    weights.assign(0.5);
-    predictions.assign(0.5);
+    weights.assign(0.5f);
+    predictions.assign(0.5f);
 
     nd4j::ops::cosine_distance_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
@@ -1641,7 +1641,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test8) {
     auto *result = results->at(0);
 
     ASSERT_TRUE(result->isScalar());
-    ASSERT_TRUE(result->e<float>(0) == -24.);
+    ASSERT_TRUE(result->e<float>(0) == -24.f);
 
     delete results;
 
@@ -1655,8 +1655,8 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test9) {
     auto weights = NDArrayFactory::create<float>('c', {1,1});
 
     labels.linspace(1);
-    weights.assign(0.5);
-    predictions.assign(0.5);
+    weights.assign(0.5f);
+    predictions.assign(0.5f);
 
     nd4j::ops::cosine_distance_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2,2});
@@ -1680,10 +1680,10 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test10) {
     auto weights = NDArrayFactory::create<float>('c', {2,3,1});
 
     labels.linspace(1);
-    weights.assign(0.5);
-    predictions.assign(0.5);
-    weights.p(0, 0.);
-    weights.p(1, 0.);
+    weights.assign(0.5f);
+    predictions.assign(0.5f);
+    weights.p(0, 0.f);
+    weights.p(1, 0.f);
 
     nd4j::ops::cosine_distance_loss op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2,2});

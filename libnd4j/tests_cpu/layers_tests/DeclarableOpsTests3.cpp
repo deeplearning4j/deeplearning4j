@@ -1707,7 +1707,7 @@ TEST_F(DeclarableOpsTests3, betainc_test8) {
     b.linspace(10.);
     x.assign(1.);
 
-    auto expected= NDArrayFactory::create<float>('c', {3,3}, {1.f, 1.f, 1.,1.,1.,1.,1.,1.,1.});
+    auto expected= NDArrayFactory::create<float>('c', {3,3}, {1.f, 1.f, 1.f,1.f,1.f,1.f,1.f,1.f,1.f});
 
     nd4j::ops::betainc op;
     auto results = op.execute({&a, &b, &x}, {}, {});
@@ -2292,9 +2292,9 @@ TEST_F(DeclarableOpsTests3, svd_test3) {
     }
     else {
         for(uint i = 0; i < expU.lengthOf(); ++i)
-            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.e<float>(i)), nd4j::math::nd4j_abs(u->e<float>(i)), 1e-5);
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.e<float>(i)), nd4j::math::nd4j_abs(u->e<float>(i)), 1e-5f);
         for(uint i = 0; i < expV.lengthOf(); ++i)
-            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.e<float>(i)), nd4j::math::nd4j_abs(v->e<float>(i)), 1e-5);
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.e<float>(i)), nd4j::math::nd4j_abs(v->e<float>(i)), 1e-5f);
     }
 
     delete results;
@@ -2329,9 +2329,9 @@ TEST_F(DeclarableOpsTests3, svd_test4) {
     }
     else {
         for(uint i = 0; i < expU.lengthOf(); ++i)
-            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.e<float>(i)), nd4j::math::nd4j_abs(u->e<float>(i)), 1e-5);
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.e<float>(i)), nd4j::math::nd4j_abs(u->e<float>(i)), 1e-5f);
         for(uint i = 0; i < expV.lengthOf(); ++i)
-            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.e<float>(i)), nd4j::math::nd4j_abs(v->e<float>(i)), 1e-5);
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.e<float>(i)), nd4j::math::nd4j_abs(v->e<float>(i)), 1e-5f);
     }
 
     delete results;
@@ -2366,9 +2366,9 @@ TEST_F(DeclarableOpsTests3, svd_test5) {
     }
     else {
         for(uint i = 0; i < expU.lengthOf(); ++i)
-            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.e<float>(i)), nd4j::math::nd4j_abs(u->e<float>(i)), 1e-5);
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.e<float>(i)), nd4j::math::nd4j_abs(u->e<float>(i)), 1e-5f);
         for(uint i = 0; i < expV.lengthOf(); ++i)
-            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.e<float>(i)), nd4j::math::nd4j_abs(v->e<float>(i)), 1e-5);
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.e<float>(i)), nd4j::math::nd4j_abs(v->e<float>(i)), 1e-5f);
     }
 
     delete results;
@@ -2421,9 +2421,9 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
     }
     else {
         for(uint i = 0; i < expU.lengthOf(); ++i)
-            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.e<float>(i)), nd4j::math::nd4j_abs(u->e<float>(i)), 1e-5);
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expU.e<float>(i)), nd4j::math::nd4j_abs(u->e<float>(i)), 1e-5f);
         for(uint i = 0; i < expV.lengthOf(); ++i)
-            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.e<float>(i)), nd4j::math::nd4j_abs(v->e<float>(i)), 1e-5);
+            ASSERT_NEAR(nd4j::math::nd4j_abs(expV.e<float>(i)), nd4j::math::nd4j_abs(v->e<float>(i)), 1e-5f);
     }
 
     delete results;
