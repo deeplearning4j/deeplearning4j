@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -85,6 +86,7 @@ public class NumpyArray {
         setND4JArray();
         if (copy){
             nd4jArray = nd4jArray.dup();
+            Nd4j.getAffinityManager().ensureLocation(nd4jArray, AffinityManager.Location.HOST);
             this.address = nd4jArray.data().address();
         }
     }
@@ -104,11 +106,12 @@ public class NumpyArray {
             nd4jStrides[i] = strides[i] / elemSize;
         }
 
-        this.nd4jArray = Nd4j.create(buff, shape, nd4jStrides, 0, Shape.getOrder(shape,nd4jStrides,1), dtype);
-
+        nd4jArray = Nd4j.create(buff, shape, nd4jStrides, 0, Shape.getOrder(shape,nd4jStrides,1), dtype);
+        Nd4j.getAffinityManager().ensureLocation(nd4jArray, AffinityManager.Location.HOST);
     }
 
     public NumpyArray(INDArray nd4jArray){
+        Nd4j.getAffinityManager().ensureLocation(nd4jArray, AffinityManager.Location.HOST);
         DataBuffer buff = nd4jArray.data();
         address = buff.pointer().address();
         shape = nd4jArray.shape();
