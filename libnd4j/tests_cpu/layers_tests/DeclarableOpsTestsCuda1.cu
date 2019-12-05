@@ -24,6 +24,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 #include <GradCheck.h>
+#include <chrono>
 
 
 using namespace nd4j;
@@ -58,5 +59,20 @@ TEST_F(DeclarableOpsTestsCuda1, Test_CHOOSE_SCALAR_LARGE) {
     //ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
-
 }
+
+/*
+TEST_F(DeclarableOpsTestsCuda1, Test_Reverse_TAD_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 3, 608, 608});
+    auto z = x.like();
+    x.linspace(1.0f);
+
+    nd4j::ops::reverse op;
+    auto timeStart = std::chrono::system_clock::now();
+    auto status = op.execute({&x}, {&z}, {}, {1}, {});
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+    nd4j_printf("exec time: %lld us\n", outerTime);
+    ASSERT_EQ(Status::OK(), status);
+}
+*/

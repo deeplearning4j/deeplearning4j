@@ -197,3 +197,44 @@ TEST_F(DeclarableOpsTests16, test_range_2) {
 
     delete shapes;
 }
+
+TEST_F(DeclarableOpsTests16, test_reverse_1) {
+    std::vector<Nd4jLong> rows = {3, 5, 7, 8, 9, 10, 119, 211};
+    std::vector<Nd4jLong> columns = {6, 5, 10, 100, 153, 171, 635};
+
+    for (auto r : rows) {
+        for (auto c : columns) {
+            //nd4j_printf("Trying [%i, %i]\n", r, c);
+            auto array = NDArrayFactory::create<float>('c', {r, c});
+            auto exp = NDArrayFactory::create<float>('c', {r, c});
+            auto reversed = NDArrayFactory::create<float>('c', {r, c});
+
+            auto rowOriginal = NDArrayFactory::create<float>('c', {c});
+            auto rowReversed = NDArrayFactory::create<float>('c', {c});
+
+            for (int e = 0; e < c; e++) {
+                rowOriginal.p(e, (float) e);
+                rowReversed.p(c - e - 1, (float) e);
+            }
+
+
+            auto listI = array.allTensorsAlongDimension({1});
+            auto listE = exp.allTensorsAlongDimension({1});
+
+            for (int e = 0; e < r; e++) {
+                listI->at(e)->assign(rowOriginal);
+                listE->at(e)->assign(rowReversed);
+            }
+
+            delete listI;
+            delete listE;
+
+            nd4j::ops::reverse op;
+            Nd4jLong axis  = 1;
+            auto status = op.execute({&array}, {&reversed}, {}, {axis}, {});
+            ASSERT_EQ(Status::OK(), status);
+
+            ASSERT_EQ(exp, reversed);
+        }
+    }
+}
