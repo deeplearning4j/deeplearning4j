@@ -60,7 +60,7 @@ public class NonMaxSuppression extends DynamicCustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[]{"NonMaxSuppression", "NonMaxSuppressionV2","NonMaxSuppressionV3","NonMaxSuppressionV4"};
+        return new String[]{"NonMaxSuppression", "NonMaxSuppressionV2"};
     }
 
     @Override

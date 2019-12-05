@@ -103,6 +103,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNormDerivative.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D.class,
+            org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1DDerivative.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2DDerivative.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D.class,

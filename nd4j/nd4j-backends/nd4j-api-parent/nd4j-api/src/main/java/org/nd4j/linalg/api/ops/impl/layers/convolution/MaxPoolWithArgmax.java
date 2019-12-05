@@ -204,7 +204,7 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
         if(attributesForNode.containsKey("argmax")) {
             outputType = TFGraphMapper.convertType(attributesForNode.get("argmax").getType());
         } else {
-            outputType = DataType.UINT32;
+            outputType = DataType.LONG;
         }
     }
 
@@ -278,7 +278,7 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input data type for %s, got %s", getClass(), inputDataTypes);
         List<DataType> result = new ArrayList<>();
         result.add(inputDataTypes.get(0));
-        result.add(outputType == null ? DataType.UINT32 : outputType);
+        result.add(outputType == null ? DataType.INT : outputType);
         return result;
     }
 }
