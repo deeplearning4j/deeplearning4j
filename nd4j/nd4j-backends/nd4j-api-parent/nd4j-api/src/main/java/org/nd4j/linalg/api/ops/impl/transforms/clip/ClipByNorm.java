@@ -49,8 +49,12 @@ public class ClipByNorm extends DynamicCustomOp {
         addTArgument(clipValue);
     }
 
+    public ClipByNorm(INDArray in, double clipValue, int... dimensions){
+        this(in, null, clipValue, dimensions);
+    }
+
     public ClipByNorm(INDArray in, INDArray out, double clipValue, int... dimensions){
-        super(null, new INDArray[]{in}, (out == null ? null : new INDArray[]{out}), Collections.singletonList(clipValue), dimensions);
+        super(null, new INDArray[]{in}, wrapOrNull(out), Collections.singletonList(clipValue), dimensions);
     }
 
     @Override

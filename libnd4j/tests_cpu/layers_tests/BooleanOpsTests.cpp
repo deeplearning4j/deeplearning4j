@@ -134,7 +134,7 @@ TEST_F(BooleanOpsTests, test_where_1) {
     auto y = NDArrayFactory::create<double>('c', {6}, { 2, -3, 1, 1, -2, 1 });
     auto e = NDArrayFactory::create<double>('c', {3}, { 4, 8, 5 });
 
-    nd4j:ops::choose op;
+    nd4j::ops::choose op;
 
     auto result = op.execute({&x, &y}, {}, {3});
     ASSERT_EQ(Status::OK(), result->status());

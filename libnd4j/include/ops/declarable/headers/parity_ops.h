@@ -513,7 +513,6 @@ namespace nd4j {
         /**
         * This op calculates polygamma function psi^(n)(x). Implementation is based on serial representation written in
         * terms of the Hurwitz zeta function: polygamma = (-1)^{n+1} * n! * zeta(n+1, x).
-        * Currently the case n = 0 is not supported.
         *
         * Input arrays:
         *    0: n - define derivative order (n+1), type integer (however currently is implemented as float casted to integer)
@@ -526,6 +525,20 @@ namespace nd4j {
         */
         #if NOT_EXCLUDED(OP_polygamma)
         DECLARE_CONFIGURABLE_OP(polygamma, 2, 1, false, 0, 0);
+        #endif
+
+        /**
+        * This op calculates digamma function psi(x) = derivative of log(Gamma(x))
+        *
+        * Input arrays:
+        *    0: x - abscissa points where to evaluate the digamma function, type float
+        *
+        * Output array:
+        *    0: values of digamma function at corresponding x, type float
+        *
+        */
+        #if NOT_EXCLUDED(OP_digamma)
+        DECLARE_CONFIGURABLE_OP(digamma, 1, 1, false, 0, 0);
         #endif
 
         /**
@@ -575,44 +588,47 @@ namespace nd4j {
          * This operation adjusts image hue by delta
          * Input arrays:
          * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+         * 1 - optional argument, input scalar-array containing delta
          *
          * T arguments:
-         * 0 - delta value
+         * 0 - optional argument, delta value
          *
          * Int arguments:
          * 0 - optional argument, corresponds to dimension with 3 channels
          */
         #if NOT_EXCLUDED(OP_adjust_hue)
-        DECLARE_CONFIGURABLE_OP(adjust_hue, 1, 1, true, 1, -2);
+        DECLARE_CONFIGURABLE_OP(adjust_hue, 1, 1, true, 0, 0);
         #endif
 
         /**
          * This operation adjusts image saturation by delta
          * Input arrays:
          * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+         * 1 - optional argument, input scalar-array containing saturation factor
          *
          * T arguments:
-         * 0 - saturation factor
+         * 0 - optional argument, saturation factor
          *
          * Int arguments:
          * 0 - optional argument, corresponds to dimension with 3 channels
          */
         #if NOT_EXCLUDED(OP_adjust_saturation)
-        DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, 1, -2);
+        DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, 0, 0);
         #endif
 
         /**
          * This operation adjusts image contrast by given factor ( z = (x - mean) * factor + mean )
          * Input arrays:
          * 0 - input array with rank >= 3, must have last one dimension equal 3, that is dimension containing channels.
+         * 1 - optional argument, input scalar-array containing saturation contrast factor
          *
          * T arguments:
-         * 0 - contrast factor
+         * 0 - optional argument, contrast factor
          *
          */
         #if NOT_EXCLUDED(OP_adjust_contrast)
-        DECLARE_CONFIGURABLE_OP(adjust_contrast, 1, 1, true, -2, 0);
-        DECLARE_CONFIGURABLE_OP(adjust_contrast_v2, 1, 1, true, -2, 0);
+        DECLARE_CONFIGURABLE_OP(adjust_contrast, 1, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(adjust_contrast_v2, 1, 1, true, 0, 0);
         #endif
 
 
@@ -1723,7 +1739,7 @@ namespace nd4j {
         #endif
 
         /**
-         * image.non_max_suppression op.
+         * image.non_max_suppression ops.
          * input:
          *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
          *     1 - scales - 1D-tensor with shape (num_boxes) by float type
@@ -1740,6 +1756,9 @@ namespace nd4j {
          * */
         #if NOT_EXCLUDED(OP_image_non_max_suppression)
         DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
+        #endif
+        #if NOT_EXCLUDED(OP_image_non_max_suppression_v3)
+                DECLARE_CUSTOM_OP(non_max_suppression_v3, 2, 1, false, 0, 0);
         #endif
 
         /*
@@ -1829,7 +1848,7 @@ namespace nd4j {
         #endif
 
         /**
-         * compare_and_bitpack - compare with greater and pack result with uint8 
+         * compare_and_bitpack - compare with greater and pack result with uint8
          *
          * input params:
          *    0 - NDArray (input)

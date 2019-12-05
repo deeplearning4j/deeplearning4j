@@ -26,7 +26,7 @@
 
 namespace nd4j {
 
-    class ShapeUtils {
+    class ND4J_EXPORT ShapeUtils {
 
         public:
 

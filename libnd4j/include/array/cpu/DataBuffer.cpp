@@ -33,7 +33,6 @@ void DataBuffer::setCountersToZero() {
 void DataBuffer::copyCounters(const DataBuffer& other) {
 
 }
-
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate primary buffer only (cpu case)
 
@@ -49,7 +48,7 @@ void DataBuffer::copyBufferFrom(const DataBuffer& other, size_t sizeToCopyinByte
         return;
 
     if(other._primaryBuffer != nullptr)
-        memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes);
+        std::memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(other._primaryBuffer) + offsetOther * DataTypeUtils::sizeOfElement(other._dataType), sizeToCopyinBytes);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -61,7 +60,7 @@ void DataBuffer::copyBufferFromHost(const void* hostBuffer, size_t sizeToCopyinB
         return;
 
     if(hostBuffer != nullptr)
-        memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType), sizeToCopyinBytes);
+        std::memcpy(static_cast<int8_t*>(_primaryBuffer) + offsetThis * DataTypeUtils::sizeOfElement(_dataType), static_cast<const int8_t*>(hostBuffer) + offsetHostBuffer * DataTypeUtils::sizeOfElement(_dataType), sizeToCopyinBytes);
 }
 
 
@@ -99,6 +98,13 @@ void DataBuffer::allocateSpecial() {
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::migrate() {
 
+}
+///////////////////////////////////////////////////////////////////////
+void DataBuffer::memcpy(const DataBuffer &dst, const DataBuffer &src) {
+    if (src._lenInBytes < dst._lenInBytes)
+        throw std::runtime_error("DataBuffer::memcpy: Source data buffer is smaller than destination");
+
+    std::memcpy(dst._primaryBuffer, src._primaryBuffer, dst._lenInBytes);
 }
 
 ////////////////////////////////////////////////////////////////////////

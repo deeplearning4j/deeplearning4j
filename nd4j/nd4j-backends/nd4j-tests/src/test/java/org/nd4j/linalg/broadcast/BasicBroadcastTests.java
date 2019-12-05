@@ -24,6 +24,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RealDivOp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -286,6 +287,30 @@ public class BasicBroadcastTests extends BaseNd4jTest {
             String s = e.getMessage();
             assertTrue(s, s.contains("broadcast") && s.contains("shape"));
         }
+    }
+
+    @Test
+    public void testLt(){
+        INDArray x = Nd4j.scalar(0);
+        INDArray y = Nd4j.createFromArray(2,1,2);
+
+        INDArray result = Nd4j.create(DataType.BOOL, 3);
+        INDArray lt = Nd4j.exec(new LessThan(x,y,result))[0];
+
+        INDArray exp = Nd4j.createFromArray(true, true, true);
+        assertEquals(exp, lt);
+    }
+
+    @Test
+    public void testAdd(){
+        INDArray x = Nd4j.scalar(0);
+        INDArray y = Nd4j.createFromArray(2,1,2);
+
+        INDArray result = Nd4j.create(DataType.INT, 3);
+        INDArray sum = Nd4j.exec(new AddOp(x,y,result))[0];
+
+        INDArray exp = Nd4j.createFromArray(2, 1, 2);
+        assertEquals(exp, sum);
     }
 
     @Override

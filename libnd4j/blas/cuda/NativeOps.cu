@@ -2202,9 +2202,16 @@ void sortByKey(Nd4jPointer *extraPointers,
         auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
         auto xLength = shape::length(xShapeInfo);
+        auto yLength = shape::length(yShapeInfo);
         auto xEWS = shape::elementWiseStride(xShapeInfo);
         auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
         auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+
+        if (shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo))
+            return;
+
+        if (xLength != yLength)
+            throw std::runtime_error("sortByKey: keys and values must have the same size");
 
 
         // check if xLength is a power of 2, and use bitonic sort, if that's the case
@@ -2269,9 +2276,16 @@ void sortByValue(Nd4jPointer *extraPointers,
         auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
         auto xLength = shape::length(xShapeInfo);
+        auto yLength = shape::length(yShapeInfo);
         auto xEWS = shape::elementWiseStride(xShapeInfo);
         auto xType = nd4j::ArrayOptions::dataType(yShapeInfo);
         auto yType = nd4j::ArrayOptions::dataType(xShapeInfo);
+
+        if (shape::isEmpty(xShapeInfo) || shape::isEmpty(yShapeInfo))
+            return;
+
+        if (xLength != yLength)
+            throw std::runtime_error("sortByValue: keys and values must have the same size");
 
 
         // check if xLength is a power of 2, and use bitonic sort, if that's the case

@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -270,6 +271,12 @@ public class SubsamplingLayer extends NoParamLayer {
             super(poolingType);
         }
 
+        @Override
+        protected boolean allowCausal() {
+            //Only conv1d/subsampling1d can use causal mode
+            return false;
+        }
+
         /**
          * Kernel size
          *
@@ -447,6 +454,14 @@ public class SubsamplingLayer extends NoParamLayer {
         public void setEps(double eps){
             ValidationUtils.validateNonNegative(eps, "eps");
             this.eps = eps;
+        }
+
+        protected abstract boolean allowCausal();
+
+        public void setConvolutionMode(ConvolutionMode convolutionMode){
+            Preconditions.checkState(allowCausal() || convolutionMode != ConvolutionMode.Causal, "Causal convolution mode can only be used with 1D" +
+                    " convolutional neural network layers");
+            this.convolutionMode = convolutionMode;
         }
 
         /**

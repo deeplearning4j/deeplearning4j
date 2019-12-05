@@ -26,7 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    bool multiUnique(std::vector<NDArray*> const& inputList, nd4j::memory::Workspace* workspace = nullptr);
+    ND4J_EXPORT bool multiUnique(std::vector<NDArray*> const& inputList, nd4j::memory::Workspace* workspace = nullptr);
 
 }
 }

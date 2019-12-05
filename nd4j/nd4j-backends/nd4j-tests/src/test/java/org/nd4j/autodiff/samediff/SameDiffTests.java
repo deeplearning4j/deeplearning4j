@@ -43,6 +43,9 @@ import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.*;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -1620,11 +1623,11 @@ public class SameDiffTests extends BaseNd4jTest {
             switch (i) {
                 case 0:
                     t = sd.math().isNonDecreasing(in1);
-                    Nd4j.exec(new IsNonDecreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    Nd4j.exec(new IsNonDecreasing(ia, expOut));
                     break;
                 case 1:
                     t = sd.math().isStrictlyIncreasing(in1);
-                    Nd4j.exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    Nd4j.exec(new IsStrictlyIncreasing(ia, expOut));
                     break;
                 case 2:
                     t = sd.isNumericTensor(in1);
@@ -1650,7 +1653,7 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray ia = Nd4j.randn(minibatch, nOut);
         INDArray expOut = Nd4j.create(DataType.BOOL, ia.shape());
 
-        Nd4j.exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+        Nd4j.exec(new IsStrictlyIncreasing(ia, expOut));
         System.out.println(expOut);
     }
 
@@ -3501,4 +3504,20 @@ public class SameDiffTests extends BaseNd4jTest {
 		Map<String, INDArray> map = sd.calculateGradients(null,"input", "concat");
 		assertEquals(map.get("input"), map.get("concat"));
 	}
+
+    @Test
+    public void testTrainingConfigJson(){
+        for(IEvaluation e : new IEvaluation[]{new Evaluation(), new RegressionEvaluation(), new EvaluationBinary(), new ROC(),
+                new ROCMultiClass(), new ROCBinary(), new EvaluationCalibration()}) {
+            TrainingConfig config = new TrainingConfig.Builder()
+                    .l2(1e-4)
+                    .updater(new Adam(0.1))
+                    .dataSetFeatureMapping("out").dataSetLabelMapping("label")
+                    .trainEvaluation("out", 0, e)
+                    .build();
+            String json = config.toJson();
+            TrainingConfig fromJson = TrainingConfig.fromJson(json);
+            assertEquals(config, fromJson);
+        }
+    }
 }

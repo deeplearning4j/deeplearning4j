@@ -27,6 +27,8 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.util.Convolution1DUtils;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -440,6 +442,78 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                     assertEquals(gradBefore, gradAfter);
                 }
             }
+        }
+    }
+
+    @Test
+    public void testCnn1Causal() {
+        int convNIn = 2;
+        int convNOut1 = 3;
+        int convNOut2 = 4;
+        int finalNOut = 3;
+
+        int[] lengths   =  {11, 12, 13,  9, 10, 11};
+        int[] kernels   =  {2,   3,  2,  4,  2,  3};
+        int[] dilations =  {1,   1,  2,  1,  2,  1};
+        int[] strides   =  {1,   2,  1,  2,  1,  1};
+        boolean[] masks =  {false, true, false, true, false, true};
+        boolean[] hasB  =  {true, false, true, false, true, true};
+
+        for (int i = 0; i < lengths.length; i++) {
+            int length = lengths[i];
+            int k = kernels[i];
+            int d = dilations[i];
+            int st = strides[i];
+            boolean mask = masks[i];
+            boolean hasBias = hasB[i];
+            //TODO has bias
+            String s = "k=" + k + ", s=" + st + "d=" + d + ", seqLen=" + length;
+            log.info("Starting test: " + s);
+            Nd4j.getRandom().setSeed(12345);
+
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.DOUBLE)
+                    .updater(new NoOp())
+                    .activation(Activation.TANH)
+                    .weightInit(new NormalDistribution(0, 1))
+                    .seed(12345)
+                    .list()
+                    .layer(new Convolution1DLayer.Builder().kernelSize(k)
+                            .dilation(d)
+                            .hasBias(hasBias)
+                            .convolutionMode(ConvolutionMode.Causal)
+                            .stride(st).nIn(convNIn).nOut(convNOut1)
+                            .build())
+                    .layer(new Convolution1DLayer.Builder().kernelSize(k)
+                            .dilation(d)
+                            .convolutionMode(ConvolutionMode.Causal)
+                            .stride(st).nIn(convNOut1).nOut(convNOut2)
+                            .build())
+                    .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                            .activation(Activation.SOFTMAX).nOut(finalNOut).build())
+                    .setInputType(InputType.recurrent(convNIn, length)).build();
+
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray f = Nd4j.rand(DataType.DOUBLE, 2, convNIn, length);
+            INDArray fm = null;
+            if (mask) {
+                fm = Nd4j.create(2, length);
+                fm.get(NDArrayIndex.point(0), NDArrayIndex.all()).assign(1);
+                fm.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, length-2)).assign(1);
+            }
+
+            long outSize1 = Convolution1DUtils.getOutputSize(length, k, st, 0, ConvolutionMode.Causal, d);
+            long outSize2 = Convolution1DUtils.getOutputSize(outSize1, k, st, 0, ConvolutionMode.Causal, d);
+
+            INDArray label = TestUtils.randomOneHotTimeSeries(2, finalNOut, (int)outSize2);
+
+            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, label, fm, null);
+
+            assertTrue(s, gradOK);
+            TestUtils.testModelSerialization(net);
         }
     }
 }

@@ -229,8 +229,8 @@ public class KerasBidirectional extends KerasLayer {
     @Override
     public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
 
-        Map<String, INDArray> forwardWeights = getUnderlyingWeights(weights, "forward");
-        Map<String, INDArray> backwardWeights = getUnderlyingWeights(weights, "backward");
+        Map<String, INDArray> forwardWeights = getUnderlyingWeights(((Bidirectional)this.layer).getFwd(), weights, "forward");
+        Map<String, INDArray> backwardWeights = getUnderlyingWeights(((Bidirectional)this.layer).getBwd(), weights, "backward");
 
         this.weights = new HashMap<>();
 
@@ -241,7 +241,7 @@ public class KerasBidirectional extends KerasLayer {
     }
 
 
-    private Map<String, INDArray> getUnderlyingWeights(Map<String, INDArray> weights, String direction)
+    private Map<String, INDArray> getUnderlyingWeights(Layer l, Map<String, INDArray> weights, String direction)
             throws InvalidKerasConfigurationException {
         int keras1SubstringLength;
         if (kerasRnnlayer instanceof KerasLSTM)
@@ -270,8 +270,12 @@ public class KerasBidirectional extends KerasLayer {
             weights = newWeights;
         }
 
+        Layer layerBefore = kerasRnnlayer.getLayer();
+        kerasRnnlayer.setLayer(l);
         kerasRnnlayer.setWeights(weights);
-        return kerasRnnlayer.getWeights();
+        Map<String,INDArray> ret = kerasRnnlayer.getWeights();
+        kerasRnnlayer.setLayer(layerBefore);
+        return ret;
     }
 
 }

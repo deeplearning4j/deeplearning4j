@@ -17,6 +17,7 @@
 package org.nd4j.evaluation.curves;
 
 import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.serde.json.JsonMappers;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
@@ -87,7 +88,7 @@ public abstract class BaseCurve {
      */
     public String toJson() {
         try {
-            return BaseEvaluation.getObjectMapper().writeValueAsString(this);
+            return JsonMappers.getMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -98,7 +99,7 @@ public abstract class BaseCurve {
      */
     public String toYaml() {
         try {
-            return BaseEvaluation.getYamlMapper().writeValueAsString(this);
+            return JsonMappers.getYamlMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -113,7 +114,7 @@ public abstract class BaseCurve {
      */
     public static <T extends BaseCurve> T fromJson(String json, Class<T> curveClass) {
         try {
-            return BaseEvaluation.getObjectMapper().readValue(json, curveClass);
+            return JsonMappers.getMapper().readValue(json, curveClass);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -128,7 +129,7 @@ public abstract class BaseCurve {
      */
     public static <T extends BaseCurve> T fromYaml(String yaml, Class<T> curveClass) {
         try {
-            return BaseEvaluation.getYamlMapper().readValue(yaml, curveClass);
+            return JsonMappers.getYamlMapper().readValue(yaml, curveClass);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

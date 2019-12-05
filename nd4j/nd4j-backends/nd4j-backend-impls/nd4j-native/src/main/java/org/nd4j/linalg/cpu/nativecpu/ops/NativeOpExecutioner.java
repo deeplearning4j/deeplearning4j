@@ -1662,7 +1662,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      * This method executes given CustomOp
      *
      * PLEASE NOTE: You're responsible for input/output validation
-     * @param op
+     * @param op Operation to execute
      */
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
@@ -1671,11 +1671,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             try {
                 val list = this.calculateOutputShape(op);
                 if (list.isEmpty())
-                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+                    throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to calculate output datatypes");
 
                 for (LongShapeDescriptor shape : list)
                     op.addOutputArgument(Nd4j.create(shape, false));
-
+            } catch (ND4JIllegalStateException e){
+                throw e;
             } catch (Exception e) {
                 throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
             }

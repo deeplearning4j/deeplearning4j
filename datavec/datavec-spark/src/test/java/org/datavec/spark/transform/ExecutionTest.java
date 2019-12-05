@@ -247,10 +247,9 @@ public class ExecutionTest extends BaseSparkTest {
                 .addColumnInteger("col1").addColumnDouble("col2").build();
         String pythonCode = "col1 = ['state0', 'state1', 'state2'].index(col1)\ncol2 += 10.0";
         TransformProcess tp = new TransformProcess.Builder(schema).transform(
-          new PythonTransform(
-                pythonCode,
-                  finalSchema
-          )
+                PythonTransform.builder().code(
+                        "first = np.sin(first)\nsecond = np.cos(second)")
+                        .outputSchema(finalSchema).build()
         ).build();
         List<List<Writable>> inputData = new ArrayList<>();
         inputData.add(Arrays.<Writable>asList(new IntWritable(0), new Text("state2"), new DoubleWritable(0.1)));
@@ -288,10 +287,9 @@ public class ExecutionTest extends BaseSparkTest {
 
         String pythonCode = "col3 = col1 + col2";
         TransformProcess tp = new TransformProcess.Builder(schema).transform(
-                new PythonTransform(
-                        pythonCode,
-                        finalSchema
-                )
+                PythonTransform.builder().code(
+                        "first = np.sin(first)\nsecond = np.cos(second)")
+                        .outputSchema(schema).build()
         ).build();
 
         INDArray zeros = Nd4j.zeros(shape);

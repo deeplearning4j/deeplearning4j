@@ -21,12 +21,14 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Ignore;
@@ -286,6 +288,68 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         TestUtils.testModelSerialization(net);
                     }
                 }
+            }
+        }
+    }
+
+
+
+
+    @Test
+    public void testTimeDistributedDense() {
+        int nIn = 3;
+        int nOut = 5;
+        int tsLength = 4;
+        int layerSize = 8;
+
+        Random r = new Random(12345);
+        for (int mb : new int[]{1, 3}) {
+            for (boolean inputMask : new boolean[]{false, true}) {
+
+
+                INDArray in = Nd4j.rand(new int[]{mb, nIn, tsLength});
+                INDArray labels = TestUtils.randomOneHotTimeSeries(mb, nOut, tsLength);
+                String maskType = (inputMask ? "inputMask" : "none");
+
+                INDArray inMask = null;
+                if (inputMask) {
+                    inMask = Nd4j.ones(mb, tsLength);
+                    for (int i = 0; i < mb; i++) {
+                        int firstMaskedStep = tsLength - 1 - i;
+                        if (firstMaskedStep == 0) {
+                            firstMaskedStep = tsLength;
+                        }
+                        for (int j = firstMaskedStep; j < tsLength; j++) {
+                            inMask.putScalar(i, j, 0.0);
+                        }
+                    }
+                }
+
+                String name = "testLastTimeStepLayer() - mb=" + mb + ", tsLength = " + tsLength + ", maskType=" + maskType;
+                if (PRINT_RESULTS) {
+                    System.out.println("Starting test: " + name);
+                }
+
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.DOUBLE)
+                        .activation(Activation.TANH)
+                        .updater(new NoOp())
+                        .weightInit(WeightInit.XAVIER)
+                        .list()
+                        .layer(new LSTM.Builder().nOut(layerSize).build())
+                        .layer(new TimeDistributed(new DenseLayer.Builder().nOut(layerSize).activation(Activation.SOFTMAX).build(), 2))
+                        .layer(new RnnOutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .setInputType(InputType.recurrent(nIn))
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 16);
+                assertTrue(name, gradOK);
+                TestUtils.testModelSerialization(net);
             }
         }
     }

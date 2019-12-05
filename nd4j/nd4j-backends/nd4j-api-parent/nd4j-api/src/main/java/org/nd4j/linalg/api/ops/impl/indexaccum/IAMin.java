@@ -41,6 +41,11 @@ public class IAMin extends BaseIndexAccumulation {
         super(x, dimensions);
     }
 
+    public IAMin(INDArray in, boolean keepDims, int... dimnesions){
+        super(in, null, dimnesions);
+        this.keepDims = keepDims;
+    }
+
     public IAMin(INDArray x, INDArray z, int... dimensions) {
         super(x, z, dimensions);
     }

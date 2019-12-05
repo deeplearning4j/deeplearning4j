@@ -22,7 +22,8 @@
 #if NOT_EXCLUDED(OP_gather)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/gather.h>
+#include <ops/declarable/helpers/gather.h>
+#include <ops/declarable/helpers/scatter.h>
 
 
 namespace nd4j {
@@ -34,8 +35,10 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
 
 	auto input   = INPUT_VARIABLE(0);
     auto indices = block.width() > 1 ? INPUT_VARIABLE(1) : nullptr;
-	auto output  = OUTPUT_VARIABLE(0);	
-	
+	auto output  = OUTPUT_VARIABLE(0);
+
+	const bool checkIndices = block.getBArguments()->empty() ? false : B_ARG(0);
+
 	//Edge case: empty indices -> empty output
 	if(indices != nullptr && indices->isEmpty()){
 		REQUIRE_TRUE(output->isEmpty(), 0, "Gather op: If indices are empty, output must also be empty");
@@ -47,7 +50,7 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     std::vector<int> intArgs;
     if (block.width() > 2) {
     	intArgs = INPUT_VARIABLE(2)->template asVectorT<int>();
-    } 
+    }
     else {
 		if (numOfIntArgs == 0)
 			intArgs.emplace_back(0);
@@ -64,14 +67,16 @@ CUSTOM_OP_IMPL(gather, 1, 1, false, 0, -2) {
     REQUIRE_TRUE(intArgs[0] < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", intArgs[0], inputRank);
     REQUIRE_TRUE(indices != nullptr || numOfIntArgs > 1, 0, "GATHER op: indices should be provided either as additional input array or as IntArguments !");
 
-	if (indices != nullptr) {
-		for(int i = 0; i < indices->lengthOf(); ++i)            
-            REQUIRE_TRUE(indices->e<Nd4jLong>(i) < input->sizeAt(intArgs[0]), 0, "GATHER op: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
-	}
-	else {
-		for(int i = 1; i < numOfIntArgs; ++i)            
-            REQUIRE_TRUE(intArgs[i] < input->sizeAt(intArgs[0]), 0, "GATHER op: some of indexes is larger than corresponding shape of input array !");
-	}
+	if(checkIndices) {
+
+		NDArray* pIndices = indices;
+		if(indices == nullptr)
+            pIndices = new NDArray(input->ordering(), {static_cast<int>(intArgs.size()) - 1}, std::vector<double>(intArgs.begin() + 1, intArgs.end()), DataType::INT64, block.launchContext());
+        const Nd4jLong numOfBadIndx = helpers::checkIndices(block.launchContext(), *pIndices, *input, intArgs[0]);
+        REQUIRE_TRUE(numOfBadIndx == 0, 0, "GATHER OP: please check elements of indices-array, total number of wrong elements is %lld!", numOfBadIndx);
+        if(indices == nullptr)
+            delete pIndices;
+    }
 
 	helpers::gather(block.launchContext(), input, indices, output, intArgs);
 
@@ -87,7 +92,7 @@ DECLARE_TYPES(gather) {
 
 DECLARE_SHAPE_FN(gather) {
 
-	// check shape of paddings 
+	// check shape of paddings
 	auto inputShapeInfo  = inputShape->at(0);
 	Nd4jLong* outputShapeInfo = nullptr;
 
@@ -105,21 +110,21 @@ DECLARE_SHAPE_FN(gather) {
     REQUIRE_TRUE(axis < inputRank, 0, "GATHER op: input axis must be smaller than input array rank, but got %i and %i correspondingly!", axis, inputRank);
 
 	bool isEmpty = false;
-	
+
 	if (block.width() > 1) {
 		auto indicesShapeInfo = inputShape->at(1);
-    
+
     	int indicesRank = shape::rank(indicesShapeInfo);
-      
+
     	int outputRank = inputRank + indicesRank - 1;
-		
+
     	ALLOCATE(outputShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outputRank), Nd4jLong);
 
     	// fill output shapeInfo
     	outputShapeInfo[0] = outputRank;
-    	int shapeIdx = 1;    
-    	
-    	for(int i = 0; i < axis; ++i)    		
+    	int shapeIdx = 1;
+
+    	for(int i = 0; i < axis; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
 
 		for(int i = 0; i < indicesRank; ++i)
@@ -127,7 +132,7 @@ DECLARE_SHAPE_FN(gather) {
 
     	for(int i = axis+1; i < inputRank; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
-	} 
+	}
 	else if (block.numI() > 1) {
 
 		int indicesRank = block.numI() == 2 ? 0 : 1;
@@ -137,7 +142,7 @@ DECLARE_SHAPE_FN(gather) {
 
 		// building shape manually
 		outputShapeInfo[0] = outputRank;
-    	int shapeIdx = 1;    
+    	int shapeIdx = 1;
     	for(int i = 0; i < axis; ++i)
     		outputShapeInfo[shapeIdx++] = inputShapeInfo[i+1];
 

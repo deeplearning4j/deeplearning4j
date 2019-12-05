@@ -239,7 +239,8 @@ public class TensorflowConversion {
             DataBuffer d = Nd4j.createBuffer(indexer.pointer(),nd4jType,length,indexer);
             array = Nd4j.create(d,ndShape);
         }
-        Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);
+        // we don't need this in this case. Device memory will be updated right in the constructor
+        //Nd4j.getAffinityManager().tagLocation(array, AffinityManager.Location.HOST);
         return array;
     }
 

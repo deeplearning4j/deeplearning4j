@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.clip;
 
+import lombok.NonNull;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -38,11 +39,10 @@ public class ClipByValue extends DynamicCustomOp {
     private double clipValueMin;
     private double clipValueMax;
 
-    public ClipByValue(INDArray[] inputs, INDArray[] outputs, double clipValueMin, double clipValueMax, boolean inPlace) {
-        super(null, inputs, outputs);
+    public ClipByValue(@NonNull INDArray input, double clipValueMin, double clipValueMax) {
+        super(null, new INDArray[]{input}, null);
         this.clipValueMin = clipValueMin;
         this.clipValueMax = clipValueMax;
-        this.inplaceCall = inPlace;
         addTArgument(clipValueMin, clipValueMax);
     }
 
@@ -68,7 +68,7 @@ public class ClipByValue extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "clipbyvalue";
+        return "ClipByValue";
     }
 
     @Override

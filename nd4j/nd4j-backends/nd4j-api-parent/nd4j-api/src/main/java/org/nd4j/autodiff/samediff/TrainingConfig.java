@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -18,7 +18,6 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.autodiff.listeners.ListenerEvaluations;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -63,6 +62,7 @@ public class TrainingConfig {
     private List<String> lossVariables;
     private int iterationCount;
     private int epochCount;
+
 
     private Map<String, List<IEvaluation>> trainEvaluations = new HashMap<>();
     private Map<String, Integer> trainEvaluationLabels = new HashMap<>();

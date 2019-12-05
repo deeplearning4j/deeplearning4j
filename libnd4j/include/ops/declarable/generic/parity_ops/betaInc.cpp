@@ -38,6 +38,12 @@ CONFIGURABLE_OP_IMPL(betainc, 3, 1, false, 0, 0) {
     auto b = INPUT_VARIABLE(1);
     auto x = INPUT_VARIABLE(2);
 
+    // just skip op if input is empty
+    if (x->isEmpty()) {
+        *x = DataTypeUtils::nanOrZero<float>();
+        return Status::OK();
+    }
+
 	auto output   = OUTPUT_VARIABLE(0);
 
     REQUIRE_TRUE(a->isSameShape(b) && a->isSameShape(x), 0, "CONFIGURABLE_OP betainc: all three input arrays must have the same shapes, bit got a=%s, b=%s and x=%s instead !", ShapeUtils::shapeAsString(a).c_str(), ShapeUtils::shapeAsString(b).c_str(), ShapeUtils::shapeAsString(x).c_str());

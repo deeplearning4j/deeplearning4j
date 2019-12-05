@@ -168,140 +168,133 @@ fi
 
 case "$OS" in
     linux-armhf)
-    export RPI_BIN=$RPI_HOME/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf
-    export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
-    if [ -z "$ARCH" ]; then
+      export RPI_BIN=$RPI_HOME/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf
+      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
+      if [ -z "$ARCH" ]; then
         ARCH="armv7-r"
-    fi
+      fi
     ;;
 
     linux-arm64)
-    if [ -z "$ARCH" ]; then
+      if [ -z "$ARCH" ]; then
         ARCH="armv8-a"
-    fi
+      fi
     ;;
 
     android-arm)
-    if [ -z "$ARCH" ]; then
+      if [ -z "$ARCH" ]; then
         ARCH="armv7-a"
-    fi
-    export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
-    export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-    export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
-    export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-arm/"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DANDROID_BUILD=true"
+      fi
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
+      export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
+      export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-arm/"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DANDROID_BUILD=true"
     ;;
 
     android-arm64)
-    if [ -z "$ARCH" ]; then
+      if [ -z "$ARCH" ]; then
         ARCH="armv8-a"
-    fi
-    export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
-    export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-    export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
-    export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DANDROID_BUILD=true"
+      fi
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
+      export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
+      export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DANDROID_BUILD=true"
     ;;
 
     android-x86)
-    if [ -z "$ARCH" ]; then
+      if [ -z "$ARCH" ]; then
         ARCH="i686"
-    fi
-    export ANDROID_BIN="$ANDROID_NDK/toolchains/x86-4.9/prebuilt/$KERNEL/"
-    export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-    export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
-    export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-x86/"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake -DANDROID_BUILD=true"
+      fi
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/x86-4.9/prebuilt/$KERNEL/"
+      export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
+      export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-x86/"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake -DANDROID_BUILD=true"
     ;;
 
     android-x86_64)
-    if [ -z "$ARCH" ]; then
+      if [ -z "$ARCH" ]; then
         ARCH="x86-64"
-    fi
-    export ANDROID_BIN="$ANDROID_NDK/toolchains/x86_64-4.9/prebuilt/$KERNEL/"
-    export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-    export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
-    export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86_64/"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DANDROID_BUILD=true"
+      fi
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/x86_64-4.9/prebuilt/$KERNEL/"
+      export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
+      export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86_64/"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DANDROID_BUILD=true"
     ;;
 
     ios-x86_64)
-    LIBTYPE="static"
-    ARCH="x86-64"
-    if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
-    export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-    else
+      LIBTYPE="static"
+      ARCH="x86-64"
+      if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
+        export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+      else
         export IOS_VERSION="10.3"
-    fi
-    XCODE_PATH="$(xcode-select --print-path)"
-    export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86_64.cmake --debug-trycompile -DIOS_BUILD=true"
+      fi
+      XCODE_PATH="$(xcode-select --print-path)"
+      export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86_64.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     ios-x86)
-    LIBTYPE="static"
-    ARCH="i386"
-    if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
-    export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-    else
+      LIBTYPE="static"
+      ARCH="i386"
+      if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
+        export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+      else
         export IOS_VERSION="10.3"
-    fi
-    XCODE_PATH="$(xcode-select --print-path)"
-    export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86.cmake --debug-trycompile -DIOS_BUILD=true"
+      fi
+      XCODE_PATH="$(xcode-select --print-path)"
+      export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     ios-arm64)
-    LIBTYPE="static"
-    ARCH="arm64"
-    if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
-    export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-    else
+      LIBTYPE="static"
+      ARCH="arm64"
+      if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
+        export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+      else
         export IOS_VERSION="10.3"
-    fi
-    XCODE_PATH="$(xcode-select --print-path)"
-    export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm64.cmake --debug-trycompile -DIOS_BUILD=true"
+      fi
+      XCODE_PATH="$(xcode-select --print-path)"
+      export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm64.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     ios-arm)
-    LIBTYPE="static"
-    ARCH="armv7"
-    if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
-    export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
-    else
+      LIBTYPE="static"
+      ARCH="armv7"
+      if xcrun --sdk iphoneos --show-sdk-version &> /dev/null; then
+      export IOS_VERSION="$(xcrun --sdk iphoneos --show-sdk-version)"
+      else
         export IOS_VERSION="10.3"
-    fi
-    XCODE_PATH="$(xcode-select --print-path)"
-    export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm.cmake --debug-trycompile -DIOS_BUILD=true"
+      fi
+      XCODE_PATH="$(xcode-select --print-path)"
+      export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     ios-armv7)
-    # change those 2 parameters and make sure the IOS_SDK exists
-    export iPhoneOS="iPhoneOS"
-    export IOS_VERSION="10.3"
-    LIBTYPE="static"
-    ARCH="armv7"
-    export IOS_SDK="/Applications/Xcode.app/Contents/Developer/Platforms/${iPhoneOS}.platform/Developer/SDKs/${iPhoneOS}${IOS_VERSION}.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-armv7.cmake --debug-trycompile -DIOS_BUILD=true"
+      # change those 2 parameters and make sure the IOS_SDK exists
+      export iPhoneOS="iPhoneOS"
+      export IOS_VERSION="10.3"
+      LIBTYPE="static"
+      ARCH="armv7"
+      export IOS_SDK="/Applications/Xcode.app/Contents/Developer/Platforms/${iPhoneOS}.platform/Developer/SDKs/${iPhoneOS}${IOS_VERSION}.sdk"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-armv7.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     linux*)
     ;;
 
     macosx*)
-    # Do something under Mac OS X platform
-    #if [ "$CHIP" == "cuda" ]; then
-        export CC=clang
-        export CXX=clang++
-        PARALLEL="true"
-    #else
-    #    export CC="$(ls -1 /usr/local/bin/gcc-? | head -n 1)"
-    #    export CXX="$(ls -1 /usr/local/bin/g++-? | head -n 1)"
-    #    PARALLEL="true"
-    #fi
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_MACOSX_RPATH=ON -DAPPLE_BUILD=true"
+      export CC=clang
+      export CXX=clang++
+      PARALLEL="true"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_MACOSX_RPATH=ON -DAPPLE_BUILD=true"
     ;;
 
     windows*)

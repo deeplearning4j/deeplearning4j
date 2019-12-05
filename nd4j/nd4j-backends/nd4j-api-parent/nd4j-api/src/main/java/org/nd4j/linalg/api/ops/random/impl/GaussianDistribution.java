@@ -24,6 +24,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -48,6 +49,10 @@ public class GaussianDistribution extends BaseRandomOp {
 
     public GaussianDistribution() {
         super();
+    }
+
+    public GaussianDistribution(double mean, double stddev, DataType datatype, long... shape){
+        this(Nd4j.createUninitialized(datatype, shape), mean, stddev);
     }
 
     /**

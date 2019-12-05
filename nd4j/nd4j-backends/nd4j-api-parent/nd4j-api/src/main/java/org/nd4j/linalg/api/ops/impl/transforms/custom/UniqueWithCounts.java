@@ -46,8 +46,8 @@ public class UniqueWithCounts extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "UniqueWithCounts";
+    public String[] tensorflowNames() {
+        return new String[]{"UniqueWithCounts","UniqueWithCountsV2"};
     }
 
     @Override

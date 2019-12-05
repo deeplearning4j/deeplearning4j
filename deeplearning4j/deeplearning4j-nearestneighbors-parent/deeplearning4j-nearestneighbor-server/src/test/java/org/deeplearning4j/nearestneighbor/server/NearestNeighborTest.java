@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -50,7 +51,6 @@ public class NearestNeighborTest extends BaseDL4JTest {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    //@Ignore("AB 2019/05/21 - Failing - Issue #7657")
     public void testNearestNeighbor() {
         double[][] data = new double[][] {{1, 2, 3, 4}, {1, 2, 3, 5}, {3, 4, 5, 6}};
         INDArray arr = Nd4j.create(data);
@@ -119,14 +119,15 @@ public class NearestNeighborTest extends BaseDL4JTest {
         File writeToTmp = testDir.newFile();
         writeToTmp.deleteOnExit();
         BinarySerde.writeArrayToDisk(rand, writeToTmp);
-        NearestNeighborsServer server = new NearestNeighborsServer();
-        server.runMain("--ndarrayPath", writeToTmp.getAbsolutePath(), "--nearestNeighborsPort",
+        NearestNeighborsServer.runMain("--ndarrayPath", writeToTmp.getAbsolutePath(), "--nearestNeighborsPort",
                 String.valueOf(localPort));
+
+        Thread.sleep(3000);
 
         NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:" + localPort);
         NearestNeighborsResults result = client.knnNew(5, rand.getRow(0));
         assertEquals(5, result.getResults().size());
-        server.stop();
+        NearestNeighborsServer.getInstance().stop();
     }
 
 

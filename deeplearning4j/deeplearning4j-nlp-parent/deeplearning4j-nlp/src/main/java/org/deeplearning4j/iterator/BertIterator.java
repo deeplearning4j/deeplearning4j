@@ -34,6 +34,7 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.primitives.Triple;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,10 +86,20 @@ import java.util.Map;
  * <pre>
  * {@code
  *          BertIterator b;
+ *          Pair<INDArray[],INDArray[]> featuresAndMask;
+ *          INDArray[] features;
+ *          INDArray[] featureMasks;
+ *
+ *          //With sentences
  *          List<String> forInference;
- *          Pair<INDArray[],INDArray[]> featuresAndMask = b.featurizeSentences(forInference);
- *          INDArray[] features = featuresAndMask.getFirst();
- *          INDArray[] featureMasks = featuresAndMask.getSecond();
+ *          featuresAndMask = b.featurizeSentences(forInference);
+ *
+ *          //OR with sentence pairs
+ *          List<Pair<String, String>> forInferencePair};
+ *          featuresAndMask = b.featurizeSentencePairs(forInference);
+ *
+ *          features = featuresAndMask.getFirst();
+ *          featureMasks = featuresAndMask.getSecond();
  * }
  * </pre>
  * This iterator supports numerous ways of configuring the behaviour with respect to the sequence lengths and data layout.<br>
@@ -135,6 +146,7 @@ public class BertIterator implements MultiDataSetIterator {
     @Setter
     protected MultiDataSetPreProcessor preProcessor;
     protected LabeledSentenceProvider sentenceProvider = null;
+    protected LabeledPairSentenceProvider sentencePairProvider = null;
     protected LengthHandling lengthHandling;
     protected FeatureArrays featureArrays;
     protected Map<String, Integer> vocabMap;   //TODO maybe use Eclipse ObjectIntHashMap or similar for fewer objects?
@@ -142,6 +154,7 @@ public class BertIterator implements MultiDataSetIterator {
     protected UnsupervisedLabelFormat unsupervisedLabelFormat = null;
     protected String maskToken;
     protected String prependToken;
+    protected String appendToken;
 
 
     protected List<String> vocabKeysAsList;
@@ -154,6 +167,7 @@ public class BertIterator implements MultiDataSetIterator {
         this.padMinibatches = b.padMinibatches;
         this.preProcessor = b.preProcessor;
         this.sentenceProvider = b.sentenceProvider;
+        this.sentencePairProvider = b.sentencePairProvider;
         this.lengthHandling = b.lengthHandling;
         this.featureArrays = b.featureArrays;
         this.vocabMap = b.vocabMap;
@@ -161,11 +175,14 @@ public class BertIterator implements MultiDataSetIterator {
         this.unsupervisedLabelFormat = b.unsupervisedLabelFormat;
         this.maskToken = b.maskToken;
         this.prependToken = b.prependToken;
+        this.appendToken = b.appendToken;
     }
 
     @Override
     public boolean hasNext() {
-        return sentenceProvider.hasNext();
+        if (sentenceProvider != null)
+            return sentenceProvider.hasNext();
+        return sentencePairProvider.hasNext();
     }
 
     @Override
@@ -181,29 +198,38 @@ public class BertIterator implements MultiDataSetIterator {
     @Override
     public MultiDataSet next(int num) {
         Preconditions.checkState(hasNext(), "No next element available");
-
-        List<Pair<String, String>> list = new ArrayList<>(num);
+        List<Pair<List<String>, String>> tokensAndLabelList;
         int mbSize = 0;
+        int outLength;
+        long[] segIdOnesFrom = null;
         if (sentenceProvider != null) {
+            List<Pair<String, String>> list = new ArrayList<>(num);
             while (sentenceProvider.hasNext() && mbSize++ < num) {
                 list.add(sentenceProvider.nextSentence());
             }
+            SentenceListProcessed sentenceListProcessed = tokenizeMiniBatch(list);
+            tokensAndLabelList = sentenceListProcessed.getTokensAndLabelList();
+            outLength = sentenceListProcessed.getMaxL();
+        } else if (sentencePairProvider != null) {
+            List<Triple<String, String, String>> listPairs = new ArrayList<>(num);
+            while (sentencePairProvider.hasNext() && mbSize++ < num) {
+                listPairs.add(sentencePairProvider.nextSentencePair());
+            }
+            SentencePairListProcessed sentencePairListProcessed = tokenizePairsMiniBatch(listPairs);
+            tokensAndLabelList = sentencePairListProcessed.getTokensAndLabelList();
+            outLength = sentencePairListProcessed.getMaxL();
+            segIdOnesFrom = sentencePairListProcessed.getSegIdOnesFrom();
         } else {
             //TODO - other types of iterators...
             throw new UnsupportedOperationException("Labelled sentence provider is null and no other iterator types have yet been implemented");
         }
 
-
-        Pair<Integer, List<Pair<List<String>, String>>> outLTokenizedSentencesPair = tokenizeMiniBatch(list);
-        List<Pair<List<String>, String>> tokenizedSentences = outLTokenizedSentencesPair.getRight();
-        int outLength = outLTokenizedSentencesPair.getLeft();
-
-        Pair<INDArray[], INDArray[]> featuresAndMaskArraysPair = convertMiniBatchFeatures(tokenizedSentences, outLength);
+        Pair<INDArray[], INDArray[]> featuresAndMaskArraysPair = convertMiniBatchFeatures(tokensAndLabelList, outLength, segIdOnesFrom);
         INDArray[] featureArray = featuresAndMaskArraysPair.getFirst();
         INDArray[] featureMaskArray = featuresAndMaskArraysPair.getSecond();
 
 
-        Pair<INDArray[], INDArray[]> labelsAndMaskArraysPair = convertMiniBatchLabels(tokenizedSentences, featureArray, outLength);
+        Pair<INDArray[], INDArray[]> labelsAndMaskArraysPair = convertMiniBatchLabels(tokensAndLabelList, featureArray, outLength);
         INDArray[] labelArray = labelsAndMaskArraysPair.getFirst();
         INDArray[] labelMaskArray = labelsAndMaskArraysPair.getSecond();
 
@@ -224,32 +250,59 @@ public class BertIterator implements MultiDataSetIterator {
     public Pair<INDArray[], INDArray[]> featurizeSentences(List<String> listOnlySentences) {
 
         List<Pair<String, String>> sentencesWithNullLabel = addDummyLabel(listOnlySentences);
+        SentenceListProcessed sentenceListProcessed = tokenizeMiniBatch(sentencesWithNullLabel);
+        List<Pair<List<String>, String>> tokensAndLabelList = sentenceListProcessed.getTokensAndLabelList();
+        int outLength = sentenceListProcessed.getMaxL();
 
-        Pair<Integer, List<Pair<List<String>, String>>> outLTokenizedSentencesPair = tokenizeMiniBatch(sentencesWithNullLabel);
-        List<Pair<List<String>, String>> tokenizedSentences = outLTokenizedSentencesPair.getRight();
-        int outLength = outLTokenizedSentencesPair.getLeft();
-
-        Pair<INDArray[], INDArray[]> featureFeatureMasks = convertMiniBatchFeatures(tokenizedSentences, outLength);
         if (preProcessor != null) {
+            Pair<INDArray[], INDArray[]> featureFeatureMasks = convertMiniBatchFeatures(tokensAndLabelList, outLength, null);
             MultiDataSet dummyMDS = new org.nd4j.linalg.dataset.MultiDataSet(featureFeatureMasks.getFirst(), null, featureFeatureMasks.getSecond(), null);
             preProcessor.preProcess(dummyMDS);
-            return new Pair<INDArray[],INDArray[]>(dummyMDS.getFeatures(), dummyMDS.getFeaturesMaskArrays());
+            return new Pair<>(dummyMDS.getFeatures(), dummyMDS.getFeaturesMaskArrays());
         }
-        return convertMiniBatchFeatures(tokenizedSentences, outLength);
+        return convertMiniBatchFeatures(tokensAndLabelList, outLength, null);
     }
 
-    private Pair<INDArray[], INDArray[]> convertMiniBatchFeatures(List<Pair<List<String>, String>> tokenizedSentences, int outLength) {
-        int mbPadded = padMinibatches ? minibatchSize : tokenizedSentences.size();
+    /**
+     * For use during inference. Will convert a given pair of a list of sentences to features and feature masks as appropriate.
+     *
+     * @param listOnlySentencePairs
+     * @return Pair of INDArrays[], first element is feature arrays and the second is the masks array
+     */
+    public Pair<INDArray[], INDArray[]> featurizeSentencePairs(List<Pair<String, String>> listOnlySentencePairs) {
+        Preconditions.checkState(sentencePairProvider != null, "The featurizeSentencePairs method is meant for inference with sentence pairs. Use only when the sentence pair provider is set (i.e not null).");
+
+        List<Triple<String, String, String>> sentencePairsWithNullLabel = addDummyLabelForPairs(listOnlySentencePairs);
+        SentencePairListProcessed sentencePairListProcessed = tokenizePairsMiniBatch(sentencePairsWithNullLabel);
+        List<Pair<List<String>, String>> tokensAndLabelList = sentencePairListProcessed.getTokensAndLabelList();
+        int outLength = sentencePairListProcessed.getMaxL();
+        long[] segIdOnesFrom = sentencePairListProcessed.getSegIdOnesFrom();
+        if (preProcessor != null) {
+            Pair<INDArray[], INDArray[]> featuresAndMaskArraysPair = convertMiniBatchFeatures(tokensAndLabelList, outLength, segIdOnesFrom);
+            MultiDataSet dummyMDS = new org.nd4j.linalg.dataset.MultiDataSet(featuresAndMaskArraysPair.getFirst(), null, featuresAndMaskArraysPair.getSecond(), null);
+            preProcessor.preProcess(dummyMDS);
+            return new Pair<>(dummyMDS.getFeatures(), dummyMDS.getFeaturesMaskArrays());
+        }
+        return convertMiniBatchFeatures(tokensAndLabelList, outLength, segIdOnesFrom);
+    }
+
+    private Pair<INDArray[], INDArray[]> convertMiniBatchFeatures(List<Pair<List<String>, String>> tokensAndLabelList, int outLength, long[] segIdOnesFrom) {
+        int mbPadded = padMinibatches ? minibatchSize : tokensAndLabelList.size();
         int[][] outIdxs = new int[mbPadded][outLength];
         int[][] outMask = new int[mbPadded][outLength];
-        for (int i = 0; i < tokenizedSentences.size(); i++) {
-            Pair<List<String>, String> p = tokenizedSentences.get(i);
+        int[][] outSegmentId = null;
+        if (featureArrays == FeatureArrays.INDICES_MASK_SEGMENTID)
+            outSegmentId = new int[mbPadded][outLength];
+        for (int i = 0; i < tokensAndLabelList.size(); i++) {
+            Pair<List<String>, String> p = tokensAndLabelList.get(i);
             List<String> t = p.getFirst();
             for (int j = 0; j < outLength && j < t.size(); j++) {
                 Preconditions.checkState(vocabMap.containsKey(t.get(j)), "Unknown token encountered: token \"%s\" is not in vocabulary", t.get(j));
                 int idx = vocabMap.get(t.get(j));
                 outIdxs[i][j] = idx;
                 outMask[i][j] = 1;
+                if (segIdOnesFrom != null && j >= segIdOnesFrom[i])
+                    outSegmentId[i][j] = 1;
             }
         }
 
@@ -260,8 +313,7 @@ public class BertIterator implements MultiDataSetIterator {
         INDArray[] f;
         INDArray[] fm;
         if (featureArrays == FeatureArrays.INDICES_MASK_SEGMENTID) {
-            //For now: always segment index 0 (only single s sequence input supported)
-            outSegmentIdArr = Nd4j.zeros(DataType.INT, mbPadded, outLength);
+            outSegmentIdArr = Nd4j.createFromArray(outSegmentId);
             f = new INDArray[]{outIdxsArr, outSegmentIdArr};
             fm = new INDArray[]{outMaskArr, null};
         } else {
@@ -271,16 +323,15 @@ public class BertIterator implements MultiDataSetIterator {
         return new Pair<>(f, fm);
     }
 
-    private Pair<Integer, List<Pair<List<String>, String>>> tokenizeMiniBatch(List<Pair<String, String>> list) {
+    private SentenceListProcessed tokenizeMiniBatch(List<Pair<String, String>> list) {
         //Get and tokenize the sentences for this minibatch
-        List<Pair<List<String>, String>> tokenizedSentences = new ArrayList<>(list.size());
+        SentenceListProcessed sentenceListProcessed = new SentenceListProcessed(list.size());
         int longestSeq = -1;
         for (Pair<String, String> p : list) {
             List<String> tokens = tokenizeSentence(p.getFirst());
-            tokenizedSentences.add(new Pair<>(tokens, p.getSecond()));
+            sentenceListProcessed.addProcessedToList(new Pair<>(tokens, p.getSecond()));
             longestSeq = Math.max(longestSeq, tokens.size());
         }
-
         //Determine output array length...
         int outLength;
         switch (lengthHandling) {
@@ -296,7 +347,52 @@ public class BertIterator implements MultiDataSetIterator {
             default:
                 throw new RuntimeException("Not implemented length handling mode: " + lengthHandling);
         }
-        return new Pair<>(outLength, tokenizedSentences);
+        sentenceListProcessed.setMaxL(outLength);
+        return sentenceListProcessed;
+    }
+
+    private SentencePairListProcessed tokenizePairsMiniBatch(List<Triple<String, String, String>> listPairs) {
+        SentencePairListProcessed sentencePairListProcessed = new SentencePairListProcessed(listPairs.size());
+        for (Triple<String, String, String> t : listPairs) {
+            List<String> tokensL = tokenizeSentence(t.getFirst(), true);
+            List<String> tokensR = tokenizeSentence(t.getSecond(), true);
+            List<String> tokens = new ArrayList<>(maxTokens);
+            int maxLength = maxTokens;
+            if (prependToken != null)
+                maxLength--;
+            if (appendToken != null)
+                maxLength -= 2;
+            if (tokensL.size() + tokensR.size() > maxLength) {
+                boolean shortOnL = tokensL.size() < tokensR.size();
+                int shortSize = Math.min(tokensL.size(), tokensR.size());
+                if (shortSize > maxLength / 2) {
+                    //both lists need to be sliced
+                    tokensL.subList(maxLength / 2, tokensL.size()).clear(); //if maxsize/2 is odd pop extra on L side to match implementation in TF
+                    tokensR.subList(maxLength - maxLength / 2, tokensR.size()).clear();
+                } else {
+                    //slice longer list
+                    if (shortOnL) {
+                        //longer on R - slice R
+                        tokensR.subList(maxLength - tokensL.size(), tokensR.size()).clear();
+                    } else {
+                        //longer on L - slice L
+                        tokensL.subList(maxLength - tokensR.size(), tokensL.size()).clear();
+                    }
+                }
+            }
+            if (prependToken != null)
+                tokens.add(prependToken);
+            tokens.addAll(tokensL);
+            if (appendToken != null)
+                tokens.add(appendToken);
+            int segIdOnesFrom = tokens.size();
+            tokens.addAll(tokensR);
+            if (appendToken != null)
+                tokens.add(appendToken);
+            sentencePairListProcessed.addProcessedToList(segIdOnesFrom, new Pair<>(tokens, t.getThird()));
+        }
+        sentencePairListProcessed.setMaxL(maxTokens);
+        return sentencePairListProcessed;
     }
 
     private Pair<INDArray[], INDArray[]> convertMiniBatchLabels(List<Pair<List<String>, String>> tokenizedSentences, INDArray[] featureArray, int outLength) {
@@ -311,6 +407,14 @@ public class BertIterator implements MultiDataSetIterator {
             if (sentenceProvider != null) {
                 numClasses = sentenceProvider.numLabelClasses();
                 List<String> labels = sentenceProvider.allLabels();
+                for (int i = 0; i < mbSize; i++) {
+                    String lbl = tokenizedSentences.get(i).getRight();
+                    classLabels[i] = labels.indexOf(lbl);
+                    Preconditions.checkState(classLabels[i] >= 0, "Provided label \"%s\" for sentence does not exist in set of classes/categories", lbl);
+                }
+            } else if (sentencePairProvider != null) {
+                numClasses = sentencePairProvider.numLabelClasses();
+                List<String> labels = sentencePairProvider.allLabels();
                 for (int i = 0; i < mbSize; i++) {
                     String lbl = tokenizedSentences.get(i).getRight();
                     classLabels[i] = labels.indexOf(lbl);
@@ -392,16 +496,22 @@ public class BertIterator implements MultiDataSetIterator {
     }
 
     private List<String> tokenizeSentence(String sentence) {
+        return tokenizeSentence(sentence, false);
+    }
+
+    private List<String> tokenizeSentence(String sentence, boolean ignorePrependAppend) {
         Tokenizer t = tokenizerFactory.create(sentence);
 
         List<String> tokens = new ArrayList<>();
-        if (prependToken != null)
+        if (prependToken != null && !ignorePrependAppend)
             tokens.add(prependToken);
 
         while (t.hasMoreTokens()) {
             String token = t.nextToken();
             tokens.add(token);
         }
+        if (appendToken != null && !ignorePrependAppend)
+            tokens.add(appendToken);
         return tokens;
     }
 
@@ -414,6 +524,13 @@ public class BertIterator implements MultiDataSetIterator {
         return list;
     }
 
+    private List<Triple<String, String, String>> addDummyLabelForPairs(List<Pair<String, String>> listOnlySentencePairs) {
+        List<Triple<String, String, String>> list = new ArrayList<>(listOnlySentencePairs.size());
+        for (Pair<String, String> p : listOnlySentencePairs) {
+            list.add(new Triple<String, String, String>(p.getFirst(), p.getSecond(), null));
+        }
+        return list;
+    }
 
     @Override
     public boolean resetSupported() {
@@ -446,12 +563,14 @@ public class BertIterator implements MultiDataSetIterator {
         protected boolean padMinibatches = false;
         protected MultiDataSetPreProcessor preProcessor;
         protected LabeledSentenceProvider sentenceProvider = null;
+        protected LabeledPairSentenceProvider sentencePairProvider = null;
         protected FeatureArrays featureArrays = FeatureArrays.INDICES_MASK_SEGMENTID;
         protected Map<String, Integer> vocabMap;   //TODO maybe use Eclipse ObjectIntHashMap for fewer objects?
         protected BertSequenceMasker masker = new BertMaskedLMMasker();
         protected UnsupervisedLabelFormat unsupervisedLabelFormat;
         protected String maskToken;
         protected String prependToken;
+        protected String appendToken;
 
         /**
          * Specify the {@link Task} the iterator should be set up for. See {@link BertIterator} for more details.
@@ -519,11 +638,18 @@ public class BertIterator implements MultiDataSetIterator {
         }
 
         /**
-         * Specify the source of the data for classification. Can also be used for unsupervised learning; in the unsupervised
-         * use case, the labels will be ignored.
+         * Specify the source of the data for classification.
          */
         public Builder sentenceProvider(LabeledSentenceProvider sentenceProvider) {
             this.sentenceProvider = sentenceProvider;
+            return this;
+        }
+
+        /**
+         * Specify the source of the data for classification on sentence pairs.
+         */
+        public Builder sentencePairProvider(LabeledPairSentenceProvider sentencePairProvider) {
+            this.sentencePairProvider = sentencePairProvider;
             return this;
         }
 
@@ -591,6 +717,19 @@ public class BertIterator implements MultiDataSetIterator {
             return this;
         }
 
+        /**
+         * Append the specified token to the sequences, when doing training on sentence pairs.<br>
+         * Generally "[SEP]" is used
+         * No token in appended by default.
+         *
+         * @param appendToken Token at end of each sentence for pairs of sentences (null: no token will be appended)
+         * @return
+         */
+        public Builder appendToken(String appendToken) {
+            this.appendToken = appendToken;
+            return this;
+        }
+
         public BertIterator build() {
             Preconditions.checkState(task != null, "No task has been set. Use .task(BertIterator.Task.X) to set the task to be performed");
             Preconditions.checkState(tokenizerFactory != null, "No tokenizer factory has been set. A tokenizer factory (such as BertWordPieceTokenizerFactory) is required");
@@ -598,9 +737,69 @@ public class BertIterator implements MultiDataSetIterator {
             Preconditions.checkState(task != Task.UNSUPERVISED || masker != null, "If task is UNSUPERVISED training, a masker must be set via masker(BertSequenceMasker) method");
             Preconditions.checkState(task != Task.UNSUPERVISED || unsupervisedLabelFormat != null, "If task is UNSUPERVISED training, a label format must be set via masker(BertSequenceMasker) method");
             Preconditions.checkState(task != Task.UNSUPERVISED || maskToken != null, "If task is UNSUPERVISED training, the mask token in the vocab (such as \"[MASK]\" must be specified");
-
+            if (sentencePairProvider != null) {
+                Preconditions.checkState(task == Task.SEQ_CLASSIFICATION, "Currently only supervised sequence classification is set up with sentence pairs. \".task(BertIterator.Task.SEQ_CLASSIFICATION)\" is required with a sentence pair provider");
+                Preconditions.checkState(featureArrays == FeatureArrays.INDICES_MASK_SEGMENTID, "Currently only supervised sequence classification is set up with sentence pairs. \".featureArrays(FeatureArrays.INDICES_MASK_SEGMENTID)\" is required with a sentence pair provider");
+                Preconditions.checkState(lengthHandling == LengthHandling.FIXED_LENGTH, "Currently only fixed length is supported for sentence pairs. \".lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, maxLength)\" is required with a sentence pair provider");
+                Preconditions.checkState(sentencePairProvider != null, "Provide either a sentence provider or a sentence pair provider. Both cannot be non null");
+            }
+            if (appendToken != null) {
+                Preconditions.checkState(sentencePairProvider != null, "Tokens are only appended with sentence pairs. Sentence pair provider is not set. Set sentence pair provider.");
+            }
             return new BertIterator(this);
         }
     }
 
+    private static class SentencePairListProcessed {
+        private int listLength = 0;
+
+        @Getter
+        private long[] segIdOnesFrom;
+        private int cursor = 0;
+        private SentenceListProcessed sentenceListProcessed;
+
+        private SentencePairListProcessed(int listLength) {
+            this.listLength = listLength;
+            segIdOnesFrom = new long[listLength];
+            sentenceListProcessed = new SentenceListProcessed(listLength);
+        }
+
+        private void addProcessedToList(long segIdIdx, Pair<List<String>, String> tokenizedSentencePairAndLabel) {
+            segIdOnesFrom[cursor] = segIdIdx;
+            sentenceListProcessed.addProcessedToList(tokenizedSentencePairAndLabel);
+            cursor++;
+        }
+
+        private void setMaxL(int maxL) {
+            sentenceListProcessed.setMaxL(maxL);
+        }
+
+        private int getMaxL() {
+            return sentenceListProcessed.getMaxL();
+        }
+
+        private List<Pair<List<String>, String>> getTokensAndLabelList() {
+            return sentenceListProcessed.getTokensAndLabelList();
+        }
+    }
+
+    private static class SentenceListProcessed {
+        private int listLength;
+
+        @Getter
+        @Setter
+        private int maxL;
+
+        @Getter
+        private List<Pair<List<String>, String>> tokensAndLabelList;
+
+        private SentenceListProcessed(int listLength) {
+            this.listLength = listLength;
+            tokensAndLabelList = new ArrayList<>(listLength);
+        }
+
+        private void addProcessedToList(Pair<List<String>, String> tokenizedSentenceAndLabel) {
+            tokensAndLabelList.add(tokenizedSentenceAndLabel);
+        }
+    }
 }

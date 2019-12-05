@@ -256,11 +256,9 @@ public class ExecutionTest  {
 
         TransformProcess transformProcess = new TransformProcess.Builder(schema)
                 .transform(
-                        new PythonTransform(
-                                "first = np.sin(first)\nsecond = np.cos(second)",
-                                schema
-                        )
-                )
+                        PythonTransform.builder().code(
+                                "first = np.sin(first)\nsecond = np.cos(second)")
+                        .outputSchema(schema).build())
                 .build();
 
         List<List<Writable>> functions = new ArrayList<>();

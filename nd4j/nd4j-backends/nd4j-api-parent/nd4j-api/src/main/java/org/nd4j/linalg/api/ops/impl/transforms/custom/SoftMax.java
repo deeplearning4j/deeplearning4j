@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -69,8 +70,12 @@ public class SoftMax extends BaseDynamicTransformOp {
         addIArgument(dimension);
     }
 
+    public SoftMax(@NonNull INDArray input, int dimension){
+        this(input, null, dimension);
+    }
+
     public SoftMax(INDArray input, INDArray result, int dimension){
-        super(new INDArray[]{input}, new INDArray[]{result});
+        super(new INDArray[]{input}, wrapOrNull(result));
         this.dimension = dimension;
         addIArgument(dimension);
     }

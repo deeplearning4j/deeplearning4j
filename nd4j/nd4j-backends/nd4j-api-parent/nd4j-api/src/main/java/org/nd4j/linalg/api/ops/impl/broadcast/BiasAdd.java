@@ -48,6 +48,10 @@ public class BiasAdd extends DynamicCustomOp {
         this.nchw = nchw;
     }
 
+    public BiasAdd(@NonNull INDArray input, @NonNull INDArray bias, boolean nchw){
+        this(input, bias, null, nchw);
+    }
+
     public BiasAdd(@NonNull INDArray input, @NonNull INDArray bias, INDArray output, boolean nchw){
         super(new INDArray[]{input, bias}, wrapOrNull(output));
         bArguments.clear();

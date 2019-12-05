@@ -46,7 +46,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.BarnesEdgeForces.class,
             org.nd4j.linalg.api.ops.custom.BarnesHutGains.class,
             org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize.class,
-            org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes.class,
             org.nd4j.linalg.api.ops.custom.KnnMinDistance.class,
             org.nd4j.linalg.api.ops.custom.SpTreeCell.class,
             org.nd4j.linalg.api.ops.custom.Flatten.class,
@@ -86,6 +85,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.image.CropAndResize.class,
             org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches.class,
             org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression.class,
+            org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionV3.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeBilinear.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeNearestNeighbor.class,
             org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex.class,
@@ -121,6 +121,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalizationDerivative.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D.class,
+            org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3DDerivative.class,
@@ -540,6 +541,8 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.strict.Log.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.Log1p.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoid.class,
+            org.nd4j.linalg.api.ops.impl.transforms.strict.Mish.class,
+            org.nd4j.linalg.api.ops.impl.transforms.strict.MishDerivative.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative.class,
             org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh.class,
@@ -586,7 +589,17 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.BitCast.class,
             org.nd4j.linalg.api.ops.custom.CompareAndBitpack.class,
             org.nd4j.linalg.api.ops.custom.DivideNoNan.class,
-            org.nd4j.linalg.api.ops.custom.FakeQuantWithMinMaxVarsPerChannel.class
+            org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes.class,
+            org.nd4j.linalg.api.ops.custom.FakeQuantWithMinMaxVarsPerChannel.class,
+            org.nd4j.linalg.api.ops.custom.AdjustSaturation.class,
+            org.nd4j.linalg.api.ops.custom.AdjustHue.class,
+            org.nd4j.linalg.api.ops.custom.FusedBatchNorm.class,
+            org.nd4j.linalg.api.ops.custom.BetaInc.class,
+            org.nd4j.linalg.api.ops.custom.MatrixBandPart.class,
+            org.nd4j.linalg.api.ops.custom.Polygamma.class,
+            org.nd4j.linalg.api.ops.custom.RandomCrop.class,
+            org.nd4j.linalg.api.ops.custom.Roll.class,
+            org.nd4j.linalg.api.ops.custom.ToggleBits.class
     );
 
     static {

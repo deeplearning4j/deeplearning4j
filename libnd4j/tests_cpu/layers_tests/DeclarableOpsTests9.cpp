@@ -1903,13 +1903,13 @@ TEST_F(DeclarableOpsTests9, cumprod_2) {
     NDArray exp0 = exp(0, {0});
     NDArray exp1 = exp(1, {0});
 
-    exp0.p<float>(0, 1.);
-    exp1.p<float>(0, 1.);
+    exp0.p(0, 1.f);
+    exp1.p(0, 1.f);
 
     for (int i = 1; i < 1500; ++i) {
         const auto prev = exp0.e<float>(i-1);
-        exp0.p<float>(i, prev * x0.e<float>(i));
-        exp1.p<float>(i, prev * x1.e<float>(i));
+        exp0.p(i, prev * x0.e<float>(i));
+        exp1.p(i, prev * x1.e<float>(i));
     }
 
     nd4j::ops::cumprod op;
@@ -3331,8 +3331,8 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Cholesky_Test_3) {
 
-    NDArray x = NDArrayFactory::create<float>('c', {2, 3, 3}, {4, 12,-16, 12 ,37,-43, -16, -43, 98, 1, 1, 1, 1, 2, 2, 1, 2., 6});
-    NDArray exp = NDArrayFactory::create<float>('c', {2, 3, 3}, {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3., 1., 0., 0., 1., 1., 0,1., 1., 2.});
+    NDArray x = NDArrayFactory::create<float>('c', {2, 3, 3}, {4.f, 12.f, -16.f, 12.f, 37.f, -43.f, -16.f, -43.f, 98.f, 1.f, 1.f, 1.f, 1.f, 2.f, 2.f, 1.f, 2.f, 6.f});
+    NDArray exp = NDArrayFactory::create<float>('c', {2, 3, 3}, {2.f,  0.f,  0.f, 6.f, 1.f,  0.f, -8.f,  5.f,  3.f, 1.f, 0.f, 0.f, 1.f, 1.f, 0.f, 1.f, 1.f, 2.f});
 
     nd4j::ops::cholesky op;
 

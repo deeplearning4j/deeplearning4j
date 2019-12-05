@@ -39,14 +39,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -744,6 +737,35 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testMaxPoolingArgMax() {
+        Nd4j.getRandom().setSeed(12345);
+        int nIn = 3;
+        int kH = 2;
+        int kW = 2;
+
+        int mb = 3;
+        int imgH = 8;
+        int imgW = 8;
+
+        SameDiff sd = SameDiff.create();
+        INDArray inArr = Nd4j.rand(new int[]{mb, nIn, imgH, imgW});
+
+        SDVariable in = sd.var("in", inArr);
+
+        Pooling2DConfig pooling2DConfig = Pooling2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(0).pW(0)
+                .sH(1).sW(1)
+                .dH(1).dW(1)
+                .isSameMode(true)
+                .build();
+
+        SDVariable[] results = sd.nn().maxPoolWithArgmax(new String[]{"",""}, in, pooling2DConfig);
+        assertArrayEquals(inArr.shape(), results[0].eval().shape());
+        assertArrayEquals(inArr.shape(), results[1].eval().shape());
+    }
+
+    @Test
     public void testMaxPooling2dBasic() {
         Nd4j.getRandom().setSeed(12345);
         int nIn = 3;
@@ -944,7 +966,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Conv1DConfig conv1DConfig = Conv1DConfig.builder()
                 .k(k).p(0).s(1)
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .build();
 
         SDVariable out = sd.cnn().conv1d(in, w, conv1DConfig);
@@ -959,6 +981,55 @@ public class LayerOpValidation extends BaseOpValidation {
                 .validate(tc);
         assertNull(err);
     }
+
+    @Test
+    public void testConv1dCausal() {
+        Nd4j.getRandom().setSeed(12345);
+        int nIn = 3;
+        int nOut = 4;
+        int mb = 2;
+
+        for( int k : new int[]{2, 3}) {
+            for (int sz : new int[]{3, 4, 5}) {
+                for (int s : new int[]{1, 2}) {
+                    for (int d : new int[]{1, 2}) {
+                        for (boolean ncw : new boolean[]{true, false}) {
+
+                            SameDiff sd = SameDiff.create();
+                            INDArray wArr = Nd4j.rand(DataType.DOUBLE, k, nIn, nOut);
+                            INDArray inArr = Nd4j.rand(DataType.DOUBLE, (ncw ? new long[]{mb, nIn, sz} : new long[]{mb, sz, nIn}));
+                            INDArray bArr = Nd4j.rand(DataType.DOUBLE, nOut);
+
+                            SDVariable in = sd.var("in", inArr);
+                            SDVariable w = sd.var("W", wArr);
+                            SDVariable b = sd.var("b", bArr);
+
+                            Conv1DConfig conv1DConfig = Conv1DConfig.builder()
+                                    .dataFormat(ncw ? Conv1DConfig.NCW : Conv1DConfig.NWC)
+                                    .k(k).p(0).s(s).d(d)
+                                    .paddingMode(PaddingMode.CAUSAL)
+                                    .build();
+
+                            SDVariable out = sd.cnn().conv1d(in, w, b, conv1DConfig);
+                            SDVariable loss = sd.nn().tanh(out).std(true).rename("loss");
+
+                            sd.setLossVariables("loss");
+
+                            String name = "k=" + k + ", sz=" + sz + ", ncw=" + ncw;
+
+                            System.out.println(name);
+
+                            TestCase tc = new TestCase(sd).testName(name).gradientCheck(true);
+                            String err = OpValidation
+                                    .validate(tc);
+                            assertNull(err);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 
     @Test
     public void testConv1dForward(){
@@ -1254,7 +1325,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         Conv1DConfig conv1DConfig = Conv1DConfig.builder()
                 .k(k).p(-1).s(0)
-                .isSameMode(false)
+                .paddingMode(PaddingMode.VALID)
                 .build();
 
         SDVariable out = sd.cnn().conv1d(in, w, conv1DConfig);

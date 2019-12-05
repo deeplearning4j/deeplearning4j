@@ -17,9 +17,11 @@
 package org.nd4j.linalg.api.ops.impl.transforms;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB;
 
 import java.util.Collections;
@@ -37,7 +39,10 @@ public class ReluLayer extends XwPlusB {
 
     public ReluLayer(SameDiff sameDiff, SDVariable input, SDVariable weights, SDVariable bias) {
         super(sameDiff, input, weights, bias);
+    }
 
+    public ReluLayer(@NonNull INDArray input, @NonNull INDArray weights, @NonNull INDArray bias){
+        super(new INDArray[]{input, weights, bias}, null);
     }
 
     @Override

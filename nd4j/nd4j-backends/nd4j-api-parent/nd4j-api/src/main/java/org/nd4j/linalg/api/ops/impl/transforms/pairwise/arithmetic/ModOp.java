@@ -57,7 +57,7 @@ public class ModOp extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "mod";
+        return "Mod";
     }
 
     @Override

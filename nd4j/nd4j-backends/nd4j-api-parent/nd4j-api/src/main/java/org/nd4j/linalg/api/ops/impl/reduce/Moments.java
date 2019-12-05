@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.reduce;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -39,6 +40,12 @@ import java.util.Map;
 public class Moments extends DynamicCustomOp {
 
     private int[] axes;
+
+    public Moments(@NonNull INDArray input, int... axes){
+        super(new INDArray[]{input}, null);
+        this.axes = axes;
+        addArgs();
+    }
 
     public Moments(SameDiff sameDiff, SDVariable input) {
         this(sameDiff, input, null);

@@ -25,6 +25,7 @@
 
 namespace nd4j {
     namespace ops {
+
         CUSTOM_OP_IMPL(create, 1, 1, false, 0, 1) {
             auto init = block.numB() > 0 ? B_ARG(0) : true;
 

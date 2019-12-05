@@ -58,8 +58,20 @@ public class StatsListener extends BaseStatsListener {
      * @param listenerFrequency Frequency with which to collect stats information
      */
     public StatsListener(StatsStorageRouter router, int listenerFrequency) {
+        this(router, listenerFrequency, null);
+    }
+
+    /**
+     * Create a StatsListener with network information collected every n >= 1 time steps
+     *
+     * @param router            Where/how to store the calculated stats. For example, {@link org.deeplearning4j.ui.storage.InMemoryStatsStorage} or
+     *                          {@link org.deeplearning4j.ui.storage.FileStatsStorage}
+     * @param listenerFrequency Frequency with which to collect stats information
+     * @param sessionId         The Session ID for storing the stats, optional (may be null)
+     */
+    public StatsListener(StatsStorageRouter router, int listenerFrequency, String sessionId) {
         this(router, null, new DefaultStatsUpdateConfiguration.Builder().reportingFrequency(listenerFrequency).build(),
-                        null, null);
+                sessionId, null);
     }
 
     public StatsListener(StatsStorageRouter router, StatsInitializationConfiguration initConfig,

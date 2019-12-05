@@ -44,7 +44,7 @@
 
 namespace nd4j {
 
-    class BenchmarkHelper {
+    class ND4J_EXPORT BenchmarkHelper {
     private:
         unsigned int _wIterations;
         unsigned int _rIterations;

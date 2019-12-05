@@ -293,8 +293,8 @@ public class MaxPooling2D extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "MaxPool";
+    public String[] tensorflowNames() {
+        return new String[]{"MaxPool","MaxPoolV2"};
     }
 
     @Override

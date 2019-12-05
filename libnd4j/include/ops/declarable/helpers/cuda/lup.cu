@@ -110,12 +110,21 @@ namespace helpers {
     template<typename T>
     static __global__ void
     invertLowKernel(void *invertedBuf, Nd4jLong *invertedShape, void *inputBuf, Nd4jLong *inputShape, Nd4jLong n) {
+
         T *inverted = reinterpret_cast<T *>(invertedBuf);
         T *input = reinterpret_cast<T *>(inputBuf);
+        if (threadIdx.x == 0) {
+            inverted = reinterpret_cast<T *>(invertedBuf);
+            input = reinterpret_cast<T *>(inputBuf);
+        }
+        __syncthreads();
 
-        for (int i = blockIdx.x + 2; i < n; i += gridDim.x) {
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = gridDim.x * blockDim.x;
+
+        for (int i = tid + 2; i < n; i += step) {
             for (int j = i - 2; j >= 0; --j)
-                for (int k = threadIdx.x; k < i; k += blockDim.x) {
+                for (int k = 0; k < i; k++) {
                     Nd4jLong posZ[] = {i, j};
                     Nd4jLong posY[] = {k, j};
                     Nd4jLong posX[] = {i, k};
@@ -144,10 +153,12 @@ namespace helpers {
             input = reinterpret_cast<T *>(inputBuf);
         }
         __syncthreads();
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = blockDim.x * gridDim.x;
 
-        for (int i = (int)n - blockIdx.x - 2; i >= 0; i -= gridDim.x) {
+        for (int i = (int)n - tid - 2; i >= 0; i -= step) {
             for (int j = i + 2; j < (int)n; j++)
-                for (int k = i + threadIdx.x; k < (int)n; k += blockDim.x) {
+                for (int k = i; k < (int)n; k++) {
                     Nd4jLong posZ[] = {i, j};
                     Nd4jLong posY[] = {k, j};
                     Nd4jLong posX[] = {i, k};
@@ -498,8 +509,6 @@ namespace helpers {
             fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
 //            else
 //                fillMatrix<T, float><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
-
-//            if (matrix.dataType() == input->dataType())
             lup_<T>(context, &matrix, nullptr, nullptr);
 //            else
 //                lup_<float>(context, &matrix, nullptr, nullptr);
@@ -627,9 +636,14 @@ namespace helpers {
             for (auto i = 0LL; i < packX.numberOfTads(); i++) {
                 fillMatrix<T, T><<<1, n2, 1024, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), i * n2, n);
                 matrix.tickWriteDevice();
-                compound.assign(matrix);
-                lup_<T>(context, &compound, nullptr, nullptr);
-                fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower.specialBuffer(), lower.specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), compound.specialBuffer(), compound.specialShapeInfo(), n);
+                //compound.assign(matrix);
+//            if (matrix.dataType() == input->dataType())
+                lup_<T>(context, &matrix, nullptr, nullptr);
+                fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower.specialBuffer(), lower.specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), matrix.specialBuffer(), matrix.specialShapeInfo(), n);
+                lower.tickWriteDevice();
+                upper.tickWriteDevice();
+//                lower.printIndexedBuffer("LOWER");
+//                upper.printIndexedBuffer("UPPER");
                 matrix.assign(0);
                 invertUpperMatrix(context, &upper, &matrix); // U^{-1}
                 matrix.tickWriteDevice();
@@ -825,37 +839,30 @@ namespace helpers {
             NDArray::prepareSpecialUse({output}, {input});
             auto n2 = input->sizeAt(-1) * input->sizeAt(-2);
             auto stream = context->getCudaStream();
-            std::unique_ptr<NDArray> tempOutput(input->dup());
-//        auto inputs = tempOutput->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
-//        for (Nd4jLong e = 0; e < packX.numberOfTads(); e++) {
-//            auto subArray = inputs->at(e);
-//            cholesky(context, subArray, subArray, true);
-//        }
-//        delete inputs;
-            cholesky(context, input, tempOutput.get(), false);
-            tempOutput->syncToHost();
-            tempOutput->printIndexedBuffer("Cholesky res!!!");
-            auto outputBuf = reinterpret_cast<T*>(output->specialBuffer()); // + e * n2; // + e * n2;
-            auto inputBuf = reinterpret_cast<T*>(tempOutput->specialBuffer());
-            output->assign(0);
-            output->syncToDevice();
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput->getShapeInfo(),
-                                                                                  {input->rankOf() - 2,
-                                                                                   input->rankOf() - 1});
-            logDetKernel<T> << < packX.numberOfTads(), n2, 128, *stream >> >
-                                                                (inputBuf, tempOutput->specialShapeInfo(), packX.numberOfTads(), packX.specialShapeInfo(), packX.specialOffsets(), outputBuf, output->specialShapeInfo());
-//        }
+            NDArray tempOutput(*input);
+
+            cholesky(context, input, &tempOutput, false);
+
+            auto outputBuf = output->dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(output->specialBuffer()); // + e * n2; // + e * n2;
+            auto inputBuf = tempOutput.dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(tempOutput->specialBuffer());
+            output->nullify();
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
+                                                                                  {tempOutput.rankOf() - 2,
+                                                                                   tempOutput.rankOf() - 1});
+            logDetKernel<T> <<< 128, 512, 256, *stream >>>(inputBuf, tempOutput.specialShapeInfo(),
+                    packX.numberOfTads(), packX.specialShapeInfo(),
+                    packX.specialOffsets(), outputBuf, output->specialShapeInfo());
+            output->tickWriteDevice();
             NDArray::registerSpecialUse({output}, {input});
-            //delete tempOutput;
             return Status::OK();
         }
 
         int logdetFunctor(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
-            BUILD_SINGLE_SELECTOR(output->dataType(), logdetFunctor_, (context, input, output), FLOAT_NATIVE);
+            BUILD_SINGLE_SELECTOR(output->dataType(), return logdetFunctor_, (context, input, output), FLOAT_NATIVE);
         }
 
-        BUILD_SINGLE_TEMPLATE(template int logdetFunctor_,
-                              (nd4j::LaunchContext * context, NDArray * input, NDArray * output), FLOAT_NATIVE);
+//        BUILD_SINGLE_TEMPLATE(template int logdetFunctor_,
+//                              (nd4j::LaunchContext * context, NDArray * input, NDArray * output), FLOAT_NATIVE);
     }
 }
 }

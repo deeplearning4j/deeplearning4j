@@ -257,12 +257,15 @@ public class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
     @Test
     public void ReshapeEmbeddingConcatTest() throws Exception{
+        //TODO AB 2019/11/23 - known issue - see https://github.com/eclipse/deeplearning4j/issues/8373 and https://github.com/eclipse/deeplearning4j/issues/8441
+
         try(InputStream is = Resources.asStream("/modelimport/keras/configs/keras2/reshape_embedding_concat.json")) {
             ComputationGraphConfiguration config =
                     new KerasModel().modelBuilder().modelJsonInputStream(is)
                             .enforceTrainingConfig(false).buildModel().getComputationGraphConfiguration();
             ComputationGraph model = new ComputationGraph(config);
             model.init();
+//            System.out.println(model.summary());
             model.outputSingle(Nd4j.zeros(1, 1), Nd4j.zeros(1, 1), Nd4j.zeros(1, 1));
         }
     }

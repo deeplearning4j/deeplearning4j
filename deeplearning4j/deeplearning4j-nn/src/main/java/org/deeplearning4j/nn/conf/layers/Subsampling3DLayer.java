@@ -431,6 +431,12 @@ public class Subsampling3DLayer extends NoParamLayer {
             this.setPoolingType(poolingType);
         }
 
+        protected void setConvolutionMode(ConvolutionMode convolutionMode){
+            Preconditions.checkState(convolutionMode != ConvolutionMode.Causal, "Causal convolution mode can only be used with 1D" +
+                    " convolutional neural network layers");
+            this.convolutionMode = convolutionMode;
+        }
+
         /**
          * Set the convolution mode for the Convolution layer. See {@link ConvolutionMode} for more details
          *

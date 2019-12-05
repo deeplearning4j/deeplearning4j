@@ -27,7 +27,7 @@
 #include <mutex>
 
 namespace nd4j {
-    class CublasHelper {
+    class ND4J_EXPORT CublasHelper {
     private:
         static CublasHelper *_INSTANCE;
         static std::mutex _mutex;

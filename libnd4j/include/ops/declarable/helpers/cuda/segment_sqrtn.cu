@@ -32,82 +32,52 @@ namespace ops {
 namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    static __global__ void unsortedSegmentSqrtNLinearKernel(void* input, Nd4jLong* inputShape, void* indices, Nd4jLong* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
-        __shared__ T* val;
-        __shared__ Nd4jLong xLen, zLen, segment, zIndex;
-        __shared__ T* x;
-        __shared__ T* z;
-        __shared__ I* y; //int threadsPerSegment, start, finish;
+    static __global__ void unsortedSegmentSqrtNLinearKernel(T* input, Nd4jLong* inputShape, I* indices, Nd4jLong* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, T* output, Nd4jLong* outputShape) {
+        __shared__ Nd4jLong xLen, zLen;
 
         if (threadIdx.x == 0) {
-//            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-            segment = blockIdx.x;// / threadsPerSegment;
-            x = reinterpret_cast<T*>(input);
-            z = reinterpret_cast<T*>(output);
-            y = reinterpret_cast<I*>(indices);
-//            extern __shared__ unsigned char shmem[];
-//            val = reinterpret_cast<T*>(shmem);
             xLen = shape::length(inputShape);
             zLen = shape::length(outputShape);
-
-//            if (segment < numOfClasses) {
-            zIndex = shape::getIndexOffset(segment, outputShape);
-            //start = starts[segment];
-            //finish = start + lengths[segment];
-            if (lengths[segment] > 0)
-                z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape)] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]);
-            else
-                z[zIndex] = 0; //DataTypeUtils::max<T>();
-//                val[segment] = z[zIndex];
-//            }
-
         }
         __syncthreads();
-        if (lengths[segment] > 0)
-            for (auto e = threadIdx.x + 1; e < xLen; e += blockDim.x) {
-                auto xIndex = shape::getIndexOffset(e, inputShape);
-                auto yIndex = shape::getIndexOffset(e, indicesShape);
-                if (y[yIndex] == segment && e != starts[segment]) {
-                    nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]));
-                }
-            }
+
+        auto start = threadIdx.x + blockIdx.x * blockDim.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for  (auto idx = start; idx < xLen; idx += step) {
+            auto yIndex = shape::getIndexOffset(idx, indicesShape);
+            auto segment = indices[yIndex];
+            auto zIndex = shape::getIndexOffset(segment, outputShape);
+            if (lengths[segment] == 0) continue;
+            auto xIndex = shape::getIndexOffset(idx, inputShape);
+
+            nd4j::math::atomics::nd4j_atomicAdd(&output[zIndex],  input[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]));
+        }
     }
     // -------------------------------------------------------------------------------------------------------------- //
     // SegmentSqrtN kernel
     template <typename T, typename I>
-    static __global__ void segmentSqrtNTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
-        __shared__ T* val;
-        __shared__ Nd4jLong len, segment, zIndex, total;
-        __shared__ T* z;
-        __shared__ int threadsPerSegment, start, finish;
+    static __global__ void segmentSqrtNTadKernel(T* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+
+        __shared__ Nd4jLong len, total;
 
         if (threadIdx.x == 0) {
-            segment = indices[blockIdx.x]; // / threadsPerSegment;
-            z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
-            len = shape::length(inputTads);
-            start = starts[segment];
-            finish = start + lengths[segment];
             total = shape::sizeAt(inputShape, 0);
-
+            len = shape::length(inputTads);
         }
         __syncthreads();
 
-        auto idx = blockIdx.x;
-        if (blockIdx.x <= total) {
-            auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
-            if (blockIdx.x == start) {
-                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputTads);
-                    auto zIndex = shape::getIndexOffset(e, outputTads);
-                    z[zIndex] = x[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]);
-                }
-            }
-            else {
-                for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputTads);
-                    auto zIndex = shape::getIndexOffset(e, outputTads);
-                    nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]));
-                }
+        for (auto idx = blockIdx.x; idx  < total; idx += gridDim.x) {
+            auto segment = indices[idx];
+            auto x = inputBuf + inputTadOffsets[idx];
+            auto z = reinterpret_cast<T *>(outputBuf) + outputTadOffsets[segment];
+            auto start = starts[segment];
+            auto finish = start + lengths[segment];
+
+            for (auto e = threadIdx.x; e < len; e += blockDim.x) {
+                auto xIndex = shape::getIndexOffset(e, inputTads);
+                auto zIndex = shape::getIndexOffset(e, outputTads);
+                nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]));
             }
         }
     }
@@ -122,17 +92,21 @@ namespace helpers {
 //        classes.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &row, &classes);
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);
-        dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
+//        dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
+        dim3 dims(128, 256, 256);
 //        int* classesBuf = reinterpret_cast<int*>(classes.specialBuffer());
         fillUpSegments(indices, numOfClasses, classesRangesBegs, classesRangesLens);
         int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
         int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
-
+        output->nullify();
         if (input->isVector()) {
-            unsortedSegmentSqrtNLinearKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo());
+            unsortedSegmentSqrtNLinearKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(
+                    input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(),
+                    indices->dataBuffer()->specialAsT<I>(), indices->specialShapeInfo(), begins, lengths, numOfClasses,
+                    output->dataBuffer()->specialAsT<T>(), output->specialShapeInfo());
         }
         else {
-            output->assign(0);
+            output->nullify();
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
             auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
             auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
@@ -141,7 +115,9 @@ namespace helpers {
             Nd4jLong* outputTads = packZ.specialShapeInfo();
             Nd4jLong* outputTadOffsets = packZ.specialOffsets();
             dims.x = input->sizeAt(0);
-            segmentSqrtNTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
+            segmentSqrtNTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(
+                    input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets, indices->dataBuffer()->specialAsT<I>(),
+                    begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads,  outputTadOffsets);
         }
     }
     // -------------------------------------------------------------------------------------------------------------- //

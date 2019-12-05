@@ -164,7 +164,7 @@ public class LossMCXENT implements ILossFunction {
                     throw new IllegalStateException("Weights vector (length " + weights.length()
                                     + ") does not match output.size(1)=" + output.size(1));
                 }
-                INDArray temp = labels.mulRowVector(weights);
+                INDArray temp = labels.mulRowVector(weights.castTo(labels.dataType()));
                 INDArray col = temp.sum(true,1);
                 grad = output.mulColumnVector(col).sub(temp);
             } else {

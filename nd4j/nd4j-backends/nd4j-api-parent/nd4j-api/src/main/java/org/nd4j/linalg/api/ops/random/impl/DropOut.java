@@ -65,18 +65,6 @@ public class DropOut extends BaseRandomOp {
         return "dropout";
     }
 
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op name found for: " + getClass().getName());
-        //return opName();
-    }
-
     @Override
     public Type opType() {
         return Type.RANDOM ;

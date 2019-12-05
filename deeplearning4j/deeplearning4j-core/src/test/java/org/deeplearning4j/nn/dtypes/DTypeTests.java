@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.dtypes;
 
+import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
 import org.nd4j.shade.guava.collect.ImmutableSet;
 import org.nd4j.shade.guava.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
@@ -811,7 +812,8 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new DenseLayer.Builder().nOut(5).build())
                             .layer(new GravesBidirectionalLSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
                             .layer(new Bidirectional(new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build()))
-                            .layer(new SimpleRnn.Builder().nIn(10).nOut(5).build())
+                            .layer(new TimeDistributed(new DenseLayer.Builder().nIn(10).nOut(5).activation(Activation.TANH).build(), 2))
+                            .layer(new SimpleRnn.Builder().nIn(5).nOut(5).build())
                             .layer(new MaskZeroLayer.Builder().underlying(new SimpleRnn.Builder().nIn(5).nOut(5).build()).maskValue(0.0).build())
                             .layer(secondLast)
                             .layer(ol)

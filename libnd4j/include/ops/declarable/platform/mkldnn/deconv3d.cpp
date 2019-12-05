@@ -525,10 +525,6 @@ PLATFORM_IMPL(deconv3d_bp) {
 
 
 PLATFORM_CHECK(deconv3d_bp) {
-    // we don't want to use mkldnn if cpu doesn't support avx/avx2
-    // if (::optimalLevel() < 2)
-    //     return false;
-
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iD, iH, iW, iC] (NHWC) or [bS, iD, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kD, kH, kW, oC, iC] always
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]

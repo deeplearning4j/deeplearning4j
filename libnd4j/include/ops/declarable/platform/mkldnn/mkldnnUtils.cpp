@@ -141,7 +141,7 @@ namespace nd4j {
 
 
         void getMKLDNNMemoryDescConv2d(
-                int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, bool isNCHW,
+                int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, const int paddingMode, bool isNCHW,
                 int bS, int iC, int iH, int iW, int oC, int oH, int oW, const NDArray* src, const NDArray* diff_src,
                 const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
                 dnnl::memory::desc* conv_src_md, dnnl::memory::desc* conv_diff_src_md, dnnl::memory::desc* conv_weights_md,
@@ -154,9 +154,11 @@ namespace nd4j {
             dnnl::memory::dims conv_bias_tz = { oC };
             dnnl::memory::dims conv_dst_tz = { bS, oC, oH, oW };
 
+            const int pWSame = (paddingMode == 2 && dW > 1) ? ((oW - 1) * sW + (kW - 1) * dW + 1 - iW) / 2 : pW;       // dH == 1 for causal mode in conv1d
+
             conv_strides   = { sH, sW };
             conv_padding   = { pH, pW };
-            conv_padding_r = { (oH - 1) * sH - iH + kH - pH, (oW - 1) * sW - iW + kW - pW };
+            conv_padding_r = { (oH - 1) * sH - iH + kH - pH, (oW - 1) * sW - iW + kW - pWSame };
             conv_dilation  = { dH-1, dW-1};
 
             auto type = dnnl::memory::data_type::f32;
@@ -220,7 +222,7 @@ namespace nd4j {
         }
 
         void getMKLDNNMemoryDescConv3d(
-                int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, int dD, int dH, int dW, bool isSameMode, bool isNCDHW,
+                int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, int dD, int dH, int dW, bool paddingMode, bool isNCDHW,
                 int bS, int iC, int iD, int iH, int iW, int oC, int oD, int oH, int oW, const NDArray* src, const NDArray* diff_src,
                 const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
                 dnnl::memory::desc* conv_src_md, dnnl::memory::desc* conv_diff_src_md, dnnl::memory::desc* conv_weights_md,

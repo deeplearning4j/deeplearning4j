@@ -3,6 +3,10 @@ package org.nd4j.autodiff.samediff.ops;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.custom.AdjustContrast;
+import org.nd4j.linalg.api.ops.custom.AdjustHue;
+import org.nd4j.linalg.api.ops.custom.AdjustSaturation;
+import org.nd4j.linalg.api.ops.custom.RandomCrop;
 import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
 import org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches;
 import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
@@ -52,10 +56,67 @@ public class SDImage extends SDOps {
         return updateVariableNameAndReference(out, name);
     }
 
-
+    /**
+     * Greedily selects a subset of bounding boxes in descending order of score
+     * @param name     Might be null. Name for the output variable
+     * @param boxes    2D array of shape [num_boxes,4]
+     * @param scores   vector of shape [num_boxes]
+     * @param maxOutSize scalar representing the maximum number of boxes to be selected
+     * @param iouThreshold  float - threshold for deciding whether boxes overlap too much with respect to IOU
+     * @param scoreThreshold float - threshold for deciding when to remove boxes based on score
+     * @return vectort of shape [M] representing the selected indices from the boxes tensor, where M <= max_output_size
+     */
     public SDVariable nonMaxSuppression(String name, @NonNull SDVariable boxes, @NonNull SDVariable scores, @NonNull SDVariable maxOutSize,
                                         @NonNull SDVariable iouThreshold, @NonNull SDVariable scoreThreshold){
         SDVariable out = new NonMaxSuppression(sd, boxes, scores, maxOutSize, iouThreshold, scoreThreshold).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Adjusts contrast of RGB or grayscale images.
+     * @param name name for the output variable
+     * @param in images to adjust. 3D shape or higher.
+     * @param factor float multiplier for adjusting contrast.
+     * @return Contrast-adjusted image
+     */
+    public SDVariable adjustContrast(String name, @NonNull SDVariable in, @NonNull SDVariable factor) {
+        SDVariable out = new AdjustContrast(sd, in, factor).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Adjust saturation of RGB images
+     * @param name name for the output variable
+     * @param in RGB image as 3D array
+     * @param factor factor for saturation
+     * @return adjusted image
+     */
+    public SDVariable adjustSaturation(String name, @NonNull SDVariable in, @NonNull SDVariable factor) {
+        SDVariable out = new AdjustSaturation(sd, in, factor).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Adjust hue of RGB image
+     * @param name name for the output variable
+     * @param in RGB image as 3D array
+     * @param delta value to add to hue channel
+     * @return adjusted image
+     */
+    public SDVariable adjustHue(String name, @NonNull SDVariable in, @NonNull SDVariable delta) {
+        SDVariable out = new AdjustHue(sd, in, delta).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Randomly crops image
+     * @param name  name for the output variable
+     * @param input input array
+     * @param shape shape for crop
+     * @return cropped array
+     */
+    public SDVariable randomCrop(String name,  @NonNull SDVariable input, @NonNull SDVariable shape) {
+        SDVariable out = new RandomCrop(sd, input, shape).outputVariable();
         return updateVariableNameAndReference(out, name);
     }
 }

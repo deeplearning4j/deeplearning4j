@@ -24,10 +24,11 @@
 #include "Workspace.h"
 #include <map>
 #include <mutex>
+#include <dll.h>
 
 namespace nd4j {
     namespace memory {
-        class MemoryRegistrator {
+        class ND4J_EXPORT MemoryRegistrator {
         protected:
             static MemoryRegistrator* _INSTANCE;
             Workspace* _workspace;

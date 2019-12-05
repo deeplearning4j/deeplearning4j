@@ -16,10 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -38,6 +40,10 @@ public class Pow extends DynamicCustomOp {
     }
 
     public Pow(){ }
+
+    public Pow(@NonNull INDArray x, @NonNull INDArray y){
+        super(new INDArray[]{x,y}, null);
+    }
 
     @Override
     public String opName(){

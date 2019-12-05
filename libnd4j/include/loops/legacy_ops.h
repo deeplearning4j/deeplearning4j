@@ -112,7 +112,8 @@
         (4, IsInfOrNan), \
         (5, MatchConditionBool), \
         (6, IsPositive) , \
-        (7, Not)
+        (7, Not), \
+        (8, IsNegative)
 
 
 #define TRANSFORM_STRICT_OPS \
@@ -279,7 +280,8 @@
         (3, IsInfOrNan), \
         (4, IsNan), \
         (5, IsInf), \
-        (6, IsPositive)
+        (6, IsPositive), \
+        (7, IsNegative)
 
 #define REDUCE_SAME_OPS \
         (0, Sum), \

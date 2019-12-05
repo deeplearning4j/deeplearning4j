@@ -31,6 +31,8 @@ namespace nd4j {
             void scatterND(nd4j::LaunchContext* context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock);
 
             void scatterForLoss(nd4j::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad);
+
+            Nd4jLong checkIndices(nd4j::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis = -1);
         }
     }
 }

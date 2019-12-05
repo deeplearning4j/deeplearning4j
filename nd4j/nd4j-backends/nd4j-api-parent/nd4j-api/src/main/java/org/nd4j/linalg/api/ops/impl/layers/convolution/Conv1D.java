@@ -29,12 +29,11 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Field;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 /**
@@ -79,7 +78,8 @@ public class Conv1D extends DynamicCustomOp {
         addIArgument(config.getK(),
                 config.getS(),
                 config.getP(),
-                ArrayUtil.fromBoolean(config.isSameMode()),
+                config.getD(),
+                config.getPaddingMode().ordinal(),
                 ArrayUtil.fromBoolean(config.isNWC()));
     }
 
@@ -95,10 +95,12 @@ public class Conv1D extends DynamicCustomOp {
     public Object getValue(Field property) {
         if (config == null && !iArguments.isEmpty()) {
             config = Conv1DConfig.builder()
-                    .s(iArguments.get(0))
-                    .p(iArguments.get(1))
-                    .isSameMode(iArguments.get(2) == 1)
-                    .dataFormat(iArguments.get(3) == 1 ? Conv1DConfig.NCW : Conv1DConfig.NWC)
+                    .k(iArguments.get(0))
+                    .s(iArguments.get(1))
+                    .p(iArguments.get(2))
+                    .d(iArguments.get(3))
+                    .paddingMode(PaddingMode.values()[iArguments.get(4).intValue()])
+                    .dataFormat(iArguments.get(5) == 1 ? Conv1DConfig.NCW : Conv1DConfig.NWC)
                     .build();
         }
 
@@ -125,16 +127,20 @@ public class Conv1D extends DynamicCustomOp {
         return "conv1d";
     }
 
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
-
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));
+    }
+
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> grads){
+        List<SDVariable> args = new ArrayList<>();
+        Collections.addAll(args, args());
+        args.add(grads.get(0));
+
+        Conv1DDerivative gradFn = new Conv1DDerivative(sameDiff, args.toArray(new SDVariable[0]), config);
+        return Arrays.asList(gradFn.outputVariables());
     }
 }

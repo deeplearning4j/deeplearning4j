@@ -16,10 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -30,6 +32,10 @@ public class MatrixSetDiag extends DynamicCustomOp {
 
     public MatrixSetDiag(SameDiff sameDiff, SDVariable in, SDVariable diag, boolean inPlace) {
         super(null, sameDiff, new SDVariable[]{in, diag}, inPlace);
+    }
+
+    public MatrixSetDiag(@NonNull INDArray in, @NonNull INDArray diag){
+        super(new INDArray[]{in, diag}, null);
     }
 
     public MatrixSetDiag(){ }

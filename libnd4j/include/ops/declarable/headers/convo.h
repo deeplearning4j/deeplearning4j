@@ -28,28 +28,28 @@ namespace nd4j {
 
         /**
          * 1D temporal convolution implementation
-         * Expected input: 
+         * Expected input:
          * x: 3D array
          * weight: 3D Array
          * bias: optional vector
-         * 
+         *
          * Int args:
          * 0: kernel
          * 1: stride
          * 2: padding
          */
         #if NOT_EXCLUDED(OP_conv1d)
-        DECLARE_CUSTOM_OP(conv1d, 2, 1, false, 0, 4);
-        DECLARE_CUSTOM_OP(conv1d_bp, 3, 2, false, 0, 4);
+        DECLARE_CUSTOM_OP(conv1d, 2, 1, false, 0, 5);
+        DECLARE_CUSTOM_OP(conv1d_bp, 3, 2, false, 0, 5);
         #endif
 
         /**
          * 2D convolution implementation
-         * Expected input: 
+         * Expected input:
          * x: 4D array
          * weight: 4D Array
          * bias: optional vector, length of outputChannels
-         * 
+         *
          * IntArgs:
          * 0: kernel height
          * 1: kernel width
@@ -83,7 +83,7 @@ namespace nd4j {
 
         /**
          * 2D deconvolution implementation
-         * 
+         *
          * IntArgs:
          * 0: kernel height
          * 1: kernel width
@@ -102,7 +102,7 @@ namespace nd4j {
 
         /**
          * 3D deconvolution implementation
-         * 
+         *
          * IntArgs:
          * 0:  filter(kernel) depth
          * 1:  filter(kernel) height
@@ -190,7 +190,7 @@ namespace nd4j {
         /**
          * This op implements im2col algorithm, widely used in convolution neural networks
          * Input: 4D input expected
-         * 
+         *
          * Int args:
          * 0: kernel height
          * 1: kernel width
@@ -210,7 +210,7 @@ namespace nd4j {
         /**
          * This op implements col2im algorithm, widely used in convolution neural networks
          * Input: 6D input expected (like output of im2col op)
-         * 
+         *
          * Int args:
          * 0: stride height
          * 1: stride width
@@ -227,7 +227,7 @@ namespace nd4j {
 
         /**
          * Expected input: 4D array
-         * 
+         *
          * IntArgs:
          * 0: scale factor for rows (height)
          * 1: scale factor for columns (width)
@@ -240,7 +240,7 @@ namespace nd4j {
 
         /**
          * Expected input: 4D array
-         * 
+         *
          * IntArgs:
          * 0: scale factor for depth
          * 1: scale factor for rows (height)
@@ -249,13 +249,13 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_upsampling3d)
         DECLARE_CUSTOM_OP(upsampling3d, 1, 1, false, 0, 3);
-        DECLARE_CUSTOM_OP(upsampling3d_bp, 2, 1, false, 0, 0);    
+        DECLARE_CUSTOM_OP(upsampling3d_bp, 2, 1, false, 0, 0);
         #endif
 
         /**
          * This op produces binary matrix wrt to target dimension.
          * Maximum value within each TAD is replaced with 1, other values are set to true.
-         * 
+         *
          * Int args:
          * 0: axis
          */
@@ -265,7 +265,7 @@ namespace nd4j {
 
         /**
          * Dilation2D op
-         * 
+         *
          * Int args:
          * 0: isSameMode
          */
@@ -295,7 +295,7 @@ namespace nd4j {
          * Output:
          *     0 - 4D tensor as input
          *     1 - 4D tensor with max value indexes
-         *     
+         *
          * Int params:
          *   9 int with 2x4 vectors and 1 bool value
          */

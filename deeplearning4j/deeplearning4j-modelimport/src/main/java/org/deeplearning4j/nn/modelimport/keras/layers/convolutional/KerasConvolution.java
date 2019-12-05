@@ -79,7 +79,6 @@ abstract public class KerasConvolution extends KerasLayer {
     public KerasConvolution(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
-
     }
 
     /**

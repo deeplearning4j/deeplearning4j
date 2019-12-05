@@ -124,7 +124,26 @@ public class KerasInput extends KerasLayer {
                 myInputType = new InputType.InputTypeFeedForward(this.inputShape[0]);
                 break;
             case 2:
-                myInputType = new InputType.InputTypeRecurrent(this.inputShape[1], this.inputShape[0]);
+                if(this.dimOrder != null) {
+                    switch (this.dimOrder) {
+                        case TENSORFLOW:    //NWC == channels_last
+                            myInputType = new InputType.InputTypeRecurrent(this.inputShape[1], this.inputShape[0]);
+                            break;
+                        case THEANO:        //NCW == channels_first
+                            myInputType = new InputType.InputTypeRecurrent(this.inputShape[0], this.inputShape[1]);
+                            break;
+                        case NONE:
+                            //Assume RNN in [mb, seqLen, size] format
+                            myInputType = new InputType.InputTypeRecurrent(this.inputShape[0], this.inputShape[1]);
+                            break;
+                        default:
+                            throw new IllegalStateException("Unknown/not supported dimension ordering: " + this.dimOrder);
+                    }
+                } else {
+                    //Assume RNN in [mb, seqLen, size] format
+                    myInputType = new InputType.InputTypeRecurrent(this.inputShape[0], this.inputShape[1]);
+                }
+
                 break;
             case 3:
                 switch (this.dimOrder) {

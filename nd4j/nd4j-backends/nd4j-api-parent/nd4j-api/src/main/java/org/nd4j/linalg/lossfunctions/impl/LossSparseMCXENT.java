@@ -117,7 +117,7 @@ public class LossSparseMCXENT extends LossMCXENT {
 
     private INDArray toOneHot(INDArray labels, INDArray preOutput){
         Preconditions.checkState(labels.size(-1) == 1, "Labels for LossSparseMCXENT should be an array of integers " +
-                "with last dimension having size 1. Got labels array with shape %ndShape", labels);
+                "with first dimension equal to minibatch size, and last dimension having size 1. Got labels array with shape %ndShape", labels);
         INDArray oneHotLabels = preOutput.ulike();
         Nd4j.exec(new OneHot(labels.reshape(labels.length()), oneHotLabels, (int)preOutput.size(-1)));
         return oneHotLabels;

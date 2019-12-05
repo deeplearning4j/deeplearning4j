@@ -68,7 +68,9 @@ public class TestOpMapping extends BaseNd4jTest {
             }
             String opName = df.opName();
 
-            assertTrue("Op is missing - not defined in ImportClassMapping: " + opName, opNameMapping.containsKey(opName));
+            assertTrue("Op is missing - not defined in ImportClassMapping: " + opName +
+                    "\nInstructions to fix: Add class to org.nd4j.imports.converters.ImportClassMapping", opNameMapping.containsKey(opName)
+            );
 
             try{
                 String[] tfNames = df.tensorflowNames();

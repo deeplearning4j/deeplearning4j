@@ -97,6 +97,8 @@ TEST_F(CudaBasicsTests1, TestPairwise_1) {
 
 	cudaMemcpyAsync(devBufferPtrX, x.buffer(), x.lengthOf() * x.sizeOfT(), cudaMemcpyHostToDevice, *stream);
 	cudaMemcpyAsync(devShapePtrX, x.shapeInfo(), shape::shapeInfoByteLength(x.shapeInfo()), cudaMemcpyHostToDevice, *stream);
+    res = cudaStreamSynchronize(*stream);
+    ASSERT_EQ(0, res);
 	
 	LaunchContext lc(stream, nullptr, nullptr);
 	NativeOpExecutioner::execPairwiseTransform(&lc, pairwise::Add, nullptr, x.shapeInfo(), devBufferPtrX, reinterpret_cast<Nd4jLong*>(devShapePtrX), nullptr, x.shapeInfo(), devBufferPtrX, reinterpret_cast<Nd4jLong*>(devShapePtrX), nullptr, z.shapeInfo(), devBufferPtrZ, reinterpret_cast<Nd4jLong*>(devShapePtrX), nullptr);
@@ -117,6 +119,7 @@ TEST_F(CudaBasicsTests1, TestPairwise_1) {
     z.tickWriteHost();
 
 	for (int e = 0; e < z.lengthOf(); e++) {
+	    nd4j_printf("step %i\n", e);
 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
 	}
 }
@@ -169,6 +172,8 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 	void* reductionPointer = nullptr;
 	cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer), 1024*1024);
 	ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMemset(reductionPointer, 0, 1024 * 1024);
+    ASSERT_EQ(0, cudaResult);
 
 	LaunchContext lc(&stream, LaunchContext::defaultContext()->getReductionPointer(), LaunchContext::defaultContext()->getScalarPointer(), LaunchContext::defaultContext()->getAllocationPointer());
 

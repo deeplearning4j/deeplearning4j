@@ -34,24 +34,30 @@ OP_IMPL(scatter_nd_sub, 3, 1, true) {
 
     auto output = OUTPUT_VARIABLE(0);
 
-    bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
+    const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
+    const bool checkIndices = block.getBArguments()->size() <= 1 ? false : B_ARG(1);
 
     const int inRank  = input->rankOf();
     const int indRank = indices->rankOf();
     const int updRank = updates->rankOf();
 
     const Nd4jLong indLastDim = indices->sizeAt(-1);
-    
+
     REQUIRE_TRUE(indLastDim <= inRank, 0, "SCATTER_ND_SUB OP: the last dimension of indices array must be <= input_array_rank, but got %i instead !", indLastDim);
     REQUIRE_TRUE(updRank == (indRank - 1 + inRank - indLastDim), 0, "SCATTER_ND_SUB OP: the equality updates_rank = (indices_rank - 1 + input_rank - last_indices_dimension) must be true for input arrays, but got instead: updates_rank = %i, indices_rank = %i, last_indices_dimension = %i !", updRank, indRank, indLastDim);
 
     std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
     std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
-    std::vector<Nd4jLong> indShape = indices->getShapeAsVector();    
-    std::vector<Nd4jLong> expectedUpdShape(std::begin(indShape), std::end(indShape) - 1);     
+    std::vector<Nd4jLong> indShape = indices->getShapeAsVector();
+    std::vector<Nd4jLong> expectedUpdShape(std::begin(indShape), std::end(indShape) - 1);
     if(inRank > indLastDim)
-        std::move(std::begin(inShape) + indLastDim, std::end(inShape), std::back_inserter(expectedUpdShape));        
+        std::move(std::begin(inShape) + indLastDim, std::end(inShape), std::back_inserter(expectedUpdShape));
     REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ND_SUB OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
+
+    if(checkIndices) {
+        const Nd4jLong numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *output);
+        REQUIRE_TRUE(numOfBadIndx == 0, 0, "SCATTER_ND_SUB OP: please check elements of indices-array, total number of wrong elements is %lld!", numOfBadIndx);
+    }
 
     if (!block.isInplace())
         output->assign(input);
@@ -62,7 +68,7 @@ OP_IMPL(scatter_nd_sub, 3, 1, true) {
 }
 
     DECLARE_TYPES(scatter_nd_sub) {
-        getOpDescriptor()                
+        getOpDescriptor()
             ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
             ->setAllowedInputTypes(1, {ALL_INTS})
             ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})

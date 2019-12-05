@@ -28,7 +28,7 @@
 
 namespace nd4j {
 
-class OmpLaunchHelper {
+class ND4J_EXPORT OmpLaunchHelper {
 	
     public:				
         

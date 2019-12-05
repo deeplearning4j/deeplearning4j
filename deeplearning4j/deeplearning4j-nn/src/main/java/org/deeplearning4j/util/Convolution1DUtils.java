@@ -66,7 +66,7 @@ public class Convolution1DUtils {
     public static long getOutputSize(long inH, int kernel, int strides, int padding,
                                     ConvolutionMode convolutionMode, int dilation) {
         long eKernel = effectiveKernelSize(kernel, dilation);
-        if (convolutionMode == ConvolutionMode.Same) {
+        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
             return (int) Math.ceil(inH / ((double) strides));
         }
         return (inH - eKernel + 2 * padding) / strides + 1;
@@ -92,7 +92,7 @@ public class Convolution1DUtils {
         boolean atrous = (eKernel == kernel);
         validateShapes(inputData, eKernel, strides, padding, convolutionMode, dilation, inH, atrous);
 
-        if (convolutionMode == ConvolutionMode.Same) {
+        if (convolutionMode == ConvolutionMode.Same || convolutionMode == ConvolutionMode.Causal) {
             int outH = (int) Math.ceil(inH / ((double) strides));
             return outH;
         }
@@ -106,8 +106,9 @@ public class Convolution1DUtils {
                                       boolean atrous) {
 
         int inH = inShape;
+        boolean t = convolutionMode == ConvolutionMode.Truncate;
 
-        if (convolutionMode != ConvolutionMode.Same && (eKernel <= 0 || eKernel > inH + 2 * padding)) {
+        if (t && (eKernel <= 0 || eKernel > inH + 2 * padding)) {
             StringBuilder sb = new StringBuilder();
             sb.append("Invalid input data or configuration: ");
             if (atrous) sb.append("effective ");

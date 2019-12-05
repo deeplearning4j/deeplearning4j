@@ -38,7 +38,12 @@ public class IAMax extends BaseIndexAccumulation {
     public IAMax() {}
 
     public IAMax(INDArray x, int... dimensions) {
+        this(x, false, dimensions);
+    }
+
+    public IAMax(INDArray x, boolean keepDims, int... dimensions) {
         this(x, null, dimensions);
+        this.keepDims = keepDims;
     }
 
     public IAMax(INDArray x, INDArray z, int... dimensions) {

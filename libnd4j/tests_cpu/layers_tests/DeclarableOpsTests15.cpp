@@ -159,18 +159,19 @@ TEST_F(DeclarableOpsTests15, Test_standarize_bp_1) {
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_1) {
     auto x = NDArrayFactory::create<double>('c', {4,4,3});
-    auto e = NDArrayFactory::create<double>('c', {4,4,3}, {
-        -21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
-          2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
-         26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
-         50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
-    });
+    NDArray factor = NDArrayFactory::create<double>(2.);
+    auto e = NDArrayFactory::create<double>('c', {4,4,3}, {-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
+                                     2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
+                                    26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
+                                    50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5});
+
+
     x.linspace(1.);
     nd4j::ops::adjust_contrast op;
-    auto result = op.execute({&x}, {2.}, {}, {});
+    auto result = op.execute({&x, &factor}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto out = result->at(0);
-//    out->printIndexedBuffer("Adjusted Constrast");
+
     ASSERT_TRUE(e.equalsTo(out));
     delete result;
 }
@@ -178,10 +179,10 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_1) {
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_2) {
     auto x = NDArrayFactory::create<float>('c', {1, 4,4,3});
     auto e = NDArrayFactory::create<float>('c', {1, 4,4,3}, {
-            -21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
-            2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
-            26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
-            50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
+            -21.5f, -20.5f, -19.5f,  -15.5f, -14.5f, -13.5f,  -9.5f,  -8.5f,  -7.5f,  -3.5f,  -2.5f,  -1.5f,
+            2.5f,   3.5f,   4.5f,    8.5f,   9.5f,  10.5f,  14.5f,  15.5f,  16.5f,  20.5f,  21.5f,  22.5f,
+            26.5f,  27.5f,  28.5f,   32.5f,  33.5f,  34.5f,  38.5f,  39.5f,  40.5f,  44.5f,  45.5f,  46.5f,
+            50.5f,  51.5f,  52.5f,   56.5f,  57.5f,  58.5f,  62.5f,  63.5f,  64.5f,  68.5f,  69.5f,  70.5f
     });
     x.linspace(1.);
     nd4j::ops::adjust_contrast op;
@@ -196,10 +197,10 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_2) {
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_3) {
     auto x = NDArrayFactory::create<float>('c', {1, 4,4,3});
     auto e = NDArrayFactory::create<float>('c', {1, 4,4,3}, {
-            -21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
-            2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
-            26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
-            50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
+            -21.5f, -20.5f, -19.5f,  -15.5f, -14.5f, -13.5f,  -9.5f,  -8.5f,  -7.5f,  -3.5f,  -2.5f,  -1.5f,
+            2.5f,   3.5f,   4.5f,    8.5f,   9.5f,  10.5f,  14.5f,  15.5f,  16.5f,  20.5f,  21.5f,  22.5f,
+            26.5f,  27.5f,  28.5f,   32.5f,  33.5f,  34.5f,  38.5f,  39.5f,  40.5f,  44.5f,  45.5f,  46.5f,
+            50.5f,  51.5f,  52.5f,   56.5f,  57.5f,  58.5f,  62.5f,  63.5f,  64.5f,  68.5f,  69.5f,  70.5f
     });
     x.linspace(1.);
     nd4j::ops::adjust_contrast_v2 op;
@@ -243,8 +244,8 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_1) {
 
 TEST_F(DeclarableOpsTests15, Test_BitCast_2) {
     auto x = NDArrayFactory::create<float>('c', {2, 4});
-    auto e = NDArrayFactory::create<float16>('c', {2, 4, 2}, {0, 1.875, 0, 2.,    0, 2.125, 0,  2.25,
-                                                                              0, 2.312, 0, 2.375, 0, 2.438, 0., 2.5});
+    auto e = NDArrayFactory::create<float16>('c', {2, 4, 2}, {0.f, 1.875f, 0.f, 2.f,    0.f, 2.125f, 0.f,  2.25f,
+                                                                              0.f, 2.312f, 0.f, 2.375f, 0.f, 2.438f, 0.f, 2.5f});
     x.linspace(1.);
     nd4j::ops::bitcast op;
     auto result = op.execute({&x}, {}, {nd4j::DataType::HALF}, {});
@@ -280,6 +281,60 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_4) {
         nd4j_printf("Error `%s' should be here. It's OK.\n",e.what());
     }
 
+}
+
+
+TEST_F(DeclarableOpsTests15, Test_BitCast_5) {
+    auto x = NDArrayFactory::create<float16>('c', {4, 4}, {
+        0.4922f,    0.2969f,    0.6172f,    0.8906f,
+        0.9297f,    0.0859f,    0.2344f,    0.3828f,
+        0.5781f,    0.7969f,    0.0391f,    0.1719f,
+        0.8359f,    0.9297f,    0.3438f,    0.0938f});
+
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4260467851820808160LL, 3900173902914993008LL, 3566895990128523424LL,
+                                                         3314989625590692528LL});
+    nd4j::ops::bitcast op;
+    auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    auto res = result->at(0);
+//    res->printIndexedBuffer("BITCAST5");
+    ASSERT_TRUE(e.equalsTo(res));
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests15, Test_BitCast_6) {
+    auto x = NDArrayFactory::create<float16>('c', {4, 4}, {
+            1.f,    2.f,    3.f,    4.f,
+            5.f,    6.f,    7.f,    8.f,
+            9.f,   10.f,   11.f,   12.f,
+           13.f,   14.f,   15.f,   16.f});
+
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4899988963420290048LL, 5188224837230806272LL, 5332342774136064128LL,
+                                                         5476460161268730496LL});
+    nd4j::ops::bitcast op;
+    auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    auto res = result->at(0);
+//    res->printIndexedBuffer("BITCAST6");
+    ASSERT_TRUE(e.equalsTo(res));
+    delete result;
+}
+TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
+    auto x = NDArrayFactory::create<float16>('c', {4, 4}, {
+            1.1f,    2.2f,    3.3f,    4.4f,
+            5.1f,    6.2f,    7.3f,    8.4f,
+            9.1f,   10.2f,   11.3f,   12.4f,
+            13.f,   14.2f,   15.3f,   16.4f});
+
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {
+        4928700072476425318LL, 5202580391758873882LL, 5346698272827918477LL,  5483778673873668736LL});
+    nd4j::ops::bitcast op;
+    auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    auto res = result->at(0);
+//    res->printIndexedBuffer("BITCAST7");
+    ASSERT_TRUE(e.equalsTo(res));
+    delete result;
 }
 
 TEST_F(DeclarableOpsTests15, Test_depthwise_bp_1) {
@@ -369,9 +424,9 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_3) {
 }
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
-    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto g = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
-    auto b = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
+    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto g = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto b = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
 
     nd4j::ops::layer_norm op;
     auto result = op.execute({&x, &g, &b}, {}, {0}, {false});
@@ -380,10 +435,10 @@ TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
 }
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
-    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto g = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
-    auto b = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
-    auto eps = NDArrayFactory::create<float>('c', {1, 5}, {0., 0., 0., 0., 0.});
+    auto x = NDArrayFactory::create<float>('c', {1, 5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto g = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto b = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
+    auto eps = NDArrayFactory::create<float>('c', {1, 5}, {0.f, 0.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::layer_norm_bp op;
     auto result = op.execute({&x, &g, &b, &eps}, {}, {0}, {false});

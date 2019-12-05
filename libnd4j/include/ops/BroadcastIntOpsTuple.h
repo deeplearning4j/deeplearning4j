@@ -22,9 +22,10 @@
 #define DEV_TESTS_BROADCASTINTOPSTUPLE_H
 
 #include <op_enums.h>
+#include <dll.h>
 
 namespace nd4j {
-    class BroadcastIntOpsTuple {
+    class ND4J_EXPORT BroadcastIntOpsTuple {
     private:
 
     public:

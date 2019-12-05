@@ -28,21 +28,35 @@
 namespace nd4j {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, 1, -2) {
+CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, 0, 0) {
 
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    const int rank     = input->rankOf();
-    const int dimC     = block.getIArguments()->size() > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
-    const double factor = T_ARG(0);
+    // just skip op if input is empty
+    if (input->isEmpty())
+        return Status::OK();
+
+    const int rank = input->rankOf();
+    const int dimC = block.getIArguments()->size() > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
 
     REQUIRE_TRUE(rank >= 3, 0, "ADJUST_SATURATION: op expects rank of input array to be >= 3, but got %i instead", rank);
     REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "ADJUST_SATURATION: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(dimC));
+    REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_SATURATION: scale factor is required !");
 
-    NDArray factorScalarArr = NDArrayFactory::create<double>(factor, block.launchContext());
+    NDArray* factor = nullptr;
 
-    helpers::adjustSaturation(block.launchContext(), input, &factorScalarArr, output, dimC);
+    if(block.width() > 1)
+        factor = INPUT_VARIABLE(1);
+    else {
+        factor = new NDArray(output->dataType(), block.launchContext());
+        factor->p(0, T_ARG(0));
+    }
+
+    helpers::adjustSaturation(block.launchContext(), input, factor, output, dimC);
+
+    if(block.width() == 1)
+        delete factor;
 
     return Status::OK();
 }

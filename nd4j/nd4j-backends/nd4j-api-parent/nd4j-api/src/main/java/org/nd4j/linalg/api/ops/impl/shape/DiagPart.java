@@ -51,6 +51,10 @@ public class DiagPart extends DynamicCustomOp {
         super(null, sameDiff, args, inPlace);
     }
 
+    public DiagPart(INDArray in){
+        this(in, null);
+    }
+
     public DiagPart(INDArray in, INDArray out){
         super(null, in, out, null, null);
     }

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,28 +14,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// Created by Yurii Shyrma on 13.12.2017.
-//
-
-#ifndef LIBND4J_POLYGAMMA_H
-#define LIBND4J_POLYGAMMA_H
-
-#include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
-
-namespace nd4j {
-namespace ops {
-namespace helpers {
+package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
 
-	// calculate the polygamma function
-    void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output);
-    
-
+public enum PaddingMode {
+    VALID,
+    SAME,
+    CAUSAL
 }
-}
-}
-
-
-#endif //LIBND4J_POLYGAMMA_H

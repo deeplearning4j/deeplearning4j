@@ -23,6 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
+#include <ops/declarable/helpers/scatter.h>
 
 namespace nd4j {
 namespace ops {
@@ -35,12 +36,19 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
     auto indices = INPUT_VARIABLE(1);
     auto output  = OUTPUT_VARIABLE(0);
 
+    const bool checkIndices = block.getBArguments()->empty() ? false : B_ARG(0);
+
     const int rankIn = input->rankOf();
     const int rankInd = indices->rankOf();
 
     REQUIRE_TRUE(rankInd > 0, 0, "GATHER_ND op: array of indexes can't be single scalar, the requirement is: rank > 0, but got rank = %i instead!", rankInd);
     int lastIndDim = indices->sizeAt(-1);
     REQUIRE_TRUE(lastIndDim <= rankIn, 0, "GATHER_ND op: the last dimension of indices array must be <= rank of input array but got %i and %i correspondingly!", lastIndDim, rankIn);
+
+    if(checkIndices) {
+        const Nd4jLong numOfBadIndx = helpers::checkIndices(block.launchContext(), *indices, *input);
+        REQUIRE_TRUE(numOfBadIndx == 0, 0, "GATHER_ND OP: please check elements of indices-array, total number of wrong elements is %lld!", numOfBadIndx);
+    }
 
     helpers::gatherND(block.launchContext(), *input, *indices, *output);
 

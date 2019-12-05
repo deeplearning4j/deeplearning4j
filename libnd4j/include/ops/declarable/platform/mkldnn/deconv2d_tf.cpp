@@ -223,10 +223,6 @@ PLATFORM_IMPL(deconv2d_tf) {
 }
 
 PLATFORM_CHECK(deconv2d_tf) {
-    // we don't want to use mkldnn if cpu doesn't support avx/avx2
-    // if (::optimalLevel() < 2)
-    //     return false;
-
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto gradO   = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
     auto gradI   = OUTPUT_VARIABLE(0);                                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW), gradI

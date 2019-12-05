@@ -108,11 +108,11 @@ __host__ static void gatherCudaLauncher(const cudaStream_t *stream, const int nu
 void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
 
     const int inputRank = input->rankOf();
-    int axis = intArgs.size() > 0 ? intArgs[0] : 0;
+    const int numOfIntArgs = intArgs.size();
+
+    int axis = numOfIntArgs > 0 ? intArgs[0] : 0;
     if(axis < 0)
         axis += inputRank;
-
-    const int numOfIntArgs = intArgs.size();
 
     if (indices == nullptr && numOfIntArgs == 2) { // scalar case
         output->assign((*input)(intArgs[1], {axis}));

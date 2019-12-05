@@ -25,9 +25,17 @@
 #include <pointercast.h>
 #include <stdexcept>
 #include <exceptions/graph_exception.h>
+#include <dll.h>
+
+#if defined(_MSC_VER)
+
+// we're ignoring warning about non-exportable parent class, since std::runtime_error is a part of Standard C++ Library
+#pragma warning( disable : 4275 )
+
+#endif
 
 namespace nd4j {
-    class unknown_graph_exception: public graph_exception {
+    class ND4J_EXPORT unknown_graph_exception: public graph_exception {
     public:
         explicit unknown_graph_exception(Nd4jLong graphId);
     };

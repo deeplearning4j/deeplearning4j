@@ -185,18 +185,11 @@ public class KerasConvolution1D extends KerasConvolution {
                     break;
 
                 case THEANO:
-                    paramValue = kerasParamValue.permute(2, 1, 0);
-                    paramValue = paramValue.reshape(
-                            paramValue.size(0), paramValue.size(1),
-                            paramValue.size(2), 1).dup();
-                    for (int i = 0; i < paramValue.tensorsAlongDimension(2, 3); i++) {
-                        INDArray copyFilter = paramValue.tensorAlongDimension(i, 2, 3).dup();
-                        double[] flattenedFilter = copyFilter.ravel().data().asDouble();
-                        ArrayUtils.reverse(flattenedFilter);
-                        INDArray newFilter = Nd4j.create(flattenedFilter, copyFilter.shape());
-                        INDArray inPlaceFilter = paramValue.tensorAlongDimension(i, 2, 3);
-                        inPlaceFilter.muli(0).addi(newFilter.castTo(inPlaceFilter.dataType()));
-                    }
+                    //Convert from keras [k,nIn,nOut] to DL4J conv2d [nOut, nIn, k, 1]
+                    long k = kerasParamValue.size(0);
+                    long nIn = kerasParamValue.size(1);
+                    long nOut = kerasParamValue.size(2);
+                    paramValue = kerasParamValue.permute(2, 1, 0).dup('c').reshape(nOut, nIn, k, 1);
                     break;
                 default:
                     throw new InvalidKerasConfigurationException("Unknown keras backend " + this.getDimOrder());

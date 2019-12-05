@@ -24,6 +24,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -44,6 +45,10 @@ public class BinomialDistribution extends BaseRandomOp {
         this.trials = trials;
         this.probability = probability;
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
+    }
+
+    public BinomialDistribution(int trials, double probability, DataType dt, long[] shape){
+        this(Nd4j.createUninitialized(dt, shape), trials, probability);
     }
 
     public BinomialDistribution() {

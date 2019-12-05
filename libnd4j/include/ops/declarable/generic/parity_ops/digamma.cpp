@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,20 +15,36 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.tensorflow.conversion;
+//
+// @author Yurii Shyrma (iuriish@yahoo.com)
+//
 
-import org.junit.Test;
-import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner;
-import org.tensorflow.framework.ConfigProto;
+#include <op_boilerplate.h>
+#if NOT_EXCLUDED(OP_digamma)
 
-import static junit.framework.TestCase.assertTrue;
+#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/gammaMathFunc.h>
 
-public class GpuDeviceAlignmentTest {
+namespace nd4j {
+namespace ops  {
 
-    @Test
-    public void testDeviceAlignment() {
-        ConfigProto configProto = GraphRunner.getAlignedWithNd4j();
-        assertTrue(configProto.getDeviceFilters(0).contains("gpu"));
-    }
+CONFIGURABLE_OP_IMPL(digamma, 1, 1, false, 0, 0) {
+
+    auto x = INPUT_VARIABLE(0);
+    auto z = OUTPUT_VARIABLE(0);
+
+    helpers::diGamma(block.launchContext(), *x, *z);
+
+    return Status::OK();
+}
+
+DECLARE_TYPES(digamma) {
+    getOpDescriptor()
+            ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+            ->setSameMode(true);
+}
 
 }
+}
+
+#endif

@@ -19,6 +19,7 @@ package org.nd4j.autodiff.samediff.ops;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -1031,5 +1032,36 @@ public class SDNN extends SDOps {
                     updateVariableNameAndReference(result.get(1), name+":weights")
             );
         }
+    }
+
+    /**
+     * Max pooling on the input and outputs both max values and indices
+     *
+     * @param name  Name of the output variable
+     * @param x input array
+     * @return output array and argmax array
+     */
+    public SDVariable[] maxPoolWithArgmax(String[] names, SDVariable x, Pooling2DConfig pooling2DConfig) {
+        SDVariable[] res = f().maxPoolWithArgmaxs(x, pooling2DConfig);
+        return sd.updateVariableNamesAndReferences(res, names);
+    }
+
+    /**
+     * Batch normalization
+     *
+     * @param name  Name of the output variable
+     * @param x 4D array
+     * @param scale vector for scaling factor of normalized x
+     * @param offset vector to shift to the normalized x
+     * @param dataFormat integer scalar - data format
+     * @param isTraining boolean scalar - is training mode
+     * @return y: 4D array
+     *         batch_mean: vector
+     *         batch_var: vector
+     */
+    public SDVariable[] fusedBatchNorm(String[] names, SDVariable x, SDVariable scale, SDVariable offset,
+                                       SDVariable dataFormat, SDVariable isTraining) {
+        SDVariable[] res = f().fusedBatchNorm(x,scale,offset,dataFormat,isTraining);
+        return sd.updateVariableNamesAndReferences(res, names);
     }
 }

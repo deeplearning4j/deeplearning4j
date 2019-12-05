@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +46,10 @@ public class RandomExponential extends DynamicCustomOp {
         Preconditions.checkState(lambda >= 0, "Lambda parameter must be > 0 - got %s", lambda);
         this.lambda = lambda;
         addTArgument(lambda);
+    }
+
+    public RandomExponential(double lambda, DataType datatype, long... shape){
+        this(Nd4j.createFromArray(shape), Nd4j.createUninitialized(datatype, shape), lambda);
     }
 
     public RandomExponential(INDArray shape,INDArray out, double lambda){

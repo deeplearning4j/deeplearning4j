@@ -62,6 +62,10 @@ public class LayerNorm extends DynamicCustomOp {
         setDimensions(dimensions);
     }
 
+    public LayerNorm(@NonNull INDArray input, @NonNull INDArray gain, boolean channelsFirst, int... dimensions) {
+        this(input, gain, null, channelsFirst, dimensions);
+    }
+
     public LayerNorm(INDArray input, INDArray gain, INDArray result, boolean channelsFirst, int... dimensions) {
         this(input, gain, null, result, channelsFirst, dimensions);
     }

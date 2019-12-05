@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -33,6 +34,10 @@ import java.util.List;
 public class SigmoidDerivative extends DynamicCustomOp {
     public SigmoidDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, new SDVariable[]{i_v1, i_v2});
+    }
+
+    public SigmoidDerivative(@NonNull INDArray x, @NonNull INDArray y) {
+        this(x, y, null);
     }
 
     public SigmoidDerivative(INDArray x, INDArray y, INDArray z) {

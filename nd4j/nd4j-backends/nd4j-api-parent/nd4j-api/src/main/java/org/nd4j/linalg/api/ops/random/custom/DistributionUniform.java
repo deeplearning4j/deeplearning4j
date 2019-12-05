@@ -24,6 +24,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -71,7 +72,12 @@ public class DistributionUniform extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        AttrValue v = attributesForNode.get("dtype");
+        AttrValue vDtype = attributesForNode.get("dtype");
+        AttrValue vTout = attributesForNode.get("Tout");
+        if (vDtype == null && vTout == null) {
+            throw new ND4JIllegalStateException("Unable to find output data type for node " + nodeDef.getName());
+        }
+        AttrValue v = vDtype == null ? vTout : vDtype;
         dataType = TFGraphMapper.convertType(v.getType());
         addIArgument(dataType.toInt());
         addTArgument(0.0, 1.0); //TF version is hardcoded 0 to 1
@@ -92,8 +98,8 @@ public class DistributionUniform extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "RandomUniform";
+    public String[] tensorflowNames() {
+        return new String[]{"RandomUniform","RandomUniformInt"};
     }
 
     @Override
@@ -103,7 +109,7 @@ public class DistributionUniform extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null /*&& inputDataTypes.size() == 1*/, "Expected input datatypes for %s, got %s", getClass(), inputDataTypes);
         //Input data type specifies the shape
         if(dataType != null){
             return Collections.singletonList(dataType);

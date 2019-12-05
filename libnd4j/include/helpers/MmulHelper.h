@@ -25,7 +25,7 @@
 #include "NDArray.h"
 
 namespace nd4j {
-    class MmulHelper {
+    class ND4J_EXPORT MmulHelper {
 
     private:
 

@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -283,6 +284,12 @@ public class ConvolutionLayer extends FeedForwardLayer {
             super();
         }
 
+        @Override
+        protected boolean allowCausal() {
+            //Causal convolution - allowed for 1D only
+            return false;
+        }
+
         /**
          * Size of the convolution rows/columns
          *
@@ -455,6 +462,14 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         protected BaseConvBuilder() {}
+
+        protected abstract boolean allowCausal();
+
+        protected void setConvolutionMode(ConvolutionMode convolutionMode){
+            Preconditions.checkState(allowCausal() || convolutionMode != ConvolutionMode.Causal, "Causal convolution mode can only be used with 1D" +
+                    " convolutional neural network layers");
+            this.convolutionMode = convolutionMode;
+        }
 
         /**
          * If true (default): include bias parameters in the model. False: no bias.

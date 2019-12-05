@@ -47,6 +47,12 @@ public class NormalizeMoments extends DynamicCustomOp {
         addArgs();
     }
 
+    public NormalizeMoments(INDArray counts, INDArray means, INDArray variances, double shift) {
+        super(null, new INDArray[]{counts, means, variances}, null);
+        this.shift = shift;
+        addArgs();
+    }
+
     public NormalizeMoments(INDArray counts, INDArray ssSum, INDArray ssSqSum, INDArray outMean, INDArray outVar) {
         super(null, new INDArray[]{counts, ssSum, ssSqSum}, new INDArray[]{outMean, outVar},
                 new ArrayList<Double>(), new ArrayList<Integer>());

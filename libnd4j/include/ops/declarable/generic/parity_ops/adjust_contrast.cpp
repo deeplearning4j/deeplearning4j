@@ -27,29 +27,42 @@
 namespace nd4j {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, -2, 0) {
+////////////////////////////////////////////////////////////////////
+CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
 
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
+    // just skip op if input is empty
+    if (input->isEmpty())
+        return Status::OK();
+
     REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST: Scale factor required");
-
-    const double factor = block.width() > 1 ? INPUT_VARIABLE(1)->e<double>(0) : T_ARG(0);
-
     REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
     REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
-    // compute mean before
+
+    NDArray* factor = nullptr;
+
+    if(block.width() > 1)
+        factor = INPUT_VARIABLE(1);
+    else {
+        factor = new NDArray(output->dataType(), block.launchContext());
+        factor->p(0, T_ARG(0));
+    }
+
     // fill up axes vector first
     std::vector<int> axes(input->rankOf() - 1);
     for (auto i = 0; i < axes.size(); ++i)
         axes[i] = i;
+
     // mean as reduction for last dimension set
     auto mean = input->reduceAlongDims(reduce::Mean, axes);
 
-    NDArray factorT(output->dataType(), block.launchContext()); // = NDArrayFactory::create(factor, block.launchContext());
-    factorT.p(0, factor);
     // this is contrast calculation
-    output->assign((*input - mean) * factorT + mean);
+    output->assign((*input - mean) * (*factor) + mean);
+
+    if(block.width() == 1)
+        delete factor;
 
     return Status::OK();
 }
@@ -60,41 +73,54 @@ DECLARE_TYPES(adjust_contrast) {
                      ->setSameMode(true);
 }
 
+////////////////////////////////////////////////////////////////////
+CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
 
-    CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, -2, 0) {
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-        auto input  = INPUT_VARIABLE(0);
-        auto output = OUTPUT_VARIABLE(0);
-
-        REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST_V2: Scale factor required");
-
-        const double factor = block.width() > 1 ? INPUT_VARIABLE(1)->e<double>(0) : T_ARG(0);
-
-        REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST_V2: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
-        REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST_V2: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
-
-        // compute mean before
-        std::vector<int> axes(input->rankOf() - 1);
-        for (auto i = 0; i < axes.size(); ++i)
-            axes[i] = i;
-
-        // mean as reduction for last dimension set
-        auto mean = input->reduceAlongDims(reduce::Mean, axes);
-
-        // result as (x - mean) * factor + mean
-        auto temp = input->ulike();
-        input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &mean, &temp);
-        temp.applyScalar(scalar::Multiply, factor);
-        temp.applyTrueBroadcast(BroadcastOpsTuple::Add(), &mean, output);
-
+    // just skip op if input is empty
+    if (input->isEmpty())
         return Status::OK();
+
+    REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST_V2: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
+    REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST_V2: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
+    REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST_V2: Scale factor required");
+
+    NDArray* factor = nullptr;
+
+    if(block.width() > 1)
+        factor = INPUT_VARIABLE(1);
+    else {
+        factor = new NDArray(output->dataType(), block.launchContext());
+        factor->p(0, T_ARG(0));
     }
 
-    DECLARE_TYPES(adjust_contrast_v2) {
-        getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setAllowedOutputTypes({ALL_FLOATS})
-                ->setSameMode(true);
-    }
+    // compute mean before
+    std::vector<int> axes(input->rankOf() - 1);
+    for (auto i = 0; i < axes.size(); ++i)
+        axes[i] = i;
+
+    // mean as reduction for last dimension set
+    auto mean = input->reduceAlongDims(reduce::Mean, axes);
+
+    // result as (x - mean) * factor + mean
+    auto temp = input->ulike();
+    input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &mean, &temp);
+    temp.applyScalarArr(scalar::Multiply, factor);
+    temp.applyTrueBroadcast(BroadcastOpsTuple::Add(), &mean, output);
+
+    if(block.width() == 1)
+        delete factor;
+
+    return Status::OK();
+}
+
+DECLARE_TYPES(adjust_contrast_v2) {
+    getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedOutputTypes({ALL_FLOATS})
+            ->setSameMode(true);
+}
 
 }
 }

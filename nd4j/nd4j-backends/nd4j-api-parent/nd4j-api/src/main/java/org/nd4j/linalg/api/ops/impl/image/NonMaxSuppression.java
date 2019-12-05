@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -41,6 +42,12 @@ public class NonMaxSuppression extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{boxes, scores, maxOutSize, iouThreshold, scoreThreshold}, false);
     }
 
+    public NonMaxSuppression(INDArray boxes, INDArray scores, int maxOutSize, double iouThreshold, double scoreThreshold) {
+        addInputArgument(boxes,scores);
+        addIArgument(maxOutSize);
+        addTArgument(iouThreshold, scoreThreshold);
+    }
+
     @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx name found for shape " + opName());
@@ -53,7 +60,7 @@ public class NonMaxSuppression extends DynamicCustomOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[]{"NonMaxSuppression", "NonMaxSuppressionV2", "NonMaxSuppressionV3"};
+        return new String[]{"NonMaxSuppression", "NonMaxSuppressionV2","NonMaxSuppressionV3","NonMaxSuppressionV4"};
     }
 
     @Override

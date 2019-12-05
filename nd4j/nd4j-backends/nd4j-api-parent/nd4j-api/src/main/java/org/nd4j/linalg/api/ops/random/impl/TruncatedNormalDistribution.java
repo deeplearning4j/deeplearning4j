@@ -24,6 +24,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +47,10 @@ public class TruncatedNormalDistribution extends BaseRandomOp {
         this.mean = mean;
         this.stddev = stddev;
         this.extraArgs = new Object[] {this.mean, this.stddev};
+    }
+
+    public TruncatedNormalDistribution(double mean, double stddev, DataType datatype, long... shape){
+        this(Nd4j.createUninitialized(datatype, shape), mean, stddev);
     }
 
     /**

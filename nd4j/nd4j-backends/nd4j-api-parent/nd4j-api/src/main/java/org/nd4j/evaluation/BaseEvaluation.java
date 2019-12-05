@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17,7 +18,6 @@
 package org.nd4j.evaluation;
 
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.classification.*;
@@ -27,24 +27,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicBoolean;
-import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicDouble;
-import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicBoolean;
-import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicDouble;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
+import org.nd4j.serde.json.JsonMappers;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
-import org.nd4j.shade.jackson.databind.module.SimpleModule;
-import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -60,32 +49,6 @@ import java.util.List;
 @EqualsAndHashCode
 public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvaluation<T> {
 
-    @Getter
-    private static ObjectMapper objectMapper = configureMapper(new ObjectMapper());
-    @Getter
-    private static ObjectMapper yamlMapper = configureMapper(new ObjectMapper(new YAMLFactory()));
-
-    private static ObjectMapper configureMapper(ObjectMapper ret) {
-        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false);
-        ret.enable(SerializationFeature.INDENT_OUTPUT);
-        SimpleModule atomicModule = new SimpleModule();
-        atomicModule.addSerializer(AtomicDouble.class, new JsonSerializerAtomicDouble());
-        atomicModule.addSerializer(AtomicBoolean.class, new JsonSerializerAtomicBoolean());
-        atomicModule.addDeserializer(AtomicDouble.class, new JsonDeserializerAtomicDouble());
-        atomicModule.addDeserializer(AtomicBoolean.class, new JsonDeserializerAtomicBoolean());
-        ret.registerModule(atomicModule);
-        //Serialize fields only, not using getters
-        ret.setVisibilityChecker(ret.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.ANY)
-        );
-        return ret;
-    }
-
     /**
      * @param yaml  YAML representation
      * @param clazz Class
@@ -94,7 +57,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
      */
     public static <T extends IEvaluation> T fromYaml(String yaml, Class<T> clazz) {
         try {
-            return yamlMapper.readValue(yaml, clazz);
+            return JsonMappers.getYamlMapper().readValue(yaml, clazz);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -108,7 +71,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
      */
     public static <T extends IEvaluation> T fromJson(String json, Class<T> clazz) {
         try {
-            return objectMapper.readValue(json, clazz);
+            return JsonMappers.getMapper().readValue(json, clazz);
         } catch (InvalidTypeIdException e) {
             if (e.getMessage().contains("Could not resolve type id")) {
                 try {
@@ -332,7 +295,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     @Override
     public String toJson() {
         try {
-            return objectMapper.writeValueAsString(this);
+            return JsonMappers.getMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -349,7 +312,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     @Override
     public String toYaml() {
         try {
-            return yamlMapper.writeValueAsString(this);
+            return JsonMappers.getYamlMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

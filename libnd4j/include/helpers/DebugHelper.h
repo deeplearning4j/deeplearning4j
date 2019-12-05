@@ -40,7 +40,7 @@
 #include <DebugInfo.h>
 namespace nd4j {
     class NDArray;
-    class DebugHelper {
+    class ND4J_EXPORT DebugHelper {
     public:
 
     // cuda-specific debug functions

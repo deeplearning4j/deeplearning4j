@@ -682,7 +682,7 @@ TEST_F(NativeOpsTests, ScalarTest_1) {
 
 TEST_F(NativeOpsTests, ScalarTest_2) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
-    auto y = NDArrayFactory::create<float>(10.);
+    auto y = NDArrayFactory::create<float>(10.f);
     auto exp = NDArrayFactory::create<bool>('c', {5,5});
     auto z = NDArrayFactory::create<bool>('c', {5,5});
 
@@ -714,9 +714,9 @@ TEST_F(NativeOpsTests, ScalarTest_2) {
 }
 
 TEST_F(NativeOpsTests, SummaryStatsScalarTest_1) {
-    auto x = NDArrayFactory::create<float>('c', {5, 5}, {0.1, 0.2, 0.3, -0.3, -0.5, 0.5, 0.7, 0.9, 0.8, 0.1, 0.11, 0.12, 0.5, -0.8, -0.9, 0.4, 0.1, 0.2, 0.3, -0.3, -0.5, 0.2, 0.3, -0.3, -0.5});
-    auto exp = NDArrayFactory::create<float>(0.9);
-    auto z = NDArrayFactory::create<float>(0.21587136);
+    auto x = NDArrayFactory::create<float>('c', {5, 5}, {0.1f, 0.2f, 0.3f, -0.3f, -0.5f, 0.5f, 0.7f, 0.9f, 0.8f, 0.1f, 0.11f, 0.12f, 0.5f, -0.8f, -0.9f, 0.4f, 0.1f, 0.2f, 0.3f, -0.3f, -0.5f, 0.2f, 0.3f, -0.3f, -0.5f});
+    auto exp = NDArrayFactory::create<float>(0.9f);
+    auto z = NDArrayFactory::create<float>(0.21587136f);
 
     Nd4jPointer extra[6];
 #ifdef __CUDABLAS__
@@ -739,9 +739,9 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_1) {
 }
 
 TEST_F(NativeOpsTests, SummaryStatsScalarTest_2) {
-    auto x = NDArrayFactory::create<float>('c', {5, 5}, {0.1, 0.2, 0.3, -0.3, -0.5, 0.5, 0.7, 0.9, 0.8, 0.1, 0.11, 0.12, 0.5, -0.8, -0.9, 0.4, 0.1, 0.2, 0.3, -0.3, -0.5, 0.2, 0.3, -0.3, -0.5});
-    auto exp = NDArrayFactory::create<float>(0.9);
-    auto z = NDArrayFactory::create<float>(0.21587136);
+    auto x = NDArrayFactory::create<double>('c', {5, 5}, {0.1, 0.2, 0.3, -0.3, -0.5, 0.5, 0.7, 0.9, 0.8, 0.1, 0.11, 0.12, 0.5, -0.8, -0.9, 0.4, 0.1, 0.2, 0.3, -0.3, -0.5, 0.2, 0.3, -0.3, -0.5});
+    auto exp = NDArrayFactory::create<double>(0.9);
+    auto z = NDArrayFactory::create<double>(0.21587136);
 
     Nd4jPointer extra[6];
 #ifdef __CUDABLAS__
@@ -764,9 +764,9 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_2) {
 }
 
 TEST_F(NativeOpsTests, SummaryStatsScalarTest_3) {
-    auto x = NDArrayFactory::create<float>('c', {5, 5}, {0.1, 0.2, 0.3, -0.3, -0.5, 0.5, 0.7, 0.9, 0.8, 0.1, 0.11, 0.12, 0.5, -0.8, -0.9, 0.4, 0.1, 0.2, 0.3, -0.3, -0.5, 0.2, 0.3, -0.3, -0.5});
-    auto exp = NDArrayFactory::create<float>(0.9);
-    auto z = NDArrayFactory::create<float>(0.21587136);
+    auto x = NDArrayFactory::create<double>('c', {5, 5}, {0.1, 0.2, 0.3, -0.3, -0.5, 0.5, 0.7, 0.9, 0.8, 0.1, 0.11, 0.12, 0.5, -0.8, -0.9, 0.4, 0.1, 0.2, 0.3, -0.3, -0.5, 0.2, 0.3, -0.3, -0.5});
+    auto exp = NDArrayFactory::create<double>(0.9);
+    auto z = NDArrayFactory::create<double>(0.21587136);
 
     Nd4jPointer extra[6];
 #ifdef __CUDABLAS__
@@ -794,9 +794,9 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_3) {
 }
 
 TEST_F(NativeOpsTests, TransformTest_1) {
-    auto x = NDArrayFactory::create<float>('c', {5, 5}, {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400, 441, 484, 529, 576, 625});
-    auto exp = NDArrayFactory::create<float>('c', {5, 5});
-    auto z = NDArrayFactory::create<float>('c', {5,5});
+    auto x = NDArrayFactory::create<double>('c', {5, 5}, {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400, 441, 484, 529, 576, 625});
+    auto exp = NDArrayFactory::create<double>('c', {5, 5});
+    auto z = NDArrayFactory::create<double>('c', {5,5});
 
     Nd4jPointer extra[6];
 #ifdef __CUDABLAS__
@@ -821,7 +821,7 @@ TEST_F(NativeOpsTests, TransformTest_1) {
 }
 
 TEST_F(NativeOpsTests, TransformTest_2) {
-    auto x = NDArrayFactory::create<float>('c', {5, 5}, {1, 4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225, 256, 289, 324, 361, 400, 441, 484, 529, 576, 625});
+    auto x = NDArrayFactory::create<float>('c', {5, 5}, {1.f, 4.f, 9.f, 16.f, 25.f, 36.f, 49.f, 64.f, 81.f, 100.f, 121.f, 144.f, 169.f, 196.f, 225.f, 256.f, 289.f, 324.f, 361.f, 400.f, 441.f, 484.f, 529.f, 576.f, 625.f});
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     auto z = NDArrayFactory::create<float>('c', {5,5});
 
@@ -878,10 +878,10 @@ TEST_F(NativeOpsTests, TransformTest_3) {
 }
 
 TEST_F(NativeOpsTests, TransformTest_4) {
-    auto x = NDArrayFactory::create<float>('c', {5, 5}, {0, 1, 2, 3, 2, 1, 0, 1.57, 1.57, 1.57, 3.141592, 3.141592,
+    auto x = NDArrayFactory::create<double>('c', {5, 5}, {0, 1, 2, 3, 2, 1, 0, 1.57, 1.57, 1.57, 3.141592, 3.141592,
                                                          3.141592, 0, 0, 0, 0, 1, 1, 2, 2, 2, 1, 0, 0});
-    auto exp = NDArrayFactory::create<float>('c', {5, 5});
-    auto z = NDArrayFactory::create<float>('c', {5,5}, {1., 0.540302, -0.416147, -0.989992, -0.416147,  0.540302, 1.0,
+    auto exp = NDArrayFactory::create<double>('c', {5, 5});
+    auto z = NDArrayFactory::create<double>('c', {5,5}, {1., 0.540302, -0.416147, -0.989992, -0.416147,  0.540302, 1.0,
                                                         0.000796, 0.000796, 0.000796, -1, -1, -1, 1., 1., 1.0, 1.0,
                                                         0.540302, 0.540302, -0.416147, -0.416147, -0.416147, 0.540302, 1., 1.});
 
@@ -909,7 +909,7 @@ TEST_F(NativeOpsTests, TransformTest_4) {
 
 TEST_F(NativeOpsTests, ScalarTadTest_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
-    auto y = NDArrayFactory::create<float>(10.);
+    auto y = NDArrayFactory::create<float>(10.f);
     auto exp = NDArrayFactory::create<float>('c', {5,5});
     auto z = NDArrayFactory::create<float>('c', {5,5});
 
@@ -1433,9 +1433,9 @@ TEST_F(NativeOpsTests, MapTests_1) {
 }
 
 TEST_F(NativeOpsTests, CustomOpTest_1) {
-    auto x = NDArrayFactory::create<float>('c', {1, 6}, {1, 2, 3, 4, 5, 6});
+    auto x = NDArrayFactory::create<float>('c', {1, 6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
     auto z = NDArrayFactory::create<float>('c', {6});
-    auto e = NDArrayFactory::create<float>('c', {6}, {1, 2, 3, 4, 5, 6});
+    auto e = NDArrayFactory::create<float>('c', {6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
 
     nd4j::ops::squeeze op;
 

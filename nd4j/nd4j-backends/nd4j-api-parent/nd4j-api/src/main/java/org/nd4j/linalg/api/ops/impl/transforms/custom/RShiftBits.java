@@ -53,15 +53,9 @@ public class RShiftBits extends BaseDynamicTransformOp {
         return "rshift_bits";
     }
 
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No TensorFlow op opName found for " +  opName());
+        return "RightShift";
     }
 
 

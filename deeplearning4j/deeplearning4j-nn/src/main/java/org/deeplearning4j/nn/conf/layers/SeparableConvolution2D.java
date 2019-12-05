@@ -184,6 +184,12 @@ public class SeparableConvolution2D extends ConvolutionLayer {
             super();
         }
 
+        @Override
+        protected boolean allowCausal() {
+            //Causal convolution - allowed for 1D only
+            return false;
+        }
+
         /**
          * Set channels multiplier of channels-wise step in separable convolution
          *

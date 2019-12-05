@@ -24,7 +24,7 @@
 #include "NDArray.h"
 
 namespace nd4j {
-    class AttentionHelper {
+    class ND4J_EXPORT AttentionHelper {
 
     public:
         static nd4j::NDArray multiHeadProject(const nd4j::NDArray* input, const nd4j::NDArray* projectionMatrix, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());

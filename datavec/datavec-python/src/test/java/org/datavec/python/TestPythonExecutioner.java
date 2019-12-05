@@ -15,17 +15,25 @@
  ******************************************************************************/
 
 package org.datavec.python;
-import org.junit.Ignore;
+import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
 import static org.junit.Assert.assertEquals;
 
-@Ignore("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
+
+@javax.annotation.concurrent.NotThreadSafe
 public class TestPythonExecutioner {
 
-    @Test(timeout = 60000L)
+
+    @org.junit.Test
+    public void testPythonSysVersion() {
+        PythonExecutioner.exec("import sys; print(sys.version)");
+    }
+
+    @Test
     public void testStr() throws Exception{
 
         PythonVariables pyInputs = new PythonVariables();
@@ -47,7 +55,7 @@ public class TestPythonExecutioner {
         assertEquals("Hello World", z);
     }
 
-    @Test(timeout = 60000L)
+    @Test
     public void testInt()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -55,7 +63,7 @@ public class TestPythonExecutioner {
         pyInputs.addInt("x", 10);
         pyInputs.addInt("y", 20);
 
-       String code = "z = x + y";
+        String code = "z = x + y";
 
         pyOutputs.addInt("z");
 
@@ -64,11 +72,11 @@ public class TestPythonExecutioner {
 
         long z = pyOutputs.getIntValue("z");
 
-        assertEquals(30, z);
+        Assert.assertEquals(30, z);
 
     }
 
-    @Test(timeout = 60000L)
+    @Test
     public void testList() throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -88,18 +96,35 @@ public class TestPythonExecutioner {
 
         Object[] z = pyOutputs.getListValue("z");
 
-        assertEquals(z.length, x.length + y.length);
+        Assert.assertEquals(z.length, x.length + y.length);
 
-        for (int i=0; i < x.length; i++){
-            assertEquals(x[i], z[i]);
+        for (int i = 0; i < x.length; i++) {
+            if(x[i] instanceof Number) {
+                Number xNum = (Number) x[i];
+                Number zNum = (Number) z[i];
+                Assert.assertEquals(xNum.intValue(), zNum.intValue());
+            }
+            else {
+                Assert.assertEquals(x[i], z[i]);
+            }
+
         }
-        for (int i=0; i<y.length; i++){
-            assertEquals(y[i], z[x.length + i]);
+        for (int i = 0; i < y.length; i++){
+            if(y[i] instanceof Number) {
+                Number yNum = (Number) y[i];
+                Number zNum = (Number) z[x.length + i];
+                Assert.assertEquals(yNum.intValue(), zNum.intValue());
+            }
+            else {
+                Assert.assertEquals(y[i], z[x.length + i]);
+
+            }
+
         }
 
     }
 
-    @Test(timeout = 60000L)
+    @Test
     public void testNDArrayFloat()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -113,12 +138,17 @@ public class TestPythonExecutioner {
         PythonExecutioner.exec(code, pyInputs, pyOutputs);
         INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
-        assertEquals(6.0, z.sum().getDouble(0), 1e-5);
+        Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
 
 
     }
 
-    @Test(timeout = 60000L)
+    @Test
+    public void testTensorflowCustomAnaconda() {
+        PythonExecutioner.exec("import tensorflow as tf");
+    }
+
+    @Test
     public void testNDArrayDouble()throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -132,10 +162,10 @@ public class TestPythonExecutioner {
         PythonExecutioner.exec(code, pyInputs, pyOutputs);
         INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
-        assertEquals(6.0, z.sum().getDouble(0), 1e-5);
+        Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
     }
 
-    @Test(timeout = 60000L)
+    @Test
     public void testNDArrayShort()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -149,11 +179,11 @@ public class TestPythonExecutioner {
         PythonExecutioner.exec(code, pyInputs, pyOutputs);
         INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
-        assertEquals(6.0, z.sum().getDouble(0), 1e-5);
+        Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
     }
 
 
-    @Test(timeout = 60000L)
+    @Test
     public void testNDArrayInt()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -167,11 +197,11 @@ public class TestPythonExecutioner {
         PythonExecutioner.exec(code, pyInputs, pyOutputs);
         INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
-        assertEquals(6.0, z.sum().getDouble(0), 1e-5);
+        Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
 
     }
 
-    @Test(timeout = 60000L)
+    @Test
     public void testNDArrayLong()throws Exception{
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -185,7 +215,7 @@ public class TestPythonExecutioner {
         PythonExecutioner.exec(code, pyInputs, pyOutputs);
         INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
 
-        assertEquals(6.0, z.sum().getDouble(0), 1e-5);
+        Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
 
 
     }

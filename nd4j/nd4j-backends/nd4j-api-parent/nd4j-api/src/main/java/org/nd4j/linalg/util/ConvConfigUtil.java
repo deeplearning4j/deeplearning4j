@@ -76,10 +76,12 @@ public class ConvConfigUtil {
     /**
      * Validate a 1D convolution's Kernel, Stride, and Padding
      */
-    public static void validate1D(long k, long s, long p){
+    public static void validate1D(long k, long s, long p, long d){
         Preconditions.checkArgument(k != 0, "Kernel can not be 0");
 
         Preconditions.checkArgument(s > 0, "Stride can not be negative or 0, got: %s", s);
+
+        Preconditions.checkArgument(d > 0, "Dilation can not be negative or 0, got: %s", s);
 
         Preconditions.checkArgument(p >= 0, "Padding can not be negative, got: %s", p);
     }

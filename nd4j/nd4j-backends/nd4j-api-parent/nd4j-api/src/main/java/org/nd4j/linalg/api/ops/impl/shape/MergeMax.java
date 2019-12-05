@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -38,6 +39,10 @@ public class MergeMax extends DynamicCustomOp {
 
     public MergeMax(SameDiff sameDiff, SDVariable... inputs) {
         super(null, sameDiff, inputs);
+    }
+
+    public MergeMax(INDArray... inputs){
+        super(inputs, null);
     }
 
     public MergeMax(){ }

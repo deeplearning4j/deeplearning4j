@@ -18,7 +18,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 26.04.2019
 //
 
-#include<ops/declarable/helpers/polyGamma.h>
+#include<ops/declarable/helpers/gammaMathFunc.h>
 #include<ops/declarable/helpers/zeta.h>
 #include <NDArrayFactory.h>
 
@@ -37,9 +37,13 @@ __global__ static void polyGammaCuda(const void *vn, const Nd4jLong *nShapeInfo,
           auto z = reinterpret_cast<T*>(vz);
 
     __shared__ Nd4jLong len;
+    __shared__ bool sameOffsetNX, sameOffsetNZ;
 
-    if (threadIdx.x == 0)
+    if (threadIdx.x == 0) {
         len = shape::length(nShapeInfo);
+        sameOffsetNX = shape::haveSameShapeAndStrides(xShapeInfo, nShapeInfo);
+        sameOffsetNZ = shape::haveSameShapeAndStrides(zShapeInfo, nShapeInfo);
+    }
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -48,19 +52,26 @@ __global__ static void polyGammaCuda(const void *vn, const Nd4jLong *nShapeInfo,
     for (int i = tid; i < len; i += totalThreads) {
 
         const auto nOffset = shape::getIndexOffset(i, nShapeInfo);
-        const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
-        const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
+        const auto xOffset = sameOffsetNX ? nOffset : shape::getIndexOffset(i, xShapeInfo);
+        const auto zOffset = sameOffsetNZ ? nOffset : shape::getIndexOffset(i, zShapeInfo);
 
-        const T nVal = n[nOffset];
+        const T order = n[nOffset];
 
-        int sign = (static_cast<int>(nVal) + 1) % 2  ?  -1 : 1;
+        int sign = (static_cast<int>(order) + 1) % 2  ?  -1 : 1;
 
-        T factorial = 1;
-        if(nVal != 0 && nVal != 1)
-        	for(int i = 2; i <= nVal; ++i)
-				factorial *= i;
+        if(order != static_cast<int>(order)) {
+            z[zOffset] = DataTypeUtils::nanOrZero<T>();
+        }
+        else if(order == 0) {
+            z[zOffset] = diGammaScalar<T>(x[xOffset]);
+        }
+        else {
+            T factorial = 1;
+            for(int i = 2; i <= order; ++i)
+                factorial *= i;
 
-        z[zOffset] = sign * factorial * zetaScalar<T>(nVal + 1, x[xOffset]);
+            z[zOffset] = sign * factorial * zetaScalar<T>(order + 1, x[xOffset]);
+        }
     }
 }
 
@@ -76,7 +87,7 @@ void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x
 
     NDArray::prepareSpecialUse({&z}, {&n, &x});
 
-    int threadsPerBlock = MAX_NUM_THREADS;
+    int threadsPerBlock = MAX_NUM_THREADS / 2;
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
     BUILD_SINGLE_SELECTOR(n.dataType(), polyGammaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), n.getSpecialBuffer(), n.getSpecialShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);

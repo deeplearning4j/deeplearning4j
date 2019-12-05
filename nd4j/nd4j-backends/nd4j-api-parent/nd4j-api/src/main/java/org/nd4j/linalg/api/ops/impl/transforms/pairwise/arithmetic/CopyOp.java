@@ -77,8 +77,8 @@ public class CopyOp extends BaseTransformSameOp {
     }
 
     @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    public String[] tensorflowNames() {
+        return new String[]{"Copy","DeepCopy","CopyHost"};
     }
 
     @Override

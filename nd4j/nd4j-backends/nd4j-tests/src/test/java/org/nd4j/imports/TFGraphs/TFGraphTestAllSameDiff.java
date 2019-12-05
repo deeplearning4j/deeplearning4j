@@ -76,8 +76,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "adjust_contrast/.*",
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             "bincount/.*",
-            // Failing 2019/11/15 https://github.com/eclipse/deeplearning4j/issues/8400
-            "bitcast/.*",
             // Failing 2019/11/14 https://github.com/eclipse/deeplearning4j/issues/8393
             "is_strictly_increasing/emptyArrayTest/.*",
 
@@ -116,18 +114,40 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // 2019/11/15 - missing dtype argument in nd4j, tests are useless https://github.com/eclipse/deeplearning4j/issues/8398
             "zeros_like/rank2_float32_dtype_int.*",
 
-            // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8399
-            "crop_and_resize.*",
-
-            // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8401
-            "draw_bounding_boxes.*",
-
             // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8402
             "fake_quant/min_max_args_per_channel.*",
 
             // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8403
-            "resize_bilinear/int32.*"
+            "resize_bilinear/int32.*",
+
+            // Suggesting TF 1.15 bug
+            "non_max_suppression_v2/float16.*",
+
+            // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8450
+            "betainc.*",
+
+            // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8452
+            "polygamma.*",
+
+            // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8453
+            "roll/.*",
+
+            // 11.26.2019 failing https://github.com/eclipse/deeplearning4j/issues/8455
+            "matrix_band_part/.*",
+
+            // 11.28.2019 failing https://github.com/eclipse/deeplearning4j/issues/8458
+            "adjust_hue/.*",
+
+            // 11.28.2019 failing https://github.com/eclipse/deeplearning4j/issues/8459
+            "adjust_saturation/.*"
     };
+
+    /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have
+       all arrays printed during execution.
+       If a test name matches any regex here, an ExecPrintListener will be added to the listeners, and all output
+       arrays will be printed during execution
+     */
+    private final List<String> debugModeRegexes = null; //Arrays.asList("resize_nearest_neighbor/.*", "add_n.*");
 
     @BeforeClass
     public static void beforeClass() {
@@ -194,8 +214,18 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
+        boolean verboseDebugMode = false;
+        if(debugModeRegexes != null){
+            for(String regex : debugModeRegexes){
+                if(modelName.matches(regex)){
+                    verboseDebugMode = true;
+                    break;
+                }
+            }
+        }
+
         try {
-            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, false);
+            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
             //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, localTestDir);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);

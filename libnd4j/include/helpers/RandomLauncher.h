@@ -24,7 +24,7 @@
 #include <execution/LaunchContext.h>
 
 namespace nd4j {
-    class RandomLauncher {
+    class ND4J_EXPORT RandomLauncher {
     public:
         static void applyDropOut(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z = nullptr);
         static void applyInvertedDropOut(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z = nullptr);

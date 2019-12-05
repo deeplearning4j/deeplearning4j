@@ -36,7 +36,9 @@ public class ROCSerializer extends JsonSerializer<ROC> {
     @Override
     public void serialize(ROC roc, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
                     throws IOException {
-        if (roc.isExact()) {
+        boolean empty = roc.getExampleCount() == 0;
+
+        if (roc.isExact() && !empty) {
             //For exact ROC implementation: force AUC and AUPRC calculation, so result can be stored in JSON, such
             //that we have them once deserialized.
             //Due to potentially huge size, exact mode doesn't store the original predictions in JSON
@@ -47,9 +49,11 @@ public class ROCSerializer extends JsonSerializer<ROC> {
         jsonGenerator.writeNumberField("countActualPositive", roc.getCountActualPositive());
         jsonGenerator.writeNumberField("countActualNegative", roc.getCountActualNegative());
         jsonGenerator.writeObjectField("counts", roc.getCounts());
-        jsonGenerator.writeNumberField("auc", roc.calculateAUC());
-        jsonGenerator.writeNumberField("auprc", roc.calculateAUCPR());
-        if (roc.isExact()) {
+        if(!empty) {
+            jsonGenerator.writeNumberField("auc", roc.calculateAUC());
+            jsonGenerator.writeNumberField("auprc", roc.calculateAUCPR());
+        }
+        if (roc.isExact() && !empty) {
             //Store ROC and PR curves only for exact mode... they are redundant + can be calculated again for thresholded mode
             jsonGenerator.writeObjectField("rocCurve", roc.getRocCurve());
             jsonGenerator.writeObjectField("prCurve", roc.getPrecisionRecallCurve());

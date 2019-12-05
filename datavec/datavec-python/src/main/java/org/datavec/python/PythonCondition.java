@@ -23,6 +23,8 @@ import org.datavec.api.writable.*;
 
 import java.util.List;
 
+import static org.datavec.python.PythonUtils.schemaToPythonVariables;
+
 /**
  * Lets a condition be defined as a python method f that takes no arguments
  * and returns a boolean indicating whether or not to filter a row.
@@ -38,81 +40,28 @@ public class PythonCondition implements Condition {
     private String code;
 
 
-    public PythonCondition(String pythonCode){
+    public PythonCondition(String pythonCode) {
+        org.nd4j.base.Preconditions.checkNotNull("Python code must not be null!",pythonCode);
+        org.nd4j.base.Preconditions.checkState(pythonCode.length() >= 1,"Python code must not be empty!");
         code = pythonCode;
     }
 
-    private PythonVariables schemaToPythonVariables(Schema schema) throws Exception{
-        PythonVariables pyVars = new PythonVariables();
-        int numCols = schema.numColumns();
-        for (int i=0; i<numCols; i++){
-            String colName = schema.getName(i);
-            ColumnType colType = schema.getType(i);
-            switch (colType){
-                case Long:
-                case Integer:
-                    pyVars.addInt(colName);
-                    break;
-                case Double:
-                case Float:
-                    pyVars.addFloat(colName);
-                    break;
-                case String:
-                    pyVars.addStr(colName);
-                    break;
-                case NDArray:
-                    pyVars.addNDArray(colName);
-                    break;
-                default:
-                    throw new Exception("Unsupported python input type: " + colType.toString());
-            }
-        }
-        return pyVars;
-    }
-    private PythonVariables getPyInputsFromWritables(List<Writable> writables){
 
-        PythonVariables ret = new PythonVariables();
 
-        for (String name: pyInputs.getVariables()){
-            int colIdx = inputSchema.getIndexOfColumn(name);
-            Writable w = writables.get(colIdx);
-            PythonVariables.Type pyType = pyInputs.getType(name);
-            switch (pyType){
-                case INT:
-                    if (w instanceof LongWritable){
-                        ret.addInt(name, ((LongWritable)w).get());
-                    }
-                    else{
-                        ret.addInt(name, ((IntWritable)w).get());
-                    }
 
-                    break;
-                case FLOAT:
-                    ret.addFloat(name, ((DoubleWritable)w).get());
-                    break;
-                case STR:
-                    ret.addStr(name, ((Text)w).toString());
-                    break;
-                case NDARRAY:
-                    ret.addNDArray(name,((NDArrayWritable)w).get());
-                    break;
-            }
-
-        }
-        return ret;
-    }
     @Override
-    public void setInputSchema(Schema inputSchema){
+    public void setInputSchema(Schema inputSchema) {
         this.inputSchema = inputSchema;
         try{
             pyInputs = schemaToPythonVariables(inputSchema);
             PythonVariables pyOuts = new PythonVariables();
             pyOuts.addInt("out");
-            pythonTransform = new PythonTransform(
-                    code + "\n\nout=f()\nout=0 if out is None else int(out)", // TODO: remove int conversion after boolean support is covered
-                    pyInputs,
-                    pyOuts
-            );
+            pythonTransform = PythonTransform.builder()
+                    .code(code + "\n\nout=f()\nout=0 if out is None else int(out)")
+                    .inputs(pyInputs)
+                    .outputs(pyOuts)
+                    .build();
+
         }
         catch (Exception e){
             throw new RuntimeException(e);
@@ -127,41 +76,47 @@ public class PythonCondition implements Condition {
         return inputSchema;
     }
 
-    public String[] outputColumnNames(){
+    @Override
+    public String[] outputColumnNames() {
         String[] columnNames = new String[inputSchema.numColumns()];
         inputSchema.getColumnNames().toArray(columnNames);
         return columnNames;
     }
 
+    @Override
     public String outputColumnName(){
         return outputColumnNames()[0];
     }
 
+    @Override
     public String[] columnNames(){
         return outputColumnNames();
     }
 
+    @Override
     public String columnName(){
         return outputColumnName();
     }
 
+    @Override
     public Schema transform(Schema inputSchema){
         return inputSchema;
     }
 
-    public boolean condition(List<Writable> list){
+    @Override
+    public boolean condition(List<Writable> list) {
         PythonVariables inputs = getPyInputsFromWritables(list);
         try{
             PythonExecutioner.exec(pythonTransform.getCode(), inputs, pythonTransform.getOutputs());
             boolean ret = pythonTransform.getOutputs().getIntValue("out") != 0;
             return ret;
         }
-        catch (Exception e){
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 
+    @Override
     public boolean condition(Object input){
         return condition(input);
     }
@@ -175,6 +130,38 @@ public class PythonCondition implements Condition {
     @Override
     public boolean conditionSequence(Object input) {
         throw new UnsupportedOperationException("not supported");
+    }
+
+    private PythonVariables getPyInputsFromWritables(List<Writable> writables) {
+        PythonVariables ret = new PythonVariables();
+
+        for (int i = 0; i < inputSchema.numColumns(); i++){
+            String name = inputSchema.getName(i);
+            Writable w = writables.get(i);
+            PythonVariables.Type pyType = pyInputs.getType(inputSchema.getName(i));
+            switch (pyType){
+                case INT:
+                    if (w instanceof LongWritable) {
+                        ret.addInt(name, ((LongWritable)w).get());
+                    }
+                    else {
+                        ret.addInt(name, ((IntWritable)w).get());
+                    }
+
+                    break;
+                case FLOAT:
+                    ret.addFloat(name, ((DoubleWritable)w).get());
+                    break;
+                case STR:
+                    ret.addStr(name, w.toString());
+                    break;
+                case NDARRAY:
+                    ret.addNDArray(name,((NDArrayWritable)w).get());
+                    break;
+            }
+        }
+
+        return ret;
     }
 
 
