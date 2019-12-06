@@ -4587,6 +4587,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  returns reference on array element with given index
         */
 
+
         /**
         *  returns array element with given index
         *  i - element index in array
@@ -5174,11 +5175,15 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 
 
 
-////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////////////////
 
+
+////////////////////////////////////////////////////////////////////////
+
+
+    
 
     
 
@@ -18280,7 +18285,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
         * This op calculates polygamma function psi^(n)(x). Implementation is based on serial representation written in
         * terms of the Hurwitz zeta function: polygamma = (-1)^{n+1} * n! * zeta(n+1, x).
-        * Currently the case n = 0 is not supported.
         *
         * Input arrays:
         *    0: n - define derivative order (n+1), type integer (however currently is implemented as float casted to integer)
@@ -18304,6 +18308,34 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public polygamma() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+        * This op calculates digamma function psi(x) = derivative of log(Gamma(x))
+        *
+        * Input arrays:
+        *    0: x - abscissa points where to evaluate the digamma function, type float
+        *
+        * Output array:
+        *    0: values of digamma function at corresponding x, type float
+        *
+        */
+//         #if NOT_EXCLUDED(OP_digamma)
+        @Namespace("nd4j::ops") public static class digamma extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public digamma(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public digamma(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public digamma position(long position) {
+                return (digamma)super.position(position);
+            }
+        
+                                                                                    public digamma() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -18398,9 +18430,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation adjusts image hue by delta
          * Input arrays:
          * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+         * 1 - optional argument, input scalar-array containing delta
          *
          * T arguments:
-         * 0 - delta value
+         * 0 - optional argument, delta value
          *
          * Int arguments:
          * 0 - optional argument, corresponds to dimension with 3 channels
@@ -18427,9 +18460,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation adjusts image saturation by delta
          * Input arrays:
          * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+         * 1 - optional argument, input scalar-array containing saturation factor
          *
          * T arguments:
-         * 0 - saturation factor
+         * 0 - optional argument, saturation factor
          *
          * Int arguments:
          * 0 - optional argument, corresponds to dimension with 3 channels
@@ -18456,9 +18490,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation adjusts image contrast by given factor ( z = (x - mean) * factor + mean )
          * Input arrays:
          * 0 - input array with rank >= 3, must have last one dimension equal 3, that is dimension containing channels.
+         * 1 - optional argument, input scalar-array containing saturation contrast factor
          *
          * T arguments:
-         * 0 - contrast factor
+         * 0 - optional argument, contrast factor
          *
          */
 //         #if NOT_EXCLUDED(OP_adjust_contrast)
@@ -21053,7 +21088,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * compare_and_bitpack - compare with greater and pack result with uint8 
+         * compare_and_bitpack - compare with greater and pack result with uint8
          *
          * input params:
          *    0 - NDArray (input)

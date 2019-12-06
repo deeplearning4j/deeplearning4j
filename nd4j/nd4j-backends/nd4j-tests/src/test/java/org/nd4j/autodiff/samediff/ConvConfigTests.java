@@ -23,13 +23,7 @@ import static org.junit.Assert.fail;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
 
 public class ConvConfigTests {
 
@@ -489,24 +483,24 @@ public class ConvConfigTests {
 
     @Test
     public void testConv1D(){
-        Conv1DConfig.builder().k(2).build();
+        Conv1DConfig.builder().k(2).paddingMode(PaddingMode.SAME).build();
 
         try{
-            Conv1DConfig.builder().k(0).build();
+            Conv1DConfig.builder().k(0).paddingMode(PaddingMode.SAME).build();
             fail();
         } catch (IllegalArgumentException e){
             assertTrue(e.getMessage().contains("Kernel"));
         }
 
         try{
-            Conv1DConfig.builder().k(4).s(-2).build();
+            Conv1DConfig.builder().k(4).s(-2).paddingMode(PaddingMode.SAME).build();
             fail();
         } catch (IllegalArgumentException e){
             assertTrue(e.getMessage().contains("Stride"));
         }
 
         try{
-            Conv1DConfig.builder().k(3).p(-2).build();
+            Conv1DConfig.builder().k(3).p(-2).paddingMode(PaddingMode.SAME).build();
             fail();
         } catch (IllegalArgumentException e){
             assertTrue(e.getMessage().contains("Padding"));

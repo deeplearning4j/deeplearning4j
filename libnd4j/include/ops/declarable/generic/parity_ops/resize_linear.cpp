@@ -32,8 +32,10 @@ namespace nd4j {
             NDArray* output = OUTPUT_VARIABLE(0);
             int width;
             int height;
-            bool center = false; // - default value
+            bool alignCorners = false; // - default value
             auto inRank = image->rankOf();
+            if (output->isEmpty()) return Status::OK();
+
             REQUIRE_TRUE( inRank == 4 || inRank == 3, 0, "resize_bilinear: input image should be 4D "
                                                                           "tensor, but input has rank %i",
                                                                           image->rankOf());
@@ -46,21 +48,25 @@ namespace nd4j {
                 auto newImageSize = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bilinear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
                 REQUIRE_TRUE(block.numI() <= 1, 0, "resize_bilinear: Resize params already given by the second param. Int params are expensive.");
-                width = newImageSize->e<int>(0);
-                height = newImageSize->e<int>(1);
-                if (block.numI() == 1) {
-                    center = 0 != INT_ARG(0);
-                }
+                height = newImageSize->e<int>(0);
+                width = newImageSize->e<int>(1);
             }
             else {
-                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_bilinear: Neither resize width nor height are provided.");
-                width = INT_ARG(0);
-                height = INT_ARG(1);
-                if (block.numI() == 3)
-                    center = 0 != INT_ARG(2);
+                REQUIRE_TRUE(block.numI() > 1, 0, "resize_bilinear: Neither resize width nor height are provided.");
+                height = INT_ARG(0);
+                width = INT_ARG(1);
             }
 
-            return helpers::resizeBilinearFunctor(block.launchContext(), inRank==4?image:&source, width, height, center, inRank == 4?output:&target);
+            if (block.numB() > 0)
+                alignCorners = B_ARG(0);
+            bool halfPixelCenter = false;
+
+            if (block.numB() > 1)
+                halfPixelCenter = B_ARG(1);
+
+            REQUIRE_TRUE(!halfPixelCenter || (halfPixelCenter && !alignCorners), 0, "resize_bilinear: `half_pixel_centers' should be false or true only when `align_corners' is false");
+
+            return helpers::resizeBilinearFunctor(block.launchContext(), inRank==4?image:&source, width, height, alignCorners, halfPixelCenter, inRank == 4 ? output : &target);
         }
 
         DECLARE_SHAPE_FN(resize_bilinear) {
@@ -83,7 +89,7 @@ namespace nd4j {
                 height = newImageSize->e<int>(1);
             }
             else {
-                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_bilinear: Neither resize width nor height are provided.");
+                REQUIRE_TRUE(block.numI() == 2, 0, "resize_bilinear: Neither resize width nor height are provided.");
                 width = INT_ARG(0);
                 height = INT_ARG(1);
             }
@@ -101,7 +107,12 @@ namespace nd4j {
                 outputShape[2] = height;
                 outputShape[3] = in[3];
             }
-            ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+            if (DataTypeUtils::isR(ArrayOptions::dataType(in))) {
+                ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+            }
+            else {
+                ShapeUtils::updateStridesAndType(outputShape, DataType::FLOAT32, shape::order(in));
+            }
 
             shapeList->push_back(CONSTANT(outputShape));
             return shapeList;

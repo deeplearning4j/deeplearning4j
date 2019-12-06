@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.image;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.NoArgsConstructor;
+import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -43,20 +44,25 @@ import java.util.Map;
 @NoArgsConstructor
 public class ResizeBilinear extends DynamicCustomOp {
     protected boolean alignCorners = false;
+    protected boolean halfPixelCenters = false;
     protected Integer height = null;
     protected Integer width = null;
 
-    public ResizeBilinear(@NonNull SameDiff sd, @NonNull SDVariable input, int height, int width, boolean alignCorners){
+    public ResizeBilinear(@NonNull SameDiff sd, @NonNull SDVariable input, int height, int width,
+                          boolean alignCorners, boolean halfPixelCenters){
         super(sd, input);
         this.alignCorners = alignCorners;
         this.height = height;
         this.width = width;
+        this.halfPixelCenters = halfPixelCenters;
         addArgs();
     }
 
-    public ResizeBilinear(@NonNull INDArray x, INDArray z, int height, int width, boolean alignCorners){
+    public ResizeBilinear(@NonNull INDArray x, INDArray z, int height, int width,
+                          boolean alignCorners, boolean halfPixelCenters) {
         super(new INDArray[]{x}, new INDArray[]{z});
         this.alignCorners = alignCorners;
+        this.halfPixelCenters = halfPixelCenters;
         this.height = height;
         this.width = width;
         addArgs();
@@ -76,7 +82,12 @@ public class ResizeBilinear extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
 
-        this.alignCorners = attributesForNode.get("align_corners").getB();
+        val attrC = attributesForNode.get("align_corners");
+        val attrH = attributesForNode.get("half_pixel_centers");
+
+        this.alignCorners = attrC != null ? attrC.getB() : false;
+        this.halfPixelCenters = attrH != null ? attrH.getB() : false;
+
         addArgs();
     }
 
@@ -87,8 +98,7 @@ public class ResizeBilinear extends DynamicCustomOp {
             iArguments.add(Long.valueOf(height));
             iArguments.add(Long.valueOf(width));
         }
-        iArguments.add(alignCorners ? 1L : 0L);
-
+        addBArgument(alignCorners, halfPixelCenters);
     }
 
     @Override

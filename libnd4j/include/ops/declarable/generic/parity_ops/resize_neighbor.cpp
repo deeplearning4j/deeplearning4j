@@ -31,35 +31,40 @@ namespace nd4j {
 
             auto image = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
+            auto inRank = image->rankOf();
             int width;
             int height;
-            bool center = false; // - default value
+            bool alignCorners = false; // - default value
+            if (output->isEmpty()) return Status::OK();
             if (block.width() > 1) {
                 auto newImageSize = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_nearest_neighbor: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
                 REQUIRE_TRUE(block.numI() <= 1, 0, "resize_nearest_neighbor: Resize params already given by the second param. Int params are expensive.");
-                width = newImageSize->e<int>(0);
-                height = newImageSize->e<int>(1);
-                if (block.numI() == 1) {
-                    center = 0 != INT_ARG(0);
-                }
+                height = newImageSize->e<int>(0);
+                width = newImageSize->e<int>(1);
             }
             else {
-                REQUIRE_TRUE(block.numI() <= 3, 0, "resize_nearest_neighbor: Neither resize width nor height are provided.");
-                width = INT_ARG(0);
-                height = INT_ARG(1);
-                if (block.numI() == 3)
-                    center = 0 != INT_ARG(2);
+                REQUIRE_TRUE(block.numI() == 2, 0, "resize_nearest_neighbor: Neither resize width nor height are provided.");
+                height = INT_ARG(0);
+                width = INT_ARG(1);
             }
-            auto inRank = image->rankOf();
+            if (block.numB() > 0)
+                alignCorners = B_ARG(0);
+            bool halfPixelCenter = false;
+
+            if (block.numB() > 1)
+                halfPixelCenter = B_ARG(1);
+            REQUIRE_TRUE(width <= (1 << 24) || height <= (1 << 24), 0, "resize_nearest_neighbour: the image resize should be limited to 2^24 pixels both for height and width, but %d and %d were given.", height, width);
             REQUIRE_TRUE(inRank == 4 || inRank == 3, 0, "resize_nearest_neighbor: Input should be 4D tensor, but rank %i occured");
             REQUIRE_TRUE(inRank == output->rankOf(), 0, "resize_nearest_neighbor: Input and output ranks should be equals, but %i and %i occured.", inRank, output->rankOf());
             REQUIRE_TRUE(image->dataType() == output->dataType(), 0, "resize_nearest_neighbor: Input and output types should be the same, but `%s' occured instead.", DataTypeUtils::asString(output->dataType()).c_str());
-            auto source = inRank == 4?*image:image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
+            REQUIRE_TRUE(!halfPixelCenter || (halfPixelCenter && !alignCorners), 0, "resize_nearest_neighbor: `half_pixel_centers' should be false or true only when `align_corners' is false");
+            REQUIRE_TRUE(((alignCorners && height > 2) || (height > 0)) && ((alignCorners && width > 1) || (width > 0)), 0,  "resize_nearest_neighbor: Wrong input or output size to resize (width = %d, height = %d)", width, height);
 
+            auto source = inRank == 4?*image:image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
             auto target = inRank == 4?*output:output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)});
 
-            return helpers::resizeNeighborFunctor(block.launchContext(), inRank==4?image:&source, width, height, center, inRank == 4?output:&target);
+            return helpers::resizeNeighborFunctor(block.launchContext(), inRank==4?image:&source, width, height, alignCorners, halfPixelCenter, inRank == 4 ? output : &target);
         }
 
         DECLARE_SHAPE_FN(resize_nearest_neighbor) {

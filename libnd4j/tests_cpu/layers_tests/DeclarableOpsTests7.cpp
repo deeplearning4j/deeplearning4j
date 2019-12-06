@@ -4084,7 +4084,7 @@ TEST_F(DeclarableOpsTests7, Softsign_1) {
 TEST_F(DeclarableOpsTests7, Softsign_BP_1) {
 
     NDArray x = NDArrayFactory::create<double >('c', {5, 2}, {1,2,3,4,5,7,9,10, 10, 11});
-//    NDArray e = NDArrayFactory::create<float>('c', {5, 2}, {1.3132616,  2.126928, 3.0485873, 4.01815, 5.0067153, 7.0009117, 9.000123, 10.000046, 10.000046, 11.000016});
+//    NDArray e = NDArrayFactory::create<float>('c', {5, 2}, {1.3132616f,  2.126928f, 3.0485873f, 4.01815f, 5.0067153f, 7.0009117f, 9.000123f, 10.000046f, 10.000046f, 11.000016f});
     NDArray eps = NDArrayFactory::create<double>('c', {5, 2}, {1,2,3,4,5,6,7,8, 9, 10});
     nd4j::ops::softsign ffOP;
     nd4j::ops::softsign_bp bpOp;

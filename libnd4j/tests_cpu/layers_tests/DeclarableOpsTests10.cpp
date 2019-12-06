@@ -121,10 +121,10 @@ TEST_F(DeclarableOpsTests10, Test_Or_1) {
 }
 
 TEST_F(DeclarableOpsTests10, Test_Not_1) {
-    auto x = NDArrayFactory::create<bool>('c', {4}, {1, 1, 0, 1});
-    auto y = NDArrayFactory::create<bool>('c', {4}, {0, 0, 0, 1});
+    auto x = NDArrayFactory::create<bool>('c', {4}, {true, true, false, true});
+    auto y = NDArrayFactory::create<bool>('c', {4}, {false, false, false, true});
 //    auto e = NDArrayFactory::create<bool>('c', {4}, {1, 1, 1, 0});
-    auto e = NDArrayFactory::create<bool>('c', {4}, {0, 0, 1, 0});
+    auto e = NDArrayFactory::create<bool>('c', {4}, {false, false, true, false});
 
     nd4j::ops::boolean_not op;
     auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
@@ -245,7 +245,8 @@ TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, WhereNP_SGO_Test_2) {
-    auto cond2d = NDArrayFactory::create<bool>('c', {3, 5}, {1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1});
+    auto cond2d = NDArrayFactory::create<bool>('c', {3, 5}, {true, true, false, false, true, true, true,
+                                                             true, true, true, false, true, true, true, true});
 //    auto expIdx({0, 1, 0, 2, 0, 3, 4, 1, 4, 1});
     auto exp1 = NDArrayFactory::create<Nd4jLong>({0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2});
     auto exp2 = NDArrayFactory::create<Nd4jLong>({0, 1, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4});
@@ -623,7 +624,7 @@ TEST_F(DeclarableOpsTests10, range_test11) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, range_test12) {
 
-    auto exp = NDArrayFactory::create<float>('c', {9}, {0.5, 1. , 1.5, 2. , 2.5, 3. , 3.5, 4. , 4.5});
+    auto exp = NDArrayFactory::create<float>('c', {9}, {0.5f, 1.f , 1.5f, 2.f , 2.5f, 3.f , 3.5f, 4.f , 4.5f});
 
     nd4j::ops::range op;
     auto result = op.execute({}, {0.5, 5, 0.5}, {}, {});
@@ -1416,7 +1417,7 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test10) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test1) {
 
-    NDArray input    = NDArrayFactory::create<double>('c', {1, 2,3,4});
+    NDArray input    = NDArrayFactory::create<double>('c', {1, 2, 3, 4});
     //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
     //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
     NDArray expected = NDArrayFactory::create<double>('c', {1, 10, 10, 4}, {1.,  2.,   3.,   4.,  2.2,  3.2,  4.2,  5.2, 3.4,  4.4,  5.4,  6.4,
@@ -1465,6 +1466,138 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test1) {
 
     //result->printIndexedBuffer("Resized to 10x10");
     //expected.printIndexedBuffer("Expect for 10x10");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test_11) {
+
+    NDArray input    = NDArrayFactory::create<float>('c', {1, 1, 1, 256});
+
+    input.assign(0.8f); //linspace(1);
+    auto size = NDArrayFactory::create<int>({65,65});
+    auto ex = NDArrayFactory::create<float>('c', {1,65,65,256});
+    nd4j::ops::resize_bilinear op;
+    auto results = op.execute({&input, &size}, {}, {}, {false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+    ASSERT_NE(*result, ex);
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test_12) {
+
+    NDArray input    = NDArrayFactory::create<float>('c', {1, 1, 1, 256});
+
+    input.assign(0.8f); //linspace(1);
+    auto size = NDArrayFactory::create<int>({65,65});
+    auto ex = NDArrayFactory::create<float>('c', {1,65,65,256});
+    nd4j::ops::resize_bilinear op;
+    auto results = op.execute({&input, &size}, {}, {}, {true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+    ASSERT_NE(*result, ex);
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test1_1) {
+
+    NDArray input    = NDArrayFactory::create<double>('c', {1, 2, 3, 4});
+    //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray expected = NDArrayFactory::create<double>('c', {1, 4, 5, 4}, {
+              1.,   2.,   3.,   4.,
+             2.6,  3.6,  4.6,  5.6,
+              5.,   6.,   7.,   8.,
+             7.4,  8.4,  9.4, 10.4,
+              9.,  10.,  11.,  12.,
+
+             4.,    5.,  6.,    7.,
+             5.6,  6.6,  7.6,  8.6,
+              8.,   9.,  10.,  11.,
+            10.4, 11.4, 12.4, 13.4,
+             12.,  13.,  14.,  15.,
+
+             10.,  11.,  12.,  13.,
+            11.6, 12.6, 13.6, 14.6,
+             14.,  15.,  16.,  17.,
+            16.4, 17.4, 18.4, 19.4,
+             18.,  19.,  20.,  21.,
+
+             13.,  14.,  15.,  16.,
+            14.6, 15.6, 16.6, 17.6,
+             17.,  18.,  19.,  20.,
+            19.4, 20.4, 21.4, 22.4,
+             21.,  22.,  23.,  24.
+    });
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_bilinear op;
+    auto results = op.execute({&input}, {}, {4, 5}, {false, true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+//    result->printIndexedBuffer("Resized to 4x5 bilinear with half pixels");
+  //expected.printIndexedBuffer("Expect for 10x10");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test1_2) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 2, 3, 4});
+    //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 4, 5, 4}, {
+            1.f,   2.f,   3.f,   4.f,
+           2.6f,  3.6f,  4.6f,  5.6f,
+            5.f,   6.f,   7.f,   8.f,
+           7.4f,  8.4f,  9.4f, 10.4f,
+            9.f,  10.f,  11.f,  12.f,
+
+            4.f,   5.f,  6.f,   7.f,
+           5.6f,  6.6f,  7.6f, 8.6f,
+            8.f,   9.f,  10.f, 11.f,
+          10.4f, 11.4f, 12.4f, 13.4f,
+           12.f,  13.f,  14.f,  15.f,
+
+            10.f,  11.f,  12.f,  13.f,
+           11.6f, 12.6f, 13.6f, 14.6f,
+            14.f,  15.f,  16.f,  17.f,
+           16.4f, 17.4f, 18.4f, 19.4f,
+            18.f,  19.f,  20.f,  21.f,
+
+            13.f,  14.f,  15.f,  16.f,
+           14.6f, 15.6f, 16.6f, 17.6f,
+            17.f,  18.f,  19.f,  20.f,
+           19.4f, 20.4f, 21.4f, 22.4f,
+            21.f,  22.f,  23.f,  24.f
+    });
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_bilinear op;
+    auto results = op.execute({&input}, {}, {4, 5}, {false, true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+//    result->printBuffer("Resized to 4x5");
+//    expected.printBuffer("Expect for 4x5");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
     delete results;
@@ -1857,7 +1990,7 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test3) {
     input.linspace(1);
 
     nd4j::ops::resize_bilinear op;
-    auto results = op.execute({&input}, {}, {10, 10, 1});
+    auto results = op.execute({&input}, {}, {10, 10}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1986,7 +2119,7 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
     input.linspace(1);
 
     nd4j::ops::resize_bilinear op;
-    auto results = op.execute({&input, &size}, {}, {1});
+    auto results = op.execute({&input, &size}, {}, {}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2023,7 +2156,8 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
     NDArray input    = NDArrayFactory::create<double>('c', {1, 2, 3, 4});
     //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
     //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
-    NDArray expected = NDArrayFactory::create<double>('c', {1, 4, 5, 4}, { 1,  2,  3,  4,
+    NDArray expected = NDArrayFactory::create<double>('c', {1, 4, 5, 4}, {
+     1,  2,  3,  4,
      1,  2,  3,  4,
      5,  6,  7,  8,
      5,  6,  7,  8,
@@ -2051,7 +2185,7 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
     input.linspace(1);
 
     nd4j::ops::resize_nearest_neighbor op;
-    auto results = op.execute({&input}, {}, {4, 5});
+    auto results = op.execute({&input}, {}, {4, 5}, {false, false});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2070,7 +2204,8 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1_1) {
     NDArray input    = NDArrayFactory::create<int>('c', {1, 2, 3, 4});
     //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
     //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
-    NDArray expected = NDArrayFactory::create<int>('c', {1, 4, 5, 4}, { 1,  2,  3,  4,
+    NDArray expected = NDArrayFactory::create<int>('c', {1, 4, 5, 4}, {
+                                                                           1,  2,  3,  4,
                                                                            1,  2,  3,  4,
                                                                            5,  6,  7,  8,
                                                                            5,  6,  7,  8,
@@ -2106,6 +2241,54 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1_1) {
 
 //    result->printIndexedBuffer("Resized to 4x5");
 //    expected.printIndexedBuffer("Expect for 4x5");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1_1_1) {
+
+    NDArray input    = NDArrayFactory::create<float>('c', {1, 2, 3, 4});
+    //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 4, 5, 4}, {
+            1.f,  2.f,  3.f,  4.f,
+            1.f,  2.f,  3.f,  4.f,
+            5.f,  6.f,  7.f,  8.f,
+            9.f, 10.f, 11.f, 12.f,
+            9.f, 10.f, 11.f, 12.f,
+
+            1.f,  2.f,  3.f,  4.f,
+            1.f,  2.f,  3.f,  4.f,
+            5.f,  6.f,  7.f,  8.f,
+            9.f, 10.f, 11.f, 12.f,
+            9.f, 10.f, 11.f, 12.f,
+
+            13.f, 14.f, 15.f, 16.f,
+            13.f, 14.f, 15.f, 16.f,
+            17.f, 18.f, 19.f, 20.f,
+            21.f, 22.f, 23.f, 24.f,
+            21.f, 22.f, 23.f, 24.f,
+
+            13.f, 14.f, 15.f, 16.f,
+            13.f, 14.f, 15.f, 16.f,
+            17.f, 18.f, 19.f, 20.f,
+            21.f, 22.f, 23.f, 24.f,
+            21.f, 22.f, 23.f, 24.f
+    });
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_nearest_neighbor op;
+    auto results = op.execute({&input}, {}, {4,5}, {false, true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+//    result->printIndexedBuffer("Resized to 4x5");
+//    expected.printBuffer("Expect for 4x5");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -2533,7 +2716,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
     NDArray cropSize = NDArrayFactory::create<Nd4jLong>({3, 3});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
-    NDArray expected('c', {1,3,3,1}, {1, 1.5f, 2., 2.f, 2.5f, 3.f, 3.f, 3.5f, 4.f}, nd4j::DataType::FLOAT32);
+    NDArray expected('c', {1,3,3,1}, {1.f, 1.5f, 2., 2.f, 2.5f, 3.f, 3.f, 3.5f, 4.f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::crop_and_resize op;
     auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {0});
@@ -2557,7 +2740,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
     NDArray cropSize = NDArrayFactory::create<int>({3, 3});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
-    NDArray expected('c', {1,3,3,1}, {1, 2.f, 2.f, 3.f, 4, 4.f, 3.f, 4.f, 4.f}, nd4j::DataType::FLOAT32);
+    NDArray expected('c', {1,3,3,1}, {1.f, 2.f, 2.f, 3.f, 4, 4.f, 3.f, 4.f, 4.f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::crop_and_resize op;
     auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {1});
@@ -2726,7 +2909,7 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_3) {
 TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
 
     NDArray x('c', {2,3}, {-63.80f, -63.75f, -63.70f, -63.5f, 0.0f, 0.1f}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {2,3},  {-63.75, -63.75, -63.75, -63.5, 0., 0.}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {2,3},  {-63.75f, -63.75f, -63.75f, -63.5f, 0.f, 0.f}, nd4j::DataType::FLOAT32);
     NDArray min('c', {},  {-63.65f}, nd4j::DataType::FLOAT32);
     NDArray max('c', {},  {0.1f}, nd4j::DataType::FLOAT32);
 
@@ -2971,22 +3154,6 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_5) {
     delete results;
 }
 
-/*    public void testFakeQuantAgainstTF_1() {
-        INDArray x = Nd4j.createFromArray(new float[]{ 0.7788f,0.8012f, 0.7244f, 0.2309f,0.7271f,
-                0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
-                0.0856f,    0.7938f,    0.6591f,    0.5555f,    0.1596f}).reshape(3,5);
-        INDArray min = Nd4j.createFromArray(new float[]{-0.2283f,   -0.0719f,   -0.0154f,   -0.5162f,   -0.3567f}).reshape(1,5);
-        INDArray max = Nd4j.createFromArray(new float[]{0.9441f,    0.5957f,    0.8669f,    0.3502f,    0.5100f}).reshape(1,5);
-
-        INDArray out = Nd4j.createUninitialized(x.shape());
-        val op = new FakeQuantWithMinMaxVarsPerChannel(x,min,max,out);
-
-        INDArray expected = Nd4j.createFromArray(new float[]{0.7801f,    0.5966f,    0.7260f,   0.2320f,    0.5084f,
-                0.1800f,    0.5046f,    0.8684f,    0.3513f,    0.5084f,
-                0.0877f,    0.5966f,    0.6600f,    0.3513f,    0.1604f}).reshape(3,5);
-
-        assertEquals(expected, out);
-    }*/
 TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_6) {
     NDArray x = NDArrayFactory::create<float>('c', {3, 5}, {0.7788f,0.8012f, 0.7244f, 0.2309f,0.7271f,
                                                             0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
@@ -3094,12 +3261,12 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_8) {
 TEST_F(DeclarableOpsTests10, batchnorm_test1) {
 
     NDArray input   ('c', {2,4}, nd4j::DataType::FLOAT32);
-    NDArray mean    ('c', {4}, {1.05, 1.15, 1.2, 1.3}, nd4j::DataType::FLOAT32);
-    NDArray variance('c', {4}, {0.5, 0.7, 0.9,  1.1},  nd4j::DataType::FLOAT32);
-    NDArray gamma   ('c', {4}, {-1.2, 1.3, -1.4, 1.5}, nd4j::DataType::FLOAT32);
-    NDArray beta    ('c', {4}, {10, 20, -10, -20},     nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5f, 0.7f, 0.9f,  1.1f},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10.f, 20.f, -10.f, -20.f},     nd4j::DataType::FLOAT32);
 
-    NDArray expected('c', {2,4}, {11.61218734,  18.52390321,  -8.67185076, -21.28716864, 10.93337162,  19.14541765, -9.26213931, -20.71509369}, nd4j::DataType::FLOAT32);
+    NDArray expected('c', {2,4}, {11.61218734f,  18.52390321f,  -8.67185076f, -21.28716864f, 10.93337162f,  19.14541765f, -9.26213931f, -20.71509369f}, nd4j::DataType::FLOAT32);
 
     input.linspace(0.1, 0.1);
 
@@ -3211,19 +3378,19 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test4) {
 TEST_F(DeclarableOpsTests10, batchnorm_test5) {
 
     NDArray input   ('c', {2,4,2,2}, nd4j::DataType::FLOAT32);
-    NDArray mean    ('c', {4}, {1.05, 1.15, 1.2, 1.3}, nd4j::DataType::FLOAT32);
-    NDArray variance('c', {4}, {0.5, 0.7, 0.9,  1.1},  nd4j::DataType::FLOAT32);
-    NDArray gamma   ('c', {4}, {-1.2, 1.3, -1.4, 1.5}, nd4j::DataType::FLOAT32);
-    NDArray beta    ('c', {4}, {10, 20, -10, -20},     nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5f, 0.7f, 0.9f,  1.1f},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10.f, 20.f, -10.f, -20.f},     nd4j::DataType::FLOAT32);
 
-    NDArray expected('c', {2,4,2,2}, {11.612187,  11.442483, 11.272779,  11.103076, 18.990039,  19.145418, 19.300796,  19.456175, -9.557284,  -9.704856, -9.852428, -10., -20.,
-                                      -19.856981, -19.713963, -19.570944, 8.896924,   8.727221, 8.557517,   8.387813, 21.476097,  21.631475, 21.786854,  21.942233, -11.918438,
-                                      -12.06601 , -12.213582, -12.361154, -17.7117, -17.568681, -17.425663, -17.282644}, nd4j::DataType::FLOAT32);
+    NDArray expected('c', {2,4,2,2}, { 11.612187f,  11.442483f,  11.272779f,  11.103076f,  18.990039f,  19.145418f,  19.300796f,  19.456175f,  -9.557284f,  -9.704856f,  -9.852428f, -10.f, -20.f,
+                                      -19.856981f, -19.713963f, -19.570944f,   8.896924f,   8.727221f,   8.557517f,   8.387813f,  21.476097f,  21.631475f,  21.786854f,  21.942233f, -11.918438f,
+                                       -12.06601f, -12.213582f, -12.361154f,   -17.7117f, -17.568681f, -17.425663f, -17.282644f}, nd4j::DataType::FLOAT32);
     input.linspace(0.1, 0.1);
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,1});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3240,14 +3407,14 @@ TEST_F(DeclarableOpsTests10, batchnorm_test5) {
 TEST_F(DeclarableOpsTests10, batchnorm_test6) {
 
     NDArray input   ('c', {2,2,2,4}, nd4j::DataType::FLOAT32);
-    NDArray mean    ('c', {4}, {1.05, 1.15, 1.2, 1.3}, nd4j::DataType::FLOAT32);
-    NDArray variance('c', {4}, {0.5, 0.7, 0.9,  1.1},  nd4j::DataType::FLOAT32);
-    NDArray gamma   ('c', {4}, {-1.2, 1.3, -1.4, 1.5}, nd4j::DataType::FLOAT32);
-    NDArray beta    ('c', {4}, {10, 20, -10, -20},     nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5f, 0.7f, 0.9,  1.1f},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10.f, 20.f, -10.f, -20.f},     nd4j::DataType::FLOAT32);
 
-    NDArray expected('c', {2,2,2,4}, {11.612187,  18.523903,  -8.671851, -21.287169, 10.933372,  19.145418,  -9.262139, -20.715094, 10.254556,  19.766932,  -9.852428, -20.143019, 9.57574 ,
-                                    20.388447, -10.442716, -19.570944,8.896924,  21.009961, -11.033005, -18.998869, 8.218109,  21.631475, -11.623294, -18.426794, 7.539293,  22.25299 ,
-                                    -12.213582, -17.854719, 6.860477,  22.874504, -12.803871, -17.282644}, nd4j::DataType::FLOAT32);
+    NDArray expected('c', {2,2,2,4}, {11.612187f,  18.523903f,  -8.671851f, -21.287169f,  10.933372f,  19.145418f,  -9.262139f, -20.715094f,  10.254556f,  19.766932f,  -9.852428f, -20.143019f,   9.57574f,
+                                      20.388447f, -10.442716f, -19.570944f,   8.896924f,  21.009961f, -11.033005f, -18.998869f,   8.218109f,  21.631475f, -11.623294f, -18.426794f,   7.539293f,  22.25299f,
+                                     -12.213582f, -17.854719f,   6.860477f,  22.874504f, -12.803871f, -17.282644f}, nd4j::DataType::FLOAT32);
     input.linspace(0.1, 0.1);
 
     nd4j::ops::batchnorm op;
@@ -3270,7 +3437,7 @@ TEST_F(DeclarableOpsTests10, bool_broadcast_test_1) {
     NDArray arr1('c', {2,2,1}, {1, 2, 3, 4}, nd4j::DataType::INT32);
     NDArray arr2('c', {  2,2}, {0, 1, 0, 4}, nd4j::DataType::INT32);
 
-    NDArray expd('c', {2,2,2}, {0,1,0,0, 0,0,0,1}, nd4j::DataType::BOOL);
+    NDArray expd('c', {2,2,2}, {false, true, false, false, false, false, false, true}, nd4j::DataType::BOOL);
 
     NDArray result('c', {2,2,2}, nd4j::DataType::BOOL);
 

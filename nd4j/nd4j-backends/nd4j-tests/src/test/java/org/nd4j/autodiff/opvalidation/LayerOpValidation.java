@@ -760,7 +760,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(true)
                 .build();
 
-        SDVariable[] results = sd.nn().maxPoolWithArgmax(new String[]{"",""}, in, pooling2DConfig);
+        SDVariable[] results = sd.nn().maxPoolWithArgmax(new String[]{"out","idx"}, in, pooling2DConfig);
         assertArrayEquals(inArr.shape(), results[0].eval().shape());
         assertArrayEquals(inArr.shape(), results[1].eval().shape());
     }
@@ -1050,7 +1050,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable in = sd.var("in", inArr);
         SDVariable w = sd.var("w", wArr);
 
-        SDVariable res = sd.cnn.conv1d(in, w, Conv1DConfig.builder().k(kernel).build());
+        SDVariable res = sd.cnn.conv1d(in, w, Conv1DConfig.builder().k(kernel).paddingMode(PaddingMode.VALID).build());
 
         INDArray expected = Nd4j.createFromArray(
                 new double[][][]{

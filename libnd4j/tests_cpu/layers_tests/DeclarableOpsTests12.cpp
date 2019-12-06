@@ -1257,7 +1257,7 @@ TEST_F(DeclarableOpsTests12, inTopK_2) {
     auto input = NDArrayFactory::create<double>('c', {4, 5});
     auto idx = NDArrayFactory::create<Nd4jLong>('c', {4});
 
-    auto exp = NDArrayFactory::create<bool>({0, 0, 0, 1});
+    auto exp = NDArrayFactory::create<bool>({false, false, false, true});
 
     int exclusive, reverse;
     input.linspace(1);
@@ -1318,7 +1318,7 @@ TEST_F(DeclarableOpsTests12, inTopK_4) {
 TEST_F(DeclarableOpsTests12, inTopK_5) {
     auto x = NDArrayFactory::create<double>('f', {6, 4}, {11.0, 3.0, 14.0, 5.0, 6.0, 9.0, 3.5, 7.0, 21.0, 3.0, 14.0, 15.0, 6.0, 9.0, 3.5, 7.0, 11.0, 13.0, 14.0, 5.0, 16.0, 9.0, 13.5, 7.0} );
     auto y = NDArrayFactory::create<Nd4jLong>('f', {6}, {0, 0, 0, 0, 0, 0});
-    auto expV = NDArrayFactory::create<bool>('f', {6}, {1, 0, 0, 0, 0, 0 });
+    auto expV = NDArrayFactory::create<bool>('f', {6}, {true, false, false, false, false, false });
 
     nd4j::ops::in_top_k op;
     auto result = op.execute({&x, &y}, {}, {2});

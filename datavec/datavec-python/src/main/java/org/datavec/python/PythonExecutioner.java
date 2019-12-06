@@ -605,7 +605,7 @@ public class PythonExecutioner {
 
 
     private static synchronized void _exec(String code) {
-        log.info(code);
+        log.debug(code);
         log.info("CPython: PyRun_SimpleStringFlag()");
 
         int result = PyRun_SimpleStringFlags(code, null);

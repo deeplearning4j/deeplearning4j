@@ -661,9 +661,9 @@ TEST_F(JavaInteropTests, Test_Greater_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 1, 2});
     auto y = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 0, 0});
 //    auto o = NDArrayFactory::create<float>('c', {2, 2}, {3, 3, 3, 3});
-    auto o = NDArrayFactory::create<bool>('c', {2, 2}, {1, 1, 1, 1});
+    auto o = NDArrayFactory::create<bool>('c', {2, 2}, {true, true, true, true});
 
-    auto exp = NDArrayFactory::create<bool>('c', {2, 2}, {0, 0, 1, 1});
+    auto exp = NDArrayFactory::create<bool>('c', {2, 2}, {false, false, true, true});
 
     NDArray::prepareSpecialUse({&o}, {&x, &y});
 
@@ -685,9 +685,9 @@ TEST_F(JavaInteropTests, Test_Greater_1) {
 TEST_F(JavaInteropTests, Test_Greater_2) {
     auto x = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 1.f, 2.f});
     auto y = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 0.f, 0.f});
-    auto o = NDArrayFactory::create<bool>('c', {2, 2}, {1, 1, 1, 1});
+    auto o = NDArrayFactory::create<bool>('c', {2, 2}, {true, true, true, true});
 
-    auto exp = NDArrayFactory::create<bool>('c', {2, 2}, {0, 0, 1, 1});
+    auto exp = NDArrayFactory::create<bool>('c', {2, 2}, {false, false, true, true});
 
     nd4j::ops::greater op;
 

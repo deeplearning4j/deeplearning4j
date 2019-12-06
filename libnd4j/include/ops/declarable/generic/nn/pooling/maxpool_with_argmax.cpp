@@ -46,7 +46,7 @@ namespace nd4j {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setAllowedOutputTypes(0, DataType::INHERIT)
-                    ->setAllowedOutputTypes(1, DataType::INT64);
+                    ->setAllowedOutputTypes(1, {ALL_INTS});
 
         }
 
