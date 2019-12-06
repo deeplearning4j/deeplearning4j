@@ -71,9 +71,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //Still failing 2019/09/11
             "slogdet/.*",
 
-            // Failing 2019/11/14 - |https://github.com/eclipse/deeplearning4j/issues/8374
-            "adjust_contrast/*",
-            "adjust_contrast/.*",
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             "bincount/.*",
             // Failing 2019/11/14 https://github.com/eclipse/deeplearning4j/issues/8393

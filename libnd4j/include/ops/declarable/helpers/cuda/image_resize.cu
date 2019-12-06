@@ -689,7 +689,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static __global__ void bicubicInterpolateWithCachingKernel(float const* cachedTable, float* cachedValue, T const* inputPtr, ImageResizerState* pResizerState, WeightsAndIndices* xWais, bool halfPixelCenters, Nd4jLong inBatchWidth, Nd4jLong inRowWidth, T* outputPtr) {
+    static __global__ void bicubicInterpolateWithCachingKernel(float const* cachedTable, float* cachedValue, T const* inputPtr, ImageResizerState* pResizerState, WeightsAndIndices* xWais, bool halfPixelCenters, Nd4jLong inBatchWidth, Nd4jLong inRowWidth, float* outputPtr) {
 //        auto numChannels = pResizerState->channels;
         for (Nd4jLong b = blockIdx.x; b < pResizerState->batchSize; b += gridDim.x) {
             auto pInput = inputPtr + b * inBatchWidth;
@@ -877,7 +877,7 @@ namespace helpers {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: computeXWeigtsAndInidces finished with error", err);
         }
         const T* pInput = image->getDataBuffer()->specialAsT<T>();
-        T* pOutput = output->dataBuffer()->specialAsT<T>(); //_data.data();
+        float* pOutput = output->dataBuffer()->specialAsT<float>(); //_data.data();
         bicubicInterpolateWithCachingKernel<T><<<128, 1, 512, *stream>>>(coeffsTable, cachedValue, pInput,
                 resizerStateD, xWais, halfPixelCenters, inBatchWidth, inRowWidth, pOutput);
         err = cudaStreamSynchronize(*stream);

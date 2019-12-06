@@ -352,14 +352,12 @@ namespace helpers {
 
     int resizeBilinearFunctor(nd4j::LaunchContext * context, NDArray const *images, int const width, int const height,
             bool const alignCorners, bool const halfPixelCenter, NDArray *output) {
-        BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_,
-                              (images, width, height, alignCorners, halfPixelCenter, output), NUMERIC_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_, (images, width, height, alignCorners, halfPixelCenter, output), NUMERIC_TYPES, FLOAT_TYPES);
     }
 
     int resizeNeighborFunctor(nd4j::LaunchContext * context, NDArray const *images, int const width, int const height,
             bool const alignCorners,  bool const halfPixelCenter, NDArray *output) {
-        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_,
-                              (images, width, height, alignCorners, halfPixelCenter, output), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (images, width, height, alignCorners, halfPixelCenter, output), LIBND4J_TYPES);
     }
 
 
@@ -696,7 +694,7 @@ namespace helpers {
         const Nd4jLong inBatchWidth = resizerState.inHeight * inRowWidth;
 
         const T* inputPtr = image->getDataBuffer()->primaryAsT<T>();
-        T* pOutputY = output->dataBuffer()->primaryAsT<T>(); //_data.data();
+        float* pOutputY = output->dataBuffer()->primaryAsT<float>(); // output is float anyway
         std::vector<float> cachedValue(numChannels == 3 ? 0 : 4 * numChannels, 0);
 
         auto func = PRAGMA_THREADS_FOR {
@@ -881,8 +879,7 @@ namespace helpers {
     }
     int resizeBicubicFunctorA(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, bool const halfPixelAlign, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context,
-                image, width, height, alignCorners, halfPixelAlign, output), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context, image, width, height, alignCorners, halfPixelAlign, output), NUMERIC_TYPES);
     }
 // ------------------------------------------------------------------------------------------------------------------ //
     int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,

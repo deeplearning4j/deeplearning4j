@@ -89,7 +89,7 @@ namespace nd4j {
                 gradY->assign(tmpX);
                 
                 //epsNext->applyPairwiseLambda(x, lambdaS, gradX);
-                gradX->assign(epsNext * ts * ((*x) - (*y)));
+                gradX->assign((*epsNext) * ts * ((*x) - (*y)));
             } else {
                 // broadcast case
 

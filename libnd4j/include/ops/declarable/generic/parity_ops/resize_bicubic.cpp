@@ -96,16 +96,16 @@ namespace nd4j {
                 outputShape[2] = height;
                 outputShape[3] = in[3];
             }
-            ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+            ShapeUtils::updateStridesAndType(outputShape, DataType::FLOAT32, shape::order(in));
 
             shapeList->push_back(CONSTANT(outputShape));
             return shapeList;
         }
         DECLARE_TYPES(resize_bicubic) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, {DataType::INT32})
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(1, DataType::INT32)
+                    ->setAllowedOutputTypes({DataType::FLOAT32});
         }
 
     }

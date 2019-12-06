@@ -76,7 +76,7 @@ namespace nd4j {
                 // Y gradient
                 //epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
 
-                gradY->assign(epsNext * -(*x) / ((*y) * (*y)));
+                gradY->assign((*epsNext) * -(*x) / ((*y) * (*y)));
 
             } else if (y->isScalar()) {
                 // scalar case
