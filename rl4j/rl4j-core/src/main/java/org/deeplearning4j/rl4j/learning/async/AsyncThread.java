@@ -122,31 +122,35 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
      */
     @Override
     public void run() {
-        RunContext context = new RunContext();
-        Nd4j.getAffinityManager().unsafeSetDevice(deviceNum);
+        try {
+            RunContext context = new RunContext();
+            Nd4j.getAffinityManager().unsafeSetDevice(deviceNum);
 
-        log.info("ThreadNum-" + threadNumber + " Started!");
+            log.info("ThreadNum-" + threadNumber + " Started!");
 
-        while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
-            if(!isEpochStarted) {
-                boolean canContinue = startNewEpoch(context);
-                if (!canContinue) {
-                    break;
-                }
-            }
-
-            handleTraining(context);
-
-            if (context.epochElapsedSteps >= getConf().getMaxEpochStep() || getMdp().isDone()) {
-                boolean canContinue = finishEpoch(context);
-                if (!canContinue) {
-                    break;
+            while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
+                if (!isEpochStarted) {
+                    boolean canContinue = startNewEpoch(context);
+                    if (!canContinue) {
+                        break;
+                    }
                 }
 
-                ++epochCounter;
+                handleTraining(context);
+
+                if (context.epochElapsedSteps >= getConf().getMaxEpochStep() || getMdp().isDone()) {
+                    boolean canContinue = finishEpoch(context);
+                    if (!canContinue) {
+                        break;
+                    }
+
+                    ++epochCounter;
+                }
             }
         }
-        terminateWork();
+        finally {
+            terminateWork();
+        }
     }
 
     private void handleTraining(RunContext context) {
@@ -184,12 +188,10 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
     }
 
     private void terminateWork() {
-        if(!isEpochStarted) {
-            return;
-        }
-
-        postEpoch();
         getAsyncGlobal().terminate();
+        if(isEpochStarted) {
+            postEpoch();
+        }
     }
 
     protected abstract NN getCurrent();

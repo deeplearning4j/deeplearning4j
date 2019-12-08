@@ -117,7 +117,7 @@ public class AsyncThreadTest {
         for(int i = 0; i < context.sut.getEpochCounter(); ++i) {
             MockAsyncThread.TrainSubEpochParams params = context.sut.trainSubEpochParams.get(i);
             assertEquals(2, params.nstep);
-            assertEquals(expectedObservation.length, params.obs.getData().shape()[0]);
+            assertEquals(expectedObservation.length, params.obs.getData().shape()[1]);
             for(int j = 0; j < expectedObservation.length; ++j){
                 assertEquals(expectedObservation[j], 255.0 * params.obs.getData().getDouble(j), 0.00001);
             }

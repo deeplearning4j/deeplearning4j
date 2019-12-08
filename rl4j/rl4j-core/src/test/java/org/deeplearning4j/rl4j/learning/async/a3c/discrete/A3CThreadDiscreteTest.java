@@ -71,7 +71,7 @@ public class A3CThreadDiscreteTest {
             double[] expectedRow = minitransObs[i];
             assertEquals(expectedRow.length, input.shape()[1]);
             for(int j = 0; j < expectedRow.length; ++j) {
-                assertEquals(expectedRow[j], input.getDouble(i, j), 0.00001);
+                assertEquals(expectedRow[j], input.getDouble(i, j, 1, 1), 0.00001);
             }
         }
 

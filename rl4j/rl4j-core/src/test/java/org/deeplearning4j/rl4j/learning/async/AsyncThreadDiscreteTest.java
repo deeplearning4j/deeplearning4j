@@ -52,7 +52,7 @@ public class AsyncThreadDiscreteTest {
             assertEquals(0.0, result.getScore(), 0.00001);
 
             double[] expectedLastObservation = expectedLastObservations[i];
-            assertEquals(expectedLastObservation.length, result.getLastObs().getData().shape()[0]);
+            assertEquals(expectedLastObservation.length, result.getLastObs().getData().shape()[1]);
             for(int j = 0; j < expectedLastObservation.length; ++j) {
                 assertEquals(expectedLastObservation[j], 255.0 * result.getLastObs().getData().getDouble(j), 0.00001);
             }
@@ -63,7 +63,7 @@ public class AsyncThreadDiscreteTest {
         double[] expectedAddValues = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0, 9.0, 11.0, 13.0, 15.0 };
         assertEquals(expectedAddValues.length, hpMock.addCalls.size());
         for(int i = 0; i < expectedAddValues.length; ++i) {
-            assertEquals(expectedAddValues[i], 255.0 * hpMock.addCalls.get(i).getDouble(0), 0.00001);
+            assertEquals(expectedAddValues[i], hpMock.addCalls.get(i).getDouble(0), 0.00001);
         }
 
         double[] expectedRecordValues = new double[] { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, };
@@ -83,7 +83,7 @@ public class AsyncThreadDiscreteTest {
         for(int i = 0; i < expectedPolicyInputs.length; ++i) {
             double[] expectedRow = expectedPolicyInputs[i];
             INDArray input = policyMock.actionInputs.get(i);
-            assertEquals(expectedRow.length, input.shape()[0]);
+            assertEquals(expectedRow.length, input.shape()[1]);
             for(int j = 0; j < expectedRow.length; ++j) {
                 assertEquals(expectedRow[j], 255.0 * input.getDouble(j), 0.00001);
             }
@@ -103,7 +103,7 @@ public class AsyncThreadDiscreteTest {
         for(int i = 0; i < expectedNNInputs.length; ++i) {
             double[] expectedRow = expectedNNInputs[i];
             INDArray input = nnMock.outputAllInputs.get(i);
-            assertEquals(expectedRow.length, input.shape()[0]);
+            assertEquals(expectedRow.length, input.shape()[1]);
             for(int j = 0; j < expectedRow.length; ++j) {
                 assertEquals(expectedRow[j], 255.0 * input.getDouble(j), 0.00001);
             }
@@ -135,7 +135,7 @@ public class AsyncThreadDiscreteTest {
                 // Observation
                 double[] expectedRow = expectedMinitransObs[rewardIdx][i];
                 INDArray realRewards = minitrans.getObs();
-                assertEquals(expectedRow.length, realRewards.shape()[0]);
+                assertEquals(expectedRow.length, realRewards.shape()[1]);
                 for (int j = 0; j < expectedRow.length; ++j) {
                     assertEquals("row: "+ i + " col: " + j, expectedRow[j], 255.0 * realRewards.getDouble(j), 0.00001);
                 }

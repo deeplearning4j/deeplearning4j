@@ -57,6 +57,7 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread implements IAsyncG
     final private NN current;
     final private ConcurrentLinkedQueue<Pair<Gradient[], Integer>> queue;
     final private AsyncConfiguration a3cc;
+    private final IAsyncLearning learning;
     @Getter
     private AtomicInteger T = new AtomicInteger(0);
     @Getter
@@ -64,10 +65,11 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread implements IAsyncG
     @Getter
     private boolean running = true;
 
-    public AsyncGlobal(NN initial, AsyncConfiguration a3cc) {
+    public AsyncGlobal(NN initial, AsyncConfiguration a3cc, IAsyncLearning learning) {
         this.current = initial;
         target = (NN) initial.clone();
         this.a3cc = a3cc;
+        this.learning = learning;
         queue = new ConcurrentLinkedQueue<>();
     }
 
@@ -106,11 +108,14 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread implements IAsyncG
     }
 
     /**
-     * Force the immediate termination of the AsyncGlobal instance. Queued work items will be discarded.
+     * Force the immediate termination of the AsyncGlobal instance. Queued work items will be discarded and the AsyncLearning instance will be forced to terminate too.
      */
     public void terminate() {
-        running = false;
-        queue.clear();
+        if(running) {
+            running = false;
+            queue.clear();
+            learning.terminate();
+        }
     }
 
 }

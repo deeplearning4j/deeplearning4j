@@ -73,11 +73,10 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
 
         IHistoryProcessor historyProcessor = getHistoryProcessor();
         if(historyProcessor != null) {
-            historyProcessor.record(rawObservation.dup());
-            rawObservation.muli(1.0 / historyProcessor.getScale());
+            historyProcessor.record(rawObservation);
         }
 
-        Observation observation = new Observation(new INDArray[] { rawObservation });
+        Observation observation = new Observation(new INDArray[] { rawObservation }, false);
 
         if(historyProcessor != null) {
             skipFrame = historyProcessor.getConf().getSkipFrame();
@@ -86,11 +85,6 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
         step = 0;
 
         return observation;
-    }
-
-    @Override
-    public void close() {
-        wrappedMDP.close();
     }
 
     @Override
@@ -104,8 +98,7 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
 
         int requiredFrame = 0;
         if(historyProcessor != null) {
-            historyProcessor.record(rawObservation.dup());
-            rawObservation.muli(1.0 / historyProcessor.getScale());
+            historyProcessor.record(rawObservation);
 
             requiredFrame = skipFrame * (historyProcessor.getConf().getHistoryLength() - 1);
             if ((getStep() % skipFrame == 0 && step >= requiredFrame)
@@ -116,13 +109,19 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
 
         Observation observation;
         if(historyProcessor != null && step >= requiredFrame) {
-            observation = new Observation(historyProcessor.getHistory());
+            observation = new Observation(historyProcessor.getHistory(), true);
+            observation.getData().muli(1.0 / historyProcessor.getScale());
         }
         else {
-            observation = new Observation(new INDArray[] { rawObservation });
+            observation = new Observation(new INDArray[] { rawObservation }, false);
         }
 
         return new StepReply<Observation>(observation, rawStepReply.getReward(), rawStepReply.isDone(), rawStepReply.getInfo());
+    }
+
+    @Override
+    public void close() {
+        wrappedMDP.close();
     }
 
     @Override

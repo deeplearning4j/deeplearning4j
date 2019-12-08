@@ -37,7 +37,10 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 @Slf4j
 public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                extends Learning<O, A, AS, NN> {
+                extends Learning<O, A, AS, NN>
+                implements IAsyncLearning {
+
+    private Thread monitorThread = null;
 
     @Getter(AccessLevel.PROTECTED)
     private final TrainingListenerList listeners = new TrainingListenerList();
@@ -126,6 +129,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     protected void monitorTraining() {
         try {
+            monitorThread = Thread.currentThread();
             while (canContinue && !isTrainingComplete() && getAsyncGlobal().isRunning()) {
                 canContinue = listeners.notifyTrainingProgress(this);
                 if(!canContinue) {
@@ -139,10 +143,25 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         } catch (InterruptedException e) {
             log.error("Training interrupted.", e);
         }
+        monitorThread = null;
     }
 
     protected void cleanupPostTraining() {
         // Worker threads stops automatically when the global thread stops
         getAsyncGlobal().terminate();
+    }
+
+    /**
+     * Force the immediate termination of the learning. All learning threads, the AsyncGlobal thread and the monitor thread will be terminated.
+     */
+    public void terminate() {
+        if(canContinue) {
+            canContinue = false;
+
+            Thread safeMonitorThread = monitorThread;
+            if(safeMonitorThread != null) {
+                safeMonitorThread.interrupt();
+            }
+        }
     }
 }

@@ -24,7 +24,7 @@ public class MockPolicy implements IPolicy<MockEncodable, Integer> {
     @Override
     public Integer nextAction(INDArray input) {
         actionInputs.add(input);
-        return input.getInt(0);
+        return input.getInt(0, 0, 0);
     }
 
     @Override
