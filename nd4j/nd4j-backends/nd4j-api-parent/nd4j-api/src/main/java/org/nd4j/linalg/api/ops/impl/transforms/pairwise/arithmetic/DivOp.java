@@ -57,8 +57,8 @@ public class DivOp extends BaseDynamicTransformOp {
     }
 
     @Override
-    public String[] tensorflowNames() {
-        return new String[]{"Div","RealDiv"};
+    public String tensorflowName() {
+        return "Div";
     }
 
 
