@@ -862,3 +862,19 @@ TEST_F(BroadcastableOpsTests, test_bert_multiply_1) {
 
     ASSERT_EQ(e, z);
 }
+
+TEST_F(BroadcastableOpsTests, test_bert_multiply_2) {
+    auto x = NDArrayFactory::create<float>('c', {4, 128, 1});
+    auto y = NDArrayFactory::create<float>('c', {768});
+    auto z = NDArrayFactory::create<float>('c', {4, 128, 768});
+    auto e = NDArrayFactory::create<float>('c', {4, 128, 768});
+
+    x.assign(1.f);
+    y.assign(2.f);
+    z.assign(119.f);
+    e.assign(2.f);
+
+    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);
+
+    ASSERT_EQ(e, z);
+}
