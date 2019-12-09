@@ -102,4 +102,7 @@ public abstract class BaseReduceBoolOp extends BaseReduceOp implements ReduceBoo
                 "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
         return Collections.singletonList(DataType.BOOL);
     }
+
+
+    public abstract boolean emptyValue();
 }
