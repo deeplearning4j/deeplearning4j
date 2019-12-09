@@ -52,12 +52,11 @@ namespace nd4j {
             if (block.getIArguments() && block.getIArguments()->size())
                 numBits = INT_ARG(0);
             bool narrowed = false;
-            //INT_ARG(1);
-            if (block.getIArguments()->size() == 2) {
-                numBits = INT_ARG(0);
-                narrowed = INT_ARG(1);
-                REQUIRE_TRUE(numBits > 1 && numBits < 17, 0, "fake_quant_with_min_max_vars: Number of bits for quatization should be in between 2 and 16, but %i was given.", numBits);
+            if (block.getBArguments() && block.getBArguments()->size()) {
+               narrowed = B_ARG(0);
             }
+            REQUIRE_TRUE(numBits > 1 && numBits < 17, 0, "fake_quant_with_min_max_vars: Number of \
+			 bits for quantization should be in between 2 and 16, but %i was given.", numBits);
             helpers::fakeQuantWithMinMaxVars(x, min, max, numBits, narrowed, output);
             return ND4J_STATUS_OK;
         }

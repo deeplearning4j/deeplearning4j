@@ -943,16 +943,9 @@ public class CustomOpsTests extends BaseNd4jTest {
              0.0877f,    0.5966f,    0.6600f,    0.3513f,    0.1604f}).reshape(3,5);
 
         INDArray out = Nd4j.createUninitialized(x.shape());
-        val op = new FakeQuantWithMinMaxVarsPerChannel(x,min,max,out);
+        val op = new FakeQuantWithMinMaxVarsPerChannel(x,min,max);
         Nd4j.exec(op);
         assertEquals(expected, out);
-
-        /*TF: [[    0.7801,    0.5966,    0.7260,    0.2320,    0.5084],
- [    0.1800,    0.5046,    0.8684,    0.3513,    0.5084],
- [    0.0877,    0.5966,    0.6600,    0.3513,    0.1604]]
-        SD: [[    0.7770,    0.5969,    0.7232,    0.2310,    0.5098],
- [    0.1793,    0.5053,    0.8685,    0.3500,    0.5098],
- [    0.0874,    0.5969,    0.6574,    0.3500,    0.1597]]*/
     }
 
     @Test
@@ -1036,13 +1029,12 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray min = Nd4j.createFromArray(new float[]{-63.65f});
         INDArray max = Nd4j.createFromArray(new float[]{0.1f});
 
-        INDArray output = Nd4j.createUninitialized(DataType.FLOAT, 1,2,3,1);
         INDArray expected = Nd4j.createFromArray(new float[]{-63.75f, -63.75f, -63.5f, -63.5f, 0.f, 0.f}).
                 reshape(1,2,3,1);
 
-        Nd4j.exec(new FakeQuantWithMinMaxVarsPerChannel(x,min,max,output));
+        INDArray[] output = Nd4j.exec(new FakeQuantWithMinMaxVarsPerChannel(x,min,max));
 
-        assertEquals(expected, output);
+        assertEquals(expected, output[0]);
     }
 
     @Test
