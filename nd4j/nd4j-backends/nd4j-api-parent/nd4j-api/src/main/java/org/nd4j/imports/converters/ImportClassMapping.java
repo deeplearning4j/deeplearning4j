@@ -87,6 +87,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression.class,
             org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionV3.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeBilinear.class,
+            org.nd4j.linalg.api.ops.impl.image.ResizeBicubic.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeNearestNeighbor.class,
             org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex.class,
             org.nd4j.linalg.api.ops.impl.indexaccum.IAMax.class,
