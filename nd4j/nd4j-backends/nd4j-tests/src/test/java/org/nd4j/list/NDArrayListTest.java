@@ -18,15 +18,12 @@ package org.nd4j.list;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.list.matrix.MatrixNDArrayList;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 public class NDArrayListTest extends BaseNd4jTest {
 
@@ -71,24 +68,4 @@ public class NDArrayListTest extends BaseNd4jTest {
         assertEquals(ndArrayList.size(),ndArrayList.array().length());
 
     }
-
-
-    @Test
-    public void testMatrixList() {
-        MatrixNDArrayList matrixNDArrayList = new MatrixNDArrayList();
-        for(int i = 0; i < 5; i++) {
-            NDArrayList ndArrayList = new NDArrayList();
-            for(int j = 0; j < 4; j++) {
-                ndArrayList.add((double) j);
-            }
-
-            matrixNDArrayList.add(ndArrayList);
-        }
-
-        INDArray arr = matrixNDArrayList.array();
-        assertEquals(5,arr.rows());
-        assertFalse(matrixNDArrayList.isEmpty());
-        assertEquals(0.0,matrixNDArrayList.getEntry(0,0));
-    }
-
 }
