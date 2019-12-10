@@ -24,6 +24,7 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -284,6 +285,9 @@ public class NativeImageLoader extends BaseImageLoader {
     private Mat streamToMat(InputStream is) throws IOException {
         if(buffer == null){
             buffer = IOUtils.toByteArray(is);
+            if(buffer.length <= 0){
+                throw new IOException("Could not decode image from input stream: input stream was empty (no data)");
+            }
             bufferMat = new Mat(buffer);
             return bufferMat;
         } else {
@@ -291,6 +295,10 @@ public class NativeImageLoader extends BaseImageLoader {
             //Need to know if all data has been read.
             //(a) if numRead < buffer.length - got everything
             //(b) if numRead >= buffer.length: we MIGHT have got everything (exact right size buffer) OR we need more data
+
+            if(numReadTotal <= 0){
+                throw new IOException("Could not decode image from input stream: input stream was empty (no data)");
+            }
 
             if(numReadTotal < buffer.length){
                 bufferMat.data().put(buffer, 0, numReadTotal);
