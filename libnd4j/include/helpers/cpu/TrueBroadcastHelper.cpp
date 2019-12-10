@@ -46,9 +46,9 @@ void TrueBroadcastHelper<X, Y, Z>::exec(const NDArray& xArr, const NDArray& yArr
 
     const Nd4jLong zLen  = zArr.lengthOf();
 
-    std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
-
     auto func = PRAGMA_THREADS_FOR {
+        std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
+
         for (auto i = start; i < stop; ++i) {
 
             shape::index2coords(i, zShapeInfo, zCoords.data());
@@ -109,6 +109,7 @@ void TrueBroadcastBoolHelper<X, Z>::exec(const NDArray& xArr, const NDArray& yAr
 
     auto func = PRAGMA_THREADS_FOR {
         std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
+
         for (auto i = start; i < stop; ++i) {
 
             shape::index2coords(i, zShapeInfo, zCoords.data());
@@ -167,9 +168,9 @@ void TrueBroadcastIntHelper<X>::exec(const NDArray& xArr, const NDArray& yArr, N
 
     const Nd4jLong zLen  = zArr.lengthOf();
 
-    std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
-
     auto func = PRAGMA_THREADS_FOR {
+        std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
+
         for (auto i = start; i < stop; ++i) {
 
             shape::index2coords(i, zShapeInfo, zCoords.data());

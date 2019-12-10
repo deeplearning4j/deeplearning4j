@@ -41,6 +41,10 @@ public class All extends BaseReduceBoolOp {
         super(x);
     }
 
+    public All(INDArray x, int... axis) {
+        super(x, axis);
+    }
+    
     @Override
     public int opNum() {
         return 1;
@@ -64,5 +68,10 @@ public class All extends BaseReduceBoolOp {
     @Override
     public String tensorflowName() {
         return "All";
+    }
+
+    @Override
+    public boolean emptyValue() {
+        return true;
     }
 }

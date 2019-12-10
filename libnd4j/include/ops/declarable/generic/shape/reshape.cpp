@@ -164,6 +164,7 @@ namespace nd4j {
 
             // we can launch op using Int arguments
             if (inputShape->size() == 1) {
+                REQUIRE_TRUE(block.numI() > 0, 0, "Reshape: new shape should be provided as NDArray or int arguments, but nothing was defined");
                 std::vector<int> *arguments = block.getIArguments();
 
                 int e = 1;

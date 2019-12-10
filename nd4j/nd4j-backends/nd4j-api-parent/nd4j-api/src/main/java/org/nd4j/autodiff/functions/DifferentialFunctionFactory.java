@@ -2612,8 +2612,9 @@ public class DifferentialFunctionFactory {
         return new DrawBoundingBoxes(sameDiff, boxes, colors).outputVariable();
     }
 
-    public SDVariable fakeQuantWithMinMaxVarsPerChannel(SDVariable x, SDVariable min, SDVariable max) {
-        return new FakeQuantWithMinMaxVarsPerChannel(sameDiff,x,min,max).outputVariable();
+    public SDVariable fakeQuantWithMinMaxVarsPerChannel(SDVariable x, SDVariable min, SDVariable max,
+                                                        int num_bits, boolean narrow) {
+        return new FakeQuantWithMinMaxVarsPerChannel(sameDiff,x,min,max,num_bits,narrow).outputVariable();
     }
 
     public SDVariable betainc( SDVariable a, SDVariable b, SDVariable x) {

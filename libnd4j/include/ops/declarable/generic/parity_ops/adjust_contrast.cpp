@@ -39,7 +39,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
 
     REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST: Scale factor required");
     REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
-    REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
+//    REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
 
     NDArray* factor = nullptr;
 
@@ -84,10 +84,15 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
         return Status::OK();
 
     REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST_V2: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
-    REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST_V2: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
+//    REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST_V2: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
     REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST_V2: Scale factor required");
 
     NDArray* factor = nullptr;
+    auto size = input->sizeAt(-2) * input->sizeAt(-3);
+    auto channels = input->sizeAt(-1);
+    auto batch = input->lengthOf() / (size * channels);
+    auto input3D = input->reshape(input->ordering(), {batch, size, channels});
+    auto output3D = input->reshape(input->ordering(), {batch, size, channels});
 
     if(block.width() > 1)
         factor = INPUT_VARIABLE(1);
@@ -96,20 +101,17 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
         factor->p(0, T_ARG(0));
     }
 
-    // compute mean before
-    std::vector<int> axes(input->rankOf() - 1);
-    for (auto i = 0; i < axes.size(); ++i)
-        axes[i] = i;
+    std::vector<int> axes({1}); // dim 1 of pseudoresult
 
-    // mean as reduction for last dimension set
-    auto mean = input->reduceAlongDims(reduce::Mean, axes);
+// mean as reduction for last dimension set over size (dim 1) of result3D
+    auto mean = input3D.reduceAlongDims(reduce::Mean, axes);
 
     // result as (x - mean) * factor + mean
-    auto temp = input->ulike();
-    input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &mean, &temp);
+    auto temp = input3D.ulike();
+    input3D.applyBroadcast(broadcast::Subtract, {0, 2}, &mean, &temp, nullptr);
     temp.applyScalarArr(scalar::Multiply, factor);
-    temp.applyTrueBroadcast(BroadcastOpsTuple::Add(), &mean, output);
-
+    temp.applyBroadcast(broadcast::Add, {0, 2},  &mean, &output3D);
+    output->assign(output3D);
     if(block.width() == 1)
         delete factor;
 

@@ -832,3 +832,49 @@ TEST_F(BroadcastableOpsTests, broadcast_3) {
     ASSERT_TRUE(z.isSameShape(e));
     ASSERT_TRUE(z.equalsTo(e));
 }
+
+TEST_F(BroadcastableOpsTests, test_bert_multiply_1) {
+    auto x = NDArrayFactory::create<float>('c', {4, 128, 1});
+    auto y = NDArrayFactory::create<float>('c', {4, 1, 128});
+    auto z = NDArrayFactory::create<float>('c', {4, 128, 128});
+    auto e = NDArrayFactory::create<float>('c', {4, 128, 128});
+
+    x.assign(0.f);
+    y.assign(1.f);
+    z.assign(119.f);
+    e.assign(0.f);
+/*
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setInputArray(1, &y);
+    ctx.setOutputArray(0, &z);
+
+    nd4j::ops::multiply op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+
+    z.printIndexedBuffer();
+*/
+
+    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);
+
+    //z.printIndexedBuffer();
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(BroadcastableOpsTests, test_bert_multiply_2) {
+    auto x = NDArrayFactory::create<float>('c', {4, 128, 1});
+    auto y = NDArrayFactory::create<float>('c', {768});
+    auto z = NDArrayFactory::create<float>('c', {4, 128, 768});
+    auto e = NDArrayFactory::create<float>('c', {4, 128, 768});
+
+    x.assign(1.f);
+    y.assign(2.f);
+    z.assign(119.f);
+    e.assign(2.f);
+
+    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);
+
+    ASSERT_EQ(e, z);
+}

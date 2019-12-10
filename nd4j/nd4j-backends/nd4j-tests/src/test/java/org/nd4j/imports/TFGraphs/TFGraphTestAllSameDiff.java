@@ -71,9 +71,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //Still failing 2019/09/11
             "slogdet/.*",
 
-            // Failing 2019/11/14 - |https://github.com/eclipse/deeplearning4j/issues/8374
-            "adjust_contrast/*",
-            "adjust_contrast/.*",
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             "bincount/.*",
             // Failing 2019/11/14 https://github.com/eclipse/deeplearning4j/issues/8393
@@ -114,17 +111,8 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // 2019/11/15 - missing dtype argument in nd4j, tests are useless https://github.com/eclipse/deeplearning4j/issues/8398
             "zeros_like/rank2_float32_dtype_int.*",
 
-            // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8402
-            "fake_quant/min_max_args_per_channel.*",
-
-            // Suggesting TF 1.15 bug
-            "non_max_suppression_v2/float16.*",
-
             // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8450
             "betainc.*",
-
-            // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8452
-            "polygamma.*",
 
             // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8453
             "roll/.*",
@@ -132,11 +120,8 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // 11.26.2019 failing https://github.com/eclipse/deeplearning4j/issues/8455
             "matrix_band_part/.*",
 
-            // 11.28.2019 failing https://github.com/eclipse/deeplearning4j/issues/8458
-            "adjust_hue/.*",
-
-            // 11.28.2019 failing https://github.com/eclipse/deeplearning4j/issues/8459
-            "adjust_saturation/.*"
+            // 05.12.2019 failing https://github.com/eclipse/deeplearning4j/issues/8507
+            "resize_bicubic/int32.*"
     };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have
