@@ -240,6 +240,17 @@
                         </relocation>
                     </relocations>
 
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/services/javax.xml.stream.XMLOutputFactory</exclude>
+                                <exclude>META-INF/services/javax.xml.stream.XMLInputFactory</exclude>
+                                <exclude>META-INF/services/javax.xml.stream.XMLEventFactory</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+
                 </configuration>
             </plugin>
             <plugin>
