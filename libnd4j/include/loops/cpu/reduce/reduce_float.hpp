@@ -269,8 +269,5 @@ namespace functions {
             // return result
             return OpType::postProcess(intermediate[0], length, extraParams);
         }
-
-
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceFloatFunction, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }
