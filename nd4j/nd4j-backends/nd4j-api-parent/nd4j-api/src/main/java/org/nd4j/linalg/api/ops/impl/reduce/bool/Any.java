@@ -65,4 +65,9 @@ public class Any extends BaseReduceBoolOp {
     public String tensorflowName() {
         return "Any";
     }
+
+    @Override
+    public boolean emptyValue() {
+        return false;
+    }
 }

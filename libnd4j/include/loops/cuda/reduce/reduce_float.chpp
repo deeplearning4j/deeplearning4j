@@ -249,7 +249,7 @@ __host__ void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStre
         auto ptr = nd4j::LaunchContext::defaultContext()->getScalarPointer();
 
         // scalar assign
-        functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, zShape, hXShapeInfo, z, zShape, hZShapeInfo, ptr, nullptr);
+        functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, zShape, hZShapeInfo, z, zShape, hZShapeInfo, ptr, nullptr);
     }
     else {
         simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);

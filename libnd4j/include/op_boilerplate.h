@@ -1242,7 +1242,9 @@
 #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
 #define NOT_EXCLUDED(NAME) 1>0
 #else
-#define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
+// for now we don't want minifier mechanics working
+//#define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
+#define NOT_EXCLUDED(NAME) 1>0
 #endif
 
 #ifdef __JAVACPP_HACK__

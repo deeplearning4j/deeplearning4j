@@ -1112,7 +1112,7 @@ public class PythonExecutioner {
             FileUtils.write(new File(dest), patch, "utf-8");
         }
         catch(IOException e){
-            throw new RuntimeException("Error reading resource.");
+            log.warn("Error patching numpy: " + e);
         }
     }
 
@@ -1120,12 +1120,12 @@ public class PythonExecutioner {
         try {
             return FileUtils.readFileToString(new File(dest), "utf-8").startsWith("#patch");
         } catch (IOException e) {
-            throw new RuntimeException("Error patching numpy");
-
+            return false;
         }
     }
 
     private static void applyPatches() {
+        // We patch numpy for partial support of multiple interpreters
         for (String[] patch : _getPatches()){
             if (_checkPatchApplied(patch[1])){
                 log.info("Patch already applied for " + patch[1]);
@@ -1137,7 +1137,7 @@ public class PythonExecutioner {
         }
         for (String[] patch: _getPatches()){
             if (!_checkPatchApplied(patch[1])){
-                throw new RuntimeException("Error patching numpy");
+                log.warn("Error patching numpy");
             }
         }
     }

@@ -8134,6 +8134,36 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(Nd4j.createFromArray(1.0,2,3,4,5,6), hStack);
     }
 
+
+    @Test
+    public void testReduceAll_1() {
+        val x = Nd4j.empty(DataType.FLOAT);
+        val e = Nd4j.scalar(true);
+        val z = Nd4j.exec(new All(x));
+
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testReduceAll_2() {
+        val x = Nd4j.ones(DataType.FLOAT, 0);
+        val e = Nd4j.scalar(true);
+        val z = Nd4j.exec(new All(x));
+
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testReduceAll_3() {
+        val x = Nd4j.create(DataType.FLOAT, 0);
+        assertEquals(1, x.rank());
+
+        val e = Nd4j.scalar(true);
+        val z = Nd4j.exec(new All(x, 0));
+
+        assertEquals(e, z);
+    }
+
     @Override
     public char ordering() {
         return 'c';

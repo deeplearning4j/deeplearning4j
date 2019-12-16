@@ -237,6 +237,8 @@ template <typename X, typename Z>
 template<typename OpType>
 __host__ void ReduceBoolFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hXShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, Nd4jLong *hZShapeInfo, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
+        nd4j_printf("Step A%i\n", -1);
+
     if(shape::isEmpty(hXShapeInfo)) {
 
         if(shape::isEmpty(hZShapeInfo))
@@ -251,7 +253,8 @@ __host__ void ReduceBoolFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStrea
         auto ptr = nd4j::LaunchContext::defaultContext()->getScalarPointer();
 
         // scalar assign
-        functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, zShapeInfo, hXShapeInfo, z, zShapeInfo, hZShapeInfo, ptr, nullptr);
+        functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, zShapeInfo, hZShapeInfo, z, zShapeInfo, hZShapeInfo, ptr, nullptr);
+        nd4j::DebugHelper::checkErrorCode(stream, "reduceBoolDim empty(...) failed");
     }
     else {
         simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);
@@ -274,6 +277,9 @@ __host__ void ReduceBoolFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaS
         auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
             throw nd4j::cuda_exception::build("ReduceBoolFunction<X,Z>::intermediateScalar: failed to copy resulting scalar", res);
+
+        nd4j::DebugHelper::checkErrorCode(stream, "reduceBoolScalar empty(...) failed");
+
     }
     else {
         simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);

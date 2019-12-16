@@ -71,4 +71,8 @@ public class IsNaN extends BaseReduceBoolOp {
         return Collections.singletonList(f().zerosLike(arg()));
     }
 
+    @Override
+    public boolean emptyValue() {
+        return false;
+    }
 }

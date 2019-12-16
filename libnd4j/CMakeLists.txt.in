@@ -9,6 +9,7 @@ ExternalProject_Add(flatbuffers
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
   CONFIGURE_COMMAND ""
+  CMAKE_ARGS        "-DFLATBUFFERS_BUILD_FLATC=OFF"
   BUILD_COMMAND     ""
   INSTALL_COMMAND   ""
   TEST_COMMAND      ""

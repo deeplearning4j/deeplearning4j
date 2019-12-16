@@ -30,31 +30,30 @@ if (CUDA_BLAS)
     if(WIN32)
         message("CUDA on Windows: enabling /EHsc")
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /FS")
-        SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc")
     endif()
 
     if ("${COMPUTE}" STREQUAL "all")
-        list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -w --cudart=static -O3 --expt-extended-lambda -gencode arch=compute_30,code=sm_30 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70)
+        set(CMAKE_CUDA_FLAGS " -DCUDA_10 ${EXPM} -w --cudart=static -O3 --expt-extended-lambda -gencode arch=compute_30,code=sm_30 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70")
     else()
-        list(APPEND CUDA_NVCC_FLAGS -DCUDA_10 ${EXPM} -w -G -g --cudart=static --expt-extended-lambda -arch=compute_${COMPUTE} -code=sm_${COMPUTE})
+        set(CMAKE_CUDA_FLAGS " -DCUDA_10 ${EXPM} -w -G -g --expt-extended-lambda -arch=compute_${COMPUTE} -code=sm_${COMPUTE}")
     endif()
 endif()
 
 # -fsanitize=address
 # -fsanitize=leak
 if (APPLE)
-    set(CMAKE_CXX_FLAGS  " -fPIC -std=c++11 -fmax-errors=2 -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS  " -fPIC  -fmax-errors=2 -D__APPLE_OS__=true")
 elseif(WIN32)
     if (CPU_BLAS)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC -march=native -mtune=native -O3")
     endif()
 
 	if (CPU_BLAS AND LINUX)
-		set(CMAKE_CXX_FLAGS  " -fPIC -std=c++11 -fmax-errors=2")
+		set(CMAKE_CXX_FLAGS  " -fPIC  -fmax-errors=2")
 	endif()
 else()
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}  -O3")
-    set(CMAKE_CXX_FLAGS  " -fPIC -std=c++11 -fmax-errors=2")
+    set(CMAKE_CXX_FLAGS  " -fPIC  -fmax-errors=2")
     if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
         set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -mcpu=native")
     else()
@@ -68,14 +67,6 @@ else()
     endif()
 endif()
 
-# TODO: get rid of this once problem confirmed solved
-#if (APPLE)
-#    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-#        if ("${CMAKE_C_COMPILER_VERSION}" VERSION_GREATER 6.0 OR "${CMAKE_C_COMPILER_VERSION}" VERSION_EQUAL 6.0)
-#            SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -Wa,-mavx512f -fmax-errors=1")
-#        endif()
-#    endif()
-#endif()
 
 # tests are always compiled with all ops included
 SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true -DBUILD_TESTS=true")
@@ -141,6 +132,15 @@ if (CPU_BLAS)
 	add_executable(runtests ${TEST_SOURCES})
 	target_link_libraries(runtests ${LIBND4J_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES} gtest gtest_main)
 elseif(CUDA_BLAS)
-	CUDA_ADD_EXECUTABLE(runtests ${TEST_SOURCES})
-	target_link_libraries(runtests ${LIBND4J_NAME} ${CUDA_LIBRARIES} gtest gtest_main)
+
+	add_executable(runtests ${TEST_SOURCES})
+
+    message("MSVC runtime for tests: ${MSVC_RT_LIB}")
+
+    # applies to windows only
+    set_property(TARGET runtests PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+    set_property(TARGET gtest PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+    set_property(TARGET gtest_main PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+
+	target_link_libraries(runtests ${LIBND4J_NAME}static ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} gtest gtest_main)
 endif()

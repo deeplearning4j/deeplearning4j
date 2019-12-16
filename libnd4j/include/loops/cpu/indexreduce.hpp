@@ -151,8 +151,5 @@ void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     nd4j::IndexReductionLoops<X,Z>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
 }
 
-
-BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES, INDEXING_TYPES);
-
 }
 }
