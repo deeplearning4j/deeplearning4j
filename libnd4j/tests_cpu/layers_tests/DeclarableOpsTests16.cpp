@@ -15,9 +15,9 @@
  ******************************************************************************/
 
 
-//
-// @author raver119@gmail.com
-//
+ //
+ // @author raver119@gmail.com
+ //
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
@@ -40,13 +40,13 @@ public:
 };
 
 TEST_F(DeclarableOpsTests16, scatter_upd_1) {
-    auto x = NDArrayFactory::create<float>('c', {3}, {1.f, 1.f, 1.f});
+    auto x = NDArrayFactory::create<float>('c', { 3 }, { 1.f, 1.f, 1.f });
     auto y = NDArrayFactory::create<int>(0);
     auto w = NDArrayFactory::create<float>(3.0f);
-    auto e = NDArrayFactory::create<float>('c', {3}, {3.f, 1.f, 1.f});
+    auto e = NDArrayFactory::create<float>('c', { 3 }, { 3.f, 1.f, 1.f });
 
     nd4j::ops::scatter_upd op;
-    auto result = op.execute({&x, &y, &w}, {}, {});
+    auto result = op.execute({ &x, &y, &w }, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -58,15 +58,15 @@ TEST_F(DeclarableOpsTests16, scatter_upd_1) {
 
 TEST_F(DeclarableOpsTests16, scatter_upd_2) {
 
-    NDArray x('c', {10, 3}, nd4j::DataType::FLOAT32);
-    NDArray indices('c', {2}, {2,5}, nd4j::DataType::INT32);
-    NDArray updates('c', {2, 3}, {100,101,102,  200,201,202}, nd4j::DataType::FLOAT32);
-    NDArray e('c', {10, 3}, {1,2,3, 4,5,6, 100,101,102, 10,11,12, 13,14,15, 200,201,202, 19,20,21, 22,23,24, 25,26,27, 28,29,30}, nd4j::DataType::FLOAT32);
+    NDArray x('c', { 10, 3 }, nd4j::DataType::FLOAT32);
+    NDArray indices('c', { 2 }, { 2,5 }, nd4j::DataType::INT32);
+    NDArray updates('c', { 2, 3 }, { 100,101,102,  200,201,202 }, nd4j::DataType::FLOAT32);
+    NDArray e('c', { 10, 3 }, { 1,2,3, 4,5,6, 100,101,102, 10,11,12, 13,14,15, 200,201,202, 19,20,21, 22,23,24, 25,26,27, 28,29,30 }, nd4j::DataType::FLOAT32);
 
     x.linspace(1);
 
     nd4j::ops::scatter_upd op;
-    auto result = op.execute({&x, &indices, &updates}, {}, {});
+    auto result = op.execute({ &x, &indices, &updates }, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -78,22 +78,22 @@ TEST_F(DeclarableOpsTests16, scatter_upd_2) {
 
 TEST_F(DeclarableOpsTests16, scatter_upd_3) {
 
-    NDArray x('c', {10, 3}, nd4j::DataType::FLOAT32);
-    NDArray indices('c', {2}, {20,5}, nd4j::DataType::INT32);
-    NDArray updates('c', {2, 3}, {100,101,102,  200,201,202}, nd4j::DataType::FLOAT32);
-    NDArray output('c', {10, 3}, nd4j::DataType::FLOAT32);
+    NDArray x('c', { 10, 3 }, nd4j::DataType::FLOAT32);
+    NDArray indices('c', { 2 }, { 20,5 }, nd4j::DataType::INT32);
+    NDArray updates('c', { 2, 3 }, { 100,101,102,  200,201,202 }, nd4j::DataType::FLOAT32);
+    NDArray output('c', { 10, 3 }, nd4j::DataType::FLOAT32);
 
     nd4j::ops::scatter_upd op;
-    ASSERT_ANY_THROW(op.execute({&x, &indices, &updates}, {&output}, {}, {}, {true, true}));
+    ASSERT_ANY_THROW(op.execute({ &x, &indices, &updates }, { &output }, {}, {}, { true, true }));
 }
 
 TEST_F(DeclarableOpsTests16, test_size_dtype_1) {
-    auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});
+    auto x = NDArrayFactory::create<float>('c', { 3 }, { 1, 1, 1 });
     auto z = NDArrayFactory::create<float>(0.0f);
     auto e = NDArrayFactory::create<float>(3.0f);
 
     nd4j::ops::size op;
-    auto status = op.execute({&x}, {&z}, {}, {}, {});
+    auto status = op.execute({ &x }, { &z }, {}, {}, {});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(e, z);
@@ -103,7 +103,7 @@ TEST_F(DeclarableOpsTests16, test_empty_noop_1) {
     auto z = NDArrayFactory::empty<Nd4jLong>();
 
     nd4j::ops::noop op;
-    auto status = op.execute({}, {&z}, {}, {}, {});
+    auto status = op.execute({}, { &z }, {}, {}, {});
     ASSERT_EQ(Status::OK(), status);
 }
 
@@ -120,22 +120,22 @@ TEST_F(DeclarableOpsTests16, test_empty_noop_2) {
 }
 
 TEST_F(DeclarableOpsTests16, test_svd_1) {
-    auto x = NDArrayFactory::create<float>('c', {3, 3}, {0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f,0.50563407f, 0.89252293f, 0.5461209f});
-    auto z = NDArrayFactory::create<float>('c', {3});
+    auto x = NDArrayFactory::create<float>('c', { 3, 3 }, { 0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f,0.50563407f, 0.89252293f, 0.5461209f });
+    auto z = NDArrayFactory::create<float>('c', { 3 });
 
     nd4j::ops::svd op;
-    auto status = op.execute({&x}, {&z}, {}, {0, 0, 16}, {});
+    auto status = op.execute({ &x }, { &z }, {}, { 0, 0, 16 }, {});
 
     ASSERT_EQ(Status::OK(), status);
 }
 
 TEST_F(DeclarableOpsTests16, test_hamming_distance_1) {
-    auto x = NDArrayFactory::create<Nd4jLong>({37, 37, 37});
-    auto y = NDArrayFactory::create<Nd4jLong>({8723, 8723, 8723});
+    auto x = NDArrayFactory::create<Nd4jLong>({ 37, 37, 37 });
+    auto y = NDArrayFactory::create<Nd4jLong>({ 8723, 8723, 8723 });
     auto e = NDArrayFactory::create<Nd4jLong>(18);
 
     nd4j::ops::bits_hamming_distance op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.execute({ &x, &y }, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -146,9 +146,9 @@ TEST_F(DeclarableOpsTests16, test_hamming_distance_1) {
 }
 
 TEST_F(DeclarableOpsTests16, test_knn_mindistance_1) {
-    auto input = NDArrayFactory::create<float>('c', {512});
-    auto low = NDArrayFactory::create<float>('c', {512});
-    auto high = NDArrayFactory::create<float>('c', {512});
+    auto input = NDArrayFactory::create<float>('c', { 512 });
+    auto low = NDArrayFactory::create<float>('c', { 512 });
+    auto high = NDArrayFactory::create<float>('c', { 512 });
 
     auto output = NDArrayFactory::create<float>(0.0f);
 
@@ -157,16 +157,16 @@ TEST_F(DeclarableOpsTests16, test_knn_mindistance_1) {
     high.linspace(1.0);
 
     nd4j::ops::knn_mindistance op;
-    auto result = op.execute({&input, &low, &high}, {&output}, {}, {}, {});
+    auto result = op.execute({ &input, &low, &high }, { &output }, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 }
 
 TEST_F(DeclarableOpsTests16, test_empty_cast_1) {
-    auto x = NDArrayFactory::create<bool>('c', {1, 0, 2});
-    auto e = NDArrayFactory::create<Nd4jLong>('c', {1, 0, 2});
+    auto x = NDArrayFactory::create<bool>('c', { 1, 0, 2 });
+    auto e = NDArrayFactory::create<Nd4jLong>('c', { 1, 0, 2 });
 
     nd4j::ops::cast op;
-    auto result = op.execute({&x}, {}, {10});
+    auto result = op.execute({ &x }, {}, { 10 });
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_EQ(e, *result->at(0));
 
@@ -175,10 +175,10 @@ TEST_F(DeclarableOpsTests16, test_empty_cast_1) {
 
 TEST_F(DeclarableOpsTests16, test_range_1) {
     nd4j::ops::range op;
-    auto z = NDArrayFactory::create<float>('c', {200});
+    auto z = NDArrayFactory::create<float>('c', { 200 });
 
     Context ctx(1);
-    ctx.setTArguments({-1.0, 1.0, 0.01});
+    ctx.setTArguments({ -1.0, 1.0, 0.01 });
     ctx.setOutputArray(0, &z);
 
     auto status = op.execute(&ctx);
@@ -187,9 +187,9 @@ TEST_F(DeclarableOpsTests16, test_range_1) {
 
 TEST_F(DeclarableOpsTests16, test_range_2) {
     nd4j::ops::range op;
-    auto z = NDArrayFactory::create<float>('c', {200});
+    auto z = NDArrayFactory::create<float>('c', { 200 });
 
-    double tArgs[] = {-1.0, 1.0, 0.01};
+    double tArgs[] = { -1.0, 1.0, 0.01 };
 
     auto shapes = ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 3, nullptr, 0, nullptr, 0);
     shape::printShapeInfoLinear("Result", shapes->at(0));
@@ -199,27 +199,27 @@ TEST_F(DeclarableOpsTests16, test_range_2) {
 }
 
 TEST_F(DeclarableOpsTests16, test_reverse_1) {
-    std::vector<Nd4jLong> rows = {3, 5, 7, 8, 9, 10, 119, 211};
-    std::vector<Nd4jLong> columns = {6, 5, 10, 100, 153, 171, 635};
+    std::vector<Nd4jLong> rows = { 3, 5, 7, 8, 9, 10, 119, 211 };
+    std::vector<Nd4jLong> columns = { 6, 5, 10, 100, 153, 171, 635 };
 
     for (auto r : rows) {
         for (auto c : columns) {
             //nd4j_printf("Trying [%i, %i]\n", r, c);
-            auto array = NDArrayFactory::create<float>('c', {r, c});
-            auto exp = NDArrayFactory::create<float>('c', {r, c});
-            auto reversed = NDArrayFactory::create<float>('c', {r, c});
+            auto array = NDArrayFactory::create<float>('c', { r, c });
+            auto exp = NDArrayFactory::create<float>('c', { r, c });
+            auto reversed = NDArrayFactory::create<float>('c', { r, c });
 
-            auto rowOriginal = NDArrayFactory::create<float>('c', {c});
-            auto rowReversed = NDArrayFactory::create<float>('c', {c});
+            auto rowOriginal = NDArrayFactory::create<float>('c', { c });
+            auto rowReversed = NDArrayFactory::create<float>('c', { c });
 
             for (int e = 0; e < c; e++) {
-                rowOriginal.p(e, (float) e);
-                rowReversed.p(c - e - 1, (float) e);
+                rowOriginal.p(e, (float)e);
+                rowReversed.p(c - e - 1, (float)e);
             }
 
 
-            auto listI = array.allTensorsAlongDimension({1});
-            auto listE = exp.allTensorsAlongDimension({1});
+            auto listI = array.allTensorsAlongDimension({ 1 });
+            auto listE = exp.allTensorsAlongDimension({ 1 });
 
             for (int e = 0; e < r; e++) {
                 listI->at(e)->assign(rowOriginal);
@@ -230,8 +230,8 @@ TEST_F(DeclarableOpsTests16, test_reverse_1) {
             delete listE;
 
             nd4j::ops::reverse op;
-            Nd4jLong axis  = 1;
-            auto status = op.execute({&array}, {&reversed}, {}, {axis}, {});
+            Nd4jLong axis = 1;
+            auto status = op.execute({ &array }, { &reversed }, {}, { axis }, {});
             ASSERT_EQ(Status::OK(), status);
 
             ASSERT_EQ(exp, reversed);
@@ -260,21 +260,21 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_1) {
         });
     auto expected = NDArrayFactory::create<float>('c', { 5, 4, 3 },
         {
-           6.75000000e+01, 2.54545455e-01, 8.62745098e-01, 1.80000000e+02,
-           3.27777778e-01, 7.05882353e-01, 1.35066079e+02, 9.26530612e-01,
-           9.60784314e-01, 7.45341615e-01, 6.85106383e-01, 9.21568627e-01,
-           2.78688525e+02, 7.85407725e-01, 9.13725490e-01, 2.10989011e+01,
-           4.76439791e-01, 7.49019608e-01, 2.89038462e+02, 8.48979592e-01,
-           9.60784314e-01, 1.56416185e+02, 6.92000000e-01, 9.80392157e-01,
-           3.52881356e+02, 5.31531532e-01, 4.35294118e-01, 1.07142857e+01,
-           2.90155440e-01, 7.56862745e-01, 3.43384615e+02, 3.86904762e-01,
-           6.58823529e-01, 1.78321678e+02, 7.48691099e-01, 7.49019608e-01,
-           2.30645161e+02, 7.78242678e-01, 9.37254902e-01, 3.19159664e+02,
-           7.62820513e-01, 6.11764706e-01, 2.10126582e+01, 9.71311475e-01,
-           9.56862745e-01, 2.90896552e+02, 5.96707819e-01, 9.52941176e-01,
-           1.74822335e+02, 9.42583732e-01, 8.19607843e-01, 2.06600985e+02,
-           9.90243902e-01, 8.03921569e-01, 1.06883721e+02, 8.70445344e-01,
-           9.68627451e-01, 1.95272727e+02, 6.11111111e-01, 7.05882353e-01
+           6.75000000e+01f, 2.54545455e-01f, 8.62745098e-01f, 1.80000000e+02f,
+           3.27777778e-01f, 7.05882353e-01f, 1.35066079e+02f, 9.26530612e-01f,
+           9.60784314e-01f, 7.45341615e-01f, 6.85106383e-01f, 9.21568627e-01f,
+           2.78688525e+02f, 7.85407725e-01f, 9.13725490e-01f, 2.10989011e+01f,
+           4.76439791e-01f, 7.49019608e-01f, 2.89038462e+02f, 8.48979592e-01f,
+           9.60784314e-01f, 1.56416185e+02f, 6.92000000e-01f, 9.80392157e-01f,
+           3.52881356e+02f, 5.31531532e-01f, 4.35294118e-01f, 1.07142857e+01f,
+           2.90155440e-01f, 7.56862745e-01f, 3.43384615e+02f, 3.86904762e-01f,
+           6.58823529e-01f, 1.78321678e+02f, 7.48691099e-01f, 7.49019608e-01f,
+           2.30645161e+02f, 7.78242678e-01f, 9.37254902e-01f, 3.19159664e+02f,
+           7.62820513e-01f, 6.11764706e-01f, 2.10126582e+01f, 9.71311475e-01f,
+           9.56862745e-01f, 2.90896552e+02f, 5.96707819e-01f, 9.52941176e-01f,
+           1.74822335e+02f, 9.42583732e-01f, 8.19607843e-01f, 2.06600985e+02f,
+           9.90243902e-01f, 8.03921569e-01f, 1.06883721e+02f, 8.70445344e-01f,
+           9.68627451e-01f, 1.95272727e+02f, 6.11111111e-01f, 7.05882353e-01f
         });
 
 
@@ -312,21 +312,21 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_2) {
         });
     auto expected = NDArrayFactory::create<float>('c', { 5,3,4 },
         {
-           6.75000000e+01, 1.80000000e+02, 1.35066079e+02, 7.45341615e-01,
-           2.54545455e-01, 3.27777778e-01, 9.26530612e-01, 6.85106383e-01,
-           8.62745098e-01, 7.05882353e-01, 9.60784314e-01, 9.21568627e-01,
-           2.78688525e+02, 2.10989011e+01, 2.89038462e+02, 1.56416185e+02,
-           7.85407725e-01, 4.76439791e-01, 8.48979592e-01, 6.92000000e-01,
-           9.13725490e-01, 7.49019608e-01, 9.60784314e-01, 9.80392157e-01,
-           3.52881356e+02, 1.07142857e+01, 3.43384615e+02, 1.78321678e+02,
-           5.31531532e-01, 2.90155440e-01, 3.86904762e-01, 7.48691099e-01,
-           4.35294118e-01, 7.56862745e-01, 6.58823529e-01, 7.49019608e-01,
-           2.30645161e+02, 3.19159664e+02, 2.10126582e+01, 2.90896552e+02,
-           7.78242678e-01, 7.62820513e-01, 9.71311475e-01, 5.96707819e-01,
-           9.37254902e-01, 6.11764706e-01, 9.56862745e-01, 9.52941176e-01,
-           1.74822335e+02, 2.06600985e+02, 1.06883721e+02, 1.95272727e+02,
-           9.42583732e-01, 9.90243902e-01, 8.70445344e-01, 6.11111111e-01,
-           8.19607843e-01, 8.03921569e-01, 9.68627451e-01, 7.05882353e-01
+           6.75000000e+01f, 1.80000000e+02f, 1.35066079e+02f, 7.45341615e-01f,
+           2.54545455e-01f, 3.27777778e-01f, 9.26530612e-01f, 6.85106383e-01f,
+           8.62745098e-01f, 7.05882353e-01f, 9.60784314e-01f, 9.21568627e-01f,
+           2.78688525e+02f, 2.10989011e+01f, 2.89038462e+02f, 1.56416185e+02f,
+           7.85407725e-01f, 4.76439791e-01f, 8.48979592e-01f, 6.92000000e-01f,
+           9.13725490e-01f, 7.49019608e-01f, 9.60784314e-01f, 9.80392157e-01f,
+           3.52881356e+02f, 1.07142857e+01f, 3.43384615e+02f, 1.78321678e+02f,
+           5.31531532e-01f, 2.90155440e-01f, 3.86904762e-01f, 7.48691099e-01f,
+           4.35294118e-01f, 7.56862745e-01f, 6.58823529e-01f, 7.49019608e-01f,
+           2.30645161e+02f, 3.19159664e+02f, 2.10126582e+01f, 2.90896552e+02f,
+           7.78242678e-01f, 7.62820513e-01f, 9.71311475e-01f, 5.96707819e-01f,
+           9.37254902e-01f, 6.11764706e-01f, 9.56862745e-01f, 9.52941176e-01f,
+           1.74822335e+02f, 2.06600985e+02f, 1.06883721e+02f, 1.95272727e+02f,
+           9.42583732e-01f, 9.90243902e-01f, 8.70445344e-01f, 6.11111111e-01f,
+           8.19607843e-01f, 8.03921569e-01f, 9.68627451e-01f, 7.05882353e-01f
         });
 
 
@@ -387,7 +387,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_4) {
     auto rgbs = NDArrayFactory::create<float>('c', { 3,8 },
         { 130.f, 117.f, 181.f,  49.f, 131.f,  86.f, 101.f, 191.f,  61.f,  16.f, 223.f, 195.f, 153.f,
         21.f,  14.f,  98.f, 239.f, 168.f,   0.f, 195.f,  78.f, 209.f, 107.f, 210.f });
-    auto expected = NDArrayFactory::create<float>('c', { 3,8 },
+    auto expected = NDArrayFactory::create<float>('c', { 3, 8 },
         { 263.25842697f, 279.86842105f,  71.30044843f, 180.f,
         77.6f, 260.74468085f, 296.12903226f, 289.82142857f,
          0.74476987f,   0.9047619f,   1.f,   0.74871795f,
@@ -396,7 +396,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_4) {
          0.6f,   0.81960784f,   0.41960784f,   0.82352941f });
 
 
-    auto actual = NDArrayFactory::create<float>('c', { 3,8 });
+    auto actual = NDArrayFactory::create<float>('c', { 3, 8 });
 
     Context ctx(1);
     ctx.setInputArray(0, &rgbs);
@@ -495,21 +495,21 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_1) {
     );
     auto hsvs = NDArrayFactory::create<float>('c', { 5,4,3 },
         {
-      6.75000000e+01, 2.54545455e-01, 8.62745098e-01, 1.80000000e+02,
-       3.27777778e-01, 7.05882353e-01, 1.35066079e+02, 9.26530612e-01,
-       9.60784314e-01, 7.45341615e-01, 6.85106383e-01, 9.21568627e-01,
-       2.78688525e+02, 7.85407725e-01, 9.13725490e-01, 2.10989011e+01,
-       4.76439791e-01, 7.49019608e-01, 2.89038462e+02, 8.48979592e-01,
-       9.60784314e-01, 1.56416185e+02, 6.92000000e-01, 9.80392157e-01,
-       3.52881356e+02, 5.31531532e-01, 4.35294118e-01, 1.07142857e+01,
-       2.90155440e-01, 7.56862745e-01, 3.43384615e+02, 3.86904762e-01,
-       6.58823529e-01, 1.78321678e+02, 7.48691099e-01, 7.49019608e-01,
-       2.30645161e+02, 7.78242678e-01, 9.37254902e-01, 3.19159664e+02,
-       7.62820513e-01, 6.11764706e-01, 2.10126582e+01, 9.71311475e-01,
-       9.56862745e-01, 2.90896552e+02, 5.96707819e-01, 9.52941176e-01,
-       1.74822335e+02, 9.42583732e-01, 8.19607843e-01, 2.06600985e+02,
-       9.90243902e-01, 8.03921569e-01, 1.06883721e+02, 8.70445344e-01,
-       9.68627451e-01, 1.95272727e+02, 6.11111111e-01, 7.05882353e-01
+      6.75000000e+01f, 2.54545455e-01f, 8.62745098e-01f, 1.80000000e+02f,
+       3.27777778e-01f, 7.05882353e-01f, 1.35066079e+02f, 9.26530612e-01f,
+       9.60784314e-01f, 7.45341615e-01f, 6.85106383e-01f, 9.21568627e-01f,
+       2.78688525e+02f, 7.85407725e-01f, 9.13725490e-01f, 2.10989011e+01f,
+       4.76439791e-01f, 7.49019608e-01f, 2.89038462e+02f, 8.48979592e-01f,
+       9.60784314e-01f, 1.56416185e+02f, 6.92000000e-01f, 9.80392157e-01f,
+       3.52881356e+02f, 5.31531532e-01f, 4.35294118e-01f, 1.07142857e+01f,
+       2.90155440e-01f, 7.56862745e-01f, 3.43384615e+02f, 3.86904762e-01f,
+       6.58823529e-01f, 1.78321678e+02f, 7.48691099e-01f, 7.49019608e-01f,
+       2.30645161e+02f, 7.78242678e-01f, 9.37254902e-01f, 3.19159664e+02f,
+       7.62820513e-01f, 6.11764706e-01f, 2.10126582e+01f, 9.71311475e-01f,
+       9.56862745e-01f, 2.90896552e+02f, 5.96707819e-01f, 9.52941176e-01f,
+       1.74822335e+02f, 9.42583732e-01f, 8.19607843e-01f, 2.06600985e+02f,
+       9.90243902e-01f, 8.03921569e-01f, 1.06883721e+02f, 8.70445344e-01f,
+       9.68627451e-01f, 1.95272727e+02f, 6.11111111e-01f, 7.05882353e-01f
         });
 
 
@@ -540,21 +540,21 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_2) {
     );
     auto hsvs = NDArrayFactory::create<float>('c', { 5,3,4 },
         {
-      6.75000000e+01, 1.80000000e+02, 1.35066079e+02, 7.45341615e-01,
-       2.54545455e-01, 3.27777778e-01, 9.26530612e-01, 6.85106383e-01,
-       8.62745098e-01, 7.05882353e-01, 9.60784314e-01, 9.21568627e-01,
-       2.78688525e+02, 2.10989011e+01, 2.89038462e+02, 1.56416185e+02,
-       7.85407725e-01, 4.76439791e-01, 8.48979592e-01, 6.92000000e-01,
-       9.13725490e-01, 7.49019608e-01, 9.60784314e-01, 9.80392157e-01,
-       3.52881356e+02, 1.07142857e+01, 3.43384615e+02, 1.78321678e+02,
-       5.31531532e-01, 2.90155440e-01, 3.86904762e-01, 7.48691099e-01,
-       4.35294118e-01, 7.56862745e-01, 6.58823529e-01, 7.49019608e-01,
-       2.30645161e+02, 3.19159664e+02, 2.10126582e+01, 2.90896552e+02,
-       7.78242678e-01, 7.62820513e-01, 9.71311475e-01, 5.96707819e-01,
-       9.37254902e-01, 6.11764706e-01, 9.56862745e-01, 9.52941176e-01,
-       1.74822335e+02, 2.06600985e+02, 1.06883721e+02, 1.95272727e+02,
-       9.42583732e-01, 9.90243902e-01, 8.70445344e-01, 6.11111111e-01,
-       8.19607843e-01, 8.03921569e-01, 9.68627451e-01, 7.05882353e-01
+      6.75000000e+01f, 1.80000000e+02f, 1.35066079e+02f, 7.45341615e-01f,
+       2.54545455e-01f, 3.27777778e-01f, 9.26530612e-01f, 6.85106383e-01f,
+       8.62745098e-01f, 7.05882353e-01f, 9.60784314e-01f, 9.21568627e-01f,
+       2.78688525e+02f, 2.10989011e+01f, 2.89038462e+02f, 1.56416185e+02f,
+       7.85407725e-01f, 4.76439791e-01f, 8.48979592e-01f, 6.92000000e-01f,
+       9.13725490e-01f, 7.49019608e-01f, 9.60784314e-01f, 9.80392157e-01f,
+       3.52881356e+02f, 1.07142857e+01f, 3.43384615e+02f, 1.78321678e+02f,
+       5.31531532e-01f, 2.90155440e-01f, 3.86904762e-01f, 7.48691099e-01f,
+       4.35294118e-01f, 7.56862745e-01f, 6.58823529e-01f, 7.49019608e-01f,
+       2.30645161e+02f, 3.19159664e+02f, 2.10126582e+01f, 2.90896552e+02f,
+       7.78242678e-01f, 7.62820513e-01f, 9.71311475e-01f, 5.96707819e-01f,
+       9.37254902e-01f, 6.11764706e-01f, 9.56862745e-01f, 9.52941176e-01f,
+       1.74822335e+02f, 2.06600985e+02f, 1.06883721e+02f, 1.95272727e+02f,
+       9.42583732e-01f, 9.90243902e-01f, 8.70445344e-01f, 6.11111111e-01f,
+       8.19607843e-01f, 8.03921569e-01f, 9.68627451e-01f, 7.05882353e-01f
         });
 
 
