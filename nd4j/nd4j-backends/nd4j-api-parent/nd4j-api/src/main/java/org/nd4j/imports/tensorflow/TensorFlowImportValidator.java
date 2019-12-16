@@ -230,6 +230,7 @@ public class TensorFlowImportValidator {
         try {
             int opCount = 0;
             Set<String> opNames = new HashSet<>();
+            Map<String,Integer> opCounts = new HashMap<>();
 
             try(InputStream bis = new BufferedInputStream(is)) {
                 GraphDef graphDef = GraphDef.parseFrom(bis);
@@ -248,6 +249,8 @@ public class TensorFlowImportValidator {
 
                     String op = nd.getOp();
                     opNames.add(op);
+                    int soFar = opCounts.containsKey(op) ? opCounts.get(op) : 0;
+                    opCounts.put(op, soFar + 1);
                     opCount++;
                 }
             }
@@ -282,6 +285,7 @@ public class TensorFlowImportValidator {
                     opCount,
                     opNames.size(),
                     opNames,
+                    opCounts,
                     importSupportedOpNames,
                     unsupportedOpNames,
                     unsupportedOpModel);
@@ -297,6 +301,7 @@ public class TensorFlowImportValidator {
                     0,
                     0,
                     Collections.<String>emptySet(),
+                    Collections.<String, Integer>emptyMap(),
                     Collections.<String>emptySet(),
                     Collections.<String>emptySet(),
                     Collections.<String, Set<String>>emptyMap());
