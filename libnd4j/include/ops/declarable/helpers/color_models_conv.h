@@ -15,7 +15,6 @@
  ******************************************************************************/
 
 #include <op_boilerplate.h>
-#include <ops/declarable/helpers/adjust_hue.h>
 #include <templatemath.h>
 #include <NDArray.h>
 

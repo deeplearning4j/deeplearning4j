@@ -14,9 +14,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
  
+#include <ops/declarable/helpers/adjust_hue.h>
 #include <ops/declarable/helpers/color_models_conv.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
+
 namespace nd4j {
     namespace ops {
         namespace helpers {
