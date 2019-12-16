@@ -23,6 +23,8 @@
 #include <ops/declarable/CustomOperations.h>  
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
+#include <ops/declarable/helpers/color_models_conv.h>
+
 namespace nd4j {
     namespace ops {
 
