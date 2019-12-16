@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.15)
 project(tests_cpu)
 
 # Download and unpack googletest at configure time

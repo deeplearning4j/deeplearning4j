@@ -104,9 +104,9 @@ void TrueBroadcastHelper<X,Y,Z>::exec(const nd4j::broadcast::Ops opNum, const ND
 
     dim3 launchDims;
 
-    launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
-    launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
-    launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
+    launchDims.y = MAX_NUM_THREADS / 8;   // threadsPerBlock
+    launchDims.x = (zArr.lengthOf() + launchDims.y - 1) / launchDims.y;  // blocksPerGrid
+    launchDims.z = sizeof(Nd4jLong) * launchDims.y * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMe
 
     PointersManager manager(xArr.getContext(), "TrueBroadcastHelper<X,Y,Z>::exec");
 
@@ -189,9 +189,10 @@ template<typename X, typename Y>
 void TrueBroadcastBoolHelper<X,Y>::exec(const nd4j::broadcast::BoolOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
     dim3 launchDims;
-    launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
-    launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
-    launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
+
+    launchDims.y = MAX_NUM_THREADS / 8;   // threadsPerBlock
+    launchDims.x = (zArr.lengthOf() + launchDims.y - 1) / launchDims.y;  // blocksPerGrid
+    launchDims.z = sizeof(Nd4jLong) * launchDims.y * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMe
 
     PointersManager manager(xArr.getContext(), "TrueBroadcastBoolHelper<X,Y>::exec");
 
@@ -274,9 +275,10 @@ template<typename X>
 void TrueBroadcastIntHelper<X>::exec(const nd4j::broadcast::IntOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
     dim3 launchDims;
-    launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
-    launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
-    launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
+
+    launchDims.y = MAX_NUM_THREADS / 8;   // threadsPerBlock
+    launchDims.x = (zArr.lengthOf() + launchDims.y - 1) / launchDims.y;  // blocksPerGrid
+    launchDims.z = sizeof(Nd4jLong) * launchDims.y * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMe
 
     PointersManager manager(xArr.getContext(), "TrueBroadcastIntHelper<X>::exec");
 

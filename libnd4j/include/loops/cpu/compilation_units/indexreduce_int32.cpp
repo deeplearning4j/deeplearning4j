@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,29 +15,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.list;
+//
+// @author raver119@gmail.com
+//
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+#include "../indexreduce.hpp"
 
-/**
- * An {@link BaseNDArrayList} for integers
- *
- * @author Adam Gibson
- */
-public class IntNDArrayList extends BaseNDArrayList<Integer> {
-    public IntNDArrayList() {
+namespace functions {
+    namespace indexreduce {
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES, (nd4j::DataType::INT32, int32_t));
     }
-
-    public IntNDArrayList(INDArray container) {
-        super(container);
-    }
-
-
-    @Override
-    public Integer get(int i) {
-        Number ret = container.getDouble(i);
-        return ret.intValue();
-    }
-
-
 }

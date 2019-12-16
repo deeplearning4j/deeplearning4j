@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,26 +15,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.list;
+//
+// @author raver119@gmail.com
+//
 
-import org.nd4j.linalg.api.ndarray.INDArray;
+#include "../reduce/reduce_float.hpp"
 
-/**
- * An {@link BaseNDArrayList} for float
- *
- * @author Adam Gibson
- */
-public class FloatNDArrayList extends BaseNDArrayList<Float> {
-    public FloatNDArrayList() {
-    }
-
-    public FloatNDArrayList(INDArray container) {
-        super(container);
-    }
-
-    @Override
-    public Float get(int i) {
-        Number ret = container.getDouble(i);
-        return ret.floatValue();
+namespace functions {
+    namespace reduce {
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceFloatFunction, , LIBND4J_TYPES, FLOAT_TYPES_3);
     }
 }

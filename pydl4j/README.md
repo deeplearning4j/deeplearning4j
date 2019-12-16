@@ -1,20 +1,19 @@
 # PyDL4J - Java dependency management for Python applications
 
-PyDL4J is a lightweight package manager for the DL4J ecosystem whick allows you to focus
+[![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![PyPI version](https://badge.fury.io/py/pydl4j.svg)](https://badge.fury.io/py/pydl4j)
+
+PyDL4J is a lightweight package manager for the DL4J ecosystem which allows you to focus
 on building Python applications on top of `pyjnius` without worrying about the details. You
 can use PyDL4J for the following tasks:
 
 - Automatically manage JARs for your Python projects, such as `jumpy` or `pydatavec`.
-- Configure your Python DL4J environment through the PyDL4J command line interface.
-- use PyDL4J as a replacement for Maven for basic tasks, from Python.
+- Configure your Python DL4J environment through the PyDL4J command line interface,
+- Use PyDL4J as a replacement for Maven for basic tasks, from Python.
 
 ---------
 
-[![Build Status](https://jenkins.ci.skymind.io/buildStatus/icon?job=deeplearing4j/pydl4j/master)](https: // jenkins.ci.skymind.io/blue/organizations/jenkins/deeplearing4j % 2Fpydl4j/activity)
-[![License](https://img.shields.io/badge/License-Apache % 202.0-blue.svg)](https: // github.com/deeplearning4j/pydl4j/blob/master/LICENSE)
-[![PyPI version](https://badge.fury.io/py/pydl4j.svg)](https: // badge.fury.io/py/pydl4j)
-
-![PyDL4J](https: // github.com/deeplearning4j/pydl4j/blob/master/python_in_java.png)
 
 # Installation
 
@@ -27,8 +26,8 @@ pip install pydl4j
 Alternatively, you can build the project locally as follows:
 
 ```bash
-git clone https: // www.github.com/deeplearning4j/pydl4j.git
-cd pydl4j
+git clone https://www.github.com/eclipse/deeplearning4j.git
+cd deeplearning4j/pydl4j
 python setup.py install
 ```
 
@@ -39,12 +38,12 @@ Skymind use PyDL4J under the hood and will install this dependency for you.
 # PyDL4J command line interface (CLI)
 
 Installing PyDL4J exposes a command line tool called `pydl4j`. You can use this tool to configure
-your PyDL4J environment. If you don't use the CLI, a default configuration that will be used instead.
+your PyDL4J environment. If you don't use the CLI, a default configuration will be used instead.
 
-**Note: ** If you intend to use the CLI, make sure to have[`docker` installed](https: // docs.docker.com/install/)
+**Note:** If you intend to use the CLI, make sure to have [`docker` installed](https://docs.docker.com/install/)
 on your machine.
 
-To initialize a new PyDL4j configuration, type
+To initialize a new PyDL4J configuration, type
 
 ```bash
 pydl4j init
@@ -84,7 +83,7 @@ Does this look good? (default 'y')[y/n]:
 
 If not configured otherwise, this configuration file will be stored at `~/.deeplearning4j/pydl4j/config.json`. This
 configuration file is a lightweight version for Python users to avoid the cognitive load of the widely used
-Project Object Model(POM) widely used in Java. PyDL4J will translate your configuration into the right format
+Project Object Model (POM) widely used in Java. PyDL4J will translate your configuration into the right format
 internally to provide you with the tools you need.
 
 Finally, to install the Java dependencies configured in your `config.json` you use the following command:
@@ -94,7 +93,7 @@ pydl4j install
 ```
 
 This tool will install all necessary JARs into `~/.deeplearning4j/pydl4j` for you, by running `mvn` in a
-docker container, and setting your classpath so that your `pyjnius` Python applications can access them.
+Docker container, and setting your classpath so that your `pyjnius` Python applications can access them.
 
 # PyDL4J API
 

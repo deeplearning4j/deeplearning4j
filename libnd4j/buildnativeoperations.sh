@@ -187,8 +187,8 @@ case "$OS" in
       fi
       export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-      export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-arm/"
+      export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DANDROID_BUILD=true"
     ;;
 
@@ -198,7 +198,7 @@ case "$OS" in
       fi
       export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-      export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
+      export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
       export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DANDROID_BUILD=true"
     ;;
@@ -209,8 +209,8 @@ case "$OS" in
       fi
       export ANDROID_BIN="$ANDROID_NDK/toolchains/x86-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-      export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-x86/"
+      export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake -DANDROID_BUILD=true"
     ;;
 
@@ -220,7 +220,7 @@ case "$OS" in
       fi
       export ANDROID_BIN="$ANDROID_NDK/toolchains/x86_64-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
-      export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
+      export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
       export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86_64/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DANDROID_BUILD=true"
     ;;

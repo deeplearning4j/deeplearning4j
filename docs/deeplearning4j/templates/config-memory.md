@@ -30,9 +30,9 @@ With DL4J/ND4J, there are two types of memory limits to be aware of and configur
 
 * `-Xmx` - this allows you to specify JVM heap memory limit (maximum, at any point). Only allocated up to this amount (at the discretion of the JVM) if required.
 
-* `-Dorg.bytedeco.javacpp.maxbytes`  - this allows you to specify the off-heap memory limit.
+* `-Dorg.bytedeco.javacpp.maxbytes`  - this allows you to specify the off-heap memory limit. This can also be a percentage, in which case it would apply to maxMemory.
 
-* `-Dorg.bytedeco.javacpp.maxphysicalbytes` - this specifies the maximum bytes for the entire process - usually set to `maxbytes` plus Xmx plus a bit extra, in case other libraries require some off-heap memory also. Unlike setting `maxbytes` setting `maxphysicalbytes` is optional
+* `-Dorg.bytedeco.javacpp.maxphysicalbytes` - this specifies the maximum bytes for the entire process - usually set to `maxbytes` plus Xmx plus a bit extra, in case other libraries require some off-heap memory also. This can also be a percentage (>100%), in which case it would apply to maxMemory. Unlike setting `maxbytes` setting `maxphysicalbytes` is optional
 
 Example: Configuring 1GB initial on-heap, 2GB max on-heap, 8GB off-heap, 10GB maximum for process:
 

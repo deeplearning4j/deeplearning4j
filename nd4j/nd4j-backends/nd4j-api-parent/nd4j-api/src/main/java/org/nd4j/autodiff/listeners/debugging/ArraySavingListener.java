@@ -7,7 +7,9 @@ import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -81,14 +83,23 @@ public class ArraySavingListener extends BaseListener {
             if(eq){
                 System.out.println("Equals: " + varName.replaceAll("__", "/"));
             } else {
-                INDArray sub = arr1.sub(arr2);
-                INDArray diff = Nd4j.math.abs(sub);
-                double maxDiff = diff.maxNumber().doubleValue();
-                System.out.println("FAILS: " + varName.replaceAll("__", "/") + " - max difference = " + maxDiff);
-                System.out.println("\t" + f.getAbsolutePath());
-                System.out.println("\t" + f2.getAbsolutePath());
-                sub.close();
-                diff.close();;
+                if(arr1.dataType() == DataType.BOOL){
+                    INDArray xor = Nd4j.exec(new Xor(arr1, arr2));
+                    int count = xor.castTo(DataType.INT).sumNumber().intValue();
+                    System.out.println("FAILS: " + varName.replaceAll("__", "/") + " - boolean, # differences = " + count);
+                    System.out.println("\t" + f.getAbsolutePath());
+                    System.out.println("\t" + f2.getAbsolutePath());
+                    xor.close();
+                } else {
+                    INDArray sub = arr1.sub(arr2);
+                    INDArray diff = Nd4j.math.abs(sub);
+                    double maxDiff = diff.maxNumber().doubleValue();
+                    System.out.println("FAILS: " + varName.replaceAll("__", "/") + " - max difference = " + maxDiff);
+                    System.out.println("\t" + f.getAbsolutePath());
+                    System.out.println("\t" + f2.getAbsolutePath());
+                    sub.close();
+                    diff.close();
+                }
             }
             arr1.close();
             arr2.close();

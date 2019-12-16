@@ -21,30 +21,46 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class FakeQuantWithMinMaxVarsPerChannel extends DynamicCustomOp {
+    protected boolean narrowRange;
+    protected int numBits;
+
     public FakeQuantWithMinMaxVarsPerChannel() {}
 
-    public FakeQuantWithMinMaxVarsPerChannel(INDArray x, INDArray min, INDArray max) {
+    public FakeQuantWithMinMaxVarsPerChannel(INDArray x, INDArray min, INDArray max, int num_bits, boolean narrow) {
         Preconditions.checkArgument(min.isVector() && max.isVector() &&
                         min.length() == max.length(),
                 "FakeQuantWithMinMaxVarsPerChannel: min and max should be 1D tensors with the same length");
-        inputArguments.add(x);
-        inputArguments.add(min);
-        inputArguments.add(max);
+        addInputArgument(x,min,max);
+        addIArgument(num_bits);
+        addBArgument(narrow);
     }
 
-    public FakeQuantWithMinMaxVarsPerChannel(INDArray x, INDArray min, INDArray max,
-                                             INDArray output) {
-        this(x,min,max);
-        outputArguments.add(output);
+    public FakeQuantWithMinMaxVarsPerChannel(INDArray x, INDArray min, INDArray max, int num_bits) {
+        this(x, min, max, num_bits, false);
     }
 
-    public FakeQuantWithMinMaxVarsPerChannel(SameDiff sameDiff, SDVariable x, SDVariable min, SDVariable max) {
+    public FakeQuantWithMinMaxVarsPerChannel(INDArray x, INDArray min, INDArray max, boolean narrow) {
+        this(x, min, max, 8, narrow);
+    }
+
+    public FakeQuantWithMinMaxVarsPerChannel(INDArray x, INDArray min, INDArray max) {
+        this(x, min, max, 8, false);
+    }
+
+    public FakeQuantWithMinMaxVarsPerChannel(SameDiff sameDiff, SDVariable x, SDVariable min, SDVariable max,
+                                             int num_bits, boolean narrow) {
         super("", sameDiff, new SDVariable[]{x, min, max});
+        addIArgument(num_bits);
+        addBArgument(narrow);
     }
 
     @Override
@@ -55,6 +71,18 @@ public class FakeQuantWithMinMaxVarsPerChannel extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         return "FakeQuantWithMinMaxVarsPerChannel";
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        if(attributesForNode.containsKey("narrow_range")){
+            this.narrowRange = attributesForNode.get("narrow_range").getB();
+        }
+        if(attributesForNode.containsKey("num_bits")) {
+            this.numBits = (int) attributesForNode.get("num_bits").getI();
+        }
+        addIArgument(numBits);
+        addBArgument(narrowRange);
     }
 
     @Override

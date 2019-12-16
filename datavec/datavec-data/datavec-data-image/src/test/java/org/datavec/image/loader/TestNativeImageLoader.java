@@ -24,7 +24,9 @@ import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -54,6 +56,9 @@ import static org.junit.Assert.fail;
 public class TestNativeImageLoader {
     static final long seed = 10;
     static final Random rng = new Random(seed);
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
     public void testConvertPix() throws Exception {
@@ -552,6 +557,45 @@ public class TestNativeImageLoader {
 
         INDArray img1ExactBuffer = loader.asMatrix(f1);
         assertEquals(img1LargeBuffer, img1ExactBuffer);
+    }
+
+
+    @Test
+    public void testNativeImageLoaderEmptyStreams() throws Exception {
+        File dir = testDir.newFolder();
+        File f = new File(dir, "myFile.jpg");
+        f.createNewFile();
+
+        NativeImageLoader nil = new NativeImageLoader(32, 32, 3);
+
+        try(InputStream is = new FileInputStream(f)){
+            nil.asMatrix(is);
+        } catch (IOException e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("decode image"));
+        }
+
+        try(InputStream is = new FileInputStream(f)){
+            nil.asImageMatrix(is);
+        } catch (IOException e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("decode image"));
+        }
+
+        try(InputStream is = new FileInputStream(f)){
+            nil.asRowVector(is);
+        } catch (IOException e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("decode image"));
+        }
+
+        try(InputStream is = new FileInputStream(f)){
+            INDArray arr = Nd4j.create(DataType.FLOAT, 1, 3, 32, 32);
+            nil.asMatrixView(is, arr);
+        } catch (IOException e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("decode image"));
+        }
     }
 
 }
