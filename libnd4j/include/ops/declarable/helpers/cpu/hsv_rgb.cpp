@@ -14,8 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
  
-#include <ops/declarable/helpers/adjust_saturation.h> 
-#include <ops/declarable/helpers/adjust_hue.h> 
+#include <ops/declarable/helpers/color_models_conv.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 namespace nd4j {
@@ -83,6 +82,7 @@ namespace nd4j {
             void transform_rgb_hsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
                 BUILD_SINGLE_SELECTOR(input->dataType(), rgb_hsv, (input, output, dimC), FLOAT_TYPES);
             }
+
         }
     }
 }
