@@ -697,9 +697,9 @@ namespace helpers {
         float* pOutputY = output->dataBuffer()->primaryAsT<float>(); // output is float anyway
         std::vector<float> cachedValue(numChannels == 3 ? 0 : 4 * numChannels, 0);
 
-//       auto func = PRAGMA_THREADS_FOR {
-            auto start = 0;
-            auto stop = resizerState.batchSize;
+       auto func = PRAGMA_THREADS_FOR {
+//            auto start = 0;
+//            auto stop = resizerState.batchSize;
             for (auto b = start; b < stop; ++b) {
                 auto pInput = inputPtr + b * inBatchWidth;
 
@@ -863,8 +863,8 @@ namespace helpers {
                     }
                 }
             }
-//        };
-//        samediff::Threads::parallel_tad(func, 0, resizerState.batchSize);
+        };
+        samediff::Threads::parallel_for(func, 0, resizerState.batchSize);
     }
 
 // simplified bicubic resize without antialiasing
