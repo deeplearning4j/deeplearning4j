@@ -38,6 +38,8 @@ public class TFImportStatus {
     private final int numUniqueOps;
     /** The (unique) names of all ops encountered in all graphs */
     private final Set<String> opNames;
+    /** The number of times each operation was observed in all graphs */
+    private final Map<String,Integer> opCounts;
     /** The (unique) names of all ops that were encountered, and can be imported, in all graphs */
     private final Set<String> importSupportedOpNames;
     /** The (unique) names of all ops that were encountered, and can NOT be imported (lacking import mapping) */
@@ -59,6 +61,11 @@ public class TFImportStatus {
 
         Set<String> newOpNames = new HashSet<>(opNames);
         newOpNames.addAll(other.opNames);
+
+        Map<String,Integer> newOpCounts = new HashMap<>(opCounts);
+        for(Map.Entry<String,Integer> e : other.opCounts.entrySet()){
+            newOpCounts.put(e.getKey(), (newOpCounts.containsKey(e.getKey()) ? newOpCounts.get(e.getKey()) : 0) + e.getValue());
+        }
 
         Set<String> newImportSupportedOpNames = new HashSet<>(importSupportedOpNames);
         newImportSupportedOpNames.addAll(other.importSupportedOpNames);
@@ -89,6 +96,7 @@ public class TFImportStatus {
                 totalNumOps + other.totalNumOps,
                 countUnique,
                 newOpNames,
+                newOpCounts,
                 newImportSupportedOpNames,
                 newUnsupportedOpNames,
                 newUnsupportedOpModels);
