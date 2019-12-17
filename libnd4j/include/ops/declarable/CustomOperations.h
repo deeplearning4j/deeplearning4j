@@ -42,6 +42,9 @@
 #include <ops/declarable/headers/kernels.h>
 #include <ops/declarable/headers/BarnesHutTsne.h>
 #include <ops/declarable/headers/color_models.h>
+
+#include <ops/declarable/headers/rgbToGrs.h>
+
 #include <dll.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
