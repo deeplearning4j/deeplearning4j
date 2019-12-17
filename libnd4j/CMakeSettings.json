@@ -12,6 +12,21 @@
       "cmakeCommandArgs": " -DCUDA_BLAS=true -DLIBND4J_NAME=nd4jcuda -DMSVC_DEV=true -DCOMPUTE=61 -DBUILD_TESTS=true",
       "buildCommandArgs": "-v",
       "ctestCommandArgs": ""
+    },
+    {
+      "name": "WSL-GCC-Debug",
+      "generator": "Unix Makefiles",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeExecutable": "/usr/bin/cmake",
+      "cmakeCommandArgs": "-DLIBND4J_ALL_OPS=true -DCMAKE_BUILD_TYPE=Debug -DCPU_BLAS=true -DLIBND4J_NAME=nd4jcpu -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug -DOPENBLAS_PATH=/usr/lib/openblas-base/  -DEXTENSION=avx2 ",
+      "buildCommandArgs": "-j 4",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "linux_x64" ],
+      "wslPath": "${defaultWSLPath}",
+      "addressSanitizerRuntimeFlags": "detect_leaks=0",
+      "variables": []
     }
   ]
 }
