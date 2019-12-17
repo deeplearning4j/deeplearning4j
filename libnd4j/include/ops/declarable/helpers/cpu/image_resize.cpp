@@ -682,29 +682,29 @@ namespace helpers {
                                     pY2[pt_index], pY3[pt_index]);
         }
 
-        template <typename T>
+        template <typename T, typename F>
         static void
     bicubicInterpolateWithCaching(NDArray const* image, ImageResizerState const& resizerState, bool const halfPixelCenters, NDArray* output) {
         std::vector<WeightsAndIndices> xWais(resizerState.outWidth);
-
         computeXWeightsAndIndices(resizerState, halfPixelCenters, &xWais);
 
         const auto numChannels = resizerState.channels;
         const Nd4jLong inRowWidth = resizerState.inWidth * numChannels;
         const Nd4jLong inBatchWidth = resizerState.inHeight * inRowWidth;
-
-        const T* inputPtr = image->getDataBuffer()->primaryAsT<T>();
-        float* pOutputY = output->dataBuffer()->primaryAsT<float>(); // output is float anyway
-        std::vector<float> cachedValue(numChannels == 3 ? 0 : 4 * numChannels, 0);
+        const auto batchNum = resizerState.batchSize;
+        const auto outHeight = resizerState.outHeight;
+        const auto outWidth = resizerState.outWidth;
 
        auto func = PRAGMA_THREADS_FOR {
-//            auto start = 0;
-//            auto stop = resizerState.batchSize;
+            const T* inputPtr = image->getDataBuffer()->primaryAsT<T>();
+            F* pOutputY = output->dataBuffer()->primaryAsT<F>(); // output is float anyway
+            std::vector<float> cachedValue(numChannels == 3 ? 0 : 4 * numChannels, 0);
+
             for (auto b = start; b < stop; ++b) {
                 auto pInput = inputPtr + b * inBatchWidth;
 
-                for (auto y = 0; y < resizerState.outHeight; ++y) {
-                    auto pOutput = &pOutputY[(b * resizerState.outHeight + y) * resizerState.outWidth * numChannels];
+                for (auto y = 0; y < outHeight; ++y) {
+                    auto pOutput = &pOutputY[(b * outHeight + y) * outWidth * numChannels];
 
                     WeightsAndIndices yWai;
                     if (halfPixelCenters) {
@@ -715,16 +715,16 @@ namespace helpers {
                                 resizerState.heightScale, y, resizerState.inHeight, &yWai);
                     }
                     // Make pointers represent offsets of data in inputBPtr.
-                    const T *y_ptr_0 = pInput + yWai._index0 * inRowWidth;
-                    const T *y_ptr_1 = pInput + yWai._index1 * inRowWidth;
-                    const T *y_ptr_2 = pInput + yWai._index2 * inRowWidth;
-                    const T *y_ptr_3 = pInput + yWai._index3 * inRowWidth;
+                    const T* y_ptr_0 = pInput + yWai._index0 * inRowWidth;
+                    const T* y_ptr_1 = pInput + yWai._index1 * inRowWidth;
+                    const T* y_ptr_2 = pInput + yWai._index2 * inRowWidth;
+                    const T* y_ptr_3 = pInput + yWai._index3 * inRowWidth;
 
                     if (numChannels == 3) {
                         // Manually unroll case of 3 channels.
-                        float cached_value_0[4] = {0};
-                        float cached_value_1[4] = {0};
-                        float cached_value_2[4] = {0};
+                        F cached_value_0[4] = {0};
+                        F cached_value_1[4] = {0};
+                        F cached_value_2[4] = {0};
                         for (auto x = 0; x < resizerState.outWidth; ++x) {
                             const WeightsAndIndices &xWai = xWais[x];
                             // Shift values in cached_value_* to fill first '_advance' values.
@@ -856,7 +856,7 @@ namespace helpers {
                             }
                             for (auto c = 0; c < numChannels; ++c) {
                                 pOutput[x * numChannels + c] =
-                                        compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1,
+                                        (F)compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1,
                                                 xWai._weight2, xWai._weight3);
                             }
                         }
@@ -864,7 +864,7 @@ namespace helpers {
                 }
             }
         };
-        samediff::Threads::parallel_for(func, 0, resizerState.batchSize);
+        samediff::Threads::parallel_tad(func, 0, batchNum);
     }
 
 // simplified bicubic resize without antialiasing
@@ -875,7 +875,7 @@ namespace helpers {
         ImageResizerState st(alignCorners, halfPixelAlign); // align_corners, half_pixel_align
         int res = st.validateAndCreateOutput(image, width, height);
         if (res == Status::OK())
-            bicubicInterpolateWithCaching<T>(image, st, halfPixelAlign, output);
+            bicubicInterpolateWithCaching<T, float>(image, st, halfPixelAlign, output);
 
         return res;
     }
