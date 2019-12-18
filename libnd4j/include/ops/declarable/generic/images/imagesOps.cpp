@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(rgb_to_grs, 1, 1, false, 0, 0) {
     REQUIRE_TRUE(rank >= 1, 0, "RGBtoGrayScale: Fails to meet the rank requirement: %i >= 1 ", rank);
     const int dimLast = input->sizeAt(rank - 1);
     REQUIRE_TRUE(dimLast == 3, 0, "RGBtoGrayScale: operation expects 3 channels (R, B, G) in last dimention, but received %i", dimLast);
-    helpers::transform_rgb_to_grs(block.launchContext(), *input, *output);
+    helpers::transformRgbGrs(block.launchContext(), *input, *output);
     return Status::OK();
 }
 
@@ -55,6 +55,65 @@ DECLARE_SHAPE_FN(rgb_to_grs) {
     nShape[rank - 1] = 1;
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(input->dataType(), input->ordering(), nShape));
 }
+
+
+CONFIGURABLE_OP_IMPL(hsv_to_rgb, 1, 1, false, 0, 0) {
+
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    if (input->isEmpty())
+        return Status::OK();
+
+    const int rank = input->rankOf();
+    const int arg_size = block.getIArguments()->size();
+    const int dimC = arg_size > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
+
+    REQUIRE_TRUE(rank >= 1, 0, "HSVtoRGB: Fails to meet the rank requirement: %i >= 1 ", rank);
+    if (arg_size > 0) {
+        REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -rank, rank);
+    }
+    REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "HSVtoRGB: operation expects 3 channels (H, S, V), but got %i instead", input->sizeAt(dimC));
+
+    helpers::transformHsvRgb(block.launchContext(), input, output, dimC);
+
+    return Status::OK();
+}
+
+CONFIGURABLE_OP_IMPL(rgb_to_hsv, 1, 1, false, 0, 0) {
+
+    auto input = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    if (input->isEmpty())
+        return Status::OK();
+
+    const int rank = input->rankOf();
+    const int arg_size = block.getIArguments()->size();
+    const int dimC = arg_size > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
+
+    REQUIRE_TRUE(rank >= 1, 0, "RGBtoHSV: Fails to meet the rank requirement: %i >= 1 ", rank);
+    if (arg_size > 0) {
+        REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -rank, rank);
+    }
+    REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBtoHSV: operation expects 3 channels (H, S, V), but got %i instead", input->sizeAt(dimC));
+
+    helpers::transformRgbHsv(block.launchContext(), input,  output, dimC);
+
+    return Status::OK();
+}
+
+
+DECLARE_TYPES(hsv_to_rgb) {
+    getOpDescriptor()->setAllowedInputTypes({ ALL_FLOATS })
+        ->setSameMode(true);
+}
+
+DECLARE_TYPES(rgb_to_hsv) {
+    getOpDescriptor()->setAllowedInputTypes({ ALL_FLOATS })
+        ->setSameMode(true);
+}
+
 
 }
 }

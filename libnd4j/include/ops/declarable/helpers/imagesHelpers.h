@@ -18,6 +18,9 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 // 
 
+#ifndef LIBND4J_HELPERS_IMAGES_H
+#define LIBND4J_HELPERS_IMAGES_H
+
 #include <op_boilerplate.h>
 #include <templatemath.h>
 #include <NDArray.h>
@@ -25,7 +28,13 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    void transform_rgb_to_grs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output);
+
+    void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output);
+    void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+    void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+
 }
 }
 }
+
+#endif

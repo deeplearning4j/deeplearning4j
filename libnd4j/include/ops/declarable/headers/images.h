@@ -18,8 +18,8 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 // 
 
-#ifndef LIBND4J_HEADERS_COLOR_MODELS_H
-#define LIBND4J_HEADERS_COLOR_MODELS_H
+#ifndef LIBND4J_HEADERS_IMAGES_H
+#define LIBND4J_HEADERS_IMAGES_H
 
 #include <ops/declarable/headers/common.h>
 #include <ops/declarable/CustomOperations.h>  
@@ -29,6 +29,29 @@
 
 namespace nd4j {
     namespace ops {
+
+
+        /**
+         * Rgb To Hsv
+         * Input arrays:
+         * 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+         * Int arguments:
+         * 0 - optional argument, corresponds to dimension with 3 channels
+         */
+#if NOT_EXCLUDED(OP_rgb_to_hsv)
+        DECLARE_CONFIGURABLE_OP(rgb_to_hsv, 1, 1, false, 0, 0);
+#endif
+
+        /**
+         * Hsv To Rgb
+         * Input arrays:
+         * 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+         * Int arguments:
+         * 0 - optional argument, corresponds to dimension with 3 channels
+         */
+#if NOT_EXCLUDED(OP_hsv_to_rgb)
+        DECLARE_CONFIGURABLE_OP(hsv_to_rgb, 1, 1, false, 0, 0);
+#endif
 
         /**
         * Rgb To GrayScale

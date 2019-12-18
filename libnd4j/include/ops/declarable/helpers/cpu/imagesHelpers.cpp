@@ -18,6 +18,7 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 // 
 
+#include <ops/declarable/helpers/adjust_hue.h>
 #include <ops/declarable/helpers/imagesHelpers.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
@@ -61,8 +62,71 @@ static void rgbToGrs_(const NDArray& input, NDArray& output) {
     return;
 }
 
-void rgbToGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrs_, (input, output), FLOAT_TYPES);
+void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrs_, (input, output), NUMERIC_TYPES);
+}
+
+
+//local
+template <typename T, typename Op>
+FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output, const int dimC, Op op) {
+
+    const int rank = input->rankOf();
+
+    const T* x = input->bufferAsT<T>();
+    T* z = output->bufferAsT<T>();
+
+    if (dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
+
+        auto func = PRAGMA_THREADS_FOR{
+            for (auto i = start; i < stop; i += increment) {
+                op(x[i], x[i + 1], x[i + 2], z[i], z[i + 1], z[i + 2]);
+            }
+        };
+
+        samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
+    }
+    else {
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+
+        const Nd4jLong numOfTads = packX.numberOfTads();
+        const Nd4jLong xDimCstride = input->stridesOf()[dimC];
+        const Nd4jLong zDimCstride = output->stridesOf()[dimC];
+
+        auto func = PRAGMA_THREADS_FOR{
+            for (auto i = start; i < stop; i += increment) {
+                const T* xTad = x + packX.platformOffsets()[i];
+                T* zTad = z + packZ.platformOffsets()[i];
+                op(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+
+            }
+        };
+
+        samediff::Threads::parallel_tad(func, 0, numOfTads);
+    }
+}
+
+
+
+template <typename T>
+FORCEINLINE static void hsvRgb(const NDArray* input, NDArray* output, const int dimC) {
+    auto op = nd4j::ops::helpers::hsvToRgb<T>;
+    return tripleTransformer<T>(input, output, dimC, op);
+}
+
+template <typename T>
+FORCEINLINE static void rgbHsv(const NDArray* input, NDArray* output, const int dimC) {
+    auto op = nd4j::ops::helpers::rgbToHsv<T>;
+    return tripleTransformer<T>(input, output, dimC, op);
+}
+
+void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), hsvRgb, (input, output, dimC), FLOAT_TYPES);
+}
+
+void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), rgbHsv, (input, output, dimC), FLOAT_TYPES);
 }
 
 }
