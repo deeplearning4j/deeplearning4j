@@ -13,30 +13,33 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
-//
+// 
 
-// #pragma once
-
-#ifndef LIBND4J_HEADERS_RBF_GRAYSCALE_H
-#define LIBND4J_HEADERS_RBF_GRAYSCALE_H
+#ifndef LIBND4J_HEADERS_COLOR_MODELS_H
+#define LIBND4J_HEADERS_COLOR_MODELS_H
 
 #include <ops/declarable/headers/common.h>
+#include <ops/declarable/CustomOperations.h>  
+#include <helpers/ConstantTadHelper.h>
+#include <execution/Threads.h>
+#include <ops/declarable/helpers/imagesHelpers.h>
 
 namespace nd4j {
-namespace ops {
+    namespace ops {
 
         /**
-         * Rgb To GrayScale
-         * Input arrays:
-         * 0 - input array with rank >= 1, the RGB tensor to convert. Last dimension must have size 3 and should contain RGB values.
-         * Int arguments:
-         * 0 - optional argument, corresponds to dimension with 3 channels
-         */
+        * Rgb To GrayScale
+        * Input arrays:
+        * 0 - input array with rank >= 1, the RGB tensor to convert. Last dimension must have size 3 and should contain RGB values.
+        */
 #if NOT_EXCLUDED(OP_rgb_to_grs)
         DECLARE_CUSTOM_OP(rgb_to_grs, 1, 1, false, 0, 0);
 #endif
+
+    }
 }
-}
+
 #endif

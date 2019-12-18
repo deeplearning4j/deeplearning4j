@@ -16,22 +16,16 @@
 
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
-//
+// 
 
-// #pragma once
-
-#ifndef LIBND4J_HEADERS_RBF_GRAYSCALE_H
-#define LIBND4J_HEADERS_RBF_GRAYSCALE_H
-
-
-#include <ops/declarable/helpers/helpers.h>
-
+#include <op_boilerplate.h>
+#include <templatemath.h>
+#include <NDArray.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
-    void rgb_to_gsc(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimLast);
+    void transform_rgb_to_grs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output);
 }
 }
 }
-#endif
