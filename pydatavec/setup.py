@@ -22,7 +22,7 @@ from setuptools import find_packages
 
 
 setup(name='pydatavec',
-      version='0.1.1',
+      version='0.1.2',
       description='Python interface for DataVec',
       long_description='Python interface for DataVec',
 

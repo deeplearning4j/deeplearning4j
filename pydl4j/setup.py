@@ -19,9 +19,9 @@ from setuptools import find_packages
 
 setup(
     name='pydl4j',
-    version='0.1.3',
+    version='0.1.4',
     packages=find_packages(),
-    install_requires=['Cython', 'jnius', 'requests',
+    install_requires=['Cython', 'pyjnius', 'requests',
                       'click', 'argcomplete', 'python-dateutil'],
     extras_require={
         'tests': ['pytest', 'pytest-pep8', 'pytest-cov']
