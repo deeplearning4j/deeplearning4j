@@ -13,7 +13,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-#include <ops/declarable/helpers/color_models_conv.h>
+#include <ops/declarable/helpers/imagesHelpers.h>
 #include <ops/declarable/helpers/adjust_hue.h>
 #include <ops/declarable/helpers/adjust_saturation.h>
 #include <helpers/ConstantTadHelper.h>

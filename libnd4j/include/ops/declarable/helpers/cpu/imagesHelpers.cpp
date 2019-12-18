@@ -61,7 +61,7 @@ static void rgbToGrs_(const NDArray& input, NDArray& output) {
     return;
 }
 
-void transform_rgb_to_grs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
+void rgbToGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
     BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrs_, (input, output), FLOAT_TYPES);
 }
 
