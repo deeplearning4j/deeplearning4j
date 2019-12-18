@@ -15,7 +15,7 @@
  ******************************************************************************/
 
  
-#include <ops/declarable/headers/images.h>
+#include <ops/declarable/headers/color_models.h>
 #include <ops/declarable/CustomOperations.h>  
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
@@ -43,7 +43,7 @@ namespace nd4j {
             }
             REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "HSVtoRGB: operation expects 3 channels (H, S, V), but got %i instead", input->sizeAt(dimC));
 
-            helpers::transformHsvRgb(block.launchContext(), input, output, dimC);
+            helpers::transform_hsv_rgb(block.launchContext(), input, output, dimC);
 
             return Status::OK();
         }
@@ -66,7 +66,7 @@ namespace nd4j {
             }
             REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBtoHSV: operation expects 3 channels (H, S, V), but got %i instead", input->sizeAt(dimC));
 
-            helpers::transformRgbHsv(block.launchContext(), input,  output, dimC);
+            helpers::transform_rgb_hsv(block.launchContext(), input,  output, dimC);
 
             return Status::OK();
         }
