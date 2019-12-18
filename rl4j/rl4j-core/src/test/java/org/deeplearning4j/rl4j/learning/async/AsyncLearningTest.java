@@ -72,7 +72,7 @@ public class AsyncLearningTest {
         public final MockAsyncGlobal asyncGlobal = new MockAsyncGlobal();
         public final MockPolicy policy = new MockPolicy();
         public final TestAsyncLearning sut = new TestAsyncLearning(config, asyncGlobal, policy);
-        public final MockTrainingListener listener = new MockTrainingListener();
+        public final MockTrainingListener listener = new MockTrainingListener(asyncGlobal);
 
         public TestContext() {
             sut.addListener(listener);

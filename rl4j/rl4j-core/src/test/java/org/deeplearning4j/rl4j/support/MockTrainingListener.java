@@ -11,6 +11,7 @@ import java.util.List;
 
 public class MockTrainingListener implements TrainingListener {
 
+    private final MockAsyncGlobal asyncGlobal;
     public int onTrainingStartCallCount = 0;
     public int onTrainingEndCallCount = 0;
     public int onNewEpochCallCount = 0;
@@ -27,6 +28,14 @@ public class MockTrainingListener implements TrainingListener {
     private int remainingonTrainingProgressCallCount = Integer.MAX_VALUE;
 
     public final List<IDataManager.StatEntry> statEntries = new ArrayList<>();
+
+    public MockTrainingListener() {
+        this(null);
+    }
+
+    public MockTrainingListener(MockAsyncGlobal asyncGlobal) {
+        this.asyncGlobal = asyncGlobal;
+    }
 
 
     @Override
@@ -55,6 +64,9 @@ public class MockTrainingListener implements TrainingListener {
     public ListenerResponse onTrainingProgress(ILearning learning) {
         ++onTrainingProgressCallCount;
         --remainingonTrainingProgressCallCount;
+        if(asyncGlobal != null) {
+            asyncGlobal.increaseCurrentLoop();
+        }
         return remainingonTrainingProgressCallCount < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;
     }
 

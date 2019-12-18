@@ -2,6 +2,7 @@ package org.deeplearning4j.rl4j.policy;
 
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -9,4 +10,5 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 public interface IPolicy<O, A> {
     <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp);
     A nextAction(INDArray input);
+    A nextAction(Observation observation);
 }

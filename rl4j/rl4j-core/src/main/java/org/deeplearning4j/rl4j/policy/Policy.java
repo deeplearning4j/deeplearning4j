@@ -16,15 +16,21 @@
 
 package org.deeplearning4j.rl4j.policy;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.StepCountable;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -39,7 +45,7 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
 
     public abstract NeuralNet getNeuralNet();
 
-    public abstract A nextAction(INDArray input);
+    public abstract A nextAction(Observation obs);
 
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
         return play(mdp, (IHistoryProcessor)null);
@@ -51,66 +57,81 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
 
     @Override
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
+        RefacStepCountable stepCountable = new RefacStepCountable();
+        LegacyMDPWrapper<O, A, AS> mdpWrapper = new LegacyMDPWrapper<O, A, AS>(mdp, hp, stepCountable);
+
         boolean isHistoryProcessor = hp != null;
         int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
 
-        getNeuralNet().reset();
-        Learning.InitMdp<O> initMdp = Learning.initMdp(mdp, hp);
-        O obs = initMdp.getLastObs();
+        Learning.InitMdp<Observation> initMdp = refacInitMdp(mdpWrapper, hp);
+        Observation obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();
 
-        A lastAction = mdp.getActionSpace().noOp();
+        A lastAction = mdpWrapper.getActionSpace().noOp();
         A action;
-        int step = initMdp.getSteps();
-        INDArray[] history = null;
+        stepCountable.setStepCounter(initMdp.getSteps());
 
-        INDArray input = Learning.getInput(mdp, obs);
+        while (!mdpWrapper.isDone()) {
 
-        while (!mdp.isDone()) {
-
-            if (step % skipFrame != 0) {
+            if (stepCountable.getStepCounter() % skipFrame != 0) {
                 action = lastAction;
             } else {
-
-                if (history == null) {
-                    if (isHistoryProcessor) {
-                        hp.add(input);
-                        history = hp.getHistory();
-                    } else
-                        history = new INDArray[] {input};
-                }
-                INDArray hstack = Transition.concat(history);
-                if (isHistoryProcessor) {
-                    hstack.muli(1.0 / hp.getScale());
-                }
-                if (getNeuralNet().isRecurrent()) {
-                    //flatten everything for the RNN
-                    hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape()), 1));
-                } else {
-                    if (hstack.shape().length > 2)
-                        hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape())));
-                }
-                action = nextAction(hstack);
+                action = nextAction(obs);
             }
+
             lastAction = action;
 
-            StepReply<O> stepReply = mdp.step(action);
+            StepReply<Observation> stepReply = mdpWrapper.step(action);
             reward += stepReply.getReward();
 
-            input = Learning.getInput(mdp, stepReply.getObservation());
-            if (isHistoryProcessor) {
-                hp.record(input);
-                hp.add(input);
-            }
-
-            history = isHistoryProcessor ? hp.getHistory()
-                            : new INDArray[] {Learning.getInput(mdp, stepReply.getObservation())};
-            step++;
+            obs = stepReply.getObservation();
+            stepCountable.increment();
         }
-
 
         return reward;
     }
 
+    private <AS extends ActionSpace<A>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<O, A, AS> mdpWrapper, IHistoryProcessor hp) {
+        getNeuralNet().reset();
+        Observation observation = mdpWrapper.reset();
+
+        int step = 0;
+        double reward = 0;
+
+        boolean isHistoryProcessor = hp != null;
+
+        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
+        int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
+
+        while (step < requiredFrame && !mdpWrapper.isDone()) {
+
+            A action = mdpWrapper.getActionSpace().noOp(); //by convention should be the NO_OP
+
+            StepReply<Observation> stepReply = mdpWrapper.step(action);
+            reward += stepReply.getReward();
+            observation = stepReply.getObservation();
+
+            step++;
+
+        }
+
+        return new Learning.InitMdp(step, observation, reward);
+    }
+
+    private class RefacStepCountable implements StepCountable {
+
+        @Getter
+        @Setter
+        private int stepCounter = 0;
+
+        public void increment() {
+            ++stepCounter;
+        }
+
+        @Override
+        public int getStepCounter() {
+            return 0;
+        }
+    }
 }

@@ -35,7 +35,7 @@ public class MockNeuralNet implements NeuralNet {
     @Override
     public INDArray[] outputAll(INDArray batch) {
         outputAllInputs.add(batch);
-        return new INDArray[] { Nd4j.create(new double[] { 1.0 }) };
+        return new INDArray[] { Nd4j.create(new double[] { outputAllInputs.size() }) };
     }
 
     @Override

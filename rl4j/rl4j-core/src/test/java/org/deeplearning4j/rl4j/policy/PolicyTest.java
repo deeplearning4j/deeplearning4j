@@ -28,6 +28,7 @@ import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.QLearningDiscret
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.support.*;
@@ -227,6 +228,11 @@ public class PolicyTest {
         @Override
         public NeuralNet getNeuralNet() {
             return neuralNet;
+        }
+
+        @Override
+        public Integer nextAction(Observation obs) {
+            return nextAction(obs.getData());
         }
 
         @Override

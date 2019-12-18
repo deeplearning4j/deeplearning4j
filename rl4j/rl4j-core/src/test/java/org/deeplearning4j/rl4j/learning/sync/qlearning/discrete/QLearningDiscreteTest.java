@@ -63,7 +63,7 @@ public class QLearningDiscreteTest {
         double[] expectedAdds = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0 };
         assertEquals(expectedAdds.length, hp.addCalls.size());
         for(int i = 0; i < expectedAdds.length; ++i) {
-            assertEquals(expectedAdds[i], 255.0 * hp.addCalls.get(i).getDouble(0), 0.0001);
+            assertEquals(expectedAdds[i], hp.addCalls.get(i).getDouble(0), 0.0001);
         }
         assertEquals(0, hp.startMonitorCallCount);
         assertEquals(0, hp.stopMonitorCallCount);
@@ -92,8 +92,8 @@ public class QLearningDiscreteTest {
         for(int i = 0; i < expectedDQNOutput.length; ++i) {
             INDArray outputParam = dqn.outputParams.get(i);
 
-            assertEquals(5, outputParam.shape()[0]);
-            assertEquals(1, outputParam.shape()[1]);
+            assertEquals(5, outputParam.shape()[1]);
+            assertEquals(1, outputParam.shape()[2]);
 
             double[] expectedRow = expectedDQNOutput[i];
             for(int j = 0; j < expectedRow.length; ++j) {
@@ -124,13 +124,15 @@ public class QLearningDiscreteTest {
             assertEquals(expectedTrActions[i], tr.getAction());
             assertEquals(expectedTrNextObservation[i], 255.0 * tr.getNextObservation().getDouble(0), 0.0001);
             for(int j = 0; j < expectedTrObservations[i].length; ++j) {
-                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], 255.0 * tr.getObservation().getData().getDouble(j, 0), 0.0001);
+                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], 255.0 * tr.getObservation().getData().getDouble(0, j, 0), 0.0001);
             }
         }
 
         // trainEpoch result
         assertEquals(16, result.getStepCounter());
         assertEquals(300.0, result.getReward(), 0.00001);
+        assertTrue(dqn.hasBeenReset);
+        assertTrue(((MockDQN)sut.getTargetQNetwork()).hasBeenReset);
     }
 
     public static class TestQLearningDiscrete extends QLearningDiscrete<MockEncodable> {
