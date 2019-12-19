@@ -61,6 +61,7 @@ namespace nd4j {
                 std::string omp(omp_threads);
                 int val = std::stoi(omp);
                 _maxThreads.store(val);
+                _maxMasterThreads.store(val);
             } catch (std::invalid_argument &e) {
                 // just do nothing
             } catch (std::out_of_range &e) {
@@ -98,6 +99,11 @@ namespace nd4j {
             } catch (std::out_of_range &e) {
                 // still do nothing
             }
+        }
+
+        if (_maxMasterThreads.load() > _maxThreads.load()) {
+            nd4j_printf("Warning! MAX_MASTER_THREADS > MAX_THREADS, tuning them down to match each other\n","");
+            _maxMasterThreads.store(_maxThreads.load());
         }
 
         /**

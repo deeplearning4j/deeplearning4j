@@ -32,7 +32,9 @@ using namespace nd4j::graph;
 
 class ThreadsTests : public testing::Test {
 public:
-
+    ThreadsTests() {
+        nd4j_printf("\n","");
+    }
 };
 
 TEST_F(ThreadsTests, th_test_1) {
@@ -82,6 +84,18 @@ TEST_F(ThreadsTests, th_test_3) {
 
     ASSERT_EQ(6, ThreadsHelper::numberOfThreads3d(6, 8, 3, 64));
     ASSERT_EQ(1, ThreadsHelper::pickLoop3d(6, 8, 3, 64));
+}
+
+TEST_F(ThreadsTests, th_test_5) {
+    ASSERT_EQ(6, ThreadsHelper::numberOfThreads3d(6, 32, 112, 112));
+
+    ASSERT_EQ(1, ThreadsHelper::pickLoop3d(6, 32, 112, 112));
+
+    for (auto e = 0; e < 6; e++) {
+        auto span = Span3::build(1, e, 6, 0, 32, 1, 0, 112, 1, 0, 112, 1);
+
+        nd4j_printf("Span start: %lld; stop: %lld\n", span.startX(), span.stopX());
+    }
 }
 
 TEST_F(ThreadsTests, th_test_4) {
