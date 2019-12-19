@@ -31,17 +31,17 @@ template <typename T>
 static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
     const T* x = input.bufferAsT<T>();
     T* z = output.bufferAsT<T>();
+    const int rank = input.rankOf();
 
-    if('c' == input.ordering() && 1 == input.ews() && 
+    if(dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 
        'c' == output.ordering() && 1 == output.ews()){
-        auto zLength = input.lengthOf() / 3;
         auto func = PRAGMA_THREADS_FOR{
              for (auto i = start; i < stop; i += increment) {
                  const auto xStep = i*3;
                  z[i] = 0.2989f*x[xStep] + 0.5870f*x[xStep + 1] + 0.1140f*x[xStep + 2];
              }
         };
-        samediff::Threads::parallel_for(func, 0, zLength, 1);
+        samediff::Threads::parallel_for(func, 0, input.lengthOf() / 3, 1);
         return;  
     }
 
