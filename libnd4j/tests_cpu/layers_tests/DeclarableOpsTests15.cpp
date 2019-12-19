@@ -1755,189 +1755,292 @@ TEST_F(DeclarableOpsTests15, test_hsv_to_rgb_6) {
 
 }
 
-/*
+
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_1) {
-// Description
-// single pixel
+    // Description
+    // single pixel
 
-    auto rgbs = NDArrayFactory::create<float>('c', { 5, 4, 3 },
-        {
-           213.f, 220.f, 164.f, 121.f, 180.f, 180.f,  18.f, 245.f,  75.f, 235.f,  76.f,  74.f, 168.f,
-            50.f, 233.f, 191.f, 132.f, 100.f, 207.f,  37.f, 245.f,  77.f, 250.f, 182.f, 111.f,  52.f,
-            59.f, 193.f, 147.f, 137.f, 168.f, 103.f, 121.f,  48.f, 191.f, 187.f,  53.f,  82.f, 239.f,
-           156.f,  37.f, 118.f, 244.f,  90.f,   7.f, 221.f,  98.f, 243.f,  12.f, 209.f, 192.f,   2.f,
-           115.f, 205.f,  79.f, 247.f,  32.f,  70.f, 152.f, 180.f
-        });
-    auto expected = NDArrayFactory::create<float>('c', { 5, 4, 3 },
-        {
-           6.75000000e+01f, 2.54545455e-01f, 8.62745098e-01f, 1.80000000e+02f,
-           3.27777778e-01f, 7.05882353e-01f, 1.35066079e+02f, 9.26530612e-01f,
-           9.60784314e-01f, 7.45341615e-01f, 6.85106383e-01f, 9.21568627e-01f,
-           2.78688525e+02f, 7.85407725e-01f, 9.13725490e-01f, 2.10989011e+01f,
-           4.76439791e-01f, 7.49019608e-01f, 2.89038462e+02f, 8.48979592e-01f,
-           9.60784314e-01f, 1.56416185e+02f, 6.92000000e-01f, 9.80392157e-01f,
-           3.52881356e+02f, 5.31531532e-01f, 4.35294118e-01f, 1.07142857e+01f,
-           2.90155440e-01f, 7.56862745e-01f, 3.43384615e+02f, 3.86904762e-01f,
-           6.58823529e-01f, 1.78321678e+02f, 7.48691099e-01f, 7.49019608e-01f,
-           2.30645161e+02f, 7.78242678e-01f, 9.37254902e-01f, 3.19159664e+02f,
-           7.62820513e-01f, 6.11764706e-01f, 2.10126582e+01f, 9.71311475e-01f,
-           9.56862745e-01f, 2.90896552e+02f, 5.96707819e-01f, 9.52941176e-01f,
-           1.74822335e+02f, 9.42583732e-01f, 8.19607843e-01f, 2.06600985e+02f,
-           9.90243902e-01f, 8.03921569e-01f, 1.06883721e+02f, 8.70445344e-01f,
-           9.68627451e-01f, 1.95272727e+02f, 6.11111111e-01f, 7.05882353e-01f
-        });
-
-
-    auto actual = NDArrayFactory::create<float>('c', { 5,4,3 });
-
-    Context ctx(1);
-    ctx.setInputArray(0, &rgbs);
-    ctx.setOutputArray(0, &actual);
+   // int all possitive
+    auto rgbs = NDArrayFactory::create<int>('c', { 3 }, { 10, 50, 200 });
+    auto expected = NDArrayFactory::create<int>('c', { 1 }, { 43 });
 
     nd4j::ops::rgb_to_grs op;
-    auto status = op.execute(&ctx);
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 #if 0
     //visual check
     rgbs.printBuffer("rgbs ");
     actual.printBuffer("GRS ");
     expected.printBuffer("exp");
 #endif
-    ASSERT_EQ(ND4J_STATUS_OK, status);
+    auto actual = result->at(0);
     ASSERT_TRUE(expected.equalsTo(actual));
-
 }
 
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_2) {
-    auto rgbs = NDArrayFactory::create<float>('c', { 5,3,4 },
-        {
-            213.f, 121.f,  18.f, 235.f, 220.f, 180.f, 245.f,  76.f, 164.f, 180.f,  75.f,  74.f, 168.f,
-            191.f, 207.f,  77.f,  50.f, 132.f,  37.f, 250.f, 233.f, 100.f, 245.f, 182.f, 111.f, 193.f,
-            168.f,  48.f,  52.f, 147.f, 103.f, 191.f,  59.f, 137.f, 121.f, 187.f,  53.f, 156.f, 244.f,
-            221.f,  82.f,  37.f,  90.f,  98.f, 239.f, 118.f,   7.f, 243.f,  12.f,   2.f,  79.f,  70.f,
-            209.f, 115.f, 247.f, 152.f, 192.f, 205.f,  32.f, 180.f
-        });
-    auto expected = NDArrayFactory::create<float>('c', { 5,3,4 },
-        {
-           6.75000000e+01f, 1.80000000e+02f, 1.35066079e+02f, 7.45341615e-01f,
-           2.54545455e-01f, 3.27777778e-01f, 9.26530612e-01f, 6.85106383e-01f,
-           8.62745098e-01f, 7.05882353e-01f, 9.60784314e-01f, 9.21568627e-01f,
-           2.78688525e+02f, 2.10989011e+01f, 2.89038462e+02f, 1.56416185e+02f,
-           7.85407725e-01f, 4.76439791e-01f, 8.48979592e-01f, 6.92000000e-01f,
-           9.13725490e-01f, 7.49019608e-01f, 9.60784314e-01f, 9.80392157e-01f,
-           3.52881356e+02f, 1.07142857e+01f, 3.43384615e+02f, 1.78321678e+02f,
-           5.31531532e-01f, 2.90155440e-01f, 3.86904762e-01f, 7.48691099e-01f,
-           4.35294118e-01f, 7.56862745e-01f, 6.58823529e-01f, 7.49019608e-01f,
-           2.30645161e+02f, 3.19159664e+02f, 2.10126582e+01f, 2.90896552e+02f,
-           7.78242678e-01f, 7.62820513e-01f, 9.71311475e-01f, 5.96707819e-01f,
-           9.37254902e-01f, 6.11764706e-01f, 9.56862745e-01f, 9.52941176e-01f,
-           1.74822335e+02f, 2.06600985e+02f, 1.06883721e+02f, 1.95272727e+02f,
-           9.42583732e-01f, 9.90243902e-01f, 8.70445344e-01f, 6.11111111e-01f,
-           8.19607843e-01f, 8.03921569e-01f, 9.68627451e-01f, 7.05882353e-01f
-        });
+    // Description
+    // single pixel
 
-
-    auto actual = NDArrayFactory::create<float>('c', { 5,3,4 });
-
-    Context ctx(1);
-    ctx.setInputArray(0, &rgbs);
-    ctx.setOutputArray(0, &actual);
-    ctx.setIArguments({ 1 });
-    nd4j::ops::rgb_to_grs op;
-    auto status = op.execute(&ctx);
-
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected.equalsTo(actual));
-
-}
-
-TEST_F(DeclarableOpsTests15, test_rgb_to_grs_3) {
-    auto rgbs = NDArrayFactory::create<float>('c', { 8,3 },
-        { 130.f,  61.f, 239.f, 117.f,  16.f, 168.f, 181.f, 223.f,   0.f,  49.f, 195.f, 195.f, 131.f,
-       153.f,  78.f,  86.f,  21.f, 209.f, 101.f,  14.f, 107.f, 191.f,  98.f, 210.f });
-    auto expected = NDArrayFactory::create<float>('c', { 8,3 },
-        { 263.25842697f,   0.74476987f,   0.9372549f, 279.86842105f,
-         0.9047619f,   0.65882353f,  71.30044843f,   1.f,
-         0.8745098f, 180.f,   0.74871795f,   0.76470588f,
-        77.6f,   0.49019608f,   0.6f, 260.74468085f,
-         0.89952153f,   0.81960784f, 296.12903226f,   0.86915888f,
-         0.41960784f, 289.82142857f,   0.53333333f,   0.82352941f });
-
-
-    auto actual = NDArrayFactory::create<float>('c', { 8,3 });
-
-    Context ctx(1);
-    ctx.setInputArray(0, &rgbs);
-    ctx.setOutputArray(0, &actual);
+    // int negative + possitive
+    auto rgbs = NDArrayFactory::create<int>('c', { 3 }, { 1, 120, -25 });
+    auto expected = NDArrayFactory::create<int>('c', { 1 }, { -72 });
 
     nd4j::ops::rgb_to_grs op;
-    auto status = op.execute(&ctx);
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 #if 0
     //visual check
     rgbs.printBuffer("rgbs ");
     actual.printBuffer("GRS ");
     expected.printBuffer("exp");
 #endif
-    ASSERT_EQ(ND4J_STATUS_OK, status);
+    auto actual = result->at(0);
     ASSERT_TRUE(expected.equalsTo(actual));
-
 }
+    
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_3) {
+    // Description
+    // single pixel
 
+    // int all zeros
+    auto rgbs = NDArrayFactory::create<int>('c', { 3 }, { 0, 0, 0 });
+    auto expected = NDArrayFactory::create<int>('c', { 1 }, 0 );
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+#if 0
+    //visual check
+    rgbs.printBuffer("rgbs ");
+    actual.printBuffer("GRS ");
+    expected.printBuffer("exp");
+#endif
+    auto actual = result->at(0);
+    ASSERT_TRUE(expected.equalsTo(actual));
+}
 
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_4) {
-    auto rgbs = NDArrayFactory::create<float>('c', { 3,8 },
-        { 130.f, 117.f, 181.f,  49.f, 131.f,  86.f, 101.f, 191.f,  61.f,  16.f, 223.f, 195.f, 153.f,
-        21.f,  14.f,  98.f, 239.f, 168.f,   0.f, 195.f,  78.f, 209.f, 107.f, 210.f });
-    auto expected = NDArrayFactory::create<float>('c', { 3, 8 },
-        { 263.25842697f, 279.86842105f,  71.30044843f, 180.f,
-        77.6f, 260.74468085f, 296.12903226f, 289.82142857f,
-         0.74476987f,   0.9047619f,   1.f,   0.74871795f,
-         0.49019608f,   0.89952153f,   0.86915888f,   0.53333333f,
-         0.9372549f,   0.65882353f,   0.8745098f,   0.76470588f,
-         0.6f,   0.81960784f,   0.41960784f,   0.82352941f });
-
-
-    auto actual = NDArrayFactory::create<float>('c', { 3, 8 });
-
-    Context ctx(1);
-    ctx.setInputArray(0, &rgbs);
-    ctx.setOutputArray(0, &actual);
-    ctx.setIArguments({ 0 });
+    // Description
+    // single pixel
+    // float all possitive
+    auto rgbs = NDArrayFactory::create<float>('c', { 3 }, { 10.0f, 240.7f, 120.3f });
+    auto expected = NDArrayFactory::create<float>('c', { 1 }, { 157.99411011f });
     nd4j::ops::rgb_to_grs op;
-    auto status = op.execute(&ctx);
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 #if 0
     //visual check
     rgbs.printBuffer("rgbs ");
     actual.printBuffer("GRS ");
     expected.printBuffer("exp");
 #endif
-    ASSERT_EQ(ND4J_STATUS_OK, status);
+    auto actual = result->at(0);
     ASSERT_TRUE(expected.equalsTo(actual));
-
 }
 
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_5) {
-    auto rgbs = NDArrayFactory::create<float>('c', { 3 },
-        { 213.f, 220.f, 164.f });
-    auto expected = NDArrayFactory::create<float>('c', { 3 },
-        { 6.75000000e+01f, 2.54545455e-01f, 8.62745098e-01f });
-
-
-    auto actual = NDArrayFactory::create<float>('c', { 3 });
-
-    Context ctx(1);
-    ctx.setInputArray(0, &rgbs);
-    ctx.setOutputArray(0, &actual);
+    // Description
+    // single pixel
+    // float  possitive and negative
+    auto rgbs = NDArrayFactory::create<float>('c', { 3 }, { -10.7f, -140.7f, 120.3f });
+    auto expected = NDArrayFactory::create<float>('c', { 1 }, { -72.07492065f });
 
     nd4j::ops::rgb_to_grs op;
-    auto status = op.execute(&ctx);
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
 #if 0
     //visual check
     rgbs.printBuffer("rgbs ");
     actual.printBuffer("GRS ");
     expected.printBuffer("exp");
 #endif
-    ASSERT_EQ(ND4J_STATUS_OK, status);
+    auto actual = result->at(0);
     ASSERT_TRUE(expected.equalsTo(actual));
 
 }
- */
+
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_6) {
+    // Description
+    // 2D
+    // int
+
+    auto rgbs = NDArrayFactory::create<int>('c', { 4, 3 }, {
+               94,  90, 111,
+              100,  99, 114,
+               96, 103,  97,
+              101, 105, 102
+    });
+    auto expected = NDArrayFactory::create<int>('c', { 4 }, { 90, 100, 100, 103 });
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+#if 0
+    //visual check
+    rgbs.printBuffer("rgbs ");
+    actual.printBuffer("GRS ");
+    expected.printBuffer("exp");
+#endif
+    auto actual = result->at(0);
+    ASSERT_TRUE(expected.equalsTo(actual));
+
+}
+
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_7) {
+    // Description
+    // 2D
+    // int
+
+    auto rgbs = NDArrayFactory::create<int>('c', { 4, 3 }, {
+              -94,  90, 111,
+              100, -99,-114,
+               96,-103, -97,
+             -101, 105, 102
+        });
+    auto expected = NDArrayFactory::create<int>('c', { 4 }, { 37, -41, -42, 43 });
+
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+#if 0
+    //visual check
+    rgbs.printBuffer("rgbs ");
+    actual.printBuffer("GRS ");
+    expected.printBuffer("exp");
+#endif
+    auto actual = result->at(0);
+    ASSERT_TRUE(expected.equalsTo(actual));
+}
+
+
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_8) {
+    // Description
+    // 3D
+    // int
+        auto rgbs = NDArrayFactory::create<int>('c', { 5, 4, 3 }, {
+              211, 100,  84,
+              143, 105, 148,
+              204, 113, 178,
+              141, 106, 229,
+              112, 110, 159,
+               90, 122, 188,
+               65, 115, 183,
+              128, 126,  62,
+              149, 244, 189,
+              168,  96, 146,
+               79, 178, 177,
+              154, 226, 147,
+              119, 197, 163,
+              101,  53, 125,
+              133, 181, 117,
+              163,  58, 260,
+              112, 182, 180,
+              180, 135, 131,
+              148, 242, 208,
+              183, 147, 200
+        });
+    auto expected = NDArrayFactory::create<int>('c', { 5, 4, 1 }, { 
+                        176, 206, 98, 140,
+                        119, 178, 193, 130,
+                        114, 162, 152, 192,
+                         99, 122, 138, 131,
+                        132, 148, 197, 116
+        });
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+#if 0
+    //visual check
+    rgbs.printBuffer("rgbs ");
+    actual.printBuffer("GRS ");
+    expected.printBuffer("exp");
+#endif
+    auto actual = result->at(0);
+    ASSERT_TRUE(expected.equalsTo(actual));
+}
+
+
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_9) {
+
+    auto rgbs = NDArrayFactory::create<float>('c', { 5,4,3 },
+        {
+            1.7750e+01f, -1.0477e+01f, -8.6562e+01f,
+            1.1641e+01f,  4.6812e+01f, -2.3406e+01f,
+            2.1391e+01f,  5.9961e+00f,  7.8438e+01f,
+            1.5404e-02f, -6.7461e+00f,  2.3125e+01f,
+            2.9609e+01f, -3.1344e+01f, -2.0125e+01f,
+            3.3562e+01f, -4.5859e+00f,  6.8562e+01f,
+            4.0531e+01f,  7.2188e+01f, -7.1062e+01f,
+            7.7344e+00f,  1.0038e+02f, -2.7516e+01f,
+            5.2250e+01f,  5.2094e+01f, -8.5312e+01f,
+            6.7812e+01f,  5.4883e+00f,  2.9938e+01f,
+            3.8562e+01f,  1.8145e+00f, -6.1438e+01f,
+            6.5125e+01f,  2.1531e+01f, -5.8844e+01f,
+            3.9344e+01f, -7.4414e+00f, -6.1211e+00f,
+            9.3750e+00f, -1.0019e+02f,  9.5469e+00f,
+            6.7938e+01f,  6.7562e+01f, -1.1414e+01f,
+            9.5438e+01f,  7.5830e-01f,  2.9734e+01f,
+            2.9438e+01f,  5.6719e+00f,  6.5078e+00f,
+            1.4602e+01f,  1.7750e+01f,  1.2695e+01f,
+            6.2500e+01f,  2.2750e+01f,  1.1617e+01f,
+            3.9656e+01f,  6.2219e+01f, -4.8125e+01f
+        });
+    auto expected = NDArrayFactory::create<float>('c', { 5,4,1 },
+        {
+            -47.82958221f,  34.46305847f,  21.36137581f, -21.91625023f,
+              2.49686432f, -43.59792709f,   9.64180183f,  23.04854202f,
+             40.7946167f,  44.98754883f, -25.19047546f,  20.64586449f,
+             -4.97033119f,   30.0226841f,  30.30688286f,  15.61459541f,
+                43.36166f,  18.22480774f,  13.74833488f,  21.59387016f,
+        });
+
+
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+#if 0
+    //visual check
+    rgbs.printBuffer("rgbs ");
+    actual.printBuffer("GRS ");
+    expected.printBuffer("exp");
+#endif
+    auto actual = result->at(0);
+    ASSERT_TRUE(expected.equalsTo(actual));
+
+}
+
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_10) {
+
+    auto rgbs = NDArrayFactory::create<float>('c', { 4,3 },{ 
+        39.84,   -5.492,  51.38,
+        99.9 ,  -48.75 ,  27.27,
+        14.3 ,    9.22 , -24.36,
+        42.25,    7.094, 118.2 
+        });
+    auto expected = NDArrayFactory::create<float>('c', { 4, 1 },{ 
+             -19.48511505,
+             19.18243217 ,
+             24.56029892 ,
+             48.74705124
+        });
+
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result);
+#if 0
+    //visual check
+    rgbs.printBuffer("rgbs ");
+    actual.printBuffer("GRS ");
+    expected.printBuffer("exp");
+#endif
+    auto actual = result->at(0);
+    ASSERT_TRUE(expected.equalsTo(actual));
+}

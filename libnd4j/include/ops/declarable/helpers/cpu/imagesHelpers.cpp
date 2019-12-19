@@ -35,14 +35,16 @@ static void rgbToGrs_(const NDArray& input, NDArray& output) {
 
     if('c' == input.ordering() && 1 == input.ews() && 
        'c' == output.ordering() && 1 == output.ews()){
-       
+        // TODO have to be clarified wrong, can be out of range
         auto func = PRAGMA_THREADS_FOR{
              for (auto i = start; i < stop; i += increment) {
                  const auto xStep = i*3;
                  z[i] = 0.2989f*x[xStep] + 0.5870f*x[xStep + 1] + 0.1140f*x[xStep + 2];
              }
         };
-        samediff::Threads::parallel_for(func, 0, input.lengthOf(), 1);
+        // was
+        // samediff::Threads::parallel_for(func, 0, input.lengthOf(), 1);
+        samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
         return;  
     }
  

@@ -38,7 +38,6 @@ CUSTOM_OP_IMPL(rgb_to_grs, 1, 1, false, 0, 0) {
     return Status::OK();
 }
 
-
 DECLARE_TYPES(rgb_to_grs) {
     getOpDescriptor()->setAllowedInputTypes( {ALL_INTS, ALL_FLOATS} )
                      ->setSameMode(true);
