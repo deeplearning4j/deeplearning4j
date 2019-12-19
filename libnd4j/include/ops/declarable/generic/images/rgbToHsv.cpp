@@ -15,8 +15,9 @@
  ******************************************************************************/
 
 //
-// @author Oleh Semeniv (oleg.semeniv@gmail.com)
-// 
+// @author Adel Rauf    (rauf@konduit.ai)
+//
+
 
 
 #include <ops/declarable/headers/images.h>
@@ -36,11 +37,11 @@ CONFIGURABLE_OP_IMPL(rgb_to_hsv, 1, 1, false, 0, 0) {
         return Status::OK();
 
     const int rank = input->rankOf();
-    const int arg_size = block.getIArguments()->size();
-    const int dimC = arg_size > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
+    const int argSize = block.getIArguments()->size();
+    const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
 
     REQUIRE_TRUE(rank >= 1, 0, "RGBtoHSV: Fails to meet the rank requirement: %i >= 1 ", rank);
-    if (arg_size > 0) {
+    if (argSize > 0) {
         REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -rank, rank);
     }
     REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBtoHSV: operation expects 3 channels (H, S, V), but got %i instead", input->sizeAt(dimC));

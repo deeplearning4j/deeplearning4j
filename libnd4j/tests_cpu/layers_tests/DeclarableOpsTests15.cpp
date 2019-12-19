@@ -1760,13 +1760,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_1) {
 
     NDArray rgbs('c', { 3 }, { 10, 50, 200 }, nd4j::DataType::INT32);
     NDArray expected('c', { 1 }, { 55 }, nd4j::DataType::INT32);
-
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({&rgbs}, {}, {});
     auto output = result->at(0);
 
     ASSERT_EQ(Status::OK(), result->status());
-
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
@@ -1775,268 +1773,170 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_2) {
-    // Description
-    // single pixel
 
-    // int negative + possitive
     auto rgbs = NDArrayFactory::create<int>('c', { 3 }, { 1, 120, -25 });
-    auto expected = NDArrayFactory::create<int>('c', { 1 }, { -72 });
-
+    auto expected = NDArrayFactory::create<int>('c', { 1 }, { 67 });
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+    
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
+    delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_3) {
-    // Description
-    // single pixel
 
-    // int all zeros
-    auto rgbs = NDArrayFactory::create<int>('c', { 3 }, { 0, 0, 0 });
-    auto expected = NDArrayFactory::create<int>('c', { 1 }, 0 );
+    NDArray rgbs('c', { 3 }, { 0, 0, 0 }, nd4j::DataType::INT32);
+    NDArray expected('c', { 1 }, { 0 }, nd4j::DataType::INT32);
+
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+  
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
+    delete result;
 }
 
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_4) {
-    // Description
-    // single pixel
-    // float all possitive
+
     auto rgbs = NDArrayFactory::create<float>('c', { 3 }, { 10.0f, 240.7f, 120.3f });
     auto expected = NDArrayFactory::create<float>('c', { 1 }, { 157.99411011f });
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+    
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
+    delete result;
 }
 
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_5) {
-    // Description
-    // single pixel
-    // float  possitive and negative
+
     auto rgbs = NDArrayFactory::create<float>('c', { 3 }, { -10.7f, -140.7f, 120.3f });
     auto expected = NDArrayFactory::create<float>('c', { 1 }, { -72.07492065f });
-
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-}
+    delete result;
+  }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_6) {
-    // Description
-    // 2D
-    // int
 
-    auto rgbs = NDArrayFactory::create<int>('c', { 4, 3 }, {
-               94,  90, 111,
-              100,  99, 114,
-               96, 103,  97,
-              101, 105, 102
-    });
-    auto expected = NDArrayFactory::create<int>('c', { 4 }, { 90, 100, 100, 103 });
+    NDArray rgbs('c', { 4, 3 }, { -94,  99,  97, 90, 114, 101, 111,  96, 105, 100, 103, 102 }, nd4j::DataType::INT32);
+    NDArray expected('c', { 4, 1 }, { 41, 105, 101, 101 }, nd4j::DataType::INT32);
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+    
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
-
+    delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_7) {
-    // Description
-    // 2D
-    // int
-
-    auto rgbs = NDArrayFactory::create<int>('c', { 4, 3 }, {
-              -94,  90, 111,
-              100, -99,-114,
-               96,-103, -97,
-             -101, 105, 102
-        });
-    auto expected = NDArrayFactory::create<int>('c', { 4 }, { 37, -41, -42, 43 });
+    auto rgbs = NDArrayFactory::create<int>('c', { 4, 3 }, {-94,  -99,  -97, 90, -114, -101, 111, 96,  105, 100, -103,  102 });
+    auto expected = NDArrayFactory::create<int>('c', { 4, 1 }, { -97, -51, 101, -18 });
 
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_8) {
-    // Description
-    // 3D
-    // int
-        auto rgbs = NDArrayFactory::create<int>('c', { 5, 4, 3 }, {
-              211, 100,  84,
-              143, 105, 148,
-              204, 113, 178,
-              141, 106, 229,
-              112, 110, 159,
-               90, 122, 188,
-               65, 115, 183,
-              128, 126,  62,
-              149, 244, 189,
-              168,  96, 146,
-               79, 178, 177,
-              154, 226, 147,
-              119, 197, 163,
-              101,  53, 125,
-              133, 181, 117,
-              163,  58, 260,
-              112, 182, 180,
-              180, 135, 131,
-              148, 242, 208,
-              183, 147, 200
-        });
-    auto expected = NDArrayFactory::create<int>('c', { 5, 4, 1 }, {
-                        176, 206, 98, 140,
-                        119, 178, 193, 130,
-                        114, 162, 152, 192,
-                         99, 122, 138, 131,
-                        132, 148, 197, 116
-        });
+
+    auto rgbs = NDArrayFactory::create<int>('c', { 5, 4, 3 }, {211, 183,  53, 148, 244, 163, 106,  79, 180, 90, 147, 242,100, 128, 125,204, 189,  58,229, 178, 180,122, 119, 208,84, 126, 133,113, 168, 260,112, 177, 135, 188, 197, 183,143,  62, 181,178,  96, 112,110, 154, 131, 65, 163, 147,105, 149, 117,141, 146, 182,159, 226, 148, 115, 101, 200  });
+    auto expected = NDArrayFactory::create<int>('c', { 5, 4, 1 }, {176, 206, 98, 140,119, 178, 193, 130,114, 162, 152, 192, 99, 122, 138, 131,132, 148, 197, 116});
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_9) {
 
-    auto rgbs = NDArrayFactory::create<float>('c', { 5,4,3 },
-        {
-            1.7750e+01f, -1.0477e+01f, -8.6562e+01f,
-            1.1641e+01f,  4.6812e+01f, -2.3406e+01f,
-            2.1391e+01f,  5.9961e+00f,  7.8438e+01f,
-            1.5404e-02f, -6.7461e+00f,  2.3125e+01f,
-            2.9609e+01f, -3.1344e+01f, -2.0125e+01f,
-            3.3562e+01f, -4.5859e+00f,  6.8562e+01f,
-            4.0531e+01f,  7.2188e+01f, -7.1062e+01f,
-            7.7344e+00f,  1.0038e+02f, -2.7516e+01f,
-            5.2250e+01f,  5.2094e+01f, -8.5312e+01f,
-            6.7812e+01f,  5.4883e+00f,  2.9938e+01f,
-            3.8562e+01f,  1.8145e+00f, -6.1438e+01f,
-            6.5125e+01f,  2.1531e+01f, -5.8844e+01f,
-            3.9344e+01f, -7.4414e+00f, -6.1211e+00f,
-            9.3750e+00f, -1.0019e+02f,  9.5469e+00f,
-            6.7938e+01f,  6.7562e+01f, -1.1414e+01f,
-            9.5438e+01f,  7.5830e-01f,  2.9734e+01f,
-            2.9438e+01f,  5.6719e+00f,  6.5078e+00f,
-            1.4602e+01f,  1.7750e+01f,  1.2695e+01f,
-            6.2500e+01f,  2.2750e+01f,  1.1617e+01f,
-            3.9656e+01f,  6.2219e+01f, -4.8125e+01f
-        });
-    auto expected = NDArrayFactory::create<float>('c', { 5,4,1 },
-        {
-            -47.82958221f,  34.46305847f,  21.36137581f, -21.91625023f,
-              2.49686432f, -43.59792709f,   9.64180183f,  23.04854202f,
-             40.7946167f,  44.98754883f, -25.19047546f,  20.64586449f,
-             -4.97033119f,   30.0226841f,  30.30688286f,  15.61459541f,
-                43.36166f,  18.22480774f,  13.74833488f,  21.59387016f,
-        });
-
+    auto rgbs = NDArrayFactory::create<float>('c', { 5,4,3 }, {1.7750e+01f, -7.1062e+01f, -1.0019e+02f,-2.3406e+01f,  5.2094e+01f,  9.5438e+01f, -6.7461e+00f,  3.8562e+01f,  6.5078e+00f,3.3562e+01f, -5.8844e+01f,  2.2750e+01f, -1.0477e+01f,  7.7344e+00f,  9.5469e+00f,2.1391e+01f, -8.5312e+01f,  7.5830e-01f,2.3125e+01f,  1.8145e+00f,  1.4602e+01f,-4.5859e+00f,  3.9344e+01f,  1.1617e+01f,-8.6562e+01f,  1.0038e+02f,  6.7938e+01f,5.9961e+00f,  6.7812e+01f,  2.9734e+01f,2.9609e+01f, -6.1438e+01f,  1.7750e+01f,6.8562e+01f, -7.4414e+00f,  3.9656e+01f,1.1641e+01f, -2.7516e+01f,  6.7562e+01f,7.8438e+01f,  5.4883e+00f,  2.9438e+01f,-3.1344e+01f,  6.5125e+01f,  1.2695e+01f,4.0531e+01f, -6.1211e+00f,  6.2219e+01f,4.6812e+01f,  5.2250e+01f, -1.1414e+01f,1.5404e-02f,  2.9938e+01f,  5.6719e+00f,-2.0125e+01f,  2.1531e+01f,  6.2500e+01f,7.2188e+01f,  9.3750e+00f, -4.8125e+01f});
+    auto expected = NDArrayFactory::create<float>('c', { 5,4,1 }, {-47.82958221f,  34.46305847f,  21.36137581f, -21.91625023f,2.49686432f, -43.59792709f,   9.64180183f,  23.04854202f,40.7946167f,  44.98754883f, -25.19047546f,  20.64586449f,-4.97033119f,   30.0226841f,  30.30688286f,  15.61459541f,43.36166f,  18.22480774f,  13.74833488f,  21.59387016f});
 
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+    
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
-
+    delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_10) {
 
-    auto rgbs = NDArrayFactory::create<float>('c', { 4,3 },{
-        39.84,   -5.492,  51.38,
-        99.9 ,  -48.75 ,  27.27,
-        14.3 ,    9.22 , -24.36,
-        42.25,    7.094, 118.2
-        });
-    auto expected = NDArrayFactory::create<float>('c', { 4, 1 },{
-             -19.48511505,
-             19.18243217 ,
-             24.56029892 ,
-             48.74705124
-        });
+    auto rgbs = NDArrayFactory::create<float>('c', { 4,3 },{ 39.84, -48.75 , -24.36, -5.492, 27.27, 42.25, 51.38,  14.3, 7.094,  99.9, 9.22, 118.2 });
+    auto expected = NDArrayFactory::create<float>('c', { 4, 1 },{ -19.48511505, 19.18243217, 24.56029892, 48.74705124 });
 
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
+    //  output->printLinearBuffer(); 
+    
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+  }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_11) {
+
+    NDArray rgbs('c', { 3, 2 }, {14,  99, 207, 10, 114, 201 }, nd4j::DataType::INT32);
+// 14, 207, 114 = 138
+// 99, 10, 201 = 158
+    rgbs.permutei({1,0});
+    NDArray expected('c', { 2, 1 }, { 138, 58 }, nd4j::DataType::INT32);
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+    
+//    output->printLinearBuffer(); 
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
 }

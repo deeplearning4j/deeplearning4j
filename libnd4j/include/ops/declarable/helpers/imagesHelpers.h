@@ -17,6 +17,9 @@
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 // 
+//
+// @author Adel Rauf    (rauf@konduit.ai)
+//
 
 #ifndef LIBND4J_HELPERS_IMAGES_H
 #define LIBND4J_HELPERS_IMAGES_H

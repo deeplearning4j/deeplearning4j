@@ -13,9 +13,12 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-
+ 
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
+// 
+//
+// @author Adel Rauf    (rauf@konduit.ai)
 //
 
 #include <ops/declarable/helpers/adjust_hue.h>
@@ -29,39 +32,38 @@ namespace helpers {
 
 template <typename T>
 static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
-
     const T* x = input.bufferAsT<T>();
     T* z = output.bufferAsT<T>();
     const int rank = input.rankOf();
 
-    if(dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 'c' == output.ordering() && 1 == output.ews()) {
-
+    if(dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 
+        'c' == output.ordering() && 1 == output.ews()){
         auto func = PRAGMA_THREADS_FOR{
              for (auto i = start; i < stop; i += increment) {
                  const auto xStep = i*3;
                  z[i] = 0.2989f*x[xStep] + 0.5870f*x[xStep + 1] + 0.1140f*x[xStep + 2];
              }
         };
-
-        samediff::Threads::parallel_for(func, 0, input.lengthOf() / 3, 1);
-
-        return;
+        samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
+        return;  
     }
-
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimC);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimC);
-    const Nd4jLong numOfTads = packX.numberOfTads();
-    const Nd4jLong xDimCstride = input.stridesOf()[dimC];
-
+    printf("1");
     auto func = PRAGMA_THREADS_FOR{
-        for (auto i = start; i < stop; i += increment) {
-            const T* xTad = x + packX.platformOffsets()[i];
-            T* zTad = z + packZ.platformOffsets()[i];
-            zTad[0] = 0.2989f*xTad[0] + 0.5870f*xTad[xDimCstride]+ 0.1140f*xTad[2 * xDimCstride];
-        }
-    };
-    samediff::Threads::parallel_tad(func, 0, numOfTads);
-    return;
+         Nd4jLong coords[MAX_RANK];
+         for (auto i = start; i < stop; i += increment) {                
+
+             shape::index2coords(i, output.getShapeInfo(), coords);
+             const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+
+             coords[output.rankOf()] = 0;
+             const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);
+             const auto xOffset1 = xOffset0 + input.strideAt(dimC);
+             const auto xOffset2 = xOffset1 + input.strideAt(dimC);
+             z[zOffset] = 0.2989f*x[xOffset0] + 0.5870f*x[xOffset1] + 0.1140f*x[xOffset2];
+         }
+     };
+     samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
+     return;
 }
 
 void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
@@ -69,7 +71,6 @@ void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray
 }
 
 
-//local
 template <typename T, typename Op>
 FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output, const int dimC, Op op) {
 
