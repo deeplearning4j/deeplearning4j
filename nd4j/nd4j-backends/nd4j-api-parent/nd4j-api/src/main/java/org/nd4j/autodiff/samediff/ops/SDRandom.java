@@ -19,6 +19,7 @@ package org.nd4j.autodiff.samediff.ops;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import static org.nd4j.autodiff.samediff.ops.SDValidation.validateInteger;
 
@@ -292,6 +293,45 @@ public class SDRandom extends SDOps {
      */
     public SDVariable uniform(String name, double min, double max, long... shape) {
         SDVariable ret = f().randomUniform(min, max, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Generate a new random SDVariable with Gamma distribution
+     *
+     * @param name   Name of the output variable
+     * @param alpha distribution parameter
+     * @param beta distribution parameter
+     * @param shape  Shape of the new variable
+     * @return new SDVariable
+     */
+    public SDVariable gamma(String name, SDVariable shape, SDVariable alpha, SDVariable beta) {
+        SDVariable ret = f().randomGamma(alpha, beta, shape);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Generate a new random SDVariable with Poission distribution
+     *
+     * @param name   Name of the output variable
+     * @param lambda rate distribution parameter
+     * @param shape  Shape of the new variable
+     * @return new SDVariable
+     */
+    public SDVariable poisson(String name, SDVariable lambda, SDVariable shape, int... seeds) {
+        SDVariable ret = f().randomPoisson(shape, lambda, seeds);
+        return updateVariableNameAndReference(ret, name);
+    }
+
+    /**
+     * Generate a new random SDVariable by random shuffle
+     *
+     * @param name   Name of the output variable
+     * @param value array to shuffle
+     * @return new SDVariable
+     */
+    public SDVariable shuffle(String name, SDVariable value, int... seeds) {
+        SDVariable ret = f().randomShuffle(value, seeds);
         return updateVariableNameAndReference(ret, name);
     }
 

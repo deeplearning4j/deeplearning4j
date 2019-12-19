@@ -572,6 +572,9 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.random.custom.RandomBernoulli.class,
             org.nd4j.linalg.api.ops.random.custom.RandomExponential.class,
             org.nd4j.linalg.api.ops.random.custom.RandomNormal.class,
+            org.nd4j.linalg.api.ops.random.custom.RandomGamma.class,
+            org.nd4j.linalg.api.ops.random.custom.RandomPoisson.class,
+            org.nd4j.linalg.api.ops.random.custom.RandomShuffle.class,
             org.nd4j.linalg.api.ops.random.impl.AlphaDropOut.class,
             org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution.class,
             org.nd4j.linalg.api.ops.random.impl.BinomialDistribution.class,
@@ -588,6 +591,8 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class,
             org.nd4j.linalg.api.ops.custom.AdjustContrast.class,
             org.nd4j.linalg.api.ops.custom.AdjustContrastV2.class,
+            org.nd4j.linalg.api.ops.custom.HsvToRgb.class,
+            org.nd4j.linalg.api.ops.custom.RgbToHsv.class,
             org.nd4j.linalg.api.ops.custom.BitCast.class,
             org.nd4j.linalg.api.ops.custom.CompareAndBitpack.class,
             org.nd4j.linalg.api.ops.custom.DivideNoNan.class,
@@ -601,7 +606,10 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.Polygamma.class,
             org.nd4j.linalg.api.ops.custom.RandomCrop.class,
             org.nd4j.linalg.api.ops.custom.Roll.class,
-            org.nd4j.linalg.api.ops.custom.ToggleBits.class
+            org.nd4j.linalg.api.ops.custom.ToggleBits.class,
+            org.nd4j.linalg.api.ops.custom.Igamma.class,
+            org.nd4j.linalg.api.ops.custom.Igammac.class,
+            org.nd4j.linalg.api.ops.custom.Digamma.class
     );
 
     static {

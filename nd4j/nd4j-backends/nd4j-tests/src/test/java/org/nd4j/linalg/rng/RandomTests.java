@@ -31,8 +31,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
-import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
-import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.custom.*;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
@@ -1471,6 +1470,44 @@ public class RandomTests extends BaseNd4jTest {
         Nd4j.exec(new RandomBernoulli(Nd4j.createFromArray(10L), out2, 0.5));
 
         assertEquals(out1, out2);
+    }
+
+    @Test
+    public void testGamma(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray shape = Nd4j.createFromArray(new int[] {1,3});
+        INDArray alpha = Nd4j.rand(1,3);
+        val randomGamma = new RandomGamma(shape, alpha, null);
+        INDArray[] res = Nd4j.exec(randomGamma);
+
+        val randomGamma1 = new RandomGamma(shape, alpha, null);
+        INDArray[] res1 = Nd4j.exec(randomGamma1);
+        assertEquals(res[0], res1[0]);
+    }
+
+    @Test
+    public void testPoisson(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray shape = Nd4j.createFromArray(new int[] {1,3});
+        INDArray alpha = Nd4j.rand(1,3);
+        val randomPoisson = new RandomPoisson(shape, alpha);
+        INDArray[] res = Nd4j.exec(randomPoisson);
+
+        val randomPoisson1 = new RandomPoisson(shape, alpha);
+        INDArray[] res1 = Nd4j.exec(randomPoisson1);
+        assertEquals(res[0], res1[0]);
+    }
+
+    @Test
+    public void testShuffle(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray alpha = Nd4j.rand(1,3);
+        val randomShuffle = new RandomShuffle(alpha);
+        INDArray[] res = Nd4j.exec(randomShuffle);
+
+        val randomShuffle1 = new RandomShuffle(alpha);
+        INDArray[] res1 = Nd4j.exec(randomShuffle1);
+        assertEquals(res[0], res1[0]);
     }
 
     @Override

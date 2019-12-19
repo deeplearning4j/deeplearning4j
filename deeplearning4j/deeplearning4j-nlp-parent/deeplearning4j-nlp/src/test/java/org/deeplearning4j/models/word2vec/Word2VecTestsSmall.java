@@ -82,7 +82,7 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
         assertEquals(neighbours, nearestWords.size());
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testUnkSerialization_1() throws Exception {
         val inputFile = Resources.asFile("big/raw_sentences.txt");
 
@@ -142,7 +142,7 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
     }
 
 
-    @Test
+    @Test(timeout = 300000)
     public void testW2VEmbeddingLayerInit() throws Exception {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
 

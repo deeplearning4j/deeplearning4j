@@ -30,7 +30,7 @@ import java.io.IOException;
  */
 public class TimeSeriesGeneratorImportTest extends BaseDL4JTest {
 
-    @Test
+    @Test(timeout=300000)
     public void importTimeSeriesTest() throws IOException, InvalidKerasConfigurationException {
         String path = "modelimport/keras/preprocessing/timeseries_generator.json";
 

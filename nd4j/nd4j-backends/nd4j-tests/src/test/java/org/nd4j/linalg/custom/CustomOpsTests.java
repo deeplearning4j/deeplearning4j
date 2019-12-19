@@ -34,8 +34,6 @@ import org.nd4j.linalg.api.ops.impl.controlflow.Where;
 import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
 import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
 import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
@@ -1352,5 +1350,81 @@ public class CustomOpsTests extends BaseNd4jTest {
         val result = Nd4j.exec(new Create(shape, 'c', true, DataType.INT))[0];
 
         assertEquals(exp, result);
+    }
+
+    // Exact copy of libnd4j test
+    @Test
+    public void testRgbToHsv() {
+        INDArray expected = Nd4j.createFromArray(new float[]{6.75000000e+01f, 2.54545455e-01f, 8.62745098e-01f, 1.80000000e+02f,
+                3.27777778e-01f, 7.05882353e-01f, 1.35066079e+02f, 9.26530612e-01f,
+                9.60784314e-01f, 7.45341615e-01f, 6.85106383e-01f, 9.21568627e-01f,
+                2.78688525e+02f, 7.85407725e-01f, 9.13725490e-01f, 2.10989011e+01f,
+                4.76439791e-01f, 7.49019608e-01f, 2.89038462e+02f, 8.48979592e-01f,
+                9.60784314e-01f, 1.56416185e+02f, 6.92000000e-01f, 9.80392157e-01f,
+                3.52881356e+02f, 5.31531532e-01f, 4.35294118e-01f, 1.07142857e+01f,
+                2.90155440e-01f, 7.56862745e-01f, 3.43384615e+02f, 3.86904762e-01f,
+                6.58823529e-01f, 1.78321678e+02f, 7.48691099e-01f, 7.49019608e-01f,
+                2.30645161e+02f, 7.78242678e-01f, 9.37254902e-01f, 3.19159664e+02f,
+                7.62820513e-01f, 6.11764706e-01f, 2.10126582e+01f, 9.71311475e-01f,
+                9.56862745e-01f, 2.90896552e+02f, 5.96707819e-01f, 9.52941176e-01f,
+                1.74822335e+02f, 9.42583732e-01f, 8.19607843e-01f, 2.06600985e+02f,
+                9.90243902e-01f, 8.03921569e-01f, 1.06883721e+02f, 8.70445344e-01f,
+                9.68627451e-01f, 1.95272727e+02f, 6.11111111e-01f, 7.05882353e-01f}).reshape(5,4,3);
+        INDArray input = Nd4j.createFromArray(new float[]{213.f, 220.f, 164.f, 121.f, 180.f, 180.f,  18.f, 245.f,  75.f, 235.f,  76.f,  74.f, 168.f,
+                50.f, 233.f, 191.f, 132.f, 100.f, 207.f,  37.f, 245.f,  77.f, 250.f, 182.f, 111.f,  52.f,
+                59.f, 193.f, 147.f, 137.f, 168.f, 103.f, 121.f,  48.f, 191.f, 187.f,  53.f,  82.f, 239.f,
+                156.f,  37.f, 118.f, 244.f,  90.f,   7.f, 221.f,  98.f, 243.f,  12.f, 209.f, 192.f,   2.f,
+                115.f, 205.f,  79.f, 247.f,  32.f,  70.f, 152.f, 180.f}).reshape(5,4,3);
+        RgbToHsv op = new RgbToHsv(input);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(ret[0], expected);
+    }
+
+    // Exact copy of libnd4j test
+    @Test
+    public void testHsvToRgb() {
+        INDArray input = Nd4j.createFromArray(new float[]{263.25842697f,   0.74476987f,   0.9372549f, 279.86842105f,
+                0.9047619f,   0.65882353f,  71.30044843f,   1.f,
+                0.8745098f, 180.f,   0.74871795f,   0.76470588f,
+                77.6f,   0.49019608f,   0.6f, 260.74468085f,
+                0.89952153f,   0.81960784f, 296.12903226f,   0.86915888f,
+                0.41960784f, 289.82142857f,   0.53333333f,   0.82352941f}).reshape(8,3);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{130.f,  61.f, 239.f, 117.f,  16.f, 168.f, 181.f, 223.f,   0.f,  49.f, 195.f, 195.f, 131.f,
+                153.f,  78.f,  86.f,  21.f, 209.f, 101.f,  14.f, 107.f, 191.f,  98.f, 210.f}).reshape(8,3);
+
+        HsvToRgb op = new HsvToRgb(input);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(ret[0], expected);
+
+    }
+
+    @Ignore
+    @Test
+    public void testHsvToRgb_1() {
+        /* Emulation of simple TF test:
+           image = tf.random_uniform(shape = [1,1,3])
+           tf.image.hsv_to_rgb(image)*/
+        INDArray image = Nd4j.createFromArray(new float[]{0.7788f,    0.8012f,    0.7244f}).
+                reshape(1,1,3);
+        HsvToRgb op = new HsvToRgb(image);
+        INDArray[] ret = Nd4j.exec(op);
+        INDArray expected = Nd4j.createFromArray(new float[]{0.53442812f,0.144007295f,0.724374652f}).reshape(1,1,3);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Ignore
+    @Test
+    public void testRgbToHsv_1() {
+        /* Emulation of simple TF test:
+           image = tf.random_uniform(shape = [1,2,3])
+           tf.image.rgb_to_hsv(image)*/
+        INDArray image = Nd4j.createFromArray(new float[]{0.7788f,0.8012f,0.7244f,
+                    0.2309f,0.7271f,0.1804f}).reshape(1,2,3);
+        RgbToHsv op = new RgbToHsv(image);
+        INDArray[] ret = Nd4j.exec(op);
+        INDArray expected = Nd4j.createFromArray(new float[]{0.215289578f,    0.095885336f,    0.801197767f,
+                0.317938268f,    0.751917899f,    0.727141261f}).reshape(1,2,3);
+        assertEquals(expected, ret[0]);
     }
 }

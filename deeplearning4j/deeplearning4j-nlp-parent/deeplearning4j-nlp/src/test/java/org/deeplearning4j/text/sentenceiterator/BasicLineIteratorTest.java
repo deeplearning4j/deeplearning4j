@@ -17,6 +17,8 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,6 +33,9 @@ import static org.junit.Assert.assertEquals;
  * @author raver119@gmail.com
  */
 public class BasicLineIteratorTest extends BaseDL4JTest {
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @Before
     public void setUp() throws Exception {

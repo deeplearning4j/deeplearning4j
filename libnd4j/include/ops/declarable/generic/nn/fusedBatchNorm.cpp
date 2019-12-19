@@ -32,7 +32,7 @@ namespace ops {
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
-CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
+CUSTOM_OP_IMPL(fused_batch_norm, 3, 3, false, 0, 2) {
     auto x      = INPUT_VARIABLE(0);                 // [bS,iH,iW,iD] (NHWC) or [bS,iD,iH,iW] (NCHW)
     auto scale  = INPUT_VARIABLE(1);                 // [iD]
     auto offset = INPUT_VARIABLE(2);                 // [iD]
@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(fused_batch_norm, 3, 1, false, 0, 2) {
         REQUIRE_TRUE(variance->rankOf() == 1 && variance->sizeAt(0) == iD, 0, "CUSTOM_OP fused_batch_norm: wrong shape of input variance array, expected is [%i], but got %s instead", iD, ShapeUtils::shapeAsString(variance).c_str());
     }
     else {
-        REQUIRE_TRUE(block.width() == 3, 0, "CUSTOM_OP fused_batch_norm: when isTraining=true then number of input arrays must be equal to 3, but got %i instead !", block.width());   
+        //REQUIRE_TRUE(block.width() == 3, 0, "CUSTOM_OP fused_batch_norm: when isTraining=true then number of input arrays must be equal to 3, but got %i instead !", block.width());   
         std::vector<Nd4jLong> shape = {iD};
         mean = NDArrayFactory::create_(scale->ordering(), shape, scale->dataType(), block.launchContext());
         variance = NDArrayFactory::create_(scale->ordering(), shape, scale->dataType(), block.launchContext());

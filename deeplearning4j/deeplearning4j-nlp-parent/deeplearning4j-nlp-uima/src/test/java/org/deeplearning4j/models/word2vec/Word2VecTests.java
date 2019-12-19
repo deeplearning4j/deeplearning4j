@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 import org.nd4j.shade.guava.primitives.Doubles;
 import org.nd4j.shade.guava.primitives.Ints;
 import lombok.val;
@@ -67,6 +69,9 @@ public class Word2VecTests extends BaseDL4JTest {
     private File inputFile2;
     private String pathToWriteto;
     private WordVectors googleModel;
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @Before
     public void before() throws Exception {

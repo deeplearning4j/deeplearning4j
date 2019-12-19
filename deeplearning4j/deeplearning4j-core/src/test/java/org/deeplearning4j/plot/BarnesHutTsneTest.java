@@ -103,7 +103,7 @@ public class BarnesHutTsneTest extends BaseDL4JTest {
         assertArrayEquals(exp.data().asDouble(), b.getData().data().asDouble(), eps);
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testTsne() throws Exception {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);

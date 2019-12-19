@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class AggregatingSentenceIteratorTest extends BaseDL4JTest {
 
-    @Test
+    @Test(timeout = 300000)
     public void testHasNext() throws Exception {
         File file = Resources.asFile("/big/raw_sentences.txt");
         BasicLineIterator iterator = new BasicLineIterator(file);
