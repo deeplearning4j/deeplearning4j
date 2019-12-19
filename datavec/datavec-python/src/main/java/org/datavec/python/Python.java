@@ -5,8 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import static org.bytedeco.cpython.global.python.PyImport_ImportModule;
-import static org.bytedeco.cpython.global.python.PyObject_Size;
+import static org.bytedeco.cpython.global.python.*;
 
 /**
  * Swift like python wrapper for J
@@ -15,31 +14,35 @@ import static org.bytedeco.cpython.global.python.PyObject_Size;
  */
 
 public class Python {
+    private static PythonObject builtins = importModule("builtins");
     public static PythonObject importModule(String moduleName){
         return new PythonObject(PyImport_ImportModule(moduleName));
     }
-    public static long len(PythonObject pythonObject){
-        return PyObject_Size(pythonObject.getNativePythonObject());
+    public static PythonObject attr(String attrName){
+        return builtins.attr(attrName);
     }
-    public static String str(PythonObject pythonObject){
-        return pythonObject.toString();
+    public static PythonObject len(PythonObject pythonObject){
+        return attr("len").call(pythonObject);
     }
-    public static double float_(PythonObject pythonObject){
-        return pythonObject.toFloat();
+    public static PythonObject  str(PythonObject pythonObject){
+        return attr("str").call(pythonObject);
     }
-    public static  boolean bool(PythonObject pythonObject){
-        return pythonObject.toBoolean();
+    public static PythonObject float_(PythonObject pythonObject){
+        return attr("float").call(pythonObject);
     }
-    public static long int_(PythonObject pythonObject){
-        return pythonObject.toLong();
+    public static  PythonObject bool(PythonObject pythonObject){
+        return attr("bool").call(pythonObject);
     }
-    public static ArrayList list(PythonObject pythonObject){
-        throw new RuntimeException("not implemented");
+    public static PythonObject int_(PythonObject pythonObject){
+        return attr("int").call(pythonObject);
     }
-    public static HashMap dict(PythonObject pythonObject){
-        throw new RuntimeException("not implemented");
+    public static PythonObject list(PythonObject pythonObject){
+        return attr("list").call(pythonObject);
     }
-    public static HashSet set(PythonObject pythonObject){
-        throw new RuntimeException("not implemented");
+    public static PythonObject dict(PythonObject pythonObject){
+        return attr("dict").call(pythonObject);
+    }
+    public static PythonObject set(PythonObject pythonObject){
+        return attr("set").call(pythonObject);
     }
 }
