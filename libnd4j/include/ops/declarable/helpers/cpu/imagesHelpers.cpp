@@ -28,44 +28,41 @@ namespace ops {
 namespace helpers {
 
 template <typename T>
-static void rgbToGrs_(const NDArray& input, NDArray& output) {
-    
+static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
     const T* x = input.bufferAsT<T>();
     T* z = output.bufferAsT<T>();
 
     if('c' == input.ordering() && 1 == input.ews() && 
        'c' == output.ordering() && 1 == output.ews()){
-        // TODO have to be clarified wrong, can be out of range
+        auto zLength = input.lengthOf() / 3;
         auto func = PRAGMA_THREADS_FOR{
              for (auto i = start; i < stop; i += increment) {
                  const auto xStep = i*3;
                  z[i] = 0.2989f*x[xStep] + 0.5870f*x[xStep + 1] + 0.1140f*x[xStep + 2];
              }
         };
-        // was
-        // samediff::Threads::parallel_for(func, 0, input.lengthOf(), 1);
-        samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
+        samediff::Threads::parallel_for(func, 0, zLength, 1);
         return;  
     }
- 
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimC);
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimC);
+    const Nd4jLong numOfTads = packX.numberOfTads();
+    const Nd4jLong xDimCstride = input.stridesOf()[dimC];
+    
     auto func = PRAGMA_THREADS_FOR{
-         Nd4jLong coords[MAX_RANK];
-         for (auto i = start; i < stop; i += increment) {                
-             shape::index2coords(i, output.getShapeInfo(), coords);
-             const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
-             coords[output.rankOf()] = 0;
-             const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);
-             const auto xOffset1 = xOffset0 + input.strideAt(-1);
-             const auto xOffset2 = xOffset1 + input.strideAt(-1);
-             z[zOffset] = 0.2989f*x[xOffset0] + 0.5870f*x[xOffset1] + 0.1140f*x[xOffset2];
-         }
+        for (auto i = start; i < stop; i += increment) {
+            const T* xTad = x + packX.platformOffsets()[i];
+            T* zTad = z + packZ.platformOffsets()[i];
+            zTad[0] = 0.2989f*xTad[0] + 0.5870f*xTad[xDimCstride]+ 0.1140f*xTad[2 * xDimCstride];
+        }
     };
-    samediff::Threads::parallel_for(func, 0, input.lengthOf(), 1);
+    samediff::Threads::parallel_tad(func, 0, numOfTads);
     return;
 }
 
-void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
-    BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrs_, (input, output), NUMERIC_TYPES);
+void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrs_, (input, output, dimC), NUMERIC_TYPES);
 }
 
 

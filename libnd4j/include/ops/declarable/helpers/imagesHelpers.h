@@ -29,7 +29,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output);
+    void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC);
     void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
     void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
 
