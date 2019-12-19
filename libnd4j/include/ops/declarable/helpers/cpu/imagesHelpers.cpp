@@ -13,10 +13,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
- 
+
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
-// 
+//
 
 #include <ops/declarable/helpers/adjust_hue.h>
 #include <ops/declarable/helpers/imagesHelpers.h>
@@ -29,27 +29,30 @@ namespace helpers {
 
 template <typename T>
 static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
+
     const T* x = input.bufferAsT<T>();
     T* z = output.bufferAsT<T>();
     const int rank = input.rankOf();
 
-    if(dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 
-       'c' == output.ordering() && 1 == output.ews()){
+    if(dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 'c' == output.ordering() && 1 == output.ews()) {
+
         auto func = PRAGMA_THREADS_FOR{
              for (auto i = start; i < stop; i += increment) {
                  const auto xStep = i*3;
                  z[i] = 0.2989f*x[xStep] + 0.5870f*x[xStep + 1] + 0.1140f*x[xStep + 2];
              }
         };
+
         samediff::Threads::parallel_for(func, 0, input.lengthOf() / 3, 1);
-        return;  
+
+        return;
     }
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimC);
     auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimC);
     const Nd4jLong numOfTads = packX.numberOfTads();
     const Nd4jLong xDimCstride = input.stridesOf()[dimC];
-    
+
     auto func = PRAGMA_THREADS_FOR{
         for (auto i = start; i < stop; i += increment) {
             const T* xTad = x + packX.platformOffsets()[i];

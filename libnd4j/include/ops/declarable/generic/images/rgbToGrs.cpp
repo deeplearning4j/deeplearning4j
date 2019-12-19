@@ -16,10 +16,10 @@
 
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
-// 
+//
 
 #include <ops/declarable/headers/images.h>
-#include <ops/declarable/CustomOperations.h>  
+#include <ops/declarable/CustomOperations.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 
@@ -27,19 +27,25 @@ namespace nd4j {
 namespace ops {
 
 CUSTOM_OP_IMPL(rgb_to_grs, 1, 1, false, 0, 0) {
-    
+
     const auto input = INPUT_VARIABLE(0);
-    auto output = OUTPUT_VARIABLE(0);
-    const int rank = input->rankOf();
-    const int arg_size = block.getIArguments()->size();
-    const int dimC = arg_size > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
-    REQUIRE_TRUE(rank >= 1, 0, "RGBtoGrayScale: Fails to meet the rank requirement: %i >= 1 ", rank);
-    REQUIRE_TRUE(rank >= 1, 0, "RGBGrayScale: Fails to meet the rank requirement: %i >= 1 ", rank);
-    if (arg_size > 0) {
-        REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -rank, rank);
+         auto output = OUTPUT_VARIABLE(0);
+
+    const int inRank = input->rankOf();
+    const int argSize = block.getIArguments()->size();
+    const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + inRank) : inRank - 1;
+
+    REQUIRE_TRUE(inRank >= 1, 0, "RGBtoGrayScale: Fails to meet the inRank requirement: %i >= 1 ", inRank);
+    REQUIRE_TRUE(inRank >= 1, 0, "RGBGrayScale: Fails to meet the inRank requirement: %i >= 1 ", inRank);
+    if (argSize > 0) {
+        REQUIRE_TRUE(dimC >= 0 && dimC < inRank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -inRank, inRank);
     }
     REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBGrayScale: operation expects 3 channels (R, G, B) in last dimention, but received %i instead", input->sizeAt(dimC));
+
     helpers::transformRgbGrs(block.launchContext(), *input, *output, dimC);
+
+    printf("%i \n", output->e<int>(0) );
+
     return Status::OK();
 }
 
@@ -50,13 +56,17 @@ DECLARE_TYPES(rgb_to_grs) {
 
 DECLARE_SHAPE_FN(rgb_to_grs) {
 
-    const auto input = INPUT_VARIABLE(0);     
-    const int rank = input->rankOf();
-    REQUIRE_TRUE(rank >= 1, 0, "RGBtoGrayScale: Fails to meet the rank requirement: %i >= 1 ", rank);
-    const int dimLast = input->sizeAt(rank - 1);
+    const auto input = INPUT_VARIABLE(0);
+    const int inRank = input->rankOf();
+
+    const int dimLast = input->sizeAt(inRank - 1);
+
+    REQUIRE_TRUE(inRank >= 1, 0, "RGBtoGrayScale: Fails to meet the inRank requirement: %i >= 1 ", inRank);
     REQUIRE_TRUE(dimLast == 3, 0, "RGBtoGrayScale: operation expects 3 channels (R, B, G) in last dimention, but received %i", dimLast);
-    auto nShape = input->getShapeInfoAsVector();
-    nShape[rank - 1] = 1;
+
+    auto nShape = input->getShapeAsVector();
+    nShape[inRank - 1] = 1;
+
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(input->dataType(), input->ordering(), nShape));
 }
 

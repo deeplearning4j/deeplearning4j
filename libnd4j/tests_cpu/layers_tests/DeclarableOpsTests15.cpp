@@ -1517,7 +1517,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_hsv_6) {
     auto expected = NDArrayFactory::create<float>('c', { 3 },
         { 263.25842697f, 0.74476987f,  0.9372549f });
 
-    //get subarray 
+    //get subarray
     std::unique_ptr<NDArray> subArrRgbs(rgbs.subarray({ NDIndex::all(), NDIndex::point(0) }));
     subArrRgbs->reshapei({ 3 });
 #if 0
@@ -1730,7 +1730,7 @@ TEST_F(DeclarableOpsTests15, test_hsv_to_rgb_6) {
          0.6,   0.81960784,   0.41960784,   0.82352941
         });
 
-    //get subarray 
+    //get subarray
     std::unique_ptr<NDArray> subArrHsvs(hsvs.subarray({ NDIndex::all(), NDIndex::point(0) }));
     subArrHsvs->reshapei({ 3 });
 #if 0
@@ -1755,29 +1755,25 @@ TEST_F(DeclarableOpsTests15, test_hsv_to_rgb_6) {
 
 }
 
-
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_1) {
-    // Description
-    // single pixel
 
-   // int all possitive
-    auto rgbs = NDArrayFactory::create<int>('c', { 3 }, { 10, 50, 200 });
-    auto expected = NDArrayFactory::create<int>('c', { 1 }, { 43 });
+    NDArray rgbs('c', { 3 }, { 10, 50, 200 }, nd4j::DataType::INT32);
+    NDArray expected('c', { 1 }, { 55 }, nd4j::DataType::INT32);
 
     nd4j::ops::rgb_to_grs op;
-    auto result = op.execute({ &rgbs }, {}, {});
+    auto result = op.execute({&rgbs}, {}, {});
+    auto output = result->at(0);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result);
-#if 0
-    //visual check
-    rgbs.printBuffer("rgbs ");
-    actual.printBuffer("GRS ");
-    expected.printBuffer("exp");
-#endif
-    auto actual = result->at(0);
-    ASSERT_TRUE(expected.equalsTo(actual));
+    ASSERT_EQ(Status::OK(), result->status());
+
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
 }
 
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_2) {
     // Description
     // single pixel
@@ -1799,7 +1795,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_2) {
     auto actual = result->at(0);
     ASSERT_TRUE(expected.equalsTo(actual));
 }
-    
+
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_3) {
     // Description
     // single pixel
@@ -1944,7 +1940,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_8) {
               148, 242, 208,
               183, 147, 200
         });
-    auto expected = NDArrayFactory::create<int>('c', { 5, 4, 1 }, { 
+    auto expected = NDArrayFactory::create<int>('c', { 5, 4, 1 }, {
                         176, 206, 98, 140,
                         119, 178, 193, 130,
                         114, 162, 152, 192,
@@ -2018,13 +2014,13 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_9) {
 
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_10) {
 
-    auto rgbs = NDArrayFactory::create<float>('c', { 4,3 },{ 
+    auto rgbs = NDArrayFactory::create<float>('c', { 4,3 },{
         39.84,   -5.492,  51.38,
         99.9 ,  -48.75 ,  27.27,
         14.3 ,    9.22 , -24.36,
-        42.25,    7.094, 118.2 
+        42.25,    7.094, 118.2
         });
-    auto expected = NDArrayFactory::create<float>('c', { 4, 1 },{ 
+    auto expected = NDArrayFactory::create<float>('c', { 4, 1 },{
              -19.48511505,
              19.18243217 ,
              24.56029892 ,
