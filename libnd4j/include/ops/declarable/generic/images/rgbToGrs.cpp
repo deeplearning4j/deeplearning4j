@@ -36,7 +36,6 @@ CUSTOM_OP_IMPL(rgb_to_grs, 1, 1, false, 0, 0) {
     const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + inRank) : inRank - 1;
 
     REQUIRE_TRUE(inRank >= 1, 0, "RGBtoGrayScale: Fails to meet the inRank requirement: %i >= 1 ", inRank);
-    REQUIRE_TRUE(inRank >= 1, 0, "RGBGrayScale: Fails to meet the inRank requirement: %i >= 1 ", inRank);
     if (argSize > 0) {
         REQUIRE_TRUE(dimC >= 0 && dimC < inRank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -inRank, inRank);
     }
@@ -55,14 +54,18 @@ DECLARE_SHAPE_FN(rgb_to_grs) {
 
     const auto input = INPUT_VARIABLE(0);
     const int inRank = input->rankOf();
-
-    const int dimLast = input->sizeAt(inRank - 1);
+    
+    const int argSize = block.getIArguments()->size();
+    const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + inRank) : inRank - 1;
 
     REQUIRE_TRUE(inRank >= 1, 0, "RGBtoGrayScale: Fails to meet the inRank requirement: %i >= 1 ", inRank);
-    REQUIRE_TRUE(dimLast == 3, 0, "RGBtoGrayScale: operation expects 3 channels (R, B, G) in last dimention, but received %i", dimLast);
+    if (argSize > 0) {
+        REQUIRE_TRUE(dimC >= 0 && dimC < inRank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -inRank, inRank);
+    }
+    REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBtoGrayScale: operation expects 3 channels (R, B, G) in last dimention, but received %i", dimC);
 
     auto nShape = input->getShapeAsVector();
-    nShape[inRank - 1] = 1;
+    nShape[dimC] = 1;
 
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(input->dataType(), input->ordering(), nShape));
 }

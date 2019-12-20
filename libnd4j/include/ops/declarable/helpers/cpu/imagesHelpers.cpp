@@ -32,25 +32,29 @@ namespace helpers {
 
 template <typename T>
 static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
+    
     const T* x = input.bufferAsT<T>();
     T* z = output.bufferAsT<T>();
     const int rank = input.rankOf();
 
     if(dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 
         'c' == output.ordering() && 1 == output.ews()){
+
         auto func = PRAGMA_THREADS_FOR{
              for (auto i = start; i < stop; i += increment) {
                  const auto xStep = i*3;
                  z[i] = 0.2989f*x[xStep] + 0.5870f*x[xStep + 1] + 0.1140f*x[xStep + 2];
              }
         };
+
         samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
         return;  
     }
+
     auto func = PRAGMA_THREADS_FOR{
+        
          Nd4jLong coords[MAX_RANK];
          for (auto i = start; i < stop; i += increment) {                
-
              shape::index2coords(i, output.getShapeInfo(), coords);
              const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
              const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);
@@ -59,6 +63,7 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
              z[zOffset] = 0.2989f*x[xOffset0] + 0.5870f*x[xOffset1] + 0.1140f*x[xOffset2];
          }
      };
+
      samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
      return;
 }
