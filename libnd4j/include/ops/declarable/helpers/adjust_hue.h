@@ -41,33 +41,33 @@ FORCEINLINE _CUDA_HD void rgbToHsv(const T& r, const T& g, const T& b, T& h, T& 
     const T max = nd4j::math::nd4j_max<T>(r, nd4j::math::nd4j_max<T>(g, b));
     const T min = nd4j::math::nd4j_min<T>(r, nd4j::math::nd4j_min<T>(g, b));
     const T c  = max - min;
-
+    const T _p6 = (T)1 / (T)6;
     // calculate h
     if(c == 0) {
         h = 0;
     }
     else if(max == r) {
-        h = 60.f * ((g - b) / c) + (g >= b ? 0 : 360);
+        h = _p6 * ((g - b) / c) + (g >= b ? (T)0 : (T)1);
     }
     else if(max == g) {
-        h = 60.f * ((b - r) / c) + 120;
+        h = _p6 * ((b - r) / c + (T)2);
     }
     else { // max == b
-        h = 60.f * ((r - g) / c) + 240;
+        h = _p6 * ((r - g) / c + (T)4);
     }
 
     // calculate s
     s = max == (T)0 ? (T)0 : c / max;
 
     // calculate v
-    v = max / 255.f;
+    v = max;// / 255.f;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 FORCEINLINE _CUDA_HD void hsvToRgb(const T& h, const T& s, const T& v, T& r, T& g, T& b) {
 
-    const float sector = h / 60.f;
+    const float sector = h * 6.f;
     const T c = v * s;
 
     if(0.f <= sector && sector < 1.f) {
@@ -101,11 +101,12 @@ FORCEINLINE _CUDA_HD void hsvToRgb(const T& h, const T& s, const T& v, T& r, T& 
         b = v - c * (sector - 5);
     }
 
-    r *= 255;
-    g *= 255;
-    b *= 255;
+//    r *= 255;
+//    g *= 255;
+//    b *= 255;
 }
 
+ 
 /*////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 static FORCEINLINE _CUDA_HD void rgb_to_hv(T r, T g, T b, T* h, T* v_min, T* v_max) {
