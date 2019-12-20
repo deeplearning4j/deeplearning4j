@@ -28,14 +28,14 @@ namespace helpers {
     template <typename T>
     static void _extractPatches(NDArray* images, NDArray* output, int sizeRow, int sizeCol, int strideRow, int strideCol, int rateRow, int rateCol, bool theSame){
         std::vector<int> restDims({1, 2, 3}); // the first and the last dims
-        std::unique_ptr<ResultSet> listOfMatricies(images->allTensorsAlongDimension(restDims));
-        std::unique_ptr<ResultSet> listOfOutputs(output->allTensorsAlongDimension(restDims));
+        ResultSet listOfMatricies = images->allTensorsAlongDimension(restDims);
+        ResultSet listOfOutputs = output->allTensorsAlongDimension(restDims);
         // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
         //int e = 0;
         const int ksizeRowsEffective = sizeRow + (sizeRow - 1) * (rateRow - 1);
         const int ksizeColsEffective = sizeCol + (sizeCol - 1) * (rateCol - 1);
         const int ksize = ksizeRowsEffective * ksizeColsEffective;
-        int batchCount = listOfMatricies->size(); //lengthOf() / ksize;
+        int batchCount = listOfMatricies.size(); //lengthOf() / ksize;
         Nd4jLong lastDim = images->sizeAt(3);
         Nd4jLong outLastDim = output->sizeAt(3);
         Nd4jLong rowDim = images->sizeAt(1);
@@ -51,8 +51,8 @@ namespace helpers {
 
        auto func = PRAGMA_THREADS_FOR {
            for (auto batch = 0; batch < stop; batch += increment) {
-               auto patch = listOfMatricies->at(batch);
-               auto outMatrix = listOfOutputs->at(batch);
+               auto patch = listOfMatricies.at(batch);
+               auto outMatrix = listOfOutputs.at(batch);
 
                for (Nd4jLong i = 0; i < outRowDim; i++) {
                    for (Nd4jLong j = 0; j < outColDim; j++) {

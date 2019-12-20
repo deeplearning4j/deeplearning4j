@@ -40,11 +40,11 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
 
     if(gamma != nullptr) {
         auto lambda = LAMBDA_TT(x, y, eps) {return x / nd4j::math::nd4j_sqrt<T, T>(y + eps);};
-        const_cast<NDArray*>(gamma)->applyPairwiseLambda<T>(variance, lambda, &sigmaInvGam);
+        const_cast<NDArray*>(gamma)->applyPairwiseLambda<T>(*variance, lambda, sigmaInvGam);
     }
     else {
         auto lambda = LAMBDA_T(x, eps) { return 1. / nd4j::math::nd4j_sqrt<T, T>(x + eps); };
-        const_cast<NDArray*>(variance)->applyLambda<T>(lambda, &sigmaInvGam);
+        const_cast<NDArray*>(variance)->applyLambda<T>(lambda, sigmaInvGam);
     }
 
     // auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);   //  sigmaInvGam = 1 / sqrt(variance + epsilon)

@@ -28,7 +28,7 @@ namespace helpers {
 
     template <typename T>
     void _confusionFunctor(NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
-        std::unique_ptr<ResultSet> arrs(output->allTensorsAlongDimension({1}));
+        ResultSet arrs = output->allTensorsAlongDimension({1});
         int lLen = labels->lengthOf();
 
         auto func = PRAGMA_THREADS_FOR {
@@ -36,7 +36,7 @@ namespace helpers {
                 auto label = labels->e<Nd4jLong>(j);
                 auto pred = predictions->e<Nd4jLong>(j);
                 T value = (weights == nullptr ? (T) 1.0f : weights->e<T>(j));
-                (*arrs->at(label)).p<T>(pred, value);
+                arrs.at(label)->p<T>(pred, value);
             }
         };
 

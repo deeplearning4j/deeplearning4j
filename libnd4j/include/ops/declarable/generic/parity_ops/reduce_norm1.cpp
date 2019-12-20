@@ -51,7 +51,7 @@ CUSTOM_OP_IMPL(reduce_norm1, 1, 1, false, 0, 0) {
     else if (block.getTArguments()->size())
         keepDims = (bool)T_ARG(0);
 
-    input->reduceAlongDimension(reduce::Norm1, output, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::Norm1, *output, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -85,7 +85,7 @@ DECLARE_TYPES(reduce_norm1) {
         ->setAllowedInputTypes(nd4j::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
-#endif 
+#endif
 #if NOT_EXCLUDED(OP_reduce_norm1_bp)
 
 //////////////////////////////////////////////////////////////////////////
@@ -100,7 +100,7 @@ CUSTOM_OP_IMPL(reduce_norm1_bp, 2, 1, false, 0, 0) {
     auto gradO = INPUT_VARIABLE(1);
     auto gradI = OUTPUT_VARIABLE(0);
 
-    input->applyTransform(nd4j::transform::Sign, gradI);
+    input->applyTransform(nd4j::transform::Sign, *gradI);
 
     if (gradO->lengthOf() == 1) {
         *gradI *= *gradO;

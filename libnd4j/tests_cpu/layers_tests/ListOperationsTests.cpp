@@ -59,7 +59,7 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
         auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
         list.write(e, row);
-        tads->at(e)->assign(row);
+        tads.at(e)->assign(row);
     }
 
     nd4j::ops::stack_list op;
@@ -75,7 +75,6 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
-    delete tads;
 }
 
 TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
@@ -86,7 +85,7 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
         auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
         //list.write(e, row);
-        tads->at(e)->assign(row);
+        tads.at(e)->assign(row);
         delete row;
     }
 
@@ -103,13 +102,12 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
 //    ASSERT_TRUE(exp.equalsTo(z));
     for (int e = 0; e < 10; e++) {
         auto row = list.read(e);
-        ASSERT_TRUE(row->equalsTo(tads->at(e)));
+        ASSERT_TRUE(row->equalsTo(tads.at(e)));
         //list.write(e, row);
         delete row;
     }
 
     delete result;
-    delete tads;
 }
 
 //TEST_F(ListOperationsTests, BasicTest_UnStackList_2) {
@@ -153,7 +151,7 @@ TEST_F(ListOperationsTests, BasicTest_Read_1) {
     for (int e = 0; e < 10; e++) {
         auto row = NDArrayFactory::create_<double>('c', {1, 100});
         row->assign((double) e);
-        list.write(e, row->dup());
+        list.write(e, new NDArray(row->dup()));
 
         delete row;
     }
@@ -179,16 +177,16 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
     for (int e = 0; e < 10; e++) {
         auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
-        list.write(e, row->dup());
+        list.write(e, new NDArray(row->dup()));
 
         delete row;
     }
 
     auto tads = exp.allTensorsAlongDimension({1});
-    tads->at(0)->assign(1.0f);
-    tads->at(1)->assign(1.0f);
-    tads->at(2)->assign(3.0f);
-    tads->at(3)->assign(3.0f);
+    tads.at(0)->assign(1.0f);
+    tads.at(1)->assign(1.0f);
+    tads.at(2)->assign(3.0f);
+    tads.at(3)->assign(3.0f);
 
 
     nd4j::ops::pick_list op;
@@ -202,7 +200,6 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
-    delete tads;
 }
 
 TEST_F(ListOperationsTests, BasicTest_Size_1) {
@@ -211,7 +208,7 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
     for (int e = 0; e < 10; e++) {
         auto row = NDArrayFactory::create_<double>('c', {100});
         row->assign((double) e);
-        list.write(e, row->dup());
+        list.write(e, new NDArray(row->dup()));
 
         delete row;
     }
@@ -272,14 +269,14 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     for (int e = 0; e < 10; e++) {
         auto row = NDArrayFactory::create_<double>('c', {5});
         row->assign((double) e);
-        tads->at(e)->assign(row);
+        tads.at(e)->assign(row);
 
         if (e < 2)
-            tads0->at(cnt0++)->assign(row);
+            tads0.at(cnt0++)->assign(row);
         else if (e < 5)
-            tads1->at(cnt1++)->assign(row);
+            tads1.at(cnt1++)->assign(row);
         else
-            tads2->at(cnt2++)->assign(row);
+            tads2.at(cnt2++)->assign(row);
 
         delete row;
     }
@@ -300,10 +297,6 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     ASSERT_TRUE(exp2.equalsTo(list.readRaw(2)));
 
     delete result;
-    delete tads;
-    delete tads0;
-    delete tads1;
-    delete tads2;
 }
 
 TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
@@ -315,7 +308,7 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
     for (int e = 0; e < 10; e++) {
         auto row = NDArrayFactory::create_<double>('c', {1, 5});
         row->assign((double) e);
-        tads->at(e)->assign(row);
+        tads.at(e)->assign(row);
 
         delete row;
     }
@@ -329,15 +322,13 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     for (int e = 0; e < 10; e++) {
-        auto row = tads->at(9 - e);
+        auto row = tads.at(9 - e);
         auto chunk = list.readRaw(e);
 
         ASSERT_TRUE(chunk->isSameShape(row));
 
         ASSERT_TRUE(chunk->equalsTo(row));
     }
-
-    delete tads;
     delete result;
 }
 
@@ -376,7 +367,7 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
     for (int e = 0; e < 10; e++) {
         auto row = NDArrayFactory::create_<double>('c', {3});
         row->assign((double) e);
-        list.write(e, row->dup());
+        list.write(e, new NDArray(row->dup()));
 
         delete row;
     }
@@ -384,7 +375,7 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
     auto exp = NDArrayFactory::create<double>('c', {10, 3});
     auto tads = exp.allTensorsAlongDimension({1});
     for (int e = 0; e < 10; e++) {
-        auto tad = tads->at(9 - e);
+        auto tad = tads.at(9 - e);
         tad->assign(e);
     }
 
@@ -407,7 +398,6 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
-    delete tads;
 }
 
 TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
@@ -415,17 +405,16 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
 
     auto matrix  = NDArrayFactory::create_<float>('c', {3, 3});
     auto tads = matrix->allTensorsAlongDimension({1});
-    for (int e = 0; e < tads->size(); e++) {
-        tads->at(e)->assign((float) (e+1));
+    for (int e = 0; e < tads.size(); e++) {
+        tads.at(e)->assign((float) (e+1));
     }
 
 
     auto exp = NDArrayFactory::create<float>('c', {3, 3});
     auto tadsExp = exp.allTensorsAlongDimension({1});
-    tadsExp->at(0)->assign(0.f);
-    tadsExp->at(1)->assign(-1.f);
-    tadsExp->at(2)->assign(-2.f);
-    delete tadsExp;
+    tadsExp.at(0)->assign(0.f);
+    tadsExp.at(1)->assign(-1.f);
+    tadsExp.at(2)->assign(-2.f);
 
     auto indices = NDArrayFactory::valueOf<int>({3}, 1, 'c');
     //indices->linspace(0);
@@ -472,7 +461,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
 //    nodeF1->setCustomOp(&opF);
 //    nodeF2->setCustomOp(&opF);
 
-    // now we're stacking chunks back to matrix state 
+    // now we're stacking chunks back to matrix state
     nd4j::ops::stack_list opG;
     auto nodeG = new Node(&opG, 20, {2, 15, 16, 17});
     //auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
@@ -537,8 +526,6 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
 
     ASSERT_TRUE(exp.isSameShape(stack));
     ASSERT_TRUE(exp.equalsTo(stack));
-
-    delete tads;
 }
 
 
@@ -548,16 +535,15 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     auto scalar = NDArrayFactory::create_<double>(0.0f);
     auto matrix = NDArrayFactory::create_<double>('c', {3, 3});
     auto tads = matrix->allTensorsAlongDimension({1});
-    for (int e = 0; e < tads->size(); e++) {
-        tads->at(e)->assign((float) (e+1));
+    for (int e = 0; e < tads.size(); e++) {
+        tads.at(e)->assign((float) (e+1));
     }
-
 
     auto exp = NDArrayFactory::create<double>('c', {3, 3});
     auto tadsExp = exp.allTensorsAlongDimension({1});
-    tadsExp->at(0)->assign(0.f);
-    tadsExp->at(1)->assign(-1.f);
-    tadsExp->at(2)->assign(-2.f);
+    tadsExp.at(0)->assign(0.f);
+    tadsExp.at(1)->assign(-1.f);
+    tadsExp.at(2)->assign(-2.f);
 
     //auto indices = NDArray<float>::valueOf({1, 3}, 1.0f, 'c');
     auto indices = NDArrayFactory::create_<double>('c', {1, 3});
@@ -580,7 +566,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     // filling list with matrix
     nd4j::ops::scatter_list opC;
     auto nodeC = new Node(&opC, 3, {2, -2, 1, -3});
-    
+
     //nodeC->setCustomOp(&opC);
 
     nd4j::ops::read_list opD;
@@ -608,7 +594,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 //    nodeF1->setCustomOp(&opF);
 //    nodeF2->setCustomOp(&opF);
 
-    // now we're gathering chunks back to matrix state 
+    // now we're gathering chunks back to matrix state
     nd4j::ops::pick_list opG;
     auto nodeG = new Node(&opG, 20, {2, -2, 15, 16, 17});
     //auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
@@ -665,14 +651,11 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     ASSERT_EQ(3, list->elements());
 
     ASSERT_TRUE(variableSpace->hasVariable(20));
-    
+
     auto stack = variableSpace->getVariable(20)->getNDArray();
-    
+
     ASSERT_TRUE(stack != nullptr);
 
     ASSERT_TRUE(exp.isSameShape(stack));
     ASSERT_TRUE(exp.equalsTo(stack));
-
-    delete tadsExp;
-    delete tads;
 }

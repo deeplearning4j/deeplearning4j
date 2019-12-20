@@ -38,7 +38,7 @@ namespace nd4j {
         }
 
         LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar)  : LegacyOp::LegacyOp(1, opNum){
-            _scalar = scalar.dup(scalar.ordering());
+            _scalar = new NDArray(scalar.dup(scalar.ordering()));
         }
 
         ShapeList *LegacyScalarOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {

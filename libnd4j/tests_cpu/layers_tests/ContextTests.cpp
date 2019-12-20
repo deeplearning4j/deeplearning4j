@@ -130,7 +130,7 @@ TEST_F(ContextTests, Basic_Test_5) {
     auto _20 = NDArrayFactory::create_<float>('c', {2, 2});
     _20->linspace(1);
 
-    auto exp = _20->dup();
+    auto exp = new NDArray(_20->dup());
 
     ctx.pushNDArrayToVariableSpace(1, 1, _20);
 

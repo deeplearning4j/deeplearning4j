@@ -120,7 +120,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_3) {
 TEST_F(ConstantShapeHelperTests, basic_test_4) {
     auto array = NDArrayFactory::create_<float>('c', {128, 256});
 
-    auto dup = array->dup('f');
+    auto dup = new NDArray(array->dup('f'));
 
     ASSERT_TRUE(dup->shapeInfo() != nullptr);
 
@@ -165,12 +165,11 @@ TEST_F(ConstantShapeHelperTests, basic_test_7) {
 
     IndicesList indices({NDIndex::all(), NDIndex::interval(0,1)});
     auto strided = array->subarray(indices);
-    strided->assign(1.0f);
+    strided.assign(1.0f);
 
     //strided->printIndexedBuffer("column");
 
     delete array;
-    delete strided;
 }
 
 TEST_F(ConstantHelperTests, basic_test_1) {

@@ -59,7 +59,7 @@ namespace helpers {
         auto listOut  = output->allTensorsAlongDimension({output->rankOf() - 1});
         auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
-        if (listOut->size() != listDiag->size()) {
+        if (listOut.size() != listDiag.size()) {
             nd4j_printf("matrix_diag_part: Input matrix has wrong shape.", "");
             return ND4J_STATUS_VALIDATION;
         }

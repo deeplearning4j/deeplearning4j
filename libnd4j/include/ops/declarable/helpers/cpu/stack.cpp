@@ -47,15 +47,13 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray* outArr, c
 
 		std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(outArr->rankOf(), {dim});
 		auto list = outArr->allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
-        int listSize = list->size();
+        int listSize = list.size();
 
         auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment)
-                list->at(i)->assign(inArrs[i]);
+                list.at(i)->assign(inArrs[i]);
         };
         samediff::Threads::parallel_tad(func, 0, listSize);
-
-		delete list;
 	}
 }
 

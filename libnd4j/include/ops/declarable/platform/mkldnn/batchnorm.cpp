@@ -339,38 +339,38 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
 
     // x - mean
     NDArray xMinusMean(x); // empty array with same shape as x
-    const_cast<NDArray*>(x)->applyBroadcast(nd4j::broadcast::Subtract, axes, mean, &xMinusMean);
+    const_cast<NDArray*>(x)->applyBroadcast(nd4j::broadcast::Subtract, axes, *mean, xMinusMean);
 
     // stdInv
     NDArray stdInv = *variance + epsilon;
-    stdInv.applyTransform(transform::Reciprocal);                           // 1 / (variance + epsilon)
-    stdInv.applyTransform(transform::Sqrt);                                 // 1 / (variance + epsilon)^0.5
+    stdInv.applyTransform(transform::Reciprocal, stdInv);                           // 1 / (variance + epsilon)
+    stdInv.applyTransform(transform::Sqrt, stdInv);                                 // 1 / (variance + epsilon)^0.5
 
     // dfdm / N
-    auto dfdm = dLdO->reduceAlongDims(nd4j::reduce::Sum, excludedAxes);
+    auto dfdm = dLdO->reduceAlongDimension(nd4j::reduce::Sum, excludedAxes);
     dfdm *= stdInv;
     dfdm *= -Ninv;
 
     // dvdm / 2
     NDArray dvdm(mean);                 // empty array with same shape as mean
-    xMinusMean.reduceAlongDimension(nd4j::reduce::Sum, &dvdm, excludedAxes);
+    xMinusMean.reduceAlongDimension(nd4j::reduce::Sum, dvdm, excludedAxes);
     dvdm *= -Ninv;
 
     // (2/N)*dfdv
     NDArray dfdv(variance);                 // empty array with same shape as variance
-    (xMinusMean * *dLdO).reduceAlongDimension(nd4j::reduce::Sum, &dfdv, excludedAxes);
+    (xMinusMean * *dLdO).reduceAlongDimension(nd4j::reduce::Sum, dfdv, excludedAxes);
     dfdv *= stdInv*stdInv*stdInv;
     dfdv *= -Ninv;
 
     // dvdm/2  + (x - m)
-    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, &dvdm);
+    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, dvdm, xMinusMean);
     // dfdv * (dvdm/2  + (x - m))
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, &dfdv);
+    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, dfdv, xMinusMean);
     // add dfdm / N
-    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, &dfdm);
+    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, dfdm, xMinusMean);
     // * gamma
     auto gamma = (*weights)({0,1, 0,0});
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, &gamma);
+    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, gamma, xMinusMean);
 
     *dLdI += xMinusMean;
 }

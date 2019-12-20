@@ -345,9 +345,9 @@ void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& outpu
     	BUILD_SINGLE_SELECTOR(input.dataType(), softMaxCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), packX.specialShapeInfo(), packX.specialOffsets(), output.specialBuffer(), packZ.specialShapeInfo(), packZ.specialOffsets()), FLOAT_TYPES);
     	NDArray::registerSpecialUse({&output}, {&input});
 
-		// auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
+		// auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
 		// (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-		// auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+		// auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
 		// output /= sumAlongDim;
 		// input.tickReadDevice();
 	}
@@ -463,11 +463,11 @@ void logSoftmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& ou
 	}
 	else {
 
-		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-		(input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-		auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
+		(input - maxAlongDim).applyTransform(transform::Exp, output); // output contains exponents temporarily
+		auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
 		output /= sumAlongDim;
-		output.applyTransform(transform::Log);
+		output.applyTransform(transform::Log, output);
 		input.tickReadDevice();
 	}
 
@@ -580,9 +580,9 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 	}
 	else {
 
-		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-		(input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-		auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
+		(input - maxAlongDim).applyTransform(transform::Exp, output); // output contains exponents temporarily
+		auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
 		output /= sumAlongDim;
 		output *= (1.f - output);	// derivative
 		input.tickReadDevice();
@@ -600,7 +600,7 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 		auto routine = LAMBDA_T(_x, threshold) {
 			return _x > (T)threshold ? _x: (T)0.f;
 		};
-		const_cast<NDArray&>(input).applyLambda(routine, &output);
+		const_cast<NDArray&>(input).applyLambda(routine, output);
 	}
 
 	void thresholdRelu(nd4j::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
@@ -611,7 +611,7 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 	linkage void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
         auto derivative = LAMBDA_TT(_x, grO, theta) {if (_x > theta) return grO; else return static_cast<T>(0); };
 
-        input->applyPairwiseLambda(dLdO, derivative, output);
+        input->applyPairwiseLambda(*dLdO, derivative, *output);
 	}
 
 	void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {

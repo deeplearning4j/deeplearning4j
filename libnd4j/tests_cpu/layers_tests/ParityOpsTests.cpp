@@ -92,9 +92,9 @@ TEST_F(ParityOpsTests, TestMinimum1) {
 TEST_F(ParityOpsTests, TestTear1) {
     auto input = NDArrayFactory::create<float>('c', {10, 5});
     auto tads = input.allTensorsAlongDimension({1});
-    for (int e = 0; e < tads->size(); e++) {
-        ASSERT_EQ(5, tads->at(e)->lengthOf());
-        tads->at(e)->assign((float) e + 1);
+    for (int e = 0; e < tads.size(); e++) {
+        ASSERT_EQ(5, tads.at(e)->lengthOf());
+        tads.at(e)->assign((float) e + 1);
     }
 
     nd4j::ops::tear op;
@@ -104,18 +104,17 @@ TEST_F(ParityOpsTests, TestTear1) {
     ASSERT_EQ(10, result->size());
 
     for (int e = 0; e < result->size(); e++)
-        ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
+        ASSERT_TRUE(tads.at(e)->equalsTo(result->at(e)));
 
     delete result;
-    delete tads;
 }
 
 TEST_F(ParityOpsTests, TestUnstack1) {
     auto input = NDArrayFactory::create<float>('c', {10, 5});
     auto tads = input.allTensorsAlongDimension({1});
-    for (int e = 0; e < tads->size(); e++) {
-        ASSERT_EQ(5, tads->at(e)->lengthOf());
-        tads->at(e)->assign((float) e + 1);
+    for (int e = 0; e < tads.size(); e++) {
+        ASSERT_EQ(5, tads.at(e)->lengthOf());
+        tads.at(e)->assign((float) e + 1);
     }
 
     nd4j::ops::unstack op;
@@ -124,14 +123,10 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 
     ASSERT_EQ(10, result->size());
 
-    // result->at(0)->printShapeInfo("rz");
-    // tads->at(0)->printShapeInfo("re");
-
     for (int e = 0; e < result->size(); e++)
-        ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
+        ASSERT_TRUE(tads.at(e)->equalsTo(result->at(e)));
 
     delete result;
-    delete tads;
 }
 
 
@@ -139,9 +134,9 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 TEST_F(ParityOpsTests, TestUnstack2) {
     auto input = NDArrayFactory::create<float>('c', {5,2,6});
     auto tads = input.allTensorsAlongDimension({0,1});
-    for (int e = 0; e < tads->size(); e++) {
-        ASSERT_EQ(10, tads->at(e)->lengthOf());
-        tads->at(e)->assign((float) e + 1);
+    for (int e = 0; e < tads.size(); e++) {
+        ASSERT_EQ(10, tads.at(e)->lengthOf());
+        tads.at(e)->assign((float) e + 1);
     }
 
     nd4j::ops::unstack op;
@@ -151,10 +146,9 @@ TEST_F(ParityOpsTests, TestUnstack2) {
     ASSERT_EQ(6, result->size());
 
     for (int e = 0; e < result->size(); e++)
-        ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
+        ASSERT_TRUE(tads.at(e)->equalsTo(result->at(e)));
 
     delete result;
-    delete tads;
 }
 
 TEST_F(ParityOpsTests, TestUnstack3) {
@@ -689,11 +683,10 @@ TEST_F(ParityOpsTests, Test_Bias_Add_1) {
     auto z = result->at(0);
 
     auto tads = z->allTensorsAlongDimension({1});
-    for (int e = 0; e < tads->size(); e++) {
-        ASSERT_TRUE(bias.equalsTo(tads->at(e)));
+    for (int e = 0; e < tads.size(); e++) {
+        ASSERT_TRUE(bias.equalsTo(tads.at(e)));
     }
 
-    delete tads;
     delete result;
 }
 
@@ -833,7 +826,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_8) {
     // z.printBuffer();
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected.isSameShapeStrict(&z));
+    ASSERT_TRUE(expected.isSameShapeStrict(z));
     ASSERT_TRUE(expected.equalsTo(z));
 }
 

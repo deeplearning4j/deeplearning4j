@@ -43,7 +43,7 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
 
     //exp.printIndexedBuffer("E B");
 
-    exp.applyBroadcast(broadcast::Add, {1}, &y);
+    exp.applyBroadcast(broadcast::Add, {1}, y, exp);
 
     nd4j::ops::add op;
     auto result = op.execute({&x, &y}, {}, {}, {});
@@ -70,7 +70,7 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
     y.linspace(1);
     exp.linspace(1);
 
-    exp.applyBroadcast(broadcast::Multiply, {1}, &y);
+    exp.applyBroadcast(broadcast::Multiply, {1}, y, exp);
 
     nd4j::ops::multiply op;
     auto result = op.execute({&x, &y}, {}, {}, {});
@@ -94,7 +94,7 @@ TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
     y.linspace(1);
     exp.linspace(1);
 
-    exp.applyBroadcast(broadcast::SquaredSubtract, {1}, &y);
+    exp.applyBroadcast(broadcast::SquaredSubtract, {1}, y, exp);
 
 
     nd4j::ops::squaredsubtract op;
@@ -856,7 +856,7 @@ TEST_F(BroadcastableOpsTests, test_bert_multiply_1) {
     z.printIndexedBuffer();
 */
 
-    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);
+    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), y, z);
 
     //z.printIndexedBuffer();
 
@@ -874,7 +874,7 @@ TEST_F(BroadcastableOpsTests, test_bert_multiply_2) {
     z.assign(119.f);
     e.assign(2.f);
 
-    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &z);
+    x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), y, z);
 
     ASSERT_EQ(e, z);
 }

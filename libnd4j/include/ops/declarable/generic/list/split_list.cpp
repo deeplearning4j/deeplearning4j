@@ -55,7 +55,7 @@ namespace nd4j {
             std::vector<Nd4jLong> indices(2 * array->rankOf(), 0);
             for (Nd4jLong e = 0; e < sizes->lengthOf(); e++) {
                 int c_size = sizes->e<int>(e);
-                
+
                 REQUIRE_TRUE(c_size > 0, 0, "Slice size should have postive value, but got %i instead", c_size);
                 REQUIRE_TRUE(cnt < array->sizeAt(0) && cnt + c_size <= array->sizeAt(0), 0, "Slices size should NOT be higher then number of TADs of source array. Source size: [%i]; Slice start: [%i]; Slice size: [%i]", array->sizeAt(0), cnt, c_size);
 
@@ -63,11 +63,11 @@ namespace nd4j {
                 indices[0] = cnt;
                 indices[1] = cnt + c_size;
                 cnt += c_size;
-                
+
                 auto subarray = (*array)(indices);
 
-                auto status = list->write(e, subarray.dup(array->ordering()));
-                
+                auto status = list->write(e, new NDArray(subarray.dup(array->ordering())));
+
                 if (status != ND4J_STATUS_OK)
                     return status;
             }

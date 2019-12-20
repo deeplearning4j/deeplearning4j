@@ -43,10 +43,10 @@ namespace nd4j {
                     // PWT case case
 
                     // X gradient
-                    epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
+                    epsNext->applyTriplewiseLambda(*x, *y, lambdaX, *gradX);
 
                     // Y gradient
-                    epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
+                    epsNext->applyTriplewiseLambda(*x, *y, lambdaY, *gradY);
 
                 } else if (y->isScalar()) {
                     T s = y->e<T>(0);
@@ -61,7 +61,7 @@ namespace nd4j {
                     else
                         gradY->assign(0.0f);
 
-                    epsNext->applyPairwiseLambda(x, lambdaS, gradX);
+                    epsNext->applyPairwiseLambda(*x, lambdaS, *gradX);
                 } else {
                     // broadcast case
 
@@ -71,8 +71,8 @@ namespace nd4j {
 
                     auto targetShape = epsNext->getShapeAsVector();
 
-                    preX->tileToShape(targetShape);
-                    preY->tileToShape(targetShape);
+                    preX.tileToShape(targetShape, preX);
+                    preY.tileToShape(targetShape, preY);
 
                     epsNext->applyTriplewiseLambda(preX, preY, lambdaX, preX);
                     epsNext->applyTriplewiseLambda(preX, preY, lambdaY, preY);
@@ -81,22 +81,16 @@ namespace nd4j {
                     auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                     if (axisX.size() > 0) {
-                        auto sum = preX->reduceAlongDimension(reduce::Sum, axisX);
+                        auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
                         gradX->assign(sum);
-                        delete sum;
                     } else
                         gradX->assign(preX);
 
                     if (axisY.size() > 0) {
-                        auto sum = preY->reduceAlongDimension(reduce::Sum, axisY);
+                        auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
                         gradY->assign(sum);
-                        delete sum;
                     } else
                         gradY->assign(preY);
-
-
-                    delete preX;
-                    delete preY;
                 }
 
             }

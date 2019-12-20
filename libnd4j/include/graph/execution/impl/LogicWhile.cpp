@@ -56,7 +56,7 @@ namespace nd4j {
                 } else {
                     // FIXME: in some cases it's possible to have no NDArray
                     if (inputVar->hasNDArray())
-                        innerVar->setNDArray(inputVar->getNDArray()->dup());
+                        innerVar->setNDArray(new NDArray(inputVar->getNDArray()->dup()));
                 }
             }
 

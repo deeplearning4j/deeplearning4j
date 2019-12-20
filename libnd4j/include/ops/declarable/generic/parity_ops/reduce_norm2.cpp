@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(reduce_norm2, 1, 1, false, 0, 0) {
     else if (block.getTArguments()->size())
         keepDims = (bool)T_ARG(0);
 
-    input->reduceAlongDimension(reduce::Norm2, output, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::Norm2, *output, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -124,7 +124,7 @@ CUSTOM_OP_IMPL(reduce_norm2_bp, 2, 1, false, 0, 0) {
 
         // *** calculations *** //
 
-        *gradI /= input->reduceAlongDims(reduce::Norm2, dimensions, true);
+        *gradI /= input->reduceAlongDimension(reduce::Norm2, dimensions, true);
 
         if(!keepDims) {
             auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());

@@ -175,13 +175,13 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
             PRAGMA_OMP_SIMD
             for (uint64_t i = 0; i < length; i++) {
-                z[i] /= n;
+                z[i] /= static_cast<T>(n);
             }
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i += increment) {
                     for (Nd4jLong ar = 1; ar < n; ar++) {
-                        z[i] += x[ar][i] / n;
+                        z[i] += x[ar][i] / static_cast<T>(n);
                     }
                 }
             };
@@ -201,7 +201,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i += increment) {
                     for (Nd4jLong ar = 0; ar < n; ar++) {
-                        z[i] += x[ar][i] / n;
+                        z[i] += x[ar][i] / static_cast<T>(n);
                     }
                 }
             };
@@ -365,11 +365,11 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 
                     if (hasBit) {
                         if (hasSign)
-                            dz[(e - 4) * 16 + bitId] -= threshold;
+                            dz[(e - 4) * 16 + bitId] -= static_cast<T>(threshold);
                         else
-                            dz[(e - 4) * 16 + bitId] += threshold;
+                            dz[(e - 4) * 16 + bitId] += static_cast<T>(threshold);
                     } else if (hasSign) {
-                        dz[(e - 4) * 16 + bitId] -= threshold / 2;
+                        dz[(e - 4) * 16 + bitId] -= static_cast<T>(threshold / 2);
                     }
                 }
             }
@@ -423,13 +423,13 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 
                         if (val < (T) 0.0f) {
                             byte |= 1 << (bitId + 16);
-                            dx[e] += threshold;
+                            dx[e] += static_cast<T>(threshold);
                         } else {
-                            dx[e] -= threshold;
+                            dx[e] -= static_cast<T>(threshold);
                         }
                     } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
                         byte |= 1 << (bitId + 16);
-                        dx[e] += threshold / 2;
+                        dx[e] += static_cast<T>(threshold / 2);
 
                         retVal++;
                     }

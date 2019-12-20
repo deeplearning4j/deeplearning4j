@@ -46,41 +46,41 @@ static FORCEINLINE void applyActivation(NDArray& x, const int opId, const float 
 
     switch (opId) {
         case 0:
-            (const_cast<NDArray&>(x)).applyTransform(transform::Tanh, &z);
+            (const_cast<NDArray&>(x)).applyTransform(transform::Tanh, z);
             break;
         case 1:
-            (const_cast<NDArray&>(x)).applyScalar<float>(scalar::RELU, 0, &z);
+            (const_cast<NDArray&>(x)).applyScalar<float>(scalar::RELU, 0, z);
             break;
         case 2:
-            (const_cast<NDArray&>(x)).applyTransform(transform::Sigmoid, &z);
+            (const_cast<NDArray&>(x)).applyTransform(transform::Sigmoid, z);
             break;
         case 3: {
             ExtraArguments args({ static_cast<double>(alpha), static_cast<double>(beta)});
-            (const_cast<NDArray&>(x)).applyTransform(transform::Affine, &z, &args);
+            (const_cast<NDArray&>(x)).applyTransform(transform::Affine, z, &args);
             break;
         }
         case 4:
-            (const_cast<NDArray&>(x)).applyScalar<float>(scalar::LeakyRELU, alpha, &z);
+            (const_cast<NDArray&>(x)).applyScalar<float>(scalar::LeakyRELU, alpha, z);
             break;
         case 5:
             helpers::thresholdRelu(x.getContext(), x, alpha, z);
             break;
         case 6: {
             ExtraArguments args({ static_cast<double>(alpha), static_cast<double>(beta)});
-            (const_cast<NDArray&>(x)).applyTransform(transform::ScaledTanh, &z, &args);
+            (const_cast<NDArray&>(x)).applyTransform(transform::ScaledTanh, z, &args);
             break;
         }
         case 7:
-            (const_cast<NDArray&>(x)).applyTransform(transform::HardSigmoid, &z);
+            (const_cast<NDArray&>(x)).applyTransform(transform::HardSigmoid, z);
             break;
         case 8:
-            (const_cast<NDArray&>(x)).applyScalar<float>(scalar::ELU, alpha, &z);
+            (const_cast<NDArray&>(x)).applyScalar<float>(scalar::ELU, alpha, z);
             break;
         case 9:
-            (const_cast<NDArray&>(x)).applyTransform(transform::SoftSign, &z);
+            (const_cast<NDArray&>(x)).applyTransform(transform::SoftSign, z);
             break;
         case 10:
-            (const_cast<NDArray&>(x)).applyTransform(transform::SoftPlus, &z);
+            (const_cast<NDArray&>(x)).applyTransform(transform::SoftPlus, z);
             break;
         default:
             throw std::invalid_argument("LSTM_LAYER operation: wrong id number of activation !");

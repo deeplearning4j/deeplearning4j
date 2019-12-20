@@ -141,7 +141,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output,
     }
     else {
          const int channelDim = isNCHW ? 1 : input.rankOf() - 1;      // second or last
-         const_cast<NDArray&>(input).applyBroadcast(nd4j::broadcast::Add, {channelDim}, &bias, &output);
+         const_cast<NDArray&>(input).applyBroadcast(nd4j::broadcast::Add, {channelDim}, bias, output);
     }
 }
 

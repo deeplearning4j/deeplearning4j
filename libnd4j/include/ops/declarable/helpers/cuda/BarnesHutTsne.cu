@@ -244,7 +244,7 @@ namespace helpers {
             return res;
         };
 
-        input->applyTriplewiseLambda(gradX, epsilon, gainsInternal, output);
+        input->applyTriplewiseLambda(*gradX, *epsilon, gainsInternal, *output);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -82,8 +82,8 @@ namespace helpers {
             NDArray alphaBroadcasted(broadcasted, alpha->dataType(), true, context);
             NDArray betaBroadcasted(broadcasted, beta->dataType(), true, context);
 
-            copyAlpha = (alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), alpha));
-            copyBeta = (betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), beta));
+            copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *alpha));
+            copyBeta = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *beta));
             copyAlpha->tickWriteDevice(); copyBeta->tickWriteDevice();
         }
 

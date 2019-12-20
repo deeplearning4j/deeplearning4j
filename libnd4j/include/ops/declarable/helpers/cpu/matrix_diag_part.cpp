@@ -37,24 +37,21 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
     auto listOut  = output->allTensorsAlongDimension({output->rankOf() - 1});
     auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
 
-    if (listOut->size() != listDiag->size()) {
+    if (listOut.size() != listDiag. size()) {
         nd4j_printf("matrix_diag_part: Input matrix has wrong shape.", "");
         return ND4J_STATUS_VALIDATION;
     }
     int lastDimension = nd4j::math::nd4j_min(input->sizeAt(-2), input->sizeAt(-1));
     // TODO: tune this properlys
-    int lO = listOut->size();
+    int lO = listOut.size();
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i += increment)
             for (int j = 0; j < lastDimension; ++j)
-                listOut->at(i)->p(j, listDiag->at(i)->e<T>(j, j));
+                listOut.at(i)->p(j, listDiag.at(i)->e<T>(j, j));
     };
 
     samediff::Threads::parallel_tad(func, 0, lO);
-    
-    delete listOut;
-    delete listDiag;
 
     return Status::OK();
 }

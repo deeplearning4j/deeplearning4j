@@ -2785,11 +2785,11 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
 TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
 
     NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
-    auto sumDiff = labels.reduceAlongDims(reduce::Sum, {1}, true);
+    auto sumDiff = labels.reduceAlongDimension(reduce::Sum, {1}, true);
 
     NDArray numOfNonZero(sumDiff.getShapeInfo(), nd4j::DataType::INT64, false);
     numOfNonZero.assign(1);
-    sumDiff.applyPairwiseTransform(pairwise::SafeDivide, &numOfNonZero, &sumDiff, nullptr);
+    sumDiff.applyPairwiseTransform(pairwise::SafeDivide, numOfNonZero, sumDiff);
 }
 
 /////////////////////////////////////////////////////////////////

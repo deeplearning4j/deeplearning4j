@@ -46,7 +46,7 @@ namespace helpers {
 //                nd4j::NDArray comp1 = *comp;
                 for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                     T result2 = processElementCondition(mode, arg->e<T>(i), comp->e<T>(0));
-                    if(result2 > 0) {
+                    if(result2 > static_cast<T>(0)) {
                         if (output != nullptr)
                             output->p(numResults, arg->e<T>(i));
                         numResults++;
@@ -59,7 +59,7 @@ namespace helpers {
                 nd4j::NDArray arg1 = *arg;
                 for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                     T result2 = processElementCondition(mode, arg->e<T>(i), comp->e<T>(i));
-                    if(result2 > 0) {
+                    if(result2 > static_cast<T>(0)) {
                         if (output != nullptr)
                             output->p(numResults, arg->e<T>(i));
                         numResults++;
@@ -74,7 +74,7 @@ namespace helpers {
             //for comparison
             for (Nd4jLong i = 0; i < arg->lengthOf(); i++) {
                 T result2 = processElementCondition(mode, arg->e<T>(i), compScalar.e<T>(0));
-                if(result2 > 0) {
+                if(result2 > static_cast<T>(0)) {
                     if (output != nullptr)
                         output->p(numResults, arg->e<T>(i));
                     numResults++;

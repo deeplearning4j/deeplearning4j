@@ -228,7 +228,7 @@ TEST_F(DeclarableOpsTests9, ScalarOpTest_MixedOrders_1) {
     auto e = NDArrayFactory::create<double>('c', {2, 2}, {2.0, 3.0, 4.0, 5.0});
     auto z = NDArrayFactory::create<double>('c', {2, 2}, {0.0, 0.0, 0.0, 0.0});
 
-    x.applyScalar(scalar::Add, 1.0, &z);
+    x.applyScalar(scalar::Add, 1.0, z);
 
     ASSERT_EQ(e, z);
 }
@@ -634,10 +634,7 @@ TEST_F(DeclarableOpsTests9, concat_test18) {
 
     for (int e = 0; e < 2000; e++) {
         auto row = z.tensorAlongDimension(e, {1});
-
-        ASSERT_NEAR((float) e, row->e<float>(0), 1e-5f);
-
-        delete row;
+        ASSERT_NEAR((float) e, row.e<float>(0), 1e-5f);
     }
 }
 
@@ -1684,7 +1681,7 @@ TEST_F(DeclarableOpsTests9, test_broadcast_bool_1) {
     auto z = NDArrayFactory::create<bool>('c', {1, 3, 2, 4, 4});
 
     std::vector<int> dims = {0, 2, 3, 4};
-    x.applyBroadcast(broadcast::LessThan, dims, &y, &z, nullptr);
+    x.applyBroadcast(broadcast::LessThan, dims, y, z);
 }
 
 TEST_F(DeclarableOpsTests9, test_broadcast_bool_2) {
@@ -1697,7 +1694,7 @@ TEST_F(DeclarableOpsTests9, test_broadcast_bool_2) {
     auto z = NDArrayFactory::create<bool>('c', {1, 3, 2, 4, 4});
 
     std::vector<int> dims = {0, 2, 3, 4};
-    x.applyBroadcast(broadcast::LessThan, dims, &y, &z, nullptr);
+    x.applyBroadcast(broadcast::LessThan, dims, y, z);
 
 }
 
@@ -1746,7 +1743,7 @@ TEST_F(DeclarableOpsTests9, clipbynorm_test12) {
     auto colVect = NDArrayFactory::create<double>('c', {bS, 1}, {0.9, 0.95, 1.00, 1.05, 1.1});
     auto expect = NDArrayFactory::create<double>('c', {bS, nOut});
 
-    auto norm2 = x.reduceAlongDims(reduce::Norm2, {axis}, true); // norm2 has shape [1, nOut]
+    auto norm2 = x.reduceAlongDimension(reduce::Norm2, {axis}, true); // norm2 has shape [1, nOut]
 
     auto y = ( (x / norm2) * clip) * colVect ;
     auto temp = (x / norm2) * clip;
@@ -2927,13 +2924,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
     auto dLdG = results->at(3);
     auto dLdB = results->at(4);
 
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
 
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(*dLdG));
     ASSERT_TRUE(expdLdG.equalsTo(dLdG));
 
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
     delete results;
@@ -2970,13 +2967,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test2) {
     auto dLdG = results->at(3);
     auto dLdB = results->at(4);
 
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
 
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(*dLdG));
     ASSERT_TRUE(expdLdG.equalsTo(dLdG));
 
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
     delete results;
@@ -3012,13 +3009,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test3) {
     auto dLdG = results->at(3);
     auto dLdB = results->at(4);
 
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
 
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(*dLdG));
     ASSERT_TRUE(expdLdG.equalsTo(dLdG));
 
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
     delete results;
@@ -3051,13 +3048,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test4) {
     auto dLdG = results->at(3);
     auto dLdB = results->at(4);
 
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
 
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(*dLdG));
     ASSERT_TRUE(expdLdG.equalsTo(dLdG));
 
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
     delete results;
@@ -3092,13 +3089,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test5) {
     auto dLdG = results->at(3);
     auto dLdB = results->at(4);
 
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
 
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(*dLdG));
     ASSERT_TRUE(expdLdG.equalsTo(dLdG));
 
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
     delete results;
@@ -3133,13 +3130,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test6) {
     auto dLdG = results->at(3);
     auto dLdB = results->at(4);
 
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
 
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(*dLdG));
     ASSERT_TRUE(expdLdG.equalsTo(dLdG));
 
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
     delete results;
@@ -3179,13 +3176,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test7) {
 
     // dLdI->printBuffer();
 
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
 
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(*dLdG));
     ASSERT_TRUE(expdLdG.equalsTo(dLdG));
 
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
     delete results;
@@ -3224,13 +3221,13 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test8) {
 
     // dLdI->printBuffer();
 
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(*dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
 
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(*dLdG));
     ASSERT_TRUE(expdLdG.equalsTo(dLdG));
 
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
     delete results;

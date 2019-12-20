@@ -32,20 +32,18 @@ namespace nd4j {
             REQUIRE_TRUE(x->isR(), 0, "CRELU: input must be real type");
 
             auto tmp = x->dup();
-            tmp->applyTransform(nd4j::transform::Neg, nullptr, nullptr);
+            tmp.applyTransform(nd4j::transform::Neg, tmp);
 
             auto z = OUTPUT_VARIABLE(0);
 
-            helpers::concat(block.launchContext(), {x, tmp}, *z, x->rankOf()-1);
+            helpers::concat(block.launchContext(), {x, &tmp}, *z, x->rankOf()-1);
             // NDArrayFactory<T>::concat({x, tmp}, -1, z);
 
             // TODO: make this configurable?
             double threshold = 0.0;
-            z->applyScalar(nd4j::scalar::RELU, threshold);
+            z->applyScalar(nd4j::scalar::RELU, threshold, *z);
 
             STORE_RESULT(z);
-
-            delete tmp;
 
             return Status::OK();
         }
@@ -61,7 +59,7 @@ namespace nd4j {
             std::vector<Nd4jLong> shape;
             for (int e = 0; e < shape::rank(inShape); e++)
                 shape.emplace_back(shape::shapeOf(inShape)[e]);
-            
+
             shape[shape.size()-1] *= 2;
             auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
 
@@ -94,7 +92,7 @@ namespace nd4j {
             auto pos = dec->at(0);
             auto neg = dec->at(1);
 
-            pos->applyPairwiseTransform(nd4j::pairwise::Subtract, neg, epsilon, nullptr);
+            pos->applyPairwiseTransform(nd4j::pairwise::Subtract, *neg, *epsilon);
 
             delete tmpResult;
             delete dec;

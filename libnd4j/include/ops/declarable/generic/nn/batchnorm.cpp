@@ -229,19 +229,19 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     // input - mean
     NDArray xMinusMean(input); // empty array with same shape as input
-    input->applyBroadcast(nd4j::broadcast::Subtract, axes, mean, &xMinusMean);
+    input->applyBroadcast(nd4j::broadcast::Subtract, axes, *mean, xMinusMean);
 
     // stdInv
     NDArray stdInv = *variance + epsilon;
-    stdInv.applyTransform(transform::Reciprocal);                           // 1 / (variance + epsilon)
-    stdInv.applyTransform(transform::Sqrt);                                 // 1 / (variance + epsilon)^0.5
+    stdInv.applyTransform(transform::Reciprocal, stdInv);                           // 1 / (variance + epsilon)
+    stdInv.applyTransform(transform::Sqrt, stdInv);                                 // 1 / (variance + epsilon)^0.5
 
     // dvdm (use dLdM as storage for dvdm)
-    xMinusMean.reduceAlongDimension(nd4j::reduce::Sum, dLdM, excludedAxes, keepUnitiesInShape);
+    xMinusMean.reduceAlongDimension(nd4j::reduce::Sum, *dLdM, excludedAxes, keepUnitiesInShape);
     *dLdM *= -Ninv;
 
     // g_sum
-    auto gSum = dLdO->reduceAlongDims(nd4j::reduce::Sum, excludedAxes, keepUnitiesInShape);
+    auto gSum = dLdO->reduceAlongDimension(nd4j::reduce::Sum, excludedAxes, keepUnitiesInShape);
 
     // dLdB
     if(applyOffset)
@@ -249,11 +249,11 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     // stdInv * (g - g_sum/N) (use dLdI as storage for this expression)
     gSum *= Ninv;
-    dLdO->applyBroadcast(nd4j::broadcast::Subtract, axes, &gSum, dLdI);
-    dLdI->applyBroadcast(nd4j::broadcast::Multiply, axes, &stdInv);
+    dLdO->applyBroadcast(nd4j::broadcast::Subtract, axes, gSum, *dLdI);
+    dLdI->applyBroadcast(nd4j::broadcast::Multiply, axes, stdInv, *dLdI);
 
     // dLdV <- [g*(x - m)]_sum
-    (xMinusMean * *dLdO).reduceAlongDimension(nd4j::reduce::Sum, dLdV, excludedAxes, keepUnitiesInShape);
+    (xMinusMean * *dLdO).reduceAlongDimension(nd4j::reduce::Sum, *dLdV, excludedAxes, keepUnitiesInShape);
 
     // dLdG
     *dLdV *= stdInv;
@@ -265,13 +265,13 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     *dLdV *=  -Ninv;             // -0.5f * (2 / N);
 
     // dfdv * (dvdm  + (x - m)) (use xMinusMean as storage for this expression)
-    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, dLdM);
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, dLdV);
+    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, *dLdM, xMinusMean);
+    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, *dLdV, xMinusMean);
 
     // dLdI
     *dLdI += xMinusMean;
     if(applyScale)
-        dLdI->applyBroadcast(nd4j::broadcast::Multiply, axes, gamma);
+        dLdI->applyBroadcast(nd4j::broadcast::Multiply, axes, *gamma, *dLdI);
 
     *dLdM = 0;      // put zeros so far
     *dLdV = 0;      // put zeros so far

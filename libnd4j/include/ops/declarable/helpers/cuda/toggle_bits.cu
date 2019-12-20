@@ -30,7 +30,7 @@ namespace nd4j {
                     return ~_x;//eUtils::flip_bits(_x);
                 };
 
-                in.applyLambda(lambda, &out);
+                in.applyLambda(lambda, out);
             }
             BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray &in, NDArray &out), INTEGER_TYPES);
 

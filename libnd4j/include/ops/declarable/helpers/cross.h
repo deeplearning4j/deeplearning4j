@@ -65,23 +65,19 @@ void FORCEINLINE cross(nd4j::LaunchContext * context, NDArray *a, NDArray *b, ND
         auto tadsB = b_.allTensorsAlongDimension({1});
         auto tadsO = o_.allTensorsAlongDimension({1});
 
-        int tads = tadsA->size();
+        int tads = tadsA.size();
 
         auto func = PRAGMA_THREADS_FOR {
             for (auto e = start; e < stop; e += increment) {
-                auto a_ = tadsA->at(e);
-                auto b_ = tadsB->at(e);
-                auto o_ = tadsO->at(e);
+                auto a_ = tadsA.at(e);
+                auto b_ = tadsB.at(e);
+                auto o_ = tadsO.at(e);
 
                 helpers::cross(context, a_, b_, o_);
             }
         };
 
         samediff::Threads::parallel_tad(func,  0, tads);
-
-        delete tadsA;
-        delete tadsB;
-        delete tadsO;
     }
 
     void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);

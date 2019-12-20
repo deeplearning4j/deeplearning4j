@@ -29,28 +29,28 @@ namespace nd4j {
 namespace ops  {
 
     CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
-        
+
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
-        
-        std::vector<int> axis;        
 
-        if (block.width() > 1)            
+        std::vector<int> axis;
+
+        if (block.width() > 1)
             axis = INPUT_VARIABLE(1)->template asVectorT<int>();
-        else if (block.numI() > 0) 
-            axis = *block.getIArguments();        
+        else if (block.numI() > 0)
+            axis = *block.getIArguments();
 
         REQUIRE_TRUE(!axis.empty(), 0, "STANDARDIZE OP: axis has to be non-empty")
 
         shape::checkDimensions(input->rankOf(), axis);
 
-        auto means = input->reduceAlongDims(reduce::Mean, axis, true);
-        auto stdev = input->varianceAlongDims(variance::SummaryStatsStandardDeviation, false, axis);
+        auto means = input->reduceAlongDimension(reduce::Mean, axis, true);
+        auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
         stdev.reshapei(means.getShapeAsVector());
 
-        input->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &means, output, false);
-        output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, output, false);
-        output->applyScalar(nd4j::scalar::ReplaceNans, 0, output, nullptr);
+        input->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), means, *output, false);
+        output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, *output, false);
+        output->applyScalar(nd4j::scalar::ReplaceNans, 0, *output);
 
         return Status::OK();
     }
@@ -69,9 +69,9 @@ namespace ops  {
         auto output = OUTPUT_VARIABLE(0);
         std::vector<int> axis;
 
-        if (block.width() == 3)             
+        if (block.width() == 3)
             axis = INPUT_VARIABLE(1)->template asVectorT<int>();
-        else if (block.numI() > 0) 
+        else if (block.numI() > 0)
             axis = *block.getIArguments();
 
         REQUIRE_TRUE(!axis.empty(), 0, "STANDARDIZE OP: axis has to be non-empty")
@@ -80,13 +80,13 @@ namespace ops  {
         shape::checkDimensions(input->rankOf(), axis);
         auto longAxis = ArrayUtils::toLongVector(axis);
 
-        auto means = input->reduceAlongDims(reduce::Mean, axis, true);
-        auto stdev = input->varianceAlongDims(variance::SummaryStatsStandardDeviation, false, axis);
+        auto means = input->reduceAlongDimension(reduce::Mean, axis, true);
+        auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
         stdev.reshapei(means.getShapeAsVector());
 
-        eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, output, false);
+        eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, *output, false);
 
-        auto dldu_sum = -output->reduceAlongDims(reduce::Sum, axis, true);
+        NDArray dldu_sum = -output->reduceAlongDimension(reduce::Sum, axis, true);
 
         NDArray dldx_u(input->shapeInfo(), false, block.launchContext());
         std::vector<NDArray*> meanBpArgs = {input, &dldu_sum};
@@ -100,12 +100,12 @@ namespace ops  {
 
         // (eps * (means - input) / (stdev * stdev))
         NDArray tmp(eps->shapeInfo(), false, block.launchContext());
-        means.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), input, &tmp, false);
-        tmp.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &tmp, nullptr);
-        stdev.applyPairwiseTransform(nd4j::pairwise::Multiply, &stdev, &stdev, nullptr);
-        tmp.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &stdev, &tmp, false);
+        means.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), *input, tmp, false);
+        tmp.applyPairwiseTransform(nd4j::pairwise::Multiply, *eps, tmp);
+        stdev.applyPairwiseTransform(nd4j::pairwise::Multiply, stdev, stdev);
+        tmp.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, tmp, false);
 
-        auto dlds_sum = tmp.reduceAlongDims(reduce::Sum, axis, true);
+        auto dlds_sum = tmp.reduceAlongDimension(reduce::Sum, axis, true);
         NDArray dldx_s(input->shapeInfo(), false, block.launchContext());
         std::vector<NDArray*> stdevBpArgs = {input, &dlds_sum};
         std::vector<NDArray*> stdevBpOutput = {&dldx_s};
@@ -115,7 +115,7 @@ namespace ops  {
         stdevBp.execute(stdevBpArgs,  stdevBpOutput, stdevBpTArgs, longAxis, stdevBpBArgs);
         *output += dldx_s;
 
-        output->applyScalar(nd4j::scalar::ReplaceNans, 0, output, nullptr);
+        output->applyScalar(nd4j::scalar::ReplaceNans, 0, *output);
 
         return Status::OK();
     }

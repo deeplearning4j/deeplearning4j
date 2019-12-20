@@ -169,7 +169,7 @@ TEST_F(DeclarableOpsTests13, test_or_1) {
 
     NDArray z('c', {4}, nd4j::DataType::BOOL);
 
-    x.applyPairwiseTransform(pairwise::Or, &y, &z, nullptr);
+    x.applyPairwiseTransform(pairwise::Or, y, z);
 
     ASSERT_EQ(e, z);
 }
@@ -181,7 +181,7 @@ TEST_F(DeclarableOpsTests13, test_and_1) {
 
     auto z = NDArrayFactory::create<bool>('c', {4});
 
-    x.applyPairwiseTransform(pairwise::And, &y, &z, nullptr);
+    x.applyPairwiseTransform(pairwise::And, y, z);
 
     ASSERT_EQ(e, z);
 }
@@ -193,7 +193,7 @@ TEST_F(DeclarableOpsTests13, test_xor_1) {
 
     auto z = NDArrayFactory::create<bool>('c', {4});
 
-    x.applyPairwiseTransform(pairwise::Xor, &y, &z, nullptr);
+    x.applyPairwiseTransform(pairwise::Xor, y, z);
 
     ASSERT_EQ(e, z);
 }
@@ -1030,10 +1030,10 @@ TEST_F(DeclarableOpsTests13, lstmLayer_1) {
     std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
     std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
-    auto expH = NDArrayFactory::create<float>('c', {sL, bS, nOut}, {0.57574f, 0.57574f, 0.57574f, 0.58006f, 0.58006f, 0.58006f, 0.58434f, 0.58434f, 0.58434f, 
-                                                           0.55114f, 0.55114f, 0.55114f, 0.55732f, 0.55732f, 0.55732f, 0.56338f, 0.56338f, 0.56338f, 
-                                                           0.53763f, 0.53763f, 0.53763f, 0.54534f, 0.54534f, 0.54534f, 0.55287f, 0.55287f, 0.55287f, 
-                                                           0.53626f, 0.53626f, 0.53626f, 0.54487f, 0.54487f, 0.54487f, 0.55327f, 0.55327f, 0.55327f, 
+    auto expH = NDArrayFactory::create<float>('c', {sL, bS, nOut}, {0.57574f, 0.57574f, 0.57574f, 0.58006f, 0.58006f, 0.58006f, 0.58434f, 0.58434f, 0.58434f,
+                                                           0.55114f, 0.55114f, 0.55114f, 0.55732f, 0.55732f, 0.55732f, 0.56338f, 0.56338f, 0.56338f,
+                                                           0.53763f, 0.53763f, 0.53763f, 0.54534f, 0.54534f, 0.54534f, 0.55287f, 0.55287f, 0.55287f,
+                                                           0.53626f, 0.53626f, 0.53626f, 0.54487f, 0.54487f, 0.54487f, 0.55327f, 0.55327f, 0.55327f,
                                                            0.54484f, 0.54484f, 0.54484f, 0.55379f, 0.55379f, 0.55379f, 0.5625f, 0.5625f, 0.5625f});
 
     auto expClast = NDArrayFactory::create<float>('c', {bS, nOut}, {1.1589154f, 1.1589154f, 1.1589154f, 1.1892855f, 1.1892855f, 1.1892855f, 1.219861f, 1.219861f, 1.219861f});

@@ -83,7 +83,7 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
                 Nd4jLong idx = indices.e<Nd4jLong>(i);
                 NDArray out = output({idx, idx + 1});
 
-                out.applyPairwiseTransform(op, updates.e(i), nullptr);
+                out.applyPairwiseTransform(op, updates.e(i));
             }
         };
 
@@ -103,7 +103,7 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
                 NDArray outSubArr = output(indices.e<Nd4jLong>(i), std::vector<int>({0}));
                 NDArray updSubArr = updates(i, dimsToExcludeUpd);
 
-                outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+                outSubArr.applyPairwiseTransform(op, updSubArr);
             }
         };
 
@@ -150,7 +150,7 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
                 NDArray outSubArr = output(idxRangeOut);
                 NDArray updSubArr = updates(i, dimsToExcludeUpd);
 
-                outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+                outSubArr.applyPairwiseTransform(op, updSubArr);
             }
         };
 

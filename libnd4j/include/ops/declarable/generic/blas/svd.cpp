@@ -33,8 +33,12 @@ CUSTOM_OP_IMPL(svd, 1, 1, false, 0, 3) {
     const int rank =  x->rankOf();
     REQUIRE_TRUE(rank >= 2 , 0, "SVD OP: the rank of input array must be >=2, but got %i instead!", rank);
 
-    const bool fullUV = (bool)INT_ARG(0);
+          bool fullUV = (bool)INT_ARG(0);
     const bool calcUV = (bool)INT_ARG(1);
+
+    if(calcUV == false)
+        fullUV = false;
+
     const int switchNum = INT_ARG(2);
 
     // #ifndef __CUDABLAS__

@@ -670,7 +670,7 @@ TEST_F(DeclarableOpsTests12, relu_1) {
     Nd4jStatus status = op.execute({&input}, {&z}, {0}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected.isSameShapeStrict(&z));
+    ASSERT_TRUE(expected.isSameShapeStrict(z));
     ASSERT_TRUE(expected.equalsTo(z));
 }
 
@@ -825,7 +825,7 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
 TEST_F(DeclarableOpsTests12, pullRows_2) {
 
     NDArray arr('f', {5, 2}, {0,1,2,3,4,5,6,7,8,9});
-    NDArray* y = arr.dup('c');
+    NDArray* y = new NDArray(arr.dup('c'));
     NDArray x = (*y)({0,0, 0,1}, true);     // view, points on first column of y, shape is {5,1}
 
     NDArray z('c', {4, 1}, nd4j::DataType::DOUBLE);
@@ -858,7 +858,7 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, softmax_9) {
     NDArray  arrC('c', {5,2}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6, -0.7, 0.8, -0.9, 1}, nd4j::DataType::FLOAT32);
-    NDArray* arrF = arrC.dup('f');
+    NDArray* arrF = new NDArray(arrC.dup('f'));
 
     NDArray  outCC('c', {5,2}, nd4j::DataType::FLOAT32);
     NDArray  outCF('f', {5,2}, nd4j::DataType::FLOAT32);
@@ -1395,7 +1395,7 @@ TEST_F(DeclarableOpsTests12, pad_tests1) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1422,7 +1422,7 @@ TEST_F(DeclarableOpsTests12, pad_tests2) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1449,7 +1449,7 @@ TEST_F(DeclarableOpsTests12, pad_tests3) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1462,10 +1462,10 @@ TEST_F(DeclarableOpsTests12, pad_tests4) {
 
     float inBuff[]  = {1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f,17.f,18.f};
     int padBuff[] = {1,1,2,2,2,2};
-    float expBuff[] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 
-                        0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 2.f, 3.f, 0.f, 0.f, 0.f, 0.f, 4.f, 5.f, 6.f, 0.f, 0.f, 0.f, 0.f, 
-                        7.f, 8.f, 9.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 10.f, 11.f, 12.f, 0.f, 
-                        0.f, 0.f, 0.f, 13.f, 14.f, 15.f, 0.f, 0.f, 0.f, 0.f, 16.f, 17.f, 18.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 
+    float expBuff[] = {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
+                        0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.f, 2.f, 3.f, 0.f, 0.f, 0.f, 0.f, 4.f, 5.f, 6.f, 0.f, 0.f, 0.f, 0.f,
+                        7.f, 8.f, 9.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 10.f, 11.f, 12.f, 0.f,
+                        0.f, 0.f, 0.f, 13.f, 14.f, 15.f, 0.f, 0.f, 0.f, 0.f, 16.f, 17.f, 18.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,
                         0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f};
 
     auto input    = NDArrayFactory::create<float>(inBuff,  'c', {2,3,3});
@@ -1480,7 +1480,7 @@ TEST_F(DeclarableOpsTests12, pad_tests4) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     // for(int i = 0; i < expected.lengthOf(); ++i) {
@@ -1514,7 +1514,7 @@ TEST_F(DeclarableOpsTests12, pad_tests5) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1541,7 +1541,7 @@ TEST_F(DeclarableOpsTests12, pad_tests6) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1567,7 +1567,7 @@ TEST_F(DeclarableOpsTests12, pad_tests7)
     auto *result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1593,7 +1593,7 @@ TEST_F(DeclarableOpsTests12, pad_tests8)
     auto *result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1619,7 +1619,7 @@ TEST_F(DeclarableOpsTests12, pad_tests9)
     auto *result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1641,7 +1641,7 @@ TEST_F(DeclarableOpsTests12, pad_tests10) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1663,7 +1663,7 @@ TEST_F(DeclarableOpsTests12, pad_tests11) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1692,7 +1692,7 @@ TEST_F(DeclarableOpsTests12, pad_tests12) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1714,7 +1714,7 @@ TEST_F(DeclarableOpsTests12, pad_tests13) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1735,7 +1735,7 @@ TEST_F(DeclarableOpsTests12, pad_tests14) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1756,7 +1756,7 @@ TEST_F(DeclarableOpsTests12, pad_tests15) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1777,7 +1777,7 @@ TEST_F(DeclarableOpsTests12, pad_tests16) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1798,7 +1798,7 @@ TEST_F(DeclarableOpsTests12, pad_tests17) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1819,7 +1819,7 @@ TEST_F(DeclarableOpsTests12, pad_tests18) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1840,7 +1840,7 @@ TEST_F(DeclarableOpsTests12, pad_tests19) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1861,7 +1861,7 @@ TEST_F(DeclarableOpsTests12, pad_tests20) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1884,7 +1884,7 @@ TEST_F(DeclarableOpsTests12, pad_tests21) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1907,7 +1907,7 @@ TEST_F(DeclarableOpsTests12, pad_tests22) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1931,7 +1931,7 @@ TEST_F(DeclarableOpsTests12, pad_tests23) {
     // result->printShapeInfo("r");
     // expected.printShapeInfo("e");
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1953,7 +1953,7 @@ TEST_F(DeclarableOpsTests12, pad_tests24) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1975,7 +1975,7 @@ TEST_F(DeclarableOpsTests12, pad_tests25) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -1997,7 +1997,7 @@ TEST_F(DeclarableOpsTests12, pad_tests26) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2017,7 +2017,7 @@ TEST_F(DeclarableOpsTests12, pad_tests27) {
     // z.printIndexedBuffer();
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(exp.isSameShapeStrict(&z));
+    ASSERT_TRUE(exp.isSameShapeStrict(z));
     ASSERT_TRUE(exp.equalsTo(z));
 }
 
@@ -2143,7 +2143,7 @@ TEST_F(DeclarableOpsTests12, pad_tests34) {
     Nd4jStatus status = op.execute({&input, &paddings}, {&z}, {10}, {0}, {});      // constant
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected.isSameShapeStrict(&z));
+    ASSERT_TRUE(expected.isSameShapeStrict(z));
     ASSERT_TRUE(expected.equalsTo(z));
 }
 
@@ -2167,7 +2167,7 @@ TEST_F(DeclarableOpsTests12, Pad_1) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2194,7 +2194,7 @@ TEST_F(DeclarableOpsTests12, Pad_2) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2221,7 +2221,7 @@ TEST_F(DeclarableOpsTests12, Pad_3) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2248,7 +2248,7 @@ TEST_F(DeclarableOpsTests12, Pad_4) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2275,7 +2275,7 @@ TEST_F(DeclarableOpsTests12, Pad_5) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2302,7 +2302,7 @@ TEST_F(DeclarableOpsTests12, Pad_6) {
     auto result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2328,7 +2328,7 @@ TEST_F(DeclarableOpsTests12, Pad_7)
     auto *result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2354,7 +2354,7 @@ TEST_F(DeclarableOpsTests12, Pad_8)
     auto *result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2380,7 +2380,7 @@ TEST_F(DeclarableOpsTests12, Pad_9)
     auto *result = results->at(0);
     // result->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;

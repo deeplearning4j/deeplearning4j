@@ -39,13 +39,11 @@ void meshgrid(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs
         inIndices[0] = 1;
         inIndices[1] = 0;
     }
-            
-    for(int i = 0; i < rank; ++i) {        
-        auto list = outArrs[i]->allTensorsAlongDimension({inIndices[i]});
-        for(int j = 0; j < list->size(); ++j)
-            list->at(j)->assign(inArrs[i]);
 
-        delete list;
+    for(int i = 0; i < rank; ++i) {
+        auto list = outArrs[i]->allTensorsAlongDimension({inIndices[i]});
+        for(int j = 0; j < list.size(); ++j)
+            list.at(j)->assign(inArrs[i]);
     }
 }
 

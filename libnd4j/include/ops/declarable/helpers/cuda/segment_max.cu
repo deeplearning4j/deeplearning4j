@@ -212,7 +212,7 @@ namespace nd4j {
                 NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
                 NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
 //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-//        classes.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &row, &classes);
+//        classes.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), row, classes);
                 classesRangesBegs.assign(indices->lengthOf());
                 classesRangesLens.assign(0);
                 dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);

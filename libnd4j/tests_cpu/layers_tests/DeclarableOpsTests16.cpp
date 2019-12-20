@@ -222,12 +222,9 @@ TEST_F(DeclarableOpsTests16, test_reverse_1) {
             auto listE = exp.allTensorsAlongDimension({ 1 });
 
             for (int e = 0; e < r; e++) {
-                listI->at(e)->assign(rowOriginal);
-                listE->at(e)->assign(rowReversed);
+                listI.at(e)->assign(rowOriginal);
+                listE.at(e)->assign(rowReversed);
             }
-
-            delete listI;
-            delete listE;
 
             nd4j::ops::reverse op;
             Nd4jLong axis = 1;
@@ -438,10 +435,11 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_6) {
         });
 
     //get subarray 
-    std::unique_ptr<NDArray> subArrRgbs(rgbs.subarray({ NDIndex::all(), NDIndex::point(0) }));
-    std::unique_ptr<NDArray> expected(hsvs.subarray({ NDIndex::all(), NDIndex::point(0) }));
-    subArrRgbs->reshapei({ 3 });
-    expected->reshapei({ 3 });
+    //get subarray
+    NDArray subArrRgbs = rgbs.subarray({ NDIndex::all(), NDIndex::point(0) });
+    NDArray expected = hsvs.subarray({ NDIndex::all(), NDIndex::point(0) });
+    subArrRgbs.reshapei({ 3 });
+    expected.reshapei({ 3 });
 #if 0
     //[RANK][SHAPE][STRIDES][OPTIONS][EWS][ORDER]
     subArrRgbs->printShapeInfo("subArrRgbs");
@@ -449,13 +447,13 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_6) {
     auto actual = NDArrayFactory::create<float>('c', { 3 });
 
     Context ctx(1);
-    ctx.setInputArray(0, subArrRgbs.get());
+    ctx.setInputArray(0, &subArrRgbs);
     ctx.setOutputArray(0, &actual);
     nd4j::ops::rgb_to_hsv op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected->equalsTo(actual));
+    ASSERT_TRUE(expected.equalsTo(actual));
 
 }
 
@@ -638,22 +636,22 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_6) {
 
     auto actual = NDArrayFactory::create<float>('c', { 3 });
     //get subarray 
-    std::unique_ptr<NDArray> subArrHsvs(hsvs.subarray({ NDIndex::all(), NDIndex::point(0) }));
-    subArrHsvs->reshapei({ 3 });
-    std::unique_ptr<NDArray> expected(rgbs.subarray({ NDIndex::all(), NDIndex::point(0) }));
-    expected->reshapei({ 3 });
+   NDArray subArrHsvs = hsvs.subarray({ NDIndex::all(), NDIndex::point(0) });
+    subArrHsvs.reshapei({ 3 });
+    NDArray expected = rgbs.subarray({ NDIndex::all(), NDIndex::point(0) });
+    expected.reshapei({ 3 });
 #if 0
     //[RANK][SHAPE][STRIDES][OPTIONS][EWS][ORDER]
     subArrHsvs->printShapeInfo("subArrHsvs");
 #endif 
 
     Context ctx(1);
-    ctx.setInputArray(0, subArrHsvs.get());
+    ctx.setInputArray(0, &subArrHsvs);
     ctx.setOutputArray(0, &actual);
     nd4j::ops::hsv_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(expected->equalsTo(actual));
+    ASSERT_TRUE(expected.equalsTo(actual));
 
 }

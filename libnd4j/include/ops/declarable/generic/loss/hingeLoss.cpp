@@ -52,7 +52,7 @@ namespace nd4j {
 
             // We first need to convert binary labels to -1/1 labels (as floats)
             NDArray E = 1.f - (*labels * 2.f - 1.f) * (*logits);
-            E.applyScalar(scalar::RELU, 0.0f, &E);
+            E.applyScalar(scalar::RELU, 0.0f, E);
 
             // multiply E on weights
             E *= *weightsBroad;
@@ -172,11 +172,11 @@ namespace nd4j {
             NDArray z = (*labels * 2.f - 1.f);
 
             NDArray E = 1.f - z * (*logits);
-            E.applyScalar(scalar::RELU, 0.0f, &E);
+            E.applyScalar(scalar::RELU, 0.0f, E);
             // turn E into gradient mask
 
             NDArray gradientMask(E.getShapeInfo(), block.getWorkspace());
-            E.applyTransform(nd4j::transform::Sign, &gradientMask);
+            E.applyTransform(nd4j::transform::Sign, gradientMask);
 
             dLdp->assign(-z * gradientMask);
             dLdl->assign(-2.f * (*logits) * gradientMask);
@@ -192,7 +192,7 @@ namespace nd4j {
                         dLdw->assign(E.reduceNumber(reduce::Sum));
                     else if(weights != weightsBroad) {
                         std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                        E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                        E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                     }
                     else
                         dLdw->assign(E);
@@ -220,7 +220,7 @@ namespace nd4j {
                             *dLdw = 0.;
                         else if(weights != weightsBroad) {
                             std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                            ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                            ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                         }
                         else
                             dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
@@ -249,7 +249,7 @@ namespace nd4j {
                             dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
                         else if(weights != weightsBroad) {
                             std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                            E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                            E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                             *dLdw /= numOfNonZeroWeightsScalar;
                         }
                         else

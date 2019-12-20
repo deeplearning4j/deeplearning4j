@@ -60,11 +60,10 @@ NDArray Householder<T>::evalHHmatrix(const NDArray& x) {
 	w.p(Nd4jLong(0), 1.f);
 	wT.assign(&w);
 
-	auto identity = NDArrayFactory::create(x.ordering(), {(int)x.lengthOf(), (int)x.lengthOf()}, x.dataType(), x.getContext());
+	NDArray identity = NDArrayFactory::create(x.ordering(), {(int)x.lengthOf(), (int)x.lengthOf()}, x.dataType(), x.getContext());
 	identity.setIdentity();																			// identity matrix
 
 	return identity - mmul(w, wT) * coeff;
-
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -95,9 +94,9 @@ void Householder<T>::evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff,
 		coeff = -u0 / normX;
 
 		if(x.isRowVector())
-			tail.assign(x({0,0, 1,-1}) / u0);
+			tail.assign(static_cast<const NDArray&>(x({0,0, 1,-1})) / u0);
 		else
-			tail.assign(x({1,-1, 0,0,}) / u0);
+			tail.assign(static_cast<const NDArray&>(x({1,-1, 0,0,})) / u0);
 	}
 }
 

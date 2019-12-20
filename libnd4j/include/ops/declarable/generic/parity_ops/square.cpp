@@ -30,7 +30,7 @@ namespace nd4j {
             auto output = OUTPUT_VARIABLE(0);
 
             int extras = 2;
-            input->applyScalar(scalar::Pow, extras, output);
+            input->applyScalar(scalar::Pow, extras, *output);
 
             return Status::OK();
         }

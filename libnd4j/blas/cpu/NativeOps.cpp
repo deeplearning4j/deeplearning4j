@@ -2717,25 +2717,25 @@ static void  _scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSub
 
                 switch (opCode) {
                     case 0:
-                        inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
+                        inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
                         break;
                     case 1:
-                        inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
+                        inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
                         break;
                     case 2:
-                        inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
+                        inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
                         break;
                     case 3:
-                        inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
+                        inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
                         break;
                     case 4:
-                        inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
+                        inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
                         break;
                     case 5:
-                        inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
+                        inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
                         break;
                     case 6:
-                        inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
+                        inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
                         break;
                     default:
                         continue;

@@ -69,8 +69,7 @@ TEST_F(HelpersTests1, evalHHmatrix_test1) {
     auto exp = NDArrayFactory::create<double>('c', {4,4}, {-0.629253, -0.764093,   -0.13484, -0.0449467, -0.764093,  0.641653, -0.0632377, -0.0210792, -0.13484,-0.0632377,    0.98884,-0.00371987, -0.0449467,-0.0210792,-0.00371987,    0.99876});
 
     auto result = ops::helpers::Householder<double>::evalHHmatrix(x);
-
-    ASSERT_TRUE(result.isSameShapeStrict(&exp));
+    ASSERT_TRUE(result.isSameShape(&exp));
     ASSERT_TRUE(result.equalsTo(&exp));
 
 }
@@ -86,7 +85,7 @@ TEST_F(HelpersTests1, evalHHmatrix_test2) {
 
     auto result = ops::helpers::Householder<double>::evalHHmatrix(x);
 
-    ASSERT_TRUE(result.isSameShapeStrict(&exp));
+    ASSERT_TRUE(result.isSameShape(&exp));
     ASSERT_TRUE(result.equalsTo(&exp));
 
 }
@@ -109,7 +108,7 @@ TEST_F(HelpersTests1, evalHHmatrixData_test1) {
 
     ASSERT_NEAR(normX, normXExpected, 1e-5);
     ASSERT_NEAR(coeff, coeffExpected, 1e-5);
-    ASSERT_TRUE(tail.isSameShapeStrict(&expTail));
+    ASSERT_TRUE(tail.isSameShapeStrict(expTail));
     ASSERT_TRUE(tail.equalsTo(&expTail));
 
 }
@@ -128,7 +127,7 @@ TEST_F(HelpersTests1, Householder_mulLeft_test1) {
     ops::helpers::Householder<double>::mulLeft(x, tail, 0.1);
     // expTail.printShapeInfo();
 
-    ASSERT_TRUE(x.isSameShapeStrict(&exp));
+    ASSERT_TRUE(x.isSameShapeStrict(exp));
     ASSERT_TRUE(x.equalsTo(&exp));
 
 }
@@ -145,7 +144,7 @@ TEST_F(HelpersTests1, Householder_mulLeft_test2) {
 
     ops::helpers::Householder<double>::mulLeft(x, tail, 0.1);
 
-    ASSERT_TRUE(x.isSameShapeStrict(&exp));
+    ASSERT_TRUE(x.isSameShapeStrict(exp));
     ASSERT_TRUE(x.equalsTo(&exp));
 
 }
@@ -162,7 +161,7 @@ TEST_F(HelpersTests1, Householder_mulRight_test1) {
 
     ops::helpers::Householder<double>::mulRight(x, tail, 0.1);
 
-    ASSERT_TRUE(x.isSameShapeStrict(&exp));
+    ASSERT_TRUE(x.isSameShapeStrict(exp));
     ASSERT_TRUE(x.equalsTo(&exp));
 
 }
@@ -181,9 +180,9 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test1) {
     ops::helpers::BiDiagonalUp object(matrix);
     // object._HHmatrix.printBuffer();
 
-    ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(&object._HHmatrix));
+    ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(object._HHmatrix));
     ASSERT_TRUE(hhMatrixExp.equalsTo(&object._HHmatrix));
-    ASSERT_TRUE(hhBidiagExp.isSameShapeStrict(&object._HHbidiag));
+    ASSERT_TRUE(hhBidiagExp.isSameShapeStrict(object._HHbidiag));
     ASSERT_TRUE(hhBidiagExp.equalsTo(&object._HHbidiag));
 }
 
@@ -200,9 +199,9 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test2) {
     ops::helpers::BiDiagonalUp object(matrix);
     // object._HHmatrix.printBuffer();
 
-    ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(&object._HHmatrix));
+    ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(object._HHmatrix));
     ASSERT_TRUE(hhMatrixExp.equalsTo(&object._HHmatrix));
-    ASSERT_TRUE(hhBidiagExp.isSameShapeStrict(&object._HHbidiag));
+    ASSERT_TRUE(hhBidiagExp.isSameShapeStrict(object._HHbidiag));
     ASSERT_TRUE(hhBidiagExp.equalsTo(&object._HHbidiag));
 }
 
@@ -219,9 +218,9 @@ TEST_F(HelpersTests1, BiDiagonalizeUp_test3) {
     ops::helpers::BiDiagonalUp object(matrix);
     // object._HHmatrix.printBuffer();
 
-    ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(&object._HHmatrix));
+    ASSERT_TRUE(hhMatrixExp.isSameShapeStrict(object._HHmatrix));
     ASSERT_TRUE(hhMatrixExp.equalsTo(&object._HHmatrix));
-    ASSERT_TRUE(hhBidiagExp.isSameShapeStrict(&object._HHbidiag));
+    ASSERT_TRUE(hhBidiagExp.isSameShapeStrict(object._HHbidiag));
     ASSERT_TRUE(hhBidiagExp.equalsTo(&object._HHbidiag));
 }
 
@@ -241,8 +240,8 @@ TEST_F(HelpersTests1, HHsequence_test1) {
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
 
-    ASSERT_TRUE(uSeq._vectors.isSameShapeStrict(&vectorsUseqExp));
-    ASSERT_TRUE(vSeq._vectors.isSameShapeStrict(&vectorsVseqExp));
+    ASSERT_TRUE(uSeq._vectors.isSameShapeStrict(vectorsUseqExp));
+    ASSERT_TRUE(vSeq._vectors.isSameShapeStrict(vectorsVseqExp));
     ASSERT_TRUE(uSeq._vectors.equalsTo(&vectorsUseqExp));
     ASSERT_TRUE(vSeq._vectors.equalsTo(&vectorsVseqExp));
 
@@ -268,8 +267,8 @@ TEST_F(HelpersTests1, HHsequence_test2) {
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
 
-    ASSERT_TRUE(uSeq._vectors.isSameShapeStrict(&vectorsUseqExp));
-    ASSERT_TRUE(vSeq._vectors.isSameShapeStrict(&vectorsVseqExp));
+    ASSERT_TRUE(uSeq._vectors.isSameShapeStrict(vectorsUseqExp));
+    ASSERT_TRUE(vSeq._vectors.isSameShapeStrict(vectorsVseqExp));
     ASSERT_TRUE(uSeq._vectors.equalsTo(&vectorsUseqExp));
     ASSERT_TRUE(vSeq._vectors.equalsTo(&vectorsVseqExp));
 
@@ -295,8 +294,8 @@ TEST_F(HelpersTests1, HHsequence_test3) {
     ops::helpers::HHsequence uSeq = object.makeHHsequence('u');
     ops::helpers::HHsequence vSeq = object.makeHHsequence('v');
 
-    ASSERT_TRUE(uSeq._vectors.isSameShapeStrict(&vectorsUseqExp));
-    ASSERT_TRUE(vSeq._vectors.isSameShapeStrict(&vectorsVseqExp));
+    ASSERT_TRUE(uSeq._vectors.isSameShapeStrict(vectorsUseqExp));
+    ASSERT_TRUE(vSeq._vectors.isSameShapeStrict(vectorsVseqExp));
     ASSERT_TRUE(uSeq._vectors.equalsTo(&vectorsUseqExp));
     ASSERT_TRUE(vSeq._vectors.equalsTo(&vectorsVseqExp));
 
@@ -870,9 +869,9 @@ TEST_F(HelpersTests1, SVD_test12) {
     ASSERT_TRUE(expU.equalsTo(&U));
     ASSERT_TRUE(expV.equalsTo(&V));
 
-    ASSERT_TRUE(expSingVals.isSameShapeStrict(&singVals));
-    ASSERT_TRUE(expU.isSameShapeStrict(&U));
-    ASSERT_TRUE(expV.isSameShapeStrict(&V));
+    ASSERT_TRUE(expSingVals.isSameShapeStrict(singVals));
+    ASSERT_TRUE(expU.isSameShapeStrict(U));
+    ASSERT_TRUE(expV.isSameShapeStrict(V));
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -893,9 +892,9 @@ TEST_F(HelpersTests1, SVD_test13) {
     ASSERT_TRUE(expCoeffs.equalsTo(&qr._coeffs));
     ASSERT_TRUE(expPermut.equalsTo(&qr._permut));
 
-    ASSERT_TRUE(expQR.isSameShapeStrict(&qr._qr));
-    ASSERT_TRUE(expCoeffs.isSameShapeStrict(&qr._coeffs));
-    ASSERT_TRUE(expPermut.isSameShapeStrict(&qr._permut));
+    ASSERT_TRUE(expQR.isSameShapeStrict(qr._qr));
+    ASSERT_TRUE(expCoeffs.isSameShapeStrict(qr._coeffs));
+    ASSERT_TRUE(expPermut.isSameShapeStrict(qr._permut));
 
 }
 
@@ -917,9 +916,9 @@ TEST_F(HelpersTests1, SVD_test14) {
     ASSERT_TRUE(expCoeffs.equalsTo(&qr._coeffs));
     ASSERT_TRUE(expPermut.equalsTo(&qr._permut));
 
-    ASSERT_TRUE(expQR.isSameShapeStrict(&qr._qr));
-    ASSERT_TRUE(expCoeffs.isSameShapeStrict(&qr._coeffs));
-    ASSERT_TRUE(expPermut.isSameShapeStrict(&qr._permut));
+    ASSERT_TRUE(expQR.isSameShapeStrict(qr._qr));
+    ASSERT_TRUE(expCoeffs.isSameShapeStrict(qr._coeffs));
+    ASSERT_TRUE(expPermut.isSameShapeStrict(qr._permut));
 }
 
 
@@ -941,9 +940,9 @@ TEST_F(HelpersTests1, SVD_test15) {
     ASSERT_TRUE(expCoeffs.equalsTo(&qr._coeffs));
     ASSERT_TRUE(expPermut.equalsTo(&qr._permut));
 
-    ASSERT_TRUE(expQR.isSameShapeStrict(&qr._qr));
-    ASSERT_TRUE(expCoeffs.isSameShapeStrict(&qr._coeffs));
-    ASSERT_TRUE(expPermut.isSameShapeStrict(&qr._permut));
+    ASSERT_TRUE(expQR.isSameShapeStrict(qr._qr));
+    ASSERT_TRUE(expCoeffs.isSameShapeStrict(qr._coeffs));
+    ASSERT_TRUE(expPermut.isSameShapeStrict(qr._permut));
 }
 
 
@@ -1246,9 +1245,9 @@ TEST_F(HelpersTests1, SVD_test16) {
 
     svd.DivideAndConquer(0, 3, 1, 1, 1);
     // svd._m.printIndexedBuffer();
-    ASSERT_TRUE(expM.isSameShapeStrict(&svd._m));
-    ASSERT_TRUE(expU.isSameShapeStrict(&svd._u));
-    ASSERT_TRUE(expV.isSameShapeStrict(&svd._v));
+    ASSERT_TRUE(expM.isSameShapeStrict(svd._m));
+    ASSERT_TRUE(expU.isSameShapeStrict(svd._u));
+    ASSERT_TRUE(expV.isSameShapeStrict(svd._v));
 
     ASSERT_TRUE(expM.equalsTo(&svd._m));
     ASSERT_TRUE(expU.equalsTo(&svd._u));
@@ -1281,9 +1280,9 @@ TEST_F(HelpersTests1, SVD_test17) {
     ASSERT_TRUE(expU.equalsTo(&svd._u));
     ASSERT_TRUE(expV.equalsTo(&svd._v));
 
-    ASSERT_TRUE(expM.isSameShapeStrict(&svd._m));
-    ASSERT_TRUE(expU.isSameShapeStrict(&svd._u));
-    ASSERT_TRUE(expV.isSameShapeStrict(&svd._v));
+    ASSERT_TRUE(expM.isSameShapeStrict(svd._m));
+    ASSERT_TRUE(expU.isSameShapeStrict(svd._u));
+    ASSERT_TRUE(expV.isSameShapeStrict(svd._v));
 }
 
 // ///////////////////////////////////////////////////////////////////
@@ -1329,9 +1328,9 @@ TEST_F(HelpersTests1, SVD_test17) {
 //     ASSERT_TRUE(expU.equalsTo(&svd._u));
 //     ASSERT_TRUE(expV.equalsTo(&svd._v));
 
-//     ASSERT_TRUE(expS.isSameShapeStrict(&svd._s));
-//     ASSERT_TRUE(expU.isSameShapeStrict(&svd._u));
-//     ASSERT_TRUE(expV.isSameShapeStrict(&svd._v));
+//     ASSERT_TRUE(expS.isSameShapeStrict(svd._s));
+//     ASSERT_TRUE(expU.isSameShapeStrict(svd._u));
+//     ASSERT_TRUE(expV.isSameShapeStrict(svd._v));
 // }
 
 
@@ -1378,9 +1377,9 @@ TEST_F(HelpersTests1, SVD_test17) {
 //     ASSERT_TRUE(expU.equalsTo(&svd._u));
 //     ASSERT_TRUE(expV.equalsTo(&svd._v));
 
-//     ASSERT_TRUE(expS.isSameShapeStrict(&svd._s));
-//     ASSERT_TRUE(expU.isSameShapeStrict(&svd._u));
-//     ASSERT_TRUE(expV.isSameShapeStrict(&svd._v));
+//     ASSERT_TRUE(expS.isSameShapeStrict(svd._s));
+//     ASSERT_TRUE(expU.isSameShapeStrict(svd._u));
+//     ASSERT_TRUE(expV.isSameShapeStrict(svd._v));
 // }
 
 
@@ -1427,9 +1426,9 @@ TEST_F(HelpersTests1, SVD_test17) {
 //     ASSERT_TRUE(expU.equalsTo(&svd._u));
 //     ASSERT_TRUE(expV.equalsTo(&svd._v));
 
-//     ASSERT_TRUE(expS.isSameShapeStrict(&svd._s));
-//     ASSERT_TRUE(expU.isSameShapeStrict(&svd._u));
-//     ASSERT_TRUE(expV.isSameShapeStrict(&svd._v));
+//     ASSERT_TRUE(expS.isSameShapeStrict(svd._s));
+//     ASSERT_TRUE(expU.isSameShapeStrict(svd._u));
+//     ASSERT_TRUE(expV.isSameShapeStrict(svd._v));
 // }
 
 
@@ -1444,7 +1443,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
 //
 //    ASSERT_TRUE(outArr.equalsTo(&exp));
-//    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
+//    ASSERT_TRUE(outArr.isSameShapeStrict(exp));
 //}
 //
 //
@@ -1458,7 +1457,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
 //
 //    ASSERT_TRUE(inArr.equalsTo(&exp));
-//    ASSERT_TRUE(inArr.isSameShapeStrict(&exp));
+//    ASSERT_TRUE(inArr.isSameShapeStrict(exp));
 //}
 //
 //
@@ -1472,7 +1471,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
 //
 //    ASSERT_TRUE(outArr.equalsTo(&exp));
-//    ASSERT_TRUE(outArr.isSameShapeStrict(&exp));
+//    ASSERT_TRUE(outArr.isSameShapeStrict(exp));
 //}
 
 ///////////////////////////////////////////////////////////////////

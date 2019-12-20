@@ -275,8 +275,8 @@ TEST_F(RNGTests, Test_Gaussian_21) {
 
 #ifdef DEBUG_BUILD
 TEST_F(RNGTests, Test_Gaussian_22) {
-    auto x0 = NDArrayFactory::create<float>('c', {10000, 1000});
-    auto x1 = NDArrayFactory::create<float>('c', {10000, 1000});
+    auto x0 = NDArrayFactory::create<float>('c', {1000, 800});
+    auto x1 = NDArrayFactory::create<float>('c', {1000, 800});
 
     RandomLauncher::fillGaussian(nd4j::LaunchContext::defaultContext(), _rngA, &x0, 0.0f, 1.0f);
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 0.0f, 1.0f);
@@ -304,7 +304,7 @@ TEST_F(RNGTests, Test_Gaussian_22) {
 }
 
 TEST_F(RNGTests, Test_Gaussian_3) {
-    auto x0 = NDArrayFactory::create<double>('c', {10000000});
+    auto x0 = NDArrayFactory::create<double>('c', {800000});
 
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngA, &x0, 0.0, 1.0);
 
@@ -381,8 +381,8 @@ TEST_F(RNGTests, Test_Truncated_2) {
 }
 
 TEST_F(RNGTests, Test_Truncated_21) {
-    auto x0 = NDArrayFactory::create<float>('c', {1000, 1000});
-    auto x1 = NDArrayFactory::create<float>('c', {1000, 1000});
+    auto x0 = NDArrayFactory::create<float>('c', {100, 100});
+    auto x1 = NDArrayFactory::create<float>('c', {100, 100});
 
     RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
@@ -428,8 +428,8 @@ TEST_F(RNGTests, Test_Truncated_21) {
 }
 
 TEST_F(RNGTests, Test_Truncated_22) {
-    auto x0 = NDArrayFactory::create<float>('c', {1000, 1000});
-    auto x1 = NDArrayFactory::create<float>('c', {1000, 1000});
+    auto x0 = NDArrayFactory::create<float>('c', {100, 100});
+    auto x1 = NDArrayFactory::create<float>('c', {100, 100});
 
     RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngA, &x0, 2.0f, 4.0f);
     RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngB, &x1, 2.0f, 4.0f);
@@ -522,17 +522,13 @@ TEST_F(RNGTests, Test_Truncated_23) {
 }
 
 TEST_F(RNGTests, Test_Truncated_3) {
-    auto x0 = NDArrayFactory::create<float>('c', {10000, 1000});
-    auto x1 = NDArrayFactory::create<float>('c', {10000, 1000});
+    auto x0 = NDArrayFactory::create<float>('c', {2000, 2000});
+    auto x1 = NDArrayFactory::create<float>('c', {2000, 2000});
 
     RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
-
-    //ASSERT_FALSE(x0.equalsTo(nexp0));
-    //ASSERT_FALSE(x0.equalsTo(nexp1));
-    //ASSERT_FALSE(x0.equalsTo(nexp2));
 
     // Check up distribution
     auto mean = x1.reduceNumber(reduce::Mean);
@@ -540,9 +536,6 @@ TEST_F(RNGTests, Test_Truncated_3) {
     //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    //deviation /= (double)x1.lengthOf();
-    // deviation.printIndexedBuffer("Deviation should be 2.0");
-    //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.001);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.3);
 }

@@ -46,8 +46,8 @@ namespace helpers {
             NDArray alphaBroadcasted(broadcasted, alpha->dataType(), false, context);
             NDArray betaBroadcasted(broadcasted, beta->dataType(), false, context);
 
-            copyAlpha = (alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), alpha));
-            copyBeta = (betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), beta));
+            copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *alpha));
+            copyBeta  = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *beta));
 
         }
 //        bool directAlpha = alpha->ews() == 1 && alpha->ordering() == 'c';

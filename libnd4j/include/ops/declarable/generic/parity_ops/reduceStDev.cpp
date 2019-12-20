@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(reduce_stdev, 1, 1, false, 0, 0) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_STDEV OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
-    input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, output, biasCorrected, dimensions);
+    input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, *output, biasCorrected, dimensions);
 
     return Status::OK();
 }
@@ -130,10 +130,10 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
     const Nd4jLong N = input->lengthOf() / gradO->lengthOf();
     const Nd4jLong NminusOne = biasCorrected ? N - 1 : N;
 
-    auto mean = input->reduceAlongDims(reduce::Mean, dimensions, true);
+    auto mean = input->reduceAlongDimension(reduce::Mean, dimensions, true);
 
     NDArray variance(mean.getShapeInfo(), true, block.launchContext());                    // create empty array with shape matching shape of mean array
-    input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, &variance, biasCorrected, dimensions);
+    input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, variance, biasCorrected, dimensions);
 
     gradI->assign( (*input - mean) / (variance * NminusOne));                              // automatic broadcasting happens here
 

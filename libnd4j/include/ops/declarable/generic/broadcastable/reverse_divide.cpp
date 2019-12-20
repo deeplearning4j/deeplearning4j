@@ -34,7 +34,7 @@ namespace nd4j {
             BROADCAST_CHECK_EMPTY(x,y,z);
 
             REQUIRE_TRUE(!x->isB(), 0, "REVERSEDIVIDE OP: you can't divide by bool array!");
-            x->applyTrueBroadcast(BROADCAST(ReverseDivide), y, z, true);            
+            x->applyTrueBroadcast(BROADCAST(ReverseDivide), *y, *z, true);
 
 			return Status::OK();
         }
@@ -67,7 +67,7 @@ namespace nd4j {
                 // X gradient
                 //epsNext->applyTriplewiseLambda(x, y, lambdaX, gradX);
                 gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
-                gradX->applyTransform(transform::Neg, nullptr, nullptr);
+                gradX->applyTransform(transform::Neg, *gradX);
                 // Y gradient
                 //epsNext->applyPairwiseLambda(x, lambdaY, gradY);
                 gradY->assign((*epsNext) / (*x));
@@ -78,14 +78,14 @@ namespace nd4j {
                 gradY->assign(tmp / tmpX);
 
                 gradX->assign((*epsNext) * (*y) / ((*x) * (*x)));
-                gradX->applyTransform(transform::Neg, nullptr, nullptr);
+                gradX->applyTransform(transform::Neg, *gradX);
             } else {
                 // broadcast case
 
                 auto preY = (*epsNext) / (*x);
 
                 auto preX = *epsNext * (*y) / ((*x) * (*x));
-                preX.applyTransform(transform::Neg, nullptr, nullptr);
+                preX.applyTransform(transform::Neg, preX);
 
                 auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
                 auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
@@ -93,14 +93,12 @@ namespace nd4j {
                 if (axisX.size() > 0) {
                     auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
-                    delete sum;
-                } else 
+                } else
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
                     auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
-                    delete sum;
                 } else
                     gradY->assign(preY);
             }

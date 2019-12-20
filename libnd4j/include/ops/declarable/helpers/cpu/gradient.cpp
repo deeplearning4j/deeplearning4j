@@ -30,7 +30,7 @@ static void applyGradientDescent_(NDArray* input, NDArray* step, double weight, 
         return _x - (_y * weight);
     };
 
-    input->applyPairwiseLambda<T>(step, lambda, output);
+    input->applyPairwiseLambda<T>(*step, lambda, *output);
 }
 
 void applyGradientDescent(nd4j::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {

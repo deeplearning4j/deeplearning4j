@@ -77,15 +77,15 @@ void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLa
 
     // reset gate
     r->assign(mmul(*x, Wrx) + mmul(*hLast, Wrh) + br);         // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-    r->applyTransform(transform::Sigmoid);
+    r->applyTransform(transform::Sigmoid, *r);
 
     // update gate
     u->assign(mmul(*x, Wux) + mmul(*hLast, Wuh) + bu);         // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-    u->applyTransform(transform::Sigmoid);
+    u->applyTransform(transform::Sigmoid, *u);
 
     // cell gate c = activation(x × Wcx + (r * hlast) × Wch + bc)
     c->assign(mmul(*x, Wcx) + mmul(*r * *hLast, Wch) + *bc);    // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-    c->applyTransform(transform::Tanh);
+    c->applyTransform(transform::Tanh, *c);
 
     NDArray temp = 1.f - *c * *c;
 
@@ -231,15 +231,15 @@ void gruCellBP(nd4j::LaunchContext* context,
 
     // reset gate
     NDArray r = mmul(*x, Wrx) + mmul(*hLast, Wrh) + br;         // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-    r.applyTransform(transform::Sigmoid);
+    r.applyTransform(transform::Sigmoid, r);
 
     // update gate
     NDArray u = mmul(*x, Wux) + mmul(*hLast, Wuh) + bu;         // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-    u.applyTransform(transform::Sigmoid);
+    u.applyTransform(transform::Sigmoid, u);
 
     // cell gate c = activation(x×Wcx + (r*hlast)×Wcu + bc)
     NDArray c = mmul(*x, Wcx) + mmul(r * *hLast, Wch) + *bc;    // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
-    c.applyTransform(transform::Tanh);
+    c.applyTransform(transform::Tanh, c);
 
     // h = (1 - u) * c + u * hPrev
 
@@ -352,10 +352,10 @@ void gruCellBP(nd4j::LaunchContext* context,
     dLdWcx.assign(mmul(xT, dLdZc));                          // [iS, bS] × [bS, nU] = [iS, nU]
     dLdWch.assign(mmul((r * *hLast).transpose(), dLdZc));    // [nU, bS] × [bS, nU] = [nU, nU]
 
-    dLdbr.assign(dLdZr.reduceAlongDims(reduce::Sum, {0}));  // [nU]
-    dLdbu.assign(dLdZu.reduceAlongDims(reduce::Sum, {0}));  // [nU]
+    dLdbr.assign(dLdZr.reduceAlongDimension(reduce::Sum, {0}));  // [nU]
+    dLdbu.assign(dLdZu.reduceAlongDimension(reduce::Sum, {0}));  // [nU]
 
-    dLdbc->assign(dLdZc.reduceAlongDims(reduce::Sum, {0})); // [nU]
+    dLdbc->assign(dLdZc.reduceAlongDimension(reduce::Sum, {0})); // [nU]
 }
 
 // //////////////////////////////////////////////////////////////////////////

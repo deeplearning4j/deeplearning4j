@@ -75,7 +75,7 @@ void test(NDArray &x) {
         return x+1.;
     };
 
-    x.applyLambda(f, &x);
+    x.applyLambda(f, x);
 }
 
 template <typename T>
@@ -84,7 +84,7 @@ void test2(NDArray &x) {
         return x+1.;
     };
 
-    x.applyLambda(f, &x);
+    x.applyLambda(f, x);
 }
 
 void testPairwise(NDArray &x, NDArray &y) {
@@ -92,7 +92,7 @@ void testPairwise(NDArray &x, NDArray &y) {
         return x + y +1.;
     };
 
-    x.applyPairwiseLambda(&y, f, &x);
+    x.applyPairwiseLambda(y, f, x);
 }
 
 void testTriplewise(NDArray &i, NDArray &j, NDArray &k) {
@@ -100,7 +100,7 @@ void testTriplewise(NDArray &i, NDArray &j, NDArray &k) {
         return i + j + k + 2.;
     };
 
-    i.applyTriplewiseLambda(&j, &k, f, &i);
+    i.applyTriplewiseLambda(j, k, f, i);
 }
 
 void testIndexed(NDArray &x) {
@@ -108,7 +108,7 @@ void testIndexed(NDArray &x) {
         return _idx + 1.;
     };
 
-    x.applyIndexedLambda(f, &x);
+    x.applyIndexedLambda(f, x);
 }
 
 void testIndexedPairwise(NDArray &x, NDArray &y) {
@@ -116,7 +116,7 @@ void testIndexedPairwise(NDArray &x, NDArray &y) {
         return _idx + x + y +1.;
     };
 
-    x.applyIndexedPairwiseLambda(&y, f, &x);
+    x.applyIndexedPairwiseLambda(y, f, x);
 }
 
 TEST_F(LambdaTests, test_basic_2) {
@@ -197,7 +197,7 @@ void testPairwiseMy(NDArray &x, NDArray &y, NDArray &z) {
                 + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(x)));
     };
 
-    x.applyPairwiseLambda(&y, f, &z);
+    x.applyPairwiseLambda(y, f, z);
 }
 
 ///////////////////////////////////////////////////////////////////

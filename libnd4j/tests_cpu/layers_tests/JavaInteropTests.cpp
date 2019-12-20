@@ -1230,18 +1230,18 @@ TEST_F(JavaInteropTests, test_bfloat16_rng) {
 TEST_F(JavaInteropTests, test_ismax_view) {
     auto original = NDArrayFactory::create<double>('c', {2, 3, 40});
     auto v = original.subarray({NDIndex::all(), NDIndex::all(), NDIndex::interval(0, 40, 2)});
-    v->assign(1.0);
+    v.assign(1.0);
 
-    auto e = v->like();
+    auto e = v.like();
     auto t = e.tensorAlongDimension(0, {0, 1});
-    t->assign(1.0);
+    t.assign(1.0);
 
-    auto z = v->ulike();
+    auto z = v.ulike();
 
 
     Nd4jLong iArgs[] = {2L, 0L};
     Context ctx(1);
-    ctx.setInputArray(0, v->buffer(), v->shapeInfo(), v->specialBuffer(), v->specialShapeInfo());
+    ctx.setInputArray(0, v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo());
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
     ctx.setIArguments(iArgs, 1);
 
@@ -1249,9 +1249,6 @@ TEST_F(JavaInteropTests, test_ismax_view) {
     op.execute(&ctx);
 
     ASSERT_EQ(e, z);
-
-    delete v;
-    delete t;
 }
 
 TEST_F(JavaInteropTests, test_size_dtype_1) {

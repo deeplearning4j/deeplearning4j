@@ -35,17 +35,15 @@ TEST_F(ResultSetTests, basic_test_1) {
     auto x = NDArrayFactory::create<float>('c', {3, 5});
 
     auto tensors = x.allTensorsAlongDimension({1});
-    ASSERT_EQ(3, tensors->size());
+    ASSERT_EQ(3, tensors.size());
 
-    ResultSet set = *tensors;
-    ASSERT_EQ(3, tensors->size());
+    ResultSet set = tensors;
+    ASSERT_EQ(3, tensors.size());
     ASSERT_EQ(3, set.size());
 
     for (int e = 0; e < set.size(); e++)
         ASSERT_EQ(5, set.at(e)->lengthOf());
 
-    for (int e = 0; e < tensors->size(); e++)
-        ASSERT_EQ(5, tensors->at(e)->lengthOf());
-
-    delete tensors;
+    for (int e = 0; e < tensors.size(); e++)
+        ASSERT_EQ(5, tensors.at(e)->lengthOf());
 }

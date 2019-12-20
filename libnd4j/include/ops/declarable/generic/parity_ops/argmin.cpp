@@ -44,11 +44,11 @@ namespace nd4j {
                 auto axisVector = INPUT_VARIABLE(1);
                 helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
-                input->applyIndexReduce(indexreduce::IndexMin, output, axis);
+                input->applyIndexReduce(indexreduce::IndexMin, *output, axis);
             } else {
                 helpers::adjustAxis(input->rankOf(), axis);
 
-                input->applyIndexReduce(indexreduce::IndexMin, output, axis);
+                input->applyIndexReduce(indexreduce::IndexMin, *output, axis);
             }
 
             STORE_RESULT(output);

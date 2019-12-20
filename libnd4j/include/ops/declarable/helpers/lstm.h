@@ -33,7 +33,7 @@ namespace helpers {
     }
 
     static FORCEINLINE void sigmoidInplace(const NDArray& arr) {
-        (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid);
+        (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid, const_cast<NDArray&>(arr));
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -42,7 +42,7 @@ namespace helpers {
     }
 
     static FORCEINLINE void tanhInplace(const NDArray& arr) {
-        (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh);
+        (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, const_cast<NDArray&>(arr));
     }
 
 //////////////////////////////////////////////////////////////////////////

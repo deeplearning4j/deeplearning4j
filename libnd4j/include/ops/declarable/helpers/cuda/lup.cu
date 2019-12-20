@@ -603,7 +603,7 @@ namespace helpers {
 
         output->assign(input); // fill up output tensor with zeros
         output->tickWriteDevice();
-        permutationVectors->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &iota, permutationVectors, true, nullptr);
+        permutationVectors->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), iota, *permutationVectors, true, nullptr);
         permutationVectors->tickWriteDevice();
 
         auto tads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-2, -1});
@@ -839,7 +839,7 @@ namespace helpers {
         int cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
             if (!inplace)
                 output->assign(input);
-            std::unique_ptr<NDArray> tempOutput(output->dup());
+            auto tempOutput =output->dup();
             cusolverDnHandle_t handle = nullptr;
             auto n = input->sizeAt(-1);
             auto n2 = n * n;
@@ -849,9 +849,9 @@ namespace helpers {
                 throw cuda_exception::build("helpers::cholesky_: Cannot create solver handle", status);
             }
             F **dArrayBatch = nullptr;
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput->getShapeInfo(),
-                                                                                  {tempOutput->rankOf() - 2,
-                                                                                   tempOutput->rankOf() - 1});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
+                                                                                  {tempOutput.rankOf() - 2,
+                                                                                   tempOutput.rankOf() - 1});
             const Nd4jLong batchSize = packX.numberOfTads();
             int *dInfoArray = nullptr;
             auto err = cudaMalloc((void **) &dArrayBatch, sizeof(F *) * batchSize);
@@ -865,7 +865,7 @@ namespace helpers {
             }
             auto stream = context->getCudaStream();
             fillBatchKernel<F> << < 1, batchSize, 128, *stream >> >
-                                                       (dArrayBatch, reinterpret_cast<F *>(tempOutput->specialBuffer()), packX.specialOffsets(), batchSize);
+                                                       (dArrayBatch, reinterpret_cast<F *>(tempOutput.specialBuffer()), packX.specialOffsets(), batchSize);
 
             status = cusolverDnSetStream(handle, *stream);
             if (CUSOLVER_STATUS_SUCCESS != status) {
@@ -895,7 +895,7 @@ namespace helpers {
                 throw cuda_exception::build("helpers::cholesky_: Cholesky factorization failed for batch", status);
             }
             adjustResultsKernel<F> << < batchSize, n2, 128, *stream >> >
-                                                            (reinterpret_cast<F *>(tempOutput->specialBuffer()), packX.specialShapeInfo(), packX.specialOffsets(), batchSize, n);
+                                                            (reinterpret_cast<F *>(tempOutput.specialBuffer()), packX.specialShapeInfo(), packX.specialOffsets(), batchSize, n);
 
             err = cudaFree(dArrayBatch);
             if (err) {
@@ -908,9 +908,9 @@ namespace helpers {
             }
 
             if (!inplace)
-                output->assign(tempOutput.get());
+                output->assign(tempOutput);
             else
-                input->assign(tempOutput.get());
+                input->assign(tempOutput);
 
             NDArray::registerSpecialUse({output}, {input});
             return Status::OK();
@@ -978,7 +978,7 @@ namespace helpers {
             cholesky(context, input, &tempOutput, false);
 
             auto outputBuf = output->dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(output->specialBuffer()); // + e * n2; // + e * n2;
-            auto inputBuf = tempOutput.dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(tempOutput->specialBuffer());
+            auto inputBuf = tempOutput.dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(tempOutput.specialBuffer());
             output->nullify();
             auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
                                                                                   {tempOutput.rankOf() - 2,

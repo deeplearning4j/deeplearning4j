@@ -112,10 +112,10 @@ namespace nd4j {
             auto n = double(labels->sizeAt(1));
             auto diffs = *predictions - *labels;
 
-            auto sumOfSquares = (diffs * diffs).reduceAlongDims(reduce::Sum, reductionIdx, true);
+            auto sumOfSquares = (diffs * diffs).reduceAlongDimension(reduce::Sum, reductionIdx, true);
 
-            auto squareOfSum  = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
-            squareOfSum.applyScalar(scalar::Pow, 2);
+            auto squareOfSum  = diffs.reduceAlongDimension(reduce::Sum, reductionIdx, true);
+            squareOfSum.applyScalar(scalar::Pow, 2, squareOfSum);
 
 
             auto E = ((sumOfSquares * n) - squareOfSum) * (4/(n*(n-1)));
@@ -240,15 +240,15 @@ namespace nd4j {
             auto diffs = *predictions - *labels;
 
             std::vector<int> reductionIdx = ShapeUtils::evalDimsToExclude(labels->rankOf(), {0});
-            auto sumOfSquares = (diffs * diffs).reduceAlongDims(reduce::Sum, reductionIdx, true);
+            auto sumOfSquares = (diffs * diffs).reduceAlongDimension(reduce::Sum, reductionIdx, true);
 
-            auto squareOfSum  = diffs.reduceAlongDims(reduce::Sum, reductionIdx, true);
-            squareOfSum.applyScalar(scalar::Pow, 2);
+            auto squareOfSum  = diffs.reduceAlongDimension(reduce::Sum, reductionIdx, true);
+            squareOfSum.applyScalar(scalar::Pow, 2, squareOfSum);
 
             auto E = ((sumOfSquares * n) - squareOfSum) * (4/(n*(n-1)));
 
-            auto sumPred = predictions->reduceAlongDims(reduce::Sum, reductionIdx, true);
-            auto sumLabel = labels->reduceAlongDims(reduce::Sum, reductionIdx, true);
+            auto sumPred = predictions->reduceAlongDimension(reduce::Sum, reductionIdx, true);
+            auto sumLabel = labels->reduceAlongDimension(reduce::Sum, reductionIdx, true);
 
             dLdp->assign(((diffs * n) - sumPred + sumLabel)*(8/(n*(n-1))));
 
@@ -273,7 +273,7 @@ namespace nd4j {
                         dLdw->assign(E.reduceNumber(reduce::Sum));
                     else if(weights != weightsBroad) {
                         std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                        E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                        E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                     }
                     else
                         dLdw->assign(E);
@@ -299,7 +299,7 @@ namespace nd4j {
                             *dLdw = 0.;
                         else if(weights != weightsBroad) {
                             std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                            ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                            ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                         }
                         else
                             dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
@@ -327,7 +327,7 @@ namespace nd4j {
                             dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
                         else if(weights != weightsBroad) {
                             std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                            E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                            E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                             *dLdw /= numOfNonZeroWeightsScalar;
                         }
                         else

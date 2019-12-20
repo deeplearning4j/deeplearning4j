@@ -71,44 +71,41 @@ void NDArray::makeBothBuffersActual() const { }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::fillAsTriangular(const float val, int lower, int upper, const char direction, NDArray* target) {
+void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction) {
 
     if (isS())
         throw std::runtime_error("NDArray::fillArrayAsTriangular: you can't use this method on String array!");
 
-    if(target == nullptr)
-        target = this;
-
-    if(!isSameShape(target) && !(rankOf() == 1 && target->rankOf() == 2 && sizeAt(0) == target->sizeAt(0) && sizeAt(0) == target->sizeAt(1)))
+    if(!isSameShape(target) && !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
         throw std::string("NDArray::fillArrayAsTriangular method: wrong shape of target array !");
 
     if (direction == 'u')
-        lower = -target->sizeAt(-2);
+        lower = -target.sizeAt(-2);
     else if (direction == 'l')
-        upper = target->sizeAt(-1);
+        upper = target.sizeAt(-1);
 
     const T value = static_cast<T>(val);
     const auto x = reinterpret_cast<const T*>(getBuffer());
-          auto z = reinterpret_cast<T*>(target->getBuffer());
+          auto z = reinterpret_cast<T*>(target.getBuffer());
 
     const int xRank = rankOf();
-    const int zRank = target->rankOf();
+    const int zRank = target.rankOf();
 
-    const auto zLen = target->lengthOf();
+    const auto zLen = target.lengthOf();
 
-    const bool areSameOffsets = shape::haveSameShapeAndStrides(getShapeInfo(), target->getShapeInfo());
+    const bool areSameOffsets = shape::haveSameShapeAndStrides(getShapeInfo(), target.getShapeInfo());
 
 
     auto func = PRAGMA_THREADS_FOR {
         Nd4jLong coords[MAX_RANK];
         for (auto i = start; i < stop; i += increment) {
-            shape::index2coords(i, target->getShapeInfo(), coords);
-            const auto zOffset = shape::getOffset(target->getShapeInfo(), coords);
+            shape::index2coords(i, target.getShapeInfo(), coords);
+            const auto zOffset = shape::getOffset(target.getShapeInfo(), coords);
 
             // if( (row + upper < col) || (row + lower > col) )
             if ((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
                 z[zOffset] = value;
-            else if (this != target) {      // when this and target are different arrays
+            else if (this != &target) {      // when this and target are different arrays
                 if (xRank != zRank)
                     coords[0] = coords[1];
 
@@ -120,7 +117,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, const char
 
     samediff::Threads::parallel_for(func, 0, zLen);
 }
-BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, int lower, int upper, const char direction, NDArray* target), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, int lower, int upper, NDArray& target, const char direction), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::setIdentity() {
@@ -405,11 +402,11 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
 
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
-NDArray* NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
+NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
 
-    auto output = new NDArray('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(),  getContext());
+    NDArray output('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(),  getContext());
 
-    BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeat_, (*this, *output, repeats, axis), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeat_, (*this, output, repeats, axis), LIBND4J_TYPES);
 
     return output;
 }

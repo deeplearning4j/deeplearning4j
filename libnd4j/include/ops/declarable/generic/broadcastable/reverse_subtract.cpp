@@ -61,13 +61,13 @@ namespace nd4j {
 
             if (x->isSameShape(y)) {
                 // PWT case case
-                epsNext->applyTransform(transform::Neg, gradX, nullptr);
+                epsNext->applyTransform(transform::Neg, *gradX);
                 gradY->assign(epsNext);
             } else if (y->isScalar()) {
                 // scalar case
                 auto tmp = epsNext->reduceNumber(reduce::Sum);
                 gradY->assign(tmp);
-                epsNext->applyTransform(transform::Neg, gradX, nullptr);
+                epsNext->applyTransform(transform::Neg, *gradX);
             } else {
                 // broadcastable
                 auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
@@ -75,20 +75,18 @@ namespace nd4j {
 
                 if (axisX.size() > 0) {
                     auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisX);
-                    sum->applyTransform(transform::Neg, gradX);
-                    delete sum;
+                    sum.applyTransform(transform::Neg, *gradX);
                 } else {
-                    epsNext->applyTransform(transform::Neg, gradX, nullptr);
+                    epsNext->applyTransform(transform::Neg, *gradX);
                 }
 
                 if (axisY.size() > 0) {
                     auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
-                    delete sum;
                 } else {
                     gradY->assign(epsNext);
                 }
-            }  
+            }
 
             return Status::OK();
         }

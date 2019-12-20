@@ -45,9 +45,9 @@ namespace ops {
         //void* whereMax = (void*)();
         auto internal = (*input);
         internal -= maxVals;
-        internal.applyTransform(transform::Exp, nullptr, nullptr);
-        internal.reduceAlongDimension(reduce::Sum, output, axes, keepDims, false); //, (void*)&maxVals);
-        output->applyTransform(transform::Log, nullptr, nullptr);
+        internal.applyTransform(transform::Exp, internal);
+        internal.reduceAlongDimension(reduce::Sum, *output, axes, keepDims, false); //, (void*)&maxVals);
+        output->applyTransform(transform::Log, *output);
         (*output) += maxVals;
         return ND4J_STATUS_OK;
     }
@@ -56,7 +56,7 @@ namespace ops {
         -> setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
         -> setAllowedOutputTypes({ALL_FLOATS});
     }
-    DECLARE_SHAPE_FN(reduce_logsumexp) {    
+    DECLARE_SHAPE_FN(reduce_logsumexp) {
 
         const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
         auto input = INPUT_VARIABLE(0);
@@ -74,6 +74,6 @@ namespace ops {
 
         return SHAPELIST(outShapeInfo);
     }
-#endif 
+#endif
 }
 }

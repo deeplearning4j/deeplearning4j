@@ -33,7 +33,7 @@ namespace helpers {
     static FORCEINLINE NDArray activation(const NDArray& arr) {
         // return (const_cast<NDArray<T>&>(arr)).template transform<simdOps::Tanh<T>>();
         auto result = NDArray(&arr, false, arr.getContext());
-        (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, &result);
+        (const_cast<NDArray&>(arr)).applyTransform(transform::Tanh, result);
         return result;
     }
 
@@ -236,7 +236,7 @@ void sruBI(nd4j::LaunchContext * context, NDArray* x, const NDArray* w, const ND
 
     //  x = x * mask
     if(mask)
-        x->applyBroadcast(broadcast::Multiply, {1, 2}, mask, x, nullptr);             // apply mask
+        x->applyBroadcast(broadcast::Multiply, {1, 2}, *mask, *x);             // apply mask
 
     // U = x * w
     NDArray wi = mmul(*x, *w); //  U [time x bS x 6*K]
@@ -497,7 +497,7 @@ void sruBIBP(nd4j::LaunchContext* context, NDArray* x, const NDArray* w, const N
 
     //  x = x * mask
     if(mask)
-        x->applyBroadcast(broadcast::Multiply, {1, 2}, mask, x, nullptr);             // apply mask
+        x->applyBroadcast(broadcast::Multiply, {1, 2}, *mask, *x);             // apply mask
 
     // U = x * w
     NDArray wi = mmul(*x, *w); //  U [time x bS x 6*K]
@@ -522,7 +522,7 @@ void sruBIBP(nd4j::LaunchContext* context, NDArray* x, const NDArray* w, const N
     manager.synchronize();
 
     // gradB
-    gradBias.reduceAlongDimension(reduce::Sum, gradB, {0});    // [4*K]
+    gradBias.reduceAlongDimension(reduce::Sum, *gradB, {0});    // [4*K]
 
     // gradW
     x->permutei({0, 2, 1});                                    // [time, bS, 2*K] -> [time, 2*K,  bS]

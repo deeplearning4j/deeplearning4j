@@ -51,7 +51,7 @@ CUSTOM_OP_IMPL(reduce_sum, 1, 1, false, 0, 0) {
     else if (block.getTArguments()->size())
         keepDims = (bool)T_ARG(0);
 
-    input->reduceAlongDimension(reduce::Sum, output, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::Sum, *output, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -85,7 +85,7 @@ DECLARE_TYPES(reduce_sum) {
         ->setAllowedInputTypes(nd4j::DataType::ANY)
         ->setSameMode(true);
 }
-#endif 
+#endif
 
 #if NOT_EXCLUDED(OP_reduce_sum_bp)
 //////////////////////////////////////////////////////////////////////////
@@ -123,9 +123,9 @@ CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
         if(!keepDims) {
             auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
             auto r  = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-            gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &r, gradI);
+            gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), r, *gradI);
         } else
-            gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), gradO, gradI);
+            gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), *gradO, *gradI);
     }
 
     return Status::OK();

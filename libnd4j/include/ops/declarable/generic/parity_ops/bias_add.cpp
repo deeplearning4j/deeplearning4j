@@ -82,7 +82,7 @@ CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
 
     gradI->assign(gradO);
 
-    gradO->reduceAlongDimension(nd4j::reduce::Sum, gradB, ShapeUtils::evalDimsToExclude(gradO->rankOf(), {channelDim}));
+    gradO->reduceAlongDimension(nd4j::reduce::Sum, *gradB, ShapeUtils::evalDimsToExclude(gradO->rankOf(), {channelDim}));
 
     return ND4J_STATUS_OK;
 }

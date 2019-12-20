@@ -104,34 +104,34 @@ namespace nd4j {
             }
 
             nd4j::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
-            std::unique_ptr<NDArray> val(output->dup());
+            NDArray val = NDArray(output->dup());
 
-            gradOut->applyPairwiseTransform(pairwise::Multiply, output, val.get(), nullptr);
-            val->applyPairwiseTransform(pairwise::Divide, input, val.get(), nullptr);
+            gradOut->applyPairwiseTransform(pairwise::Multiply, *output, val);
+            val.applyPairwiseTransform(pairwise::Divide, *input, val);
             if (!exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, val.get(), output, dims, true, false);
+                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);
                 else
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, val.get(), output, false, true);
+                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, false, true);
 
             }
             else if (!exclusive && reverse){
                 if (dims.size())
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, val.get(), output, dims, false, false);
+                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, false, false);
                 else
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, val.get(), output, false, false);
+                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, false, false);
             }
             else if (exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, val.get(), output, dims, true, true);
+                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, true);
                 else
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, val.get(), output, true, true);
+                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, true, true);
             }
             else {
                 if (dims.size())
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, val.get(), output, dims, true, false);
+                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);
                 else
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, val.get(), output, true, false);
+                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, true, false);
             }
 
             return Status::OK();

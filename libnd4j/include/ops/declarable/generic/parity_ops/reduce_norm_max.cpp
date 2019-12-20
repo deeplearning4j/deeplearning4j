@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(reduce_norm_max, 1, 1, false, 0, 0) {
     else if (block.getTArguments()->size())
         keepDims = (bool)T_ARG(0);
 
-    input->reduceAlongDimension(reduce::NormMax, output, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::NormMax, *output, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -87,7 +87,7 @@ DECLARE_TYPES(reduce_norm_max) {
         ->setAllowedInputTypes(nd4j::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
-#endif 
+#endif
 
 #if NOT_EXCLUDED(OP_reduce_norm_max_bp)
 
@@ -124,9 +124,8 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
     else {
 
         auto indicesArr = input->applyIndexReduce(nd4j::indexreduce::IndexAbsoluteMax, dimensions);
-        helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, *indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));      // 6 corresponds to copy operation
+        helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));      // 6 corresponds to copy operation
         *gradI *= input->transform(nd4j::transform::Sign);
-        delete indicesArr;
     }
 
     return Status::OK();
@@ -139,7 +138,7 @@ DECLARE_SHAPE_FN(reduce_norm_max_bp) {
         auto axesVector = INPUT_VARIABLE(2);
         helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
-    
+
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_NORM_MAX_BP OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
     for(const auto& item : dimensions)

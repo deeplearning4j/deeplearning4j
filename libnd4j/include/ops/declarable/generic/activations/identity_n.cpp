@@ -33,7 +33,7 @@ namespace nd4j {
                     auto x = INPUT_VARIABLE(i);
                     auto z = OUTPUT_VARIABLE(i);
 
-                    x->applyTransform(transform::Identity, z, nullptr);
+                    x->applyTransform(transform::Identity, *z);
                 }
             }
 

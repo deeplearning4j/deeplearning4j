@@ -35,21 +35,6 @@ ND4J_EXPORT utf8string NDArray::e(const Nd4jLong i) const;
 template <>
 ND4J_EXPORT std::string NDArray::e(const Nd4jLong i) const;
 
-//////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray* NDArray::asT() const{
-
-    auto result = isScalar() ? new NDArray('c', {}, {0.}, DataTypeUtils::fromT<T>(), this->getContext()) : new NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
-    auto l = this->lengthOf();
-
-    NDArray::prepareSpecialUse({result}, {this});
-    NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result->getBuffer(), result->getShapeInfo(), result->getSpecialBuffer(), result->getSpecialShapeInfo(), nullptr, nullptr, nullptr);
-    NDArray::registerSpecialUse({result}, {this});
-
-    return result;
-}
-BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray* NDArray::asT, () const, LIBND4J_TYPES);
-
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
@@ -499,9 +484,7 @@ std::vector<int8_t> NDArray::asByteVector() {
         if (this->isView()) {
             auto tmp = this->dup(this->ordering());
             syncToHost();
-            memcpy(result.data(), tmp->getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
-
-            delete tmp;
+            memcpy(result.data(), tmp.getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
         } else {
             syncToHost();
             memcpy(result.data(), getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
@@ -590,26 +573,78 @@ void NDArray::copyBuffersContinuouslyFrom(const NDArray& other, size_t sizeToCop
     dataBuffer()->copyBufferFrom(*other.getDataBuffer(), sizeToCopyInBytes, offsetThis, offsetOther);
 }
 
+////////////////////////////////////////////////////////////////////
+// This method assigns values of given NDArray to this one
+void NDArray::assign(const NDArray& other, bool allowParallelism) {
+
+    if (this == &other)
+        return;
+
+    if (other.isEmpty()) {
+        if (!isEmpty()) {
+             ArrayOptions::setPropertyBit(shapeInfo(), ARRAY_EMPTY);
+             syncShape();
+             _buffer = std::make_shared<DataBuffer>();
+             _offset = 0;
+        }
+        return;
+    }
+
+    if(isEmpty()) {
+        *this = other;
+        return;
+    }
+
+    if (other.lengthOf() == 1) {
+
+        if(lengthOf() == 1) {
+            NDArray::preparePrimaryUse({this}, {&other});
+            BUILD_DOUBLE_SELECTOR(dataType(), other.dataType(), templatedDoubleAssign, (buffer(), 0, other.getBuffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
+            NDArray::registerPrimaryUse({this}, {&other});
+            this->syncToDevice();
+        }
+        else {
+            if (dataType() != other.dataType()) {
+                auto tmp = other.cast(dataType());
+                NDArray::prepareSpecialUse({this}, {&tmp});
+                NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), tmp.getBuffer(), tmp.getShapeInfo(), tmp.getSpecialBuffer(), tmp.getSpecialShapeInfo(), nullptr, allowParallelism);
+                NDArray::registerSpecialUse({this}, {});
+            }
+            else {
+                NDArray::prepareSpecialUse({this}, {&other});
+                NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), nullptr, allowParallelism);
+                NDArray::registerSpecialUse({this}, {&other});
+            }
+        }
+    }
+    else {
+        if (other.lengthOf() != lengthOf()) {
+            auto shapeThis = ShapeUtils::shapeAsString(this);
+            auto shapeThat = ShapeUtils::shapeAsString(&other);
+            nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
+            throw std::runtime_error("NDArray::assign: lengths of arrays are mismatched");
+        }
+
+        // memcpy is allowed only for same order && same ews (being equal to 1)
+        if (ordering() == other.ordering() && dataType() == other.dataType() && ews() == 1 && other.ews() == 1)
+            copyBuffersContinuouslyFrom(other, other.lengthOf() * other.sizeOfT());
+        else {
+            NDArray::prepareSpecialUse({this}, {&other});
+            NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr, allowParallelism);
+            NDArray::registerSpecialUse({this}, {&other});
+        }
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////
 // This method assigns values of given NDArray to this one, wrt order
-    void NDArray::assign(const NDArray *other, bool allowParallelism) {
-        assign(*other, allowParallelism);
-    }
-
-//////////////////////////////////////////////////////////////////////////
-// This method assigns given value to all elements in this NDArray
-void NDArray::assign(const double value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({this}, {&temp});
+void NDArray::assign(const NDArray *other, bool allowParallelism) {
+    assign(*other, allowParallelism);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const float value, bool allowParallelism) {
+template <typename T, typename>
+void NDArray::assign(const T& value, bool allowParallelism) {
     // just fire scalar
     auto temp = NDArrayFactory::create(dataType(), value, this->getContext());
 
@@ -617,116 +652,19 @@ void NDArray::assign(const float value, bool allowParallelism) {
     NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
     NDArray::registerSpecialUse({this}, {&temp});
 }
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const float16 value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const bfloat16& value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const Nd4jLong value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const int value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), _shapeInfo, specialBuffer(), _shapeInfoD, buffer(), _shapeInfo, specialBuffer(), _shapeInfoD, temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp._shapeInfoD, nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const int16_t value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), _shapeInfo, specialBuffer(), _shapeInfoD, buffer(), _shapeInfo, specialBuffer(), _shapeInfoD, temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp._shapeInfoD, nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const uint8_t value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const uint16_t value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const uint32_t value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const uint64_t value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const int8_t value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
-
-//////////////////////////////////////////////////////////////////////////
-void NDArray::assign(const bool value, bool allowParallelism) {
-    // just fire scalar
-    auto temp = NDArrayFactory::create(this->dataType(), value, this->getContext());
-
-    NDArray::prepareSpecialUse({this}, {&temp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::CopyPws, buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.getSpecialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
-}
+template ND4J_EXPORT void NDArray::assign(const double& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const float& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const float16& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const bfloat16& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const Nd4jLong& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const int& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const int8_t& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const int16_t& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const uint8_t& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const uint16_t& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const uint32_t& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const uint64_t& value, bool allowParallelism);
+template ND4J_EXPORT void NDArray::assign(const bool& value, bool allowParallelism);
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* NDArray::detach() {
@@ -841,32 +779,7 @@ void* NDArray::bufferWithOffset(Nd4jLong offset) const {
 
 //////////////////////////////////////////////////////////////////////////
 // eventually method reduces array by excluding its shapes along axes present in dimensions vector
-NDArray* NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-
-    return new NDArray(reduceAlongDims(op, dimensions, keepDims, supportOldShapes));
-}
-
-//////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-
-    return new NDArray(reduceAlongDims(op, dimensions, keepDims, supportOldShapes));
-}
-
-//////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-
-    return new NDArray(reduceAlongDims(op, dimensions, keepDims, supportOldShapes));
-}
-
-//////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
-
-    return new NDArray(reduceAlongDims(op, dimensions, keepDims, supportOldShapes));
-}
-
-//////////////////////////////////////////////////////////////////////////
-// eventually method reduces array by excluding its shapes along axes present in dimensions vector
-NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+NDArray NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
     std::vector<int> copy(dimensions);
 
@@ -874,13 +787,13 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::FloatOps op, const std::vector<in
 
     NDArray result(newShape, true, getContext());
 
-    reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
+    this->reduceAlongDimension(op, result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+NDArray NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
     std::vector<int> copy(dimensions);
 
@@ -888,13 +801,13 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::SameOps op, const std::vector<int
 
     NDArray result(newShape, true, getContext());
 
-    reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
+    reduceAlongDimension(op, result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+NDArray NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
     std::vector<int> copy(dimensions);
 
@@ -902,13 +815,13 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::BoolOps op, const std::vector<int
 
     NDArray result(newShape, true, getContext());
 
-    reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
+    reduceAlongDimension(op, result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+NDArray NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
 
     std::vector<int> copy(dimensions);
 
@@ -916,29 +829,29 @@ NDArray NDArray::reduceAlongDims(nd4j::reduce::LongOps op, const std::vector<int
 
     NDArray result(newShape, true, getContext());
 
-    reduceAlongDimension(op, &result, copy, keepDims, supportOldShapes, false);
+    reduceAlongDimension(op, result, copy, keepDims, supportOldShapes, false);
 
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-NDArray *NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+NDArray NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
     return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray *NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+NDArray NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
     return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray *NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+NDArray NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
     return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray *NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
+NDArray NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, const std::initializer_list<int>& dimensions, const bool keepDims, const bool supportOldShapes) const {
     return reduceAlongDimension(op, std::vector<int>(dimensions), keepDims, supportOldShapes);
 }
 
@@ -1080,11 +993,6 @@ Nd4jLong NDArray::tensorsAlongDimension(const std::vector<int>& dimensions) cons
     Nd4jLong numTads = this->lengthOf() / tadLength;
 
     return numTads;
-}
-
-//////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::initializer_list<int>& dimensions) const {
-    return tensorAlongDimension(index, std::vector<int>(dimensions));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1305,13 +1213,20 @@ BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void* NDArray::templatedPointerShift,
 
 //////////////////////////////////////////////////////////////////////////
 // method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
-NDArray NDArray::transpose() const {
+NDArray NDArray::transpose() const &{
     NDArray newArr(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext(), getBufferOffset());
     newArr.transposei();
 
     return newArr;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// method makes copy of this array and applies to the copy transpose operation, this array remains unaffected
+NDArray NDArray::transpose() && {
+
+    this->transposei();
+    return std::move(*this);
+}
 
 ////////////////////////////////////////////////////////////////////////
 // method performs transpose operation based on this array and store result in target, this array remains unaffected
@@ -1418,12 +1333,19 @@ Nd4jLong NDArray::argMax(std::initializer_list<int> dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
-NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const {
+NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const & {
 
     NDArray newArr(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext(), getBufferOffset());
     newArr.reshapei(order, shape);
 
     return newArr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) && {
+
+    this->reshapei(order, shape);
+    return std::move(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1490,7 +1412,7 @@ bool NDArray::permutei(const std::vector<Nd4jLong>& dimensions) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const int* dimensions, const int rank) const {
+NDArray NDArray::permute(const int* dimensions, const int rank) const & {
 
     // evaluate shapeInfo for output (permuted) array ret
     auto shapeInfoPermuted = ShapeUtils::evalPermShapeInfo(dimensions, rank, *this, getContext()->getWorkspace());
@@ -1499,36 +1421,78 @@ NDArray NDArray::permute(const int* dimensions, const int rank) const {
     return ret;
 }
 
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::permute(const int* dimensions, const int rank) && {
+
+    this->permutei(dimensions, rank);
+    return std::move(*this);
+}
+
 /////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const Nd4jLong* dimensions, const int rank) const {
+NDArray NDArray::permute(const Nd4jLong* dimensions, const int rank) const &{
     int tempDims[MAX_RANK];
     shape::convertT<Nd4jLong, int>(const_cast<Nd4jLong *>(dimensions), tempDims, rank);
     return permute(tempDims, rank);
 }
 
+/////////////////////////////////////////////////////////////////////////
+NDArray NDArray::permute(const Nd4jLong* dimensions, const int rank) && {
+
+    this->permutei(dimensions, rank);
+    return std::move(*this);
+}
+
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::vector<int>& dimensions) const {
+NDArray NDArray::permute(const std::vector<int>& dimensions) const &{
     auto data = dimensions.data();
     auto size = dimensions.size();
     return permute(data, size);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::vector<Nd4jLong>& dimensions) const {
+NDArray NDArray::permute(const std::vector<int>& dimensions) && {
+
+    this->permutei(dimensions);
+    return std::move(*this);
+}
+
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::permute(const std::vector<Nd4jLong>& dimensions) const & {
     return permute(dimensions.data(), dimensions.size());
 }
 
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::permute(const std::vector<Nd4jLong>& dimensions) && {
+
+    this->permutei(dimensions);
+    return std::move(*this);
+}
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::initializer_list<int>& dimensions) const {
+NDArray NDArray::permute(const std::initializer_list<int>& dimensions) const &{
+
     std::vector<int> vec(dimensions);
     return permute(vec);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::permute(const std::initializer_list<Nd4jLong>& dimensions) const {
+NDArray NDArray::permute(const std::initializer_list<int>& dimensions) && {
+
+    this->permutei(dimensions);
+    return std::move(*this);
+}
+
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::permute(const std::initializer_list<Nd4jLong>& dimensions) const & {
     std::vector<Nd4jLong> vec(dimensions);
     return permute(vec);
+}
+
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::permute(const std::initializer_list<Nd4jLong>& dimensions) && {
+
+    this->permutei(dimensions);
+    return std::move(*this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1623,7 +1587,7 @@ T* NDArray::bufferAsT() const {
 BUILD_SINGLE_UNCHAINED_TEMPLATE(template ND4J_EXPORT , * NDArray::bufferAsT() const, LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::subarray(IndicesList& idx) const {
+NDArray NDArray::subarray(IndicesList& idx) const {
 
     const int idxSize = idx.size();
     if (idxSize != this->rankOf())
@@ -1655,11 +1619,11 @@ NDArray* NDArray::subarray(IndicesList& idx) const {
             indexes[3 * d + 2] = idx.at(d)->getIndices().at(2); // stride
         }
     }
-    return new NDArray((*this)(indexes, true, true));
+    return NDArray((*this)(indexes, true, true));
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::subarray(const std::initializer_list<NDIndex*>& idx) const {
+NDArray NDArray::subarray(const std::initializer_list<NDIndex*>& idx) const {
 
     const int idxSize = idx.size();
     if (idxSize != this->rankOf())
@@ -1698,11 +1662,11 @@ NDArray* NDArray::subarray(const std::initializer_list<NDIndex*>& idx) const {
     for (auto i: idx)
         delete i;
 
-    return new NDArray((*this)(indexes, true, true));
+    return NDArray((*this)(indexes, true, true));
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::subarray(const Intervals& idx) const {
+NDArray NDArray::subarray(const Intervals& idx) const {
 
     const int idxSize = idx.size();
     if (idxSize != this->rankOf())
@@ -1723,390 +1687,47 @@ NDArray* NDArray::subarray(const Intervals& idx) const {
         }
     }
 
-    return new NDArray((*this)(indexes, true));
+    return NDArray((*this)(indexes, true));
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray NDArray::asT() const{
+
+    auto result = isScalar() ? NDArray('c', {}, {0.}, DataTypeUtils::fromT<T>(), this->getContext()) : NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
+    auto l = this->lengthOf();
+
+    NDArray::prepareSpecialUse({&result}, {this});
+    NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.getSpecialBuffer(), result.getSpecialShapeInfo(), nullptr, nullptr, nullptr);
+    NDArray::registerSpecialUse({&result}, {this});
+
+    return result;
+}
+BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArray::asT, () const, LIBND4J_TYPES);
+
 ////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::asT(DataType dtype) const {
+NDArray NDArray::asT(DataType dtype) const {
     if (isS())
         throw std::runtime_error("NDArray::asT: you can't use this method on String array!");
 
     BUILD_SINGLE_SELECTOR(dtype, return asT, (), LIBND4J_TYPES);
 
-    return nullptr;
+    return NDArray();
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename T>
-NDArray* NDArray::cast() {
-    if (isS())
-        throw std::runtime_error("NDArray::cast: you can't use this method on String array!");
-    return this->asT<T>();
-}
-
-////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::cast(DataType dtype) const {
+NDArray NDArray::cast(DataType dtype) const {
     if (isS())
         throw std::runtime_error("NDArray::cast: you can't use this method on String array!");
     return this->asT(dtype);
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::cast(NDArray* target, DataType dtype) {
+void NDArray::cast(NDArray& target, DataType dtype) {
     if (isS())
         throw std::runtime_error("NDArray::cast: you can't use this method on String array!");
     // TODO: to be implemented properly
-    target->assign(this);
-}
-
-////////////////////////////////////////////////////////////////////////
-// addition operator array + array
-NDArray NDArray::operator+(const NDArray& other) const {
-    if (isS())
-    throw std::runtime_error("NDArray::operator+: you can't use this method on String array!");
-
-    if (!Environment::getInstance()->isExperimentalBuild() && this->dataType() != other.dataType() && (other.dataType() != DataType::BOOL) ) {
-        throw datatype_exception::build("NDArray::operator+: cannot add different types.", dataType(), other.dataType());
-    }
-    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        NDArray result(getShapeInfo(), DataTypeUtils::pickPairwiseResultType(getShapeInfo(), other.getShapeInfo()), false, getContext());
-
-        NDArray::prepareSpecialUse({&result}, {this, &other});
-        NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({&result}, {this, &other});
-
-        return result;
-    }
-
-    return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), other);
-}
-
-////////////////////////////////////////////////////////////////////////
-// addition operator array + scalar
-template <typename T>
-NDArray NDArray::operator+(const T& scalar) const {
-    if (isS())
-        throw std::runtime_error("NDArray::operator+: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
-    NDArray result(getShapeInfo(), DataTypeUtils::pickPairwiseResultType(dataType(), DataTypeUtils::fromT<T>()), false, getContext());
-
-    NDArray::prepareSpecialUse({&result}, {this, &tmp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {this, &tmp});
-
-    return result;
-}
-template ND4J_EXPORT NDArray NDArray::operator+(const double&   scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const float&    scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const float16&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const bfloat16&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const Nd4jLong& scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const int&      scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const int16_t&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const int8_t&   scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const uint8_t&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator+(const bool&     scalar) const;
-
-////////////////////////////////////////////////////////////////////////
-// subtraction operator array - scalar
-template<typename T>
-NDArray NDArray::operator-(const T& scalar) const {
-    if (isS())
-        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
-    NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(dataType(), DataTypeUtils::fromT<T>()), false, getContext());
-
-    NDArray::prepareSpecialUse({&result}, {this, &tmp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Subtract, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {this, &tmp});
-
-    return result;
-}
-template ND4J_EXPORT NDArray NDArray::operator-(const double&   scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const float&    scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const float16&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const bfloat16&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const Nd4jLong& scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const int&      scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const int16_t&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const int8_t&   scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const uint8_t&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator-(const bool&     scalar) const;
-
-////////////////////////////////////////////////////////////////////////
-// multiplication operator array*scalar
-template<typename T>
-NDArray NDArray::operator*(const T& scalar) const {
-    if (isS())
-        throw std::runtime_error("NDArray::operator*: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
-    NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(dataType(), DataTypeUtils::fromT<T>()), false, getContext());
-
-    NDArray::prepareSpecialUse({&result}, {this, &tmp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Multiply, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {this, &tmp});
-
-    return result;
-}
-template ND4J_EXPORT NDArray NDArray::operator*(const double&   scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const float&    scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const float16&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const bfloat16&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const Nd4jLong& scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const int&      scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const int16_t&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const int8_t&   scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const uint8_t&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator*(const bool&     scalar) const;
-
-////////////////////////////////////////////////////////////////////////
-// division operator array / scalar
-template<typename T>
-NDArray NDArray::operator/(const T& scalar) const {
-    if (isS())
-        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
-
-    if(scalar == (T)0.)
-        throw std::runtime_error("NDArray::operator/ (division operator) : division by zero !");
-
-    auto tmp = NDArrayFactory::create(dataType(), scalar, getContext());
-    NDArray result(_shapeInfo, DataTypeUtils::pickPairwiseResultType(dataType(), DataTypeUtils::fromT<T>()), false, getContext());
-
-    NDArray::prepareSpecialUse({&result}, {this, &tmp});
-    NativeOpExecutioner::execScalar(getContext(), nd4j::scalar::Divide, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {this, &tmp});
-
-    return result;
-}
-template ND4J_EXPORT NDArray NDArray::operator/(const double&   scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const float&    scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const float16&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const bfloat16&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const Nd4jLong& scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const int&      scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const int16_t&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const int8_t&   scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const uint8_t&  scalar) const;
-template ND4J_EXPORT NDArray NDArray::operator/(const bool&     scalar) const;
-
-////////////////////////////////////////////////////////////////////////
-// addition operator scalar + array
-ND4J_EXPORT NDArray operator+(const float16& scalar, const NDArray& arr) {
-    return arr + scalar;
-}
-ND4J_EXPORT NDArray operator+(const bfloat16& scalar, const NDArray& arr) {
-     return arr + scalar;
-}
-ND4J_EXPORT NDArray operator+(const float& scalar, const NDArray& arr) {
-    return arr + scalar;
-}
-ND4J_EXPORT NDArray operator+(const double& scalar, const NDArray& arr) {
-    return arr + scalar;
-}
-ND4J_EXPORT NDArray operator+(const Nd4jLong& scalar, const NDArray& arr) {
-    return arr + scalar;
-}
-ND4J_EXPORT NDArray operator+(const int& scalar, const NDArray& arr) {
-    return arr + scalar;
-}
-
-////////////////////////////////////////////////////////////////////////
-// addition operator scalar + array
-ND4J_EXPORT NDArray operator*(const float16& scalar, const NDArray& arr) {
-    return arr * scalar;
-}
-ND4J_EXPORT NDArray operator*(const bfloat16& scalar, const NDArray& arr) {
-    return arr * scalar;
-}
-
-ND4J_EXPORT NDArray operator*(const float& scalar, const NDArray& arr) {
-    return arr * scalar;
-}
-ND4J_EXPORT NDArray operator*(const double& scalar, const NDArray& arr) {
-    return arr * scalar;
-}
-ND4J_EXPORT NDArray operator*(const Nd4jLong& scalar, const NDArray& arr) {
-    return arr * scalar;
-}
-ND4J_EXPORT NDArray operator*(const int& scalar, const NDArray& arr) {
-    return arr * scalar;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator-(const float16& scalar, const NDArray & arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float16>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator-(const bfloat16& scalar, const NDArray & arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<bfloat16>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator-(const float& scalar, const NDArray& arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator-(const double& scalar, const NDArray& arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<double>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator-(const Nd4jLong& scalar, const NDArray& arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<Nd4jLong>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator-(const int& scalar, const NDArray& arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<int>()), false, arr.getContext());
-
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator/(const bfloat16& scalar, const NDArray& arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
-    if (arr.isB())
-        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<bfloat16>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator/(const float16& scalar, const NDArray& arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
-    if (arr.isB())
-        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float16>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator/(const float& scalar, const NDArray & arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
-    if (arr.isB())
-        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<float>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator/(const double& scalar, const NDArray & arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
-    if (arr.isB())
-        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<double>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
-}
-
-////////////////////////////////////////////////////////////////////////
-ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray & arr) {
-    if (arr.isS())
-        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
-    if (arr.isB())
-        throw std::runtime_error("NDArray::operator/: you can't divide scalar by bool array!");
-
-    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
-    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<int>()), false, arr.getContext());
-
-    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
-    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
-
-    return result;
+    target.assign(this);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2133,11 +1754,11 @@ void NDArray::operator+=(const NDArray& other) {
             throw std::invalid_argument("NDArray::operator+=: the shapes of this and other arrays are not suitable for broadcast operation !");
 
         if(shape::equalsTypesAndShapesSoft(getShapeInfo(), bShape)) {
-            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &other, this, false);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), other, *this, false);
         }
         else {
             NDArray result(bShape, true, getContext());
-            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), &other, &result, false);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), other, result, false);
             *this = std::move(result);      // move assignment operator, zero cost copy
         }
     }
@@ -2167,11 +1788,11 @@ void NDArray::operator-=(const NDArray& other) {
             throw std::invalid_argument("NDArray::operator-=: the shapes of this and other arrays are not suitable for broadcast operation !");
 
         if(shape::equalsTypesAndShapesSoft(getShapeInfo(), bShape)) {
-            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &other, this, false);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), other, *this, false);
         }
         else {
             NDArray result(bShape, true, getContext());
-            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &other, &result, false);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), other, result, false);
             *this = std::move(result);      // move assignment operator, zero cost copy
         }
     }
@@ -2200,11 +1821,11 @@ void NDArray::operator*=(const NDArray& other) {
             throw std::invalid_argument("NDArray::operator*=: the shapes of this and other arrays are not suitable for broadcast operation !");
 
         if(shape::equalsTypesAndShapesSoft(_shapeInfo, bShape)) {
-            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), &other, this, false);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other, *this, false);
         }
         else {
             NDArray result(bShape, true, getContext());
-            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), &other, &result, false);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other, result, false);
             *this = std::move(result);      // move assignment operator, zero cost copy
         }
     }
@@ -2237,15 +1858,16 @@ void NDArray::operator/=(const NDArray& other) {
             throw std::invalid_argument("NDArray::operator/=: the shapes of this and other arrays are not suitable for broadcast operation !");
 
         if(shape::equalsTypesAndShapesSoft(_shapeInfo, bShape)) {
-            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &other, this, false);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other, *this, false);
         }
         else {
             NDArray result(bShape, true, getContext());
-            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), &other, &result, false);
+            this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other, result, false);
             *this = std::move(result);      // move assignment operator, zero cost copy
         }
     }
 }
+
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 void NDArray::operator+=(const T value) {
@@ -2336,76 +1958,8 @@ template ND4J_EXPORT void NDArray::operator/=(const uint8_t scalar);
 template ND4J_EXPORT void NDArray::operator/=(const bool scalar);
 
 ////////////////////////////////////////////////////////////////////////
-// subtraction operator array - array
-NDArray NDArray::operator-(const NDArray& other) const {
-    if (isS())
-        throw std::runtime_error("NDArray::operator-: you can't use this method on String array!");
-
-    if (!Environment::getInstance()->isExperimentalBuild() && this->dataType() != other.dataType() && (this->dataType() != DataType::BOOL || other.dataType() != BOOL))
-        throw nd4j::datatype_exception::build("NDArray operator-: Cannot subtract different types", this->dataType(), other.dataType());
-
-    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        NDArray result(getShapeInfo(), DataTypeUtils::pickPairwiseResultType(getShapeInfo(), other.getShapeInfo()), false, getContext());
-
-        NDArray::prepareSpecialUse({&result}, {this, &other});
-        NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Subtract, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({&result}, {this, &other});
-
-        return result;
-    }
-
-    return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), other);
-}
-
-////////////////////////////////////////////////////////////////////////
-// multiplication operator array*array
-NDArray NDArray::operator*(const NDArray& other) const {
-    if (isS())
-        throw std::runtime_error("NDArray::operator*: you can't use this method on String array!");
-    if (!Environment::getInstance()->isExperimentalBuild() && this->dataType() != other.dataType() && (this->dataType() != DataType::BOOL || other.dataType() != BOOL))
-        throw nd4j::datatype_exception::build("NDArray operator*: Cannot multiply different types", this->dataType(), other.dataType());
-
-    PointersManager pointersManager(getContext(), "operator *");
-    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        NDArray result(getShapeInfo(), DataTypeUtils::pickPairwiseResultType(getShapeInfo(), other.getShapeInfo()), false, this->getContext());
-
-        NDArray::prepareSpecialUse({&result}, {this, &other});
-
-        NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Multiply, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({&result}, {this, &other});
-
-        return result;
-    }
-
-    return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), other);
-}
-
-////////////////////////////////////////////////////////////////////////
-// division operator array/array
-NDArray NDArray::operator/(const NDArray& other) const {
-    if (isS())
-        throw std::runtime_error("NDArray::operator/: you can't use this method on String array!");
-    if (other.isB())
-        throw std::runtime_error("NDArray::operator/: you can't divide by bool array!");
-    if (!Environment::getInstance()->isExperimentalBuild() && this->dataType() != other.dataType())
-        throw nd4j::datatype_exception::build("NDArray operator/: Cannot divide different types", this->dataType(), other.dataType());
-
-    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        NDArray result(getShapeInfo(), DataTypeUtils::pickPairwiseResultType(getShapeInfo(), other.getShapeInfo()), false, getContext());
-
-        NDArray::prepareSpecialUse({&result}, {this, &other});
-        NativeOpExecutioner::execPairwiseTransform(getContext(), nd4j::pairwise::Divide, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({&result}, {this, &other});
-
-        return result;
-    }
-
-    return this->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), other);
-}
-
-////////////////////////////////////////////////////////////////////////
 // negative operator, it makes all array elements = -elements
-NDArray NDArray::operator-() const {
+NDArray NDArray::operator-() const & {
     if (isS())
         throw std::runtime_error("NDArray::negative-: you can't use this method on String array!");
 
@@ -2416,6 +1970,18 @@ NDArray NDArray::operator-() const {
     NDArray::registerSpecialUse({&result}, {this});
 
     return result;
+}
+
+////////////////////////////////////////////////////////////////////////
+NDArray NDArray::operator-() && {
+    if (isS())
+        throw std::runtime_error("NDArray::negative-: you can't use this method on String array!");
+
+    NDArray::prepareSpecialUse({this}, {this});
+    NativeOpExecutioner::execTransformSame(getContext(), nd4j::transform::Neg, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), buffer(), getShapeInfo(), specialBuffer(), getSpecialShapeInfo(), nullptr, nullptr, nullptr);
+    NDArray::registerSpecialUse({this}, {this});
+
+    return std::move(*this);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2430,9 +1996,9 @@ NDArray mmul(const NDArray& left, const NDArray& right) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::tileToShape(const std::vector<Nd4jLong>& shape, NDArray* target) {
-    if(target != nullptr) {
-        this->tile(*target);
+void NDArray::tileToShape(const std::vector<Nd4jLong>& shape, NDArray& target) {
+    if(&target != this) {
+        this->tile(target);
         return;
     }
 
@@ -2457,7 +2023,7 @@ void NDArray::tileToShape(const std::vector<Nd4jLong>& shape, NDArray* target) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::tileToShape(const std::initializer_list<Nd4jLong>& shape, NDArray* target) {
+void NDArray::tileToShape(const std::initializer_list<Nd4jLong>& shape, NDArray& target) {
     tileToShape(std::vector<Nd4jLong>(shape), target);
 }
 
@@ -2496,152 +2062,143 @@ double NDArray::getTrace() const {
     return sum;
 }
 
-
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::quantize(NDArray &array) {
-    return *(quantize(&array));
-}
+NDArray NDArray::quantize(const NDArray& array) {
 
-////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::quantize(NDArray *array) {
-
-    if(array->isR())
+    if(!array.isR())
         throw std::invalid_argument("NDArray::quantize: type of array should be from real space!");
 
-    auto ws = array->getContext()->getWorkspace();
+    auto ws = array.getContext()->getWorkspace();
 
-    Nd4jLong* shapeInfo = ShapeBuilders::copyShapeInfo(array->getShapeInfo(), true, ws);
+    Nd4jLong* shapeInfo = ShapeBuilders::copyShapeInfo(array.getShapeInfo(), true, ws);
     ArrayOptions::setPropertyBit(shapeInfo, ARRAY_QUANTIZED);
 
-    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(TypeCast::estimateQuantizedSize(array->lengthOf()), ArrayOptions::dataType(shapeInfo), ws);
+    std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(TypeCast::estimateQuantizedSize(array.lengthOf()), ArrayOptions::dataType(shapeInfo), ws);
 
-    auto result = new NDArray(buffer, ShapeDescriptor(shapeInfo), array->getContext());
+    NDArray result(buffer, ShapeDescriptor(shapeInfo), array.getContext());
 
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
+void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, NDArray& target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
+
     if (isS())
         throw std::runtime_error("NDArray::applyTrueBroadcast: you can't use this method on String array!");
-    if(target == nullptr || other == nullptr)
-        throw std::runtime_error("NDArray::applyTrueBroadcast method: target or other = nullptr !");
-    if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other->isB()) || (op.s == scalar::ReverseDivide && this->isB()))
+
+    if(((op.s == scalar::Divide || op.s == scalar::FloorDiv || op.s == scalar::FloorMod) && other.isB()) || (op.s == scalar::ReverseDivide && this->isB()))
         throw std::runtime_error("NDArray::applyTrueBroadcast method: you can't divide by bool array !");
 
-    if (isEmpty() || other->isEmpty())
+    if (isEmpty() || other.isEmpty())
         return;
 
     if (lengthOf() == 1) {
-        target->assign(this);
-        target->applyPairwiseTransform(op.p, *other, extraArgs);
+        target.assign(this);
+        target.applyPairwiseTransform(op.p, other, extraArgs);
         return;
     }
-    if (other->lengthOf() == 1) {
+    if (other.lengthOf() == 1) {
         const_cast<NDArray*>(this)->applyScalarArr(op.s, other, target, extraArgs);
         return;
     }
 
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
-        if(!ShapeUtils::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-        if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
+        if(!shape::equalsTypesAndShapesSoft(target.getShapeInfo(), newShapeInfo))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
     }
 
-    if(target->isSameShape(this) || target->isSameShape(other)) {
-        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, *other), other, target, extraArgs);
+    if(target.isSameShape(this) || target.isSameShape(other)) {
+        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, other), other, target, extraArgs);
         return;
     }
 
     #ifdef __ND4J_EXPERIMENTAL__
-        BUILD_PAIRWISE_SELECTOR(dataType(), other->dataType(), target->dataType(), helpers::TrueBroadcastHelper, ::exec(op.b, *this, *other, *target), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_PAIRWISE_SELECTOR(dataType(), other.dataType(), target.dataType(), helpers::TrueBroadcastHelper, ::exec(op.b, *this, other, target), LIBND4J_TYPES, LIBND4J_TYPES);
     #else
-        BUILD_SINGLE_SELECTOR_THRICE(dataType(), helpers::TrueBroadcastHelper, ::exec(op.b, *this, *other, *target), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(dataType(), helpers::TrueBroadcastHelper, ::exec(op.b, *this, other, target), LIBND4J_TYPES);
     #endif
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
+void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray& other, NDArray& target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
     if (isS())
         throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
-    if(target == nullptr || other == nullptr)
-        throw std::runtime_error("NDArray::applyTrueBroadcast bool method: target or other = nullptr !");
 
-    if (isEmpty() || other->isEmpty())
+    if (isEmpty() || other.isEmpty())
         return;
 
     if (lengthOf() == 1) {
-        NDArray temp(target->_shapeInfo, dataType(), false, getContext());
+        NDArray temp(target._shapeInfo, dataType(), false, getContext());
         temp.assign(this);
         temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
         return;
     }
-    if (other->lengthOf() == 1) {
+    if (other.lengthOf() == 1) {
         this->applyScalarArr(op.s, other, target, extraArgs);
         return;
     }
 
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
-        if(!ShapeUtils::evalBroadcastShapeInfo(*this, *other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-        if(!shape::equalsSoft(target->_shapeInfo, newShapeInfo) || target->dataType() != DataType::BOOL)
+        if(!shape::equalsSoft(target._shapeInfo, newShapeInfo) || target.dataType() != DataType::BOOL)
             throw std::runtime_error("NDArray::applyTrueBroadcast bool method: the shape or type of target array is wrong !");
-        if(dataType() != other->dataType())
+        if(dataType() != other.dataType())
             throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
     }
 
-    if(target->isSameShape(this) || target->isSameShape(other)) {
-        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, *other), other, target, extraArgs);
+    if(target.isSameShape(this) || target.isSameShape(other)) {
+        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, other), other, target, extraArgs);
         return;
     }
 
-    BUILD_DOUBLE_SELECTOR(dataType(), target->dataType(), helpers::TrueBroadcastBoolHelper, ::exec(op.b, *this, *other, *target), LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), helpers::TrueBroadcastBoolHelper, ::exec(op.b, *this, other, target), LIBND4J_TYPES, BOOL_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyTrueBroadcast(nd4j::BroadcastIntOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
+void NDArray::applyTrueBroadcast(nd4j::BroadcastIntOpsTuple op, const NDArray& other, NDArray& target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
+
     if (isS())
         throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
-    if(target == nullptr || other == nullptr)
-        throw std::runtime_error("NDArray::applyTrueBroadcast int method: target or other = nullptr !");
 
-    if (isEmpty() || other->isEmpty())
+    if (isEmpty() || other.isEmpty())
         return;
 
     if (lengthOf() == 1) {
-        NDArray temp(target->_shapeInfo, dataType(), false, getContext());
+        NDArray temp(target._shapeInfo, dataType(), false, getContext());
         temp.assign(this);
         temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
         return;
     }
-    if (other->lengthOf() == 1) {
+    if (other.lengthOf() == 1) {
         this->applyScalarArr(op.s, other, target, extraArgs);
         return;
     }
 
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
-        if(!ShapeUtils::evalBroadcastShapeInfo(*this, *other, false, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
+        if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, false, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
-        if(!shape::equalsSoft(target->_shapeInfo, newShapeInfo) || target->dataType() != this->dataType())
+        if(!shape::equalsSoft(target._shapeInfo, newShapeInfo) || target.dataType() != this->dataType())
             throw std::runtime_error("NDArray::applyTrueBroadcast int method: the shape or type of target array is wrong !");
-        if(dataType() != other->dataType())
+        if(dataType() != other.dataType())
             throw std::invalid_argument("NDArray::applyTrueBroadcast int method: this and other arrays must have the same type !");
     }
 
-    if(target->isSameShape(this) || target->isSameShape(other)) {
-        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, *other), other, target, extraArgs);
+    if(target.isSameShape(this) || target.isSameShape(other)) {
+        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, other), other, target, extraArgs);
         return;
     }
 
-    BUILD_SINGLE_SELECTOR(dataType(), helpers::TrueBroadcastIntHelper, ::exec(op.b, *this, *other, *target), INTEGER_TYPES);
+    BUILD_SINGLE_SELECTOR(dataType(), helpers::TrueBroadcastIntHelper, ::exec(op.b, *this, other, target), INTEGER_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, ExtraArguments *extraArgs) const {
+NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, ExtraArguments *extraArgs) const & {
     if (isEmpty() || other.isEmpty()) {
         if (isEmpty())
             return NDArray(*this);
@@ -2654,19 +2211,100 @@ NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& o
         throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
     NDArray result(newShapeInfo, true, getContext());
 
-    this->applyTrueBroadcast(op, &other, &result, false, extraArgs);
+    this->applyTrueBroadcast(op, other, result, false, extraArgs);
 
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& dimensions, const NDArray* other, NDArray* target, ExtraArguments* extraArgs) {
+NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, NDArray&& other, ExtraArguments *extraArgs) const & {
+    if (isEmpty() || other.isEmpty()) {
+        if (isEmpty())
+            return NDArray(*this);
+        else
+            return NDArray(other);
+    }
+
+    Nd4jLong* newShapeInfo = nullptr;
+    if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of new array = max->rankOf)()
+        throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
+
+    if(!shape::shapeEquals(newShapeInfo, other.getShapeInfo())) {
+
+        NDArray result(newShapeInfo, true, getContext());
+        this->applyTrueBroadcast(op, other, result, false, extraArgs);
+        return std::move(result);
+    }
+
+    this->applyTrueBroadcast(op, other, other, false, extraArgs);
+    return std::move(other);
+}
+
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray& other, ExtraArguments *extraArgs) && {
+    if (isEmpty() || other.isEmpty()) {
+        if (isEmpty())
+            return NDArray(*this);
+        else
+            return NDArray(other);
+    }
+
+    Nd4jLong* newShapeInfo = nullptr;
+    if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of new array = max->rankOf)()
+        throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
+
+    if(!shape::shapeEquals(newShapeInfo, getShapeInfo())) {
+
+        NDArray result(newShapeInfo, true, getContext());
+        this->applyTrueBroadcast(op, other, result, false, extraArgs);
+        return std::move(result);
+    }
+
+    this->applyTrueBroadcast(op, other, *this, false, extraArgs);
+    return std::move(*this);
+}
+
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, NDArray&& other, ExtraArguments *extraArgs) && {
+    if (isEmpty() || other.isEmpty()) {
+        if (isEmpty())
+            return NDArray(*this);
+        else
+            return NDArray(other);
+    }
+
+    Nd4jLong* newShapeInfo = nullptr;
+    if(!ShapeUtils::evalBroadcastShapeInfo(*this, other, true, newShapeInfo, getContext()->getWorkspace()))          // the rank of new array = max->rankOf)()
+        throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
+
+    const bool thisMove  = shape::shapeEquals(newShapeInfo, getShapeInfo());
+    const bool otherMove = shape::shapeEquals(newShapeInfo, other.getShapeInfo());
+
+    if(!thisMove && !otherMove) {
+
+        NDArray result(newShapeInfo, true, getContext());
+        this->applyTrueBroadcast(op, other, result, false, extraArgs);
+        return std::move(result);
+    }
+
+    if(thisMove) {
+        this->applyTrueBroadcast(op, other, *this, false, extraArgs);
+        return std::move(*this);
+    }
+
+    // otherMove
+    this->applyTrueBroadcast(op, other, other, false, extraArgs);
+    return std::move(other);
+}
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& dimensions, const NDArray& other, NDArray& target, ExtraArguments* extraArgs) {
     if (isS())
         throw std::runtime_error("NDArray::applyBroadcast: you can't use this method on String array!");
-    if(((op == broadcast::Divide || op == broadcast::FloorDiv || op == broadcast::FloorMod) && other->isB()) || (op == broadcast::ReverseDivide && this->isB()))
+    if(((op == broadcast::Divide || op == broadcast::FloorDiv || op == broadcast::FloorMod) && other.isB()) || (op == broadcast::ReverseDivide && this->isB()))
         throw std::runtime_error("NDArray::applyBroadcast: you can't divide by array!");
-    if(isEmpty() || other->isEmpty()) {
-        if(!target->isEmpty())
+    if(isEmpty() || other.isEmpty()) {
+        if(!target.isEmpty())
             throw std::runtime_error("NDArray::applyBroadcast method: when some of input arrays (or both) is empty, target array must be empty as well !");
         return;
     }
@@ -2674,28 +2312,26 @@ void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& di
     if (dimensions.size() == 0)
         return;
 
-    auto result = target == nullptr ? this : target;
-
-    if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
-        NDArray::prepareSpecialUse({result}, {this, other});
-        NativeOpExecutioner::execPairwiseTransform(getContext(), fromBroadcastToPairwise(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({result}, {this, other});
+    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+        NDArray::prepareSpecialUse({&target}, {this, &other});
+        NativeOpExecutioner::execPairwiseTransform(getContext(), fromBroadcastToPairwise(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
+        NDArray::registerSpecialUse({&target}, {this, &other});
         return;
     }
 
     NDArray *min(nullptr), *max(nullptr);
-    if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
+    if((lengthOf() > other.lengthOf()) || (lengthOf() == other.lengthOf() && rankOf() >= other.rankOf()))  {
         max = this;
-        min = const_cast<NDArray*>(other);
+        min = const_cast<NDArray*>(&other);
     }
     else {
-        max = const_cast<NDArray*>(other);
+        max = const_cast<NDArray*>(&other);
         min = this;
     }
 
-    if(result->dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), other->getShapeInfo()))
+    if(target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), other.getShapeInfo()))
         throw std::invalid_argument("NDArray::applyBroadcast method: wrong type of target array !");
-    if(!result->isSameShape(max))
+    if(!target.isSameShape(max))
         throw std::invalid_argument("NDArray::applyBroadcast method: max and target arrays must have the same shape !");
 
     std::vector<int> copy(dimensions);
@@ -2708,22 +2344,22 @@ void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int>& di
         throw std::runtime_error("NDArray::applyBroadcast method: tad length mismatch !");
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->shapeInfo(), copy);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(result->shapeInfo(), copy);
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(target.shapeInfo(), copy);
 
-    NDArray::prepareSpecialUse({result}, {this, other});
+    NDArray::prepareSpecialUse({&target}, {this, &other});
     if(max == this)
-        NativeOpExecutioner::execBroadcast(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+        NativeOpExecutioner::execBroadcast(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
     else
-        NativeOpExecutioner::execInverseBroadcast(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
-    registerSpecialUse({result}, {this, other});
+        NativeOpExecutioner::execInverseBroadcast(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+    registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>& dimensions, const NDArray* other, NDArray* target, ExtraArguments* extraArgs) {
+void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>& dimensions, const NDArray& other, NDArray& target, ExtraArguments* extraArgs) {
     if (isS())
         throw std::runtime_error("NDArray::applyBroadcast BoolOps: you can't use this method on String array!");
-    if(isEmpty() || other->isEmpty()) {
-        if(!target->isEmpty())
+    if(isEmpty() || other.isEmpty()) {
+        if(!target.isEmpty())
             throw std::runtime_error("NDArray::applyBroadcast BoolOps: when some of input arrays (or both) is empty, target array must be empty as well !");
         return;
     }
@@ -2731,30 +2367,28 @@ void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>
     if (dimensions.size() == 0)
         return;
 
-    auto result = target == nullptr ? this : target;
-
-    if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
-        NDArray::prepareSpecialUse({result}, {this, other});
-        NativeOpExecutioner::execPairwiseBoolTransform(getContext(), fromBroadcastToPairwiseBool(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({result}, {this, other});
+    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+        NDArray::prepareSpecialUse({&target}, {this, &other});
+        NativeOpExecutioner::execPairwiseBoolTransform(getContext(), fromBroadcastToPairwiseBool(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
+        NDArray::registerSpecialUse({&target}, {this, &other});
         return;
     }
 
     NDArray *min(nullptr), *max(nullptr);
-    if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
+    if((lengthOf() > other.lengthOf()) || (lengthOf() == other.lengthOf() && rankOf() >= other.rankOf()))  {
         max = this;
-        min = const_cast<NDArray*>(other);
+        min = const_cast<NDArray*>(&other);
     }
     else {
-        max = const_cast<NDArray*>(other);
+        max = const_cast<NDArray*>(&other);
         min = this;
     }
 
-    if(result->dataType() != DataType::BOOL)
+    if(target.dataType() != DataType::BOOL)
         throw std::invalid_argument("NDArray::applyBroadcast bool method: type of target array must be BOOL!");
-    if(!result->isSameShape(max))
+    if(!target.isSameShape(max))
         throw std::invalid_argument("NDArray::applyBroadcast bool method: max and target arrays must have the same shape !");
-    if(_dataType != other->_dataType)
+    if(_dataType != other._dataType)
         throw std::invalid_argument("NDArray::applyBroadcast bool method: this and other arrays must have the same type !");
 
     std::vector<int> copy(dimensions);
@@ -2767,24 +2401,24 @@ void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>
         throw std::runtime_error("Tad length mismatch");
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->shapeInfo(), copy);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(result->shapeInfo(), copy);
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(target.shapeInfo(), copy);
 
     // TODO: eventually we want separate tads here
-    NDArray::prepareSpecialUse({result}, {this, other});
+    NDArray::prepareSpecialUse({&target}, {this, &other});
     if(max == this)
-        NativeOpExecutioner::execBroadcastBool(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr, copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+        NativeOpExecutioner::execBroadcastBool(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
     else
-        NativeOpExecutioner::execInverseBroadcastBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr, copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
-    registerSpecialUse({result}, {this, other});
+        NativeOpExecutioner::execInverseBroadcastBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+    registerSpecialUse({&target}, {this, &other});
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyBroadcast(nd4j::broadcast::IntOps op, const std::vector<int>& dimensions, const NDArray* other, NDArray* target, ExtraArguments* extraArgs) {
+void NDArray::applyBroadcast(nd4j::broadcast::IntOps op, const std::vector<int>& dimensions, const NDArray& other, NDArray& target, ExtraArguments* extraArgs) {
     if (!isZ())
         throw std::runtime_error("NDArray::applyBroadcast IntOps: you can't use this method on non-Integer array!");
-    if(isEmpty() || other->isEmpty()) {
-        if(!target->isEmpty())
+    if(isEmpty() || other.isEmpty()) {
+        if(!target.isEmpty())
             throw std::runtime_error("NDArray::applyBroadcast IntOps: when some of input arrays (or both) is empty, target array must be empty as well !");
         return;
     }
@@ -2792,30 +2426,28 @@ void NDArray::applyBroadcast(nd4j::broadcast::IntOps op, const std::vector<int>&
     if (dimensions.empty())
         return;
 
-    auto result = target == nullptr ? this : target;
-
-    if (other->lengthOf() == lengthOf() && this->rankOf() == other->rankOf()) {
-        NDArray::prepareSpecialUse({result}, {this, other});
-        NativeOpExecutioner::execPairwiseIntTransform(getContext(), fromBroadcastToPairwiseInt(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({result}, {this, other});
+    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+        NDArray::prepareSpecialUse({&target}, {this, &other});
+        NativeOpExecutioner::execPairwiseIntTransform(getContext(), fromBroadcastToPairwiseInt(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
+        NDArray::registerSpecialUse({&target}, {this, &other});
         return;
     }
 
     NDArray *min(nullptr), *max(nullptr);
-    if((lengthOf() > other->lengthOf()) || (lengthOf() == other->lengthOf() && rankOf() >= other->rankOf()))  {
+    if((lengthOf() > other.lengthOf()) || (lengthOf() == other.lengthOf() && rankOf() >= other.rankOf()))  {
         max = this;
-        min = const_cast<NDArray*>(other);
+        min = const_cast<NDArray*>(&other);
     }
     else {
-        max = const_cast<NDArray*>(other);
+        max = const_cast<NDArray*>(&other);
         min = this;
     }
 
-    if(result->dataType() != dataType())
+    if(target.dataType() != dataType())
         throw std::invalid_argument("NDArray::applyBroadcast int method: type of target array must be the same as input!");
-    if(!result->isSameShape(max))
+    if(!target.isSameShape(max))
         throw std::invalid_argument("NDArray::applyBroadcast int method: max and target arrays must have the same shape !");
-    if(_dataType != other->_dataType)
+    if(_dataType != other._dataType)
         throw std::invalid_argument("NDArray::applyBroadcast int method: this and other arrays must have the same type !");
 
     std::vector<int> copy(dimensions);
@@ -2828,74 +2460,21 @@ void NDArray::applyBroadcast(nd4j::broadcast::IntOps op, const std::vector<int>&
         throw std::runtime_error("Tad length mismatch");
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(max->shapeInfo(), copy);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(result->shapeInfo(), copy);
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(target.shapeInfo(), copy);
 
     // TODO: eventually we want separate tads here
-    NDArray::prepareSpecialUse({result}, {this, other});
+    NDArray::prepareSpecialUse({&target}, {this, &other});
     if(max == this)
-        NativeOpExecutioner::execBroadcastInt(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+        NativeOpExecutioner::execBroadcastInt(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
     else
-        NativeOpExecutioner::execInverseBroadcastInt(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
-    registerSpecialUse({result}, {this, other});
+        NativeOpExecutioner::execInverseBroadcastInt(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+    registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::initializer_list<int> dimensions, const NDArray* tadArray, NDArray* target, ExtraArguments* extraArgs) {
+void NDArray::applyBroadcast(nd4j::broadcast::Ops op, const std::initializer_list<int> dimensions, const NDArray& tadArray, NDArray& target, ExtraArguments* extraArgs) {
     std::vector<int> vec(dimensions);
     applyBroadcast(op, vec, tadArray, target, extraArgs);
-}
-
-//////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, ExtraArguments *extraArgs) const {
-    return new NDArray(this->applyTrueBroadcast(op, *other, extraArgs));
-}
-
-//////////////////////////////////////////////////////////////////////////
-// return array which is broadcasted from this and argument array
-NDArray* NDArray::broadcast(const NDArray& other) {
-    // the orders must be the same
-    char order = ordering();
-    if(order != other.ordering())
-        throw std::runtime_error("NDArray::broadcast method: arrays have different orders!");
-
-    // recognize shapes with smaller and bigger rank
-    Nd4jLong* biggerShapeInfo = nullptr;
-    Nd4jLong* smallerShapeInfo = nullptr;
-    int smallerRank, biggerRank;
-    if (rankOf() > other.rankOf()) {
-        biggerShapeInfo = _shapeInfo;
-        biggerRank = shape::rank(_shapeInfo);
-        smallerShapeInfo = other._shapeInfo;
-        smallerRank = shape::rank(other._shapeInfo);
-    }
-    else {
-        biggerShapeInfo = other._shapeInfo;
-        biggerRank = shape::rank(other._shapeInfo);
-        smallerShapeInfo = _shapeInfo;
-        smallerRank = shape::rank(_shapeInfo);
-    }
-
-    // check shapes on consistency
-    int diff = biggerRank - smallerRank;
-    for (int i = smallerRank; i<=1; --i)
-        if(biggerShapeInfo[diff+i] != smallerShapeInfo[i] && biggerShapeInfo[i] != 1 && smallerShapeInfo[i] != 1)
-            throw std::runtime_error("Broadcast method: arrays have incompatible shapes !");
-
-    // create and fill ret shapeInfo
-    Nd4jLong *shapeInfoNew;
-    ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(biggerRank), Nd4jLong);
-    memcpy(shapeInfoNew, biggerShapeInfo, shape::shapeInfoByteLength(biggerRank));
-    for (int i = smallerRank; i>=1; --i)
-        if(shapeInfoNew[diff+i] == 1 || smallerShapeInfo[i] == 1)
-            shapeInfoNew[diff+i] *= smallerShapeInfo[i];
-
-    ShapeUtils::updateStridesAndType(shapeInfoNew, DataTypeUtils::pickPairwiseResultType(dataType(), other.dataType()), order);
-
-    auto ret = new NDArray(shapeInfoNew, true, getContext());
-
-    RELEASE(shapeInfoNew, getContext()->getWorkspace());
-
-    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3017,7 +2596,7 @@ bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
     }
     else {
         NDArray temp(order, shape, dataType(), getContext());
-        this->applyTransform(transform::Assign, &temp, nullptr);
+        this->applyTransform(transform::Assign, temp, nullptr);
         *this = std::move(temp);
     }
 
@@ -3049,57 +2628,57 @@ void NDArray::templatedSet(void *buffer, const Nd4jLong xOfsset, nd4j::DataType 
 BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void NDArray::templatedSet, (void *buffer, const Nd4jLong xOfsset, nd4j::DataType dtype, const void *value), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray* other, NDArray *target, ExtraArguments *extraParams) const{
+void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, NDArray& target, ExtraArguments *extraParams) const{
     if (isS())
         throw std::runtime_error("NDArray::applyPairwiseTransform: you can't use this method on String array!");
-    if (other->lengthOf() != target->lengthOf())
+    if (other.lengthOf() != target.lengthOf())
         throw std::invalid_argument("NDArray::applyPairwiseTransform method - lengths of arrays are mismatched");
-    if (target->dataType() != this->dataType() && target->dataType() != other->dataType())
+    if (target.dataType() != this->dataType() && target.dataType() != other.dataType())
         throw std::invalid_argument("NDArray::applyPairwiseTransform method - type of target array must be the same as type of this or other array !");
 
-    NDArray::prepareSpecialUse({target}, {this, other});
-    NativeOpExecutioner::execPairwiseTransform(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
-    NDArray::registerSpecialUse({target}, {this, other});
+    NDArray::prepareSpecialUse({&target}, {this, &other});
+    NativeOpExecutioner::execPairwiseTransform(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &other});
 
     if (extraParams != nullptr)
         synchronize("NDArray::applyPairwiseTransform");
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, ExtraArguments *extraParams) const{
+void NDArray::applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray& other, NDArray& target, ExtraArguments *extraParams) const{
     if (isS())
         throw std::runtime_error("NDArray::applyPairwiseTransform BoolOps: you can't use this method on String array!");
-    if (other->lengthOf() != target->lengthOf())
+    if (other.lengthOf() != target.lengthOf())
         throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - lengths of arrays are mismatched");
-    if (!target->isB())
+    if (!target.isB())
         throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - result must have bool type");
-    if (dataType() != other->dataType())
+    if (dataType() != other.dataType())
         throw std::invalid_argument("NDArray::applyPairwiseTransform BoolOps method - this and other arrays must have the same type !");
 
-    NDArray::prepareSpecialUse({target}, {this, other});
-    NativeOpExecutioner::execPairwiseBoolTransform(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
-    NDArray::registerSpecialUse({target}, {this, other});
+    NDArray::prepareSpecialUse({&target}, {this, &other});
+    NativeOpExecutioner::execPairwiseBoolTransform(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &other});
 }
 
 ////////////////////////////////////////////////////////////////////////
-    void NDArray::applyPairwiseTransform(nd4j::pairwise::IntOps op, const NDArray *other, NDArray *target, ExtraArguments *extraParams) const{
-        if (isS())
-            throw std::runtime_error("NDArray::applyPairwiseTransform IntOps: you can't use this method on String array!");
-        if (other->lengthOf() != target->lengthOf())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform IntOps method - lengths of arrays are mismatched");
-        if (!target->isZ())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform IntOps method - result must have bool type");
-        if (dataType() != other->dataType())
-            throw std::invalid_argument("NDArray::applyPairwiseTransform IntOps method - this and other arrays must have the same type !");
+void NDArray::applyPairwiseTransform(nd4j::pairwise::IntOps op, const NDArray& other, NDArray& target, ExtraArguments *extraParams) const{
+    if (isS())
+        throw std::runtime_error("NDArray::applyPairwiseTransform IntOps: you can't use this method on String array!");
+    if (other.lengthOf() != target.lengthOf())
+        throw std::invalid_argument("NDArray::applyPairwiseTransform IntOps method - lengths of arrays are mismatched");
+    if (!target.isZ())
+        throw std::invalid_argument("NDArray::applyPairwiseTransform IntOps method - result must have bool type");
+    if (dataType() != other.dataType())
+        throw std::invalid_argument("NDArray::applyPairwiseTransform IntOps method - this and other arrays must have the same type !");
 
-        NDArray::prepareSpecialUse({target}, {this, other});
-        NativeOpExecutioner::execPairwiseIntTransform(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr);
-        NDArray::registerSpecialUse({target}, {this, other});
-    }
+    NDArray::prepareSpecialUse({&target}, {this, &other});
+    NativeOpExecutioner::execPairwiseIntTransform(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &other});
+}
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyPairwiseTransform(nd4j::pairwise::Ops op, const NDArray& other, ExtraArguments *extraParams) {
-    applyPairwiseTransform(op, &other, this, extraParams);
+    applyPairwiseTransform(op, other, *this, extraParams);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3112,41 +2691,31 @@ void NDArray::templatedDoubleAssign(void *xBuffer, const Nd4jLong xOffset, const
 BUILD_DOUBLE_TEMPLATE(template ND4J_EXPORT void NDArray::templatedDoubleAssign, (void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const, LIBND4J_TYPES, LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::varianceAlongDimension(nd4j::variance::Ops op, NDArray *target, const bool biasCorrected, const std::vector<int>& dimensions) const {
+void NDArray::varianceAlongDimension(nd4j::variance::Ops op, NDArray& target, const bool biasCorrected, const std::vector<int>& dimensions) const {
 
     if (isS())
         throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
-    if (!target->isR())
+    if (!target.isR())
         throw std::runtime_error("NDArray::varianceAlongDimension: target array must have FLOAT type");
 
-    NDArray::prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
 
     if(rankOf() == dimensions.size() || dimensions.empty())
-        NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), biasCorrected);
+        NativeOpExecutioner::execSummaryStatsScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), biasCorrected);
     else {
         std::vector<int> copy(dimensions);
         auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimensions);
-        NativeOpExecutioner::execSummaryStats(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->buffer(), target->shapeInfo(), target->getSpecialBuffer(), target->specialShapeInfo(), pDims, dimensions.size(), packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
+        NativeOpExecutioner::execSummaryStats(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.buffer(), target.shapeInfo(), target.getSpecialBuffer(), target.specialShapeInfo(), pDims, dimensions.size(), packX.platformShapeInfo(), packX.platformOffsets(), biasCorrected);
         synchronize("NDArray::varianceAlongDimension");
     }
 
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
-    return varianceAlongDimension(op, biasCorrected, std::vector<int>(dimensions));
-}
-
-////////////////////////////////////////////////////////////////////////
-void NDArray::varianceAlongDimension(nd4j::variance::Ops op, NDArray *target, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
-    varianceAlongDimension(op, target, biasCorrected, std::vector<int>(dimensions));
-}
-
-////////////////////////////////////////////////////////////////////////
-NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
+NDArray NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
     if (isS())
         throw std::runtime_error("NDArray::varianceAlongDimension: you can't use this method on String array!");
 
@@ -3157,87 +2726,27 @@ NDArray NDArray::varianceAlongDims(nd4j::variance::Ops op, const bool biasCorrec
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(dataType()), false, false, getContext()->getWorkspace());
     NDArray result(newShape, true, getContext());
 
-    this->varianceAlongDimension(op, &result, biasCorrected, dimensions);
+    this->varianceAlongDimension(op, result, biasCorrected, dimensions);
 
     return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::vector<int>& dimensions) const {
-
-    return new NDArray(this->varianceAlongDims(op, biasCorrected, dimensions));
+NDArray NDArray::varianceAlongDimension(nd4j::variance::Ops op, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
+    return varianceAlongDimension(op, biasCorrected, std::vector<int>(dimensions));
 }
 
-////////////////////////////////////////////////////////////////////
-// This method assigns values of given NDArray to this one
-void NDArray::assign(const NDArray& other, bool allowParallelism) {
-
-    if (this == &other)
-        return;
-
-    if (other.isEmpty()) {
-        if (!isEmpty()) {
-             ArrayOptions::setPropertyBit(shapeInfo(), ARRAY_EMPTY);
-             syncShape();
-             _buffer = std::make_shared<DataBuffer>();
-             _offset = 0;
-        }
-        return;
-    }
-
-    if(isEmpty()) {
-        *this = other;
-        return;
-    }
-
-    if (other.lengthOf() == 1) {
-
-        if(lengthOf() == 1) {
-            NDArray::preparePrimaryUse({this}, {&other});
-            BUILD_DOUBLE_SELECTOR(dataType(), other.dataType(), templatedDoubleAssign, (buffer(), 0, other.getBuffer(), 0), LIBND4J_TYPES, LIBND4J_TYPES);
-            NDArray::registerPrimaryUse({this}, {&other});
-            this->syncToDevice();
-        }
-        else {
-            if (dataType() != other.dataType()) {
-                auto tmp = other.cast(dataType());
-                NDArray::prepareSpecialUse({this}, {tmp});
-                NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), tmp->getBuffer(), tmp->getShapeInfo(), tmp->getSpecialBuffer(), tmp->getSpecialShapeInfo(), nullptr, allowParallelism);
-                NDArray::registerSpecialUse({this}, {});
-                delete tmp;
-            }
-            else {
-                NDArray::prepareSpecialUse({this}, {&other});
-                NativeOpExecutioner::execScalar(getContext(), scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), nullptr, allowParallelism);
-                NDArray::registerSpecialUse({this}, {&other});
-            }
-        }
-    }
-    else {
-        if (other.lengthOf() != lengthOf()) {
-            auto shapeThis = ShapeUtils::shapeAsString(this);
-            auto shapeThat = ShapeUtils::shapeAsString(&other);
-            nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
-            throw std::runtime_error("NDArray::assign: lengths of arrays are mismatched");
-        }
-
-        // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && dataType() == other.dataType() && ews() == 1 && other.ews() == 1)
-            copyBuffersContinuouslyFrom(other, other.lengthOf() * other.sizeOfT());
-        else {
-            NDArray::prepareSpecialUse({this}, {&other});
-            NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr, allowParallelism);
-            NDArray::registerSpecialUse({this}, {&other});
-        }
-    }
+////////////////////////////////////////////////////////////////////////
+void NDArray::varianceAlongDimension(nd4j::variance::Ops op, NDArray &target, const bool biasCorrected, const std::initializer_list<int>& dimensions) const {
+    varianceAlongDimension(op, target, biasCorrected, std::vector<int>(dimensions));
 }
 
 ////////////////////////////////////////////////////////////////////////
 // This method returns new copy of this NDArray, optionally in different order
-NDArray* NDArray::dup(const char newOrder) const {
+NDArray NDArray::dup(const char newOrder) const {
 
     if (isEmpty())
-        return NDArrayFactory::empty_(dataType(), getContext());
+        return NDArrayFactory::empty(dataType(), getContext());
 
     char order = newOrder == 'a' ? ordering() : newOrder;
 
@@ -3248,12 +2757,12 @@ NDArray* NDArray::dup(const char newOrder) const {
         for (int e = 0; e < lengthOf(); e++)
             strings[e] = this->e<std::string>(e);
 
-        auto result = NDArrayFactory::string_(order, getShapeAsVector(), strings, getContext());
+        auto result = NDArrayFactory::string(order, getShapeAsVector(), strings, getContext());
         return result;
     }
 
-    auto result = new NDArray(order, isScalar() ? std::vector<Nd4jLong>({0}) : getShapeAsVector(), dataType(), getContext());
-    result->assign(*this);
+    NDArray result(order, isScalar() ? std::vector<Nd4jLong>({0}) : getShapeAsVector(), dataType(), getContext());
+    result.assign(*this);
 
     return result;
 }
@@ -3432,87 +2941,72 @@ NDArray NDArray::e(const Nd4jLong i) const {
 
 //////////////////////////////////////////////////////////////////////////
 // perform array transformation
-void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray *target, ExtraArguments *extraParams) {
+void NDArray::applyTransform(nd4j::transform::FloatOps op, NDArray& target, ExtraArguments *extraParams) {
 
     if (isS())
         throw std::runtime_error("NDArray::applyTransform FloatOps: you can't use this method on String array!");
 
-    if (target == nullptr)
-        target = this;
-
-    if (!target->isR())
+    if (!target.isR())
         throw std::runtime_error("NDArray::applyTransform FloatOps: target array must have one of FLOAT types");
 
-    NDArray::prepareSpecialUse({target}, {this});
-    NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
+    NativeOpExecutioner::execTransformFloat(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray *target, ExtraArguments *extraParams) {
+void NDArray::applyTransform(nd4j::transform::AnyOps op, NDArray& target, ExtraArguments *extraParams) {
 
     if (isS())
         throw std::runtime_error("NDArray::applyTransform AnyOps: you can't use this method on String array!");
 
-    if (target == nullptr)
-        target = this;
-
-    NDArray::prepareSpecialUse({target}, {this});
-    NativeOpExecutioner::execTransformAny(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
+    NativeOpExecutioner::execTransformAny(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray *target, ExtraArguments *extraParams) {
+void NDArray::applyTransform(nd4j::transform::SameOps op, NDArray& target, ExtraArguments *extraParams) {
 
     if (isS())
         throw std::runtime_error("NDArray::applyTransform SameOps: you can't use this method on String array!");
 
-    if (target == nullptr)
-        target = this;
-
-    if (target->dataType() != dataType())
+    if (target.dataType() != dataType())
         throw std::runtime_error("NDArray::applyTransform SameOps: target array must have the same data type as original array");
 
-    NDArray::prepareSpecialUse({target}, {this});
-    NativeOpExecutioner::execTransformSame(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
+    NativeOpExecutioner::execTransformSame(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::applyTransform(nd4j::transform::StrictOps op, NDArray *target, ExtraArguments *extraParams) {
+void NDArray::applyTransform(nd4j::transform::StrictOps op, NDArray& target, ExtraArguments *extraParams) {
     if (isS())
         throw std::runtime_error("NDArray::applyTransform StrictOps: you can't use this method on String array!");
 
-    if (target == nullptr)
-        target = this;
-
-    if (!this->isR() || !target->isR() || (this->dataType() != target->dataType()))
+    if (!this->isR() || !target.isR() || (this->dataType() != target.dataType()))
         throw std::runtime_error("NDArray::applyTransform StrictOps: both Source and Target array must have same FLOAT type !");
 
-    NDArray::prepareSpecialUse({target}, {this});
-    NativeOpExecutioner::execTransformStrict(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
+    NativeOpExecutioner::execTransformStrict(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray *target, ExtraArguments *extraParams) {
+void NDArray::applyTransform(nd4j::transform::BoolOps op, NDArray& target, ExtraArguments *extraParams) {
     if (isS())
         throw std::runtime_error("NDArray::applyTransform BoolOps: you can't use this method on String array!");
 
-    if (target == nullptr)
-        target = this;
-
-    if (!target->isB())
+    if (!target.isB())
         throw std::runtime_error("NDArray::applyTransform BoolOps: target array must have one of BOOL types");
 
-    NDArray::prepareSpecialUse({target}, {this});
-    NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()) : nullptr, nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
+    NativeOpExecutioner::execTransformBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()) : nullptr, nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) const {
+NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) const & {
     if (isS())
         throw std::runtime_error("NDArray::transform FloatOps: you can't use this method on String array!");
 
@@ -3526,7 +3020,19 @@ NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) cons
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) const {
+NDArray NDArray::transform(nd4j::transform::FloatOps op, void *extraParams) && {
+    if (isS())
+        throw std::runtime_error("NDArray::transform SameOps: you can't use this method on String array!");
+
+    NDArray::prepareSpecialUse({this}, {this});
+    NativeOpExecutioner::execTransformFloat(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams, nullptr, nullptr);
+    NDArray::registerSpecialUse({this}, {this});
+
+    return std::move(*this);
+}
+
+////////////////////////////////////////////////////////////////////////
+NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) const & {
     if (isS())
         throw std::runtime_error("NDArray::transform SameOps: you can't use this method on String array!");
 
@@ -3540,7 +3046,19 @@ NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) const
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(nd4j::transform::StrictOps op, void *extraParams) const {
+NDArray NDArray::transform(nd4j::transform::SameOps op, void *extraParams) && {
+    if (isS())
+        throw std::runtime_error("NDArray::transform SameOps: you can't use this method on String array!");
+
+    NDArray::prepareSpecialUse({this}, {this});
+    NativeOpExecutioner::execTransformSame(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams, nullptr, nullptr);
+    NDArray::registerSpecialUse({this}, {this});
+
+    return std::move(*this);
+}
+
+////////////////////////////////////////////////////////////////////////
+NDArray NDArray::transform(nd4j::transform::StrictOps op, void *extraParams) const & {
     if (!this->isR())
         throw std::runtime_error("Source array must have one of FLOAT types");
 
@@ -3554,7 +3072,19 @@ NDArray NDArray::transform(nd4j::transform::StrictOps op, void *extraParams) con
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray NDArray::transform(nd4j::transform::BoolOps op, void *extraParams) const {
+NDArray NDArray::transform(nd4j::transform::StrictOps op, void *extraParams) && {
+    if (!this->isR())
+        throw std::runtime_error("Source array must have one of FLOAT types");
+
+    NDArray::prepareSpecialUse({this}, {this});
+    NativeOpExecutioner::execTransformStrict(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams, nullptr, nullptr);
+    NDArray::registerSpecialUse({this}, {this});
+
+    return std::move(*this);
+}
+
+////////////////////////////////////////////////////////////////////////
+NDArray NDArray::transform(nd4j::transform::BoolOps op, void *extraParams) const & {
     if (isS())
         throw std::runtime_error("NDArray::transform BoolOps: you can't use this method on String array!");
 
@@ -3567,151 +3097,159 @@ NDArray NDArray::transform(nd4j::transform::BoolOps op, void *extraParams) const
     return result;
 }
 
+////////////////////////////////////////////////////////////////////////
+NDArray NDArray::transform(nd4j::transform::BoolOps op, void *extraParams) && {
+    if (isS())
+        throw std::runtime_error("NDArray::transform BoolOps: you can't use this method on String array!");
+
+    NDArray::prepareSpecialUse({this}, {this});
+    NativeOpExecutioner::execTransformBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), extraParams, nullptr, nullptr);
+    NDArray::registerSpecialUse({this}, {this});
+
+    return std::move(*this);
+}
+
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams) {
+void NDArray::applyScalarArr(nd4j::scalar::Ops op, const NDArray& scalar, NDArray& target, ExtraArguments *extraParams) {
     if (isS())
         throw std::runtime_error("NDArray::applyScalarArr: you can't use this method on String array!");
-    if (scalar->lengthOf() != 1)
+    if (scalar.lengthOf() != 1)
         throw std::invalid_argument("NDArray::applyScalarArr method: operand is not a scalar!");
-    if(target == nullptr)
-        target = this;
-    if(target->dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar->getShapeInfo()) && !(target->dataType() == dataType() || target->dataType() == scalar->dataType()))
+
+    if(target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), scalar.getShapeInfo()) && !(target.dataType() == dataType() || target.dataType() == scalar.dataType()))
         throw std::invalid_argument("NDArray::applyScalarArr method: wrong type of target array!");
 
-    NDArray::prepareSpecialUse({target}, {this, scalar});
-    NativeOpExecutioner::execScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), scalar->getBuffer(), scalar->getShapeInfo(), scalar->getSpecialBuffer(), scalar->getSpecialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()): nullptr);
-    NDArray::registerSpecialUse({target}, {this, scalar});
+    NDArray::prepareSpecialUse({&target}, {this, &scalar});
+    NativeOpExecutioner::execScalar(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), scalar.getBuffer(), scalar.getShapeInfo(), scalar.getSpecialBuffer(), scalar.getSpecialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()): nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &scalar});
 }
-
-////////////////////////////////////////////////////////////////////////
-template <typename T>
-void NDArray::applyScalar(nd4j::scalar::Ops op, const T scalar, NDArray *target, ExtraArguments *extraParams) {
-
-    auto scalarArr = NDArrayFactory::create<T>(dataType(), scalar, this->getContext());
-    applyScalarArr(op, &scalarArr, target, extraParams);
-}
-
-template <> ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const NDArray* scalar, NDArray *target, ExtraArguments *extraParams) { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const double scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const float scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const float16 scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const bfloat16 scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const Nd4jLong scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const int scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const int16_t scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const int8_t scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const uint8_t scalar, NDArray *target, ExtraArguments *extraParams);
-template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDArray *target, ExtraArguments *extraParams);
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray *target, ExtraArguments *extraParams) const {
+void NDArray::applyScalarArr(nd4j::scalar::BoolOps op, const NDArray& scalar, NDArray &target, ExtraArguments *extraParams) const {
     if (isS())
         throw std::runtime_error("NDArray::applyScalarArr BoolOps: you can't use this method on String array!");
-    if (target == nullptr || !target->isB())
-        throw std::invalid_argument("NDArray::applyScalarArr bool method: target is nullptr or has not bool type!");
-    if (dataType() != scalar->dataType()) {
-        nd4j_printf("NDArray::applyScalarArr BoolOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(), scalar->dataType());
+    if (!target.isB())
+        throw std::invalid_argument("NDArray::applyScalarArr bool method: target has not bool type!");
+    if (dataType() != scalar.dataType()) {
+        nd4j_printf("NDArray::applyScalarArr BoolOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(), scalar.dataType());
         throw std::invalid_argument("NDArray::applyScalarArr bool method: this and scalar arrays must have the same type!");
     }
 
-    NDArray::prepareSpecialUse({target}, {this, scalar});
-    NativeOpExecutioner::execScalarBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), scalar->getBuffer(), scalar->getShapeInfo(), scalar->getSpecialBuffer(), scalar->getSpecialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()): nullptr);
-    NDArray::registerSpecialUse({target}, {this, scalar});
+    NDArray::prepareSpecialUse({&target}, {this, &scalar});
+    NativeOpExecutioner::execScalarBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), scalar.getBuffer(), scalar.getShapeInfo(), scalar.getSpecialBuffer(), scalar.getSpecialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()): nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &scalar});
+}
+
+//////////////////////////////////////////////////////////////////////////
+void NDArray::applyScalarArr(nd4j::scalar::IntOps op, const NDArray& scalar, NDArray &target, ExtraArguments *extraParams) const {
+    if (isS())
+        throw std::runtime_error("NDArray::applyScalarArr IntOps: you can't use this method on String array!");
+
+    if (target.dataType() != this->dataType())
+        throw std::invalid_argument("NDArray::applyScalarArr int method: target has not bool type!");
+    if (dataType() != scalar.dataType()) {
+        nd4j_printf("NDArray::applyScalarArr IntOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(), scalar.dataType());
+        throw std::invalid_argument("NDArray::applyScalarArr int method: this and scalar arrays must have the same type!");
+    }
+
+    NDArray::prepareSpecialUse({&target}, {this, &scalar});
+    NativeOpExecutioner::execScalarInt(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), scalar.getBuffer(), scalar.getShapeInfo(), scalar.getSpecialBuffer(), scalar.getSpecialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target.dataType()): nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &scalar});
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-void NDArray::applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray *target, ExtraArguments *extraParams) const {
+void NDArray::applyScalar(nd4j::scalar::IntOps op, const T scalar, NDArray& target, ExtraArguments *extraParams) const {
 
-    NDArray scalarArr = NDArrayFactory::create<T>(scalar, getContext());
-    applyScalarArr(op, &scalarArr, target, extraParams);
+    NDArray scalarArr = NDArrayFactory::create(this->dataType(), scalar, getContext());
+    applyScalarArr(op, scalarArr, target, extraParams);
 }
 
-template <> ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray *target, ExtraArguments *extraParams) const { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
-template ND4J_EXPORT void NDArray::applyScalar<double>(nd4j::scalar::BoolOps op, const double scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<float>(nd4j::scalar::BoolOps op, const float scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<float16>(nd4j::scalar::BoolOps op, const float16 scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<bfloat16>(nd4j::scalar::BoolOps op, const bfloat16 scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<Nd4jLong>(nd4j::scalar::BoolOps op, const Nd4jLong scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<int>(nd4j::scalar::BoolOps op, const int scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<int16_t>(nd4j::scalar::BoolOps op, const int16_t scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<int8_t>(nd4j::scalar::BoolOps op, const int8_t scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<uint8_t>(nd4j::scalar::BoolOps op, const uint8_t scalar, NDArray *target, ExtraArguments *extraParams) const;
-template ND4J_EXPORT void NDArray::applyScalar<bool>(nd4j::scalar::BoolOps op, const bool scalar, NDArray *target, ExtraArguments *extraParams) const;
-
-
-//////////////////////////////////////////////////////////////////////////
-    void NDArray::applyScalarArr(nd4j::scalar::IntOps op, const NDArray* scalar, NDArray *target, ExtraArguments *extraParams) const {
-        if (isS())
-            throw std::runtime_error("NDArray::applyScalarArr IntOps: you can't use this method on String array!");
-
-        if (target == nullptr || target->dataType() != this->dataType())
-            throw std::invalid_argument("NDArray::applyScalarArr int method: target is nullptr or has not bool type!");
-        if (dataType() != scalar->dataType()) {
-            nd4j_printf("NDArray::applyScalarArr IntOps: this dtype: [%i]; scalar dtype: [%i]\n", this->dataType(), scalar->dataType());
-            throw std::invalid_argument("NDArray::applyScalarArr int method: this and scalar arrays must have the same type!");
-        }
-
-        NDArray::prepareSpecialUse({target}, {this, scalar});
-        NativeOpExecutioner::execScalarInt(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), scalar->getBuffer(), scalar->getShapeInfo(), scalar->getSpecialBuffer(), scalar->getSpecialShapeInfo(), extraParams != nullptr ? extraParams->argumentsAsT(target->dataType()): nullptr);
-        NDArray::registerSpecialUse({target}, {this, scalar});
-    }
+template <> ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::IntOps op, const NDArray& scalar, NDArray &target, ExtraArguments *extraParams) const { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
+template ND4J_EXPORT void NDArray::applyScalar<double>(nd4j::scalar::IntOps op, const double scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<float>(nd4j::scalar::IntOps op, const float scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<float16>(nd4j::scalar::IntOps op, const float16 scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<bfloat16>(nd4j::scalar::IntOps op, const bfloat16 scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<Nd4jLong>(nd4j::scalar::IntOps op, const Nd4jLong scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<int>(nd4j::scalar::IntOps op, const int scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<int16_t>(nd4j::scalar::IntOps op, const int16_t scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<int8_t>(nd4j::scalar::IntOps op, const int8_t scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<uint8_t>(nd4j::scalar::IntOps op, const uint8_t scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<bool>(nd4j::scalar::IntOps op, const bool scalar, NDArray &target, ExtraArguments *extraParams) const;
 
 ////////////////////////////////////////////////////////////////////////
-    template <typename T>
-    void NDArray::applyScalar(nd4j::scalar::IntOps op, const T scalar, NDArray *target, ExtraArguments *extraParams) const {
+template <typename T>
+void NDArray::applyScalar(nd4j::scalar::Ops op, const T scalar, NDArray& target, ExtraArguments *extraParams) {
 
-        NDArray scalarArr = NDArrayFactory::create(this->dataType(), scalar, getContext());
-        applyScalarArr(op, &scalarArr, target, extraParams);
-    }
-
-    template <> ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::IntOps op, const NDArray* scalar, NDArray *target, ExtraArguments *extraParams) const { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
-    template ND4J_EXPORT void NDArray::applyScalar<double>(nd4j::scalar::IntOps op, const double scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<float>(nd4j::scalar::IntOps op, const float scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<float16>(nd4j::scalar::IntOps op, const float16 scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<bfloat16>(nd4j::scalar::IntOps op, const bfloat16 scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<Nd4jLong>(nd4j::scalar::IntOps op, const Nd4jLong scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<int>(nd4j::scalar::IntOps op, const int scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<int16_t>(nd4j::scalar::IntOps op, const int16_t scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<int8_t>(nd4j::scalar::IntOps op, const int8_t scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<uint8_t>(nd4j::scalar::IntOps op, const uint8_t scalar, NDArray *target, ExtraArguments *extraParams) const;
-    template ND4J_EXPORT void NDArray::applyScalar<bool>(nd4j::scalar::IntOps op, const bool scalar, NDArray *target, ExtraArguments *extraParams) const;
-
+    auto scalarArr = NDArrayFactory::create<T>(dataType(), scalar, this->getContext());
+    applyScalarArr(op, scalarArr, target, extraParams);
+}
+template <> ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const NDArray& scalar, NDArray &target, ExtraArguments *extraParams) { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const double scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const float scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const float16 scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const bfloat16 scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const Nd4jLong scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const int scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const int16_t scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const int8_t scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const uint8_t scalar, NDArray &target, ExtraArguments *extraParams);
+template ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::Ops op, const bool scalar, NDArray &target, ExtraArguments *extraParams);
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, NDArray* target, const std::vector<int>& dimensions, const ExtraArguments *extraParams) const {
+template <typename T>
+void NDArray::applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray &target, ExtraArguments *extraParams) const {
+
+    NDArray scalarArr = NDArrayFactory::create<T>(scalar, getContext());
+    applyScalarArr(op, scalarArr, target, extraParams);
+}
+
+template <> ND4J_EXPORT void NDArray::applyScalar(nd4j::scalar::BoolOps op, const NDArray& scalar, NDArray &target, ExtraArguments *extraParams) const { throw std::runtime_error("NDArray::applyScalar<NDArray*> method: do not use me!");}
+template ND4J_EXPORT void NDArray::applyScalar<double>(nd4j::scalar::BoolOps op, const double scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<float>(nd4j::scalar::BoolOps op, const float scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<float16>(nd4j::scalar::BoolOps op, const float16 scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<bfloat16>(nd4j::scalar::BoolOps op, const bfloat16 scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<Nd4jLong>(nd4j::scalar::BoolOps op, const Nd4jLong scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<int>(nd4j::scalar::BoolOps op, const int scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<int16_t>(nd4j::scalar::BoolOps op, const int16_t scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<int8_t>(nd4j::scalar::BoolOps op, const int8_t scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<uint8_t>(nd4j::scalar::BoolOps op, const uint8_t scalar, NDArray &target, ExtraArguments *extraParams) const;
+template ND4J_EXPORT void NDArray::applyScalar<bool>(nd4j::scalar::BoolOps op, const bool scalar, NDArray &target, ExtraArguments *extraParams) const;
+
+////////////////////////////////////////////////////////////////////////
+void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, NDArray& target, const std::vector<int>& dimensions, const ExtraArguments *extraParams) const {
     if (isS())
         throw std::runtime_error("NDArray::applyIndexReduce: you can't use this method on String array!");
 
-    if (target->dataType() != nd4j::DataType::INT64 && target->dataType() != nd4j::DataType::INT32)
+    if (target.dataType() != nd4j::DataType::INT64 && target.dataType() != nd4j::DataType::INT32)
         throw std::runtime_error("NDArray::applyIndexReduce operations return INT32/INT64");
 
     void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
 
-    NDArray::prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
 
-    if (target->lengthOf() == 1) {
-        NativeOpExecutioner::execIndexReduceScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo());
+    if (target.lengthOf() == 1) {
+        NativeOpExecutioner::execIndexReduceScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     }
     else {
         std::vector<int> copy = dimensions;
         shape::checkDimensions(rankOf(), copy);
         auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(getShapeInfo(), copy);
-        NativeOpExecutioner::execIndexReduce(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, target->buffer(), target->shapeInfo(), target->specialBuffer(), target->specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execIndexReduce(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
         synchronize("NDArray::applyIndexReduce");
     }
 
-    registerSpecialUse({target}, {this});
+    registerSpecialUse({&target}, {this});
 }
 
 ////////////////////////////////////////////////////////////////////////
 // reduce dimensions in this array relying on index operations
-NDArray* NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, const std::vector<int>& dimensions, const ExtraArguments* extraParams ) const {
+NDArray NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, const std::vector<int>& dimensions, const ExtraArguments* extraParams ) const {
 
     std::vector<int> copy = dimensions;
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataType::INT64, false, false, getContext()->getWorkspace());
-    auto result = new NDArray(newShape, true, getContext());
+    NDArray result(newShape, true, getContext());
 
     applyIndexReduce(op, result, copy, extraParams);
 
@@ -3720,10 +3258,11 @@ NDArray* NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, const std::vector<
 
 ////////////////////////////////////////////////////////////////////////
 // apply reduce3 operations to this and other array, return result in new output array
-NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const ExtraArguments* extraParams) const {
+NDArray NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray& other, const ExtraArguments* extraParams) const {
+
     if (isS())
         throw std::runtime_error("NDArray::applyReduce3 method: you can't use this method on String array!");
-    if(dataType() != other->dataType())
+    if(dataType() != other.dataType())
         throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
     // check shapes consistency
     if(!isSameShape(other))
@@ -3731,75 +3270,75 @@ NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, cons
     // create shapeInfo for scalar
     auto newShape = ShapeBuilders::createScalarShapeInfo(DataTypeUtils::pickFloatingType(dataType()), getContext()->getWorkspace());
     // create output array (scalar)
-    auto result = new NDArray(newShape, true, getContext());
+    NDArray result(newShape, true, getContext());
     RELEASE(newShape, getContext()->getWorkspace());
     // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
     void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(dataType()) : nullptr;
 
-    NDArray::prepareSpecialUse({result}, {this, other});
-    NativeOpExecutioner::execReduce3Scalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
-    NDArray::registerSpecialUse({result}, {this, other});
+    NDArray::prepareSpecialUse({&result}, {this, &other});
+    NativeOpExecutioner::execReduce3Scalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
+    NDArray::registerSpecialUse({&result}, {this, &other});
 
     return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
 // apply reduce3 (exec) operations to this and other array, return result in new output array
-NDArray* NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray* other, const std::vector<int>& dimensions, const ExtraArguments* extraParams) const {
+NDArray NDArray::applyReduce3(nd4j::reduce3::Ops op, const NDArray& other, const std::vector<int>& dimensions, const ExtraArguments* extraParams) const {
 
     if (isS())
         throw std::runtime_error("NDArray::applyReduce3: you can't use this method on String array!");
-    if(dataType() != other->dataType())
+    if(dataType() != other.dataType())
         throw std::runtime_error("NDArray::applyReduce3 method: the types of this and other arrays must be the same !");
 
     std::vector<int> copy(dimensions);
     shape::checkDimensions(rankOf(), copy);
-    shape::checkDimensions(other->rankOf(), copy);
+    shape::checkDimensions(other.rankOf(), copy);
 
     auto newShape = ShapeUtils::evalReduceShapeInfo('c', copy, *this, DataTypeUtils::pickFloatingType(dataType()), false, false, getContext()->getWorkspace());
-    auto result = new NDArray(newShape, true, getContext());
+    NDArray result(newShape, true, getContext());
     // create temporary dynamic array of extra parameters if array extraParams is empty (==nullptr)
     void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(dataType()) : nullptr;
 
-    NDArray::prepareSpecialUse({result}, {this, other});
+    NDArray::prepareSpecialUse({&result}, {this, &other});
 
     // perform calculations
-    if(rankOf() == copy.size() && other->rankOf() == copy.size()) {
-        NativeOpExecutioner::execReduce3Scalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo());
+    if(rankOf() == copy.size() && other.rankOf() == copy.size()) {
+        NativeOpExecutioner::execReduce3Scalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo());
     }
     else {
 
         auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
 
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(getShapeInfo(), copy);
-        auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(other->getShapeInfo(), copy);
+        auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(other.getShapeInfo(), copy);
 
         if(!shape::equalsSoft(packX.primaryShapeInfo(), packY.primaryShapeInfo()) || (packX.numberOfTads() != packY.numberOfTads() && packX.numberOfTads() != 1 && packY.numberOfTads() != 1))
             throw std::runtime_error("NDArray::applyReduce3 cuda method: arrays tads are inconsistent !");
 
-        NativeOpExecutioner::execReduce3(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+        NativeOpExecutioner::execReduce3(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
     }
 
-    registerSpecialUse({result}, {this, other});
+    registerSpecialUse({&result}, {this, &other});
 
     return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
 // apply reduce3 (execAll) operations to this and other array, return result in new output array
-NDArray* NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray *other, const std::vector<int>& dimensions, const ExtraArguments* extraParams) const {
+NDArray NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray& other, const std::vector<int>& dimensions, const ExtraArguments* extraParams) const {
     if (isS())
         throw std::runtime_error("NDArray::applyAllReduce3: you can't use this method on String array!");
-    if(dataType() != other->dataType())
+    if(dataType() != other.dataType())
         throw std::runtime_error("NDArray::applyAllReduce3 method: the types of this and other arrays must be the same !");
 
     // be careful, copy array may undergo changes (sort, transformation of negative dimensions to positive, duplicates removing )
     std::vector<int> copy(dimensions);
     shape::checkDimensions(rankOf(), copy);
-    shape::checkDimensions(other->rankOf(), copy);
+    shape::checkDimensions(other.rankOf(), copy);
 
     auto packX = ConstantTadHelper::getInstance()->tadForDimensions(getShapeInfo(), copy);
-    auto packY = ConstantTadHelper::getInstance()->tadForDimensions(other->getShapeInfo(), copy);
+    auto packY = ConstantTadHelper::getInstance()->tadForDimensions(other.getShapeInfo(), copy);
 
     // check tads shapes
     if(!shape::equalsSoft(packX.primaryShapeInfo(), packY.primaryShapeInfo()))
@@ -3809,145 +3348,145 @@ NDArray* NDArray::applyAllReduce3(nd4j::reduce3::Ops op, const NDArray *other, c
     auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(DataTypeUtils::pickFloatingType(dataType()), 'c', {packX.numberOfTads(), packY.numberOfTads()});
 
     // create output array
-    auto result = new NDArray(newShape, true, getContext());
+    NDArray result(newShape, true, getContext());
 
     // create dynamic array of extra parameters if array extraParams is empty (==nullptr)
     void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(dataType()) : nullptr;
 
     auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
 
-    NDArray::prepareSpecialUse({result}, {this, other});
-    NativeOpExecutioner::execReduce3All(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
-    NDArray::registerSpecialUse({result}, {this, other});
+    NDArray::prepareSpecialUse({&result}, {this, &other});
+    NativeOpExecutioner::execReduce3All(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), params, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), result.buffer(), result.shapeInfo(), result.specialBuffer(), result.specialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+    NDArray::registerSpecialUse({&result}, {this, &other});
 
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
+void NDArray::reduceAlongDimension(nd4j::reduce::FloatOps op, NDArray& target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
     if (isS())
         throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: you can't use this method on String array!");
-    if (target == nullptr || !target->isR())
+    if (!target.isR())
         throw std::invalid_argument("NDArray::reduceAlongDimension FloatOps: requires target array to be present and have type form real space!");
 
     std::vector<int> copy(dimensions);
 
     if(checkTargetShape) {
-        auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
-        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
+        auto newShape = ShapeUtils::evalReduceShapeInfo(target.ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
+        if(!shape::shapeEquals(newShape, target.getShapeInfo()))
             throw std::runtime_error("NDArray::reduceAlongDimension FloatOps: wrong target shape!");
     }
 
-    NDArray::prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
 
     if(rankOf() == copy.size() || copy.empty()) {
-        NativeOpExecutioner::execReduceFloatScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(),nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo());
+        NativeOpExecutioner::execReduceFloatScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(),nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo());
     }
     else {
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(getShapeInfo(), copy);
-        NativeOpExecutioner::execReduceFloat(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execReduceFloat(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), copy.data(), copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
     }
     synchronize("NDArray::reduceAlongDimension FloatOps");
 
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
+void NDArray::reduceAlongDimension(nd4j::reduce::SameOps op, NDArray& target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
     if (isS())
         throw std::runtime_error("NDArray::reduceAlongDimension SameOps: you can't use this method on String array!");
-    if (target == nullptr || target->dataType() != dataType())
+    if (target.dataType() != dataType())
         throw std::runtime_error("NDArray::reduceAlongDimension SameOps: requires target array to be present and have same dtype as input");
 
     std::vector<int> copy(dimensions);
 
     if(checkTargetShape) {
-        auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
-        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
+        auto newShape = ShapeUtils::evalReduceShapeInfo(target.ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
+        if(!shape::shapeEquals(newShape, target.getShapeInfo()))
             throw std::runtime_error("NDArray::reduceAlongDimension SameOps: wrong target shape!");
     }
 
-    NDArray::prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
 
     if(rankOf() == copy.size() || copy.empty()) {
-        NativeOpExecutioner::execReduceSameScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo());
+        NativeOpExecutioner::execReduceSameScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo());
     }
     else { //if (!isEmpty()) {
         auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execReduceSame(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execReduceSame(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
     }
     synchronize("NDArray::reduceAlongDimension SameOps");
 
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
+void NDArray::reduceAlongDimension(nd4j::reduce::LongOps op, NDArray& target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
     if (isS())
         throw std::runtime_error("NDArray::reduceAlongDimension LongOps: you can't use this method on String array!");
-    if (target == nullptr || target->dataType() != DataType::INT64)
+    if (target.dataType() != DataType::INT64)
         throw std::runtime_error("NDArray::reduceAlongDimension LongOps: requires target array to be present and have type of INT64");
 
     std::vector<int> copy(dimensions);
 
     if(checkTargetShape) {
-        auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
-        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
+        auto newShape = ShapeUtils::evalReduceShapeInfo(target.ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
+        if(!shape::shapeEquals(newShape, target.getShapeInfo()))
             throw std::runtime_error("NDArray::reduceAlongDimension LongOps: wrong target shape!");
     }
 
-    NDArray::prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
 
     if(rankOf() == copy.size() || copy.empty()) {
-        NativeOpExecutioner::execReduceLongScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo());
+        NativeOpExecutioner::execReduceLongScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo());
     }
     else {
         auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execReduceLong(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execReduceLong(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
     }
     synchronize("NDArray::reduceAlongDimension LongOps");
 
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
 // method reduces array by excluding its shapes along axes present in dimensions vector
-void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray* target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
+void NDArray::reduceAlongDimension(nd4j::reduce::BoolOps op, NDArray& target, const std::vector<int>& dimensions, const bool keepDims, const bool supportOldShapes, const bool checkTargetShape) const {
 
     if (isS())
         throw std::runtime_error("NDArray::reduceAlongDimension BoolOps cuda: you can't use this method on String array!");
-    if (target == nullptr || !target->isB())
+    if (!target.isB())
         throw std::invalid_argument("NDArray::reduceAlongDimension BoolOps cuda: requires target array to be present and have BOOL type!");
 
     std::vector<int> copy(dimensions);
 
     if(checkTargetShape) {
-        auto newShape = ShapeUtils::evalReduceShapeInfo(target->ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
-        if(!shape::shapeEquals(newShape, target->getShapeInfo()))
+        auto newShape = ShapeUtils::evalReduceShapeInfo(target.ordering(), copy, *this, keepDims, supportOldShapes, getContext()->getWorkspace());
+        if(!shape::shapeEquals(newShape, target.getShapeInfo()))
             throw std::runtime_error("NDArray::reduceAlongDimension BoolOps cuda: wrong target shape!");
     }
 
-    NDArray::prepareSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
 
     if(rankOf() == copy.size() || copy.empty()) {
-        NativeOpExecutioner::execReduceBoolScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo());
+        NativeOpExecutioner::execReduceBoolScalar(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo());
     }
     else {
         auto pDims = nd4j::Environment::getInstance()->isCPU() ? copy.data() : nullptr;
         auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-        NativeOpExecutioner::execReduceBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
+        NativeOpExecutioner::execReduceBool(getContext(), op, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), nullptr, target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), pDims, copy.size(), packX.platformShapeInfo(), packX.platformOffsets());
     }
     synchronize("NDArray::reduceAlongDimension LongOps");
 
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4102,152 +3641,152 @@ void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
     }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::addRowVector(const NDArray *row, NDArray *target) const {
+void NDArray::addRowVector(const NDArray& row, NDArray& target) const {
 
     if (isS())
         throw std::runtime_error("NDArray::addRowVector: you can't use this method on String array!");
-    if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->lengthOf())
+    if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() || !row.isRowVector() || columns() != row.lengthOf())
         throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
-    if(target->dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row->dataType()) && !(isR() && row->isR() && target->isR()))
+    if(target.dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()) && !(isR() && row.isR() && target.isR()))
         throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
 
     int dimension = 1;
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-    NDArray::prepareSpecialUse({target}, {this, row});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row->getBuffer(), row->getShapeInfo(), row->getSpecialBuffer(), row->getSpecialShapeInfo(), target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this, row});
+    NDArray::prepareSpecialUse({&target}, {this, &row});
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row.getBuffer(), row.getShapeInfo(), row.getSpecialBuffer(), row.getSpecialShapeInfo(), target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &row});
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::subRowVector(const NDArray *row, NDArray *target) const {
+void NDArray::subRowVector(const NDArray& row, NDArray& target) const {
 
     if (isS())
         throw std::runtime_error("NDArray::addRowVector: you can't use this method on String array!");
-    if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->lengthOf())
+    if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() || !row.isRowVector() || columns() != row.lengthOf())
         throw std::invalid_argument("NDArray::addRowVector: wrong arguments !");
-    if(target->dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row->dataType()) && !(isR() && row->isR() && target->isR()))
+    if(target.dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()) && !(isR() && row.isR() && target.isR()))
         throw std::invalid_argument("NDArray::addRowVector: wrong type of target array !");
 
     int dimension = 1;
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-    NDArray::prepareSpecialUse({target}, {this, row});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Subtract, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row->getBuffer(), row->getShapeInfo(), row->getSpecialBuffer(), row->getSpecialShapeInfo(), target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), &dimension, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this, row});
+    NDArray::prepareSpecialUse({&target}, {this, &row});
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Subtract, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row.getBuffer(), row.getShapeInfo(), row.getSpecialBuffer(), row.getSpecialShapeInfo(), target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), &dimension, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &row});
 }
 
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::mulRowVector(const NDArray *row, NDArray *target) const {
+void NDArray::mulRowVector(const NDArray &row, NDArray &target) const {
 
     if (isS())
         throw std::runtime_error("NDArray::mulRowVector: you can't use this method on String array!");
-    if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+    if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() || !row.isRowVector() || columns() != row.columns())
         throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
-    if(target->dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row->dataType()))
+    if(target.dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()))
         throw std::invalid_argument("NDArray::mulRowVector: wrong type of target array !");
 
     int dimension = 1;
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-    NDArray::prepareSpecialUse({target}, {this, row});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Multiply, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row->getBuffer(), row->getShapeInfo(), row->getSpecialBuffer(), row->getSpecialShapeInfo(), target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this, row});
+    NDArray::prepareSpecialUse({&target}, {this, &row});
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Multiply, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row.getBuffer(), row.getShapeInfo(), row.getSpecialBuffer(), row.getSpecialShapeInfo(), target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &row});
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::divRowVector(const NDArray *row, NDArray *target) const {
+void NDArray::divRowVector(const NDArray &row, NDArray &target) const {
 
     if (isS())
         throw std::runtime_error("NDArray::divRowVector: you can't use this method on String array!");
-    if (row->isB())
+    if (row.isB())
         throw std::runtime_error("NDArray::divRowVector: you can't divide by bool row!");
-    if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !row->isRowVector() || columns() != row->columns())
+    if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() || !row.isRowVector() || columns() != row.columns())
         throw std::invalid_argument("NDArray::divRowVector: wrong arguments !");
-    if(target->dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row->dataType()))
+    if(target.dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), row.dataType()))
         throw std::invalid_argument("NDArray::divRowVector: wrong type of target array !");
 
     int dimension = 1;
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-    NDArray::prepareSpecialUse({target}, {this, row});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Divide, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row->getBuffer(), row->getShapeInfo(), row->getSpecialBuffer(), row->getSpecialShapeInfo(), target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this, row});
+    NDArray::prepareSpecialUse({&target}, {this, &row});
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Divide, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row.getBuffer(), row.getShapeInfo(), row.getSpecialBuffer(), row.getSpecialShapeInfo(), target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &row});
 }
 
 //////////////////////////////////////////////////////////////////////////
 // This method adds given row to all rows in this NDArray, this array becomes affected
-void NDArray::addiRowVector(const NDArray *row) {
+void NDArray::addiRowVector(const NDArray& row) {
 
     if (isS())
         throw std::runtime_error("NDArray::addiRowVector: you can't use this method on String array!");
-    if (rankOf() != 2 || !row->isRowVector() || columns() != row->lengthOf())
+    if (rankOf() != 2 || !row.isRowVector() || columns() != row.lengthOf())
         throw std::invalid_argument("NDArray::addiRowVector: wrong arguments !");
 
     int dimension = 1;
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-    NDArray::prepareSpecialUse({this}, {row});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row->getBuffer(), row->getShapeInfo(), row->getSpecialBuffer(), row->getSpecialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
-    NDArray::registerSpecialUse({this}, {row});
+    NDArray::prepareSpecialUse({this}, {&row});
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), row.getBuffer(), row.getShapeInfo(), row.getSpecialBuffer(), row.getSpecialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NDArray::registerSpecialUse({this}, {&row});
 }
 
 //////////////////////////////////////////////////////////////////////////
-void NDArray::addColumnVector(const NDArray *column, NDArray *target) const {
+void NDArray::addColumnVector(const NDArray &column, NDArray &target) const {
     if (isS())
         throw std::runtime_error("NDArray::addColumnVector: you can't use this method on String array!");
-    if (rankOf() != 2 || target->rankOf() != 2 || rows() != target->rows() || columns() != target->columns() || !column->isColumnVector() || rows() != column->lengthOf())
+    if (rankOf() != 2 || target.rankOf() != 2 || rows() != target.rows() || columns() != target.columns() || !column.isColumnVector() || rows() != column.lengthOf())
         throw std::invalid_argument("NDArray::addColumnVector: wrong arguments !");
-    if(target->dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), column->dataType()))
+    if(target.dataType() !=  DataTypeUtils::pickPairwiseResultType(dataType(), column.dataType()))
         throw std::invalid_argument("NDArray::addColumnVector: wrong type of target array !");
 
     int dimension = 0;
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-    NDArray::prepareSpecialUse({target}, {this, column});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), column->getBuffer(), column->getShapeInfo(), column->getSpecialBuffer(), column->getSpecialShapeInfo(), target->getBuffer(), target->getShapeInfo(), target->getSpecialBuffer(), target->getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
-    NDArray::registerSpecialUse({target}, {this, column});
+    NDArray::prepareSpecialUse({&target}, {this, &column});
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), column.getBuffer(), column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(), target.getBuffer(), target.getShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NDArray::registerSpecialUse({&target}, {this, &column});
 }
 
 //////////////////////////////////////////////////////////////////////////
 // This method adds given column to all columns in this NDArray, this array becomes affected
-void NDArray::addiColumnVector(const NDArray *column) {
+void NDArray::addiColumnVector(const NDArray &column) {
     if (isS())
         throw std::runtime_error("NDArray::addiColumnVector: you can't use this method on String array!");
-    if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
+    if (rankOf() != 2 || !column.isColumnVector() || rows() != column.lengthOf())
         throw std::invalid_argument("NDArray::addiColumnVector: wrong arguments !");
 
     int dimension = 0;
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-    NDArray::prepareSpecialUse({this}, {column});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), column->getBuffer(), column->getShapeInfo(), column->getSpecialBuffer(), column->getSpecialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
-    NDArray::registerSpecialUse({this}, {column});
+    NDArray::prepareSpecialUse({this}, {&column});
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Add, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), column.getBuffer(), column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NDArray::registerSpecialUse({this}, {&column});
 }
 
 //////////////////////////////////////////////////////////////////////////
 // This method multiplies each column of this array by given argument-column, this array becomes affected
-void NDArray::muliColumnVector(const NDArray *column) {
+void NDArray::muliColumnVector(const NDArray& column) {
     if (isS())
         throw std::runtime_error("NDArray::muliColumnVector: you can't use this method on String array!");
-    if (rankOf() != 2 || !column->isColumnVector() || rows() != column->lengthOf())
+    if (rankOf() != 2 || !column.isColumnVector() || rows() != column.lengthOf())
         throw std::invalid_argument("NDArray::muliColumnVector: wrong arguments !");
 
     int dimension = 0;
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), dimension);
 
-    NDArray::prepareSpecialUse({this}, {column});
-    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Multiply, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), column->getBuffer(), column->getShapeInfo(), column->getSpecialBuffer(), column->getSpecialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
-    NDArray::registerSpecialUse({this}, {column});
+    NDArray::prepareSpecialUse({this}, {&column});
+    NativeOpExecutioner::execBroadcast(getContext(), nd4j::broadcast::Ops::Multiply, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), column.getBuffer(), column.getShapeInfo(), column.getSpecialBuffer(), column.getSpecialShapeInfo(), this->buffer(), this->shapeInfo(), this->specialBuffer(), this->specialShapeInfo(), nullptr, 1, packX.platformShapeInfo(), packX.platformOffsets(), nullptr, nullptr);
+    NDArray::registerSpecialUse({this}, {&column});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4278,8 +3817,8 @@ bool NDArray::permutei(const Nd4jLong* dimensions, const int rank) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-ResultSet* NDArray::multipleTensorsAlongDimension(const std::vector<int> &indices, const std::vector<int> &dimensions) const {
-    auto result = new ResultSet();
+ResultSet NDArray::multipleTensorsAlongDimension(const std::vector<int> &indices, const std::vector<int> &dimensions) const {
+    ResultSet result;
 
     if (indices.size() == 0)
         return result;
@@ -4296,19 +3835,19 @@ ResultSet* NDArray::multipleTensorsAlongDimension(const std::vector<int> &indice
         }
 
         auto array = new NDArray(getDataBuffer(), ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx] + getBufferOffset());
-        result->push_back(array);
+        result.push_back(array);
     }
 
     return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
-ResultSet* NDArray::allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const {
+ResultSet NDArray::allTensorsAlongDimension(const std::initializer_list<int>& dimensions) const {
     return allTensorsAlongDimension(std::vector<int>(dimensions));
 }
 
 ////////////////////////////////////////////////////////////////////////
-ResultSet* NDArray::allExamples() const {
+ResultSet NDArray::allExamples() const {
     std::vector<int> dimensions(rankOf() - 1);
     for (int e = 1; e < rankOf(); e++)
         dimensions[e-1] = e;
@@ -4338,7 +3877,7 @@ NDArray NDArray::ulike() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::diagonal(const char type) const {
+NDArray NDArray::diagonal(const char type) const {
 
     if (isS())
         throw std::runtime_error("NDArray::diagonal: you can't use this method on String array!");
@@ -4386,7 +3925,7 @@ NDArray* NDArray::diagonal(const char type) const {
 
     ArrayOptions::setDataType(outShapeInfo, this->dataType());
 
-    auto result = new NDArray(_buffer, ShapeDescriptor(outShapeInfo), getContext(), getBufferOffset());
+    NDArray result(_buffer, ShapeDescriptor(outShapeInfo), getContext(), getBufferOffset());
 
     RELEASE(outShapeInfo, getContext()->getWorkspace());
 
@@ -4394,9 +3933,9 @@ NDArray* NDArray::diagonal(const char type) const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
+ResultSet NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) const {
 
-    auto result = new ResultSet();
+    ResultSet result;
 
     if(dimensions.size() == 0)
         return result;
@@ -4411,14 +3950,14 @@ ResultSet* NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions)
     for (int idx = 0; idx < numTads; idx++ ) {
         auto array = new NDArray(_buffer, ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx] + getBufferOffset());
         array->_isView = true;
-        result->push_back(array);
+        result.push_back(array);
     }
 
     return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
+NDArray NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
     std::vector<int> copy(dimensions);
     shape::checkDimensions(rankOf(), copy);
 
@@ -4430,10 +3969,15 @@ NDArray* NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& d
 
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
 
-    auto array = new NDArray(_buffer, ShapeDescriptor(packX.primaryShapeInfo()), getContext(), packX.primaryOffsets()[index] + getBufferOffset());
-    array->_isView = true;
+    NDArray array(_buffer, ShapeDescriptor(packX.primaryShapeInfo()), getContext(), packX.primaryOffsets()[index] + getBufferOffset());
+    array._isView = true;
 
     return array;
+}
+
+//////////////////////////////////////////////////////////////////////////
+NDArray NDArray::tensorAlongDimension(Nd4jLong index, const std::initializer_list<int>& dimensions) const {
+    return tensorAlongDimension(index, std::vector<int>(dimensions));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4605,6 +4149,539 @@ void NDArray::setShapeInfo(const ConstantDataBuffer& shapeBuffer) {
 
     _dataType = ArrayOptions::dataType(_shapeInfo);
 }
+
+///////////////////////////////////////////////////////////////////////
+// addition operator array + scalar
+template <typename T, typename>
+NDArray operator+(NDArray&& arr, const T& scalar) {
+
+    if(arr.isView())                        // do not use resources of arrays which use buffers of other original arrays
+        return std::move(arr + scalar);     // arr is lvalue inside function body
+
+    if (arr.isS())
+        throw std::runtime_error("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+    if (arr.dataType() != DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()))
+       throw std::runtime_error("operator+(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+
+    NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::Add, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), arr.buffer(), arr.getShapeInfo(), arr.specialBuffer(), arr.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
+
+    return std::move(arr);
+}
+template ND4J_EXPORT NDArray operator+(NDArray&& arr, const double& scalar);
+template ND4J_EXPORT NDArray operator+(NDArray&& arr, const float& scalar);
+template ND4J_EXPORT NDArray operator+(NDArray&& arr, const float16& scalar);
+template ND4J_EXPORT NDArray operator+(NDArray&& arr, const bfloat16& scalar);
+template ND4J_EXPORT NDArray operator+(NDArray&& arr, const int& scalar);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator+(const NDArray& arr, const T& scalar) {
+
+    if (arr.isS())
+        throw std::runtime_error("operator+(const NDArray& arr, const T& scalar): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()), false, arr.getContext());
+
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::Add, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
+
+    return result;
+}
+template ND4J_EXPORT NDArray operator+(const NDArray& arr, const double& scalar);
+template ND4J_EXPORT NDArray operator+(const NDArray& arr, const float& scalar);
+template ND4J_EXPORT NDArray operator+(const NDArray& arr, const float16& scalar);
+template ND4J_EXPORT NDArray operator+(const NDArray& arr, const bfloat16& scalar);
+template ND4J_EXPORT NDArray operator+(const NDArray& arr, const int& scalar);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator+(const T& scalar, NDArray&& arr) {
+    return  std::move(arr) + scalar;
+}
+template ND4J_EXPORT NDArray operator+(const double& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator+(const float& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator+(const float16& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator+(const bfloat16& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator+(const int& scalar, NDArray&& arr);
+
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator+(const T& scalar, const NDArray& arr) {
+    return arr + scalar;
+}
+template ND4J_EXPORT NDArray operator+(const double& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator+(const float& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator+(const int& scalar, const NDArray& arr);
+
+///////////////////////////////////////////////////////////////////////
+// addition operator array - scalar
+template <typename T, typename>
+NDArray operator-(NDArray&& arr, const T& scalar) {
+
+    if(arr.isView())                        // do not use resources of arrays which use buffers of other original arrays
+        return std::move(arr - scalar);     // arr is lvalue inside function body
+
+    if (arr.isS())
+        throw std::runtime_error("operator-(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+    if (arr.dataType() != DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()))
+       throw std::runtime_error("operator-(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+
+    NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::Subtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), arr.buffer(), arr.getShapeInfo(), arr.specialBuffer(), arr.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
+
+    return std::move(arr);
+}
+template ND4J_EXPORT NDArray operator-(NDArray&& arr, const double& scalar);
+template ND4J_EXPORT NDArray operator-(NDArray&& arr, const float& scalar);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator-(const NDArray& arr, const T& scalar) {
+
+    if (arr.isS())
+        throw std::runtime_error("operator-(const NDArray& arr, const T& scalar): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()), false, arr.getContext());
+
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::Subtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
+
+    return result;
+}
+template ND4J_EXPORT NDArray operator-(const NDArray& arr, const double& scalar);
+template ND4J_EXPORT NDArray operator-(const NDArray& arr, const float& scalar);
+template ND4J_EXPORT NDArray operator-(const NDArray& arr, const float16& scalar);
+template ND4J_EXPORT NDArray operator-(const NDArray& arr, const bfloat16& scalar);
+template ND4J_EXPORT NDArray operator-(const NDArray& arr, const int& scalar);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator-(const T& scalar, NDArray&& arr) {
+
+    if(arr.isView())                        // do not use resources of arrays which use buffers of other original arrays
+        return std::move(scalar - arr);     // arr is lvalue inside function body
+
+    if (arr.isS())
+        throw std::runtime_error("operator-(const T& scalar, NDArray&& arr): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+
+    NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), arr.getBuffer(), arr.getShapeInfo(), arr.specialBuffer(), arr.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
+
+    return std::move(arr);
+
+}
+template ND4J_EXPORT NDArray operator-(const double& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator-(const float& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator-(const float16& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator-(const bfloat16& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator-(const int& scalar, NDArray&& arr);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator-(const T& scalar, const NDArray& arr) {
+
+    if (arr.isS())
+        throw std::runtime_error("operator-(const T& scalar, const NDArray& arr): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()), false, arr.getContext());
+
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseSubtract, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
+
+    return result;
+}
+template ND4J_EXPORT NDArray operator-(const double& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator-(const float& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator-(const int& scalar, const NDArray& arr);
+
+///////////////////////////////////////////////////////////////////////
+// addition operator array + scalar
+template <typename T, typename>
+NDArray operator*(NDArray&& arr, const T& scalar) {
+
+    if(arr.isView())                        // do not use resources of arrays which use buffers of other original arrays
+        return std::move(arr * scalar);     // arr is lvalue inside function body
+
+    if (arr.isS())
+        throw std::runtime_error("operator*(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+    if (arr.dataType() != DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()))
+       throw std::runtime_error("operator*(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+
+    NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::Multiply, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), arr.buffer(), arr.getShapeInfo(), arr.specialBuffer(), arr.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
+
+    return std::move(arr);
+}
+template ND4J_EXPORT NDArray operator*(NDArray&& arr, const double& scalar);
+template ND4J_EXPORT NDArray operator*(NDArray&& arr, const float& scalar);
+template ND4J_EXPORT NDArray operator*(NDArray&& arr, const float16& scalar);
+template ND4J_EXPORT NDArray operator*(NDArray&& arr, const bfloat16& scalar);
+template ND4J_EXPORT NDArray operator*(NDArray&& arr, const int& scalar);
+template ND4J_EXPORT NDArray operator*(NDArray&& arr, const long long& scalar);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator*(const NDArray& arr, const T& scalar) {
+
+    if (arr.isS())
+        throw std::runtime_error("operator*(const NDArray& arr, const T& scalar): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()), false, arr.getContext());
+
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::Multiply, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
+
+    return result;
+}
+
+template ND4J_EXPORT NDArray operator*(const NDArray& arr, const double& scalar);
+template ND4J_EXPORT NDArray operator*(const NDArray& arr, const float& scalar);
+template ND4J_EXPORT NDArray operator*(const NDArray& arr, const float16& scalar);
+template ND4J_EXPORT NDArray operator*(const NDArray& arr, const bfloat16& scalar);
+template ND4J_EXPORT NDArray operator*(const NDArray& arr, const int& scalar);
+template ND4J_EXPORT NDArray operator*(const NDArray& arr, const long long& scalar);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator*(const T& scalar, NDArray&& arr) {
+    return  std::move(arr) * scalar;
+}
+template ND4J_EXPORT NDArray operator*(const double& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator*(const float& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator*(const float16& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator*(const bfloat16& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator*(const int& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator*(const long long& scalar, NDArray&& arr);
+
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator*(const T& scalar, const NDArray& arr) {
+    return arr * scalar;
+}
+template ND4J_EXPORT NDArray operator*(const double& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator*(const float& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator*(const float16& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator*(const bfloat16& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator*(const int& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator*(const long long& scalar, const NDArray& arr);
+
+///////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator/(NDArray&& arr, const T& scalar) {
+
+    if(arr.isView())                        // do not use resources of arrays which use buffers of other original arrays
+        return std::move(arr / scalar);     // arr is lvalue inside function body
+
+    if (arr.isS())
+        throw std::runtime_error("operator/(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+    if (arr.dataType() != DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()))
+       throw std::runtime_error("operator/(NDArray&& arr, const T& scalar): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+
+    NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::Divide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), arr.buffer(), arr.getShapeInfo(), arr.specialBuffer(), arr.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
+
+    return std::move(arr);
+}
+template ND4J_EXPORT NDArray operator/(NDArray&& arr, const double& scalar);
+template ND4J_EXPORT NDArray operator/(NDArray&& arr, const float& scalar);
+template ND4J_EXPORT NDArray operator/(NDArray&& arr, const float16& scalar);
+template ND4J_EXPORT NDArray operator/(NDArray&& arr, const bfloat16& scalar);
+template ND4J_EXPORT NDArray operator/(NDArray&& arr, const long long& scalar);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator/(const NDArray& arr, const T& scalar) {
+
+    if (arr.isS())
+        throw std::runtime_error("operator/(const NDArray& arr, const T& scalar): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()), false, arr.getContext());
+
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::Divide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.buffer(), result.getShapeInfo(), result.specialBuffer(), result.getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
+
+    return result;
+}
+template ND4J_EXPORT NDArray operator/(const NDArray& arr, const double& scalar);
+template ND4J_EXPORT NDArray operator/(const NDArray& arr, const float& scalar);
+template ND4J_EXPORT NDArray operator/(const NDArray& arr, const float16& scalar);
+template ND4J_EXPORT NDArray operator/(const NDArray& arr, const bfloat16& scalar);
+template ND4J_EXPORT NDArray operator/(const NDArray& arr, const int& scalar);
+template ND4J_EXPORT NDArray operator/(const NDArray& arr, const long long& scalar);
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator/(const T& scalar, NDArray&& arr) {
+
+    if(arr.isView())                        // do not use resources of arrays which use buffers of other original arrays
+        return std::move(scalar / arr);     // arr is lvalue inside function body
+
+    if (arr.isS())
+        throw std::runtime_error("operator/(const T& scalar, NDArray&& arr): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+
+    NDArray::prepareSpecialUse({&arr}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), arr.getBuffer(), arr.getShapeInfo(), arr.specialBuffer(), arr.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&arr}, {&arr, &tmp});
+
+    return std::move(arr);
+
+}
+template ND4J_EXPORT NDArray operator/(const double& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator/(const float& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator/(const float16& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator/(const bfloat16& scalar, NDArray&& arr);
+template ND4J_EXPORT NDArray operator/(const int& scalar, NDArray&& arr);
+
+
+////////////////////////////////////////////////////////////////////////
+template <typename T, typename>
+NDArray operator/(const T& scalar, const NDArray& arr) {
+
+    if (arr.isS())
+        throw std::runtime_error("operator/(const T& scalar, const NDArray& arr): you can't use this method on String array!");
+
+    auto tmp = NDArrayFactory::create(arr.dataType(), scalar, arr.getContext());
+    NDArray result(arr.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr.dataType(), DataTypeUtils::fromT<T>()), false, arr.getContext());
+
+    NDArray::prepareSpecialUse({&result}, {&arr, &tmp});
+    NativeOpExecutioner::execScalar(arr.getContext(), nd4j::scalar::ReverseDivide, arr.getBuffer(), arr.getShapeInfo(), arr.getSpecialBuffer(), arr.getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo(), nullptr);
+    NDArray::registerSpecialUse({&result}, {&arr, &tmp});
+
+    return result;
+}
+template ND4J_EXPORT NDArray operator/(const double& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator/(const float& scalar, const NDArray& arr);
+template ND4J_EXPORT NDArray operator/(const int& scalar, const NDArray& arr);
+
+////////////////////////////////////////////////////////////////////////
+// addition operator array + array
+template <typename T1, typename T2, typename>
+NDArray operator+(T1&& arr1, T2&& arr2) {
+
+    if (arr1.isS() || arr2.isS())
+        throw std::runtime_error("operator+(T&& arr1, T&& arr2): you can't use this method on String arrays!");
+    if (!Environment::getInstance()->isExperimentalBuild() && arr1.dataType() != arr2.dataType() && (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL))
+        throw nd4j::datatype_exception::build("operator+(T&& arr1, T&& arr2): Cannot multiply different types", arr1.dataType(), arr2.dataType());
+
+    PointersManager pointersManager(arr1.getContext(), "operator+(T&& arr1, T&& arr2)");
+
+    if (arr1.lengthOf() == arr2.lengthOf() && arr1.rankOf() == arr2.rankOf()) {
+
+        const bool isArr1Rvalue = !std::is_reference<T1>::value && !arr1.isView();
+        const bool isArr2Rvalue = !std::is_reference<T2>::value && !arr2.isView();
+
+        NDArray* result = nullptr;
+        if(isArr1Rvalue)
+            result = const_cast<NDArray*>(&arr1);
+        else if(isArr2Rvalue)
+            result = const_cast<NDArray*>(&arr2);
+        else
+            result = new NDArray(arr1.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr1.getShapeInfo(), arr2.getShapeInfo()), false, arr1.getContext());
+
+        NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
+        NativeOpExecutioner::execPairwiseTransform(arr1.getContext(), nd4j::pairwise::Add, arr1.getBuffer(), arr1.getShapeInfo(), arr1.getSpecialBuffer(), arr1.getSpecialShapeInfo(), arr2.getBuffer(), arr2.getShapeInfo(), arr2.getSpecialBuffer(), arr2.getSpecialShapeInfo(), result->buffer(), result->getShapeInfo(), result->specialBuffer(), result->getSpecialShapeInfo(), nullptr);
+        NDArray::registerSpecialUse({result}, {&arr1, &arr2});
+
+        if(!isArr1Rvalue && !isArr2Rvalue) {
+            NDArray res = std::move(*result);
+            delete result;
+            return std::move(res);
+        }
+
+        return std::move(*result);
+    }
+
+    return std::forward<T1>(arr1).applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), std::forward<T2>(arr2));
+}
+template ND4J_EXPORT NDArray operator+<NDArray&, NDArray&, void>(NDArray& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator+<NDArray&, NDArray, void>(NDArray& arr1, NDArray&& arr2);
+template ND4J_EXPORT NDArray operator+<NDArray,  NDArray&, void>(NDArray&& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator+<NDArray&, const NDArray&, void>(NDArray& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator+<const NDArray&, NDArray&, void>(const NDArray& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator+<const NDArray&, NDArray, void>(const NDArray& arr1, NDArray&& arr2);
+template ND4J_EXPORT NDArray operator+<const NDArray&, const NDArray&, void>(const NDArray& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator+<NDArray, const NDArray&, void>(NDArray&& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator+<NDArray, NDArray, void>(NDArray&& arr1, NDArray&& arr2);
+
+////////////////////////////////////////////////////////////////////////
+// addition operator array - array
+template <typename T1, typename T2, typename>
+NDArray operator-(T1&& arr1, T2&& arr2) {
+
+    if (arr1.isS() || arr2.isS())
+        throw std::runtime_error("operator-(T&& arr1, T&& arr2): you can't use this method on String arrays!");
+    if (!Environment::getInstance()->isExperimentalBuild() && arr1.dataType() != arr2.dataType() && (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL))
+        throw nd4j::datatype_exception::build("operator-(T&& arr1, T&& arr2): Cannot multiply different types", arr1.dataType(), arr2.dataType());
+
+    PointersManager pointersManager(arr1.getContext(), "operator-(T&& arr1, T&& arr2)");
+
+    if (arr1.lengthOf() == arr2.lengthOf() && arr1.rankOf() == arr2.rankOf()) {
+
+        const bool isArr1Rvalue = !std::is_reference<T1>::value && !arr1.isView();
+        const bool isArr2Rvalue = !std::is_reference<T2>::value && !arr2.isView();
+
+        NDArray* result = nullptr;
+        if(isArr1Rvalue)
+            result = const_cast<NDArray*>(&arr1);
+        else if(isArr2Rvalue)
+            result = const_cast<NDArray*>(&arr2);
+        else
+            result = new NDArray(arr1.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr1.getShapeInfo(), arr2.getShapeInfo()), false, arr1.getContext());
+
+        NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
+        NativeOpExecutioner::execPairwiseTransform(arr1.getContext(), nd4j::pairwise::Subtract, arr1.getBuffer(), arr1.getShapeInfo(), arr1.getSpecialBuffer(), arr1.getSpecialShapeInfo(), arr2.getBuffer(), arr2.getShapeInfo(), arr2.getSpecialBuffer(), arr2.getSpecialShapeInfo(), result->buffer(), result->getShapeInfo(), result->specialBuffer(), result->getSpecialShapeInfo(), nullptr);
+        NDArray::registerSpecialUse({result}, {&arr1, &arr2});
+
+        if(!isArr1Rvalue && !isArr2Rvalue) {
+            NDArray res = std::move(*result);
+            delete result;
+            return std::move(res);
+        }
+
+        return std::move(*result);
+    }
+
+    return std::forward<T1>(arr1).applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), std::forward<T2>(arr2));
+}
+template ND4J_EXPORT NDArray operator-<NDArray&, NDArray&, void>(NDArray& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator-<NDArray&, NDArray, void>(NDArray& arr1, NDArray&& arr2);
+template ND4J_EXPORT NDArray operator-<NDArray,  NDArray&, void>(NDArray&& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator-<NDArray&, const NDArray&, void>(NDArray& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator-<const NDArray&, NDArray&, void>(const NDArray& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator-<const NDArray&, NDArray, void>(const NDArray& arr1, NDArray&& arr2);
+template ND4J_EXPORT NDArray operator-<const NDArray&, const NDArray&, void>(const NDArray& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator-<NDArray, const NDArray&, void>(NDArray&& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator-<NDArray, NDArray, void>(NDArray&& arr1, NDArray&& arr2);
+
+////////////////////////////////////////////////////////////////////////
+// multiplication operator array*array
+template <typename T1, typename T2, typename>
+NDArray operator*(T1&& arr1, T2&& arr2) {
+
+    if (arr1.isS() || arr2.isS())
+        throw std::runtime_error("operator*(T&& arr1, T&& arr2): you can't use this method on String arrays!");
+    if (!Environment::getInstance()->isExperimentalBuild() && arr1.dataType() != arr2.dataType() && (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL))
+        throw nd4j::datatype_exception::build("operator*(T&& arr1, T&& arr2): Cannot multiply different types", arr1.dataType(), arr2.dataType());
+
+    PointersManager pointersManager(arr1.getContext(), "operator*(T&& arr1, T&& arr2)");
+
+    if (arr1.lengthOf() == arr2.lengthOf() && arr1.rankOf() == arr2.rankOf()) {
+
+        const bool isArr1Rvalue = !std::is_reference<T1>::value && !arr1.isView();
+        const bool isArr2Rvalue = !std::is_reference<T2>::value && !arr2.isView();
+
+        NDArray* result = nullptr;
+        if(isArr1Rvalue)
+            result = const_cast<NDArray*>(&arr1);
+        else if(isArr2Rvalue)
+            result = const_cast<NDArray*>(&arr2);
+        else
+            result = new NDArray(arr1.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr1.getShapeInfo(), arr2.getShapeInfo()), false, arr1.getContext());
+
+        NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
+        NativeOpExecutioner::execPairwiseTransform(arr1.getContext(), nd4j::pairwise::Multiply, arr1.getBuffer(), arr1.getShapeInfo(), arr1.getSpecialBuffer(), arr1.getSpecialShapeInfo(), arr2.getBuffer(), arr2.getShapeInfo(), arr2.getSpecialBuffer(), arr2.getSpecialShapeInfo(), result->buffer(), result->getShapeInfo(), result->specialBuffer(), result->getSpecialShapeInfo(), nullptr);
+        NDArray::registerSpecialUse({result}, {&arr1, &arr2});
+
+        if(!isArr1Rvalue && !isArr2Rvalue) {
+            NDArray res = std::move(*result);
+            delete result;
+            return std::move(res);
+        }
+
+        return std::move(*result);
+    }
+
+    return std::forward<T1>(arr1).applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), std::forward<T2>(arr2));
+}
+template ND4J_EXPORT NDArray operator*<NDArray&, NDArray&, void>(NDArray& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator*<NDArray&, NDArray, void>(NDArray& arr1, NDArray&& arr2);
+template ND4J_EXPORT NDArray operator*<NDArray,  NDArray&, void>(NDArray&& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator*<NDArray&, const NDArray&, void>(NDArray& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator*<const NDArray&, NDArray&, void>(const NDArray& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator*<const NDArray&, NDArray, void>(const NDArray& arr1, NDArray&& arr2);
+template ND4J_EXPORT NDArray operator*<const NDArray&, const NDArray&, void>(const NDArray& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator*<NDArray, const NDArray&, void>(NDArray&& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator*<NDArray, NDArray, void>(NDArray&& arr1, NDArray&& arr2);
+
+////////////////////////////////////////////////////////////////////////
+// multiplication operator array*array
+template <typename T1, typename T2, typename>
+NDArray operator/(T1&& arr1, T2&& arr2) {
+
+    if (arr1.isS() || arr2.isS())
+        throw std::runtime_error("operator/(T&& arr1, T&& arr2): you can't use this method on String arrays!");
+    if (!Environment::getInstance()->isExperimentalBuild() && arr1.dataType() != arr2.dataType() && (arr1.dataType() != DataType::BOOL || arr2.dataType() != BOOL))
+        throw nd4j::datatype_exception::build("operator/(T&& arr1, T&& arr2): Cannot multiply different types", arr1.dataType(), arr2.dataType());
+
+    PointersManager pointersManager(arr1.getContext(), "operator/(T&& arr1, T&& arr2)");
+
+    if (arr1.lengthOf() == arr2.lengthOf() && arr1.rankOf() == arr2.rankOf()) {
+
+        const bool isArr1Rvalue = !std::is_reference<T1>::value && !arr1.isView();
+        const bool isArr2Rvalue = !std::is_reference<T2>::value && !arr2.isView();
+
+        NDArray* result = nullptr;
+        if(isArr1Rvalue)
+            result = const_cast<NDArray*>(&arr1);
+        else if(isArr2Rvalue)
+            result = const_cast<NDArray*>(&arr2);
+        else
+            result = new NDArray(arr1.getShapeInfo(), DataTypeUtils::pickPairwiseResultType(arr1.getShapeInfo(), arr2.getShapeInfo()), false, arr1.getContext());
+
+        NDArray::prepareSpecialUse({result}, {&arr1, &arr2});
+        NativeOpExecutioner::execPairwiseTransform(arr1.getContext(), nd4j::pairwise::Divide, arr1.getBuffer(), arr1.getShapeInfo(), arr1.getSpecialBuffer(), arr1.getSpecialShapeInfo(), arr2.getBuffer(), arr2.getShapeInfo(), arr2.getSpecialBuffer(), arr2.getSpecialShapeInfo(), result->buffer(), result->getShapeInfo(), result->specialBuffer(), result->getSpecialShapeInfo(), nullptr);
+        NDArray::registerSpecialUse({result}, {&arr1, &arr2});
+
+        if(!isArr1Rvalue && !isArr2Rvalue) {
+            NDArray res = std::move(*result);
+            delete result;
+            return std::move(res);
+        }
+
+        return std::move(*result);
+    }
+
+    return std::forward<T1>(arr1).applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), std::forward<T2>(arr2));
+}
+template ND4J_EXPORT NDArray operator/<NDArray&, NDArray&, void>(NDArray& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator/<NDArray&, NDArray, void>(NDArray& arr1, NDArray&& arr2);
+template ND4J_EXPORT NDArray operator/<NDArray,  NDArray&, void>(NDArray&& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator/<NDArray&, const NDArray&, void>(NDArray& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator/<const NDArray&, NDArray&, void>(const NDArray& arr1, NDArray& arr2);
+template ND4J_EXPORT NDArray operator/<const NDArray&, NDArray, void>(const NDArray& arr1, NDArray&& arr2);
+template ND4J_EXPORT NDArray operator/<const NDArray&, const NDArray&, void>(const NDArray& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator/<NDArray, const NDArray&, void>(NDArray&& arr1, const NDArray& arr2);
+template ND4J_EXPORT NDArray operator/<NDArray, NDArray, void>(NDArray&& arr1, NDArray&& arr2);
 
 
 /*

@@ -31,10 +31,10 @@ namespace nd4j {
             REQUIRE_TRUE(w->isMatrix(), 0, "relu_layer: weights argument should be a 2D tensor, but got rank %i instead!", w->rankOf());
             REQUIRE_TRUE(b->isVector(), 0, "relu_layer: biases argument should be a 1D tensor, but got rank %i instead!", b->rankOf());
             REQUIRE_TRUE(b->lengthOf() == w->sizeAt(1), 0, "relu_layer: biases array length should match to columns of weights matrix, however got length = %i and columns = %i!", b->lengthOf(), w->sizeAt(1));
-            REQUIRE_TRUE(x->sizeAt(1) == w->sizeAt(0), 0, "relu_layer: number of x columns should match to row number of weights matrix, but got x_columns = %i and weights_rows = %i!", 
+            REQUIRE_TRUE(x->sizeAt(1) == w->sizeAt(0), 0, "relu_layer: number of x columns should match to row number of weights matrix, but got x_columns = %i and weights_rows = %i!",
                 x->sizeAt(1), w->sizeAt(0));
 
-            
+
             auto output = OUTPUT_VARIABLE(0);
             //T bound = (T)0.f;
             //nd4j_printf("Matrix x(%ix%i), Matrix w(%ix%i), b(1x%i)\n", x->sizeAt(0), x->sizeAt(1), w->sizeAt(0), w->sizeAt(1), b->lengthOf());
@@ -46,7 +46,7 @@ namespace nd4j {
             auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
             auto xw = result->at(0);
-            xw->applyScalar(nd4j::scalar::RELU, scalar, output);
+            xw->applyScalar(nd4j::scalar::RELU, scalar, *output);
 
             return Status::OK();
         }
@@ -55,7 +55,7 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
             auto weightsShape = inputShape->at(1);
             auto outputShape = ShapeUtils::matrixProductShape(inShape, weightsShape, false, false, ArrayOptions::dataType(inShape), block.getWorkspace());
-            
+
             return SHAPELIST(CONSTANT(outputShape));
         }
 

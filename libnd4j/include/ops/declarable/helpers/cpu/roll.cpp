@@ -40,8 +40,8 @@ namespace helpers {
 
         if (actualShift) {
             int shiftCount = fullLen / actualShift - 1;
-            int remainShift = fullLen % actualShift; 
-            
+            int remainShift = fullLen % actualShift;
+
             // stage 1) swap last actualShift elements with first ones.
             //PRAGMA_OMP_PARALLEL_FOR //_IF(actualShift > Environment::getInstance()->elementwiseThreshold())
             for (int e = 0; e < actualShift; ++e) {
@@ -70,7 +70,7 @@ namespace helpers {
                     output->p<T>(sourceIndex, _e0);
                 }
             }
-            
+
             // stage 3) swap remainer of items.
             if (remainShift && shiftCount)
             for (int i = actualShift; i < 2 * actualShift; ++i) {
@@ -94,9 +94,9 @@ namespace helpers {
         for (size_t i = 0; i < axes.size(); i++) {
             int axe = axes[i];
             if (axe == source->rankOf() - 1) {// last dimension
-                std::unique_ptr<ResultSet> listOfTensors(source->allTensorsAlongDimension({axe}));
-                std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension({axe}));
-                int fullLen = listOfTensors->size();
+                ResultSet listOfTensors = source->allTensorsAlongDimension({axe});
+                ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
+                int fullLen = listOfTensors.size();
                 int theShift = shifts[i];
                 if (theShift > 0) {
                     theShift %= fullLen;
@@ -105,7 +105,7 @@ namespace helpers {
                         theShift -= fullLen * (theShift / fullLen - 1);
                 }
                 for (int k = 0; k < fullLen; k++) {
-                    rollFunctorLinear(context, listOfTensors->at(k), listOfOutTensors->at(k), theShift, true);
+                    rollFunctorLinear(context, listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
                 }
             }
             else {
@@ -113,10 +113,10 @@ namespace helpers {
                 for (int i = 0; i < dims.size(); ++i)
                     dims[i] = axe + 1 + i;
 
-                std::unique_ptr<ResultSet> listOfTensors(source->allTensorsAlongDimension({dims}));
-                std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension({dims}));
+                ResultSet listOfTensors = source->allTensorsAlongDimension({dims});
+                ResultSet listOfOutTensors = output->allTensorsAlongDimension({dims});
                 //
-                int fullLen = listOfTensors->size();
+                int fullLen = listOfTensors.size();
                 int sizeAt = input->sizeAt(axe);
 
                 int theShift = shifts[i];
@@ -131,16 +131,16 @@ namespace helpers {
                 if (theShift) {
                     for (int dim = 0; dim < fullLen / sizeAt; ++dim) {
                         for (int e = theShift; e < sizeAt - theShift; ++e) {
-                            auto sourceM = listOfTensors->at(dim * sizeAt + e - theShift);
-                            auto targetM = listOfOutTensors->at(dim * sizeAt + e);
+                            auto sourceM = listOfTensors.at(dim * sizeAt + e - theShift);
+                            auto targetM = listOfOutTensors.at(dim * sizeAt + e);
                             sourceM->swapUnsafe(*targetM);
                         }
-    
+
                         for (int e = 0; e < theShift; ++e) {
                             int sourceIndex = dim * sizeAt + sizeAt - theShift + e;
-                            auto sourceM = listOfTensors->at(sourceIndex);
-                            auto targetM = listOfOutTensors->at(dim * sizeAt + e);
-    
+                            auto sourceM = listOfTensors.at(sourceIndex);
+                            auto targetM = listOfOutTensors.at(dim * sizeAt + e);
+
                             sourceM->swapUnsafe(*targetM);
                         }
                     }

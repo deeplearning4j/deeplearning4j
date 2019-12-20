@@ -29,7 +29,7 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            x->applyTransform(transform::Rint, z);
+            x->applyTransform(transform::Rint, *z);
 
             return Status::OK();
         }

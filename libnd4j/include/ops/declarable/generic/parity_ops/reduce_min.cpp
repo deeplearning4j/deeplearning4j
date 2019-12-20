@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(reduce_min, 1, 1, false, 0, 0) {
     else if (block.getTArguments()->size() > 0)
         keepDims = (bool)T_ARG(0);
 
-    input->reduceAlongDimension(reduce::Min, output, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::Min, *output, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -89,7 +89,7 @@ DECLARE_TYPES(reduce_min) {
 }
 
 
-#endif 
+#endif
 
 
 #if NOT_EXCLUDED(OP_reduce_min_bp)
@@ -125,8 +125,7 @@ CUSTOM_OP_IMPL(reduce_min_bp, 2, 1, false, 0, 0) {
     else {
 
         auto indicesArr = input->applyIndexReduce(nd4j::indexreduce::IndexMin, dimensions);
-        helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, *indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));  // 6 corresponds to copy operation
-        delete indicesArr;
+        helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));  // 6 corresponds to copy operation
     }
 
     return Status::OK();

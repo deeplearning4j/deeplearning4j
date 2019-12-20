@@ -52,7 +52,7 @@ CUSTOM_OP_IMPL(reduce_max, 1, 1, false, 0, 0) {
     else if (block.getTArguments()->size() > 0)
         keepDims = (bool)T_ARG(0);
 
-    input->reduceAlongDimension(reduce::Max, output, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::Max, *output, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -122,8 +122,7 @@ CUSTOM_OP_IMPL(reduce_max_bp, 2, 1, false, 0, 0) {
     else {
 
         auto indicesArr = input->applyIndexReduce(nd4j::indexreduce::IndexMax, dimensions);
-        helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, *indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions)); // 6 corresponds to copy operation
-        delete indicesArr;
+        helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions)); // 6 corresponds to copy operation
     }
 
     return Status::OK();

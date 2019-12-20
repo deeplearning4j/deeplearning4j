@@ -2356,7 +2356,7 @@ TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_1) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2378,7 +2378,7 @@ TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_2) {
     auto result = results->at(0);
 //    result->printIndexedBuffer("REDUCE_LOGSUMEXP");
 //    expected.printIndexedBuffer("LSE EXPECTED");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2398,7 +2398,7 @@ TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_3) {
     auto result = results->at(0);
 //    result->printIndexedBuffer("REDUCE_LOGSUMEXP");
 //    expected.printIndexedBuffer("LSE EXPECTED");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2419,7 +2419,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
     NDArray* result = results->at(0);
     //result->printIndexedBuffer("OOOOUUUUTTT");
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2440,7 +2440,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
 
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppression OUtput2");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2462,7 +2462,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_3) {
 
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppression OUtput3");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2485,7 +2485,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_4) {
 
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppression OUtput4");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2507,7 +2507,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_5) {
 
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppression OUtput4");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2531,7 +2531,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_6) {
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppression OUtput6");
 //    result->printShapeInfo("Ouput6 shape is");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2555,7 +2555,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_06) {
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppression OUtput06");
 //    result->printShapeInfo("Ouput06 shape is");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2602,7 +2602,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_1) {
 
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppressionOverlap1 Output");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2627,7 +2627,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_2) {
 
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppressionOverlap Output");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2652,7 +2652,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_3) {
 
     NDArray* result = results->at(0);
 //    result->printBuffer("NonMaxSuppressionOverlap Output");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2677,7 +2677,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
     auto result = results->at(0);
 //    result->printIndexedBuffer("Cropped and Resized");
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2701,7 +2701,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2725,7 +2725,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2749,7 +2749,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
 
     auto result = results->at(0);
     // result->printIndexedBuffer("Cropped and Resized");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2773,7 +2773,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_5) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     //ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2811,7 +2811,7 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
     result->syncToHost();
 //    result->printBuffer("Bounded boxes");
 //    expected.printBuffer("Bounded expec");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2844,7 +2844,7 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_2) {
 //    result->syncToHost();
 //    result->printBuffer("Bounded boxes 2");
 //    expected.printBuffer("Bounded expec 2");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2899,7 +2899,7 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_3) {
 //    result->syncToHost();
 //    result->printBuffer("Bounded boxes 2");
 //    expected.printBuffer("Bounded expec 2");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -2921,7 +2921,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
     auto result = results->at(0);
 //    result->printBuffer("Quantized");
 //    exp.printBuffer("Expected");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -2941,7 +2941,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_2) {
 
     auto result = results->at(0);
     // result->printIndexedBuffer("Quantized2");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -2962,7 +2962,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_3) {
 
     auto result = results->at(0);
     // result->printIndexedBuffer("Quantized2");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -2986,7 +2986,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_03) {
 
     auto result = results->at(0);
 //    result->printIndexedBuffer("Quantized03");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3009,7 +3009,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_03_1) {
 
     auto result = results->at(0);
 //    result->printIndexedBuffer("Quantized03_1");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3033,7 +3033,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_03_2) {
 
     auto result = results->at(0);
     result->printIndexedBuffer("Quantized03_2");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3056,7 +3056,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_03_3) {
 
     auto result = results->at(0);
     result->printIndexedBuffer("Quantized03_3");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3094,7 +3094,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_4) {
 //    exp.printBuffer("Quantized per channest E");
 //    auto diff = *result - exp;
 //    diff.printIndexedBuffer("Difference");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3148,7 +3148,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_5) {
 //    auto diff = *result - exp;
 //    diff.printIndexedBuffer("Difference");
 
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3182,7 +3182,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_6) {
 //    auto diff = *result - exp;
 //    diff.printIndexedBuffer("Difference");
 
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3225,7 +3225,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_7) {
     auto result = results->at(0);
 //     result->printBuffer("Quantized7");
 //     exp.printBuffer("Expected 7");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3251,7 +3251,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_8) {
 //    x.printBuffer("SourInput8");
 //    result->printBuffer("Quantized8");
 //    exp.printBuffer("Expected 8");
-    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.isSameShapeStrict(*result));
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
@@ -3279,7 +3279,7 @@ TEST_F(DeclarableOpsTests10, batchnorm_test1) {
     auto output = results->at(0);
     // output->printBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3294,7 +3294,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test2) {
     auto gamma    = NDArrayFactory::create<TypeParam>('c', {4});
     auto beta     = NDArrayFactory::create<TypeParam>('c', {4});
 
-    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-0.52733537f, -0.35763144f, -0.18792751f, -0.01822358f, 0.15148035f, 0.32118428f, 0.49088821f, 0.66059214f, 0.83029607f, 1.f, 1.16970393f, 1.33940786f, 
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-0.52733537f, -0.35763144f, -0.18792751f, -0.01822358f, 0.15148035f, 0.32118428f, 0.49088821f, 0.66059214f, 0.83029607f, 1.f, 1.16970393f, 1.33940786f,
                                             1.50911179f, 1.67881572f, 1.84851965f, 2.01822358f, 2.18792751f, 2.35763144f, 2.52733537f, 2.6970393f, 2.86674323f, 3.03644717f, 3.2061511f, 3.37585503f});
 
     input.linspace(0.1, 0.1);
@@ -3312,7 +3312,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test2) {
     auto output = results->at(0);
     // output->printBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3327,7 +3327,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test3) {
     auto gamma    = NDArrayFactory::create<TypeParam>('c', {3}, {1.2f, 1.3f, 1.4f});
     auto beta     = NDArrayFactory::create<TypeParam>('c', {3}, {0.1f, 0.2f, 0.3f});
 
-    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734f, -1.34248341f, -1.17277948f, -1.00307555f, -0.80696728f, -0.6391394f, -0.47131152f, -0.30348364f, -0.11832703f, 0.04900378f, 0.21633459f, 0.38366541f, 
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734f, -1.34248341f, -1.17277948f, -1.00307555f, -0.80696728f, -0.6391394f, -0.47131152f, -0.30348364f, -0.11832703f, 0.04900378f, 0.21633459f, 0.38366541f,
                                             0.52425983f, 0.69396376f, 0.86366769f, 1.03337162f, 1.20696728f, 1.37479516f, 1.54262304f, 1.71045092f, 1.8896427f, 2.05697351f, 2.22430432f, 2.39163513f});
 
     input.linspace(0.1, 0.1);
@@ -3340,7 +3340,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test3) {
 
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3355,7 +3355,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test4) {
     auto gamma    = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f});
     auto beta     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.66f, 0.7f, 0.8f});
 
-    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734f, -1.31045092f, -1.12231189f, -0.9416324f, -0.83337162f, -0.6391394f, -0.45298865f, -0.2708162f, -0.1545559f, 0.03217212f, 0.21633459f, 0.4f, 
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734f, -1.31045092f, -1.12231189f, -0.9416324f, -0.83337162f, -0.6391394f, -0.45298865f, -0.2708162f, -0.1545559f, 0.03217212f, 0.21633459f, 0.4f,
                                             0.58432694f, 0.82999915f, 0.95743373f, 1.14688951f, 1.25894242f, 1.50999575f, 1.64392367f, 1.84066852f, 1.93355791f, 2.18999235f, 2.33041362f, 2.53444754f});
 
     input.linspace(0.1, 0.1);
@@ -3368,7 +3368,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test4) {
 
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3397,7 +3397,7 @@ TEST_F(DeclarableOpsTests10, batchnorm_test5) {
     auto output = results->at(0);
     // output->printBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3425,7 +3425,7 @@ TEST_F(DeclarableOpsTests10, batchnorm_test6) {
 
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3441,7 +3441,7 @@ TEST_F(DeclarableOpsTests10, bool_broadcast_test_1) {
 
     NDArray result('c', {2,2,2}, nd4j::DataType::BOOL);
 
-    arr1.applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple::custom(scalar::EqualTo, pairwise::EqualTo, broadcast::EqualTo), &arr2, &result, true, nullptr);
+    arr1.applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple::custom(scalar::EqualTo, pairwise::EqualTo, broadcast::EqualTo), arr2, result, true);
     // result.printIndexedBuffer();
     // expd.printIndexedBuffer();
 
@@ -3474,7 +3474,7 @@ TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
 //   [[5 6]
 //    [7 8]]]
 //
-    ResultSet* lastDims = arr.allTensorsAlongDimension({3}); // last dim
+    ResultSet lastDims = arr.allTensorsAlongDimension({3}); // last dim
     size_t k = 0; // k from 0 to lastDims->size()
     Nd4jLong rank = 4; // in this case
     printf("[");
@@ -3488,15 +3488,13 @@ TEST_F(DeclarableOpsTests10, printIndexedTest_1) {
             //        printf("[");
             //    else
             //        printf(" ");
-            lastDims->at(k++)->printBuffer();
+            lastDims.at(k++)->printBuffer();
         //if (k == arr.sizeAt(i))
         //    printf("]\n");
         }
         printf("]\n");
     }
     printf("]\n");
-    delete lastDims;
-
 }
 
 

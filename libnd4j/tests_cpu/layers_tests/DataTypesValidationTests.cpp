@@ -126,8 +126,8 @@ TEST_F(DataTypesValidationTests, cast_1) {
     float16 x = static_cast<float16>(1.f);
     float y = static_cast<float16>(x);
 
-    ASSERT_TRUE(1.f == x);
-    ASSERT_TRUE(y == x);
+    ASSERT_TRUE(static_cast<float16>(1.f) == x);
+    ASSERT_TRUE(y == static_cast<float>(x));
 }
 
 TEST_F(DataTypesValidationTests, test_bits_hamming_distance_1) {

@@ -40,22 +40,19 @@ namespace nd4j {
                 shift.assign(T_ARG(0));
             }
 
-            means->applyScalarArr(scalar::Divide, counts, resMeans, nullptr);
+            means->applyScalarArr(scalar::Divide, *counts, *resMeans);
 
-            NDArray* squareMeans = resMeans->dup('c');
-            NDArray* tempVariances = resVariances->dup('c');
+            NDArray squareMeans = resMeans->dup('c');
+            NDArray tempVariances = resVariances->dup('c');
 
-            squareMeans->applyTransform(transform::Square, squareMeans, nullptr);
-            variances->applyScalarArr(scalar::Divide, counts, tempVariances, nullptr);
-//            tempVariances->printIndexedBuffer("varianced divided by count");
-            tempVariances->applyPairwiseTransform(pairwise::Subtract, squareMeans, resVariances, nullptr);
+            squareMeans.applyTransform(transform::Square, squareMeans, nullptr);
+            variances->applyScalarArr(scalar::Divide, *counts, tempVariances);
+//            tempVariances.printIndexedBuffer("varianced divided by count");
+            tempVariances.applyPairwiseTransform(pairwise::Subtract, squareMeans, *resVariances);
 
             if (shift.e<double>(0) != 0) {
-                resMeans->applyScalarArr(scalar::Add, &shift, resMeans, nullptr);
+                resMeans->applyScalarArr(scalar::Add, shift, *resMeans);
             }
-
-            delete squareMeans;
-            delete tempVariances;
 
             return Status::OK();
         }

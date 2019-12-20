@@ -649,7 +649,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
                     int r = rng.relativeInt(i) % i;
 
                     if(i != r)
-                        subArrsListIn->at(i)->swapUnsafe(*subArrsListIn->at(r));
+                        subArrsListIn.at(i)->swapUnsafe(*subArrsListIn.at(r));
                 }
             }
             else {
@@ -661,21 +661,19 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 
                 for(int i = firstDim - 1; i > 0; --i) {
                     int r = rng.relativeInt(i) % i;
-                    subArrsListOut->at(i)->assign(subArrsListIn->at(indices[r]));
+                    subArrsListOut.at(i)->assign(subArrsListIn.at(indices[r]));
                     if(r == 0)
                         isZeroShuffled = true;
 
                     if(i != r) {
-                        subArrsListOut->at(r)->assign(subArrsListIn->at(indices[i]));
+                        subArrsListOut.at(r)->assign(subArrsListIn.at(indices[i]));
                         math::nd4j_swap<int>(indices[i], indices[r]);
                     }
                 }
                 if(!isZeroShuffled)
-                    subArrsListOut->at(0)->assign(subArrsListIn->at(0));
-                delete subArrsListOut;
+                    subArrsListOut.at(0)->assign(subArrsListIn.at(0));
             }
             rng.rewindH(firstDim-1);
-            delete subArrsListIn;
         }
         NDArray::registerSpecialUse({&output}, {&input});
 
@@ -747,7 +745,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
     template<typename T>
     static void clipByNorm_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, NDArray const& clipNormA, const bool isInplace) {
         const int rank = input.rankOf();
-        auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
+        auto norm2 = input.reduceAlongDimension(reduce::Norm2, dimensions);
         clipNormA.syncToHost();
         //norm2.printBuffer("Norm2");
         T const clipNorm = clipNormA.e<T>(0);
@@ -814,10 +812,10 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
             globalNorm += l2norm * l2norm;
         }
 
-        globalNorm.applyTransform(transform::Sqrt, nullptr, nullptr);// = nd4j::math::nd4j_sqrt(globalNorm);
+        globalNorm.applyTransform(transform::Sqrt, globalNorm);     // = nd4j::math::nd4j_sqrt(globalNorm);
         outputs[inputs.size()]->p(0, globalNorm);
         globalNorm.syncToHost();
-        const T factor = clipNorm / globalNorm.e<T>(0);
+        const T factor = static_cast<T>(clipNorm) / globalNorm.e<T>(0);
 
         for (size_t e = 0; e < inputs.size(); e++) {
             // all-reduce
@@ -830,7 +828,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
             else {
 
                 auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-                input->applyLambda(lambda, output);
+                input->applyLambda(lambda, *output);
             }
         }
     }
@@ -848,7 +846,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
         auto cn = clipNorm.e<T>(0);
         if (dimensions.size() == 0) {
             // all-reduce
-            T n2 = input.reduceNumber(reduce::Norm2).e<T>(0) / input.lengthOf();
+            T n2 = input.reduceNumber(reduce::Norm2).e<T>(0) / static_cast<T>(input.lengthOf());
             if (n2 <= cn) {
                 if (!isInplace)
                     output.assign(input);
@@ -856,28 +854,26 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
             else {
                 const T factor = cn / n2;
                 //auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-                //input.applyLambda<T>(lambda, &output);
+                //input.applyLambda<T>(lambda, output);
                 output.assign(input * factor);
             }
         }
         else {
             // along dimension
-            auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions, false);
+            auto norm2 = input.reduceAlongDimension(reduce::Norm2, dimensions, false);
             if (!isInplace)
                 output.assign(input);
             auto tads = output.allTensorsAlongDimension(dimensions);
             auto outTads = output.allTensorsAlongDimension(dimensions);
             // TODO: make this CUDA-compliant somehow
-            for (int e = 0; e < tads->size(); e++) {
-                T n2 = norm2.e<T>(e) / tads->at(e)->lengthOf();
+            for (int e = 0; e < tads.size(); e++) {
+                T n2 = norm2.e<T>(e) / static_cast<T>(tads.at(e)->lengthOf());
                 const T factor = cn / n2;
                 if (n2 > cn) {
                     //auto lambda = LAMBDA_T(_x, factor) {return _x * factor;};
-                    tads->at(e)->applyScalar(scalar::Multiply, factor, outTads->at(e));//applyLambda<T>(lambda, &output);
+                    tads.at(e)->applyScalar(scalar::Multiply, factor, *outTads.at(e));//applyLambda<T>(lambda, &output);
                 }
             }
-            delete tads;
-            delete outTads;
         }
     }
 

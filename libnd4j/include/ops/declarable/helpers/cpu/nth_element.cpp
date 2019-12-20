@@ -51,12 +51,12 @@ namespace helpers {
 
             SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), pack.primaryShapeInfo(), pack.primaryOffsets(), reverse);
 
-            std::unique_ptr<ResultSet> rows(sortedVals.allTensorsAlongDimension(lastDims));
+            ResultSet rows = sortedVals.allTensorsAlongDimension(lastDims);
             Nd4jLong oL = output->lengthOf();
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto e = start; e < stop; e += increment) {
-                    auto row = rows->at(e);
+                    auto row = rows.at(e);
                     output->p(e, row->e<T>(n));
                 }
             };
@@ -70,7 +70,7 @@ namespace helpers {
 
     }
     BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (NDArray* input, Nd4jLong n, NDArray* output, bool reverse), LIBND4J_TYPES);
-    
+
 }
 }
 }

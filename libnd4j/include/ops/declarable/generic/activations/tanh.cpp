@@ -30,7 +30,7 @@ namespace nd4j {
             auto first = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            first->applyTransform(nd4j::transform::Tanh, z, nullptr);
+            first->applyTransform(nd4j::transform::Tanh, *z);
 
             STORE_RESULT(*z);
 

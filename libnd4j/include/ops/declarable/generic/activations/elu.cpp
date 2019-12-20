@@ -32,7 +32,7 @@ namespace nd4j {
 
             const auto alpha = block.numT() > 0 ? T_ARG(0) : 1.f;
 
-            input->applyScalar(nd4j::scalar::ELU, alpha, output);
+            input->applyScalar(nd4j::scalar::ELU, alpha, *output);
 
             return Status::OK();
         }

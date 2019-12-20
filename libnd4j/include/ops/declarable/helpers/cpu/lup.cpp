@@ -264,14 +264,14 @@ namespace helpers {
         auto n = input->sizeAt(-1);
 
         output->assign(input); // fill up output tensor with zeros
-        std::unique_ptr<ResultSet> outputs(output->allTensorsAlongDimension({-2, -1}));
-        std::unique_ptr<ResultSet> permutations(permutationVectors->allTensorsAlongDimension({-1}));
+        ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
+        ResultSet permutations = permutationVectors->allTensorsAlongDimension({-1});
         auto loop = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment) {
-                luNN_<T, I>(context, outputs->at(i), permutations->at(i), n);
+                luNN_<T, I>(context, outputs.at(i), permutations.at(i), n);
             }
         };
-        samediff::Threads::parallel_for(loop, 0, outputs->size(), 1);
+        samediff::Threads::parallel_for(loop, 0, outputs.size(), 1);
     }
 
     void lu(LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation) {
@@ -384,13 +384,13 @@ template <typename T>
     template <typename T>
     static bool checkCholeskyInput_(nd4j::LaunchContext * context, NDArray const* input) {
         //std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType())); //, block.getWorkspace());
-        std::unique_ptr<ResultSet> lastMatrixList(input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf()-1}));
-        for (size_t i = 0; i < lastMatrixList->size(); i++) {
-            auto thisMatrix = lastMatrixList->at(i);
+        ResultSet lastMatrixList = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf()-1});
+        for (size_t i = 0; i < lastMatrixList.size(); i++) {
+            auto thisMatrix = lastMatrixList.at(i);
             // check for symmetric
             for (Nd4jLong r = 0; r < thisMatrix->rows(); r++)
                 for (Nd4jLong c = 0; c < thisMatrix->columns(); c++)
-                    if (nd4j::math::nd4j_abs(thisMatrix->e<T>(r, c) - lastMatrixList->at(i)->e<T>(c,r)) > DataTypeUtils::min<T>()) return false;
+                    if (nd4j::math::nd4j_abs(thisMatrix->e<T>(r, c) - lastMatrixList.at(i)->e<T>(c,r)) > DataTypeUtils::min<T>()) return false;
 
             NDArray output = NDArrayFactory::create<T>(0., context);
             if (ND4J_STATUS_OK != determinant(context, thisMatrix, &output)) return false;
@@ -459,21 +459,18 @@ template <typename T>
 
     template <typename T>
     int logdetFunctor_(LaunchContext *context, NDArray* input, NDArray* output) {
-        std::unique_ptr<NDArray> tempOutput(input->dup());
-        int res = cholesky_<T>(context, input, tempOutput.get(), false);
+        auto tempOutput = input->dup();
+        int res = cholesky_<T>(context, input, &tempOutput, false);
         if (res != ND4J_STATUS_OK)
             return res;
         auto n = input->sizeAt(-1);
         auto totalCount = output->lengthOf();
         std::vector<T> d(n);
-        std::unique_ptr<ResultSet> matricies(tempOutput->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
-        std::unique_ptr<ResultSet> inputMatricies(input->allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1}));
-        for (Nd4jLong e = 0; e < totalCount; e++) {
+        ResultSet matricies = tempOutput.allTensorsAlongDimension({input->rankOf()-2, input->rankOf() - 1});
 
-            //d[0] = inputMatricies->at(e)->t<T>(0, 0);
-            for (size_t i = 0; i < n; ++i) {
-                output->t<T>(e) += nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_pow<T,T,T>(matricies->at(e)->t<T>(i, i), T(2)));
-            }
+        for (Nd4jLong e = 0; e < totalCount; e++) {
+            for (size_t i = 0; i < n; ++i)
+                output->t<T>(e) += nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_pow<T,T,T>(matricies.at(e)->t<T>(i, i), T(2)));
         }
         return ND4J_STATUS_OK;
     }

@@ -63,11 +63,11 @@ namespace nd4j {
                 sparse2dense.insert(pair);
             }
 
-            std::unique_ptr<ResultSet> rows(x->allTensorsAlongDimension({1}));
+            ResultSet rows = x->allTensorsAlongDimension({1});
 
             //PRAGMA_OMP_PARALLEL_FOR
             for (int r = 0; r < batchSize; r++) {
-                auto row = rows->at(r);
+                auto row = rows.at(r);
 
                 for (int e = 0; e < numColumns; e += 2) {
                     int idx = row->e<int>(e);

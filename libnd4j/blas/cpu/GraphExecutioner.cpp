@@ -104,7 +104,7 @@ namespace graph {
     if (node->id() == 13)
         nd4j_debug("","");
 
-    // if true - this is special case: Graph-in-Graph. 
+    // if true - this is special case: Graph-in-Graph.
     if (node->hasGraphEmbedded()) {
         auto embedded = node->getGraph();
 
@@ -128,12 +128,12 @@ namespace graph {
         int cnt = 0;
         for (Variable* v: *embedded->getPlaceholders()) {
             if (v->getName() != nullptr && v->getName()->size() > 0) {
-                
+
                 // trying symbolic lookup first
                 if (variableSpace->hasVariable(v->getName())) {
                     // symbolic feeder
                     auto array = variableSpace->getVariable(v->getName())->getNDArray();
-                    auto vr = array->dup();
+                    auto vr = new NDArray(array->dup());
 //                    deletables.push_back(vr);
                     v->setNDArray(vr);
                 } else {
@@ -145,7 +145,7 @@ namespace graph {
                 // if we're not using symbolic lookup - we'll use sequential approach then
                 auto p = node->input()->at(cnt);
                 auto array = variableSpace->getVariable(p)->getNDArray();
-                auto vr = array->dup();
+                auto vr = new NDArray(array->dup());
                 //deletables.push_back(vr);
                 v->setNDArray(vr);
             }
@@ -501,7 +501,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
 }
 
 /**
- * This method is provided for IPC: 
+ * This method is provided for IPC:
  * 1) it accepts pointer to FlatBuffers buffer
  * 2) restores Graph from it
  * 3) Executes this Graph

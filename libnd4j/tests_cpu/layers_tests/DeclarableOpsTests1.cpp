@@ -786,7 +786,7 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
     x.assign(3.f);
     y.assign(1.f);
     exp.assign(-2.f);
-    x.applyTrueBroadcast(BROADCAST(ReverseSubtract), &y, &z, true);
+    x.applyTrueBroadcast(BROADCAST(ReverseSubtract), y, z, true);
 
     ASSERT_TRUE(exp.equalsTo(&z));
 
@@ -811,7 +811,7 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_3) {
     x.assign(1);
     y.assign(3);
     exp.assign(2);
-    x.applyTrueBroadcast(BROADCAST(ReverseSubtract), &y, &z, true);
+    x.applyTrueBroadcast(BROADCAST(ReverseSubtract), y, z, true);
     ASSERT_TRUE(z.equalsTo(&exp));
     nd4j::ops::reversesubtract subOp;
 
@@ -833,10 +833,10 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_1) {
     x.assign(2.);
     y.assign(9.f);
     exp.assign(1.f);
-    y.applyTrueBroadcast(BROADCAST(Mod), &x, &z, true);
+    y.applyTrueBroadcast(BROADCAST(Mod), x, z, true);
     ASSERT_TRUE(exp.equalsTo(&z));
 
-    x.applyTrueBroadcast(BROADCAST(ReverseMod), &y, &exp, true);
+    x.applyTrueBroadcast(BROADCAST(ReverseMod), y, exp, true);
     ASSERT_TRUE(exp.equalsTo(&z));
 
     nd4j::ops::reversemod subOp;
@@ -861,9 +861,9 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_2) {
     x.assign(2.f);
     y.assign(9.f);
     exp.assign(1.f);
-    x.applyTrueBroadcast(BROADCAST(ReverseMod), &y, &z, true);
+    x.applyTrueBroadcast(BROADCAST(ReverseMod), y, z, true);
     ASSERT_TRUE(z.equalsTo(&exp));
-    x.applyTrueBroadcast(BROADCAST(ReverseMod), &y, &exp, true);
+    x.applyTrueBroadcast(BROADCAST(ReverseMod), y, exp, true);
     ASSERT_TRUE(z.equalsTo(&exp));
 
     nd4j::ops::reversemod subOp;
@@ -1218,8 +1218,8 @@ TEST_F(DeclarableOpsTests1, BroadcastReverseDivideTest_1) {
 
     ASSERT_TRUE(res->at(0)->equalsTo(exp));
     auto z(exp);
-    x.applyTrueBroadcast(BROADCAST(ReverseDivide), &y, &z, true);
-    y.applyTrueBroadcast(BROADCAST(Divide), &x, &exp, true);
+    x.applyTrueBroadcast(BROADCAST(ReverseDivide), y, z, true);
+    y.applyTrueBroadcast(BROADCAST(Divide), x, exp, true);
 
     ASSERT_TRUE(z.equalsTo(&exp));
 
@@ -1759,7 +1759,7 @@ TEST_F(DeclarableOpsTests1, Transpose1) {
 
     Nd4jStatus status = transpose.execute(block);
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    // ASSERT_TRUE(x.isSameShapeStrict(&exp));
+    // ASSERT_TRUE(x.isSameShapeStrict(exp));
 
     for (int e = 0; e < x->rankOf() * 2 + 2; e++) {
         ASSERT_EQ(x->getShapeInfo()[e], exp->getShapeInfo()[e]);
@@ -1790,7 +1790,7 @@ TEST_F(DeclarableOpsTests1, Transpose2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // ASSERT_TRUE(result->isSameShapeStrict(&exp));
+    // ASSERT_TRUE(result->isSameShapeStrict(exp));
     for (int e = 0; e < result->rankOf() * 2 + 2; e++) {
         ASSERT_EQ(result->getShapeInfo()[e], exp->getShapeInfo()[e]);
     }
@@ -1828,7 +1828,7 @@ TEST_F(DeclarableOpsTests1, Permute1) {
     Nd4jStatus status = permute.execute(block);
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
-    ASSERT_TRUE(x->isSameShapeStrict(exp));
+    ASSERT_TRUE(x->isSameShapeStrict(*exp));
 
     delete exp;
     delete block;
@@ -1863,7 +1863,7 @@ TEST_F(DeclarableOpsTests1, Permute2) {
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(result->isSameShapeStrict(exp));
+    ASSERT_TRUE(result->isSameShapeStrict(*exp));
 
     delete block;
     delete variableSpace;
@@ -2468,7 +2468,7 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
     NDArray expGradX('c', {N,bS,2*K}, expGradXBuff);
     NDArray expGradW('c', {N,2*K,6*K}, expGradWBuff);
     auto expGradB = NDArrayFactory::create<double>('c', {4*K});
-    gradBias.reduceAlongDimension(reduce::Sum, &expGradB, {0});    // [bS, 4K] -> [4K]
+    gradBias.reduceAlongDimension(reduce::Sum, expGradB, {0});    // [bS, 4K] -> [4K]
     NDArray expGradInit('c', {bS,2*K}, expGradInitBuff);
 
     input.assign(1.5);
@@ -2827,7 +2827,7 @@ TEST_F(DeclarableOpsTests1, Stack_1) {
     auto results = op.execute({&input1, &input2}, {}, {0});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -2855,7 +2855,7 @@ TEST_F(DeclarableOpsTests1, Stack_2) {
     auto results = op.execute({&input1, &input2}, {}, {1});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -2883,7 +2883,7 @@ TEST_F(DeclarableOpsTests1, Stack_3) {
     auto results = op.execute({&input1, &input2}, {}, {0});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -2910,7 +2910,7 @@ TEST_F(DeclarableOpsTests1, Stack_4) {
     auto results = op.execute({&input1, &input2}, {}, {1});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -2937,7 +2937,7 @@ TEST_F(DeclarableOpsTests1, Stack_5) {
     auto results = op.execute({&input1, &input2}, {}, {0});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -2964,7 +2964,7 @@ TEST_F(DeclarableOpsTests1, Stack_6) {
     auto results = op.execute({&input1, &input2}, {}, {1});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -2988,7 +2988,7 @@ TEST_F(DeclarableOpsTests1, Stack_7) {
     auto results = op.execute({&input1, &input1, &input1}, {}, {0});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3011,7 +3011,7 @@ TEST_F(DeclarableOpsTests1, Stack_8) {
     auto results = op.execute({&input1, &input1, &input1}, {}, {0});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3034,7 +3034,7 @@ TEST_F(DeclarableOpsTests1, Stack_9) {
     auto results = op.execute({&input1, &input1, &input1}, {}, {1});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3060,7 +3060,7 @@ TEST_F(DeclarableOpsTests1, Stack_10) {
     //expected.printShapeInfo("exp");
     //output->printShapeInfo("out");
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3082,7 +3082,7 @@ TEST_F(DeclarableOpsTests1, Stack_11) {
     auto results = op.execute({&input1, &input1, &input1}, {}, {});
     auto output = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
@@ -3370,7 +3370,7 @@ TEST_F(DeclarableOpsTests1, Reverse_1 ) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3395,7 +3395,7 @@ TEST_F(DeclarableOpsTests1, Reverse_2 ) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(&input));
+    ASSERT_TRUE(expected.isSameShapeStrict(input));
     ASSERT_TRUE(expected.equalsTo(&input));
 
     delete results;
@@ -3421,7 +3421,7 @@ TEST_F(DeclarableOpsTests1, Reverse_3 ) {
     auto result = results->at(0);
     // result->printBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3447,7 +3447,7 @@ TEST_F(DeclarableOpsTests1, Reverse_4 ) {
     auto result = results->at(0);
     // result->printBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3472,7 +3472,7 @@ TEST_F(DeclarableOpsTests1, Reverse_5 ) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3498,7 +3498,7 @@ TEST_F(DeclarableOpsTests1, Reverse_6 ) {
     auto result = results->at(0);
     // result->printBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(&input));
+    ASSERT_TRUE(expected.isSameShapeStrict(input));
     ASSERT_TRUE(expected.equalsTo(&input));
 
     delete results;
@@ -3526,7 +3526,7 @@ TEST_F(DeclarableOpsTests1, Reverse_7 ) {
     //expected.printIndexedBuffer("E");
     //result->printIndexedBuffer("R");
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3554,7 +3554,7 @@ TEST_F(DeclarableOpsTests1, Reverse_8 ) {
     auto result = results->at(0);
     // result->printBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3579,7 +3579,7 @@ TEST_F(DeclarableOpsTests1, Reverse_9 ) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3618,7 +3618,7 @@ TEST_F(DeclarableOpsTests1, Reverse_11 ) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3640,7 +3640,7 @@ TEST_F(DeclarableOpsTests1, Reverse_12 ) {
     auto result = results->at(0);
     //result->printIndexedBuffer("Result reverse");
     //expected.printIndexedBuffer("Expected reverse");
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3661,7 +3661,7 @@ TEST_F(DeclarableOpsTests1, Reverse_13 ) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
@@ -3682,7 +3682,7 @@ TEST_F(DeclarableOpsTests1, Reverse_14 ) {
 
     auto result = results->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.isSameShapeStrict(*result));
     ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;

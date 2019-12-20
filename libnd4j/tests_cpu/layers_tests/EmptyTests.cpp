@@ -197,7 +197,7 @@ TEST_F(EmptyTests, Test_Reshape_3) {
 
 TEST_F(EmptyTests, Test_dup_1) {
     auto empty = NDArrayFactory::empty<int>();
-    auto dup = empty.dup();
+    auto dup = new NDArray(empty.dup());
 
     ASSERT_TRUE(dup->isEmpty());
     ASSERT_EQ(empty, *dup);

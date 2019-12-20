@@ -115,9 +115,9 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
             BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxDerivForVector, (context, input.getBuffer(), input.getShapeInfo(), output.buffer()), FLOAT_TYPES);
         }
         else {
-            auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-            (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-            auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+            auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
+            (input - maxAlongDim).applyTransform(transform::Exp, output); // output contains exponents temporarily
+            auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
             output /= sumAlongDim;
             output *= (1.f - output);   // derivative
         }
@@ -204,7 +204,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
         else
             output = 1.;
     }
-    else if(input.isSameShapeStrict(&output)) {
+    else if(input.isSameShapeStrict(output)) {
 
         TadPack tadPack  = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimension);
         Nd4jLong* tadShapeInfo  = tadPack.primaryShapeInfo();
@@ -275,10 +275,10 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
         }
     }
     else {
-        NDArray max = input.reduceAlongDims(nd4j::reduce::Max, {dimension}, true);
-        input.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &max, &output, false);
-        output.applyTransform(nd4j::transform::Exp);
-        NDArray sum = output.reduceAlongDims(nd4j::reduce::Sum, {dimension}, true);
+        NDArray max = input.reduceAlongDimension(nd4j::reduce::Max, {dimension}, true);
+        input.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), max, output, false);
+        output.applyTransform(nd4j::transform::Exp, output);
+        NDArray sum = output.reduceAlongDimension(nd4j::reduce::Sum, {dimension}, true);
         output /= sum;
     }
 }
@@ -347,7 +347,7 @@ void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray&
         auto routine = LAMBDA_T(_x, threshold) {
             return _x > (T)threshold? _x: (T)0.f;
         };
-        const_cast<NDArray&>(input).applyLambda<T>(routine, &output);
+        const_cast<NDArray&>(input).applyLambda<T>(routine, output);
     }
 
     void thresholdRelu(nd4j::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
@@ -358,7 +358,7 @@ void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray&
     static void thresholdReluDerivative_(nd4j::LaunchContext * context, NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
         auto derivative = LAMBDA_TT(_x, grO, theta) {if (_x > theta) return grO; else return static_cast<T>(0); };
 
-        input->applyPairwiseLambda<T>(dLdO, derivative, output);
+        input->applyPairwiseLambda<T>(*dLdO, derivative, *output);
 
     }
 
@@ -381,11 +381,11 @@ void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray&
         }
         else {
 
-            auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-            (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-            auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+            auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
+            (input - maxAlongDim).applyTransform(transform::Exp, output); // output contains exponents temporarily
+            auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
             output /= sumAlongDim;
-            output.applyTransform(transform::Log);
+            output.applyTransform(transform::Log, output);
         }
     }
 

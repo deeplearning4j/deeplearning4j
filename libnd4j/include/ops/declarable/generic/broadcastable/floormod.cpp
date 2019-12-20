@@ -69,7 +69,7 @@ namespace nd4j {
             std::unique_ptr<ResultSet> tmpResult(op.execute({x, y}, {}, {}, {}));
 
             if (gradY->rankOf() == gradX->rankOf())
-                epsNext->applyPairwiseTransform(pairwise::Multiply, tmpResult->at(0), gradY, nullptr);
+                epsNext->applyPairwiseTransform(pairwise::Multiply, *tmpResult->at(0), *gradY);
             else // epsNext is greater than gradY
             {
                 std::vector<Nd4jLong> dims(epsNext->rankOf() * 2);
@@ -78,7 +78,7 @@ namespace nd4j {
                     dims[d * 2 + 1] = 1;
                 }
                 auto tempIn((*tmpResult->at(0))(dims));
-                (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, &tempIn, gradY, nullptr);
+                (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, tempIn, *gradY);
             }
             return Status::OK();
         }

@@ -29,7 +29,7 @@ namespace nd4j {
             auto first = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            first->applyTransform(transform::Floor, z, nullptr);
+            first->applyTransform(transform::Floor, *z);
 
             STORE_RESULT(*z);
 

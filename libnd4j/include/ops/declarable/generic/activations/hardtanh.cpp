@@ -30,9 +30,9 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->applyTransform(nd4j::transform::HardTanh, output, nullptr);
+            input->applyTransform(nd4j::transform::HardTanh, *output);
             STORE_RESULT(output);
-            
+
             return Status::OK();
         }
 

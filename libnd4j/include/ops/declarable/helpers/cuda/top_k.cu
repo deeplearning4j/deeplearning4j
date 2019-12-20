@@ -251,7 +251,7 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
 
         // we get top K values first
         if (k == 1) {
-            input->applyIndexReduce(indexreduce::IndexMax, indices, {input->rankOf() - 1});
+            input->applyIndexReduce(indexreduce::IndexMax, *indices, {input->rankOf() - 1});
 
             // copy values on specified indices
             topValuesMover<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), indices->specialBuffer(), packI.platformShapeInfo(), packI.platformOffsets(), values->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), tadLength, packX.numberOfTads(), k);

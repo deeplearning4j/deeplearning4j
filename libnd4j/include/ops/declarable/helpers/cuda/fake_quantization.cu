@@ -49,8 +49,8 @@ namespace helpers {
             }
             return nd4j::math::nd4j_round<T,uint16_t>(zeroPointFromMin);
         }();
-        *nudgedMin = (quantMinF - nudgedZeroPoint) * (*scale);
-        *nudgedMax = (quantMaxF - nudgedZeroPoint) * (*scale);
+        *nudgedMax = (quantMaxF - static_cast<T>(nudgedZeroPoint)) * (*scale);
+        *nudgedMin = (quantMinF - static_cast<T>(nudgedZeroPoint)) * (*scale);
     }
 
     template <typename T>
@@ -75,7 +75,7 @@ namespace helpers {
             return (math::nd4j_floor<T,T>((val - nudgedMin) / scale + T(0.5)) * scale + nudgedMin);
         };
 
-        input->applyLambda(wiseMinMaxAndSoOn, output);
+        input->applyLambda(wiseMinMaxAndSoOn, *output);
     }
 
     template <typename T>

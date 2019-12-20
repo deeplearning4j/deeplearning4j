@@ -56,31 +56,29 @@ namespace helpers {
 
             auto numOfClasses = output->sizeAt(0); // number of classes
             std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
-            auto maxT = listOfOutTensors->at(idx);
+            auto maxT = listOfOutTensors.at(idx);
 
             //int pos = 0;
-            maxT->assign(listOfTensors->at(0));
+            maxT->assign(listOfTensors.at(0));
 
             for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
 
                     for (Nd4jLong e = 0; e < maxT->lengthOf(); e++) {
-                       maxT->t<T>(e) = nd4j::math::nd4j_max(maxT->t<T>(e), listOfTensors->at(i)->t<T>(e));
+                       maxT->t<T>(e) = nd4j::math::nd4j_max(maxT->t<T>(e), listOfTensors.at(i)->t<T>(e));
                     }
                 }
                 else {
                     idx = indices->e<Nd4jLong>(i);
-                    maxT = listOfOutTensors->at(idx);
-                    maxT->assign(listOfTensors->at(i));
+                    maxT = listOfOutTensors.at(idx);
+                    maxT->assign(listOfTensors.at(i));
                 }
 
             }
-            delete listOfTensors;
-            delete listOfOutTensors;
         }
     }
 
-    // segmen min 
+    // segmen min
     template <typename T>
     static void segmentMinFunctor_(NDArray* input, NDArray* indices, NDArray* output) {
         //int numClasses = output->sizeAt(0);
@@ -91,7 +89,7 @@ namespace helpers {
 
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<Nd4jLong>(e)) {
-                   // min 
+                   // min
                    val = nd4j::math::nd4j_min<T>(val, input->t<T>(e));
                 }
                 else {
@@ -104,27 +102,27 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfTensors( input->allTensorsAlongDimension(restDims) );
-            std::unique_ptr<ResultSet> listOfOutTensors( output->allTensorsAlongDimension(restDims) );
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             int numOfClasses = output->sizeAt(0); // number of classes
             std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
-            auto minT = listOfOutTensors->at(idx);
+            auto minT = listOfOutTensors.at(idx);
 
             int pos = 0;
-            minT->assign(listOfTensors->at(0));
+            minT->assign(listOfTensors.at(0));
 
             for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<Nd4jLong>(i) == idx) {
 
                     for (int e = 0; e < minT->lengthOf(); e++) {
-                       minT->p(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
+                       minT->p(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors.at(i)->e<T>(e)));
                     }
                 }
                 else {
                     idx = indices->e<Nd4jLong>(i);
-                    minT = listOfOutTensors->at(idx);
-                    minT->assign(listOfTensors->at(i));
+                    minT = listOfOutTensors.at(idx);
+                    minT->assign(listOfTensors.at(i));
                 }
             }
         }
@@ -142,7 +140,7 @@ namespace helpers {
 
             for (int e = 0; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
-                   // mean 
+                   // mean
                    val += input->e<T>(e);
                    count++;
                 }
@@ -163,16 +161,16 @@ namespace helpers {
 
             int numOfClasses = output->sizeAt(0); // number of classes
             std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
-            auto meanT = listOfOutTensors->at(idx);
+            auto meanT = listOfOutTensors.at(idx);
             int count = 1;
             auto meanV = meanT->dup();
-            meanV->assign(listOfTensors->at(0));
+            meanV.assign(listOfTensors.at(0));
 
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e += increment) {
-                            meanV->p<T>(e, meanV->e<T>(e) + listOfTensors->at(i)->e<T>(e));
+                            meanV.p<T>(e, meanV.e<T>(e) + listOfTensors.at(i)->e<T>(e));
                         }
                     };
                     samediff::Threads::parallel_for(func, 0, meanT->lengthOf());
@@ -181,17 +179,14 @@ namespace helpers {
                 }
                 else {
                     //meanT->assign(meanV);
-                    meanV->applyScalar(scalar::Divide, count, meanT, nullptr);
+                    meanV.applyScalar(scalar::Divide, count, *meanT);
                     idx = indices->e<int>(i);
-                    meanT = listOfOutTensors->at(idx);
-                    meanV->assign(listOfTensors->at(i));
+                    meanT = listOfOutTensors.at(idx);
+                    meanV.assign(listOfTensors.at(i));
                     count = 1;
                 }
-                meanV->applyScalar(scalar::Divide, count, meanT, nullptr);
+                meanV.applyScalar(scalar::Divide, count, *meanT);
             }
-            delete meanV;
-            delete listOfTensors;
-            delete listOfOutTensors;
         }
     }
 
@@ -205,7 +200,7 @@ namespace helpers {
             int count = 0;
             for (int e = 0; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
-                   // sum 
+                   // sum
                    val += input->t<T>(e);
                 }
                 else {
@@ -223,25 +218,23 @@ namespace helpers {
 
             int numOfClasses = output->sizeAt(0); // number of classes
             std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
-            auto sumT = listOfOutTensors->at(idx);
+            auto sumT = listOfOutTensors.at(idx);
 
             for (int i = 0; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e += increment) {
-                            sumT->p(e, sumT->e<T>(e) + listOfTensors->at(i)->e<T>(e));
+                            sumT->p(e, sumT->e<T>(e) + listOfTensors.at(i)->e<T>(e));
                         }
                     };
                     samediff::Threads::parallel_for(func, 0, sumT->lengthOf());
                 }
                 else {
                     idx = indices->e<int>(i);
-                    sumT = listOfOutTensors->at(idx);
-                    sumT->assign(listOfTensors->at(i));
+                    sumT = listOfOutTensors.at(idx);
+                    sumT->assign(listOfTensors.at(i));
                 }
             }
-            delete listOfTensors;
-            delete listOfOutTensors;
         }
     }
 
@@ -257,7 +250,7 @@ namespace helpers {
 
             for (int e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
-                   // sum 
+                   // sum
                    val *= input->e<T>(e);
                 }
                 else {
@@ -274,25 +267,23 @@ namespace helpers {
             auto listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             int numOfClasses = output->sizeAt(0); // number of classes
-            auto sumT = listOfOutTensors->at(idx);
-            sumT->assign(listOfTensors->at(0));
+            auto sumT = listOfOutTensors.at(idx);
+            sumT->assign(listOfTensors.at(0));
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i)  == idx) {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e += increment) {
-                            sumT->p(e, sumT->e<T>(e) * listOfTensors->at(i)->e<T>(e));
+                            sumT->p(e, sumT->e<T>(e) * listOfTensors.at(i)->e<T>(e));
                         }
                     };
                     samediff::Threads::parallel_for(func, 0, sumT->lengthOf());
                 }
                 else {
                     idx = indices->e<int>(i);
-                    sumT = listOfOutTensors->at(idx);
-                    sumT->assign(listOfTensors->at(i));
+                    sumT = listOfOutTensors.at(idx);
+                    sumT->assign(listOfTensors.at(i));
                 }
             }
-            delete listOfTensors;
-            delete listOfOutTensors;
         }
     }
 
@@ -380,24 +371,23 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             T maxVal = DataTypeUtils::max<T>();
             output->assign(-maxVal);
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
-                auto outputT = listOfOutTensors->at(fi->first);
-                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                auto outputT = listOfOutTensors.at(fi->first);
+                outputT->assign(listOfTensors.at(fi->second.at(0)));
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
-                    auto maxT = listOfTensors->at(fi->second.at(idx));
+                    auto maxT = listOfTensors.at(fi->second.at(idx));
                     for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
                         T val = nd4j::math::nd4j_max(maxT->e<T>(e), outputT->e<T>(e));
 
                         outputT->p(e, val);
                     }
                 }
-                //outputT->assign(maxT);
             }
         }
     }
@@ -433,17 +423,17 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             T maxVal = DataTypeUtils::max<T>();
             output->assign(maxVal);
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
-                auto outputT = listOfOutTensors->at(fi->first);
-                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                auto outputT = listOfOutTensors.at(fi->first);
+                outputT->assign(listOfTensors.at(fi->second.at(0)));
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
-                    auto minT = listOfTensors->at(fi->second.at(idx));
+                    auto minT = listOfTensors.at(fi->second.at(idx));
 
                     for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
                         outputT->t<T>(e) = nd4j::math::nd4j_min(minT->t<T>(e), outputT->t<T>(e));
@@ -485,17 +475,17 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             // FIXME: parallelism here?
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
-                auto outputT = listOfOutTensors->at(fi->first);
-                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                auto outputT = listOfOutTensors.at(fi->first);
+                outputT->assign(listOfTensors.at(fi->second.at(0)));
                 Nd4jLong loopSize = fi->second.size();
 
                 for (Nd4jLong idx = 1; idx < loopSize; ++idx) {
-                    auto current = listOfTensors->at(fi->second.at(idx));
+                    auto current = listOfTensors.at(fi->second.at(idx));
                     *outputT += *current;
                 }
                 (*outputT) /= double(fi->second.size());
@@ -524,17 +514,17 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
-                auto outputT = listOfOutTensors->at(fi->first);
-                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                auto outputT = listOfOutTensors.at(fi->first);
+                outputT->assign(listOfTensors.at(fi->second.at(0)));
                 Nd4jLong loop_size = fi->second.size();
 
                 // FIXME: parallelism here?
                 for (Nd4jLong idx = 1; idx < loop_size; ++idx) {
-                    auto current = listOfTensors->at(fi->second.at(idx));
+                    auto current = listOfTensors.at(fi->second.at(idx));
                     *(outputT) += *current;
                 }
                 //outputT->assign(maxT);
@@ -564,14 +554,14 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
-                auto outputT = listOfOutTensors->at(fi->first);
-                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                auto outputT = listOfOutTensors.at(fi->first);
+                outputT->assign(listOfTensors.at(fi->second.at(0)));
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
-                    auto current = listOfTensors->at(fi->second.at(idx));
+                    auto current = listOfTensors.at(fi->second.at(idx));
 
                     *outputT *= *current;
                 }
@@ -603,14 +593,14 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
-                auto outputT = listOfOutTensors->at(fi->first);
-                outputT->assign(listOfTensors->at(fi->second.at(0)));
+                auto outputT = listOfOutTensors.at(fi->first);
+                outputT->assign(listOfTensors.at(fi->second.at(0)));
                 for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
-                    auto current = listOfTensors->at(fi->second.at(idx));
+                    auto current = listOfTensors.at(fi->second.at(idx));
                     *outputT += *current;
                 }
                 //outputT->assign(maxT);
@@ -630,14 +620,14 @@ namespace helpers {
         //int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto tempRes = gradOut->dup();
-        segmentMaxFunctor_<T>(input, indices, tempRes);
+        segmentMaxFunctor_<T>(input, indices, &tempRes);
         if (input->isVector()) {
             Nd4jLong loop_size = input->lengthOf();
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto e = start; e < stop; e += increment) {
                     auto classNum = indices->e<Nd4jLong>(e);
-                    if (nd4j::math::nd4j_abs(tempRes->e<T>(classNum) - input->e<T>(e)) <= T(1.e-6))
+                    if (nd4j::math::nd4j_abs(tempRes.e<T>(classNum) - input->e<T>(e)) <= T(1.e-6))
                         output->p(e, gradOut->e<T>(classNum));
                 }
             };
@@ -646,23 +636,23 @@ namespace helpers {
         else {
             std::vector<int> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(restDims);
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //int numOfClasses = tempRes.sizeAt(0); // number of classes
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i += increment) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto current = listOfTensors->at(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
+                    auto current = listOfTensors.at(i);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
 
                     for (uint64_t e = 0; e < current->lengthOf(); e++) {
-                        if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->e<T>(e) - current->e<T>(e)) <= T(1.e-6))
+                        if (nd4j::math::nd4j_abs(listOfBPTensors.at(classNum)->e<T>(e) - current->e<T>(e)) <= T(1.e-6))
                             currentOut->p(e, currentGradOut->e<T>(e));
                     }
                 }
@@ -670,7 +660,7 @@ namespace helpers {
 
             samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
         }
-        delete tempRes;
+
         return ND4J_STATUS_OK;
     }
 
@@ -681,13 +671,13 @@ namespace helpers {
 
     // segmen min
     int segmentMinFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
-        std::unique_ptr<NDArray> tempRes(gradOut->dup());
-        segmentMinFunctor(context, input, indices, tempRes.get());
+        NDArray tempRes = gradOut->dup();
+        segmentMinFunctor(context, input, indices, &tempRes);
         if (input->isVector()) {
             auto func = PRAGMA_THREADS_FOR {
                 for (auto e = start; e < stop; e += increment) {
                     auto classNum = indices->e<Nd4jLong>(e);
-                    if (nd4j::math::nd4j_abs(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
+                    if (nd4j::math::nd4j_abs(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
                         output->p(e, gradOut->e<double>(classNum));
                 }
             };
@@ -696,12 +686,12 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(restDims);
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //int numOfClasses = tempRes.sizeAt(0); // number of classes
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
             output->assign(0.);
             int pos = 0;
@@ -709,12 +699,12 @@ namespace helpers {
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i += increment) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto current = listOfTensors->at(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
+                    auto current = listOfTensors.at(i);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
 
                     for (int e = 0; e < current->lengthOf(); e++) {
-                        if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->e<double>(e) - current->e<double>(e)) <
+                        if (nd4j::math::nd4j_abs(listOfBPTensors.at(classNum)->e<double>(e) - current->e<double>(e)) <
                             1.e-5)
                             currentOut->p(e, currentGradOut->e<double>(e));
                     }
@@ -749,20 +739,18 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
-
-            //int numOfClasses = tempRes->sizeAt(0); // number of classes
-            //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
+;
 
             int pos = 0;
             //auto func = [&](uint64_t thread_id, uint64_t start, uint64_t stop, uint64_t increment) -> void {
                 for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto current = listOfTensors->at(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
+                    auto current = listOfTensors.at(i);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
 
                     for (int e = 0; e < current->lengthOf(); e++) {
                         currentOut->p(e, currentGradOut->e<double>(e) / classCount.at(classNum));
@@ -788,16 +776,16 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
                 for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto current = listOfTensors->at(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
+                    auto current = listOfTensors.at(i);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
 
                     currentOut->assign(currentGradOut);
                 }
@@ -810,31 +798,31 @@ namespace helpers {
 
     int segmentProdFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         auto tempRes = gradOut->dup();
-        segmentProdFunctor(context, input, indices, tempRes);
+        segmentProdFunctor(context, input, indices, &tempRes);
         if (input->isVector()) {
             for (Nd4jLong e = 0; e < indices->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
-                output->p(e, gradOut->e<double>(classNum) * tempRes->e<double>(classNum)/ input->e<double>(e));
+                output->p(e, gradOut->e<double>(classNum) * tempRes.e<double>(classNum)/ input->e<double>(e));
             }
         }
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(restDims);
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-            //int numOfClasses = tempRes->sizeAt(0); // number of classes
+            //int numOfClasses = tempRes.sizeAt(0); // number of classes
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             //auto func = PRAGMA_THREADS_FOR {
                 for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto current = listOfTensors->at(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
-                    auto currentFFOut = listOfBPTensors->at(classNum);
+                    auto current = listOfTensors.at(i);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
+                    auto currentFFOut = listOfBPTensors.at(classNum);
 
                     currentOut->assign((*currentFFOut) * (*currentGradOut) / (*current));
                 }
@@ -842,7 +830,7 @@ namespace helpers {
 
             //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
-        delete tempRes;
+
         return ND4J_STATUS_OK;
     }
 
@@ -855,35 +843,35 @@ namespace helpers {
 //        int numOfClasses = gradOut->sizeAt(0);
         // if input is a vector: (as if in doc sample)
         auto tempRes = gradOut->dup();
-        unsortedSegmentMaxFunctor(context, input, indices, numOfClasses, tempRes);
+        unsortedSegmentMaxFunctor(context, input, indices, numOfClasses, &tempRes);
         if (input->isVector()) {
 
             for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(e);
-                if (nd4j::math::nd4j_abs(tempRes->e<double>(classNum) - input->e<double>(e)) < 1.e-5)
+                if (nd4j::math::nd4j_abs(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
                     output->p(e, gradOut->e<T>(classNum));
             }
         }
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(restDims);
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
-                NDArray* current = listOfTensors->at(i);
-                NDArray* currentOut = listOfOutTensors->at(i);
-                NDArray* currentGradOut = listOfGradOuts->at(classNum);
+                NDArray* current = listOfTensors.at(i);
+                NDArray* currentOut = listOfOutTensors.at(i);
+                NDArray* currentGradOut = listOfGradOuts.at(classNum);
                 for (int e = 0; e < current->lengthOf(); e++) {
-                    if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
+                    if (nd4j::math::nd4j_abs(listOfBPTensors.at(classNum)->e<double>(e) - current->e<double>(e)) < 1.e-5)
                         currentOut->p(e, currentGradOut->e<T>(e));
                 }
             }
         }
-        delete tempRes;
+
         return ND4J_STATUS_OK;
     }
 
@@ -895,13 +883,13 @@ namespace helpers {
     template <typename T>
     static int unsortedSegmentMinFunctorBP_(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto tempRes = gradOut->dup();
-        unsortedSegmentMinFunctor(context, input, indices, numOfClasses, tempRes);
+        unsortedSegmentMinFunctor(context, input, indices, numOfClasses, &tempRes);
         if (input->isVector()) {
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto e = start; e < stop; e += increment) {
                     auto classNum = indices->e<Nd4jLong>(e);
-                    if (nd4j::math::nd4j_abs(tempRes->t<T>(classNum) - input->t<T>(e)) < 1.e-6)
+                    if (nd4j::math::nd4j_abs(tempRes.t<T>(classNum) - input->t<T>(e)) < 1.e-6)
                         output->t<T>(e) = gradOut->t<T>(classNum);
                 }
             };
@@ -911,20 +899,20 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(restDims);
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
                 for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto current = listOfTensors->at(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
+                    auto current = listOfTensors.at(i);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
 
                     for (int e = 0; e < current->lengthOf(); e++) {
-                        if (nd4j::math::nd4j_abs(listOfBPTensors->at(classNum)->t<T>(e) - current->t<T>(e)) < 1.e-6)
+                        if (nd4j::math::nd4j_abs(listOfBPTensors.at(classNum)->t<T>(e) - current->t<T>(e)) < 1.e-6)
                             currentOut->t<T>(e) = currentGradOut->t<T>(e);
                     }
                 }
@@ -932,7 +920,7 @@ namespace helpers {
 
             //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
-        delete tempRes;
+
         return ND4J_STATUS_OK;
     }
 
@@ -963,15 +951,15 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             for (int i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
-                NDArray* current = listOfTensors->at(i);
-                NDArray* currentOut = listOfOutTensors->at(i);
-                NDArray* currentGradOut = listOfGradOuts->at(classNum);
+                NDArray* current = listOfTensors.at(i);
+                NDArray* currentOut = listOfOutTensors.at(i);
+                NDArray* currentGradOut = listOfGradOuts.at(classNum);
                 currentOut->assign(*currentGradOut / double(classCount[classNum]));
             }
         }
@@ -991,15 +979,15 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
                 for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
 
                     currentOut->assign(currentGradOut);
                 }
@@ -1011,14 +999,14 @@ namespace helpers {
     }
 
     int unsortedSegmentProdFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        auto tempRes = gradOut->dup();
 
-        unsortedSegmentProdFunctor(context, input, indices, numOfClasses, tempRes);
+        auto tempRes = gradOut->dup();
+        unsortedSegmentProdFunctor(context, input, indices, numOfClasses, &tempRes);
         if (input->isVector()) {
             auto func = PRAGMA_THREADS_FOR {
                 for (auto e = start; e < stop; e += increment) {
                     auto classNum = indices->e<Nd4jLong>(e);
-                    output->p<double>(e, gradOut->e<double>(classNum) * tempRes->e<double>(classNum) / input->e<double>(e));
+                    output->p<double>(e, gradOut->e<double>(classNum) * tempRes.e<double>(classNum) / input->e<double>(e));
                 }
             };
 
@@ -1027,18 +1015,18 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfBPTensors(tempRes->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfBPTensors = tempRes.allTensorsAlongDimension(restDims);
+            ResultSet listOfGradOuts = gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
                 for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto current = listOfTensors->at(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
-                    auto currentFFOut = listOfBPTensors->at(classNum);
+                    auto current = listOfTensors.at(i);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
+                    auto currentFFOut = listOfBPTensors.at(classNum);
 
                     currentOut->assign((*currentFFOut) * (*currentGradOut) / (*current));
                 }
@@ -1046,7 +1034,7 @@ namespace helpers {
 
             //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
-        delete tempRes;
+
         return Status::OK();
     }
 
@@ -1076,16 +1064,16 @@ namespace helpers {
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
 
-            std::unique_ptr<ResultSet> listOfGradOuts(gradOut->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
-            std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+            ResultSet listOfGradOuts  =gradOut->allTensorsAlongDimension(restDims);
+            ResultSet listOfTensors  =input->allTensorsAlongDimension(restDims);
+            ResultSet listOfOutTensors  =output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
                 for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
-                    auto current = listOfTensors->at(i);
-                    auto currentOut = listOfOutTensors->at(i);
-                    auto currentGradOut = listOfGradOuts->at(classNum);
+                    auto current = listOfTensors.at(i);
+                    auto currentOut = listOfOutTensors.at(i);
+                    auto currentGradOut = listOfGradOuts.at(classNum);
 
                     for (int e = 0; e < current->lengthOf(); e++) {
                         currentOut->p<double>(e, currentGradOut->e<double>(e) / nd4j::math::nd4j_sqrt<double, double>(classCount[classNum]));

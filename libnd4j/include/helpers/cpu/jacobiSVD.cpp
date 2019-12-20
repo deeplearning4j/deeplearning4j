@@ -269,7 +269,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
 
         HHcolPivQR qr(matrix / scale);
         _m.assign(qr._qr({0,_cols, 0,_cols}));
-        _m.fillAsTriangular<T>(0., 0, 0, 'l');
+        _m.fillAsTriangular<T>(0., 0, 0, _m, 'l');
 
         HHsequence hhSeg(qr._qr, qr._coeffs, 'u');
 
@@ -288,7 +288,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
         auto matrixT = matrix.transpose();
         HHcolPivQR qr(matrixT / scale);
         _m.assign(qr._qr({0,_rows, 0,_rows}));
-        _m.fillAsTriangular<T>(0., 0, 0, 'l');
+        _m.fillAsTriangular<T>(0., 0, 0, _m, 'l');
         _m.transposei();
 
         HHsequence  hhSeg(qr._qr, qr._coeffs, 'u');          // type = 'u' is not mistake here !
@@ -305,7 +305,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
     }
     else {
 
-        _m.assign(matrix({0,_diagSize, 0,_diagSize}) / scale);
+        _m.assign(static_cast<const NDArray&>(matrix({0,_diagSize, 0,_diagSize})) / scale);
 
         if(_calcU)
             _u.setIdentity();
@@ -366,7 +366,7 @@ void JacobiSVD<T>::evalData(const NDArray& matrix) {
         _s.p(i, math::nd4j_abs<T>(_m.e<T>(i,i)));
         if(_calcU && _m.e<T>(i,i) < (T)0.) {
             auto temp = _u({0,0, i,i+1}, true);
-            temp.applyTransform(transform::Neg, &temp, nullptr);
+            temp.applyTransform(transform::Neg, temp, nullptr);
         }
     }
 

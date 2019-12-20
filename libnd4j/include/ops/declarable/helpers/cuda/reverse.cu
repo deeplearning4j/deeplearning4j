@@ -181,27 +181,21 @@ namespace helpers {
             auto inSubArrsSet  = input->allTensorsAlongDimension(dimensions);
             auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
 
-            for(int i = 0; i < inSubArrsSet->size(); ++i) {
+            for(int i = 0; i < inSubArrsSet.size(); ++i) {
 
                 int numOfElemsToReverse = seqLengths->e<int>(i);
 
                 if(numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
-                    outSubArrsSet->at(i)->assign(inSubArrsSet->at(i));
+                    outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
                 }
                 else {
-                    auto inInnerSet  = inSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
-                    auto outInnerSet = outSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
-                    for(int j = 0; j < inInnerSet->size(); ++j)
-                        reverseArray<T>(context, inInnerSet->at(j), outInnerSet->at(j), numOfElemsToReverse);
-
-                    delete inInnerSet;
-                    delete outInnerSet;
+                    auto inInnerSet  = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
+                    auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
+                    for(int j = 0; j < inInnerSet.size(); ++j)
+                        reverseArray<T>(context, inInnerSet.at(j), outInnerSet.at(j), numOfElemsToReverse);
                 }
             }
-            delete inSubArrsSet;
-            delete outSubArrsSet;
         }
-
     }
 
     void reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {

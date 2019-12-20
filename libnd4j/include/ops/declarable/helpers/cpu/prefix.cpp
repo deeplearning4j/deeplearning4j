@@ -101,17 +101,14 @@ namespace nd4j {
             static void prefix_(scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse) {
                 auto xTads = x->allTensorsAlongDimension(dims);
                 auto zTads = z->allTensorsAlongDimension(dims);
-                auto t = xTads->size();
+                auto t = xTads.size();
 
                 for (int e = 0; e < t; e++) {
-                    auto tx = xTads->at(e);
-                    auto tz = zTads->at(e);
+                    auto tx = xTads.at(e);
+                    auto tz = zTads.at(e);
 
                     prefix_<T>(op, tx->buffer(), tx->shapeInfo(), tz->buffer(), tz->shapeInfo(), exclusive, reverse);
                 }
-
-                delete xTads;
-                delete zTads;
             };
 
             template <typename T>

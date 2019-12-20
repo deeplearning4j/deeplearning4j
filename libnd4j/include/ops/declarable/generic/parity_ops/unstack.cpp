@@ -52,21 +52,20 @@ namespace nd4j {
             }
 
             auto tads = input->allTensorsAlongDimension(dims);
-            //nd4j_printf("Tad size: %d\n",tads->size());
-            for (int e = 0; e < tads->size(); e++) {
+            //nd4j_printf("Tad size: %d\n",tads.size());
+            for (int e = 0; e < tads.size(); e++) {
                 //nd4j_printf("Calling assign at index %d\n",e);
                 auto outE = OUTPUT_VARIABLE(e);
-                auto tadAtE = tads->at(e);
+                auto tadAtE = tads.at(e);
 
                 outE->assign(tadAtE);
 
                 this->storeResult(block, e, *outE);
             }
 
-            delete tads;
-
             return Status::OK();
         }
+
         DECLARE_SYN(unpack, unstack);
 
         DECLARE_SHAPE_FN(unstack) {

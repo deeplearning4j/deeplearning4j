@@ -31,7 +31,7 @@ namespace helpers {
             return x > (T) 0.f ? y : T(0.f);
         };
 
-        theFirst->applyPairwiseLambda<T>(theSecond, functor, nullptr);
+        theFirst->applyPairwiseLambda<T>(*theSecond, functor, *theFirst);
     }
 
     void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond) {
@@ -46,7 +46,7 @@ namespace helpers {
             return x > zero ? y : zero;
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
 
         /*
         auto x =  input->bufferAsT<T>();
@@ -74,7 +74,7 @@ namespace helpers {
             return x > (T)0.f && x < (T)6.f? y : T(0.f);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void relu6Derivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -90,7 +90,7 @@ namespace helpers {
             return x < 0 ? alphaT * y : y;
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void leakyReluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
@@ -106,7 +106,7 @@ namespace helpers {
             return y * nd4j::math::nd4j_eluderivative<T,T>(x, alphaT);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void eluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
@@ -119,7 +119,7 @@ namespace helpers {
             return y * simdOps::SELUDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void seluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -132,7 +132,7 @@ namespace helpers {
             return y * (3 * x * x);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void cubeDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -146,7 +146,7 @@ namespace helpers {
             return x > T(0.f)? y : -y;
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void reduceNorm1(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -160,7 +160,7 @@ namespace helpers {
             return nd4j::math::nd4j_max<T>(x, (T)0.f) - x * y + nd4j::math::nd4j_log<T,T>((T)1.f + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(x)));
         };
 
-        logits->applyPairwiseLambda<T>(labels, functor, output);
+        logits->applyPairwiseLambda<T>(*labels, functor, *output);
     }
 
     void sigmCrossEntropy(nd4j::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
@@ -178,7 +178,7 @@ namespace helpers {
             return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);
         };
 
-        logits->applyPairwiseLambda<T>(labels, functor, output);
+        logits->applyPairwiseLambda<T>(*labels, functor, *output);
     }
 
     void sigmCrossEntropyGrad(nd4j::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
@@ -193,7 +193,7 @@ namespace helpers {
             return y * ((T)1.0f - (th * th));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void tanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -208,7 +208,7 @@ namespace helpers {
             return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void hardTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -221,7 +221,7 @@ namespace helpers {
             return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void rationalTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -234,7 +234,7 @@ namespace helpers {
             return x > (T) 0.0f ? y * (nd4j::math::nd4j_tanhderivative<T,T>(x)) : (T) 0.0f;
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void rectifiedTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -251,7 +251,7 @@ namespace helpers {
             return y * ((T) 1.0f  / (ss * ss));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void softSignDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -265,7 +265,7 @@ namespace helpers {
             return y * (p / (p + 1.));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void softPlusDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -282,7 +282,7 @@ namespace helpers {
             return y * (s * ((T) 1.0f - s));
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void sigmoidDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -295,7 +295,7 @@ namespace helpers {
             return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda<T>(epsilon, functor, output);
+        input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
     void hardSigmoidDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -305,24 +305,24 @@ namespace helpers {
     template <typename T>
     static void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
         // reduce along axis with
-        std::unique_ptr<NDArray> tempInput(input->dup());
-        input->applyTransform(transform::Exp, tempInput.get());
+        NDArray tempInput = input->dup();
+        input->applyTransform(transform::Exp, tempInput);
         std::vector<int> axisVector;
         if (axis != nullptr) {
             axisVector.resize(axis->lengthOf());
             for (size_t i = 0; i < axisVector.size(); ++i)
                 axisVector[i] = axis->e<int>(i);
         }
-        tempInput->reduceAlongDimension(reduce::Sum, output, axisVector);
-        output->applyTransform(transform::Log, nullptr, nullptr);
+        tempInput.reduceAlongDimension(reduce::Sum, *output, axisVector);
+        output->applyTransform(transform::Log, *output);
     }
 
     template <typename T>
     static void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
         // reduce along axis with
-        std::unique_ptr<NDArray> tempInput(input->dup());
-        input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput.get(), nullptr);
-        tempInput->applyTransform(transform::Exp, nullptr, nullptr);
+        NDArray tempInput = input->dup();
+        input->applyPairwiseTransform(pairwise::Subtract, *subtrah, tempInput);
+        tempInput.applyTransform(transform::Exp, tempInput);
 
         std::vector<int> axisVector;
         if (axis != nullptr) {
@@ -330,8 +330,8 @@ namespace helpers {
             for (size_t i = 0; i < axisVector.size(); ++i)
                 axisVector[i] = axis->e<int>(i);
         }
-        tempInput->reduceAlongDimension(reduce::Sum, output, axisVector);
-        output->applyTransform(transform::Log, nullptr, nullptr);
+        tempInput.reduceAlongDimension(reduce::Sum, *output, axisVector);
+        output->applyTransform(transform::Log, *output);
     }
 
     void logSumExp(nd4j::LaunchContext * context, NDArray* input, NDArray* axis, NDArray* output) {
@@ -364,16 +364,16 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArr
 
 
     if (weights->isScalar()) {
-        const_cast<NDArray*>(input)->applyPairwiseLambda<T>(const_cast<NDArray*>(targets), mainRoutineT1, output);
+        const_cast<NDArray*>(input)->applyPairwiseLambda<T>(const_cast<NDArray&>(*targets), mainRoutineT1, *output);
     }
     else
     {
         std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
-        targetVector->applyScalar(scalar::Add, -1.f);
+        targetVector->applyScalar(scalar::Add, -1.f, *targetVector);
 
         std::unique_ptr<NDArray> targetTensor(new NDArray(*targets));
         *targetTensor = (*targetVector * *targetTensor) + T(1.f);
-        const_cast<NDArray*>(input)->applyTriplewiseLambda<T>(const_cast<NDArray*>(targets), targetTensor.get(), mainRoutineT2, output);
+        const_cast<NDArray*>(input)->applyTriplewiseLambda<T>(const_cast<NDArray&>(*targets), *targetTensor.get(), mainRoutineT2, *output);
     }
 }
 

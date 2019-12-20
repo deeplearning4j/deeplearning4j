@@ -171,27 +171,21 @@ static void reverseSequence_(nd4j::LaunchContext * context, const NDArray* input
         auto inSubArrsSet  = input->allTensorsAlongDimension(dimensions);
         auto outSubArrsSet = output->allTensorsAlongDimension(dimensions);
 
-        for(int i = 0; i < inSubArrsSet->size(); ++i) {
+        for(int i = 0; i < inSubArrsSet.size(); ++i) {
 
             Nd4jLong numOfElemsToReverse = seqLengths->e<Nd4jLong>(i);
 
             if(numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
-                outSubArrsSet->at(i)->assign(inSubArrsSet->at(i));
+                outSubArrsSet.at(i)->assign(inSubArrsSet.at(i));
             }
             else {
-                auto inInnerSet  = inSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
-                auto outInnerSet = outSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
-                for(int j = 0; j < inInnerSet->size(); ++j)
-                    helpers::reverseArray<T>(context, inInnerSet->at(j)->getBuffer(), inInnerSet->at(j)->getShapeInfo(), outInnerSet->at(j)->getBuffer(), outInnerSet->at(j)->getShapeInfo(), numOfElemsToReverse);
-
-                delete inInnerSet;
-                delete outInnerSet;
+                auto inInnerSet  = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
+                auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
+                for(int j = 0; j < inInnerSet.size(); ++j)
+                    helpers::reverseArray<T>(context, inInnerSet.at(j)->getBuffer(), inInnerSet.at(j)->getShapeInfo(), outInnerSet.at(j)->getBuffer(), outInnerSet.at(j)->getShapeInfo(), numOfElemsToReverse);
             }
         }
-        delete inSubArrsSet;
-        delete outSubArrsSet;
     }
-
 }
 
     void reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
@@ -209,14 +203,11 @@ void reverse(nd4j::LaunchContext * context, const NDArray* input, NDArray* outpu
 
     NDArray *subArrIn, *subArrOut;
 
-    for(int i = 0; i < listIn->size(); ++i) {               // listIn->size() = listOut->size()
-        subArrIn   = listIn->at(i);
-        subArrOut  = listOut->at(i);
+    for(int i = 0; i < listIn.size(); ++i) {               // listIn.size() = listOut.size()
+        subArrIn   = listIn.at(i);
+        subArrOut  = listOut.at(i);
         BUILD_SINGLE_SELECTOR(input->dataType(), helpers::reverseArray, (context, subArrIn->getBuffer(), subArrIn->getShapeInfo(), subArrOut->getBuffer(), subArrOut->getShapeInfo()), LIBND4J_TYPES);
     }
-
-    delete listOut;
-    delete listIn;
 }
 
 BUILD_SINGLE_TEMPLATE(template void reverseSequence_, (nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim), LIBND4J_TYPES);

@@ -40,7 +40,7 @@ namespace nd4j {
             result->setIndex(this->_index);
 
             if (this->_ndarray != nullptr)
-                result->setNDArray(this->_ndarray->template asT<N>());
+                result->setNDArray(new NDArray(this->_ndarray->template asT<N>()));
 
             // FIXME: add support for ArrayList
             if (this->_list != nullptr) {
@@ -61,7 +61,7 @@ namespace nd4j {
             result->_index = this->_index;
 
             if (this->_ndarray != nullptr)
-                result->_ndarray = this->_ndarray->dup(this->_ndarray->ordering());
+                result->_ndarray = new NDArray(this->_ndarray->dup(this->_ndarray->ordering()));
 
             if (this->_list != nullptr)
                 result->_list = this->_list->clone();
