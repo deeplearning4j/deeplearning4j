@@ -13,11 +13,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
- 
+
 //
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
-// 
-//
 // @author Adel Rauf    (rauf@konduit.ai)
 //
 
@@ -32,12 +30,12 @@ namespace helpers {
 
 template <typename T>
 static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
-    
+
     const T* x = input.bufferAsT<T>();
     T* z = output.bufferAsT<T>();
     const int rank = input.rankOf();
 
-    if(dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() && 
+    if(dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() &&
         'c' == output.ordering() && 1 == output.ews()){
 
         auto func = PRAGMA_THREADS_FOR{
@@ -48,13 +46,13 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
         };
 
         samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
-        return;  
+        return;
     }
 
     auto func = PRAGMA_THREADS_FOR{
-        
+
          Nd4jLong coords[MAX_RANK];
-         for (auto i = start; i < stop; i += increment) {                
+         for (auto i = start; i < stop; i += increment) {
              shape::index2coords(i, output.getShapeInfo(), coords);
              const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
              const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);

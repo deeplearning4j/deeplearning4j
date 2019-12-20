@@ -20,6 +20,8 @@
 
 #include <op_boilerplate.h>
 #include <ops/declarable/helpers/imagesHelpers.h>
+#include <helpers/ConstantTadHelper.h>
+#include <ops/declarable/helpers/adjust_hue.h>
 #include <PointersManager.h>
 
 
@@ -42,7 +44,8 @@ __global__ void rgbToGrsCuda(const void *vx, const Nd4jLong *xShapeInfo, void *v
 		extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-		rank = shape::length(xShapeInfo);
+		zLen = shape::length(zShapeInfo);
+		rank = shape::rank(zShapeInfo);
 	}
 	__syncthreads();
 
@@ -52,7 +55,7 @@ __global__ void rgbToGrsCuda(const void *vx, const Nd4jLong *xShapeInfo, void *v
 
 		if (dimC == (rank - 1) && 'c' == shape::order(xShapeInfo) && 1 == shape::elementWiseStride(xShapeInfo) && 'c' == shape::order(zShapeInfo) && 1 == shape::elementWiseStride(zShapeInfo)) {
 			const auto xStep = i*3;
-            z[i] = 0.2989f*x[xStep] + 0.5870f*x[xStep + 1] + 0.1140f*x[xStep + 2];
+            z[i] = 0.2989f * x[xStep] + 0.5870f * x[xStep + 1] + 0.1140f * x[xStep + 2];
 		}
 		else {
 
@@ -62,6 +65,8 @@ __global__ void rgbToGrsCuda(const void *vx, const Nd4jLong *xShapeInfo, void *v
             const auto xOffset0 = shape::getOffset(xShapeInfo, coords);
             const auto xOffset1 = xOffset0 + shape::stride(xShapeInfo)[dimC];
             const auto xOffset2 = xOffset1 + shape::stride(xShapeInfo)[dimC];
+
+            z[zOffset] = 0.2989f * x[xOffset0] + 0.5870f * x[xOffset1] + 0.1140f * x[xOffset2];
 		}
 	}
 }
@@ -74,7 +79,7 @@ linkage void rgbToGrsCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void rgbToGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
 
 	PointersManager manager(context, "rgbToGrs");
 
@@ -88,6 +93,134 @@ void rgbToGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& outpu
 
 	manager.synchronize();
 }
+
+
+///////////////////////////////////////////////////////////////////
+template <typename T>
+static void _CUDA_G rgbToHsvCuda(const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets,
+                                  void* vz, const Nd4jLong *zShapeInfo, const Nd4jLong* zTadOffsets,
+                                  const Nd4jLong numOfTads, const int dimC) {
+
+    const T* x = reinterpret_cast<const T*>(vx);
+    T* z = reinterpret_cast<T*>(vz);
+
+    __shared__ int rank;
+    __shared__ Nd4jLong xDimCstride, zDimCstride;
+
+    if (threadIdx.x == 0) {
+        rank = shape::rank(xShapeInfo);
+        xDimCstride = shape::stride(xShapeInfo)[dimC];
+        zDimCstride = shape::stride(zShapeInfo)[dimC];
+    }
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < numOfTads; i += gridDim.x * blockDim.x) {
+        const T* xTad = x + xTadOffsets[i];
+        T* zTad = z + zTadOffsets[i];
+
+        rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template <typename T>
+static void _CUDA_G hsvToRgbCuda(const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets,
+                                 void* vz, const Nd4jLong *zShapeInfo, const Nd4jLong* zTadOffsets,
+                                 const Nd4jLong numOfTads, const int dimC) {
+
+    const T* x = reinterpret_cast<const T*>(vx);
+    T* z = reinterpret_cast<T*>(vz);
+
+    __shared__ int rank;
+    __shared__ Nd4jLong xDimCstride, zDimCstride;
+
+    if (threadIdx.x == 0) {
+        rank = shape::rank(xShapeInfo);
+        xDimCstride = shape::stride(xShapeInfo)[dimC];
+        zDimCstride = shape::stride(zShapeInfo)[dimC];
+    }
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < numOfTads; i += gridDim.x * blockDim.x) {
+        const T* xTad = x + xTadOffsets[i];
+        T* zTad = z + zTadOffsets[i];
+
+        hsvToRgb<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static _CUDA_H void hsvToRgbCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
+                                          const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets,
+                                          void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zTadOffsets,
+                                          const Nd4jLong numOfTads, const int dimC) {
+
+    hsvToRgbCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, dimC);
+}
+
+template<typename T>
+static _CUDA_H void rgbToHsvCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
+                                         const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets,
+                                         void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zTadOffsets,
+                                         const Nd4jLong numOfTads, const int dimC) {
+
+    rgbToHsvCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, dimC);
+}
+
+///////////////////////////////////////////////////////////////////
+void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+
+    const Nd4jLong numOfTads = packX.numberOfTads();
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
+
+    PointersManager manager(context, "hsv_to_rgb");
+
+    NDArray::prepareSpecialUse({output}, {input});
+    BUILD_SINGLE_SELECTOR(input->dataType(), hsvToRgbCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {input});
+
+    manager.synchronize();
+}
+
+///////////////////////////////////////////////////////////////////
+void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+
+    const Nd4jLong numOfTads = packX.numberOfTads();
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
+
+    PointersManager manager(context, "rgb_to_hsv");
+
+    NDArray::prepareSpecialUse({output}, {input});
+    BUILD_SINGLE_SELECTOR(input->dataType(), rgbToHsvCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
+    NDArray::registerSpecialUse({output}, {input});
+
+    manager.synchronize();
+}
+
+
+
+
+
+
+
+
+
+
+
 
 }
 }
