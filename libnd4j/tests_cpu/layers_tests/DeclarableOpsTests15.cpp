@@ -138,8 +138,8 @@ TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
 }
 
 TEST_F(DeclarableOpsTests15, Test_standarize_1) {
-    auto x = NDArrayFactory::create<float>('c', {5}, {1, 1, 1, 1, 1});
-    auto e = NDArrayFactory::create<float>('c', {5}, {0, 0, 0, 0, 0});
+    auto x = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
+    auto e = NDArrayFactory::create<float>('c', {5}, {0.f, 0f, 0.f, 0.f, 0.f});
 
     nd4j::ops::standardize op;
     auto result = op.execute({&x}, {&x}, {}, {0}, {});
@@ -1023,7 +1023,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_6) {
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_7) {
     // rank 3
     auto rgbs = NDArrayFactory::create<float>('c', { 5,3,4 }, { 1.7750e+01f, -7.1062e+01f, -1.0019e+02f,-2.3406e+01f,  5.2094e+01f,  9.5438e+01f, -6.7461e+00f,  3.8562e+01f,  6.5078e+00f,3.3562e+01f, -5.8844e+01f,  2.2750e+01f, -1.0477e+01f,  7.7344e+00f,  9.5469e+00f,2.1391e+01f, -8.5312e+01f,  7.5830e-01f,2.3125e+01f,  1.8145e+00f,  1.4602e+01f,-4.5859e+00f,  3.9344e+01f,  1.1617e+01f,-8.6562e+01f,  1.0038e+02f,  6.7938e+01f,5.9961e+00f,  6.7812e+01f,  2.9734e+01f,2.9609e+01f, -6.1438e+01f,  1.7750e+01f,6.8562e+01f, -7.4414e+00f,  3.9656e+01f,1.1641e+01f, -2.7516e+01f,  6.7562e+01f,7.8438e+01f,  5.4883e+00f,  2.9438e+01f,-3.1344e+01f,  6.5125e+01f,  1.2695e+01f,4.0531e+01f, -6.1211e+00f,  6.2219e+01f,4.6812e+01f,  5.2250e+01f, -1.1414e+01f,1.5404e-02f,  2.9938e+01f,  5.6719e+00f,-2.0125e+01f,  2.1531e+01f,  6.2500e+01f,7.2188e+01f,  9.3750e+00f, -4.8125e+01f});
-    auto expected = NDArrayFactory::create<float>('c', { 5,1,4 }, { 36.626545, 38.607746, -40.614971, 18.233341, -51.545094,2.234142, 20.913160, 8.783220, 15.955761, 55.273506, 36.838833, -29.751089, 8.148357, 13.676106, 1.097548, 68.766457, 38.690712, 27.176361, -14.156269, 7.157052  });
+    auto expected = NDArrayFactory::create<float>('c', { 5,1,4 }, { 36.626545f, 38.607746f, -40.614971f, 18.233341f, -51.545094f,2.234142f, 20.913160f, 8.783220f, 15.955761f, 55.273506f, 36.838833f, -29.751089f, 8.148357f, 13.676106f, 1.097548f, 68.766457f, 38.690712f, 27.176361f, -14.156269f, 7.157052f  });
 
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {1});
