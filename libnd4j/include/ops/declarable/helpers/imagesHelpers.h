@@ -14,17 +14,30 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+//
+// @author Oleh Semeniv (oleg.semeniv@gmail.com)
+// 
+//
+// @author Adel Rauf    (rauf@konduit.ai)
+//
+
+#ifndef LIBND4J_HELPERS_IMAGES_H
+#define LIBND4J_HELPERS_IMAGES_H
+
 #include <op_boilerplate.h>
 #include <templatemath.h>
 #include <NDArray.h>
 
 namespace nd4j {
-    namespace ops {
-        namespace helpers {
-             
-            void transform_hsv_rgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
-            void transform_rgb_hsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
-         
-        }
-    }
+namespace ops {
+namespace helpers {
+
+    void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC);
+    void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+    void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+
 }
+}
+}
+
+#endif

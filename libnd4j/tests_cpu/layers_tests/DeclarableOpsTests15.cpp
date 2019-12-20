@@ -919,3 +919,150 @@ TEST_F(DeclarableOpsTests15, test_empty_decreasing_1) {
 
     ASSERT_EQ(true, z.e<bool>(0));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_1) {
+    // rank 1
+    NDArray rgbs('c', { 3 }, { 10, 50, 200 }, nd4j::DataType::INT32);
+    NDArray expected('c', { 1 }, { 55 }, nd4j::DataType::INT32);
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({&rgbs}, {}, {});
+    auto output = result->at(0);
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_2) {
+    // rank 1
+    auto rgbs = NDArrayFactory::create<int>('f', { 3 }, { 1, 120, -25 });
+    auto expected = NDArrayFactory::create<int>('f', { 1 }, { 67 });
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_3) {
+    // rank 2
+    NDArray rgbs('c', { 4, 3 }, { -94,  99,  97, 90, 114, 101, 111,  96, 105, 100, 103, 102 }, nd4j::DataType::INT32);
+    NDArray expected('c', { 4, 1 }, { 41, 105, 101, 101 }, nd4j::DataType::INT32);
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_4) {
+
+    NDArray rgbs('c', { 3, 2 }, {14,  99, 207, 10, 114, 201 }, nd4j::DataType::INT32);
+
+    rgbs.permutei({1,0});
+    NDArray expected('c', { 2, 1 }, { 138, 58 }, nd4j::DataType::INT32);
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_5) {
+    // rank 2
+    NDArray rgbs('c', { 3, 4 }, { -94,  99,  97, 90, 114, 101, 111,  96, 105, 100, 103, 102 }, nd4j::DataType::INT32);
+    NDArray expected('c', { 1, 4 }, { 50, 100, 105, 94 }, nd4j::DataType::INT32);
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {0});
+    auto output = result->at(0);
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_6) {
+    // rank 3
+    auto rgbs = NDArrayFactory::create<float>('c', { 5,4,3 }, {1.7750e+01f, -7.1062e+01f, -1.0019e+02f,-2.3406e+01f,  5.2094e+01f,  9.5438e+01f, -6.7461e+00f,  3.8562e+01f,  6.5078e+00f,3.3562e+01f, -5.8844e+01f,  2.2750e+01f, -1.0477e+01f,  7.7344e+00f,  9.5469e+00f,2.1391e+01f, -8.5312e+01f,  7.5830e-01f,2.3125e+01f,  1.8145e+00f,  1.4602e+01f,-4.5859e+00f,  3.9344e+01f,  1.1617e+01f,-8.6562e+01f,  1.0038e+02f,  6.7938e+01f,5.9961e+00f,  6.7812e+01f,  2.9734e+01f,2.9609e+01f, -6.1438e+01f,  1.7750e+01f,6.8562e+01f, -7.4414e+00f,  3.9656e+01f,1.1641e+01f, -2.7516e+01f,  6.7562e+01f,7.8438e+01f,  5.4883e+00f,  2.9438e+01f,-3.1344e+01f,  6.5125e+01f,  1.2695e+01f,4.0531e+01f, -6.1211e+00f,  6.2219e+01f,4.6812e+01f,  5.2250e+01f, -1.1414e+01f,1.5404e-02f,  2.9938e+01f,  5.6719e+00f,-2.0125e+01f,  2.1531e+01f,  6.2500e+01f,7.2188e+01f,  9.3750e+00f, -4.8125e+01f});
+    auto expected = NDArrayFactory::create<float>('c', { 5,4,1 }, {-47.82958221f,  34.46305847f,  21.36137581f, -21.91625023f,2.49686432f, -43.59792709f,   9.64180183f,  23.04854202f,40.7946167f,  44.98754883f, -25.19047546f,  20.64586449f,-4.97033119f,   30.0226841f,  30.30688286f,  15.61459541f,43.36166f,  18.22480774f,  13.74833488f,  21.59387016f});
+
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_7) {
+    // rank 3
+    auto rgbs = NDArrayFactory::create<float>('c', { 5,3,4 }, { 1.7750e+01f, -7.1062e+01f, -1.0019e+02f,-2.3406e+01f,  5.2094e+01f,  9.5438e+01f, -6.7461e+00f,  3.8562e+01f,  6.5078e+00f,3.3562e+01f, -5.8844e+01f,  2.2750e+01f, -1.0477e+01f,  7.7344e+00f,  9.5469e+00f,2.1391e+01f, -8.5312e+01f,  7.5830e-01f,2.3125e+01f,  1.8145e+00f,  1.4602e+01f,-4.5859e+00f,  3.9344e+01f,  1.1617e+01f,-8.6562e+01f,  1.0038e+02f,  6.7938e+01f,5.9961e+00f,  6.7812e+01f,  2.9734e+01f,2.9609e+01f, -6.1438e+01f,  1.7750e+01f,6.8562e+01f, -7.4414e+00f,  3.9656e+01f,1.1641e+01f, -2.7516e+01f,  6.7562e+01f,7.8438e+01f,  5.4883e+00f,  2.9438e+01f,-3.1344e+01f,  6.5125e+01f,  1.2695e+01f,4.0531e+01f, -6.1211e+00f,  6.2219e+01f,4.6812e+01f,  5.2250e+01f, -1.1414e+01f,1.5404e-02f,  2.9938e+01f,  5.6719e+00f,-2.0125e+01f,  2.1531e+01f,  6.2500e+01f,7.2188e+01f,  9.3750e+00f, -4.8125e+01f});
+    auto expected = NDArrayFactory::create<float>('c', { 5,1,4 }, { 36.626545, 38.607746, -40.614971, 18.233341, -51.545094,2.234142, 20.913160, 8.783220, 15.955761, 55.273506, 36.838833, -29.751089, 8.148357, 13.676106, 1.097548, 68.766457, 38.690712, 27.176361, -14.156269, 7.157052  });
+
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {1});
+    auto output = result->at(0);
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_8) {
+    // rank 3
+    auto rgbs = NDArrayFactory::create<float>('c', { 3,5,4 }, {1.7750e+01f, -7.1062e+01f, -1.0019e+02f,-2.3406e+01f,  5.2094e+01f,  9.5438e+01f, -6.7461e+00f,  3.8562e+01f,  6.5078e+00f,3.3562e+01f, -5.8844e+01f,  2.2750e+01f, -1.0477e+01f,  7.7344e+00f,  9.5469e+00f,2.1391e+01f, -8.5312e+01f,  7.5830e-01f,2.3125e+01f,  1.8145e+00f,  1.4602e+01f,-4.5859e+00f,  3.9344e+01f,  1.1617e+01f,-8.6562e+01f,  1.0038e+02f,  6.7938e+01f,5.9961e+00f,  6.7812e+01f,  2.9734e+01f,2.9609e+01f, -6.1438e+01f,  1.7750e+01f,6.8562e+01f, -7.4414e+00f,  3.9656e+01f,1.1641e+01f, -2.7516e+01f,  6.7562e+01f,7.8438e+01f,  5.4883e+00f,  2.9438e+01f,-3.1344e+01f,  6.5125e+01f,  1.2695e+01f,4.0531e+01f, -6.1211e+00f,  6.2219e+01f,4.6812e+01f,  5.2250e+01f, -1.1414e+01f,1.5404e-02f,  2.9938e+01f,  5.6719e+00f,-2.0125e+01f,  2.1531e+01f,  6.2500e+01f,7.2188e+01f,  9.3750e+00f, -4.8125e+01f});
+    try {
+        nd4j::ops::rgb_to_grs op;
+        auto result = op.execute({ &rgbs }, {}, {});
+        ASSERT_EQ(Status::THROW(), result->status());
+        delete result;
+    } catch (std::exception& e) {
+        nd4j_printf("Error should be here `%s'. It's OK.\n", e.what());
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, test_rgb_to_grs_9) {
+    // rank 3
+    auto rgbs = NDArrayFactory::create<float>('f', { 2, 2, 3 }, { 1.7750e+01f,-7.1062e+01f, -1.0019e+02f, -2.3406e+01f,5.2094e+01f,9.5438e+01f, -6.7461e+00f,3.8562e+01f, 6.5078e+00f,      3.3562e+01f,-5.8844e+01f,2.2750e+01f});
+    auto expected = NDArrayFactory::create<float>('f', { 2,2,1 }, { 36.626545f, 38.607746f, -40.614971f, 18.233341f });
+
+    nd4j::ops::rgb_to_grs op;
+    auto result = op.execute({ &rgbs }, {}, {});
+    auto output = result->at(0);
+
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete result;
+}
