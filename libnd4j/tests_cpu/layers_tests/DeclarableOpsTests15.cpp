@@ -1318,13 +1318,13 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_1) {
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_2) {
-    // rank 2
+    // rank 1
     auto rgbs = NDArrayFactory::create<int>('f', { 3 }, { 1, 120, -25 });
     auto expected = NDArrayFactory::create<int>('f', { 1 }, { 67 });
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
     auto output = result->at(0);
-    
+
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1340,7 +1340,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_3) {
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
     auto output = result->at(0);
-    
+
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1352,15 +1352,12 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_3) {
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_4) {
 
     NDArray rgbs('c', { 3, 2 }, {14,  99, 207, 10, 114, 201 }, nd4j::DataType::INT32);
-// 14, 207, 114 = 138
-// 99, 10, 201 = 158
+
     rgbs.permutei({1,0});
     NDArray expected('c', { 2, 1 }, { 138, 58 }, nd4j::DataType::INT32);
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
     auto output = result->at(0);
-    
-//    output->printLinearBuffer(); 
 
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -1377,12 +1374,12 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_5) {
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {0});
     auto output = result->at(0);
-    
+
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete result; 
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1394,7 +1391,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_6) {
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
     auto output = result->at(0);
-    
+
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1412,12 +1409,6 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_7) {
     auto result = op.execute({ &rgbs }, {}, {1});
     auto output = result->at(0);
 
-    // output->printBuffer(); 
-    //for (int i = 0; i < output->lengthOf(); ++i) {
-    //    if(output->e<float>(i) != expected.e<float>(i))
-    //        printf("%f, %f\n", output->e<float>(i),expected.e<float>(i));
-    //}
-    
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -1436,7 +1427,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_8) {
         delete result;
     } catch (std::exception& e) {
         nd4j_printf("Error should be here `%s'. It's OK.\n", e.what());
-    } 
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1444,16 +1435,10 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_9) {
     // rank 3
     auto rgbs = NDArrayFactory::create<float>('f', { 2, 2, 3 }, { 1.7750e+01f,-7.1062e+01f, -1.0019e+02f, -2.3406e+01f,5.2094e+01f,9.5438e+01f, -6.7461e+00f,3.8562e+01f, 6.5078e+00f,      3.3562e+01f,-5.8844e+01f,2.2750e+01f});
     auto expected = NDArrayFactory::create<float>('f', { 2,2,1 }, { 36.626545f, 38.607746f, -40.614971f, 18.233341f });
-    
+
     nd4j::ops::rgb_to_grs op;
     auto result = op.execute({ &rgbs }, {}, {});
     auto output = result->at(0);
-
-    // output->printBuffer(); 
-    //for (int i = 0; i < output->lengthOf(); ++i) {
-    //    if(output->e<float>(i) != expected.e<float>(i))
-    //        printf("%f, %f\n", output->e<float>(i),expected.e<float>(i));
-    //}
 
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
