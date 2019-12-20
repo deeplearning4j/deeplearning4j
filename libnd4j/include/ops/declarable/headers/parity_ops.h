@@ -1028,6 +1028,24 @@ namespace nd4j {
         #endif
 
         /**
+         * lu op. - make LUP decomposition of given batch of 2D square matricies
+         *
+         * input params:
+         *    0 - float tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    0 - float tensor with dimension (x * y * z * ::: * M * M) with LU M x M matricies in it
+         *    1 - int (32 or 64) batched vector of permutations with length M - shape (x * y * z * ::: * M)
+         *
+         * int argument:
+         *    0 - data type of output permutaion vector (int32 or int64), optional, default INT32
+         */
+
+        #if NOT_EXCLUDED(OP_matrix_inverse)
+        DECLARE_CUSTOM_OP(lu, 1, 2, false, 0, 0);
+        #endif
+
+        /**
          * sequence_mask op. - make mask for given tensor filled by (j > x[i_1, i_2,...,i_n]) -> z[i_1, i_2,...,i_n,j]
          *
          * input params:

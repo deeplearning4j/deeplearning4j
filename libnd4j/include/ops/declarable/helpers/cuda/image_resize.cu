@@ -689,11 +689,17 @@ namespace helpers {
     }
 
     template <typename T>
-    static __global__ void bicubicInterpolateWithCachingKernel(float const* cachedTable, float* cachedValue, T const* inputPtr, ImageResizerState* pResizerState, WeightsAndIndices* xWais, bool halfPixelCenters, Nd4jLong inBatchWidth, Nd4jLong inRowWidth, float* outputPtr) {
+    static __global__ void bicubicInterpolateWithCachingKernel(float const* cachedTable, T const* inputPtr, ImageResizerState* pResizerState, WeightsAndIndices* xWais, bool halfPixelCenters, Nd4jLong inBatchWidth, Nd4jLong inRowWidth, float* outputPtr) {
 //        auto numChannels = pResizerState->channels;
+
         for (Nd4jLong b = blockIdx.x; b < pResizerState->batchSize; b += gridDim.x) {
             auto pInput = inputPtr + b * inBatchWidth;
+            float* cachedValue;
             for (Nd4jLong y = threadIdx.x; y < pResizerState->outHeight; y += blockDim.x) {
+                if (threadIdx.x == 0) {
+                    extern __shared__ char sharedChar[];
+                    cachedValue = reinterpret_cast<float*>(sharedChar);
+                }
                 auto pos = (b * pResizerState->outHeight + y) * pResizerState->outWidth * pResizerState->channels;
                 auto pOutput = &outputPtr[pos];
                 struct WeightsAndIndices yWai;
@@ -846,20 +852,20 @@ namespace helpers {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot set up memory for resizerState", err);
         }
 
-        float* cachedValue = nullptr;
-        size_t cachedSize = sizeof(float) * (numChannels == 3 ? 0 : 4 * numChannels);
-        if (cachedSize) {
-            err = cudaMalloc(reinterpret_cast<void**>(&cachedValue), cachedSize);
-            if (err != 0) {
-                throw cuda_exception::build(
-                        "helpers::bicubicInterpolateWithCaching: Cannot allocate memory for cached values", err);
-            }
-            err = cudaMemset(cachedValue, 0, cachedSize);
-            if (err != 0) {
-                throw cuda_exception::build(
-                        "helpers::bicubicInterpolateWithCaching: Cannot set up memory for cached values", err);
-            }
-        }
+//        float* cachedValue = nullptr;
+//        size_t cachedSize = sizeof(float) * (numChannels == 3 ? 0 : 4 * numChannels);
+//        if (cachedSize) {
+//            err = cudaMalloc(reinterpret_cast<void**>(&cachedValue), cachedSize);
+//            if (err != 0) {
+//                throw cuda_exception::build(
+//                        "helpers::bicubicInterpolateWithCaching: Cannot allocate memory for cached values", err);
+//            }
+//            err = cudaMemset(cachedValue, 0, cachedSize);
+//            if (err != 0) {
+//                throw cuda_exception::build(
+//                        "helpers::bicubicInterpolateWithCaching: Cannot set up memory for cached values", err);
+//            }
+//        }
 
         WeightsAndIndices* xWais; //(resizerState.outWidth);
         err = cudaMalloc(&xWais, sizeof(WeightsAndIndices) * resizerState.outWidth);
@@ -878,7 +884,7 @@ namespace helpers {
         }
         const T* pInput = image->getDataBuffer()->specialAsT<T>();
         float* pOutput = output->dataBuffer()->specialAsT<float>(); //_data.data();
-        bicubicInterpolateWithCachingKernel<T><<<128, 1, 512, *stream>>>(coeffsTable, cachedValue, pInput,
+        bicubicInterpolateWithCachingKernel<T><<<128, 1, 512, *stream>>>(coeffsTable, pInput,
                 resizerStateD, xWais, halfPixelCenters, inBatchWidth, inRowWidth, pOutput);
         err = cudaStreamSynchronize(*stream);
         if (err != 0) {
@@ -889,11 +895,11 @@ namespace helpers {
         if (err != 0) {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for resizerState", err);
         }
-        if (cachedSize)
-        err = cudaFree(cachedValue);
-        if (err != 0) {
-            throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for cached values", err);
-        }
+//        if (cachedSize)
+//        err = cudaFree(cachedValue);
+//        if (err != 0) {
+//            throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for cached values", err);
+//        }
 
         err = cudaFree(xWais);
         if (err != 0) {
