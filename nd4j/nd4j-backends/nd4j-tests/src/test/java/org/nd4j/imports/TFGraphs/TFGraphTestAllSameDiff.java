@@ -89,12 +89,12 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "rnn/bstack/d_.*",
 
             //2019/05/21 - Failing on AVX2/512 intermittently (Linux, OSX), passing elsewhere
-            "unsorted_segment/.*",
+            //"unsorted_segment/.*",
 
             //2019/05/21 - Failing on windows-x86_64-cuda-9.2 only -
             "conv_4",
             "g_09",
-            "unsorted_segment/unsorted_segment_mean_rank2",
+            //"unsorted_segment/unsorted_segment_mean_rank2",
 
             //2019/05/28 - JVM crash on ppc64le only - See issue 7657
             "g_11",
@@ -115,7 +115,10 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "roll/.*",
 
             // 11.26.2019 failing https://github.com/eclipse/deeplearning4j/issues/8455
-            "matrix_band_part/.*"
+            "matrix_band_part/.*",
+
+            // 12.20.2019 - https://github.com/eclipse/deeplearning4j/issues/8559
+            "fused_batch_norm/.*"
     };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have
