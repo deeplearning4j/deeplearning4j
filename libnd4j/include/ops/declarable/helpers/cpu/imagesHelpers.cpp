@@ -47,15 +47,12 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
         samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
         return;  
     }
-    printf("1");
     auto func = PRAGMA_THREADS_FOR{
          Nd4jLong coords[MAX_RANK];
          for (auto i = start; i < stop; i += increment) {                
 
              shape::index2coords(i, output.getShapeInfo(), coords);
              const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
-
-             coords[output.rankOf()] = 0;
              const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);
              const auto xOffset1 = xOffset0 + input.strideAt(dimC);
              const auto xOffset2 = xOffset1 + input.strideAt(dimC);
