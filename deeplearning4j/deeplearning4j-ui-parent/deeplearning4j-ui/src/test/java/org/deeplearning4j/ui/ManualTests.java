@@ -100,7 +100,7 @@ public class ManualTests {
     }
 
 
-    @Test
+    @Test(timeout = 300000)
     public void testTsne() throws Exception {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
@@ -208,7 +208,7 @@ public class ManualTests {
 
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testWord2VecPlot() throws Exception {
         File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());

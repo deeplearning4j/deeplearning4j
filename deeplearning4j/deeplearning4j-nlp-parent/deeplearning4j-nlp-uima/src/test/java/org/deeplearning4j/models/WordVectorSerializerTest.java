@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models;
 
+import org.junit.rules.Timeout;
 import org.nd4j.shade.guava.io.Files;
 import org.nd4j.shade.guava.primitives.Doubles;
 import lombok.val;
@@ -74,6 +75,9 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     private File textFile, binaryFile, textFile2;
     private File fastTextRaw, fastTextZip, fastTextGzip;

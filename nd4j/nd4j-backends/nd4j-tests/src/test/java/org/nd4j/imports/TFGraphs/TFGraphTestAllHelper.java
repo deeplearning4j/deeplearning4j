@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
+
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -228,9 +229,9 @@ public class TFGraphTestAllHelper {
                             String s1 = s.format(tfPred, false);
                             String s2 = s.format(nd4jPred, false);
                             System.out.print("TF: ");
-                            System.out.println(s1);
+                            System.out.println(tfPred.toStringFull());
                             System.out.print("SD: ");
-                            System.out.println(s2);
+                            System.out.println(nd4jPred.toStringFull());
                         }
                     }
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);

@@ -28,7 +28,9 @@ import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.deeplearning4j.nn.weights.WeightInitRelu;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.util.ModelSerializer;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,6 +44,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 import org.nd4j.resources.Resources;
 
 import java.io.File;
+import java.sql.Time;
 
 import static org.junit.Assert.*;
 
@@ -54,6 +57,9 @@ import static org.junit.Assert.*;
  * @author Alex Black
  */
 public class RegressionTest050 extends BaseDL4JTest {
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @Override
     public DataType getDataType(){

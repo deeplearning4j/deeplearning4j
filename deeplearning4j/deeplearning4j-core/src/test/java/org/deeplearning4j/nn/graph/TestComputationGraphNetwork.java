@@ -317,7 +317,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         assertEquals(paramsMLN, paramsGraph);
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testIrisFitMultiDataSetIterator() throws Exception {
 
         RecordReader rr = new CSVRecordReader(0, ',');

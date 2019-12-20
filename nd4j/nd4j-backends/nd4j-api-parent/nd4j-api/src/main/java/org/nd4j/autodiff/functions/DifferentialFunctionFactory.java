@@ -232,10 +232,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentProdBp;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSqrtNBp;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSumBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
-import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
-import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
-import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
-import org.nd4j.linalg.api.ops.random.custom.RandomNormal;
+import org.nd4j.linalg.api.ops.random.custom.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
@@ -382,6 +379,18 @@ public class DifferentialFunctionFactory {
 
     public SDVariable randomNormalTruncated(double mean, double stdev, long... shape) {
         return new TruncatedNormalDistribution(sameDiff(), mean, stdev, shape).outputVariable();
+    }
+
+    public SDVariable randomGamma(SDVariable shape, SDVariable alpha, SDVariable beta, int... seeds) {
+        return new RandomGamma(sameDiff(), shape, alpha, beta, seeds).outputVariable();
+    }
+
+    public SDVariable randomPoisson(SDVariable shape, SDVariable rate, int... seeds) {
+        return new RandomPoisson(sameDiff(), shape, rate, seeds).outputVariable();
+    }
+
+    public SDVariable randomShuffle(SDVariable values, int... seeds) {
+        return new RandomShuffle(sameDiff(), values, seeds).outputVariable();
     }
 
     /**

@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.junit.rules.Timeout;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.config.ND4JSystemProperties;
@@ -50,6 +51,9 @@ public abstract class BaseNd4jTest {
 
     @Rule
     public TestName testName = new TestName();
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(30);
 
     protected long startTime;
     protected int threadCountBefore;

@@ -58,11 +58,11 @@ static void _CUDA_G adjustHueCuda(const void* vx, const Nd4jLong* xShapeInfo, co
 
         rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
 
-        h += delta * 360;
-        if(h > 360)
-            h -= 360;
+        h += delta ;
+        if(h > 1)
+            h -= 1;
         else if(h < 0)
-            h += 360;
+            h += 1;
 
         hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
     }

@@ -111,17 +111,11 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // 2019/11/15 - missing dtype argument in nd4j, tests are useless https://github.com/eclipse/deeplearning4j/issues/8398
             "zeros_like/rank2_float32_dtype_int.*",
 
-            // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8450
-            "betainc.*",
-
             // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8453
             "roll/.*",
 
             // 11.26.2019 failing https://github.com/eclipse/deeplearning4j/issues/8455
-            "matrix_band_part/.*",
-
-            // 05.12.2019 failing https://github.com/eclipse/deeplearning4j/issues/8507
-            "resize_bicubic/int32.*"
+            "matrix_band_part/.*"
     };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have

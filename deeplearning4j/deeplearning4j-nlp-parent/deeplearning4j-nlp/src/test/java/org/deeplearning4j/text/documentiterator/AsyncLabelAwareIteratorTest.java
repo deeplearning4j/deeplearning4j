@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
  * @author raver119@gmail.com
  */
 public class AsyncLabelAwareIteratorTest extends BaseDL4JTest {
-    @Test
+    @Test(timeout = 300000)
     public void nextDocument() throws Exception {
         SentenceIterator sentence = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
         BasicLabelAwareIterator backed = new BasicLabelAwareIterator.Builder(sentence).build();

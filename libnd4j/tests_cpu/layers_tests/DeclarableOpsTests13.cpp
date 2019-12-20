@@ -24,7 +24,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 #include <GradCheck.h>
-
+#include <memory>
 
 using namespace nd4j;
 
@@ -432,7 +432,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_1) {
     NDArray exp  ('c', {2,2,3}, {100,0,44, 208,5,220, 177,230,97,  2,255,244}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    auto results = op.execute({&input, &factor}, {}, {2});
+    std::unique_ptr<nd4j::ResultSet> results (op.execute({&input, &factor}, {}, {2}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -442,17 +442,18 @@ TEST_F(DeclarableOpsTests13, adjustHue_1) {
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
-    delete results;
+
 }
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustHue_2) {
 
-    NDArray input('c', {2,2,3}, {0,100,56, 17,220,5,  150,97,230,   255,2,13}, nd4j::DataType::FLOAT32);
-    NDArray exp  ('c', {2,2,3}, {4,100,0,  146,220,5, 97,123.8,230, 255,2,164.8}, nd4j::DataType::FLOAT32);
+    NDArray input('c', { 2,2,3 }, { 0.f,100.f / 255.f,56.f / 255.f, 17.f / 255.f,220.f / 255.f,5.f / 255.f,  150.f / 255.f,97.f / 255.f,230.f / 255.f, 255.f / 255.f,2.f / 255.f,13.f / 255.f }, nd4j::DataType::FLOAT32);
+    NDArray exp('c', { 2,2,3 }, { 4.f / 255.f,100.f / 255.f,0.f,  146.f / 255.f,220.f / 255.f,5.f / 255.f, 97.f / 255.f,123.8f / 255.f,230.f / 255.f, 255.f / 255.f,2.f / 255.f,164.8f / 255.f }, nd4j::DataType::FLOAT32);
+
 
     nd4j::ops::adjust_hue op;
-    auto results = op.execute({&input}, {0.9}, {2});
+    std::unique_ptr<nd4j::ResultSet> results(op.execute({&input}, {0.9}, {2}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -461,7 +462,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_2) {
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
-    delete results;
+
 }
 
 
@@ -472,7 +473,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_3) {
     NDArray exp  ('c', {2,2,3}, {0.,84.,100., 5.,220.,122.0001,  229.8,97.,230., 255.,142.8002,2.}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    auto results = op.execute({&input}, {-0.9}, {2});
+    std::unique_ptr<nd4j::ResultSet> results(op.execute({&input}, {-0.9}, {2}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -481,7 +482,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_3) {
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
-    delete results;
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -491,7 +492,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_4) {
     NDArray exp  ('c', {2,3,2}, {100,208, 0,5,   44,220,  177,2,   230,255, 97,244}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    auto results = op.execute({&input}, {0.5}, {1});
+    std::unique_ptr<nd4j::ResultSet> results(op.execute({&input}, {0.5}, {1}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -500,7 +501,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_4) {
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
-    delete results;
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -510,7 +511,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_5) {
     NDArray exp  ('c', {3,2,2}, {100,208, 177,2,  0,5, 230,255,   44,220, 97,244}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    auto results = op.execute({&input}, {0.5}, {0});
+    std::unique_ptr<nd4j::ResultSet> results(op.execute({&input}, {0.5}, {0}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -519,7 +520,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_5) {
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
-    delete results;
+
 }
 
 ////////////////////////////////////////////////////////////////////

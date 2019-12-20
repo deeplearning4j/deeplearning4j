@@ -161,7 +161,7 @@ public class EvalTest extends BaseDL4JTest {
         assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testEvaluationWithMetaData() throws Exception {
 
         RecordReader csv = new CSVRecordReader();

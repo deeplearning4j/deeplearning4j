@@ -50,7 +50,7 @@ public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
     /**
      * Basically all we want from this test - being able to finish without exceptions.
      */
-    @Test
+    @Test(timeout = 300000)
     public void testIterator1() throws Exception {
         File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());

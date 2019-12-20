@@ -62,7 +62,7 @@ public class VectorsConfigurationTest extends BaseDL4JTest {
         assertEquals(configuration, configuration2);
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testFromW2V() throws Exception {
         VectorsConfiguration configuration = new VectorsConfiguration();
         configuration.setHugeModelExpected(true);

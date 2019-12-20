@@ -12,6 +12,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.resources.Resources;
 
@@ -26,6 +27,9 @@ import static org.junit.Assert.assertEquals;
 
 @Slf4j
 public class FastTextTest extends BaseDL4JTest {
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     private File inputFile = Resources.asFile("models/fasttext/data/labeled_data.txt");
     private File supModelFile = Resources.asFile("models/fasttext/supervised.model.bin");

@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -1465,6 +1466,7 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
+    @Ignore("12/16/2019 https://github.com/eclipse/deeplearning4j/issues/8540")
     @Test
     public void testPad(){
         INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);

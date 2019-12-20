@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.datasets.datavec;
 
+import org.junit.rules.Timeout;
 import org.nd4j.shade.guava.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -69,6 +70,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  */
 @Slf4j
 public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
+
+    @Rule
+    protected Timeout timeout = Timeout.seconds(300);
 
     @Override
     public DataType getDataType(){

@@ -27,7 +27,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.junit.Ignore;
+import org.junit.*;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -38,9 +39,6 @@ import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
 import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObservable;
 import org.deeplearning4j.util.ModelSerializer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -65,6 +63,9 @@ import static org.junit.Assert.*;
 public class ParallelInferenceTest extends BaseDL4JTest {
     private static MultiLayerNetwork model;
     private static DataSetIterator iterator;
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @Before
     public void setUp() throws Exception {

@@ -35,7 +35,7 @@ public class TokenizerImportTest extends BaseDL4JTest {
     ClassLoader classLoader = getClass().getClassLoader();
 
 
-    @Test
+    @Test(timeout=300000)
     public void importTest() throws IOException, InvalidKerasConfigurationException {
 
         String path = "modelimport/keras/preprocessing/tokenizer.json";
@@ -51,7 +51,7 @@ public class TokenizerImportTest extends BaseDL4JTest {
 
     }
 
-    @Test
+    @Test(timeout=300000)
     public void importNumWordsNullTest() throws IOException, InvalidKerasConfigurationException {
 
         String path = "modelimport/keras/preprocessing/tokenizer_num_words_null.json";

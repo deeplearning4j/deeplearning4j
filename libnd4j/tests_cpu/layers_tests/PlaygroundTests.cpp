@@ -59,6 +59,41 @@ public:
         fflush(stdout);
     }
 };
+
+/*
+TEST_F(PlaygroundTests, test_s_1) {
+    auto x = NDArrayFactory::create<float>('c', {32,112,112,16});
+    auto y = NDArrayFactory::create<float>('c', {16});
+    auto z = x.ulike();
+
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setInputArray(1, &y);
+    ctx.setOutputArray(0, &z);
+
+    std::vector<Nd4jLong> values;
+
+
+    nd4j::ops::biasadd op;
+    op.execute(&ctx);
+
+    for (int e = 0; e < 1000; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        op.execute(&ctx);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+}
+*/
+
 /*
 TEST_F(PlaygroundTests, test_s_1) {
     auto t = ::runLightBenchmarkSuit(true);

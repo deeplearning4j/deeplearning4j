@@ -84,7 +84,7 @@ namespace ops {
 
         if (block.isInplace()) output = input;
 
-        shiftIsLinear = axes.size() == 0;
+        shiftIsLinear = (axes.size() == 0) || (input->rankOf() == 1);
 
         if (shiftIsLinear) {
             helpers::rollFunctorLinear(block.launchContext(), input, output, shifts[0], block.isInplace());

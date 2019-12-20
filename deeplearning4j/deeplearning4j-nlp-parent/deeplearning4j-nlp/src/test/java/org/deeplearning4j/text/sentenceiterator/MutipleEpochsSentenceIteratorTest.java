@@ -27,7 +27,7 @@ import static org.junit.Assert.assertEquals;
  * @author raver119@gmail.com
  */
 public class MutipleEpochsSentenceIteratorTest extends BaseDL4JTest {
-    @Test
+    @Test(timeout = 300000)
     public void hasNext() throws Exception {
         SentenceIterator iterator = new MutipleEpochsSentenceIterator(
                         new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 100);
