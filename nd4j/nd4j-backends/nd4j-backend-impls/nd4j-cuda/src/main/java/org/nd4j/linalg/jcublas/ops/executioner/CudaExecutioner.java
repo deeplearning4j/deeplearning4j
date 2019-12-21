@@ -1293,6 +1293,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 //        validateDataType(Nd4j.dataType(), op);
 
+        if(op.z() == null){
+            switch (op.getOpType()) {
+                case SCALAR:
+                    op.setZ(op.x().ulike());
+                    break;
+                case SCALAR_BOOL:
+                    op.setZ(Nd4j.createUninitialized(DataType.BOOL, op.x().shape()));
+                    break;
+                default:
+                    throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
+            }
+        }
+
         if (op.x().length() != op.z().length())
             throw new ND4JIllegalStateException("op.X length should be equal to op.Y length: ["
                     + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "] != ["
@@ -2280,7 +2293,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     op.addOutputArgument(Nd4j.create(shape));
 
             } catch (Exception e) {
-                throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
+                throw new ND4JIllegalStateException("Op name " + op.opName() + " - no output arrays were provided and calculateOutputShape failed to execute", e);
             }
         }
 

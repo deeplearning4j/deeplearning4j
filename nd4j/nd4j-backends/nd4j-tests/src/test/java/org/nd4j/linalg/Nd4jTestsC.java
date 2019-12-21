@@ -66,6 +66,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
 import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
@@ -8162,6 +8163,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val z = Nd4j.exec(new All(x, 0));
 
         assertEquals(e, z);
+    }
+
+    @Test
+    public void testScalarEqualsNoResult(){
+        INDArray out = Nd4j.exec(new ScalarEquals(Nd4j.createFromArray(-2, -1, 0, 1, 2), null, 0));
+        INDArray exp = Nd4j.createFromArray(false, false, true, false, false);
+        assertEquals(exp, out);
     }
 
     @Override
