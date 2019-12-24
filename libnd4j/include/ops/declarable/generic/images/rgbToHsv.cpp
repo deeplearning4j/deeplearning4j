@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author Adel Rauf    (rauf@konduit.ai)
+// @author AbdelRauf    (rauf@konduit.ai)
 //
 
 
@@ -28,7 +28,7 @@
 namespace nd4j {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(rgb_to_hsv, 1, 1, false, 0, 0) {
+CONFIGURABLE_OP_IMPL(rgb_to_hsv, 1, 1, true, 0, 0) {
 
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
@@ -44,7 +44,7 @@ CONFIGURABLE_OP_IMPL(rgb_to_hsv, 1, 1, false, 0, 0) {
     if (argSize > 0) {
         REQUIRE_TRUE(dimC >= 0 && dimC < rank, 0, "Index of the Channel dimension out of range: %i not in [%i,%i) ", INT_ARG(0), -rank, rank);
     }
-    REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBtoHSV: operation expects 3 channels (H, S, V), but got %i instead", input->sizeAt(dimC));
+    REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "RGBtoHSV: operation expects 3 channels (R, G, B), but got %i instead", input->sizeAt(dimC));
 
     helpers::transformRgbHsv(block.launchContext(), input,  output, dimC);
 

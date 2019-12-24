@@ -18,7 +18,7 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 // 
 //
-// @author Adel Rauf    (rauf@konduit.ai)
+// @author AbdelRauf    (rauf@konduit.ai)
 //
 
 #ifndef LIBND4J_HEADERS_IMAGES_H
@@ -63,6 +63,28 @@ namespace ops {
 */
 #if NOT_EXCLUDED(OP_rgb_to_grs)
     DECLARE_CUSTOM_OP(rgb_to_grs, 1, 1, false, 0, 0);
+#endif
+
+/**
+* Rgb To Yiq
+* Input arrays:
+* 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+* Int arguments:
+* 0 - optional argument, corresponds to dimension with 3 channels
+*/
+#if NOT_EXCLUDED(OP_rgb_to_yiq)
+    DECLARE_CONFIGURABLE_OP(rgb_to_yiq, 1, 1, false, 0, 0);
+#endif
+
+/**
+* Yiq To Rgb
+* Input arrays:
+* 0 - input array with rank >= 1, must have at least one dimension equal 3, that is dimension containing channels.
+* Int arguments:
+* 0 - optional argument, corresponds to dimension with 3 channels
+*/
+#if NOT_EXCLUDED(OP_yiq_to_rgb)
+    DECLARE_CONFIGURABLE_OP(yiq_to_rgb, 1, 1, false, 0, 0);
 #endif
 
 }

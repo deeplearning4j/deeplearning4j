@@ -18,7 +18,7 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 // 
 //
-// @author Adel Rauf    (rauf@konduit.ai)
+// @author AbdelRauf    (rauf@konduit.ai)
 //
 
 #ifndef LIBND4J_HELPERS_IMAGES_H
@@ -33,9 +33,14 @@ namespace ops {
 namespace helpers {
 
     void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC);
+
     void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+
     void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
 
+    void transformYiqRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+
+    void transformRgbYiq(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
 }
 }
 }
