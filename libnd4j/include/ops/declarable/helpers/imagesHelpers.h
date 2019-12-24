@@ -37,6 +37,8 @@ namespace helpers {
     void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
 
     void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
+    void transformYuvRgb(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC);
+    void transformRgbYuv(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC);
 
     void transformYiqRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC);
 

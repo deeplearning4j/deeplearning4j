@@ -16,6 +16,7 @@
 
 //
 // @author Yurii Shyrma (iuriish@yahoo.com)
+// @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
 
 #include <op_boilerplate.h>
@@ -28,6 +29,117 @@
 namespace nd4j    {
 namespace ops     {
 namespace helpers {
+
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ void rgbToYuvCuda(const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets, void* vz, const Nd4jLong *zShapeInfo, const Nd4jLong* zTadOffsets, const Nd4jLong numOfTads, const int dimC) {
+
+    const T* x = reinterpret_cast<const T*>(vx);
+    T* z = reinterpret_cast<T*>(vz);
+
+    __shared__ int rank;
+    __shared__ Nd4jLong xDimCstride, zDimCstride;
+
+    if (threadIdx.x == 0) {
+        rank = shape::rank(xShapeInfo);
+        xDimCstride = shape::stride(xShapeInfo)[dimC];
+        zDimCstride = shape::stride(zShapeInfo)[dimC];
+    }
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < numOfTads; i += gridDim.x * blockDim.x) {
+        const T* xTad = x + xTadOffsets[i];
+        T* zTad = z + zTadOffsets[i];
+
+        rgbYuv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+    }
+
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+linkage void rgbToYuvCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zTadOffsets, const Nd4jLong numOfTads, const int dimC) {
+
+    rgbToYuvCuda<T> << <blocksPerGrid, threadsPerBlock, 256, * stream >> > (vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, dimC);
+}
+
+///////////////////////////////////////////////////////////////////
+void transformRgbYuv(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), { dimC });
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), { dimC });
+
+    const Nd4jLong numOfTads = packX.numberOfTads();
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
+
+    PointersManager manager(context, "yuv_to_rgb");
+
+    NDArray::prepareSpecialUse({ &output }, { &input });
+    BUILD_SINGLE_SELECTOR(input.dataType(), rgbToYuvCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), packX.platformOffsets(), output.specialBuffer(), output.specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
+    NDArray::registerSpecialUse({ &output }, { &input });
+
+    manager.synchronize();
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ void yuvToRgbCuda(const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets, void* vz, const Nd4jLong *zShapeInfo, const Nd4jLong* zTadOffsets, const Nd4jLong numOfTads, const int dimC) {
+
+    const T* x = reinterpret_cast<const T*>(vx);
+    T* z = reinterpret_cast<T*>(vz);
+
+    __shared__ int rank;
+    __shared__ Nd4jLong xDimCstride, zDimCstride;
+
+    if (threadIdx.x == 0) {
+        rank = shape::rank(xShapeInfo);
+        xDimCstride = shape::stride(xShapeInfo)[dimC];
+        zDimCstride = shape::stride(zShapeInfo)[dimC];
+    }
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < numOfTads; i += gridDim.x * blockDim.x) {
+        const T* xTad = x + xTadOffsets[i];
+        T* zTad = z + zTadOffsets[i];
+
+        yuvRgb<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+    }
+
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+linkage void yuvToRgbCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream, const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zTadOffsets, const Nd4jLong numOfTads, const int dimC) {
+
+    yuvToRgbCuda<T> << <blocksPerGrid, threadsPerBlock, 256, * stream >> > (vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, dimC);
+}
+
+///////////////////////////////////////////////////////////////////
+void transformYuvRgb(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), { dimC });
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), { dimC });
+
+    const Nd4jLong numOfTads = packX.numberOfTads();
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (numOfTads + threadsPerBlock - 1) / threadsPerBlock;
+
+    PointersManager manager(context, "yuv_to_rgb");
+
+    NDArray::prepareSpecialUse({ &output }, { &input });
+    BUILD_SINGLE_SELECTOR(input.dataType(), yuvToRgbCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), packX.platformOffsets(), output.specialBuffer(), output.specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
+    NDArray::registerSpecialUse({ &output }, { &input });
+
+    manager.synchronize();
+}
 
 ///////////////////////////////////////////////////////////////////
 // for example xShapeInfo = {2,3,4}, zShapeInfo = {2,1,4}
@@ -83,7 +195,7 @@ void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray
 
 	PointersManager manager(context, "rgbToGrs");
 
-    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
     const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 

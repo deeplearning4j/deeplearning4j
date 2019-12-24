@@ -17,6 +17,7 @@
 //
 // @author raver119@gmail.com
 // @author Yurii Shyrma (iuriish@yahoo.com)
+// @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
 
 #include <op_boilerplate.h>
@@ -106,7 +107,22 @@ FORCEINLINE _CUDA_HD void hsvToRgb(const T& h, const T& s, const T& v, T& r, T& 
 //    b *= 255;
 }
 
- 
+////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+FORCEINLINE _CUDA_HD void rgbYuv(const T& r, const T& g, const T& b, T& y, T& u, T& v) {
+    y =  static_cast<T>(0.299) * r + static_cast<T>(0.587) *g + static_cast<T>(0.114) * b;
+    u = -static_cast<T>(0.14714119) * r - static_cast<T>(0.2888691) * g + static_cast<T>(0.43601035) * b;
+    v = static_cast<T>(0.61497538) * r - static_cast<T>(0.51496512) * g - static_cast<T>(0.10001026) * b;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+FORCEINLINE _CUDA_HD void yuvRgb(const T& y, const T& u, const T& v, T& r, T& g, T& b) {
+    r = y + static_cast<T>(1.13988303)  * v;
+    g = y - static_cast<T>(0.394642334) * u - static_cast<T>(0.58062185) * v;
+    b = y + static_cast<T>(2.03206185)  * u;
+}
+
 /*////////////////////////////////////////////////////////////////////////////////
 template <typename T>
 static FORCEINLINE _CUDA_HD void rgb_to_hv(T r, T g, T b, T* h, T* v_min, T* v_max) {

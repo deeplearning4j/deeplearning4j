@@ -70,6 +70,65 @@ void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray
     BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrs_, (input, output, dimC), NUMERIC_TYPES);
 }
 
+template <typename T, typename Op>
+FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, const int dimC, Op op) {
+
+    const T* x = input.bufferAsT<T>();
+    T* z = output.bufferAsT<T>();
+    const int rank = input.rankOf();
+    bool bSimple = (dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() &&
+                     'c' == output.ordering() && 1 == output.ews());
+    
+    if (bSimple) {
+        
+        auto func = PRAGMA_THREADS_FOR{
+            for (auto i = start; i < stop; i += increment) {
+                op(x[i], x[i + 1], x[i + 2], z[i], z[i + 1], z[i + 2]);
+            }
+        };
+
+        samediff::Threads::parallel_for(func, 0, input.lengthOf(), 3);
+        return;
+    }
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimC);
+    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimC);
+
+    const Nd4jLong numOfTads = packX.numberOfTads();
+    const Nd4jLong xDimCstride = input.stridesOf()[dimC];
+    const Nd4jLong zDimCstride = output.stridesOf()[dimC];
+
+    auto func = PRAGMA_THREADS_FOR{
+        for (auto i = start; i < stop; i += increment) {
+            const T* xTad = x + packX.platformOffsets()[i];
+            T* zTad = z + packZ.platformOffsets()[i];
+            op(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+        }
+    };
+
+    samediff::Threads::parallel_tad(func, 0, numOfTads);
+    return;
+}
+
+template <typename T>
+FORCEINLINE static void rgbYuv_(const NDArray& input, NDArray& output, const int dimC) {
+    auto op = nd4j::ops::helpers::rgbYuv<T>;
+    return rgbToFromYuv_<T>(input, output, dimC, op);
+}
+
+void transformRgbYuv(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), rgbYuv_, (input, output, dimC), FLOAT_TYPES);
+}
+
+template <typename T>
+FORCEINLINE static void yuvRgb_(const NDArray& input, NDArray& output, const int dimC) {
+    auto op = nd4j::ops::helpers::yuvRgb<T>;
+    return rgbToFromYuv_<T>(input, output, dimC, op);
+}
+
+void transformYuvRgb(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), yuvRgb_, (input, output, dimC), FLOAT_TYPES);
+}
 
 template <typename T, typename Op>
 FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output, const int dimC, Op op) {
