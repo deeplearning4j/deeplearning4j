@@ -173,13 +173,6 @@ namespace nd4j {
                     order = shape::order(inp);
                     e = 0;
                 }
-                
-//                //Special case: empty.reshape(-1) -> return empty
-//                if (INPUT_VARIABLE(0)->isEmpty()) {
-//                    //
-//                    auto newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inp));
-//                    return SHAPELIST(newShape);
-//                }
 
                 std::vector<Nd4jLong> shapeNew;
 
@@ -226,10 +219,24 @@ namespace nd4j {
                     //REQUIRE_TRUE(y->lengthOf() == 1 && y->e<Nd4jLong>(0) == -1, 0, "Reshape: when input is empty, shape must be [-1]");
                     auto shapeOf = y->getBufferAsVector<Nd4jLong>();
                     Nd4jLong prod = 1;
-                    for (auto v:shapeOf)
+                    bool hasNegs = false;
+                    for (auto v:shapeOf) {
+                        if (v < 0) {
+                            hasNegs = true;
+                            v = 0;
+                        }
+
                         prod *= v;
+                    }
 
                     REQUIRE_TRUE(prod == 0, 0, "Reshape: in case of empty arrays reshape must return empty array as well");
+
+                    // if there are -1s - we turn them into zeros
+                    if (hasNegs) {
+                        for (int e = 0; e < shapeOf.size(); e++)
+                            if (shapeOf[e] < 0)
+                                shapeOf[e] = 0;
+                    }
 
                     auto newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inp), shape::order(inp), y->lengthOf(), shapeOf.data());
                     return SHAPELIST(CONSTANT(newShape));
