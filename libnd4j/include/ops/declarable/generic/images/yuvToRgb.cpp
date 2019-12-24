@@ -31,6 +31,10 @@ CONFIGURABLE_OP_IMPL(yuv_to_rgb, 1, 1, true, 0, 0) {
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
+    // just skip op if input is empty
+    if (input->isEmpty())
+        return Status::OK();
+
     const int rank = input->rankOf();
     const int argSize = block.getIArguments()->size();
     const int dimC = argSize > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
