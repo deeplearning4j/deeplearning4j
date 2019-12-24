@@ -62,19 +62,31 @@ public:
 
 /*
 TEST_F(PlaygroundTests, test_s_1) {
-    auto x = NDArrayFactory::create<float>('c', {32,112,112,16});
-    auto y = NDArrayFactory::create<float>('c', {16});
-    auto z = x.ulike();
+    auto x0 = NDArrayFactory::create<float>('c', {32, 7, 7, 176});
+    auto x1 = x0.ulike();
+    auto x2 = x0.ulike();
+    auto x3 = x0.ulike();
+    auto x4 = x0.ulike();
+    auto x5 = x0.ulike();
+
+    auto y = NDArrayFactory::create<int >(3);
+    auto z = NDArrayFactory::create<float>('c', {32, 7, 7, 1056});
 
     Context ctx(1);
-    ctx.setInputArray(0, &x);
-    ctx.setInputArray(1, &y);
+    ctx.setInputArray(0, &x0);
+    ctx.setInputArray(1, &x1);
+    ctx.setInputArray(2, &x2);
+    ctx.setInputArray(3, &x3);
+    ctx.setInputArray(4, &x4);
+    ctx.setInputArray(5, &x5);
+
+    ctx.setInputArray(6, &y);
     ctx.setOutputArray(0, &z);
+    ctx.setBArguments({true});
 
     std::vector<Nd4jLong> values;
 
-
-    nd4j::ops::biasadd op;
+    nd4j::ops::concat op;
     op.execute(&ctx);
 
     for (int e = 0; e < 1000; e++) {
