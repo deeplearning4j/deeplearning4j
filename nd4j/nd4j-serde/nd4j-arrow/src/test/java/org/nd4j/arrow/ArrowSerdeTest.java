@@ -18,6 +18,7 @@ package org.nd4j.arrow;
 
 import org.apache.arrow.flatbuf.Tensor;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -43,4 +44,13 @@ public class ArrowSerdeTest {
         assertEquals(matrix.slice(0),from);
     }
 
+    @Test
+    public void testTypeFromTensorType() {
+        for(DataType dataType : DataType.values()) {
+            INDArray arr = Nd4j.create(dataType,1,1);
+            Tensor tensor = ArrowSerde.toTensor(arr);
+            INDArray converted = ArrowSerde.fromTensor(tensor);
+            assertEquals(arr,converted);
+        }
+    }
 }

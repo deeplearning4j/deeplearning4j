@@ -18,12 +18,16 @@ package org.nd4j.arrow;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import org.apache.arrow.flatbuf.*;
+import org.apache.arrow.flatbuf.Tensor;
+import org.apache.arrow.flatbuf.Type;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+
 
 /**
  * Conversion to and from arrow {@link Tensor}
@@ -113,7 +117,7 @@ public class ArrowSerde {
      * Convert the given {@link INDArray}
      * data  type to the proper data type for the tensor.
      * @param bufferBuilder the buffer builder in use
-     * @param arr the array to conver tthe data type for
+     * @param arr the array to convert the data type for
      */
     public static void addTypeTypeRelativeToNDArray(FlatBufferBuilder bufferBuilder,INDArray arr) {
         switch(arr.data().dataType()) {
@@ -122,11 +126,21 @@ public class ArrowSerde {
                 Tensor.addTypeType(bufferBuilder,Type.Int);
                 break;
             case FLOAT:
-                Tensor.addTypeType(bufferBuilder,Type.FloatingPoint);
+                Tensor.addTypeType(bufferBuilder, Type.FloatingPoint);
                 break;
             case DOUBLE:
                 Tensor.addTypeType(bufferBuilder,Type.Decimal);
                 break;
+            case HALF:
+                Tensor.addTypeType(bufferBuilder,Type.FloatingPoint);
+                break;
+            case BOOL:
+                Tensor.addTypeType(bufferBuilder,Type.Bool);
+                break;
+            case UTF8:
+                Tensor.addTypeType(bufferBuilder,Type.Utf8);
+                break;
+
         }
     }
 
@@ -167,7 +181,7 @@ public class ArrowSerde {
 
 
     /**
-     * Create thee databuffer type frm the given type,
+     * Create thee {@link DataType} type frm the given type,
      * relative to the bytes in arrow in class:
      * {@link Type}
      * @param type the type to create the nd4j {@link DataType} from
@@ -188,6 +202,10 @@ public class ArrowSerde {
             else if(elementSize == 8) {
                 return DataType.LONG;
             }
+
+        }
+        else if(type == Type.Utf8) {
+            return DataType.UTF8;
         }
         else {
             throw new IllegalArgumentException("Only valid types are Type.Decimal and Type.Int");

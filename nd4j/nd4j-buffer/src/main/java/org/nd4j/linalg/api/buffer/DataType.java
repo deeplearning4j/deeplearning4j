@@ -100,7 +100,7 @@ public enum DataType {
     /**
      * @return True if the datatype is a numerical type and is signed (supports negative values)
      */
-    public boolean isSigned(){
+    public boolean isSigned() {
         switch (this){
             case DOUBLE:
             case FLOAT:
@@ -127,7 +127,7 @@ public enum DataType {
     /**
      * @return the max number of significant decimal digits
      */
-    public int precision(){
+    public int precision() {
         switch (this){
             case DOUBLE:
                 return 17;
@@ -157,7 +157,7 @@ public enum DataType {
     /**
      * @return For fixed-width types, this returns the number of bytes per array element
      */
-    public int width(){
+    public int width() {
         switch (this){
             case DOUBLE:
             case LONG:
@@ -184,7 +184,7 @@ public enum DataType {
         }
     }
 
-    public static DataType fromNumpy(String numpyDtypeName){
+    public static DataType fromNumpy(String numpyDtypeName) {
         switch (numpyDtypeName.toLowerCase()){
             case "bool": return BOOL;
             case "byte": return BYTE;

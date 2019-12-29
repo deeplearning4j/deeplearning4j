@@ -3637,25 +3637,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <execution/AffinityManager.h>
 
 
-    @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(float arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(@Cast("const float16") short arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(double arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(int arg0, @Const @ByRef NDArray arg1);
 
-    @Namespace("nd4j") public static native @ByVal @Name("operator +") NDArray add(float arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator +") NDArray add(@Cast("const float16") short arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator +") NDArray add(double arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator +") NDArray add(int arg0, @Const @ByRef NDArray arg1);
-
-    @Namespace("nd4j") public static native @ByVal @Name("operator *") NDArray multiply(float arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator *") NDArray multiply(@Cast("const float16") short arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator *") NDArray multiply(double arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator *") NDArray multiply(int arg0, @Const @ByRef NDArray arg1);
-
-    @Namespace("nd4j") public static native @ByVal @Name("operator /") NDArray divide(float arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator /") NDArray divide(@Cast("const float16") short arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator /") NDArray divide(double arg0, @Const @ByRef NDArray arg1);
-    @Namespace("nd4j") public static native @ByVal @Name("operator /") NDArray divide(int arg0, @Const @ByRef NDArray arg1);
 
     @Namespace("nd4j") public static native @ByVal NDArray mmul(@Const @ByRef NDArray arg0, @Const @ByRef NDArray arg1);
 
@@ -3906,9 +3888,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  axis - axis along which to repeat elements
         *  repeats - number of repetitions
         */
-        public native NDArray repeat(int axis, @StdVector IntPointer repeats);
-        public native NDArray repeat(int axis, @StdVector IntBuffer repeats);
-        public native NDArray repeat(int axis, @StdVector int[] repeats);
+        public native @ByVal NDArray repeat(int axis, @StdVector IntPointer repeats);
+        public native @ByVal NDArray repeat(int axis, @StdVector IntBuffer repeats);
+        public native @ByVal NDArray repeat(int axis, @StdVector int[] repeats);
 
         /**
          * This method fills this array with zeros
@@ -3921,14 +3903,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
          * @param array
          * @return
          */
-        public static native @ByVal NDArray quantize(@ByRef NDArray array);
-
-        /**
-         * This method returns quantized copy of given array
-         *
-         * @param array
-         * @return
-         */
+        public static native @ByVal NDArray quantize(@Const @ByRef NDArray array);
 
         /**
         *  fill target array by repeating current array
@@ -3949,10 +3924,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
         *  cast array elements to given dtype
         */
+        public native @ByVal NDArray cast(@Cast("nd4j::DataType") int dtype);
 
-        public native NDArray cast(@Cast("nd4j::DataType") int dtype);
-
-        public native void cast(NDArray target, @Cast("nd4j::DataType") int dtype);
+        public native void cast(@ByRef NDArray target, @Cast("nd4j::DataType") int dtype);
 
         /**
         *   returns _context
@@ -4123,26 +4097,12 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
         *  this method assigns given value to all elements in array
         */
-        public native void assign(double value, @Cast("bool") boolean allowParallelism/*=true*/);
-        public native void assign(double value);
-        public native void assign(float value, @Cast("bool") boolean allowParallelism/*=true*/);
-        public native void assign(float value);
-        public native void assign(@Cast("const float16") short value, @Cast("bool") boolean allowParallelism/*=true*/);
-        public native void assign(@Cast("const float16") short value);
-        public native void assign(@Cast("const Nd4jLong") long value, @Cast("bool") boolean allowParallelism/*=true*/);
-        public native void assign(@Cast("const Nd4jLong") long value);
-        public native void assign(int value, @Cast("bool") boolean allowParallelism/*=true*/);
-        public native void assign(int value);
-        public native void assign(@Cast("const uint8_t") byte value, @Cast("bool") boolean allowParallelism/*=true*/);
-        public native void assign(@Cast("const uint8_t") byte value);
-        public native void assign(@Cast("const bool") boolean value, @Cast("bool") boolean allowParallelism/*=true*/);
-        public native void assign(@Cast("const bool") boolean value);
 
         /**
         *  returns new copy of this array, optionally in different order
         */
-        public native NDArray dup(byte newOrder/*='a'*/);
-        public native NDArray dup();
+        public native @ByVal NDArray dup(byte newOrder/*='a'*/);
+        public native @ByVal NDArray dup();
 
         /**
         *  returns sum of all elements of array
@@ -4179,9 +4139,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  index - the number of array to be returned among set of possible arrays
         *  dimensions - array of dimensions to point on
         */
-        public native NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntPointer dimensions);
-        public native NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntBuffer dimensions);
-        public native NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector int[] dimensions);
+        public native @ByVal NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntPointer dimensions);
+        public native @ByVal NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector IntBuffer dimensions);
+        public native @ByVal NDArray tensorAlongDimension(@Cast("Nd4jLong") long index, @StdVector int[] dimensions);
 
         /**
         *  returns the number of arrays pointing on specified dimension(s)
@@ -4203,54 +4163,54 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  add given row vector to all rows of this array
         *  row - row vector to add
         */
-        public native void addiRowVector(@Const NDArray row);
+        public native void addiRowVector(@Const @ByRef NDArray row);
 
         /**
         *  add given row vector to all rows of this array, store result in target
         *  row - row vector to add
         *  target - where to store result
         */
-        public native void addRowVector(@Const NDArray row, NDArray target);
+        public native void addRowVector(@Const @ByRef NDArray row, @ByRef NDArray target);
 
         /**
         *  subtract given row vector from all rows of this array, store result in target
         *  row - row vector to subtract
         *  target - where to store result
         */
-        public native void subRowVector(@Const NDArray row, NDArray target);
+        public native void subRowVector(@Const @ByRef NDArray row, @ByRef NDArray target);
 
         /**
         *  multiply all rows of this array on given row vector, store result in target
         *  row - row vector to multiply on
         *  target - where to store result
         */
-        public native void mulRowVector(@Const NDArray row, NDArray target);
+        public native void mulRowVector(@Const @ByRef NDArray row, @ByRef NDArray target);
 
         /**
         *  divide all rows of this array on given row vector, store result in target
         *  row - row vector to divide on
         *  target - where to store result
         */
-        public native void divRowVector(@Const NDArray row, NDArray target);
+        public native void divRowVector(@Const @ByRef NDArray row, @ByRef NDArray target);
 
         /**
         *  add given column vector to all columns of this array, store result in target
         *  column - column vector to add
         *  target - where to store result
         */
-        public native void addColumnVector(@Const NDArray column, NDArray target);
+        public native void addColumnVector(@Const @ByRef NDArray column, @ByRef NDArray target);
 
         /**
         *  add given column vector to all columns of this array, this array becomes affected (in-place operation)
         *  column - column vector to add
         */
-		public native void addiColumnVector(@Const NDArray column);
+		public native void addiColumnVector(@Const @ByRef NDArray column);
 
         /**
         *  multiply all columns of this array on given column vector, this array becomes affected (in-place operation)
         *  column - column vector to multiply on
         */
-		public native void muliColumnVector(@Const NDArray column);
+		public native void muliColumnVector(@Const @ByRef NDArray column);
 
         /**
         *  returns number of bytes used by _buffer & _shapeInfo
@@ -4286,9 +4246,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *
         * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
-		public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
-		public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
-		public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector long[] shape);
+        public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
+        public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
+        public native @ByVal NDArray reshape(byte order, @Cast("Nd4jLong*") @StdVector long[] shape);
 
         /**
         *  calculate strides and set given order
@@ -4328,12 +4288,6 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         public native void tile(@ByRef NDArray target);
 
         /**
-        *  returns an array which is result of broadcasting of this and other arrays
-        *  other - input array
-        */
-		public native NDArray broadcast(@Const @ByRef NDArray other);
-
-        /**
         *  check whether array is identity matrix
         */
 		public native @Cast("bool") boolean isIdentityMatrix();
@@ -4342,7 +4296,6 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  check whether array is unitary matrix
         */
 		public native @Cast("bool") boolean isUnitary();
-
 
         /**
         *  operator returns subarray with buffer pointing at this->_buffer with offset defined by given intervals
@@ -4390,25 +4343,6 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         public native void getSubArrShapeAndOffsets(@StdVector int[] dimsToExclude, @Cast("Nd4jLong*&") @ByPtrRef long[] subArrShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef long[] subArrOffsets);
 
         /**
-        *  addition operator: array + other
-        *  other - input array to add
-        */
-        public native @ByVal @Name("operator +") NDArray add(@Const @ByRef NDArray other);
-
-        /**
-        *  addition operator: array + scalar
-        *  scalar - input scalar to add
-        */
-
-        /**
-        *  friend functions which implement addition operator: scalar + array
-        *  scalar - input scalar to add
-        */
-        //template <typename T>
-        //friend NDArray nd4j::operator+(const T scalar, const NDArray& arr);
-
-
-        /**
         *  addition unary operator array += other
         *  other - input array to add
         */
@@ -4421,37 +4355,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         public native @Name("operator -=") void subtractPut(@Const @ByRef NDArray other);
 
         /**
-        *  subtraction operator: array - other
-        *  other - input array to subtract
-        */
-        public native @ByVal @Name("operator -") NDArray subtract(@Const @ByRef NDArray other);
-
-        /**
-        *  subtraction operator: array - scalar
-        *  scalar - input scalar to subtract
-        */
-
-        /**
         *  negative operator, it changes sign of all array elements on opposite
         */
         public native @ByVal @Name("operator -") NDArray subtract();
-
-        /**
-        *  friend functions which implement subtraction operator: scalar - array
-        *  scalar - input scalar to subtract
-        */
-        //friend NDArray nd4j::operator-(const float scalar, const NDArray& arr);
-
-        /**
-        *  pairwise multiplication operator: array * other
-        *  other - input array to multiply on
-        */
-        public native @ByVal @Name("operator *") NDArray multiply(@Const @ByRef NDArray other);
-
-        /**
-        *  multiplication operator: array * scalar
-        *  scalar - input scalar to multiply on
-        */
 
         /**
         *  pairwise multiplication unary operator array *= other
@@ -4462,17 +4368,6 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
         *  multiplication unary operator array *= scalar
         *  scalar - input scalar to multiply on
-        */
-
-        /**
-        *  pairwise division operator: array / other
-        *  other - input array to divide on
-        */
-        public native @ByVal @Name("operator /") NDArray divide(@Const @ByRef NDArray other);
-
-        /**
-        *  division operator: array / scalar
-        *  scalar - input scalar to divide each array element on
         */
 
         /**
@@ -4513,7 +4408,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  return vector with buffer which points on corresponding diagonal elements of array
         *  type - means of vector to be returned: column ('c') or row ('r')
         */
-        public native NDArray diagonal(byte type );
+        public native @ByVal NDArray diagonal(byte type );
 
         /**
         * fill target matrix with given value in one or two directions from main diagonal:
@@ -4536,13 +4431,13 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") LongPointer shapeInfo);
         public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
         public native @ByVal NDArray tileToShape(@Cast("const Nd4jLong*") long[] shapeInfo);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, NDArray target/*=nullptr*/);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape, NDArray target/*=nullptr*/);
-        public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape, NDArray target/*=nullptr*/);
+        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongPointer shape, @ByRef NDArray target);
+        public native void tileToShape(@Cast("Nd4jLong*") @StdVector LongBuffer shape, @ByRef NDArray target);
+        public native void tileToShape(@Cast("Nd4jLong*") @StdVector long[] shape, @ByRef NDArray target);
 // #ifndef __JAVACPP_HACK__
 // #endif
 
-        public native NDArray asT(@Cast("nd4j::DataType") int dtype);
+        public native @ByVal NDArray asT(@Cast("nd4j::DataType") int dtype);
 
 
         public native void linspace(double start);
@@ -4554,17 +4449,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         */
         public native double getTrace();
 
-        public native ResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
-        public native ResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
-        public native ResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
+        public native @ByVal ResultSet multipleTensorsAlongDimension(@StdVector IntPointer indices, @StdVector IntPointer dimensions);
+        public native @ByVal ResultSet multipleTensorsAlongDimension(@StdVector IntBuffer indices, @StdVector IntBuffer dimensions);
+        public native @ByVal ResultSet multipleTensorsAlongDimension(@StdVector int[] indices, @StdVector int[] dimensions);
 
-        public native ResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
-        public native ResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
-        public native ResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
+        public native @ByVal ResultSet allTensorsAlongDimension(@StdVector IntPointer dimensions);
+        public native @ByVal ResultSet allTensorsAlongDimension(@StdVector IntBuffer dimensions);
+        public native @ByVal ResultSet allTensorsAlongDimension(@StdVector int[] dimensions);
 
-        //ResultSet  allTensorsAlongDims(const std::vector<int>& dimensions) const;
-
-        public native ResultSet allExamples();
+        public native @ByVal ResultSet allExamples();
 
         /**
         *  set _shapeInfo
@@ -4672,7 +4565,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
         *  returns true if these two NDArrays have same rank, dimensions, strides, ews and order
         */
-        public native @Cast("bool") boolean isSameShapeStrict(@Const NDArray other);
+        public native @Cast("bool") boolean isSameShapeStrict(@Const @ByRef NDArray other);
 
         /**
         *  returns true if buffer && shapeInfo were defined (non nullptr)
@@ -4730,11 +4623,6 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  value - scalar value to assign
         */
         public native void p(@Cast("const Nd4jLong") long i, @Cast("const Nd4jLong") long j, @Cast("const Nd4jLong") long k, @Cast("const Nd4jLong") long l, @Const @ByRef NDArray value);
-
-        /**
-        *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
-        */
-        
 
         /**
         *  returns true if array is 2D
@@ -4806,59 +4694,6 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
          */
         public native @Cast("bool") boolean isS();
 
-        /**
-        *  inline accessing operator for matrix, i - absolute index
-        */
-        //FORCEINLINE NDArray operator()(const Nd4jLong i) const;
-
-        /**
-        *  inline modifying operator for matrix, i - absolute index
-        */
-        //FORCEINLINE NDArray& operator()(const Nd4jLong i);
-
-        /**
-        *  inline accessing operator for 2D array, i - row, j - column
-        */
-        //FORCEINLINE NDArray operator()(const Nd4jLong i, const Nd4jLong j) const;
-
-        /**
-        *  inline modifying operator for 2D array, i - row, j - column
-        */
-        //FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j);
-
-        /**
-        *  inline accessing operator for 3D array, i - height, j - width, k - depth
-        */
-        //FORCEINLINE NDArray operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
-
-        /**
-        *  inline modifying operator for 3D array, i - height, j - width, k - depth
-        */
-        //FORCEINLINE NDArray& operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
-
-        /**
-        *  inline modifying operator for 4D array, i - height, j - width, k - depth
-        */
-        //FORCEINLINE NDArray& operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w);
-
-        /**
-        *  inline accessing operator for 4D array, i - height, j - width, k - depth
-        */
-        //FORCEINLINE NDArray operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const;
-
-        /**
-        *  inline modifying operator for ND array
-        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
-        */
-        //FORCEINLINE NDArray& operator()(const Nd4jLong* idx);
-
-        /**
-        *  inline accessing operator for ND array
-        *  idx - array with corresponding indexes, for example {2,10,0,5,...,8}, number of indexes should be equal to array rank
-        */
-        //FORCEINLINE NDArray operator()(const Nd4jLong* idx) const;
-
-
         public native @Cast("bool") boolean isAttached();
 
         public native NDArray detach();
@@ -4874,268 +4709,75 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 //////////////////////////////////////////////////////////////////////////
 ///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
-    
 
-    
 
-    //////////////////////////////////////////////////////////////////////////
-    
 
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
-
-    //////////////////////////////////////////////////////////////////////////
-    
 
 //////////////////////////////////////////////////////////////////////////
-// accessing operator for matrix, i - absolute index
-/*
-NDArray NDArray::operator()(const Nd4jLong i) const {
 
-    if (i >= shape::length(_shapeInfo))
-            throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
-
-    auto ews   = shape::elementWiseStride(_shapeInfo);
-    char order = ordering();
-
-    if(ews == 1 && order == 'c') {
-        auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
-        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        return result;
-    } else if(ews > 1 && order == 'c') {
-        auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
-        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        return result;
-    } else {
-        Nd4jLong idx[MAX_RANK];
-        shape::ind2subC(rankOf(), shapeOf(), i, idx);
-        auto xOffset = shape::getOffset(getShapeInfo(), idx);
-
-        auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        return result;
-    }
-}
-*/
-//////////////////////////////////////////////////////////////////////////
-// modifying operator for matrix, i - absolute index
-/*
-NDArray& NDArray::operator()(const Nd4jLong i) {
-    if (i >= shape::length(_shapeInfo))
-            throw std::invalid_argument("NDArray::operator(i): input index is out of array length !");
-
-    auto ews = shape::elementWiseStride(_shapeInfo);
-    auto order = ordering();
-
-    if(ews == 1 && order == 'c') {
-        auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * this->sizeOfT());
-        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-
-        // FIXME: bad
-        return result;
-    } else if(ews > 1 && order == 'c') {
-        auto cast = reinterpret_cast<int8_t *>(_buffer) + (i * ews * this->sizeOfT());
-        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        return result;
-    } else {
-        Nd4jLong idx[MAX_RANK];
-        shape::ind2subC(rankOf(), shapeOf(), i, idx);
-        auto xOffset = shape::getOffset(getShapeInfo(), idx);
-
-        auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-        NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-        return result;
-    }
-}*/
 
 //////////////////////////////////////////////////////////////////////////
-// accessing operator for 2D matrix, i - row, j - column
-/*
-NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
 
-    if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
-       throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
-
-    Nd4jLong coords[2] = {i, j};
-    auto xOffset = shape::getOffset(getShapeInfo(), coords);
-
-    // TODO: do we really want a view here?
-    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    return result;
-}
-*/
-//////////////////////////////////////////////////////////////////////////
-// modifying operator for 2D matrix, i - row, j - column
-/*
-NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
-    if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
-       throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
-
-    Nd4jLong coords[2] = {i, j};
-    auto xOffset = shape::getOffset(getShapeInfo(), coords);
-
-    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-
-    //FIXME: bad, will crash!
-    return result;
-}
-*/
 
 //////////////////////////////////////////////////////////////////////////
-// accessing operator for 3D array, i - row, j - column
-/*
-NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
 
-    if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || j >= shapeOf()[2])
-       throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
-
-    Nd4jLong coords[3] = {i, j, k};
-    auto xOffset = shape::getOffset(getShapeInfo(), coords);
-
-    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    return result;
-}
-*/
 
 //////////////////////////////////////////////////////////////////////////
-// modifying operator for 3D array
-/*
-NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
 
-    if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
-       throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
-    Nd4jLong coords[3] = {i, j, k};
-    auto xOffset = shape::getOffset(getShapeInfo(), coords);
-
-    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-
-    //FIXME: bad, will crash!
-    return result;
-}
-*/
-/*
-NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) const {
-
-    if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
-       throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
-
-    Nd4jLong coords[4] = {t, u, v, w};
-    auto xOffset = shape::getOffset(getShapeInfo(), coords);
-
-    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    return result;
-}
-*/
-/*
-NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v, const Nd4jLong w) {
-
-    if (rankOf() != 4 || t >= shapeOf()[0] || u >= shapeOf()[1] || v >= shapeOf()[2] || w >= shapeOf()[3])
-       throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
-
-    Nd4jLong coords[4] = {t, u, v, w};
-    auto xOffset = shape::getOffset(getShapeInfo(), coords);
-
-    // FIXME
-    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    return result;
-}
-*/
 //////////////////////////////////////////////////////////////////////////
-/*
-NDArray NDArray::operator()(const Nd4jLong* idx) const {
 
-    for(int i = 0; i < rankOf(); ++i)
-        if (idx[i] >= sizeAt(i))
-            throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
 
-    auto xOffset = shape::getOffset(getShapeInfo(), idx);
-
-    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-    return result;
-}
-*/
 //////////////////////////////////////////////////////////////////////////
-/*
-NDArray& NDArray::operator()(const Nd4jLong* idx) {
-
-    for(int i = 0; i < rankOf(); ++i)
-        if (idx[i] >= sizeAt(i))
-            throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
-
-    auto xOffset = shape::getOffset(getShapeInfo(), idx);
-
-    auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
-    NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
-
-    // FIXME
-    return result;
-}
-*/
 
 
-    //////////////////////////////////////////////////////////////////////////
-    
+//////////////////////////////////////////////////////////////////////////
 
-    //////////////////////////////////////////////////////////////////////////
-    // still the definition of inline function must be in header file
-    
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+
+//////////////////////////////////////////////////////////////////////////
+
+
+//////////////////////////////////////////////////////////////////////////
+// still the definition of inline function must be in header file
+
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -11193,7 +10835,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
 // #define NOT_EXCLUDED(NAME) 1>0
 // #else
-// #define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
+// for now we don't want minifier mechanics working
+//#define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
+// #define NOT_EXCLUDED(NAME) 1>0
 // #endif
 
 // #ifdef __JAVACPP_HACK__
@@ -12368,6 +12012,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ops/declarable/headers/tests.h>
 // #include <ops/declarable/headers/kernels.h>
 // #include <ops/declarable/headers/BarnesHutTsne.h>
+// #include <ops/declarable/headers/images.h>
 // #include <dll.h>
 // #include <helpers/shape.h>
 // #include <helpers/TAD.h>
@@ -17115,19 +16760,20 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation calculates hash code, optionally along dimension
          */
 //         #if NOT_EXCLUDED(OP_hashcode)
-        @Namespace("nd4j::ops") public static class hashcode extends DeclarableReductionOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public hashcode(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public hashcode(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public hashcode position(long position) {
-                return (hashcode)super.position(position);
-            }
-        
+            @Namespace("nd4j::ops") public static class hashcode extends DeclarableCustomOp {
+                static { Loader.load(); }
+                /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                public hashcode(Pointer p) { super(p); }
+                /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                public hashcode(long size) { super((Pointer)null); allocateArray(size); }
+                private native void allocateArray(long size);
+                @Override public hashcode position(long position) {
+                    return (hashcode)super.position(position);
+                }
+            
                                                                                     public hashcode() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
 
@@ -19343,6 +18989,38 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
+//         #endif
+
+        /**
+         * lu op. - make LUP decomposition of given batch of 2D square matricies
+         *
+         * input params:
+         *    0 - float tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    0 - float tensor with dimension (x * y * z * ::: * M * M) with LU M x M matricies in it
+         *    1 - int (32 or 64) batched vector of permutations with length M - shape (x * y * z * ::: * M)
+         *
+         * int argument:
+         *    0 - data type of output permutaion vector (int32 or int64), optional, default INT32
+         */
+
+//         #if NOT_EXCLUDED(OP_matrix_inverse)
+        @Namespace("nd4j::ops") public static class lu extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public lu(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public lu(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public lu position(long position) {
+                return (lu)super.position(position);
+            }
+        
+                                                                                    public lu() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**

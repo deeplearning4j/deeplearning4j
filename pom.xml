@@ -230,7 +230,7 @@
 
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>
-        <arrow.version>0.11.0</arrow.version>
+        <arrow.version>0.15.1</arrow.version>
         <avro.version>1.7.7</avro.version>
         <curator.version>2.8.0</curator.version>
         <guice.version>4.0</guice.version>
@@ -288,15 +288,16 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5.2</javacpp.version>
-        <javacpp-presets.version>1.5.2</javacpp-presets.version>
-        <javacv.version>1.5.2</javacv.version>
+        <javacpp.version>1.5.3-SNAPSHOT</javacpp.version>
+        <javacpp-presets.version>1.5.3-SNAPSHOT</javacpp-presets.version>
+        <javacv.version>1.5.3-SNAPSHOT</javacv.version>
 
         <python.version>3.7.5</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
         <numpy.version>1.17.3</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
+        <arrow.javacpp.version>${arrow.version}-${javacpp.version}</arrow.javacpp.version>
         <openblas.version>0.3.7</openblas.version>
         <mkl.version>2019.5</mkl.version>
         <opencv.version>4.1.2</opencv.version>
