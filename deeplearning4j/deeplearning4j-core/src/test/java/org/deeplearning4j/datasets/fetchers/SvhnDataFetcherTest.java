@@ -17,7 +17,9 @@
 package org.deeplearning4j.datasets.fetchers;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.io.File;
 
@@ -27,6 +29,9 @@ import static org.junit.Assert.assertTrue;
  * @author saudet
  */
 public class SvhnDataFetcherTest extends BaseDL4JTest {
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(600);
 
     @Test
     public void testSvhnDataFetcher() throws Exception {

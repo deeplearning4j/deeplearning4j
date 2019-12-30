@@ -71,7 +71,7 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Rule
-    protected Timeout timeout = Timeout.seconds(300);
+    public Timeout timeout = Timeout.seconds(300);
 
     @Test
     public void testsBasic() throws Exception {

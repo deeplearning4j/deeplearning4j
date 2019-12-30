@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 public class MultipleEpochsIteratorTest extends BaseDL4JTest {
 
     @Rule
-    protected Timeout timeout = Timeout.seconds(300);
+    public Timeout timeout = Timeout.seconds(300);
 
     @Test
     public void testNextAndReset() throws Exception {

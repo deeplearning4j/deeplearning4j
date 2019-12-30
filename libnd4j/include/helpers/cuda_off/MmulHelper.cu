@@ -235,6 +235,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     if(C == nullptr)
         C = new NDArray(outOrder, {M,N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
 
+    if (C->isEmpty())
+        return C;
+
     const int major = Environment::getInstance()->capabilities()[AffinityManager::currentDeviceId()].first();
 
     const auto aType = A->dataType();
@@ -375,6 +378,9 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
 
     if(Y == nullptr)
         Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()), A->getContext());
+
+    if (Y->isEmpty())
+        return Y;
 
     const int incx = X->strideAt(xLenDim);
     const int incy = Y->strideAt(yLenDim);
@@ -633,6 +639,9 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
     }
     else
         C = new NDArray(outOrder, cExpectedShape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
+
+    if (C->isEmpty())
+        return C;
 
     const int cRank = C->rankOf();
 

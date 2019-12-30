@@ -22,6 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -35,6 +36,9 @@ import java.util.Properties;
 
 @Slf4j
 public class BaseDL4JTest {
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(600);
 
     @Rule
     public TestName name = new TestName();

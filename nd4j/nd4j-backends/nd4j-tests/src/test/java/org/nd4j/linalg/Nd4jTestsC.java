@@ -6081,6 +6081,42 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(mE, mC);
     }
 
+    /*
+        Analog of this TF code:
+         a = tf.constant([], shape=[0,1])
+         b = tf.constant([], shape=[1, 0])
+         c = tf.matmul(a, b)
+     */
+    @Test
+    public void testMatmul_Empty() {
+        val mA = Nd4j.create(0,1);
+        val mB = Nd4j.create(1,0);
+        val mC = Nd4j.create(0,0);
+
+        val op = DynamicCustomOp.builder("matmul")
+                .addInputs(mA, mB)
+                .addOutputs(mC)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Nd4j.create(0,0), mC);
+    }
+
+    @Test
+    public void testMatmul_Empty1() {
+        val mA = Nd4j.create(1,0, 4);
+        val mB = Nd4j.create(1,4, 0);
+        val mC = Nd4j.create(1,0, 0);
+
+        val op = DynamicCustomOp.builder("mmul")
+                .addInputs(mA, mB)
+                .addOutputs(mC)
+                .addIntegerArguments(0,0)
+                .build();
+
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Nd4j.create(1,0,0), mC);
+    }
 
     @Test
     public void testScalarSqueeze() {

@@ -202,6 +202,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     if(C == nullptr)
         C = new NDArray(outOrder, {M,N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
 
+    if (C->isEmpty())
+        return C;
+
     const auto aType = A->dataType();
     const auto bType = B->dataType();
     const auto cType = C->dataType();
@@ -306,6 +309,9 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
 
     if(Y == nullptr)
         Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()), A->getContext());
+
+    if (Y->isEmpty())
+        return Y;
 
     const int incx = X->stridesOf()[xLenDim];
     const int incy = Y->stridesOf()[yLenDim];
@@ -510,6 +516,9 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
     else {
         C = new NDArray(outOrder, cExpectedShape, B->dataType());
     }
+
+    if (C->isEmpty())
+        return C;
 
     const int cRank = C->rankOf();
 

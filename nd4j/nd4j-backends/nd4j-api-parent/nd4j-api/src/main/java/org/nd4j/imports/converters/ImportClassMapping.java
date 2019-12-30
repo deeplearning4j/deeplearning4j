@@ -593,6 +593,11 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.AdjustContrastV2.class,
             org.nd4j.linalg.api.ops.custom.HsvToRgb.class,
             org.nd4j.linalg.api.ops.custom.RgbToHsv.class,
+            org.nd4j.linalg.api.ops.custom.RgbToYiq.class,
+            org.nd4j.linalg.api.ops.custom.RgbToGrayscale.class,
+            org.nd4j.linalg.api.ops.custom.YiqToRgb.class,
+            org.nd4j.linalg.api.ops.custom.RgbToYuv.class,
+            org.nd4j.linalg.api.ops.custom.YuvToRgb.class,
             org.nd4j.linalg.api.ops.custom.BitCast.class,
             org.nd4j.linalg.api.ops.custom.CompareAndBitpack.class,
             org.nd4j.linalg.api.ops.custom.DivideNoNan.class,
@@ -609,7 +614,8 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.ToggleBits.class,
             org.nd4j.linalg.api.ops.custom.Igamma.class,
             org.nd4j.linalg.api.ops.custom.Igammac.class,
-            org.nd4j.linalg.api.ops.custom.Digamma.class
+            org.nd4j.linalg.api.ops.custom.Digamma.class,
+            org.nd4j.linalg.api.ops.custom.Lu.class
     );
 
     static {

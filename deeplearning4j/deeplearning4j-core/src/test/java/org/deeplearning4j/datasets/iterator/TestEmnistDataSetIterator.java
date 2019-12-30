@@ -19,7 +19,9 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -32,6 +34,9 @@ import static org.junit.Assert.*;
  */
 @Slf4j
 public class TestEmnistDataSetIterator extends BaseDL4JTest {
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(600);
 
     @Override
     public DataType getDataType(){

@@ -72,7 +72,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
     @Rule
-    protected Timeout timeout = Timeout.seconds(300);
+    public Timeout timeout = Timeout.seconds(300);
 
     @Override
     public DataType getDataType(){

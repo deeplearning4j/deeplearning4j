@@ -324,3 +324,34 @@ TEST_F(EmptyTests, test_empty_reshape_1) {
     delete result0;
     delete result1;
 }
+
+
+TEST_F(EmptyTests, test_empty_matmul_1) {
+    auto x = NDArrayFactory::create<float>('c', {0, 1});
+    auto y = NDArrayFactory::create<float>('c', {1, 0});
+    auto e = NDArrayFactory::create<float>('c', {0, 0});
+
+    nd4j::ops::matmul op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(EmptyTests, test_empty_matmul_2) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 4});
+    auto y = NDArrayFactory::create<float>('c', {1, 4, 0});
+    auto e = NDArrayFactory::create<float>('c', {1, 0, 0});
+
+    nd4j::ops::matmul op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}

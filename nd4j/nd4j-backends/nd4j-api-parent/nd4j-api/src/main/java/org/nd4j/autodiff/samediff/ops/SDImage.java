@@ -138,4 +138,48 @@ public class SDImage extends SDOps {
         SDVariable out = new HsvToRgb(sd, input).outputVariable();
         return updateVariableNameAndReference(out, name);
     }
+
+    /**
+     * Converting array from RGB to YIQ format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable rgbToYiq(String name,  @NonNull SDVariable input) {
+        SDVariable out = new RgbToYiq(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting image from YIQ to RGB format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable yiqToRgb(String name,  @NonNull SDVariable input) {
+        SDVariable out = new YiqToRgb(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting array from RGB to YUV format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable rgbToYuv(String name,  @NonNull SDVariable input) {
+        SDVariable out = new RgbToYuv(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting image from YUV to RGB format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable yuvToRgb(String name,  @NonNull SDVariable input) {
+        SDVariable out = new YuvToRgb(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
 }
