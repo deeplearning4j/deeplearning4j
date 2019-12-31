@@ -24,8 +24,6 @@ import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -56,6 +54,8 @@ public class ArchiveUtils {
         File target = new File(file);
         if (!target.exists())
             throw new IllegalArgumentException("Archive doesnt exist");
+        if (!new File(dest).exists())
+            new File(dest).mkdirs();
         FileInputStream fin = new FileInputStream(target);
         int BUFFER = 2048;
         byte data[] = new byte[BUFFER];
