@@ -598,14 +598,13 @@ namespace helpers {
     static void lu_(LaunchContext * context, NDArray* input, NDArray* output, NDArray* permutationVectors) {
         auto n = input->sizeAt(-1);
         auto stream = context->getCudaStream();
-        auto iota = NDArrayFactory::create<int>('c', {n});
+        NDArray iota('c', {n}, permutationVectors->dataType());// = NDArrayFactory::create(); // <int>('c', {n});
         iota.linspace(0); iota.syncToDevice();
 
         output->assign(input); // fill up output tensor with zeros
-        output->tickWriteDevice();
+//        output->tickWriteDevice();
         permutationVectors->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), iota, *permutationVectors, true, nullptr);
-        permutationVectors->tickWriteDevice();
-
+//        permutationVectors->tickWriteDevice();
         auto tads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-2, -1});
         auto permutaionTads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-1});
         auto batchNum = tads.numberOfTads();
