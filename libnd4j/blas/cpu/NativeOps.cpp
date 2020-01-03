@@ -3107,7 +3107,6 @@ const char* lastErrorMessage() {
 int  binaryLevel() {
 #ifdef CPU_FEATURES
 
-
 #if defined(F_X64)
     return 1;
 #elif defined (F_AVX2)

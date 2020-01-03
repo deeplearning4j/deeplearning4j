@@ -60,6 +60,10 @@ public:
     }
 };
 
+TEST_F(PlaygroundTests, test_avx) {
+    nd4j_printf("Optimal level: %i; Binary level: %i;\n", ::optimalLevel(), ::binaryLevel());
+}
+
 /*
 TEST_F(PlaygroundTests, test_s_0) {
     auto x = NDArrayFactory::create<float>('c', {32, 112, 112, 16});
