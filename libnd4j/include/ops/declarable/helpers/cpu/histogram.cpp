@@ -29,26 +29,16 @@ namespace nd4j {
                 auto result = reinterpret_cast<Z*>(zBuffer);
 
                 int length = shape::length(xShapeInfo);
-                // FIXME: 2???
-                int _threads = 2;
-
-                int span = (length / _threads) + 8;
 
                 X binSize = (max_val - min_val) / (numBins);
 
-                PRAGMA_OMP_PARALLEL_THREADS(_threads)
+                // FIXME: this op should be parallelized
                 {
-                    int tid, start, end;
-
                     int *bins = new int[numBins];
                     std::memset(bins, 0, sizeof(int) * numBins);
-                    tid = omp_get_thread_num();
-                    start = span * tid;
-                    end = span * (tid + 1);
-                    if (end > length) end = length;
 
                     PRAGMA_OMP_SIMD
-                    for (int x = start; x < end; x++) {
+                    for (int x = 0; x < length; x++) {
                         int idx = (int) ((dx[x] - min_val) / binSize);
                         if (idx < 0)
                             idx = 0;
@@ -58,14 +48,11 @@ namespace nd4j {
                         bins[idx]++;
                     }
 
-                    PRAGMA_OMP_CRITICAL
-                    {
-                        PRAGMA_OMP_SIMD
-                        for (int x = 0; x < numBins; x++) {
-                            result[x] += bins[x];
-                        }
-
+                    PRAGMA_OMP_SIMD
+                    for (int x = 0; x < numBins; x++) {
+                        result[x] += bins[x];
                     }
+
 
                     delete[] bins;
                 }
