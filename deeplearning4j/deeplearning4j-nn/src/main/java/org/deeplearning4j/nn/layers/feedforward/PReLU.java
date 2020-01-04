@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -82,7 +83,10 @@ public class PReLU extends BaseLayer<org.deeplearning4j.nn.conf.layers.PReLULaye
 
         Pair<INDArray, INDArray> deltas = prelu.backprop(layerInput, epsilon);
         INDArray delta = deltas.getFirst();
-        INDArray weightGradView = deltas.getSecond();
+        INDArray weightGrad = deltas.getSecond();
+        INDArray weightGradView = gradientViews.get(PReLUParamInitializer.WEIGHT_KEY);
+        weightGradView.assign(weightGrad);
+
 
         delta = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta);  //Usually a no-op (except for perhaps identity)
         delta = backpropDropOutIfPresent(delta);

@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.ui.stats;
 
-import org.deeplearning4j.ui.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.ui.stats.api.*;
 import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
 import org.deeplearning4j.ui.stats.impl.SbeStatsReport;

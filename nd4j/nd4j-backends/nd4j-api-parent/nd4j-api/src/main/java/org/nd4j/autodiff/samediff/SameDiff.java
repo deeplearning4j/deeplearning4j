@@ -1804,7 +1804,7 @@ public class SameDiff extends SDBaseOps {
                     if (validationData != null && (validationFrequency <= 0 || i % validationFrequency == 0)) {
 
                         long validationStart = System.currentTimeMillis();
-                        outputHelper(validationData, new At(at.epoch(), 0, 0, 0, Operation.TRAINING_VALIDATION),
+                        outputHelper(validationData, new At(at.epoch(), 0, 0, 0, null, Operation.TRAINING_VALIDATION),
                                 listenersWitHistory);
 
                         long validationTime = System.currentTimeMillis() - validationStart;

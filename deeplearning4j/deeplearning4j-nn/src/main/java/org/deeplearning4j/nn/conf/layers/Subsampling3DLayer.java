@@ -142,7 +142,7 @@ public class Subsampling3DLayer extends NoParamLayer {
         long inChannels = ((InputType.InputTypeConvolutional3D) inputType).getChannels();
         if (inChannels > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
-        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, new int[] {1, 1, 1}, // no dilation
+        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, dataFormat, kernelSize, stride, padding, new int[] {1, 1, 1}, // no dilation
                         convolutionMode, (int) inChannels,
                         layerIndex, getLayerName(), Subsampling3DLayer.class);
     }

@@ -21,6 +21,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.datavec.spark.util.SerializableHadoopConfig;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -43,7 +44,7 @@ import java.util.Random;
 /**
  * Created by agibsonccc on 1/23/15.
  */
-public abstract class BaseSparkTest implements Serializable {
+public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable {
     protected transient JavaSparkContext sc;
     protected transient INDArray labels;
     protected transient INDArray input;

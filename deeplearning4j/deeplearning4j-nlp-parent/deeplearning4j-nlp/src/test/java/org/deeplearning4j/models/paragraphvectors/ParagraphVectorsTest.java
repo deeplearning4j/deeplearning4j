@@ -79,6 +79,11 @@ import static org.junit.Assert.*;
 @Slf4j
 public class ParagraphVectorsTest extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 240000;
+    }
+
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 

@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.optimizers;
 
-import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;

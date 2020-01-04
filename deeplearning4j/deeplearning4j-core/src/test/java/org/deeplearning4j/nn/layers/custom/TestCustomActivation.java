@@ -53,7 +53,7 @@ public class TestCustomActivation extends BaseDL4JTest {
         String json = conf.toJson();
         String yaml = conf.toYaml();
 
-        System.out.println(json);
+//        System.out.println(json);
 
         MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
         assertEquals(conf, confFromJson);

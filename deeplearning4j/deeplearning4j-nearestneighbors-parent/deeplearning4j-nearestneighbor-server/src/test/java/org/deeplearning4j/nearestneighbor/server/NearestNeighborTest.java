@@ -17,6 +17,7 @@
 
 package org.deeplearning4j.nearestneighbor.server;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
@@ -24,7 +25,6 @@ import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResult;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResults;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -36,7 +36,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 

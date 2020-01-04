@@ -94,7 +94,7 @@ public enum DataType {
      * Note: Boolean values are considered numerical (0/1)<br>
      */
     public boolean isNumerical(){
-        return this != UTF8 && this != COMPRESSED && this != UNKNOWN;
+        return this != UTF8 && this != BOOL && this != COMPRESSED && this != UNKNOWN;
     }
 
     /**

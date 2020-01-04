@@ -23,7 +23,7 @@ import org.datavec.api.split.NumberedFileInputSplit;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
-import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;

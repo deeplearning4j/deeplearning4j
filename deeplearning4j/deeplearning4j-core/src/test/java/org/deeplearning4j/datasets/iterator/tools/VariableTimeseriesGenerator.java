@@ -69,8 +69,8 @@ public class VariableTimeseriesGenerator implements DataSetIterator {
         int localMaxima = isFirst && firstMaxima > 0 ? firstMaxima
                         : minTS == maxTS ? minTS : rng.nextInt(maxTS - minTS) + minTS;
 
-        if (isFirst)
-            log.info("Local maxima: {}", localMaxima);
+//        if (isFirst)
+//            log.info("Local maxima: {}", localMaxima);
 
         isFirst = false;
 

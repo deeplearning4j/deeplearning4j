@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -32,7 +33,7 @@ import org.junit.Test;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class PerformanceTests {
+public class PerformanceTests extends BaseDL4JTest {
 
 
     @Ignore

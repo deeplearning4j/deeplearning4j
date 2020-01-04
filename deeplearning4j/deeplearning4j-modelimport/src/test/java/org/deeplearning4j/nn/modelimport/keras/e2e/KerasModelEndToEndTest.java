@@ -30,7 +30,7 @@ import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
@@ -724,6 +724,29 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         }
     }
 
+    @Test
+    public void testActivationLayers() throws Exception {
+        String[] names = new String[]{
+                "ELU_0_model.h5",
+                "LeakyReLU_0_model.h5",
+                "ReLU_0_model.h5",
+                "ReLU_1_model.h5",
+                "ReLU_2_model.h5",
+                "ReLU_3_model.h5",
+                "Softmax_0_model.h5",
+                "ThresholdReLU_0_model.h5",
+        };
+
+        for(String name : names ){
+            System.out.println("Starting test: " + name);
+            String modelPath = "modelimport/keras/examples/activations/" + name;
+            String inputsOutputPath = "modelimport/keras/examples/activations/" + (name.substring(0,name.length()-"model.h5".length()) + "inputs_and_outputs.h5");
+
+            importEndModelTest(modelPath, inputsOutputPath, true, true,
+                    true, true, false, null, null);
+        }
+    }
+
     private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
         return importFunctionalModelH5Test(modelPath, null, false);
     }
@@ -991,8 +1014,8 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         }
 
         Nd4j.setDataType(DataType.DOUBLE);
-        boolean passed = GradientCheckUtil.checkGradients(netToTest, eps, max_rel_error, min_abs_error, true, false,
-                input, labels, null, null, true, 9);
+        boolean passed = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(netToTest).input(input)
+                .labels(labels).subset(true).maxPerParam(9));
         assertTrue("Gradient check failed", passed);
     }
 

@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -156,7 +157,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
-                .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
+                .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).activation(Activation.IDENTITY).build())
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                 .build();
@@ -204,7 +205,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
-                .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
+                .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).activation(Activation.IDENTITY).build())
                 .layer(1, new OutputLayer.Builder().nIn(5).nOut(4).activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -249,8 +250,8 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER).list()
-                .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build()).layer(1,
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4)
+                .layer(new DenseLayer.Builder().nIn(nClassesIn).nOut(5).activation(Activation.IDENTITY).build())
+                .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(4)
                                 .activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -309,7 +310,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
-                .layer(new DenseLayer.Builder().nIn(nClassesIn).nOut(embeddingDim).build())
+                .layer(new DenseLayer.Builder().nIn(nClassesIn).nOut(embeddingDim).activation(Activation.IDENTITY).build())
                 .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
                 .setInputType(InputType.recurrent(nClassesIn))
                 .build();
@@ -344,7 +345,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         net.computeGradientAndScore();
         net2.computeGradientAndScore();
 
-        System.out.println(net.score() + "\t" + net2.score());
+//        System.out.println(net.score() + "\t" + net2.score());
         assertEquals(net2.score(), net.score(), 1e-6);
 
         Map<String, INDArray> gradient = net.gradient().gradientForVariable();
@@ -375,7 +376,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .dataType(DataType.DOUBLE)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).build())
+                .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).activation(Activation.IDENTITY).build())
                 .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                         .activation(Activation.SOFTMAX).build())
@@ -416,7 +417,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         net.computeGradientAndScore();
         net2.computeGradientAndScore();
 
-        System.out.println(net.score() + "\t" + net2.score());
+//        System.out.println(net.score() + "\t" + net2.score());
         assertEquals(net2.score(), net.score(), 1e-5);
 
         Map<String, INDArray> gradient = net.gradient().gradientForVariable();
@@ -513,7 +514,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 net.computeGradientAndScore();
                 net2.computeGradientAndScore();
 
-                System.out.println(net.score() + "\t" + net2.score());
+//                System.out.println(net.score() + "\t" + net2.score());
                 assertEquals(net2.score(), net.score(), 1e-5);
 
                 Map<String, INDArray> gradients = net.gradient().gradientForVariable();
@@ -706,5 +707,22 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         public boolean jsonSerializable() {
             return true;
         }
+    }
+
+    @Test
+    public void testEmbeddingDefaultActivation(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new EmbeddingLayer.Builder().nIn(10).nOut(10).build())
+                .layer(new EmbeddingSequenceLayer.Builder().nIn(10).nOut(10).build())
+                .build();
+
+        EmbeddingLayer l = (EmbeddingLayer) conf.getConf(0).getLayer();
+        assertEquals(new ActivationIdentity(), l.getActivationFn());
+
+        EmbeddingSequenceLayer l2 = (EmbeddingSequenceLayer) conf.getConf(1).getLayer();
+        assertEquals(new ActivationIdentity(), l2.getActivationFn());
+
     }
 }

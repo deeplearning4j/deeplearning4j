@@ -22,6 +22,7 @@ import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.AbstractSession;
+import org.nd4j.autodiff.samediff.internal.FrameIter;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.memory.NoOpMemoryMgr;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -112,7 +113,6 @@ public class TestSessions extends BaseNd4jTest {
         m.put("x", x);
         m.put("y", y);
 
-        System.out.println("----------------------------------");
         Map<String,INDArray> outMap = is.output(Collections.singletonList("d"), m, null,
                 Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
 
@@ -144,7 +144,6 @@ public class TestSessions extends BaseNd4jTest {
         m.put("x", x);
         m.put("y", y);
 
-        System.out.println("----------------------------------");
         InferenceSession is = new InferenceSession(sd);
 //        String outName = merge.name();
         String outName = outVar.name();
@@ -183,14 +182,14 @@ public class TestSessions extends BaseNd4jTest {
         InferenceSession is = new InferenceSession(sd);
         String n = merge.name();
 
-        System.out.println("----------------------------------");
+//        System.out.println("----------------------------------");
         Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(),
                 null, At.defaultAt(Operation.TRAINING));
         assertEquals(1, outMap.size());
         assertEquals(expTrue, outMap.get(n));
 
 
-        System.out.println("----------------------------------");
+//        System.out.println("----------------------------------");
         //Check false case:
         bArr.assign(0);
         is = new InferenceSession(sd);
@@ -217,9 +216,10 @@ public class TestSessions extends BaseNd4jTest {
             File f = new ClassPathResource("tf_graphs/examples/while1/iter_" + numIter + "/frozen_model.pb").getFile();
             SameDiff sd = TFGraphMapper.importGraph(f);
 
-            System.out.println(sd.summary());
+//            System.out.println(sd.summary());
+            sd.summary();
 
-            System.out.println("----------------------------------");
+//            System.out.println("----------------------------------");
             //This particular test/graph doesn't use placeholders
             InferenceSession is = new InferenceSession(sd);
             is.setMmgr(new NoOpMemoryMgr());    //So arrays aren't deallocated during execution
@@ -239,17 +239,17 @@ public class TestSessions extends BaseNd4jTest {
             //Some sanity checks on the internal state:
             //Check 1: "while/Less" should be executed numIter+1 times... i.e., numIter times through the loop, plus once to exit
             for( int i=0; i<numIter+1; i++ ){
-                AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", i, new AbstractSession.FrameIter(AbstractSession.OUTER_FRAME, 0, null));
+                AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", i, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
                 INDArray expLessVal = Nd4j.scalar(i != numIter);
                 assertTrue(outputs.containsKey(expVarId));
                 assertEquals(expLessVal, outputs.get(expVarId));
             }
-            AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", numIter+1, new AbstractSession.FrameIter(AbstractSession.OUTER_FRAME, 0, null));
+            AbstractSession.VarId expVarId = new AbstractSession.VarId("while/Less","while/while_context", numIter+1, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
             assertFalse(outputs.containsKey(expVarId));
 
             //Check 2: Add should be executed numIter times...
             for( int i=0; i<numIter; i++ ){
-                expVarId = new AbstractSession.VarId("while/add","while/while_context", i, new AbstractSession.FrameIter(AbstractSession.OUTER_FRAME, 0, null));
+                expVarId = new AbstractSession.VarId("while/add","while/while_context", i, new FrameIter(AbstractSession.OUTER_FRAME, 0, null));
                 INDArray expAddVal = Nd4j.scalar((float)(i+1));  //Starts at 0, so post exec it's 1 higher than iter number
                 assertTrue(outputs.containsKey(expVarId));
                 assertEquals(expAddVal, outputs.get(expVarId));

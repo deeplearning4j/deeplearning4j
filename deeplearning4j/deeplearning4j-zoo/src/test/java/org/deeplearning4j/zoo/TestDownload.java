@@ -17,6 +17,7 @@
 package org.deeplearning4j.zoo;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.zoo.model.LeNet;

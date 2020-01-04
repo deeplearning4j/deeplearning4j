@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.layers.convolution;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
@@ -53,8 +54,8 @@ import java.util.Arrays;
  *
  * @author Adam Gibson (original impl), Alex Black (current version)
  */
+@Slf4j
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
-    protected static final Logger log = LoggerFactory.getLogger(ConvolutionLayer.class);
 
     protected INDArray i2d;
     protected ConvolutionHelper helper = null;

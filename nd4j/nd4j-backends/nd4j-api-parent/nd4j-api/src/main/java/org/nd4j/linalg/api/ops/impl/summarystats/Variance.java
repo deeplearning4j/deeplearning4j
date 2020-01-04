@@ -88,6 +88,8 @@ public class Variance extends BaseReduceOp {
         return 0;
     }
 
+
+
     @Override
     public String opName() {
         return "var";

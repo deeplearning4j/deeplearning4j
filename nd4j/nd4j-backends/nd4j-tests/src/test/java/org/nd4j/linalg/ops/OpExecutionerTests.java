@@ -111,7 +111,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
                 new EuclideanDistance(distanceInputRow, distanceComp, result, 0));
         INDArray euclideanAssertion = Nd4j.ones(4).castTo(DataType.DOUBLE);
         assertEquals(euclideanAssertion, result);
-        System.out.println(result);
+//        System.out.println(result);
 
     }
 
@@ -517,7 +517,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
                 0.27320877, 0.29476917, 0.29449323, 0.29720396, 0.31319344, 0.2803108, 0.28671616, 0.30462897,
                 0.3049033, 0.29277474, 0.29136384, 0.30316526, 0.2807459}, new int[] {150, 3}, 'f');
 
-        System.out.println("Data:" + input.data().length());
+//        System.out.println("Data:" + input.data().length());
         val softMax = new SoftMax(input);
         Nd4j.getExecutioner().exec((CustomOp) softMax);
         assertEquals(assertion, softMax.outputArguments()[0]);
@@ -589,12 +589,12 @@ public class OpExecutionerTests extends BaseNd4jTest {
 
     @Test
     public void testMeanSumSimple() {
-        System.out.println("3d");
+//        System.out.println("3d");
         INDArray arr = Nd4j.ones(1, 4, 4);
         assertEquals(Nd4j.ones(1), arr.mean(1, 2));
         assertEquals(Nd4j.ones(1).muli(16), arr.sum(1, 2));
 
-        System.out.println("4d");
+//        System.out.println("4d");
         INDArray arr4 = Nd4j.ones(1, 1, 4, 4);
         INDArray arr4m = arr4.mean(2, 3);
         INDArray arr4s = arr4.sum(2, 3);
@@ -603,7 +603,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         for (int i = 0; i < arr4s.length(); i++)
             assertEquals(arr4s.getDouble(i), 16, 1e-1);
 
-        System.out.println("5d");
+//        System.out.println("5d");
         INDArray arr5 = Nd4j.ones(1, 1, 4, 4, 4);
         INDArray arr5m = arr5.mean(2, 3);
         INDArray arr5s = arr5.sum(2, 3);
@@ -611,7 +611,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
             assertEquals(arr5m.getDouble(i), 1, 1e-1);
         for (int i = 0; i < arr5s.length(); i++)
             assertEquals(arr5s.getDouble(i), 16, 1e-1);
-        System.out.println("6d");
+//        System.out.println("6d");
         INDArray arr6 = Nd4j.ones(1, 1, 4, 4, 4, 4);
         INDArray arr6Tad = arr6.tensorAlongDimension(0, 2, 3);
         INDArray arr6s = arr6.sum(2, 3);
@@ -629,7 +629,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray arr6 = Nd4j.ones(1, 1, 4, 4, 4, 4);
         INDArray arr6s = arr6.sum(2, 3);
 
-        System.out.println("Arr6s: " + arr6.length());
+//        System.out.println("Arr6s: " + arr6.length());
         for (int i = 0; i < arr6s.length(); i++)
             assertEquals(16, arr6s.getDouble(i), 1e-1);
     }
@@ -659,10 +659,10 @@ public class OpExecutionerTests extends BaseNd4jTest {
                 }
                 assertEquals("Failed for [" + order + "] order", exp, arr6s);
 
-                System.out.println("ORDER: " + order);
-                for (int i = 0; i < 6; i++) {
-                    System.out.println(arr6s.getDouble(i));
-                }
+//                System.out.println("ORDER: " + order);
+//                for (int i = 0; i < 6; i++) {
+//                    System.out.println(arr6s.getDouble(i));
+//                }
             }
         } finally {
             Nd4j.factory().setOrder(origOrder);
@@ -727,8 +727,8 @@ public class OpExecutionerTests extends BaseNd4jTest {
         DropOut dropOut = new DropOut(array, result, 0.05);
         Nd4j.getExecutioner().exec(dropOut);
 
-        System.out.println("Src array: " + array);
-        System.out.println("Res array: " + result);
+//        System.out.println("Src array: " + array);
+//        System.out.println("Res array: " + result);
 
         assertNotEquals(array, result);
     }
@@ -741,8 +741,8 @@ public class OpExecutionerTests extends BaseNd4jTest {
         DropOutInverted dropOut = new DropOutInverted(array, result, 0.65);
         Nd4j.getExecutioner().exec(dropOut);
 
-        System.out.println("Src array: " + array);
-        System.out.println("Res array: " + result);
+//        System.out.println("Src array: " + array);
+//        System.out.println("Res array: " + result);
 
         assertNotEquals(array, result);
     }
@@ -778,8 +778,8 @@ public class OpExecutionerTests extends BaseNd4jTest {
         assertEquals(5, result.columns());
         assertEquals(assertion, result);
 
-        System.out.println(assertion.toString());
-        System.out.println(result.toString());
+//        System.out.println(assertion.toString());
+//        System.out.println(result.toString());
     }
 
 

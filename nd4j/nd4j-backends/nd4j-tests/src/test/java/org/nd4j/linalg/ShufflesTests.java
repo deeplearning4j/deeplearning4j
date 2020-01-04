@@ -48,17 +48,15 @@ public class ShufflesTests extends BaseNd4jTest {
             array.getRow(x).assign(x);
         }
 
-        System.out.println(array);
+//        System.out.println(array);
 
         OrderScanner2D scanner = new OrderScanner2D(array);
 
         assertArrayEquals(new float[] {0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f}, scanner.getMap(), 0.01f);
 
-        System.out.println();
-
         Nd4j.shuffle(array, 1);
 
-        System.out.println(array);
+//        System.out.println(array);
 
         ArrayUtil.argMin(new int[] {});
 
@@ -71,19 +69,12 @@ public class ShufflesTests extends BaseNd4jTest {
         for (int x = 0; x < 10; x++) {
             array.getColumn(x).assign(x);
         }
-
-        System.out.println(array);
+//        System.out.println(array);
 
         OrderScanner2D scanner = new OrderScanner2D(array);
-
         assertArrayEquals(new float[] {0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f}, scanner.getMap(), 0.01f);
-
-        System.out.println();
-
         Nd4j.shuffle(array, 0);
-
-        System.out.println(array);
-
+//        System.out.println(array);
         assertTrue(scanner.compareColumn(array));
     }
 
@@ -94,20 +85,12 @@ public class ShufflesTests extends BaseNd4jTest {
             array.getRow(x).assign(x);
         }
 
-        System.out.println(array);
-
+//        System.out.println(array);
         OrderScanner2D scanner = new OrderScanner2D(array);
 
         assertArrayEquals(new float[] {0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f, 10f}, scanner.getMap(), 0.01f);
-
-        System.out.println();
-
         Nd4j.shuffle(array, 1);
-
-        System.out.println(array);
-
-        ArrayUtil.argMin(new int[] {});
-
+//        System.out.println(array);
         assertTrue(scanner.compareRow(array));
     }
 
@@ -119,14 +102,11 @@ public class ShufflesTests extends BaseNd4jTest {
             features.getRow(x).assign(x);
             labels.getRow(x).assign(x);
         }
-
-        System.out.println(features);
+//        System.out.println(features);
 
         OrderScanner2D scanner = new OrderScanner2D(features);
 
         assertArrayEquals(new float[] {0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f, 9f}, scanner.getMap(), 0.01f);
-
-        System.out.println();
 
         List<INDArray> list = new ArrayList<>();
         list.add(features);
@@ -134,11 +114,9 @@ public class ShufflesTests extends BaseNd4jTest {
 
         Nd4j.shuffle(list, 1);
 
-        System.out.println(features);
-
-        System.out.println();
-
-        System.out.println(labels);
+//        System.out.println(features);
+//        System.out.println();
+//        System.out.println(labels);
 
         ArrayUtil.argMin(new int[] {});
 
@@ -164,12 +142,10 @@ public class ShufflesTests extends BaseNd4jTest {
             labels.slice(x).assign(x);
         }
 
-        System.out.println(features);
+//        System.out.println(features);
 
         OrderScanner3D scannerFeatures = new OrderScanner3D(features);
         OrderScanner3D scannerLabels = new OrderScanner3D(labels);
-
-        System.out.println();
 
         List<INDArray> list = new ArrayList<>();
         list.add(features);
@@ -177,11 +153,9 @@ public class ShufflesTests extends BaseNd4jTest {
 
         Nd4j.shuffle(list, 1, 2);
 
-        System.out.println(features);
-
-        System.out.println("------------------");
-
-        System.out.println(labels);
+//        System.out.println(features);
+//        System.out.println("------------------");
+//        System.out.println(labels);
 
         assertTrue(scannerFeatures.compareSlice(features));
         assertTrue(scannerLabels.compareSlice(labels));
@@ -360,7 +334,7 @@ public class ShufflesTests extends BaseNd4jTest {
             }
 
             if (Arrays.equals(map, newMap)) {
-                System.out.println("Maps are equal");
+//                System.out.println("Maps are equal");
                 return false;
             }
 
@@ -407,7 +381,7 @@ public class ShufflesTests extends BaseNd4jTest {
             }
 
             if (Arrays.equals(map, newMap)) {
-                System.out.println("Maps are equal");
+//                System.out.println("Maps are equal");
                 return false;
             }
 
@@ -433,7 +407,7 @@ public class ShufflesTests extends BaseNd4jTest {
             }
 
             if (Arrays.equals(map, newMap)) {
-                System.out.println("Maps are equal");
+//                System.out.println("Maps are equal");
                 return false;
             }
 

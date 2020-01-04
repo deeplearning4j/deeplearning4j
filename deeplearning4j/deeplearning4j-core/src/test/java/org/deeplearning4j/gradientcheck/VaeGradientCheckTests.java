@@ -46,7 +46,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class VaeGradientCheckTests extends BaseDL4JTest {
 
-    private static final boolean PRINT_RESULTS = true;
+    private static final boolean PRINT_RESULTS = false;
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
@@ -122,8 +122,8 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     + Arrays.toString(decoderSizes) + ", l2=" + l2 + ", l1=" + l1;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+//                for (int j = 0; j < mln.getnLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -193,8 +193,8 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
                     + l1;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-                for (int l = 0; l < mln.getnLayers(); l++)
-                    System.out.println("Layer " + l + " # params: " + mln.getLayer(l).numParams());
+//                for (int l = 0; l < mln.getnLayers(); l++)
+//                    System.out.println("Layer " + l + " # params: " + mln.getLayer(l).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS,
@@ -281,8 +281,8 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
             String msg = "testVaePretrainReconstructionDistributions() - " + reconstructionDistributions[i];
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+//                for (int j = 0; j < mln.getnLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS,
@@ -323,8 +323,8 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
             String msg = "testVaePretrainMultipleSamples() - numSamples = " + numSamples;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+//                for (int j = 0; j < mln.getnLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradientsPretrainLayer(layer, DEFAULT_EPS,

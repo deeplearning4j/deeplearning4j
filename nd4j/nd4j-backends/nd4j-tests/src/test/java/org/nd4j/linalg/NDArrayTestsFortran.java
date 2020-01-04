@@ -183,7 +183,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
                 @Override
                 public void run() {
                     INDArray dot = Nd4j.linspace(1, 8, 8, DataType.DOUBLE);
-                    System.out.println(Transforms.sigmoid(dot));
+//                    System.out.println(Transforms.sigmoid(dot));
+                    Transforms.sigmoid(dot);
                 }
             });
             list.add(future);
@@ -274,7 +275,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testNd4jSortScalar() {
         INDArray linspace = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(1, -1);
         INDArray sorted = Nd4j.sort(linspace, 1, false);
-        System.out.println(sorted);
+//        System.out.println(sorted);
     }
 
     @Test
@@ -284,9 +285,9 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
             INDArray nSlice = n.slice(i);
             for (int j = 0; j < nSlice.slices(); j++) {
                 INDArray sliceJ = nSlice.slice(j);
-                System.out.println(sliceJ);
+//                System.out.println(sliceJ);
             }
-            System.out.println(nSlice);
+//            System.out.println(nSlice);
         }
         INDArray slice = n.swapAxes(2, 1);
         INDArray assertion = Nd4j.create(new double[] {1, 4, 7, 10, 13});
@@ -435,7 +436,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray column2 = Nd4j.create(new double[] {3, 4});
         INDArray testColumn = n.getColumn(0);
         INDArray testColumn1 = n.getColumn(1);
-        log.info("testColumn shape: {}", Arrays.toString(testColumn.shapeInfoDataBuffer().asInt()));
+//        log.info("testColumn shape: {}", Arrays.toString(testColumn.shapeInfoDataBuffer().asInt()));
         assertEquals(column, testColumn);
         assertEquals(column2, testColumn1);
 
@@ -445,13 +446,13 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     @Test
     public void testGetColumns() {
         INDArray matrix = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3).castTo(DataType.DOUBLE);
-        log.info("Original: {}", matrix);
+//        log.info("Original: {}", matrix);
         INDArray matrixGet = matrix.getColumns(1, 2);
         INDArray matrixAssertion = Nd4j.create(new double[][] {{3, 5}, {4, 6}});
-        log.info("order A: {}", Arrays.toString(matrixAssertion.shapeInfoDataBuffer().asInt()));
-        log.info("order B: {}", Arrays.toString(matrixGet.shapeInfoDataBuffer().asInt()));
-        log.info("data A: {}", Arrays.toString(matrixAssertion.data().asFloat()));
-        log.info("data B: {}", Arrays.toString(matrixGet.data().asFloat()));
+//        log.info("order A: {}", Arrays.toString(matrixAssertion.shapeInfoDataBuffer().asInt()));
+//        log.info("order B: {}", Arrays.toString(matrixGet.shapeInfoDataBuffer().asInt()));
+//        log.info("data A: {}", Arrays.toString(matrixAssertion.data().asFloat()));
+//        log.info("data B: {}", Arrays.toString(matrixGet.data().asFloat()));
         assertEquals(matrixAssertion, matrixGet);
     }
 
@@ -916,7 +917,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray put = Nd4j.create(new double[] {5, 6});
         row1.putRow(1, put);
 
-        System.out.println(row1);
+//        System.out.println(row1);
+        row1.toString();
 
         INDArray row1Fortran = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(2, 2);
         INDArray putFortran = Nd4j.create(new double[] {5, 6});
@@ -949,10 +951,10 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray sum42 = array4d.sum(2); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 910 and stride of 10
         INDArray sum43 = array4d.sum(3); //java.lang.IllegalArgumentException: Illegal index 1000 derived from 9 with offset of 100 and stride of 100
 
-        System.out.println("40: " + sum40.length());
-        System.out.println("41: " + sum41.length());
-        System.out.println("42: " + sum42.length());
-        System.out.println("43: " + sum43.length());
+//        System.out.println("40: " + sum40.length());
+//        System.out.println("41: " + sum41.length());
+//        System.out.println("42: " + sum42.length());
+//        System.out.println("43: " + sum43.length());
 
         INDArray array5d = Nd4j.ones(1, 10, 10, 10, 10);
         array5d.sum(0); //OK
@@ -1080,7 +1082,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         for (Pair<INDArray, String> pair : testInputs) {
             String msg = pair.getSecond();
             INDArray in = pair.getFirst();
-            System.out.println("Count " + count);
+//            System.out.println("Count " + count);
             INDArray dup = in.dup();
             INDArray dupc = in.dup('c');
             INDArray dupf = in.dup('f');

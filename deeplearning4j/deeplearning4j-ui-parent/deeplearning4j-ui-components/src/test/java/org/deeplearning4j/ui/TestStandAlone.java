@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.ui;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.components.chart.ChartHistogram;
 import org.deeplearning4j.ui.components.chart.ChartLine;
@@ -30,7 +31,7 @@ import java.awt.*;
 /**
  * Created by Alex on 2/06/2016.
  */
-public class TestStandAlone {
+public class TestStandAlone extends BaseDL4JTest {
 
     @Test
     public void testStandAlone() throws Exception {

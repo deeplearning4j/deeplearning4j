@@ -16,8 +16,9 @@
 
 package org.deeplearning4j.gradientcheck;
 
+import lombok.*;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.deeplearning4j.nn.api.Model;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
@@ -113,6 +114,52 @@ public class GradientCheckUtil {
         }
     }
 
+    public enum PrintMode {
+        ALL,
+        ZEROS,
+        FAILURES_ONLY
+    }
+
+    @Accessors(fluent = true)
+    @Data
+    @NoArgsConstructor
+    public static class MLNConfig {
+        private MultiLayerNetwork net;
+        private INDArray input;
+        private INDArray labels;
+        private INDArray inputMask;
+        private INDArray labelMask;
+        private double epsilon = 1e-6;
+        private double maxRelError = 1e-3;
+        private double minAbsoluteError = 1e-8;
+        private PrintMode print = PrintMode.ZEROS;
+        private boolean exitOnFirstError = false;
+        private boolean subset;
+        private int maxPerParam;
+        private Set<String> excludeParams;
+        private Consumer<MultiLayerNetwork> callEachIter;
+    }
+
+    @Accessors(fluent = true)
+    @Data
+    @NoArgsConstructor
+    public static class GraphConfig {
+        private ComputationGraph net;
+        private INDArray[] inputs;
+        private INDArray[] labels;
+        private INDArray[] inputMask;
+        private INDArray[] labelMask;
+        private double epsilon = 1e-6;
+        private double maxRelError = 1e-3;
+        private double minAbsoluteError = 1e-8;
+        private PrintMode print = PrintMode.ZEROS;
+        private boolean exitOnFirstError = false;
+        private boolean subset;
+        private int maxPerParam;
+        private Set<String> excludeParams;
+        private Consumer<ComputationGraph> callEachIter;
+    }
+
     /**
      * Check backprop gradients for a MultiLayerNetwork.
      * @param mln MultiLayerNetwork to test. This must be initialized.
@@ -127,46 +174,18 @@ public class GradientCheckUtil {
      * @param labels Labels/targets to use to calculate backprop gradient. May be mini-batch data.
      * @return true if gradients are passed, false otherwise.
      */
+    @Deprecated
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
-        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input, labels, null, null);
+                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input, INDArray labels) {
+        return checkGradients(new MLNConfig().net(mln).epsilon(epsilon).maxRelError(maxRelError).minAbsoluteError(minAbsoluteError).print(PrintMode.FAILURES_ONLY)
+                .exitOnFirstError(exitOnFirstError).input(input).labels(labels));
     }
 
-    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray input,
-                                         INDArray labels, Set<String> excludeParams) {
-        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input, labels, null, null,
-                false, -1, excludeParams, (Integer)null);
-    }
-
-    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
-                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask) {
-        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError,
-                input, labels, inputMask, labelMask, false, -1);
-    }
-
-    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
-                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
-                                         boolean subset, int maxPerParam) {
-        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input,
-                labels, inputMask, labelMask, subset, maxPerParam, null);
-    }
-
-    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
-                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
-                                         boolean subset, int maxPerParam, Set<String> excludeParams) {
-        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input,
-                labels, inputMask, labelMask, subset, maxPerParam, excludeParams, (Consumer<MultiLayerNetwork>)null);
-    }
-
+    @Deprecated
     public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
                                          double minAbsoluteError, boolean print, boolean exitOnFirstError,
                                          INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
                                          boolean subset, int maxPerParam, Set<String> excludeParams, final Integer rngSeedResetEachIter) {
-
         Consumer<MultiLayerNetwork> c = null;
         if(rngSeedResetEachIter != null){
             c = new Consumer<MultiLayerNetwork>() {
@@ -177,21 +196,18 @@ public class GradientCheckUtil {
             };
         }
 
-        return checkGradients(mln, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, input,
-                labels, inputMask, labelMask, subset, maxPerParam, excludeParams, c);
+        return checkGradients(new MLNConfig().net(mln).epsilon(epsilon).maxRelError(maxRelError).minAbsoluteError(minAbsoluteError).print(PrintMode.FAILURES_ONLY)
+                        .exitOnFirstError(exitOnFirstError).input(input).labels(labels).inputMask(inputMask).labelMask(labelMask).subset(subset).maxPerParam(maxPerParam).excludeParams(excludeParams).callEachIter(c));
     }
 
-    public static boolean checkGradients(MultiLayerNetwork mln, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError,
-                                         INDArray input, INDArray labels, INDArray inputMask, INDArray labelMask,
-                                         boolean subset, int maxPerParam, Set<String> excludeParams, Consumer<MultiLayerNetwork> callEachIter) {
+    public static boolean checkGradients(MLNConfig c){
 
         //Basic sanity checks on input:
-        if (epsilon <= 0.0 || epsilon > 0.1)
+        if (c.epsilon <= 0.0 || c.epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
-        if (maxRelError <= 0.0 || maxRelError > 0.25)
-            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
-        if (!(mln.getOutputLayer() instanceof IOutputLayer))
+        if (c.maxRelError <= 0.0 || c.maxRelError > 0.25)
+            throw new IllegalArgumentException("Invalid maxRelativeError: " + c.maxRelError);
+        if (!(c.net.getOutputLayer() instanceof IOutputLayer))
             throw new IllegalArgumentException("Cannot check backprop gradients without OutputLayer");
 
         DataType dataType = DataTypeUtil.getDtypeFromContext();
@@ -201,21 +217,21 @@ public class GradientCheckUtil {
                             + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
-        DataType netDataType = mln.getLayerWiseConfigurations().getDataType();
+        DataType netDataType = c.net.getLayerWiseConfigurations().getDataType();
         if (netDataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Network datatype is not set to double precision ("
                     + "is: " + netDataType + "). Double precision must be used for gradient checks. Create network with .dataType(DataType.DOUBLE) before using GradientCheckUtil");
         }
 
-        if(netDataType != mln.params().dataType()){
+        if(netDataType != c.net.params().dataType()){
             throw new IllegalStateException("Parameters datatype does not match network configuration datatype ("
-                    + "is: " + mln.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
+                    + "is: " + c.net.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
         }
 
 
         //Check network configuration:
         int layerCount = 0;
-        for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
+        for (NeuralNetConfiguration n : c.net.getLayerWiseConfigurations().getConfs()) {
             if (n.getLayer() instanceof BaseLayer) {
                 BaseLayer bl = (BaseLayer) n.getLayer();
                 IUpdater u = bl.getIUpdater();
@@ -243,7 +259,7 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (n.getLayer().getIDropout() != null && callEachIter == null) {
+            if (n.getLayer().getIDropout() != null && c.callEachIter == null) {
                 throw new IllegalStateException("When gradient checking dropout, need to reset RNG seed each iter, or no" +
                         " dropout should be present during gradient checks - got dropout = "
                                 + n.getLayer().getIDropout() + " for layer " + layerCount);
@@ -251,45 +267,45 @@ public class GradientCheckUtil {
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
-        for(Layer l : mln.getLayers()){
+        for(Layer l : c.net.getLayers()){
             if(l instanceof IOutputLayer){
                 configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
 
-        mln.setInput(input);
-        mln.setLabels(labels);
-        mln.setLayerMaskArrays(inputMask, labelMask);
-        if(callEachIter != null){
-            callEachIter.accept(mln);
+        c.net.setInput(c.input);
+        c.net.setLabels(c.labels);
+        c.net.setLayerMaskArrays(c.inputMask, c.labelMask);
+        if(c.callEachIter != null){
+            c.callEachIter.accept(c.net);
         }
-        mln.computeGradientAndScore();
-        Pair<Gradient, Double> gradAndScore = mln.gradientAndScore();
+        c.net.computeGradientAndScore();
+        Pair<Gradient, Double> gradAndScore = c.net.gradientAndScore();
 
-        Updater updater = UpdaterCreator.getUpdater(mln);
-        updater.update(mln, gradAndScore.getFirst(), 0, 0, mln.batchSize(), LayerWorkspaceMgr.noWorkspaces());
+        Updater updater = UpdaterCreator.getUpdater(c.net);
+        updater.update(c.net, gradAndScore.getFirst(), 0, 0, c.net.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
-        INDArray originalParams = mln.params().dup(); //need dup: params are a *view* of full parameters
+        INDArray originalParams = c.net.params().dup(); //need dup: params are a *view* of full parameters
 
         val nParams = originalParams.length();
 
-        Map<String, INDArray> paramTable = mln.paramTable();
+        Map<String, INDArray> paramTable = c.net.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
         val paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
         Map<String,Integer> stepSizeForParam;
-        if(subset){
+        if(c.subset){
             stepSizeForParam = new HashMap<>();
-            stepSizeForParam.put(paramNames.get(0), (int) Math.max(1, paramTable.get(paramNames.get(0)).length() / maxPerParam));
+            stepSizeForParam.put(paramNames.get(0), (int) Math.max(1, paramTable.get(paramNames.get(0)).length() / c.maxPerParam));
         } else {
             stepSizeForParam = null;
         }
         for (int i = 1; i < paramEnds.length; i++) {
             val n = paramTable.get(paramNames.get(i)).length();
             paramEnds[i] = paramEnds[i - 1] + n;
-            if(subset){
-                long ss = n / maxPerParam;
+            if(c.subset){
+                long ss = n / c.maxPerParam;
                 if(ss == 0){
                     ss = n;
                 }
@@ -300,9 +316,9 @@ public class GradientCheckUtil {
             }
         }
 
-        if(print) {
+        if(c.print == PrintMode.ALL) {
             int i=0;
-            for (Layer l : mln.getLayers()) {
+            for (Layer l : c.net.getLayers()) {
                 Set<String> s = l.paramTable().keySet();
                 log.info("Layer " + i + ": " + l.getClass().getSimpleName() + " - params " + s);
                 i++;
@@ -312,36 +328,40 @@ public class GradientCheckUtil {
 
         int totalNFailures = 0;
         double maxError = 0.0;
-        DataSet ds = new DataSet(input, labels, inputMask, labelMask);
+        DataSet ds = new DataSet(c.input, c.labels, c.inputMask, c.labelMask);
         int currParamNameIdx = 0;
 
-        INDArray params = mln.params(); //Assumption here: params is a view that we can modify in-place
+        if(c.excludeParams != null && !c.excludeParams.isEmpty()){
+            log.info("NOTE: parameters will be skipped due to config: {}", c.excludeParams);
+        }
+
+        INDArray params = c.net.params(); //Assumption here: params is a view that we can modify in-place
         for (long i = 0; i < nParams; ) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
-            if(excludeParams != null && excludeParams.contains(paramName)){
-                log.info("Skipping parameters for parameter name: {}", paramName);
+            if(c.excludeParams != null && c.excludeParams.contains(paramName)){
+//                log.info("Skipping parameters for parameter name: {}", paramName);
                 i = paramEnds[currParamNameIdx++];
                 continue;
             }
 
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
-            params.putScalar(i, origValue + epsilon);
-            if(callEachIter != null){
-                callEachIter.accept(mln);
+            params.putScalar(i, origValue + c.epsilon);
+            if(c.callEachIter != null){
+                c.callEachIter.accept(c.net);
             }
-            double scorePlus = mln.score(ds, true);
+            double scorePlus = c.net.score(ds, true);
 
             //(w-epsilon): Do forward pass and score
-            params.putScalar(i, origValue - epsilon);
-            if(callEachIter != null){
-                callEachIter.accept(mln);
+            params.putScalar(i, origValue - c.epsilon);
+            if(c.callEachIter != null){
+                c.callEachIter.accept(c.net);
             }
-            double scoreMinus = mln.score(ds, true);
+            double scoreMinus = c.net.score(ds, true);
 
             //Reset original param value
             params.putScalar(i, origValue);
@@ -349,7 +369,7 @@ public class GradientCheckUtil {
             //Calculate numerical parameter gradient:
             double scoreDelta = scorePlus - scoreMinus;
 
-            double numericalGradient = scoreDelta / (2 * epsilon);
+            double numericalGradient = scoreDelta / (2 * c.epsilon);
             if (Double.isNaN(numericalGradient))
                 throw new IllegalStateException("Numerical gradient was NaN for parameter " + i + " of " + nParams);
 
@@ -363,30 +383,29 @@ public class GradientCheckUtil {
 
             if (relError > maxError)
                 maxError = relError;
-            if (relError > maxRelError || Double.isNaN(relError)) {
+            if (relError > c.maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
-                if (absError < minAbsoluteError) {
-                    if(print) {
+                if (absError < c.minAbsoluteError) {
+                    if(c.print == PrintMode.ALL || c.print == PrintMode.ZEROS && absError == 0.0) {
                         log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
                                 + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                                + "; absolute error = " + absError + " < minAbsoluteError = " + c.minAbsoluteError);
                     }
                 } else {
-                    if (print)
-                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
-                                        + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
-                    if (exitOnFirstError)
+                    log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
+                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                    + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
+                    if (c.exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
-            } else if (print) {
+            } else if (c.print == PrintMode.ALL) {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
                                 + numericalGradient + ", relError= " + relError);
             }
 
             long step;
-            if(subset){
+            if(c.subset){
                 step = stepSizeForParam.get(paramName);
                 if(i + step > paramEnds[currParamNameIdx]+1){
                     step = paramEnds[currParamNameIdx]+1 - i;
@@ -398,83 +417,25 @@ public class GradientCheckUtil {
             i += step;
         }
 
-        if (print) {
-            val nPass = nParams - totalNFailures;
-            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
+        val nPass = nParams - totalNFailures;
+        log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
                             + totalNFailures + " failed. Largest relative error = " + maxError);
-        }
 
         return totalNFailures == 0;
     }
 
-
-
-    /**Check backprop gradients for a ComputationGraph
-     * @param graph ComputationGraph to test. This must be initialized.
-     * @param epsilon Usually on the order of 1e-4 or so.
-     * @param maxRelError Maximum relative error. Usually < 0.01, though maybe more for deep networks
-     * @param minAbsoluteError Minimum absolute error to cause a failure. Numerical gradients can be non-zero due to precision issues.
-     *                         For example, 0.0 vs. 1e-18: relative error is 1.0, but not really a failure
-     * @param print Whether to print full pass/failure details for each parameter gradient
-     * @param exitOnFirstError If true: return upon first failure. If false: continue checking even if
-     *  one parameter gradient has failed. Typically use false for debugging, true for unit tests.
-     * @param inputs Input arrays to use for forward pass. May be mini-batch data.
-     * @param labels Labels/targets (output) arrays to use to calculate backprop gradient. May be mini-batch data.
-     * @return true if gradients are passed, false otherwise.
-     */
-    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
-                    double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
-                    INDArray[] labels) {
-        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs, labels, null, null, null);
-    }
-
-    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
-                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask) {
-        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs,
-                labels, fMask, lMask, null);
-    }
-
-    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
-                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams) {
-        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs,
-                labels, fMask, lMask, excludeParams, (Consumer<ComputationGraph>)null);
-    }
-
-    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
-                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams,
-                                         final Integer rngSeedResetEachIter) {
-        Consumer<ComputationGraph> c = null;
-        if(rngSeedResetEachIter != null){
-            c = new Consumer<ComputationGraph>() {
-                @Override
-                public void accept(ComputationGraph computationGraph) {
-                    Nd4j.getRandom().setSeed(rngSeedResetEachIter);
-                }
-            };
-        }
-
-        return checkGradients(graph, epsilon, maxRelError, minAbsoluteError, print, exitOnFirstError, inputs,
-                labels, fMask, lMask, excludeParams, c);
-    }
-
-    public static boolean checkGradients(ComputationGraph graph, double epsilon, double maxRelError,
-                                         double minAbsoluteError, boolean print, boolean exitOnFirstError, INDArray[] inputs,
-                                         INDArray[] labels, INDArray[] fMask, INDArray[] lMask, Set<String> excludeParams,
-                                         Consumer<ComputationGraph> callEachIter) {
+    public static boolean checkGradients(GraphConfig c){
         //Basic sanity checks on input:
-        if (epsilon <= 0.0 || epsilon > 0.1)
+        if (c.epsilon <= 0.0 || c.epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
-        if (maxRelError <= 0.0 || maxRelError > 0.25)
-            throw new IllegalArgumentException("Invalid maxRelativeError: " + maxRelError);
+        if (c.maxRelError <= 0.0 || c.maxRelError > 0.25)
+            throw new IllegalArgumentException("Invalid maxRelativeError: " + c.maxRelError);
 
-        if (graph.getNumInputArrays() != inputs.length)
-            throw new IllegalArgumentException("Invalid input arrays: expect " + graph.getNumInputArrays() + " inputs");
-        if (graph.getNumOutputArrays() != labels.length)
+        if (c.net.getNumInputArrays() != c.inputs.length)
+            throw new IllegalArgumentException("Invalid input arrays: expect " + c.net.getNumInputArrays() + " inputs");
+        if (c.net.getNumOutputArrays() != c.labels.length)
             throw new IllegalArgumentException(
-                            "Invalid labels arrays: expect " + graph.getNumOutputArrays() + " outputs");
+                            "Invalid labels arrays: expect " + c.net.getNumOutputArrays() + " outputs");
 
         DataType dataType = DataTypeUtil.getDtypeFromContext();
         if (dataType != DataType.DOUBLE) {
@@ -483,21 +444,21 @@ public class GradientCheckUtil {
                             + "DataTypeUtil.setDTypeForContext(DataType.DOUBLE); before using GradientCheckUtil");
         }
 
-        DataType netDataType = graph.getConfiguration().getDataType();
+        DataType netDataType = c.net.getConfiguration().getDataType();
         if (netDataType != DataType.DOUBLE) {
             throw new IllegalStateException("Cannot perform gradient check: Network datatype is not set to double precision ("
                     + "is: " + netDataType + "). Double precision must be used for gradient checks. Create network with .dataType(DataType.DOUBLE) before using GradientCheckUtil");
         }
 
-        if(netDataType != graph.params().dataType()){
+        if(netDataType != c.net.params().dataType()){
             throw new IllegalStateException("Parameters datatype does not match network configuration datatype ("
-                    + "is: " + graph.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
+                    + "is: " + c.net.params().dataType() + "). If network datatype is set to DOUBLE, parameters must also be DOUBLE.");
         }
 
         //Check configuration
         int layerCount = 0;
-        for (String vertexName : graph.getConfiguration().getVertices().keySet()) {
-            GraphVertex gv = graph.getConfiguration().getVertices().get(vertexName);
+        for (String vertexName : c.net.getConfiguration().getVertices().keySet()) {
+            GraphVertex gv = c.net.getConfiguration().getVertices().get(vertexName);
             if (!(gv instanceof LayerVertex))
                 continue;
             LayerVertex lv = (LayerVertex) gv;
@@ -529,7 +490,7 @@ public class GradientCheckUtil {
                 }
             }
 
-            if (lv.getLayerConf().getLayer().getIDropout() != null && callEachIter == null) {
+            if (lv.getLayerConf().getLayer().getIDropout() != null && c.callEachIter == null) {
                 throw new IllegalStateException("When gradient checking dropout, rng seed must be reset each iteration, or no" +
                         " dropout should be present during gradient checks - got dropout = "
                         + lv.getLayerConf().getLayer().getIDropout() + " for layer " + layerCount);
@@ -537,34 +498,34 @@ public class GradientCheckUtil {
         }
 
         //Set softmax clipping to 0 if necessary, to avoid spurious failures due to clipping
-        for(Layer l : graph.getLayers()){
+        for(Layer l : c.net.getLayers()){
             if(l instanceof IOutputLayer){
                 configureLossFnClippingIfPresent((IOutputLayer) l);
             }
         }
 
-        for (int i = 0; i < inputs.length; i++)
-            graph.setInput(i, inputs[i]);
-        for (int i = 0; i < labels.length; i++)
-            graph.setLabel(i, labels[i]);
+        for (int i = 0; i < c.inputs.length; i++)
+            c.net.setInput(i, c.inputs[i]);
+        for (int i = 0; i < c.labels.length; i++)
+            c.net.setLabel(i, c.labels[i]);
 
-        graph.setLayerMaskArrays(fMask, lMask);
+        c.net.setLayerMaskArrays(c.inputMask, c.labelMask);
 
-        if(callEachIter != null){
-            callEachIter.accept(graph);
+        if(c.callEachIter != null){
+            c.callEachIter.accept(c.net);
         }
-        graph.computeGradientAndScore();
-        Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
+        c.net.computeGradientAndScore();
+        Pair<Gradient, Double> gradAndScore = c.net.gradientAndScore();
 
-        ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
-        updater.update(gradAndScore.getFirst(), 0, 0, graph.batchSize(), LayerWorkspaceMgr.noWorkspaces());
+        ComputationGraphUpdater updater = new ComputationGraphUpdater(c.net);
+        updater.update(gradAndScore.getFirst(), 0, 0, c.net.batchSize(), LayerWorkspaceMgr.noWorkspaces());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
-        INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters
+        INDArray originalParams = c.net.params().dup(); //need dup: params are a *view* of full parameters
 
         val nParams = originalParams.length();
 
-        Map<String, INDArray> paramTable = graph.paramTable();
+        Map<String, INDArray> paramTable = c.net.paramTable();
         List<String> paramNames = new ArrayList<>(paramTable.keySet());
         val paramEnds = new long[paramNames.size()];
         paramEnds[0] = paramTable.get(paramNames.get(0)).length();
@@ -572,19 +533,23 @@ public class GradientCheckUtil {
             paramEnds[i] = paramEnds[i - 1] + paramTable.get(paramNames.get(i)).length();
         }
 
+        if(c.excludeParams != null && !c.excludeParams.isEmpty()){
+            log.info("NOTE: parameters will be skipped due to config: {}", c.excludeParams);
+        }
+
         int currParamNameIdx = 0;
         int totalNFailures = 0;
         double maxError = 0.0;
-        MultiDataSet mds = new MultiDataSet(inputs, labels, fMask, lMask);
-        INDArray params = graph.params(); //Assumption here: params is a view that we can modify in-place
+        MultiDataSet mds = new MultiDataSet(c.inputs, c.labels, c.inputMask, c.labelMask);
+        INDArray params = c.net.params(); //Assumption here: params is a view that we can modify in-place
         for (long i = 0; i < nParams; i++) {
             //Get param name
             if (i >= paramEnds[currParamNameIdx]) {
                 currParamNameIdx++;
             }
             String paramName = paramNames.get(currParamNameIdx);
-            if(excludeParams != null && excludeParams.contains(paramName)){
-                log.info("Skipping parameters for parameter name: {}", paramName);
+            if(c.excludeParams != null && c.excludeParams.contains(paramName)){
+                //log.info("Skipping parameters for parameter name: {}", paramName);
                 i = paramEnds[currParamNameIdx++];
                 continue;
             }
@@ -592,18 +557,18 @@ public class GradientCheckUtil {
             //(w+epsilon): Do forward pass and score
             double origValue = params.getDouble(i);
 
-            params.putScalar(i, origValue + epsilon);
-            if(callEachIter != null){
-                callEachIter.accept(graph);
+            params.putScalar(i, origValue + c.epsilon);
+            if(c.callEachIter != null){
+                c.callEachIter.accept(c.net);
             }
-            double scorePlus = graph.score(mds, true); //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
+            double scorePlus = c.net.score(mds, true); //training == true for batch norm, etc (scores and gradients need to be calculated on same thing)
 
             //(w-epsilon): Do forward pass and score
-            params.putScalar(i, origValue - epsilon);
-            if(callEachIter != null){
-                callEachIter.accept(graph);
+            params.putScalar(i, origValue - c.epsilon);
+            if(c.callEachIter != null){
+                c.callEachIter.accept(c.net);
             }
-            double scoreMinus = graph.score(mds, true);
+            double scoreMinus = c.net.score(mds, true);
 
             //Reset original param value
             params.putScalar(i, origValue);
@@ -611,7 +576,7 @@ public class GradientCheckUtil {
             //Calculate numerical parameter gradient:
             double scoreDelta = scorePlus - scoreMinus;
 
-            double numericalGradient = scoreDelta / (2 * epsilon);
+            double numericalGradient = scoreDelta / (2 * c.epsilon);
             if (Double.isNaN(numericalGradient))
                 throw new IllegalStateException("Numerical gradient was NaN for parameter " + i + " of " + nParams);
 
@@ -625,32 +590,31 @@ public class GradientCheckUtil {
 
             if (relError > maxError)
                 maxError = relError;
-            if (relError > maxRelError || Double.isNaN(relError)) {
+            if (relError > c.maxRelError || Double.isNaN(relError)) {
                 double absError = Math.abs(backpropGradient - numericalGradient);
-                if (absError < minAbsoluteError) {
-                    log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
-                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                    + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
+                if (absError < c.minAbsoluteError) {
+                    if(c.print == PrintMode.ALL || c.print == PrintMode.ZEROS && absError == 0.0) {
+                        log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient
+                                + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                + "; absolute error = " + absError + " < minAbsoluteError = " + c.minAbsoluteError);
+                    }
                 } else {
-                    if (print)
-                        log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
-                                        + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                        + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
-                    if (exitOnFirstError)
+                    log.info("Param " + i + " (" + paramName + ") FAILED: grad= " + backpropGradient
+                                    + ", numericalGrad= " + numericalGradient + ", relError= " + relError
+                                    + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus + ", paramValue = " + origValue);
+                    if (c.exitOnFirstError)
                         return false;
                     totalNFailures++;
                 }
-            } else if (print) {
+            } else if (c.print == PrintMode.ALL) {
                 log.info("Param " + i + " (" + paramName + ") passed: grad= " + backpropGradient + ", numericalGrad= "
                                 + numericalGradient + ", relError= " + relError);
             }
         }
 
-        if (print) {
-            val nPass = nParams - totalNFailures;
-            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                            + totalNFailures + " failed. Largest relative error = " + maxError);
-        }
+        val nPass = nParams - totalNFailures;
+        log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
+                        + totalNFailures + " failed. Largest relative error = " + maxError);
 
         return totalNFailures == 0;
     }

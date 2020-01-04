@@ -33,11 +33,12 @@
 package com.atilika.kuromoji.trie;
 
 import com.atilika.kuromoji.trie.Trie.Node;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class TrieTest {
+public class TrieTest extends BaseDL4JTest {
 
     @Test
     public void testGetRoot() {

@@ -95,9 +95,8 @@ public abstract class FeedForwardLayer extends BaseLayer {
             case CNN3D:
                 //CNN3D -> FF
                 InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D) inputType;
-                //TODO don't hardcode NCDHW
                 return new Cnn3DToFeedForwardPreProcessor(c3d.getDepth(), c3d.getHeight(), c3d.getWidth(),
-                                c3d.getChannels(), true);
+                                c3d.getChannels(), c3d.getDataFormat() == Convolution3D.DataFormat.NCDHW);
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }

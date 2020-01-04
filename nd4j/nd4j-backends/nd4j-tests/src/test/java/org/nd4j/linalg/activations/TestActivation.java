@@ -22,7 +22,11 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.databind.*;
 
 import java.util.ArrayList;
@@ -37,9 +41,9 @@ import static org.junit.Assert.assertEquals;
  * Created by Alex on 30/12/2016.
  */
 @RunWith(Parameterized.class)
-public class TestActivationJson extends BaseNd4jTest {
+public class TestActivation extends BaseNd4jTest {
 
-    public TestActivationJson(Nd4jBackend backend) {
+    public TestActivation(Nd4jBackend backend) {
         super(backend);
     }
 
@@ -60,6 +64,59 @@ public class TestActivationJson extends BaseNd4jTest {
     }
 
     @Test
+    public void testRelu(){
+
+        Double[] max = {null, 6.0, 2.5, 5.0};
+        Double[] threshold = {0.0, 0.0, 0.75, 0.2};
+        Double[] negativeSlope = {0.0, 0.0, 0.0, 0.3};
+
+        INDArray in = Nd4j.linspace(-10, 10, 1000, DataType.DOUBLE);
+        double[] dIn = in.data().asDouble();
+
+        for( int i=0; i<max.length; i++ ){
+//            System.out.println("i = " + i);
+            ActivationReLU r = new ActivationReLU(max[i], threshold[i], negativeSlope[i]);
+            INDArray out = r.getActivation(in.dup(), true);
+            double[] exp = new double[dIn.length];
+            for( int j=0; j<exp.length; j++ ){
+                if(max[i] != null && dIn[j] >= max[i]){
+                    exp[j] = max[i];
+                } else if(dIn[j] < threshold[i]){
+                    exp[j] = negativeSlope[i] * (dIn[j] - threshold[i]);
+                } else {
+                    exp[j] = Math.min(dIn[j], max[i] == null ? Double.MAX_VALUE : max[i]);
+                }
+            }
+            INDArray expArr = Nd4j.createFromArray(exp);
+            assertEquals(expArr, out);
+        }
+
+        //Test backprop
+        INDArray eps = Nd4j.arange(in.length()).castTo(DataType.DOUBLE);
+        double[] dEps = eps.data().asDouble();
+        for( int i=0; i<max.length; i++ ){
+            ActivationReLU r = new ActivationReLU(max[i], threshold[i], negativeSlope[i]);
+            Pair<INDArray,INDArray> p = r.backprop(in.dup(), eps.dup());
+            INDArray grad = p.getFirst();
+            double[] dGrad = grad.data().asDouble();
+
+            for( int j=0; j<dGrad.length; j++ ){
+                if(max[i] != null && dIn[j] >= max[i]){
+                    //Max segment - gradient at input should be zero
+                    assertEquals(0.0, dGrad[j], 0.0);
+                } else if(dIn[j] < threshold[i]){
+                    //Below threshold - gradient equal to dL/dOut * threshold
+                    double exp = dEps[j] * negativeSlope[i];
+                    assertEquals(exp, dGrad[j], 1e-6);
+                } else {
+                    //Linear part
+                    assertEquals(dEps[j], dGrad[j], 1e-8);
+                }
+            }
+        }
+    }
+
+    @Test
     public void testJson() throws Exception {
 
         IActivation[] activations = new IActivation[] {new ActivationCube(), new ActivationELU(0.25),
@@ -75,7 +132,7 @@ public class TestActivationJson extends BaseNd4jTest {
                         {"@class"}, //Identity
                         {"@class", "alpha"}, //Leaky Relu
                         {"@class"}, //rational tanh
-                        {"@class"}, //relu
+                        {"@class", "max", "negativeSlope", "threshold"}, //relu
                         {"@class", "l", "u"}, //rrelu
                         {"@class"}, //sigmoid
                         {"@class"}, //Softmax
@@ -89,7 +146,7 @@ public class TestActivationJson extends BaseNd4jTest {
 
         for (int i = 0; i < activations.length; i++) {
             String asJson = mapper.writeValueAsString(activations[i]);
-            System.out.println(asJson);
+//            System.out.println(asJson);
 
             JsonNode node = mapper.readTree(asJson);
 

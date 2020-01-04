@@ -86,7 +86,7 @@ public class Conv1DConfig extends BaseConvolutionConfig {
         ret.put("s", s);
         ret.put("p", p);
         ret.put("d", d);
-        ret.put("isSameMode", paddingMode);
+        ret.put("paddingMode", paddingMode);
         ret.put("dataFormat", dataFormat);
         return ret;
     }

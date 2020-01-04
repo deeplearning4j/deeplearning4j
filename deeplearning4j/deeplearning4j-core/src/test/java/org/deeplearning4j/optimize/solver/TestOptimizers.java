@@ -66,7 +66,7 @@ import static org.junit.Assert.assertTrue;
 public class TestOptimizers extends BaseDL4JTest {
 
     //For debugging.
-    private static final boolean PRINT_OPT_RESULTS = true;
+    private static final boolean PRINT_OPT_RESULTS = false;
 
     @Test
     public void testOptimizersBasicMLPBackprop() {

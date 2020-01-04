@@ -84,13 +84,13 @@ public class SortCooTests extends BaseNd4jTest {
         DataBuffer idx = Nd4j.getDataBufferFactory().createLong(indices);
         DataBuffer val = Nd4j.createBuffer(values);
 
-        log.info("Old indices: {}", Arrays.toString(idx.asInt()));
+//        log.info("Old indices: {}", Arrays.toString(idx.asInt()));
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                 val.addressPointer(), 4, 3);
 
 
-        log.info("New indices: {}", Arrays.toString(idx.asInt()));
+//        log.info("New indices: {}", Arrays.toString(idx.asInt()));
 
         assertArrayEquals(expIndices, idx.asInt());
         assertArrayEquals(expValues, val.asDouble(), 1e-5);

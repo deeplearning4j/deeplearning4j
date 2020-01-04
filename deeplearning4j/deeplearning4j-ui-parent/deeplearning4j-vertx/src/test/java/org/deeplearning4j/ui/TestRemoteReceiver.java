@@ -17,6 +17,7 @@
 
 package org.deeplearning4j.ui;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.api.storage.impl.CollectionStatsStorageRouter;
@@ -51,7 +52,7 @@ import static org.junit.Assert.assertEquals;
  * Created by Alex on 10/11/2016.
  */
 @Ignore
-public class TestRemoteReceiver {
+public class TestRemoteReceiver extends BaseDL4JTest {
 
     @Test
     @Ignore

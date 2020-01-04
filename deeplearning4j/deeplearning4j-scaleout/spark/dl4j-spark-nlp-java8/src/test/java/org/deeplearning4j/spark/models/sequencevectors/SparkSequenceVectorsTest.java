@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.models.sequencevectors;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -41,7 +42,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * @author raver119@gmail.com
  */
-public class SparkSequenceVectorsTest {
+public class SparkSequenceVectorsTest extends BaseDL4JTest {
     protected static List<Sequence<VocabWord>> sequencesCyclic;
     private JavaSparkContext sc;
 

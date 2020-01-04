@@ -17,6 +17,7 @@
 package org.deeplearning4j.perf.listener;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;

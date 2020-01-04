@@ -53,7 +53,7 @@ public class CyclicWorkspaceTests extends BaseNd4jTest {
                 val fArray = Nd4j.create(fShape).assign(e);
                 val lArray = Nd4j.create(lShape).assign(e);
 
-                log.info("Current offset: {}; Current size: {};", ws.getCurrentOffset(), ws.getCurrentSize());
+//                log.info("Current offset: {}; Current size: {};", ws.getCurrentOffset(), ws.getCurrentSize());
             }
         }
     }

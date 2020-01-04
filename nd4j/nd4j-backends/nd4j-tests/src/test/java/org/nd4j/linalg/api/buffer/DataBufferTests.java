@@ -289,7 +289,7 @@ public class DataBufferTests extends BaseNd4jTest {
                     continue;
                 }
 
-                log.info("Testing source [{}]; target: [{}]", sourceType, dt);
+//                log.info("Testing source [{}]; target: [{}]", sourceType, dt);
 
                 for (boolean useWs : new boolean[]{false, true}) {
 

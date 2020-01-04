@@ -32,6 +32,7 @@
  */
 package com.atilika.kuromoji.ipadic;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -39,7 +40,7 @@ import java.io.IOException;
 
 import static com.atilika.kuromoji.TestUtils.assertMultiThreadedTokenizedStreamEquals;
 
-public class MultiThreadedTokenizerTest {
+public class MultiThreadedTokenizerTest extends BaseDL4JTest {
 
     @Test
     public void testMultiThreadedBocchan() throws IOException, InterruptedException {

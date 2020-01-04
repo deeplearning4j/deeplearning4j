@@ -34,6 +34,7 @@ package com.atilika.kuromoji.compile;
 
 import com.atilika.kuromoji.buffer.BufferEntry;
 import com.atilika.kuromoji.buffer.TokenInfoBuffer;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.io.File;
@@ -47,7 +48,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class TokenInfoBufferCompilerTest {
+public class TokenInfoBufferCompilerTest extends BaseDL4JTest {
 
     @Test
     public void testReadAndWriteFromBuffer() throws Exception {

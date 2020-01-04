@@ -32,12 +32,13 @@
  */
 package com.atilika.kuromoji.trie;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class NodeTest {
+public class NodeTest extends BaseDL4JTest {
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {}

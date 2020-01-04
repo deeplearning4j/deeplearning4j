@@ -135,7 +135,7 @@ public class TestSameDiffDenseVertex extends BaseDL4JTest {
 
                     assertEquals(gStd.gradient(), gSD.gradient());
 
-                    System.out.println("========================================================================");
+//                    System.out.println("========================================================================");
 
                     //Sanity check: different minibatch size
                     in = Nd4j.rand(2 * minibatch, nIn);

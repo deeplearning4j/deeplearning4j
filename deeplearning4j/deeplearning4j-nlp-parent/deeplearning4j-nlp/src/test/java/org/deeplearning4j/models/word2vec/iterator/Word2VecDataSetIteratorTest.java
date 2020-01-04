@@ -47,10 +47,15 @@ import static org.junit.Assert.assertArrayEquals;
  */
 public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 240000L;
+    }
+
     /**
      * Basically all we want from this test - being able to finish without exceptions.
      */
-    @Test(timeout = 300000)
+    @Test
     public void testIterator1() throws Exception {
         File inputFile = Resources.asFile("big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());

@@ -36,6 +36,7 @@ import com.atilika.kuromoji.dict.CharacterDefinitions;
 import com.atilika.kuromoji.dict.UnknownDictionary;
 import com.atilika.kuromoji.io.IntegerArrayIO;
 import com.atilika.kuromoji.io.StringArrayIO;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -45,7 +46,7 @@ import java.util.Map;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class UnknownDictionaryCompilerTest {
+public class UnknownDictionaryCompilerTest extends BaseDL4JTest {
 
     private static UnknownDictionary unknownDictionary;
 

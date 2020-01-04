@@ -32,11 +32,13 @@
  */
 package com.atilika.kuromoji;
 
+import org.deeplearning4j.BaseDL4JTest;
+
 import java.util.Arrays;
 
 import static com.atilika.kuromoji.TestUtils.assertTokenSurfacesEquals;
 
-public class CommonCornerCasesTest {
+public class CommonCornerCasesTest extends BaseDL4JTest {
 
     public static void testPunctuation(TokenizerBase tokenizer) {
         String gerryNoHanaNoHanashi = "僕の鼻はちょっと\r\n長いよ。";

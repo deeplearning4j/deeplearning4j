@@ -1648,8 +1648,8 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray vArr = gm.get(v.name());
         INDArray wArr = gm.get(w.name());
 
-        System.out.println(vArr);
-        System.out.println(wArr);
+//        System.out.println(vArr);
+//        System.out.println(wArr);
 
         assertEquals(Nd4j.zeros(DataType.DOUBLE, 3, 4), wArr);
     }

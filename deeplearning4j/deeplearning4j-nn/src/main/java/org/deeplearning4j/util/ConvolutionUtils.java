@@ -94,6 +94,49 @@ public class ConvolutionUtils {
         return new int[]{hOut, wOut};
     }
 
+    /**
+     * Get the output size of a deconvolution operation for given input data. In deconvolution, we compute the inverse
+     * of the shape computation of a convolution.
+     *
+     * @param inputData       Input data
+     * @param kernel          Kernel size (height/width)
+     * @param strides         Strides (height/width)
+     * @param padding         Padding (height/width)
+     * @param convolutionMode Convolution mode (Same, Strict, Truncate)
+     * @param dilation        Kernel dilation (height/width)
+     * @return Output size: int[2] with output height/width
+     */
+    public static long[] getDeconvolution3DOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding, int[] dilation,
+                                                   ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat) {
+
+        long hIn, wIn, dIn;
+        if(dataFormat == Convolution3D.DataFormat.NCDHW){
+            hIn = inputData.size(2);
+            wIn = inputData.size(3);
+            dIn = inputData.size(4);
+        } else {
+            hIn = inputData.size(1);
+            wIn = inputData.size(2);
+            dIn = inputData.size(3);
+        }
+
+
+        int[] eKernel = effectiveKernelSize(kernel, dilation);
+
+        if (convolutionMode == ConvolutionMode.Same) {
+            long hOut = strides[0] * hIn;
+            long wOut = strides[1] * wIn;
+            long dOut = strides[2] * dIn;
+            return new long[]{hOut, wOut, dOut};
+        }
+
+        long hOut = strides[0] * (hIn - 1) + eKernel[0] - 2 * padding[0];
+        long wOut = strides[1] * (wIn - 1) + eKernel[1] - 2 * padding[1];
+        long dOut = strides[2] * (dIn - 1) + eKernel[2] - 2 * padding[2];
+
+        return new long[]{hOut, wOut, dOut};
+    }
+
 
     /**
      * Get the output size (height/width) for the given input data and CNN configuration
@@ -307,11 +350,15 @@ public class ConvolutionUtils {
      */
     public static int[] getSameModeTopLeftPadding(int[] outSize, int[] inSize, int[] kernel, int[] strides, int[] dilation) {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
-        int[] outPad = new int[2];
-        outPad[0] = ((outSize[0] - 1) * strides[0] + eKernel[0] - inSize[0]) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
-        outPad[1] = ((outSize[1] - 1) * strides[1] + eKernel[1] - inSize[1]) / 2; //As above
-        Preconditions.checkState(outPad[0] >= 0 && outPad[1] >= 0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
+        int[] outPad = new int[kernel.length];
+        boolean allGt0 = true;
+        for( int i=0; i<kernel.length; i++ ){
+            outPad[i] = ((outSize[i] - 1) * strides[i] + eKernel[i] - inSize[i]) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
+            allGt0 &= outPad[i] >= 0;
+        }
+        Preconditions.checkState(allGt0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
                 outPad, inSize, outSize, kernel, strides, dilation);
+
         return outPad;
     }
 

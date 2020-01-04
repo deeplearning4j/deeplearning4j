@@ -273,8 +273,9 @@ public class TransferLearningComplex extends BaseDL4JTest {
         MultiDataSet rand = new MultiDataSet(new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 2)},
                         new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 3)});
         modelNow.fit(rand);
-        log.info(modelNow.summary());
-        log.info(modelNow.summary(InputType.feedForward(2),InputType.feedForward(2)));
-
+//        log.info(modelNow.summary());
+//        log.info(modelNow.summary(InputType.feedForward(2),InputType.feedForward(2)));
+        modelNow.summary();
+        modelNow.summary(InputType.feedForward(2),InputType.feedForward(2));
     }
 }

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.ui;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.api.Style;
@@ -41,7 +42,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 9/04/2016.
  */
-public class TestComponentSerialization {
+public class TestComponentSerialization extends BaseDL4JTest {
 
     @Test
     public void testSerialization() throws Exception {

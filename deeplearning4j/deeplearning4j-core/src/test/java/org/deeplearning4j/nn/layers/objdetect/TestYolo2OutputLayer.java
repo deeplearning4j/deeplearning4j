@@ -140,7 +140,7 @@ public class TestYolo2OutputLayer extends BaseDL4JTest {
         y2impl.setLabels(labels);
         double score = y2impl.computeScore(0.0, true, LayerWorkspaceMgr.noWorkspaces());
 
-        System.out.println("SCORE: " + score);
+//        System.out.println("SCORE: " + score);
         assertTrue(score > 0.0);
 
 

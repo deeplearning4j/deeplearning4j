@@ -17,7 +17,7 @@
 package org.deeplearning4j.graph.data;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.deeplearning4j.graph.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.impl.WeightedEdgeLineProcessor;

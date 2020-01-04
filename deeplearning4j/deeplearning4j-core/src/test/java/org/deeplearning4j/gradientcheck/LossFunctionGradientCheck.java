@@ -206,21 +206,19 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 } else {
                     failed.add(testName);
                 }
-
-                System.out.println("\n\n");
                 TestUtils.testModelSerialization(net);
             }
         }
 
-
-        System.out.println("---- Passed ----");
-        for (String s : passed) {
-            System.out.println(s);
-        }
-
-        System.out.println("---- Failed ----");
-        for (String s : failed) {
-            System.out.println(s);
+        if(failed.size() > 0) {
+            System.out.println("---- Passed ----");
+            for (String s : passed) {
+                System.out.println(s);
+            }
+            System.out.println("---- Failed ----");
+            for (String s : failed) {
+                System.out.println(s);
+            }
         }
 
         assertEquals("Tests failed", 0, failed.size());
@@ -376,7 +374,6 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     failed.add(testName);
                 }
 
-                System.out.println("\n\n");
                 TestUtils.testModelSerialization(net);
             }
         }
@@ -684,8 +681,6 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     } else {
                         failed.add(testName);
                     }
-
-                    System.out.println("\n\n");
                 }
             }
         }

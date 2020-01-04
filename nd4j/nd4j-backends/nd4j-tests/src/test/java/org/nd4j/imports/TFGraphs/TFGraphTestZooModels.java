@@ -61,9 +61,6 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             "xlnet_cased_L-24_H-1024_A-16",
 
             // 2019/07/22 - OOM, Passes with sufficient memory (16GB heap, 32GB off-heap tested)
-            "compression_residual_gru",
-
-            // 2019/07/22 - OOM, Passes with sufficient memory (16GB heap, 32GB off-heap tested)
             "deeplabv3_xception_ade20k_train",
 
             //2019/07/03 - o.n.i.g.t.TFGraphMapper - No TensorFlow descriptor found for tensor "sample_sequence/model/h0/attn/MatMul", op "BatchMatMulV2"
@@ -72,15 +69,13 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             // Missing Multinormal op, see https://github.com/eclipse/deeplearning4j/issues/7913
             "gpt-2_117M",
 
-            //2019/05/15 - "Invalid shape for op shape_of: shape has invalid values <= 0: shape=[0]"
-            //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
+            //2019/12/24 - https://github.com/eclipse/deeplearning4j/issues/8572
             "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
 
-            //2019/05/15 - CUSTOM CONV2D OP: rank of input array must be equal to 4, but got 0 instead !
-            //Also: https://github.com/deeplearning4j/deeplearning4j/issues/7112
+            //2019/12/24 - https://github.com/eclipse/deeplearning4j/issues/8572
             "ssd_mobilenet_v1_coco_2018_01_28",
 
-            //2019/06/24 - size op dtypes / libnd4j size op issue: https://github.com/eclipse/deeplearning4j/issues/7938
+            //2019/12/24 - https://github.com/eclipse/deeplearning4j/issues/8572
             "faster_rcnn_resnet101_coco_2018_01_28",
 
             //2019/06/24 - JVM crash on linux-x86_64-cpu-avx2 and -avx512 CI machines only - runs fine elsewhere
@@ -256,7 +251,9 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             OpValidationSuite.ignoreFailing();
         }
 
-//        if(!modelName.startsWith("mobilenet_v2_1.0_224")){
+//        if(!modelName.startsWith("ssd_mobilenet_v1_coco_2018_01_28")){
+//        if(!modelName.startsWith("ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03")){
+//        if(!modelName.startsWith("faster_rcnn_resnet101_coco_2018_01_28")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();

@@ -46,6 +46,11 @@ import static org.junit.Assert.assertEquals;
 @Slf4j
 public class TsneTest extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
@@ -58,15 +63,15 @@ public class TsneTest extends BaseDL4JTest {
                 log.info("Starting test: WSM={}, syntheticData={}", wsm, syntheticData);
 
                 //STEP 1: Initialization
-                int iterations = 300;
+                int iterations = 50;
                 //create an n-dimensional array of doubles
-                Nd4j.setDataType(DataType.DOUBLE);
+                Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
                 List<String> cacheList = new ArrayList<>(); //cacheList is a dynamic array of strings used to hold all words
 
                 //STEP 2: Turn text input into a list of words
                 INDArray weights;
                 if(syntheticData){
-                    weights = Nd4j.rand(5000, 200);
+                    weights = Nd4j.rand(1000, 200);
                 } else {
                     log.info("Load & Vectorize data....");
                     File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file

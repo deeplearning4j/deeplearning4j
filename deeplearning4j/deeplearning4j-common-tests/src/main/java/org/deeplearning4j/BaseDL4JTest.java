@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -22,6 +23,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.junit.rules.Timeout;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
@@ -34,13 +37,22 @@ import java.util.Map;
 import java.util.Properties;
 
 @Slf4j
-public class BaseDL4JTest {
+public abstract class BaseDL4JTest {
 
     @Rule
     public TestName name = new TestName();
+    @Rule
+    public Timeout timeout = Timeout.millis(getTimeoutMilliseconds());
 
     protected long startTime;
     protected int threadCountBefore;
+
+    /**
+     * Override this method to set the default timeout for methods in the test class
+     */
+    public long getTimeoutMilliseconds(){
+        return 30000;
+    }
 
     /**
      * Override this to set the profiling mode for the tests defined in the child class
@@ -63,6 +75,9 @@ public class BaseDL4JTest {
     @Before
     public void beforeTest(){
         log.info("{}.{}", getClass().getSimpleName(), name.getMethodName());
+        //Suppress ND4J initialization - don't need this logged for every test...
+        System.setProperty(ND4JSystemProperties.LOG_INITIALIZATION, "false");
+        System.setProperty(ND4JSystemProperties.ND4J_IGNORE_AVX, "true");
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j.setDefaultDataTypes(getDataType(), getDefaultFPDataType());

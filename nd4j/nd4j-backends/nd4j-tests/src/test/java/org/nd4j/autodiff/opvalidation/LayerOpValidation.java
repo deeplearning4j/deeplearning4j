@@ -74,10 +74,12 @@ public class LayerOpValidation extends BaseOpValidation {
                 .gradientCheck(true)
                 .expectedOutput(res.name(), exp);
 
-        System.out.println(sameDiff.summary());
-        System.out.println("============================");
+//        System.out.println(sameDiff.summary());
+//        System.out.println("============================");
+        sameDiff.summary();
         sameDiff.createGradFunction();
-        System.out.println(sameDiff.getFunction("grad").summary());
+//        System.out.println(sameDiff.getFunction("grad").summary());
+        sameDiff.getFunction("grad").summary();
 
 
         String err = OpValidation.validate(tc);
@@ -501,6 +503,7 @@ public class LayerOpValidation extends BaseOpValidation {
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
                                     .isSameMode(false)
+                                    .isNCDHW(ncdhw)
                                     .build());
                             break;
                         case 3:
@@ -510,6 +513,7 @@ public class LayerOpValidation extends BaseOpValidation {
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
                                     .isSameMode(true)
+                                    .isNCDHW(ncdhw)
                                     .build());
                             break;
                         case 4:

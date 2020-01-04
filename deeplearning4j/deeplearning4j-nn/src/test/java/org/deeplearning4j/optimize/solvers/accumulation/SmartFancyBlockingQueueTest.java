@@ -292,10 +292,10 @@ public class SmartFancyBlockingQueueTest extends BaseDL4JTest {
         }
 
         // each reader will read 250 updates. supposedly equal :)
-        val means = new long[4];
+        final long[] means = new long[4];
         val readers = new ArrayList<Thread>();
         for (int e = 0; e < 4; e++) {
-            val f = e;
+            final int f = e;
             means[f] = 0;
             val t = new Thread(new Runnable() {
                 @Override

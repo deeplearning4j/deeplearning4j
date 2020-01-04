@@ -75,7 +75,6 @@ public class TestUtils {
     }
 
     public static ComputationGraph testModelSerialization(ComputationGraph net){
-
         ComputationGraph restored;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();

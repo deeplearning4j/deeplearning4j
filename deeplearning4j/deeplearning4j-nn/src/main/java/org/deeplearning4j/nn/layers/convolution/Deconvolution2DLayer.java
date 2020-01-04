@@ -70,7 +70,7 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         assertInputSet(true);
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
-                    + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
+                    + " array as input to Deconvolution2DLayer with shape " + Arrays.toString(input.shape())
                     + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
                     + layerId());
         }

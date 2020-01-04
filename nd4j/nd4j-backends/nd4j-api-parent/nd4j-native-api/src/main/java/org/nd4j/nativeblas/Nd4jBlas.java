@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.config.ND4JEnvironmentVars;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.blas.Blas;
 
 
@@ -52,7 +53,10 @@ public abstract class Nd4jBlas implements Blas {
                 setMaxThreads(numThreads);
             }
 
-            log.info("Number of threads used for OpenMP BLAS: {}", getMaxThreads());
+            String logInit = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION);
+            if(logInit == null || logInit.isEmpty() || Boolean.parseBoolean(logInit)) {
+                log.info("Number of threads used for OpenMP BLAS: {}", getMaxThreads());
+            }
         }
     }
 

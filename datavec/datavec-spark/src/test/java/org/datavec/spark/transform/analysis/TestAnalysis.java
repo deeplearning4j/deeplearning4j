@@ -72,7 +72,9 @@ public class TestAnalysis extends BaseSparkTest {
         DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
         String daString = da.toString();
 
-        System.out.println(da);
+//        System.out.println(da);
+        da.toJson();
+        da.toString();
 
         List<ColumnAnalysis> ca = da.getColumnAnalysis();
         assertEquals(5, ca.size());
@@ -151,7 +153,7 @@ public class TestAnalysis extends BaseSparkTest {
         assertEquals(1, countD[countD.length - 1]);
 
         File f = Files.createTempFile("datavec_spark_analysis_UITest", ".html").toFile();
-        System.out.println(f.getAbsolutePath());
+//        System.out.println(f.getAbsolutePath());
         f.deleteOnExit();
         HtmlAnalysis.createHtmlAnalysisFile(da, f);
     }
@@ -210,7 +212,7 @@ public class TestAnalysis extends BaseSparkTest {
         for( int i=1; i<10; i++ ){
             counter.merge(counters.get(i));
             sparkCounter.merge(sparkCounters.get(i));
-            System.out.println();
+//            System.out.println();
         }
         assertEquals(sc1.sampleStdev(), counter.getStddev(false), 1e-6);
         assertEquals(sparkCounter.sampleStdev(), counter.getStddev(false), 1e-6);
@@ -356,7 +358,9 @@ public class TestAnalysis extends BaseSparkTest {
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
         DataAnalysis da = AnalyzeSpark.analyze(s, rdd);
-        System.out.println(da);
+//        System.out.println(da);
+        da.toString();
+        da.toJson();
     }
 
 }

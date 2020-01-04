@@ -326,6 +326,8 @@
                                         <argument>--compute</argument>
                                         <argument>${libnd4j.compute}</argument>
                                         <argument>${libnd4j.tests}</argument>
+                                        <argument>-j</argument>
+                                        <argument>${libnd4j.buildthreads}</argument>
                                     </buildCommand>
                                     <workingDirectory>${project.basedir}</workingDirectory>
                                 </configuration>

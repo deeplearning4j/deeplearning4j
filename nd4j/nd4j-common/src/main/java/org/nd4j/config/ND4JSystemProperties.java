@@ -31,6 +31,13 @@ public class ND4JSystemProperties {
      * initialization information
      */
     public static final String LOG_INITIALIZATION = "org.nd4j.log.initialization";
+
+    /**
+     * Applicability: nd4j-native when running non-AVX binary on an AVX compatible CPU<br>
+     * Description: Set to true to avoid logging AVX warnings (i.e., running generic x86 binaries on an AVX2 system)
+     */
+    public static final String ND4J_IGNORE_AVX = "org.nd4j.avx.ignore";
+
     /**
      * Applicability: Always<br>
      * Description: This system property defines the maximum amount of off-heap memory that can be used.

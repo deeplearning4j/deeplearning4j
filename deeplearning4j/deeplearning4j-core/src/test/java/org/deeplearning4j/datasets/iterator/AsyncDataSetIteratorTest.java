@@ -183,7 +183,7 @@ public class AsyncDataSetIteratorTest extends BaseDL4JTest {
             }
 
             adsi.reset();
-            log.info("Epoch {} finished...", e);
+//            log.info("Epoch {} finished...", e);
         }
     }
 
@@ -215,7 +215,7 @@ public class AsyncDataSetIteratorTest extends BaseDL4JTest {
             }
 
             adsi.reset();
-            log.info("Epoch {} finished...", e);
+//            log.info("Epoch {} finished...", e);
         }
     }
 }

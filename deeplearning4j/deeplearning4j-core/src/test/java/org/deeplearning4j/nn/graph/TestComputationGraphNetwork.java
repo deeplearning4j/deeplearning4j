@@ -531,28 +531,38 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         ComputationGraph graph = new ComputationGraph(conf1);
         graph.init();
-        System.out.println(graph.summary());
-        System.out.println(graph.summary(InputType.feedForward(5)));
+//        System.out.println(graph.summary());
+//        System.out.println(graph.summary(InputType.feedForward(5)));
+        graph.summary();
+        graph.summary(InputType.feedForward(5));
 
         graph = new ComputationGraph(conf2);
         graph.init();
-        System.out.println(graph.summary());
-        System.out.println(graph.summary(InputType.recurrent(5)));
+//        System.out.println(graph.summary());
+//        System.out.println(graph.summary(InputType.recurrent(5)));
+        graph.summary();
+        graph.summary(InputType.recurrent(5));
 
         graph = new ComputationGraph(conf3);
         graph.init();
-        System.out.println(graph.summary());
-        System.out.println(graph.summary(InputType.convolutional(28, 28, 1)));
+//        System.out.println(graph.summary());
+//        System.out.println(graph.summary(InputType.convolutional(28, 28, 1)));
+        graph.summary();
+        graph.summary(InputType.convolutional(28, 28, 1));
 
         graph = new ComputationGraph(conf4);
         graph.init();
-        System.out.println(graph.summary());
-        System.out.println(graph.summary(InputType.convolutional(28, 28, 1), InputType.recurrent(5)));
+//        System.out.println(graph.summary());
+//        System.out.println(graph.summary(InputType.convolutional(28, 28, 1), InputType.recurrent(5)));
+        graph.summary();
+        graph.summary(InputType.convolutional(28, 28, 1), InputType.recurrent(5));
 
         graph = new ComputationGraph(conf5);
         graph.init();
-        System.out.println(graph.summary());
-        System.out.println(graph.summary(InputType.convolutional(28, 28, 1)));
+//        System.out.println(graph.summary());
+//        System.out.println(graph.summary(InputType.convolutional(28, 28, 1)));
+        graph.summary();
+        graph.summary(InputType.convolutional(28, 28, 1));
     }
 
     @Test
@@ -753,7 +763,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         int nOut = 3;
 
         for(WorkspaceMode ws : WorkspaceMode.values()) {
-            System.out.println("***** WORKSPACE: " + ws);
+//            System.out.println("***** WORKSPACE: " + ws);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Adam(0.01))
@@ -981,7 +991,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 OptimizationAlgorithm.LBFGS};
 
         for (OptimizationAlgorithm oa : oas) {
-            System.out.println(oa);
+//            System.out.println(oa);
             ComputationGraphConfiguration conf =
                     new NeuralNetConfiguration.Builder().optimizationAlgo(oa).graphBuilder()
                             .addInputs("input")
@@ -1065,12 +1075,15 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
-        System.out.println(modelToTune.summary());
+//        System.out.println(modelToTune.summary());
+        modelToTune.summary();
 
         ComputationGraph modelNow =
                 new TransferLearning.GraphBuilder(modelToTune).setFeatureExtractor("denseCentre2").build();
-        System.out.println(modelNow.summary());
-        System.out.println(modelNow.summary(InputType.feedForward(10),InputType.feedForward(2)));
+//        System.out.println(modelNow.summary());
+//        System.out.println(modelNow.summary(InputType.feedForward(10),InputType.feedForward(2)));
+        modelNow.summary();
+        modelNow.summary(InputType.feedForward(10),InputType.feedForward(2));
     }
 
     @Test
@@ -1315,9 +1328,12 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         ComputationGraph modelExpectedArch = new ComputationGraph(confForArchitecture);
         modelExpectedArch.init();
         ComputationGraph modelMow = new TransferLearning.GraphBuilder(modelExpectedArch).setFeatureExtractor("layer2").build();
-        System.out.println(modelExpectedArch.summary());
-        System.out.println(modelMow.summary());
-        System.out.println(modelExpectedArch.summary(InputType.recurrent(V_HEIGHT* V_WIDTH* 3)));
+//        System.out.println(modelExpectedArch.summary());
+//        System.out.println(modelMow.summary());
+//        System.out.println(modelExpectedArch.summary(InputType.recurrent(V_HEIGHT* V_WIDTH* 3)));
+        modelExpectedArch.summary();
+        modelMow.summary();
+        modelExpectedArch.summary(InputType.recurrent(V_HEIGHT* V_WIDTH* 3));
     }
 
     @Test
@@ -2117,8 +2133,8 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray features = Nd4j.rand(new int[] {dataSize, inputSize});
         INDArray labels = Nd4j.rand(new int[] {dataSize, outputSize});
 
-        boolean gradOK = GradientCheckUtil.checkGradients(net, 1e-6, 1e-3,
-                1e-8, false, true, new INDArray[]{features}, new INDArray[]{labels}, null, null);
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{features})
+                .labels(new INDArray[]{labels}));
         assertTrue(gradOK);
     }
 

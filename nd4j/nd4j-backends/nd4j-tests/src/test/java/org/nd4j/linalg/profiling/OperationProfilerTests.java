@@ -125,7 +125,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processOperands(x, y);
 
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.MIXED_ORDER));
         //assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.NON_EWS_ACCESS));
@@ -139,7 +139,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processOperands(x, y, z);
 
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.MIXED_ORDER));
         //assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.NON_EWS_ACCESS));
@@ -154,7 +154,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processOperands(w, x, y, z);
 
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.MIXED_ORDER));
     }
@@ -167,7 +167,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processOperands(x, y);
 
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.STRIDED_ACCESS));
     }
@@ -181,7 +181,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_NON_EWS_ACCESS));
     }
@@ -195,7 +195,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_NON_EWS_ACCESS));
     }
@@ -211,7 +211,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_NON_EWS_ACCESS));
     }
@@ -225,8 +225,8 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
-        log.info("TAD: {}", Arrays.toString(pair.getFirst().asInt()));
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("TAD: {}", Arrays.toString(pair.getFirst().asInt()));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.NONE));
     }
@@ -239,8 +239,8 @@ public class OperationProfilerTests extends BaseNd4jTest {
 
         OpProfiler.PenaltyCause[] causes = OpProfiler.getInstance().processTADOperands(pair.getFirst());
 
-        log.info("TAD: {}", Arrays.toString(pair.getFirst().asInt()));
-        log.info("Causes: {}", Arrays.toString(causes));
+//        log.info("TAD: {}", Arrays.toString(pair.getFirst().asInt()));
+//        log.info("Causes: {}", Arrays.toString(causes));
         assertEquals(1, causes.length);
         assertTrue(ArrayUtils.contains(causes, OpProfiler.PenaltyCause.TAD_STRIDED_ACCESS));
     }
@@ -412,7 +412,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
             val avgA = (nanosB - nanosA) / iterations;
 
 
-            log.info("A: {}; B: {}", avgA, avgB);
+//            log.info("A: {}; B: {}", avgA, avgB);
         }
     }
 

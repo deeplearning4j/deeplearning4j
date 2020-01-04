@@ -70,7 +70,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
             int lastDot = path.lastIndexOf('.');
             int lastUnderscore = path.lastIndexOf('_');
             String dtype = path.substring(lastUnderscore+1, lastDot);
-            System.out.println(path + " : " + dtype);
+//            System.out.println(path + " : " + dtype);
 
             DataType dt = DataType.fromNumpy(dtype);
             //System.out.println(dt);
@@ -120,7 +120,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
             int lastDot = path.lastIndexOf('.');
             int lastUnderscore = path.lastIndexOf('_');
             String dtype = path.substring(lastUnderscore+1, lastDot);
-            System.out.println(path + " : " + dtype);
+//            System.out.println(path + " : " + dtype);
 
             DataType dt = DataType.fromNumpy(dtype);
             //System.out.println(dt);
@@ -173,7 +173,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
             int lastDot = path.lastIndexOf('.');
             int lastSlash = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
             String dtype = path.substring(lastSlash+1, lastDot);
-            System.out.println(path + " : " + dtype);
+//            System.out.println(path + " : " + dtype);
 
             DataType dt = DataType.fromNumpy(dtype);
             //System.out.println(dt);
@@ -236,7 +236,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
                 int lastDot = path.lastIndexOf('.');
                 int lastUnderscore = path.lastIndexOf('_');
                 String dtype = path.substring(lastUnderscore + 1, lastDot);
-                System.out.println(path + " : " + dtype);
+//                System.out.println(path + " : " + dtype);
 
                 DataType dt = DataType.fromNumpy(dtype);
                 //System.out.println(dt);
@@ -322,8 +322,8 @@ public class NumpyFormatTests extends BaseNd4jTest {
     @Test
     public void testNumpyBoolean() {
         INDArray out = Nd4j.createFromNpyFile(new File("c:/Users/raver/Downloads/error2.npy"));
-        System.out.println(ArrayUtil.toList(ArrayUtil.toInts(out.shape())));
-        System.out.println(out);
+//        System.out.println(ArrayUtil.toList(ArrayUtil.toInts(out.shape())));
+//        System.out.println(out);
     }
 
     @Override

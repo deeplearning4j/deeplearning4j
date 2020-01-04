@@ -240,7 +240,8 @@ public class EvaluationBinaryTest extends BaseNd4jTest {
         EvaluationBinary eb = new EvaluationBinary(4, 30);
         eb.eval(l1, p1);
 
-        System.out.println(eb.stats());
+//        System.out.println(eb.stats());
+        eb.stats();
     }
 
 

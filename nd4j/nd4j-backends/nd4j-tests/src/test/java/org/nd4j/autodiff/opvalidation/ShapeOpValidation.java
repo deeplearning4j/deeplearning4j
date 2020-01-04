@@ -1236,7 +1236,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(4,4);
         //System.out.println(in.shapeInfoToString());   //Rank: 2,Offset: 0 Order: c Shape: [4,4],  stride: [4,1]
-        System.out.println(Arrays.toString(in.data().asFloat())); //[0.27620894, 0.21801452, 0.062078513, 7.348895E-4, 0.24149609, 0.4948205, 0.93483436, 0.52035654, 0.30292067, 0.3289706, 0.7977864, 0.03180518, 0.1455722, 0.90352905, 0.9405744, 0.0048329555]
+        //System.out.println(Arrays.toString(in.data().asFloat())); //[0.27620894, 0.21801452, 0.062078513, 7.348895E-4, 0.24149609, 0.4948205, 0.93483436, 0.52035654, 0.30292067, 0.3289706, 0.7977864, 0.03180518, 0.1455722, 0.90352905, 0.9405744, 0.0048329555]
 
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", in);
@@ -1925,8 +1925,8 @@ public class ShapeOpValidation extends BaseOpValidation {
     public void testSliceShape(){
 
         INDArray arr = Nd4j.arange(0, 25).reshape(1,5,5).castTo(DataType.INT);
-        System.out.println(Arrays.toString(arr.shape()));
-        System.out.println(arr);
+//        System.out.println(Arrays.toString(arr.shape()));
+//        System.out.println(arr);
 
         INDArray begin = Nd4j.createFromArray(0, 1, 2);
         INDArray size = Nd4j.createFromArray(-1, -1, -1);
@@ -2374,7 +2374,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                         Nd4j.createFromArray(1, 0))
                 .build();
         List<LongShapeDescriptor> l = op.calculateOutputShape();
-        System.out.println(Arrays.toString(l.get(0).getShape()));
+//        System.out.println(Arrays.toString(l.get(0).getShape()));
         assertArrayEquals(new long[]{4, 3}, l.get(0).getShape());
 
         op = DynamicCustomOp.builder("permute")
@@ -2382,7 +2382,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .addIntegerArguments(1, 0)
                 .build();
         l = op.calculateOutputShape();
-        System.out.println(Arrays.toString(l.get(0).getShape()));
+//        System.out.println(Arrays.toString(l.get(0).getShape()));
         assertArrayEquals(new long[]{4, 3}, l.get(0).getShape());
 
 
@@ -2391,7 +2391,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                         Nd4j.createFromArray(1, 2, 0))
                 .build();
         l = op.calculateOutputShape();
-        System.out.println(Arrays.toString(l.get(0).getShape()));
+//        System.out.println(Arrays.toString(l.get(0).getShape()));
         assertArrayEquals(new long[]{4, 5, 3}, l.get(0).getShape());
     }
 
@@ -2419,7 +2419,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray in = Nd4j.linspace(DataType.FLOAT, 1, 6, 1).reshape(3,2);
         INDArray permute = Nd4j.createFromArray(1,0);
 
-        System.out.println(in);
+//        System.out.println(in);
 
         SameDiff sd = SameDiff.create();
         SDVariable v = sd.var(in);
@@ -2457,8 +2457,8 @@ public class ShapeOpValidation extends BaseOpValidation {
             DynamicCustomOp op = b.build();
             Nd4j.exec(op);
 
-            System.out.println(in);
-            System.out.println(op.outputArguments()[0]);
+//            System.out.println(in);
+//            System.out.println(op.outputArguments()[0]);
 
             assertEquals(exp, op.getOutputArgument(0));
         }

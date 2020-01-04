@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.clustering.randomprojection;
 
-import org.deeplearning4j.clustering.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.Before;
 import org.junit.Test;

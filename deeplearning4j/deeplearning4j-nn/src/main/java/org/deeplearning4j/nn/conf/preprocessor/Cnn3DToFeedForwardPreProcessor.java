@@ -101,7 +101,7 @@ public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
             throw new IllegalStateException("Invalid input array: expected shape in format "
                     + "[minibatch, channels, channels, height, width] or "
                     + "[minibatch, channels, height, width, channels]"
-                    + "for numChannels: " + numChannels + ", inputDepth " + inputDepth + ", inputHeight " + inputHeight
+                    + " for numChannels: " + numChannels + ", inputDepth " + inputDepth + ", inputHeight " + inputHeight
                     + " and inputWidth " + inputWidth + ", but got "
                     + Arrays.toString(input.shape()));
         }

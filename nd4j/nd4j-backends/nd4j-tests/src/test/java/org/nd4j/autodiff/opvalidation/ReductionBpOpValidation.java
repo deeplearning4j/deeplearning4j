@@ -532,8 +532,8 @@ public class ReductionBpOpValidation extends BaseOpValidation {
                 .subi(mean).divi(stdev * 2)
                 .muli(0.5); //* dL/dOut
 
-        System.out.println(dLdInExp.shapeInfoToString());
-        System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
+//        System.out.println(dLdInExp.shapeInfoToString());
+//        System.out.println(Arrays.toString(dLdInExp.data().asFloat()));
 
         INDArray dLdIn = Nd4j.createUninitialized(new long[]{3});
 

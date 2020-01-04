@@ -125,7 +125,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         boolean[] found = new boolean[names.size()];
         for(File f : files){
             String s = f.getAbsolutePath();
-            System.out.println(s);
+//            System.out.println(s);
             for( int i=0; i<names.size(); i++ ){
                 if(s.contains(names.get(i))){
                     found[i] = true;
@@ -171,7 +171,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         boolean[] found = new boolean[names.size()];
         for(File f : files){
             String s = f.getAbsolutePath();
-            System.out.println(s);
+//            System.out.println(s);
             for( int i=0; i<names.size(); i++ ){
                 if(s.contains(names.get(i))){
                     found[i] = true;

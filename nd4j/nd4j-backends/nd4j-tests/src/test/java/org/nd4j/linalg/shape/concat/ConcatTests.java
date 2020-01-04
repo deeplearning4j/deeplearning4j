@@ -138,7 +138,7 @@ public class ConcatTests extends BaseNd4jTest {
 
         assertEquals(exp, concat0);
 
-        System.out.println("1------------------------");
+//        System.out.println("1------------------------");
 
         //ConcatV2, dim 1
         second = Nd4j.linspace(24, 32, 8, DataType.DOUBLE).reshape('c', 2, 1, 4);
@@ -148,7 +148,7 @@ public class ConcatTests extends BaseNd4jTest {
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.point(3), NDArrayIndex.all()}, second);
         exp.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.interval(4, 6), NDArrayIndex.all()}, third);
 
-        System.out.println("2------------------------");
+//        System.out.println("2------------------------");
 
         INDArray concat1 = Nd4j.concat(1, first, second, third);
 
@@ -192,7 +192,7 @@ public class ConcatTests extends BaseNd4jTest {
                     INDArray s2 = s.getFirst().assign(second);
                     INDArray t2 = t.getFirst().assign(third);
 
-                    System.out.println("-------------------------------------------");
+//                    System.out.println("-------------------------------------------");
                     INDArray concat0 = Nd4j.concat(0, f2, s2, t2);
 
                     assertEquals(exp, concat0);

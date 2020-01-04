@@ -1006,7 +1006,9 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
             for (RecordMetaData m : meta) {
                 Record r = csv.loadFromMetaData(m);
                 INDArray row = ds.getFeatures().getRow(i);
-                System.out.println(m.getLocation() + "\t" + r.getRecord() + "\t" + row);
+                if(i <= 3) {
+                    System.out.println(m.getLocation() + "\t" + r.getRecord() + "\t" + row);
+                }
 
                 for (int j = 0; j < 4; j++) {
                     double exp = r.getRecord().get(j).toDouble();

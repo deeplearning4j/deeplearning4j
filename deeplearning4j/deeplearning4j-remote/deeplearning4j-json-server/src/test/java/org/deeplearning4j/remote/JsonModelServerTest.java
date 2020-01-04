@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -63,7 +64,7 @@ import static org.deeplearning4j.parallelism.inference.InferenceMode.SEQUENTIAL;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class JsonModelServerTest {
+public class JsonModelServerTest extends BaseDL4JTest {
     private static final MultiLayerNetwork model;
     private final int PORT = 18080;
 

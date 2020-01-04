@@ -520,7 +520,8 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertEquals(2, in1.first());
         assertEquals(0, in1.second());
 
-        System.out.println(tg.summary());
+//        System.out.println(tg.summary());
+        tg.summary();
 
         int dimensionsLength = nodeSum.dimensionsLength();
         assertEquals(1, dimensionsLength);

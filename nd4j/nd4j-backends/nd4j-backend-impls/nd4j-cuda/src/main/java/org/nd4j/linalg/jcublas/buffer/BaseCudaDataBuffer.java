@@ -462,6 +462,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = LongIndexer.create((LongPointer) pointer);
                 break;
             case UINT16:
+                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asShortPointer();
+                indexer = UShortIndexer.create((ShortPointer) pointer);
+                break;
             case SHORT:
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), originalBuffer.length()).asShortPointer();
                 indexer = ShortIndexer.create((ShortPointer) pointer);

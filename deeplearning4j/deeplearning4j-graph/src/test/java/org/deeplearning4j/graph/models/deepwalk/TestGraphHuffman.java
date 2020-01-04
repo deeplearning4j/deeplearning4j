@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.graph.models.deepwalk;
 
-import org.deeplearning4j.graph.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.util.Arrays;

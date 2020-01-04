@@ -18,6 +18,7 @@
 package org.deeplearning4j.ui;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.ui.api.UIServer;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -35,7 +36,7 @@ import java.util.Arrays;
 
 @Ignore
 @Slf4j
-public class TestSameDiffUI {
+public class TestSameDiffUI extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

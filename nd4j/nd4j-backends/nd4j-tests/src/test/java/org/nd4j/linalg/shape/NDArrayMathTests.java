@@ -116,10 +116,11 @@ public class NDArrayMathTests extends BaseNd4jTest {
 
 
         INDArray otherTest = Nd4j.linspace(1, 144, 144, DataType.DOUBLE).reshape(6, 3, 2, 2, 2);
-        System.out.println(otherTest);
+//        System.out.println(otherTest);
         INDArray baseArr = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(2, 2, 2);
         for (int i = 0; i < baseArr.tensorsAlongDimension(0, 1); i++) {
-            System.out.println(NDArrayMath.sliceOffsetForTensor(i, baseArr, new int[] {2, 2}));
+//            System.out.println(NDArrayMath.sliceOffsetForTensor(i, baseArr, new int[] {2, 2}));
+            NDArrayMath.sliceOffsetForTensor(i, baseArr, new int[] {2, 2});
         }
 
 

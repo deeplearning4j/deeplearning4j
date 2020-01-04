@@ -32,6 +32,7 @@
  */
 package com.atilika.kuromoji.ipadic;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -45,7 +46,7 @@ import java.util.List;
 import static com.atilika.kuromoji.TestUtils.assertTokenSurfacesEquals;
 import static org.junit.Assert.assertEquals;
 
-public class UserDictionaryTokenizerTest {
+public class UserDictionaryTokenizerTest extends BaseDL4JTest {
 
     private String userDictionary = "" + "クロ,クロ,クロ,カスタム名詞\n" + "真救世主,真救世主,シンキュウセイシュ,カスタム名詞\n"
                     + "真救世主伝説,真救世主伝説,シンキュウセイシュデンセツ,カスタム名詞\n" + "北斗の拳,北斗の拳,ホクトノケン,カスタム名詞";

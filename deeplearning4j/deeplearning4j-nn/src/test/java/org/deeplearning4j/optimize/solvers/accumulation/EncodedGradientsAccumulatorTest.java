@@ -34,6 +34,11 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 1200000L;
+    }
+
     /**
      * This test ensures, that memory amount assigned to buffer is enough for any number of updates
      * @throws Exception

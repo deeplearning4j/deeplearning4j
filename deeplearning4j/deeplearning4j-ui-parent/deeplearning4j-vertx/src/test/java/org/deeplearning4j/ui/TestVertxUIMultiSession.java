@@ -18,6 +18,7 @@
 package org.deeplearning4j.ui;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -52,7 +53,7 @@ import static org.junit.Assert.*;
  * @author Tamas Fenyvesi
  */
 @Ignore
-public class TestVertxUIMultiSession {
+public class TestVertxUIMultiSession extends BaseDL4JTest {
     @Before
     public void setUp() throws Exception {
         UIServer.stopInstance();

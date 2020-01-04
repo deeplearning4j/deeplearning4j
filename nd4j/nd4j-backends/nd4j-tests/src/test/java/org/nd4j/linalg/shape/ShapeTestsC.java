@@ -126,7 +126,7 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray matrix = Nd4j.create(new double[][] {{1, 2}, {3, 4}});
         for (int i = 0; i < matrix.rows(); i++) {
             INDArray row = matrix.getRow(i);
-            System.out.println(matrix.getRow(i));
+//            System.out.println(matrix.getRow(i));
         }
         matrix.putRow(1, Nd4j.create(new double[] {1, 2}));
         assertEquals(matrix.getRow(0), matrix.getRow(1));
@@ -187,9 +187,9 @@ public class ShapeTestsC extends BaseNd4jTest {
         INDArray slice = nd.slice(1, 0);
 
         INDArray vector = slice;
-        for (int i = 0; i < vector.length(); i++) {
-            System.out.println(vector.getDouble(i));
-        }
+//        for (int i = 0; i < vector.length(); i++) {
+//            System.out.println(vector.getDouble(i));
+//        }
         assertEquals(Nd4j.create(new double[] {4, 5, 6}), vector);
     }
 

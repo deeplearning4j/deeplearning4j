@@ -53,7 +53,14 @@ public abstract class BaseNd4jTest {
     public TestName testName = new TestName();
 
     @Rule
-    public Timeout timeout = Timeout.seconds(30);
+    public Timeout timeout = Timeout.seconds(testTimeoutMilliseconds());
+
+    /**
+     * Override this method to set the default timeout for methods in the class
+     */
+    public long testTimeoutMilliseconds(){
+        return 30000L;
+    }
 
     protected long startTime;
     protected int threadCountBefore;
@@ -76,6 +83,7 @@ public abstract class BaseNd4jTest {
 
         //Suppress ND4J initialization - don't need this logged for every test...
         System.setProperty(ND4JSystemProperties.LOG_INITIALIZATION, "false");
+        System.setProperty(ND4JSystemProperties.ND4J_IGNORE_AVX, "true");
         System.gc();
     }
 

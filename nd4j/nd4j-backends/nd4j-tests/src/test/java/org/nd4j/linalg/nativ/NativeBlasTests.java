@@ -256,7 +256,7 @@ public class NativeBlasTests extends BaseNd4jTest {
 
 
         val exp = A.mmul(B);
-        log.info("exp: {}", exp);
+//        log.info("exp: {}", exp);
 
         // ?
         assertEquals(exp, res);
@@ -284,7 +284,7 @@ public class NativeBlasTests extends BaseNd4jTest {
 
 
         val exp = A.mmul(B);
-        log.info("exp mean: {}", exp.meanNumber());
+//        log.info("exp mean: {}", exp.meanNumber());
 
         // ?
         assertEquals(exp, res);

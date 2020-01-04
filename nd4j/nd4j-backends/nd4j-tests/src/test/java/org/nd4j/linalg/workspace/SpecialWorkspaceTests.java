@@ -70,7 +70,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         }
 
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1");
-        workspace.enableDebug(true);
+//        workspace.enableDebug(true);
 
         assertEquals(0, workspace.getStepNumber());
 
@@ -172,7 +172,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
         Nd4jWorkspace workspace =
                         (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS1");
-        workspace.enableDebug(true);
+//        workspace.enableDebug(true);
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
             Nd4j.create(500);

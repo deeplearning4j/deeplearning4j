@@ -370,7 +370,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
         Nd4j.getExecutioner().exec(op);
 
-        log.info("Matrix: {}", matrix);
+//        log.info("Matrix: {}", matrix);
         assertEquals(exp0, matrix.getRow(0));
         assertEquals(exp1, matrix.getRow(1));
         assertEquals(exp0, matrix.getRow(2));
@@ -579,7 +579,7 @@ public class CustomOpsTests extends BaseNd4jTest {
                 .build();
 
         for( int i=0; i<1000; i++ ) {
-            System.out.println(i);
+//            System.out.println(i);
             Nd4j.getExecutioner().exec(op);
         }
     }
@@ -633,7 +633,7 @@ public class CustomOpsTests extends BaseNd4jTest {
                 .build();
 
         Nd4j.exec(op);
-        System.out.println(out);
+//        System.out.println(out);
     }
 
     @Test
@@ -660,13 +660,13 @@ public class CustomOpsTests extends BaseNd4jTest {
             }
         }
 
-        System.out.println("Eps:");
-        System.out.println(eps.shapeInfoToString());
-        System.out.println(Arrays.toString(eps.data().asFloat()));
+//        System.out.println("Eps:");
+//        System.out.println(eps.shapeInfoToString());
+//        System.out.println(Arrays.toString(eps.data().asFloat()));
 
-        System.out.println("Expected:");
-        System.out.println(exp.shapeInfoToString());
-        System.out.println(Arrays.toString(exp.data().asFloat()));
+//        System.out.println("Expected:");
+//        System.out.println(exp.shapeInfoToString());
+//        System.out.println(Arrays.toString(exp.data().asFloat()));
 
         DynamicCustomOp op = DynamicCustomOp.builder("upsampling2d_bp")
                 .addInputs(input, eps)
@@ -1044,7 +1044,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray distance = Nd4j.scalar(0.f);
 
         Nd4j.exec(new KnnMinDistance(point, lowest, highest, distance));
-        System.out.println(distance);
+//        System.out.println(distance);
     }
 
     @Ignore("2019/11/15 AS - https://github.com/eclipse/deeplearning4j/issues/8399")
@@ -1069,7 +1069,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray output = Nd4j.createUninitialized(4, 5);
         DropOut op = new DropOut(input, output, 0.1);
         Nd4j.exec(op);
-        System.out.println(output);
+//        System.out.println(output);
     }
 
     @Test
@@ -1336,7 +1336,7 @@ public class CustomOpsTests extends BaseNd4jTest {
 
         AdjustHue op = new AdjustHue(image, 0.2f);
         INDArray[] res = Nd4j.exec(op);
-        System.out.println(res[0]);
+//        System.out.println(res[0]);
         List<LongShapeDescriptor> lsd = op.calculateOutputShape();
         assertEquals(1, lsd.size());
         assertArrayEquals(new long[]{8, 8, 3}, lsd.get(0).getShape());
@@ -1358,7 +1358,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray y = Nd4j.linspace(DataType.FLOAT, -5, 9, 1).reshape(3, 3);
         val c =  Conditions.equals(0.0);
 
-        System.out.println("Y:\n" + y);
+//        System.out.println("Y:\n" + y);
 
         INDArray z = x.match(y, c);
         INDArray exp = Nd4j.createFromArray(new boolean[][]{

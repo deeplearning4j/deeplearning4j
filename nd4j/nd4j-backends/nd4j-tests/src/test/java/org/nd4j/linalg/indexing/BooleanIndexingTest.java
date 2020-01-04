@@ -139,11 +139,8 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     @Test
     public void test2dAnd2() {
         INDArray array = Nd4j.zeros(10, 10);
-
         array.slice(4).putScalar(2, 1e-5f);
-
-
-        System.out.println(array);
+//        System.out.println(array);
 
         assertFalse(BooleanIndexing.and(array, Conditions.equals(0f)));
 
@@ -329,7 +326,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         boolean result[] = BooleanIndexing.and(array, Conditions.equals(0.0), 1);
         boolean comp[] = new boolean[] {false, false, true};
 
-        System.out.println("Result: " + Arrays.toString(result));
+//        System.out.println("Result: " + Arrays.toString(result));
         assertArrayEquals(comp, result);
     }
 
@@ -338,12 +335,12 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         INDArray array = Nd4j.ones(3, 10);
         array.getRow(2).assign(0.0).putScalar(0, 1.0);
 
-        System.out.println("Array: " + array);
+//        System.out.println("Array: " + array);
 
         boolean result[] = BooleanIndexing.or(array, Conditions.lessThan(0.9), 1);
         boolean comp[] = new boolean[] {false, false, true};
 
-        System.out.println("Result: " + Arrays.toString(result));
+//        System.out.println("Result: " + Arrays.toString(result));
         assertArrayEquals(comp, result);
     }
 
@@ -355,7 +352,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         boolean result[] = BooleanIndexing.and(array, Conditions.lessThan(0.0), 1);
         boolean comp[] = new boolean[] {false, false, false};
 
-        System.out.println("Result: " + Arrays.toString(result));
+//        System.out.println("Result: " + Arrays.toString(result));
         assertArrayEquals(comp, result);
     }
 

@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.PReLUParamInitializer;
+import org.deeplearning4j.nn.weights.WeightInitConstant;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -115,10 +116,13 @@ public class PReLULayer extends BaseLayer {
                         .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS).build();
     }
 
-    @NoArgsConstructor
     @Getter
     @Setter
     public static class Builder extends FeedForwardLayer.Builder<PReLULayer.Builder> {
+
+        public Builder(){
+            this.weightInitFn = new WeightInitConstant(0);
+        }
 
         /**
          * Explicitly set input shape of incoming activations so that parameters can be initialized properly. This

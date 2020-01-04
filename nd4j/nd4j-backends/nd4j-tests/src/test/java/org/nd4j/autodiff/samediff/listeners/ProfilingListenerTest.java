@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class ProfilingListenerTest extends BaseNd4jTest {
 
@@ -68,7 +69,8 @@ public class ProfilingListenerTest extends BaseNd4jTest {
         }
 
         String content = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
-        System.out.println(content);
+//        System.out.println(content);
+        assertFalse(content.isEmpty());
 
         //Should be 2 begins and 2 ends for each entry
         //5 warmup iterations, 5 profile iterations, x2 for both the op name and the op "instance" name

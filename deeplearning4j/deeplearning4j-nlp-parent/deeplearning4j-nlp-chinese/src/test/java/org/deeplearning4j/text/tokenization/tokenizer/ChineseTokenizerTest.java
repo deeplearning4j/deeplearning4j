@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
@@ -37,7 +38,7 @@ import static org.junit.Assert.assertEquals;
  *
  */
 @Slf4j
-public class ChineseTokenizerTest {
+public class ChineseTokenizerTest extends BaseDL4JTest {
 
     private final String toTokenize = "青山绿水和伟大的科学家让世界更美好和平";
     private final String[] expect = {"青山绿水", "和", "伟大", "的", "科学家", "让", "世界", "更", "美好", "和平"};

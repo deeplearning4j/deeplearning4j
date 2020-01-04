@@ -126,7 +126,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testBroadcastMultiDim() {
         INDArray data = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(2, 3, 5);
-        System.out.println(data);
+//        System.out.println(data);
         INDArray mask = Nd4j.create(new double[][] {{1.00, 1.00, 1.00, 1.00, 1.00}, {1.00, 1.00, 1.00, 0.00, 0.00}});
         Nd4j.getExecutioner().exec(new BroadcastMulOp(data, mask, data, 0, 2));
         INDArray assertion = Nd4j.create(new double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0,
@@ -342,7 +342,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testTad() {
         INDArray arr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(2, 3, 2);
         for (int i = 0; i < arr.tensorsAlongDimension(0); i++) {
-            System.out.println(arr.tensorAlongDimension(i, 0));
+//            System.out.println(arr.tensorAlongDimension(i, 0));
+            arr.tensorAlongDimension(i, 0);
         }
     }
 
@@ -503,12 +504,12 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testMeanSumSimple() {
-        System.out.println("3d");
+//        System.out.println("3d");
         INDArray arr = Nd4j.ones(1, 4, 4);
         assertEquals(Nd4j.ones(1), arr.mean(1, 2));
         assertEquals(Nd4j.ones(1).muli(16), arr.sum(1, 2));
 
-        System.out.println("4d");
+//        System.out.println("4d");
         INDArray arr4 = Nd4j.ones(1, 1, 4, 4);
         INDArray arr4m = arr4.mean(2, 3);
         INDArray arr4s = arr4.sum(2, 3);
@@ -516,7 +517,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
             assertEquals(arr4m.getDouble(i), 1, 1e-1);
         for (int i = 0; i < arr4s.length(); i++)
             assertEquals(arr4s.getDouble(i), 16, 1e-1);
-        System.out.println("5d");
+//        System.out.println("5d");
         INDArray arr5 = Nd4j.ones(1, 1, 4, 4, 4);
         INDArray arr5s = arr5.sum(2, 3);
         for (int i = 0; i < arr5s.length(); i++)
@@ -525,7 +526,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         for (int i = 0; i < arr5m.length(); i++)
             assertEquals(1, arr5m.getDouble(i), 1e-1);
 
-        System.out.println("6d");
+//        System.out.println("6d");
         INDArray arr6 = Nd4j.ones(1, 1, 4, 4, 4, 4);
         INDArray arr6m = arr6.mean(2, 3);
         for (int i = 0; i < arr6m.length(); i++)
@@ -590,17 +591,17 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testSum5d() throws Exception {
-        System.out.println("5d");
+//        System.out.println("5d");
         INDArray arr5 = Nd4j.ones(1, 1, 4, 4, 4);
         INDArray arr5s = arr5.sum(2, 3);
         Thread.sleep(1000);
-        System.out.println("5d length: " + arr5s.length());
+//        System.out.println("5d length: " + arr5s.length());
         for (int i = 0; i < arr5s.length(); i++)
             assertEquals(16, arr5s.getDouble(i), 1e-1);
 
 
         INDArray arrF = Nd4j.ones(1, 1, 4, 4, 4);
-        System.out.println("A: " + arrF);
+//        System.out.println("A: " + arrF);
     }
 
 
@@ -643,9 +644,9 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray cOrder = Nd4j.create(new int[] {2, 2}, 'c').assign(toAssign);
         INDArray fOrder = Nd4j.create(new int[] {2, 2}, 'f').assign(toAssign);
 
-        System.out.println(cOrder);
-        System.out.println(cOrder.sum(0)); //[2,4] -> correct
-        System.out.println(fOrder.sum(0)); //[2,3] -> incorrect
+//        System.out.println(cOrder);
+//        System.out.println(cOrder.sum(0)); //[2,4] -> correct
+//        System.out.println(fOrder.sum(0)); //[2,3] -> incorrect
 
         assertEquals(cOrder, fOrder);
         assertEquals(cOrder.sum(0), fOrder.sum(0));
@@ -908,7 +909,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         assertEquals(xDup, x);
 
-        log.info("bins: {}", z);
+//        log.info("bins: {}", z);
 
         assertEquals(zExp, z);
     }
@@ -931,8 +932,8 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
             expManhattanDistance += Math.abs(diff);
         }
         double expectedEuclidean = Math.sqrt(sumSquaredDiff);
-        System.out.println("Expected, Euclidean: " + expectedEuclidean);
-        System.out.println("Expected, Manhattan: " + expManhattanDistance);
+//        System.out.println("Expected, Euclidean: " + expectedEuclidean);
+//        System.out.println("Expected, Manhattan: " + expManhattanDistance);
 
         int mb = 2;
         INDArray firstOrig = Nd4j.create(mb, 2, 2, 2);
@@ -959,14 +960,14 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
             INDArray outManhattan = Nd4j.getExecutioner().exec(new ManhattanDistance(first, second, 1, 2, 3));
 
-            System.out.println("\n\nOrder: " + order);
-            System.out.println("Euclidean:");
+//            System.out.println("\n\nOrder: " + order);
+//            System.out.println("Euclidean:");
             //System.out.println(Arrays.toString(out.getRow(0).dup().data().asDouble()));
             //System.out.println(Arrays.toString(out.getRow(1).dup().data().asDouble()));
 
             assertEquals(out.getDouble(0), out.getDouble(1), 1e-5);
 
-            System.out.println("Manhattan:");
+//            System.out.println("Manhattan:");
             //System.out.println(Arrays.toString(outManhattan.getRow(0).dup().data().asDouble()));
             //System.out.println(Arrays.toString(outManhattan.getRow(1).dup().data().asDouble()));
 
@@ -1017,7 +1018,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         for (int i = 0; i < 32; i++) {
             INDArray tensor = array.tensorAlongDimension(i, 1, 2);
-            log.info("tad {}: {}", i, array.getDouble(0));
+//            log.info("tad {}: {}", i, array.getDouble(0));
             assertEquals((float) (100 + i) * (100 * 100), tensor.sumNumber().floatValue(), 0.001f);
             assertEquals((float) 100 + i, tensor.meanNumber().floatValue(), 0.001f);
         }
@@ -1076,7 +1077,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         INDArray pile = Nd4j.pile(arrays);
 
-        log.info("Pile: {}", pile);
+//        log.info("Pile: {}", pile);
 
         INDArray[] tears = Nd4j.tear(pile, 1, 2);
 

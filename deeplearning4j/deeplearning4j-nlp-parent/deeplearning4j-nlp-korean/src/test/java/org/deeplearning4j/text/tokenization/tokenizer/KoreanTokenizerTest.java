@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.KoreanTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
@@ -25,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by kepricon on 16. 10. 24.
  */
-public class KoreanTokenizerTest {
+public class KoreanTokenizerTest extends BaseDL4JTest {
     @Test
     public void testKoreanTokenizer() throws Exception {
         String toTokenize = "세계 최초의 상용 수준 오픈소스 딥러닝 라이브러리입니다";

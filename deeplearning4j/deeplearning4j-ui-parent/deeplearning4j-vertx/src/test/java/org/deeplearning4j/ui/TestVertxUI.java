@@ -18,6 +18,7 @@
 package org.deeplearning4j.ui;
 
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -56,7 +57,7 @@ import static org.junit.Assert.*;
  * Created by Alex on 08/10/2016.
  */
 @Ignore
-public class TestVertxUI {
+public class TestVertxUI extends BaseDL4JTest {
     @Before
     public void setUp() throws Exception {
         UIServer.stopInstance();

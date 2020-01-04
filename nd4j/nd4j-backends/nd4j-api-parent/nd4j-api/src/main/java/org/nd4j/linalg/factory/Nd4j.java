@@ -538,6 +538,14 @@ public class Nd4j {
     }
 
     /**
+     * Get the backend Environment instance
+     * @return The backend Environment instance
+     */
+    public static Environment getEnvironment(){
+        return backend.getEnvironment();
+    }
+
+    /**
      * Get the operation executioner instance.
      *
      * @return the operation executioner instance.

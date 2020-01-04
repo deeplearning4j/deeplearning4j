@@ -18,7 +18,7 @@ package org.deeplearning4j.clustering.vptree;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.deeplearning4j.clustering.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.joda.time.Duration;
 import org.junit.BeforeClass;

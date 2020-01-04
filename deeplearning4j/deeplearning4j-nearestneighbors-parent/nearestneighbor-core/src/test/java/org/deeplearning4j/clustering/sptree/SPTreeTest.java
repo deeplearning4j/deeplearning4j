@@ -16,18 +16,15 @@
 
 package org.deeplearning4j.clustering.sptree;
 
-import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import org.apache.commons.lang3.time.StopWatch;
-import org.deeplearning4j.clustering.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 
 import static org.junit.Assert.*;
 
@@ -35,6 +32,11 @@ import static org.junit.Assert.*;
  * @author Adam Gibson
  */
 public class SPTreeTest extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
 
     @Before
     public void setUp() {

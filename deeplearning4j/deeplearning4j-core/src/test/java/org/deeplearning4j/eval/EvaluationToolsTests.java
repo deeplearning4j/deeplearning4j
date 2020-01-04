@@ -117,7 +117,7 @@ public class EvaluationToolsTests extends BaseDL4JTest {
 
 
             String str = EvaluationTools.rocChartToHtml(roc, Arrays.asList("setosa", "versicolor", "virginica"));
-            System.out.println(str);
+//            System.out.println(str);
         }
     }
 
