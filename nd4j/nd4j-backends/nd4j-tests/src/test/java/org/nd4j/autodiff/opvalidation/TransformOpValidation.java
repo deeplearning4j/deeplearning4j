@@ -939,9 +939,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.name(), Transforms.min(ia, 0.5, true));
                     break;
                 case 65:
-                    t = sd.assign(in, 0.5);
-                    tc.expectedOutput(t.name(), ia.dup().assign(0.5));
-                    break;
+                    continue; // assign op was removed.
                 case 66:
                     t = sd.scalarFloorMod(in, 0.5);
                     tc.expectedOutput(t.name(), Nd4j.getExecutioner().exec(new ScalarFMod(ia.dup(), 0.5)));
@@ -1181,9 +1179,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.name(), Transforms.xor(ia.castTo(DataType.BOOL), ib.castTo(DataType.BOOL))).gradientCheck(false);
                     break;
                 case 18:
-                    t = sd.assign(in1, in2);
-                    tc.expectedOutput(t.name(), ib);
-                    break;
+                    continue; //assign op was removed.
                 case 19:
                     t = sd.math().atan2(in1, in2);
                     tc.expectedOutput(t.name(), Transforms.atan2(ib, ia));    //Note: y,x order for samediff; x,y order for transforms
