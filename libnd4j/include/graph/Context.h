@@ -64,6 +64,9 @@ namespace nd4j {
             std::vector<NDArray*> _handles;
 
             bool _helpersAllowed = true;
+
+            // in some cases we might be able to skip shape function for validation purposes
+            bool _shapeFunctionOverride = false;
         public:
             Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
@@ -196,9 +199,11 @@ namespace nd4j {
 
             void setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer);
 
-
             void allowHelpers(bool reallyAllow);
             bool helpersAllowed();
+
+            void setShapeFunctionOverride(bool reallyOverride);
+            bool shapeFunctionOverride();
         };
     }
 }

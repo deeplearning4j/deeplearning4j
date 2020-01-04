@@ -2282,7 +2282,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         Nd4j.getExecutioner().commit();
 
-        //
+        boolean shapeOverride = false;
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {
                 val list = this.calculateOutputShape(op);
@@ -2292,6 +2292,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 for (val shape: list)
                     op.addOutputArgument(Nd4j.create(shape));
 
+                shapeOverride = true;
             } catch (Exception e) {
                 throw new ND4JIllegalStateException("Op name " + op.opName() + " - no output arrays were provided and calculateOutputShape failed to execute", e);
             }
@@ -2301,6 +2302,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val name = op.opName();
         try (val context = (CudaOpContext) buildContext()) {
+
+            // optionally skip shape validation on op execution
+            if (shapeOverride)
+                context.shapeFunctionOverride(true);
 
             context.markInplace(op.isInplaceCall());
 

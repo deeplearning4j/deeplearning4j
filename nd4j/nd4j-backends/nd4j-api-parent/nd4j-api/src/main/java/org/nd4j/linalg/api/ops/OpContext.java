@@ -136,4 +136,10 @@ public interface OpContext extends AutoCloseable {
      * @param reallyAllow
      */
     void allowHelpers(boolean reallyAllow);
+
+    /**
+     * This methos allows to disape outputs validation via shape function
+     * @param reallyOverride
+     */
+    void shapeFunctionOverride(boolean reallyOverride);
 }

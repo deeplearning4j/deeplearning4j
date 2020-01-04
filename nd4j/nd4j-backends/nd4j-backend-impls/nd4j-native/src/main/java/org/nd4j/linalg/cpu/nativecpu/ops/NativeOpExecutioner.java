@@ -1691,6 +1691,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
 
+        boolean shapeOverride = false;
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {
                 val list = this.calculateOutputShape(op);
@@ -1699,6 +1700,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 for (LongShapeDescriptor shape : list)
                     op.addOutputArgument(Nd4j.create(shape, false));
+
+                shapeOverride = true;
             } catch (ND4JIllegalStateException e){
                 throw e;
             } catch (Exception e) {
@@ -1708,6 +1711,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val name = op.opName();
         try (val context = buildContext()) {
+
+            // optionally skip shape validation on op execution
+            if (shapeOverride)
+                context.shapeFunctionOverride(true);
 
             context.markInplace(op.isInplaceCall());
 

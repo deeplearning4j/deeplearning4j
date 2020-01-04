@@ -189,6 +189,11 @@ namespace nd4j {
                     shapeStart = std::chrono::system_clock::now();
                 }
 
+                // if we override shape function, we'll return size of fastPath
+                if (ctx.isFastPath() && ctx.shapeFunctionOverride()) {
+                    return (int) ctx.fastpath_out().size();
+                }
+
                 auto outSha = this->calculateOutputShape(&inSha, ctx);
                 results = outSha->size();
 

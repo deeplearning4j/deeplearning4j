@@ -484,6 +484,14 @@ namespace nd4j {
             for (auto b:bArgs)
                 _bArgs.push_back(b);
         }
+
+        void Context::setShapeFunctionOverride(bool reallyOverride) {
+            _shapeFunctionOverride = reallyOverride;
+        }
+
+        bool Context::shapeFunctionOverride() {
+            return _shapeFunctionOverride;
+        }
     }
 }
 

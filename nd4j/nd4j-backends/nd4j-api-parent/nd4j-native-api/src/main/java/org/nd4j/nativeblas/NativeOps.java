@@ -1125,6 +1125,7 @@ public interface NativeOps {
     void setGraphContextIArguments(OpaqueContext ptr, LongPointer arguments, int numberOfArguments);
     void setGraphContextBArguments(OpaqueContext ptr, BooleanPointer arguments, int numberOfArguments);
     void ctxAllowHelpers(OpaqueContext ptr, boolean reallyAllow);
+    void ctxShapeFunctionOverride(OpaqueContext ptr, boolean reallyOverride);
     void deleteGraphContext(OpaqueContext ptr);
 
     OpaqueRandomGenerator createRandomGenerator(long rootSeed, long nodeSeed);

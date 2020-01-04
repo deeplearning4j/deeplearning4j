@@ -3104,6 +3104,10 @@ const char* lastErrorMessage() {
     return nd4j::LaunchContext::defaultContext()->errorReference()->errorMessage();
 }
 
+void ctxShapeFunctionOverride(OpaqueContext* ptr, bool reallyOverride) {
+    ptr->setShapeFunctionOverride(reallyOverride);
+}
+
 int  binaryLevel() {
 #ifdef CPU_FEATURES
 

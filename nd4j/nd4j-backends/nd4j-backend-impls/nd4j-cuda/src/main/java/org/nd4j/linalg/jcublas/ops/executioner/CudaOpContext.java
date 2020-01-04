@@ -141,4 +141,9 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
     public void allowHelpers(boolean reallyAllow) {
         nativeOps.ctxAllowHelpers(context, reallyAllow);
     }
+
+    @Override
+    public void shapeFunctionOverride(boolean reallyOverride) {
+        nativeOps.ctxShapeFunctionOverride(context, reallyOverride);
+    }
 }
