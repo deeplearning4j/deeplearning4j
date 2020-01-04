@@ -83,6 +83,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.Axpy;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
+import org.nd4j.linalg.api.ops.util.PrintVariable;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -439,6 +440,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testMmulOp() throws Exception {
         INDArray arr = Nd4j.create(new double[][] {{1, 2, 3}, {4, 5, 6}});
         INDArray z = Nd4j.create(2, 2);
@@ -2862,7 +2864,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(25, Nd4j.getBlasWrapper().dot(row, row), 1e-1);
     }
-
 
     @Test
     public void testIdentity() {
@@ -6077,6 +6078,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    //@Ignore
     public void testMatmul_128by256() {
         val mA = Nd4j.create(128, 156).assign(1.0f);
         val mB = Nd4j.create(156, 256).assign(1.0f);
@@ -6241,6 +6243,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertArrayEquals(exp.shape(), output.shape());
         assertEquals(exp, output);
+    }
+
+
+    @Test
+    public void testScalarPrint_1() {
+        val scalar = Nd4j.scalar(3.0f);
+
+        Nd4j.exec(new PrintVariable(scalar, true));
     }
 
 
@@ -6986,6 +6996,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testMatmul_vs_tf() throws Exception {
 
         // uncomment this line to initialize & propagate sgemm/dgemm pointer
@@ -7166,6 +7177,16 @@ public class Nd4jTestsC extends BaseNd4jTest {
         for( int i=0; i<matchIndexes2.length; i++ ){
             assertTrue(matchIndexes2[i].isEmpty());
         }
+    }
+
+    @Test
+    public void testScalarEquality_1() {
+        val x = Nd4j.scalar(1.0f);
+        val e = Nd4j.scalar(3.0f);
+
+        x.addi(2.0f);
+
+        assertEquals(e, x);
     }
 
     @Test
@@ -8215,6 +8236,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray out = Nd4j.exec(new ScalarEquals(Nd4j.createFromArray(-2, -1, 0, 1, 2), null, 0));
         INDArray exp = Nd4j.createFromArray(false, false, true, false, false);
         assertEquals(exp, out);
+    }
+
+    @Test
+    public void testPutOverwrite(){
+        INDArray arr = Nd4j.create(DataType.DOUBLE, 10);
+        arr.putScalar(0, 10);
+        System.out.println(arr);
+        INDArray arr2 = Nd4j.createFromArray(3.0, 3.0, 3.0);
+        val view = arr.get(new INDArrayIndex[]{NDArrayIndex.interval(1, 4)});
+        view.assign(arr2);
+        System.out.println(arr);
     }
 
     @Test

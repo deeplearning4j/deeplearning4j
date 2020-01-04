@@ -47,8 +47,7 @@ namespace nd4j {
             }
 
             // just memcpy data
-//            output->dataBuffer()->copyBufferFrom(*input->dataBuffer()); // as variant
-            DataBuffer::memcpy(*output->dataBuffer(), *input->dataBuffer()); // this is modern approach
+            DataBuffer::memcpy(*output->dataBuffer(), *input->dataBuffer());
 
             return Status::OK();
         }

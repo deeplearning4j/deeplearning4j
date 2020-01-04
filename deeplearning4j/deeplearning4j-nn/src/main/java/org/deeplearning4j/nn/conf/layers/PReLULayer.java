@@ -121,6 +121,7 @@ public class PReLULayer extends BaseLayer {
     public static class Builder extends FeedForwardLayer.Builder<PReLULayer.Builder> {
 
         public Builder(){
+            //Default to 0s, and don't inherit global default
             this.weightInitFn = new WeightInitConstant(0);
         }
 

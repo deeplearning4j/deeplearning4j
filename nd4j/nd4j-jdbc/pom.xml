@@ -53,6 +53,18 @@
         <profile>
             <id>testresources</id>
         </profile>
+
+        <profile>
+            <id>nd4j-testresources</id>
+        </profile>
+
+        <profile>
+            <id>nd4j-tests-cpu</id>
+        </profile>
+
+        <profile>
+            <id>nd4j-tests-cuda</id>
+        </profile>
     </profiles>
 
 </project>

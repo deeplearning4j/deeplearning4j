@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.validation.listeners;
 
 import lombok.Getter;
+import lombok.val;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
 import org.nd4j.autodiff.listeners.Operation;
@@ -50,12 +51,12 @@ public class NonInplaceValidationListener extends BaseListener {
                 opInputs = new INDArray[]{o.x().dup(), o.y().dup()};
             }
         } else if(op.getOp() instanceof DynamicCustomOp){
-            INDArray[] arr = ((DynamicCustomOp) op.getOp()).inputArguments();
-            opInputs = new INDArray[arr.length];
-            opInputsOrig = new INDArray[arr.length];
-            for( int i=0; i<arr.length; i++ ){
-                opInputsOrig[i] = arr[i];
-                opInputs[i] = arr[i].dup();
+            val arr = ((DynamicCustomOp) op.getOp()).inputArguments();
+            opInputs = new INDArray[arr.size()];
+            opInputsOrig = new INDArray[arr.size()];
+            for( int i=0; i<arr.size(); i++ ){
+                opInputsOrig[i] = arr.get(i);
+                opInputs[i] = arr.get(i).dup();
             }
         } else {
             throw new IllegalStateException("Unknown op type: " + op.getOp().getClass());

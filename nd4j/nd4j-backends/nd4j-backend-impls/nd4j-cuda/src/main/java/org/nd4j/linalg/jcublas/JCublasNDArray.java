@@ -17,34 +17,39 @@
 package org.nd4j.linalg.jcublas;
 
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.bytedeco.javacpp.BytePointer;
+import org.nd4j.base.Preconditions;
+import org.nd4j.graph.FlatArray;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.DataTypeEx;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.JvmShapeInfo;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
+import org.nd4j.linalg.api.ops.util.PrintVariable;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaUtf8Buffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  *
@@ -387,10 +392,6 @@ public class JCublasNDArray extends BaseNDArray {
         super(data, order);
     }
 
-    public JCublasNDArray(FloatBuffer floatBuffer, char order) {
-        super(floatBuffer, order);
-    }
-
     public JCublasNDArray(DataBuffer buffer, int[] shape, int[] strides) {
         super(buffer, shape, strides);
     }
@@ -574,26 +575,16 @@ public class JCublasNDArray extends BaseNDArray {
         MemcpyDirection direction = MemcpyDirection.HOST_TO_HOST;
         val prof = PerformanceTracker.getInstance().helperStartTransaction();
 
-        if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE && srcPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
-            // d2d copy
+        if (srcPoint.isActualOnDeviceSide()) {
             route = 1;
             NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getDevicePointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, blocking ? context.getOldStream() : context.getSpecialStream());
             dstPoint.tickDeviceWrite();
             direction = MemcpyDirection.DEVICE_TO_DEVICE;
-        } else if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && srcPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
-            route = 2;
-            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getHostPointer(), srcPoint.getDevicePointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyDeviceToHost, blocking ? context.getOldStream() : context.getSpecialStream());
-            dstPoint.tickHostWrite();
-            direction = MemcpyDirection.DEVICE_TO_HOST;
-        } else if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE && srcPoint.getAllocationStatus() == AllocationStatus.HOST) {
+        } else {
             route = 3;
             NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getHostPointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, blocking ? context.getOldStream() : context.getSpecialStream());
             dstPoint.tickDeviceWrite();
             direction = MemcpyDirection.HOST_TO_DEVICE;
-        } else {
-            route = 4;
-            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getHostPointer(), srcPoint.getHostPointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, blocking ? context.getOldStream() : context.getSpecialStream());
-            dstPoint.tickHostWrite();
         }
 
 
@@ -650,30 +641,16 @@ public class JCublasNDArray extends BaseNDArray {
 
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
 
-//        log.info("Leveraging...");
-
         INDArray copy = null;
         if (!this.isView()) {
-        //if (1 < 0) {
             Nd4j.getExecutioner().commit();
 
-            DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
+            val buffer = Nd4j.createBuffer(this.length(), false);
 
-            AllocationPoint pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
-            AllocationPoint pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
+            val pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+            val pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
 
-            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
-/*
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(pointDst.getDevicePointer(), 0, 1, 0, context.getOldStream()) == 0)
-                throw new ND4JIllegalStateException("memsetAsync 1 failed");
-
-            context.syncOldStream();
-
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(pointSrc.getDevicePointer(), 0, 1, 0, context.getOldStream()) == 0)
-                throw new ND4JIllegalStateException("memsetAsync 2 failed");
-
-            context.syncOldStream();
-*/
+            val context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
 
             MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
             val perfD = PerformanceTracker.getInstance().helperStartTransaction();
@@ -690,12 +667,11 @@ public class JCublasNDArray extends BaseNDArray {
 
             context.syncOldStream();
 
-            PerformanceTracker.getInstance().helperRegisterTransaction(pointDst.getDeviceId(), perfD, pointSrc.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
+            PerformanceTracker.getInstance().helperRegisterTransaction(pointDst.getDeviceId(), perfD, pointSrc.getNumberOfBytes(), direction);
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
 
             // tag buffer as valid on device side
-            pointDst.tickHostRead();
             pointDst.tickDeviceWrite();
 
             AtomicAllocator.getInstance().getFlowController().registerAction(context, pointDst, pointSrc);
@@ -727,6 +703,7 @@ public class JCublasNDArray extends BaseNDArray {
 
             val pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
             val pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
+
 
             val context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
 
@@ -762,6 +739,38 @@ public class JCublasNDArray extends BaseNDArray {
         }
 
         return copy;
+    }
+
+    protected int stringBuffer(FlatBufferBuilder builder, DataBuffer buffer) {
+        Preconditions.checkArgument(buffer.dataType() == DataType.UTF8, "This method can be called on UTF8 buffers only");
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(bos);
+
+            val numWords = this.length();
+            val ub = (CudaUtf8Buffer) buffer;
+            // writing length first
+            val t = length();
+            val ptr = (BytePointer) ub.pointer();
+
+            // now write all strings as bytes
+            for (int i = 0; i < ub.length(); i++) {
+                dos.writeByte(ptr.get(i));
+            }
+
+            val bytes = bos.toByteArray();
+            return FlatArray.createBufferVector(builder, bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String getString(long index) {
+        if (!isS())
+            throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
+
+        return ((CudaUtf8Buffer) data).getString(index);
     }
 
 /*

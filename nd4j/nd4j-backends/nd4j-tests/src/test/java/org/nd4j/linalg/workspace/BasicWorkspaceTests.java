@@ -17,6 +17,7 @@
 package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -29,6 +30,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.util.PrintVariable;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -176,6 +178,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLeverageTo2() {
+        val exp = Nd4j.scalar(15.0);
         try (Nd4jWorkspace wsOne =
                         (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopOverTimeConfig, "EXT")) {
             INDArray array1 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
@@ -190,6 +193,10 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 array3 = array2.leverageTo("EXT");
 
                 assertEquals(0, wsOne.getCurrentSize());
+
+                assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
+
+                array2.assign(0);
 
                 assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
             }

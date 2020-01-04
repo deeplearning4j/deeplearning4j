@@ -107,12 +107,12 @@ public class ScatterUpdate implements CustomOp {
     }
 
     @Override
-    public INDArray[] outputArguments() {
+    public List<INDArray> outputArguments() {
         return op.outputArguments();
     }
 
     @Override
-    public INDArray[] inputArguments() {
+    public List<INDArray> inputArguments() {
         return op.inputArguments();
     }
 

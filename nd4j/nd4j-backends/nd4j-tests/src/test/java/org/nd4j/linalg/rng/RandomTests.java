@@ -488,7 +488,7 @@ public class RandomTests extends BaseNd4jTest {
     @Test
     public void testLegacyDistribution1() {
         NormalDistribution distribution = new NormalDistribution(new DefaultRandom(), 0.0, 1.0);
-        INDArray z1 = distribution.sample(new int[] {1, 30000000});
+        INDArray z1 = distribution.sample(new int[] {1, 1000000});
 
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);

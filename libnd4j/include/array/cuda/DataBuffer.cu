@@ -25,6 +25,40 @@
 #include <exceptions/cuda_exception.h>
 
 namespace nd4j {
+    void DataBuffer::expand(const uint64_t size) {
+        if (size > _lenInBytes) {
+            // allocate new buffer
+            int8_t *newBuffer = nullptr;
+            int8_t *newSpecialBuffer = nullptr;
+            ALLOCATE_SPECIAL(newSpecialBuffer, _workspace, size, int8_t);
+
+            // copy data from existing buffer
+            if (_primaryBuffer != nullptr) {
+                // there's non-zero chance that primary buffer doesn't exist yet
+                ALLOCATE(newBuffer, _workspace, size, int8_t);
+                std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
+
+                if (_isOwnerPrimary) {
+                    auto ipb = reinterpret_cast<int8_t *>(_primaryBuffer);
+                    RELEASE(ipb, _workspace);
+                }
+
+                _primaryBuffer = newBuffer;
+                _isOwnerPrimary = true;
+            }
+
+            cudaMemcpy(newSpecialBuffer, _specialBuffer, _lenInBytes, cudaMemcpyDeviceToDevice);
+
+            if (_isOwnerSpecial) {
+                auto isb = reinterpret_cast<int8_t *>(_specialBuffer);
+                RELEASE_SPECIAL(isb, _workspace);
+            }
+
+            _specialBuffer = newSpecialBuffer;
+            _lenInBytes = size;
+            _isOwnerSpecial = true;
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::allocateSpecial() {
@@ -37,8 +71,9 @@ void DataBuffer::allocateSpecial() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
-    if(isPrimaryActual() && !forceSync)
+    if(isPrimaryActual() && !forceSync) {
         return;
+    }
 
     allocatePrimary();
 
@@ -46,7 +81,9 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
     if (res != 0)
         throw cuda_exception::build("DataBuffer::syncToPrimary failed to to some previous kernel failre", res);
 
-    cudaMemcpy(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
+    res = cudaMemcpy(_primaryBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToHost);
+    if (res != 0)
+        throw cuda_exception::build("DataBuffer::syncToPrimary cudaMemcpy failed", res);
 
     readPrimary();
 }
@@ -54,13 +91,19 @@ void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSyn
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToSpecial(const bool forceSync) {
-
-    if(isSpecialActual() && !forceSync)
+    // in this case there's nothing to do here
+    if (_primaryBuffer == nullptr)
         return;
+
+    if(isSpecialActual() && !forceSync) {
+        return;
+    }
 
     allocateSpecial();
 
-    cudaMemcpy(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
+    auto res = cudaMemcpy(_specialBuffer, _primaryBuffer, getLenInBytes(), cudaMemcpyHostToDevice);
+    if (res != 0)
+        throw cuda_exception::build("DataBuffer::syncToSpecial cudaMemcpy failed", res);
 
     readSpecial();
 }
@@ -96,19 +139,6 @@ void DataBuffer::copyCounters(const DataBuffer& other) {
     _writeSpecial.store(other._readPrimary);
     _readPrimary.store(other._writeSpecial);
     _readSpecial.store(other._writePrimary);
-}
-////////////////////////////////////////////////////////////////////////
-void DataBuffer::memcpy(const DataBuffer &dst, const DataBuffer &src) {
-    if (src._lenInBytes < dst._lenInBytes)
-        throw std::runtime_error("DataBuffer::memcpy: Source data buffer is smaller than destination");
-
-    if (src.isSpecialActual()) {
-        cudaMemcpy(dst._specialBuffer, src._specialBuffer, dst.getLenInBytes(), cudaMemcpyDeviceToDevice);
-    } else if (src.isPrimaryActual()) {
-        cudaMemcpy(dst._specialBuffer, src._primaryBuffer, dst.getLenInBytes(), cudaMemcpyHostToDevice);
-    }
-
-    dst.writeSpecial();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -176,8 +206,11 @@ void DataBuffer::allocateBuffers(const bool allocBoth) {    // always allocate s
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setToZeroBuffers(const bool both) {
+    cudaMemsetAsync(special(), 0, getLenInBytes(), *LaunchContext::defaultContext()->getCudaStream());
+    auto res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
+    if (res != 0)
+        throw cuda_exception::build("DataBuffer::setToZeroBuffers: streamSync failed!", res);
 
-    cudaMemset(special(), 0, getLenInBytes());
     writeSpecial();
 
     if(both) {
@@ -186,12 +219,37 @@ void DataBuffer::setToZeroBuffers(const bool both) {
     }
 }
 
+/////////////////////////
+void DataBuffer::memcpy(const DataBuffer &dst, const DataBuffer &src) {
+    if (src._lenInBytes > dst._lenInBytes)
+        throw std::runtime_error("DataBuffer::memcpy: Source data buffer is larger than destination");
+
+
+    int res = 0;
+    if (src.isSpecialActual()) {
+        res = cudaMemcpyAsync(dst._specialBuffer, src._specialBuffer, src.getLenInBytes(), cudaMemcpyDeviceToDevice, *LaunchContext::defaultContext()->getCudaStream());
+    } else if (src.isPrimaryActual()) {
+        res = cudaMemcpyAsync(dst._specialBuffer, src._primaryBuffer, src.getLenInBytes(), cudaMemcpyHostToDevice, *LaunchContext::defaultContext()->getCudaStream());
+    }
+
+    if (res != 0)
+        throw cuda_exception::build("DataBuffer::memcpy: cudaMemcpyAsync failed!", res);
+
+    res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
+    if (res != 0)
+        throw cuda_exception::build("DataBuffer::memcpy: streamSync failed!", res);
+
+    dst.writeSpecial();
+}
+
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::migrate() {
     memory::Workspace* newWorkspace = nullptr;
     void* newBuffer;
     ALLOCATE_SPECIAL(newBuffer, newWorkspace, getLenInBytes(), int8_t);
-    cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
+    auto res = cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
+    if (res != 0)
+        throw cuda_exception::build("DataBuffer::migrate: cudaMemcpyAsync failed!", res);
 
     if (_isOwnerSpecial) {
         // now we're releasing original buffer
@@ -203,7 +261,7 @@ void DataBuffer::migrate() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void DataBuffer::writePrimary() const    { _writePrimary = ++_counter; }
+void DataBuffer::writePrimary() const    {_writePrimary = ++_counter; }
 void DataBuffer::writeSpecial() const    { _writeSpecial = ++_counter; }
 void DataBuffer::readPrimary()  const    { _readPrimary  = ++_counter; }
 void DataBuffer::readSpecial()  const    { _readSpecial  = ++_counter; }

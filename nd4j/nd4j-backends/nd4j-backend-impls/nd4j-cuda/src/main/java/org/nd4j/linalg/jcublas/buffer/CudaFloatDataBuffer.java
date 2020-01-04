@@ -50,6 +50,10 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(pointer, specialPointer, indexer, length);
     }
 
+    public CudaFloatDataBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
+        super(buffer, dataType, length, offset);
+    }
+
     /**
      * Base constructor
      *
@@ -132,19 +136,6 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     public CudaFloatDataBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
     }
-
-    public CudaFloatDataBuffer(byte[] data, long length) {
-        super(data, length, DataType.FLOAT);
-    }
-
-    public CudaFloatDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length, DataType.FLOAT);
-    }
-
-    public CudaFloatDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset, DataType.FLOAT);
-    }
-
 
     @Override
     protected DataBuffer create(long length) {

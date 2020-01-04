@@ -27,6 +27,7 @@ namespace nd4j {
         SPARSE = 2,
         COMPRESSED = 3,
         EMPTY = 4,
+        RAGGED = 5,
     };
 }
 

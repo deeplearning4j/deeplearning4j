@@ -87,8 +87,6 @@ public class ConcatTests extends BaseNd4jTest {
         assertTrue(firstRet.isColumnVector());
         INDArray secondRet = Nd4j.concat(1, first, second);
         assertTrue(secondRet.isRowVector());
-
-
     }
 
 

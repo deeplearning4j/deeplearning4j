@@ -223,6 +223,8 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& desc
     setShapeInfo(descriptor);
 
     _buffer = buffer;
+
+    _isView = offset > 0 || _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -288,6 +290,8 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std
     setShapeInfo(ShapeDescriptor(buffer->getDataType(), order, shape));
 
     _buffer = buffer;
+
+    _isView =  _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
 }
 
 ////////////////////////////////////////////////////////////////////////

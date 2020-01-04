@@ -623,23 +623,6 @@ public interface DataBuffer extends Serializable, AutoCloseable {
     void read(InputStream is, AllocationMode allocationMode, long length, DataType dataType);
 
     /**
-     * Returns tracking point for Allocator
-     *
-     * PLEASE NOTE: Suitable & meaningful only for specific backends
-     * @return
-     */
-    Long getTrackingPoint();
-
-    /**
-     * Sets tracking point used by Allocator
-     *
-     * PLEASE NOTE: Suitable & meaningful only for specific backends
-     *
-     * @param trackingPoint
-     */
-    void setTrackingPoint(Long trackingPoint);
-
-    /**
      * This method returns whether this DataBuffer is constant, or not.
      * Constant buffer means that it modified only during creation time, and then it stays the same for all lifecycle. I.e. used in shape info databuffers.
      *

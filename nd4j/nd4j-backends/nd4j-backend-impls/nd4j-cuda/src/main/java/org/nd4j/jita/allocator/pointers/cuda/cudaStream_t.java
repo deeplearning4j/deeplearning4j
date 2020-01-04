@@ -17,6 +17,7 @@
 package org.nd4j.jita.allocator.pointers.cuda;
 
 import lombok.NonNull;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.exception.ND4JException;
@@ -37,8 +38,9 @@ public class cudaStream_t extends CudaPointer {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int res = nativeOps.streamSynchronize(this);
 
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
+        val ec = nativeOps.lastErrorCode();
+        if (ec != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage() + "; Error code: " + ec);
 
         return res;
     }

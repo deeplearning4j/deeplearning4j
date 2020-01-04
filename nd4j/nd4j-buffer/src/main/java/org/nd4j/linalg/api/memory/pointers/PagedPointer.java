@@ -63,7 +63,7 @@ public class PagedPointer extends Pointer {
     public PagedPointer(Pointer pointer, long capacity) {
         this.originalPointer = pointer;
 
-        this.address = pointer.address();
+        this.address = pointer == null ? 0 : pointer.address();
 
         this.capacity = capacity;
         this.limit = capacity;

@@ -1750,7 +1750,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         Nd4j.getExecutioner().exec(op);
 
-        val output = op.outputArguments()[0];
+        val output = op.outputArguments().get(0);
 
         assertEquals(exp, output);
     }
@@ -2458,7 +2458,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             Nd4j.exec(op);
 
 //            System.out.println(in);
-//            System.out.println(op.outputArguments()[0]);
+//            System.out.println(op.outputArguments().get(0));
 
             assertEquals(exp, op.getOutputArgument(0));
         }

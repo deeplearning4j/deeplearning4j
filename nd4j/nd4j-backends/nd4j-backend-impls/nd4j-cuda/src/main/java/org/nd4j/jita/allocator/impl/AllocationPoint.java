@@ -19,6 +19,7 @@ package org.nd4j.jita.allocator.impl;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.garbage.GarbageBufferReference;
@@ -29,9 +30,11 @@ import org.nd4j.jita.allocator.time.providers.MillisecondsProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +57,8 @@ import java.util.concurrent.locks.ReentrantLock;
 public class AllocationPoint {
     private static Logger log = LoggerFactory.getLogger(AllocationPoint.class);
 
-    // thread safety is guaranteed by cudaLock
-    private volatile PointersPair pointerInfo;
+    @Getter
+    private OpaqueDataBuffer ptrDataBuffer;
 
     @Getter
     @Setter
@@ -104,32 +107,26 @@ public class AllocationPoint {
     */
     private volatile int deviceId;
 
-    public AllocationPoint() {
-        //
+    private long bytes;
+
+    public AllocationPoint(@NonNull OpaqueDataBuffer opaqueDataBuffer, long bytes) {
+        ptrDataBuffer = opaqueDataBuffer;
+        this.bytes = bytes;
+        objectId = Nd4j.getDeallocatorService().nextValue();
     }
 
-    public void acquireLock() {
-        //lock.lock();
-    }
-
-    public void releaseLock() {
-        //lock.unlock();
+    public void setPointers(Pointer primary, Pointer special, long numberOfElements) {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetPrimaryBuffer(ptrDataBuffer, primary, numberOfElements);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetSpecialBuffer(ptrDataBuffer, special, numberOfElements);
     }
 
     public int getDeviceId() {
-        return deviceId;
+        return ptrDataBuffer.deviceId();
     }
 
     public void setDeviceId(int deviceId) {
-        this.deviceId = deviceId;
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetDeviceId(ptrDataBuffer, deviceId);
     }
-
-    /*
-        We assume 1D memory chunk allocations.
-    */
-    @Getter
-    @Setter
-    private AllocationShape shape;
 
     private AtomicBoolean enqueued = new AtomicBoolean(false);
 
@@ -164,7 +161,7 @@ public class AllocationPoint {
     }
 
     public long getNumberOfBytes() {
-        return shape.getNumberOfBytes();
+        return bytes;
     }
 
     /*
@@ -220,67 +217,25 @@ public class AllocationPoint {
      * This method returns CUDA pointer object for this allocation.
      * It can be either device pointer or pinned memory pointer, or null.
      *
-     * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @return
      */
     public Pointer getDevicePointer() {
-        if (pointerInfo == null) {
-            log.info("pointerInfo is null");
-            return null;
-        }
-        return pointerInfo.getDevicePointer();
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbSpecialBuffer(ptrDataBuffer);
     }
 
     /**
      * This method returns CUDA pointer object for this allocation.
      * It can be either device pointer or pinned memory pointer, or null.
      *
-     * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
      * @return
      */
     public Pointer getHostPointer() {
-        if (pointerInfo == null)
-            return null;
-
-        return pointerInfo.getHostPointer();
-    }
-
-    /**
-     * This method sets CUDA pointer for this allocation.
-     * It can be either device pointer, or pinned memory pointer, or null.
-     *
-     * PLEASE NOTE: Thread safety is guaranteed by reentrant read/write lock
-     * @param pointerInfo CUDA pointers wrapped into DevicePointerInfo
-     */
-    public void setPointers(@NonNull PointersPair pointerInfo) {
-        this.pointerInfo = pointerInfo;
-    }
-
-    public PointersPair getPointers() {
-        return this.pointerInfo;
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(ptrDataBuffer);
     }
 
 
     public synchronized void tickDeviceRead() {
-        //        this.deviceTicks.incrementAndGet();
-        //        this.timerShort.triggerEvent();
-        //        this.timerLong.triggerEvent();
-        //this.deviceAccessTime.set(realTimeProvider.getCurrentTime());
-        this.accessDeviceRead  = (timeProvider.getCurrentTime());
-    }
-
-
-    /**
-     * Returns time, in milliseconds, when this point was accessed on host side
-     *
-     * @return
-     */
-    public synchronized long getHostReadTime() {
-        return accessHostRead;
-    };
-
-    public synchronized long getHostWriteTime() {
-        return accessHostWrite;
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickDeviceRead(ptrDataBuffer);
     }
 
     /**
@@ -302,7 +257,7 @@ public class AllocationPoint {
     }
 
     public synchronized void tickHostRead() {
-        accessHostRead = (timeProvider.getCurrentTime());
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickHostRead(ptrDataBuffer);
     }
 
     /**
@@ -310,17 +265,14 @@ public class AllocationPoint {
      *
      */
     public synchronized void tickDeviceWrite() {
-        //        deviceAccessTime.set(realTimeProvider.getCurrentTime());
-        tickDeviceRead();
-        accessDeviceWrite = (timeProvider.getCurrentTime());
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickDeviceWrite(ptrDataBuffer);
     }
 
     /**
      * This method sets time when this point was changed on host
      */
     public synchronized void tickHostWrite() {
-        tickHostRead();
-        accessHostWrite = (timeProvider.getCurrentTime());
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbTickHostWrite(ptrDataBuffer);
     }
 
     /**
@@ -329,10 +281,8 @@ public class AllocationPoint {
      * @return true, if data is actual, false otherwise
      */
     public synchronized boolean isActualOnHostSide() {
-        boolean result = accessHostWrite >= accessDeviceWrite
-                        || accessHostRead >= accessDeviceWrite;
-
-        return result;
+        val s = NativeOpsHolder.getInstance().getDeviceNativeOps().dbLocality(ptrDataBuffer);
+        return s <= 0;
     }
 
     /**
@@ -341,9 +291,8 @@ public class AllocationPoint {
      * @return
      */
     public synchronized boolean isActualOnDeviceSide() {
-        boolean result = accessDeviceWrite >= accessHostWrite
-                        || accessDeviceRead >= accessHostWrite;
-        return result;
+        val s = NativeOpsHolder.getInstance().getDeviceNativeOps().dbLocality(ptrDataBuffer);
+        return s >= 0;
     }
 
     /**
@@ -355,6 +304,6 @@ public class AllocationPoint {
 
     @Override
     public String toString() {
-        return "AllocationPoint{" + "deviceId=" + deviceId + ", objectId=" + objectId + ", shape=" + shape + '}';
+        return "AllocationPoint{" + "deviceId=" + deviceId + ", objectId=" + objectId + "}";
     }
 }

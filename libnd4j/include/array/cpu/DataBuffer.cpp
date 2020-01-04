@@ -23,6 +23,24 @@
 #include <DataTypeUtils.h>
 
 namespace nd4j {
+    void DataBuffer::expand(const uint64_t size) {
+        if (size > _lenInBytes) {
+            // allocate new buffer
+            int8_t *newBuffer = nullptr;
+            ALLOCATE(newBuffer, _workspace, size, int8_t);
+
+            // copy data from existing buffer
+            std::memcpy(newBuffer, _primaryBuffer, _lenInBytes);
+
+            if (_isOwnerPrimary) {
+                RELEASE(reinterpret_cast<int8_t *>(_primaryBuffer), _workspace);
+            }
+
+            _primaryBuffer = newBuffer;
+            _lenInBytes = size;
+            _isOwnerPrimary = true;
+        }
+    }
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::setCountersToZero() {
@@ -99,13 +117,16 @@ void DataBuffer::allocateSpecial() {
 void DataBuffer::migrate() {
 
 }
-///////////////////////////////////////////////////////////////////////
-void DataBuffer::memcpy(const DataBuffer &dst, const DataBuffer &src) {
-    if (src._lenInBytes < dst._lenInBytes)
-        throw std::runtime_error("DataBuffer::memcpy: Source data buffer is smaller than destination");
 
-    std::memcpy(dst._primaryBuffer, src._primaryBuffer, dst._lenInBytes);
+/////////////////////////
+void DataBuffer::memcpy(const DataBuffer &dst, const DataBuffer &src) {
+    if (src._lenInBytes > dst._lenInBytes)
+        throw std::runtime_error("DataBuffer::memcpy: Source data buffer is larger than destination");
+
+    std::memcpy(dst._primaryBuffer, src._primaryBuffer, src._lenInBytes);
+    dst.readPrimary();
 }
+
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::writePrimary() const    { }

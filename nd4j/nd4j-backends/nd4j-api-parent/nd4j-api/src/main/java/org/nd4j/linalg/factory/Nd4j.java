@@ -40,7 +40,6 @@ import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
-import org.nd4j.linalg.api.buffer.factory.DefaultDataBufferFactory;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
@@ -1044,16 +1043,7 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, int length, long offset) {
-        switch (type) {
-            case INT:
-                return DATA_BUFFER_FACTORY_INSTANCE.createInt(offset, buffer, length);
-            case DOUBLE:
-                return DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, buffer, length);
-            case FLOAT:
-                return DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, buffer, length);
-            default:
-                throw new IllegalArgumentException("Illegal opType " + type);
-        }
+        return DATA_BUFFER_FACTORY_INSTANCE.create(buffer, type, length, offset);
     }
 
     /**
@@ -1336,38 +1326,9 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(ByteBuffer buffer, DataType type, int length) {
-        switch (type) {
-            case INT:
-                return DATA_BUFFER_FACTORY_INSTANCE.createInt(buffer, length);
-            case LONG:
-                return DATA_BUFFER_FACTORY_INSTANCE.createLong(buffer, length);
-            case DOUBLE:
-                return DATA_BUFFER_FACTORY_INSTANCE.createDouble(buffer, length);
-            case FLOAT:
-                return DATA_BUFFER_FACTORY_INSTANCE.createFloat(buffer, length);
-            case HALF:
-                return DATA_BUFFER_FACTORY_INSTANCE.createHalf(buffer, length);
-            default:
-                throw new IllegalArgumentException("Illegal opType " + type);
-        }
+        return createBuffer(buffer, type, length, 0);
     }
 
-    /**
-     * Create a buffer based on the data opType
-     *
-     * @param data the data to create the buffer with
-     * @return the created buffer
-     */
-    public static DataBuffer createBuffer(byte[] data, int length) {
-        DataBuffer ret;
-        if (dataType() == DataType.DOUBLE)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, length);
-        else if (dataType() == DataType.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, length);
-        else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, length);
-        return ret;
-    }
 
     /**
      * Create a buffer equal of length prod(shape)
@@ -2206,6 +2167,7 @@ public class Nd4j {
     private static String writeStringForArray(INDArray write) {
         if(write.isView() || !Shape.hasDefaultStridesForShape(write))
             write = write.dup();
+
         String format = "0.000000000000000000E0";
 
         return "{\n" +
@@ -3927,16 +3889,6 @@ public class Nd4j {
         return create(shape, stride);
     }
 
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int rows, int columns) {
-        return create(rows, columns, order());
-    }
 
     /**
      * Creates an ndarray with the specified shape
@@ -4387,13 +4339,6 @@ public class Nd4j {
     }
 
     /**
-     * See {@link #createUninitialized(long)}
-     */
-    public static INDArray createUninitialized(int length) {
-        return createUninitialized((long)length);
-    }
-
-    /**
      * This method creates an *uninitialized* ndarray of specified length and default ordering.
      *
      * PLEASE NOTE: Do not use this method unless you're 100% sure why you use it.
@@ -4428,37 +4373,6 @@ public class Nd4j {
 
     ////////////////////// OTHER ///////////////////////////////
 
-    /**
-     * Creates a 2D array with specified number of rows, columns initialized with zero.
-     *
-     * @param rows    number of rows.
-     * @param columns number of columns.
-     * @return the created array.
-     */
-    public static INDArray zeros(long rows, long columns) {
-        return  INSTANCE.zeros(rows, columns);
-    }
-
-    /**
-     * Creates a 1D array with the specified number of columns initialized with zero.
-     *
-     * @param columns number of columns.
-     * @return the created array
-     */
-    public static INDArray zeros(int columns) {
-        return INSTANCE.zeros(columns);
-    }
-
-    /**
-     * Creates a 1D array with the specified data tyoe and number of columns initialized with zero.
-     *
-     * @param dataType data type.
-     * @param columns number of columns.
-     * @return the created array.
-     */
-    public static INDArray zeros(DataType dataType, int columns) {
-        return INSTANCE.create(dataType, new long[]{columns}, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
 
     /**
      * Creates an array with the specified data tyoe and shape initialized with zero.
@@ -4468,7 +4382,10 @@ public class Nd4j {
      * @return the created array.
      */
     public static INDArray zeros(DataType dataType, @NonNull long... shape) {
-        return INSTANCE.create(dataType, shape, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
+        if(shape.length == 0)
+            return Nd4j.scalar(dataType, 0);
+
+        return INSTANCE.create(dataType, shape, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
@@ -4586,31 +4503,6 @@ public class Nd4j {
      */
     public static INDArray valueArrayOf(long rows, long columns, double value) {
         return INSTANCE.valueArrayOf(rows, columns, value);
-    }
-
-    /**
-     * Creates a row vector with the specified number of columns
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the columns of the ndarray
-     * @return the created ndarray
-     */
-    public static INDArray ones(int rows, int columns) {
-        return INSTANCE.ones(rows, columns);
-    }
-
-    /**
-     * Create a 2D array with the given rows, columns and data type initialised with ones.
-     *
-     * @param dataType data type
-     * @param rows rows of the new array.
-     * @param columns columns of the new arrau.
-     * @return the created array
-     */
-    public static INDArray ones(DataType dataType, int rows, int columns) {
-        INDArray ret = INSTANCE.createUninitialized(dataType, new long[]{rows, columns}, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
-        ret.assign(1);
-        return ret;
     }
 
     /**
@@ -4817,8 +4709,7 @@ public class Nd4j {
 
         for (int idx : indexes) {
             if (idx < 0 || idx >= source.shape()[source.rank() - sourceDimension - 1]) {
-                throw new IllegalStateException(
-                        "Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
+                throw new IllegalStateException("Index can't be < 0 and >= " + source.shape()[source.rank() - sourceDimension - 1]);
             }
         }
 
@@ -5186,7 +5077,7 @@ public class Nd4j {
                     pp.toString(NDARRAY_FACTORY_CLASS));
             Class<? extends ConvolutionInstance> convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
                     .forName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
-            String defaultName = pp.toString(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
+            String defaultName = pp.toString(DATA_BUFFER_OPS, "org.nd4j.linalg.cpu.nativecpu.buffer.DefaultDataBufferFactory");
             Class<? extends DataBufferFactory> dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class
                     .forName(pp.toString(DATA_BUFFER_OPS, defaultName));
             Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class
@@ -5871,7 +5762,7 @@ public class Nd4j {
                         arr[e] = sb.get(e + pos);
                     }
 
-                    val buffer = new Utf8Buffer(arr, prod);
+                    val buffer = DATA_BUFFER_FACTORY_INSTANCE.createUtf8Buffer(arr, prod);
                     return Nd4j.create(buffer, shapeOf);
                 } catch (Exception e) {
                     throw new RuntimeException(e);

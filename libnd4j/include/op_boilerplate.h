@@ -1624,4 +1624,9 @@
 
 #define PARAMETRIC_D() [&] (Parameters &p) -> Context*
 
+
+#ifdef __CUDABLAS__
+#define checkCudaErrors(ERR) if (ERR != 0) {throw std::runtime_error("CUDA stream synchronization failed");}
+#endif
+
 #endif

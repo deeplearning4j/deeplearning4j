@@ -185,9 +185,11 @@ namespace nd4j {
 
             void setInputArray(int index, NDArray *array, bool removable = false);
             void setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+            void setInputArray(int index, void *databuffer, void *shapeInfo, void *specialShapeInfo);
 
             void setOutputArray(int index, NDArray *array, bool removable = false);
             void setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+            void setOutputArray(int index, void *databuffer, void *shapeInfo, void *specialShapeInfo);
 
             void setTArguments(double *arguments, int numberOfArguments);
             void setIArguments(Nd4jLong *arguments, int numberOfArguments);

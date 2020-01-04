@@ -26,6 +26,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
+import org.nd4j.linalg.api.ops.util.PrintVariable;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -184,10 +186,22 @@ public class LoneTest extends BaseNd4jTest {
         assertEquals(max - 1, currentArgMax);
     }
 
+    @Test
+    public void testRPF() {
+        val array = Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).reshape(2, 2, 3);
+
+        log.info("--------");
+
+        val tad = array.tensorAlongDimension(1, 1, 2);
+        Nd4j.exec(new PrintVariable(tad, false));
+        log.info("TAD native shapeInfo: {}", tad.shapeInfoDataBuffer().asLong());
+        log.info("TAD Java shapeInfo: {}", tad.shapeInfoJava());
+        log.info("TAD:\n{}", tad);
+    }
 
     @Test
     public void testConcat3D_Vstack_C() {
-        val shape = new long[]{1, 1000, 150};
+        val shape = new long[]{1, 1000, 20};
 
         List<INDArray> cArrays = new ArrayList<>();
         List<INDArray> fArrays = new ArrayList<>();
@@ -200,15 +214,17 @@ public class LoneTest extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
 
-        long time1 = System.currentTimeMillis();
-        INDArray res = Nd4j.vstack(cArrays);
-        long time2 = System.currentTimeMillis();
+        val time1 = System.currentTimeMillis();
+        val res = Nd4j.vstack(cArrays);
+        val time2 = System.currentTimeMillis();
 
 //        log.info("Time spent: {} ms", time2 - time1);
 
         for (int e = 0; e < 32; e++) {
-            INDArray tad = res.tensorAlongDimension(e, 1, 2);
+            val tad = res.tensorAlongDimension(e, 1, 2);
+
             assertEquals("Failed for TAD [" + e + "]",(double) e, tad.meanNumber().doubleValue(), 1e-5);
+            assertEquals((double) e, tad.getDouble(0), 1e-5);
         }
     }
 

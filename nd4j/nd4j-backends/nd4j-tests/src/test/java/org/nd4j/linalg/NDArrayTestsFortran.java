@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
+import org.nd4j.linalg.api.ops.util.PrintVariable;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.executors.ExecutorServiceProvider;
@@ -678,6 +680,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     public void testPutSlice() {
         INDArray n = Nd4j.linspace(1, 27, 27, DataType.DOUBLE).reshape(3, 3, 3);
         INDArray newSlice = Nd4j.create(DataType.DOUBLE, 3, 3);
+        Nd4j.exec(new PrintVariable(newSlice));
+        log.info("Slice: {}", newSlice);
         n.putSlice(0, newSlice);
         assertEquals(getFailureMessage(), newSlice, n.slice(0));
 
@@ -993,14 +997,10 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray put = Nd4j.create(new double[] {5, 6});
         row1.putRow(1, put);
 
-
         INDArray row1Fortran = Nd4j.create(new double[][] {{1, 3}, {2, 4}});
         INDArray putFortran = Nd4j.create(new double[] {5, 6});
         row1Fortran.putRow(1, putFortran);
         assertEquals(row1, row1Fortran);
-
-
-
     }
 
 
@@ -1036,6 +1036,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testTensorDot() {
         INDArray oneThroughSixty = Nd4j.arange(60).reshape('f', 3, 4, 5).castTo(DataType.DOUBLE);
         INDArray oneThroughTwentyFour = Nd4j.arange(24).reshape('f', 4, 3, 2).castTo(DataType.DOUBLE);

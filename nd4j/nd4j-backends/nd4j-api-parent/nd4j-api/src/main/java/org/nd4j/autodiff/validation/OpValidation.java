@@ -457,7 +457,7 @@ public class OpValidation {
         for (int i = 0; i < testCase.testFns().size(); i++) {
             String error;
             try {
-                error = testCase.testFns().get(i).apply(testCase.op().outputArguments()[i]);
+                error = testCase.testFns().get(i).apply(testCase.op().outputArguments().get(i));
             } catch (Throwable t) {
                 throw new IllegalStateException("Exception thrown during op output validation for output " + i, t);
             }

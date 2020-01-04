@@ -470,12 +470,16 @@ TEST_F(LegacyOpsTests, Reduce3_2) {
     auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    OpaqueDataBuffer dimBuf(dim.dataBuffer());
 
     execReduce3Tad(extraPointers, reduce3::CosineSimilarity,
-                        x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-                        nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-                        dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+                        &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                        nullptr, &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                        &zBuf, z.shapeInfo(), z.specialShapeInfo(),
+                        &dimBuf, dim.shapeInfo(), dim.specialShapeInfo(),
                         packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
 
     NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
@@ -506,14 +510,17 @@ TEST_F(LegacyOpsTests, Reduce3_3) {
     auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
-
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    OpaqueDataBuffer dimBuf(dim.dataBuffer());
 
     execReduce3Tad(extraPointers, reduce3::CosineDistance,
-                        x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                        &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                         nullptr,
-                        y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-                        dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+                        &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                        &zBuf, z.shapeInfo(), z.specialShapeInfo(),
+                        &dimBuf, dim.shapeInfo(), dim.specialShapeInfo(),
                         packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
     ASSERT_EQ(e, z);
     NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
@@ -543,14 +550,17 @@ TEST_F(LegacyOpsTests, Reduce3_4) {
     auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
-
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    OpaqueDataBuffer dimBuf(dim.dataBuffer());
 
     execReduce3Tad(extraPointers, reduce3::CosineDistance,
-                          x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                          &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                           nullptr,
-                          y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                          z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-                          dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+                          &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                          &zBuf, z.shapeInfo(), z.specialShapeInfo(),
+                          &dimBuf, dim.shapeInfo(), dim.specialShapeInfo(),
                           packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
 
     // z.printIndexedBuffer("z");
@@ -583,13 +593,16 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    OpaqueDataBuffer dimBuf(dim.dataBuffer());
 
     execReduce3Tad(extraPointers, reduce3::CosineDistance,
-                          x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                          &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                           nullptr,
-                          y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                          z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-                          dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+                          &yBuf, y.shapeInfo(), y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(),
+                          &dimBuf, dim.shapeInfo(), dim.specialShapeInfo(),
                           packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
 
     NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
@@ -615,10 +628,15 @@ TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
 
     NDArray::prepareSpecialUse({&z}, {&x, &y});
 
-    execReduce3All(extraPointers, reduce3::EuclideanDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-                       nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                       z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-                       dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    OpaqueDataBuffer dimBuf(dim.dataBuffer());
+
+    execReduce3All(extraPointers, reduce3::EuclideanDistance, &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                       nullptr, &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                       &zBuf, z.shapeInfo(), z.specialShapeInfo(),
+                       &dimBuf, dim.shapeInfo(), dim.specialShapeInfo(),
                        tadPackX.platformShapeInfo(), tadPackX.platformOffsets(),
                        tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
 
@@ -730,13 +748,16 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_4) {
     auto z = NDArrayFactory::create<float>('c', {0, 2});
     auto e = NDArrayFactory::create<float>('c', {0, 2});
 
+    InteropDataBuffer xdb(x.dataBuffer());
+    InteropDataBuffer ddb(d.dataBuffer());
+    InteropDataBuffer zdb(z.dataBuffer());
 
 
     ::execReduceSame2(nullptr, reduce::SameOps::Sum,
-            x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+            &xdb, x.shapeInfo(), x.specialShapeInfo(),
             nullptr,
-            z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-            d.buffer(), d.shapeInfo(), d.specialBuffer(), d.specialShapeInfo());
+            &zdb, z.shapeInfo(), z.specialShapeInfo(),
+            &ddb, d.shapeInfo(), d.specialShapeInfo());
 
 }
 

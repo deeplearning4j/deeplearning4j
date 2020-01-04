@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This class provides unified management for Deallocatable resources
@@ -42,6 +43,8 @@ public class DeallocatorService {
     private ReferenceQueue<Deallocatable>[] queues;
     private Map<String, DeallocatableReference> referenceMap = new ConcurrentHashMap<>();
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
+
+    private AtomicLong counter = new AtomicLong(0);
 
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity
@@ -67,6 +70,10 @@ public class DeallocatorService {
             
             deallocatorThreads[e].start();
         }
+    }
+
+    public long nextValue() {
+        return counter.incrementAndGet();
     }
 
     /**

@@ -17,8 +17,12 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 
+import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.val;
+import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.base.Preconditions;
+import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
@@ -27,10 +31,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.JvmShapeInfo;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.cpu.nativecpu.buffer.DoubleBuffer;
+import org.nd4j.linalg.cpu.nativecpu.buffer.FloatBuffer;
+import org.nd4j.linalg.cpu.nativecpu.buffer.LongBuffer;
+import org.nd4j.linalg.cpu.nativecpu.buffer.Utf8Buffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.List;
 
 
@@ -487,5 +498,37 @@ public class NDArray extends BaseNDArray {
     @Override
     public LongShapeDescriptor shapeDescriptor() {
         return LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), ordering(), dataType(), isEmpty());
+    }
+
+    protected int stringBuffer(FlatBufferBuilder builder, DataBuffer buffer) {
+        Preconditions.checkArgument(buffer.dataType() == DataType.UTF8, "This method can be called on UTF8 buffers only");
+        try {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            DataOutputStream dos = new DataOutputStream(bos);
+
+            val numWords = this.length();
+            val ub = (Utf8Buffer) buffer;
+            // writing length first
+            val t = length();
+            val ptr = (BytePointer) ub.pointer();
+
+            // now write all strings as bytes
+            for (int i = 0; i < ub.length(); i++) {
+                dos.writeByte(ptr.get(i));
+            }
+
+            val bytes = bos.toByteArray();
+            return FlatArray.createBufferVector(builder, bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public String getString(long index) {
+        if (!isS())
+            throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
+
+        return ((Utf8Buffer) data).getString(index);
     }
 }

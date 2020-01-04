@@ -119,13 +119,15 @@ TEST_F(NativeOpsTests, ExecIndexReduce_1) {
 #ifdef __CUDABLAS__
     printf("Unsupported for cuda now.\n");
 #else
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
     ::execIndexReduceScalar(nullptr,
                                         indexreduce::IndexMax,
-                                        x.buffer(), x.shapeInfo(),
-                                        nullptr, nullptr,
+                                        &xBuf, x.shapeInfo(),
                                         nullptr,
-                                        exp.buffer(), exp.shapeInfo(),
-                                        nullptr, nullptr);
+                                        nullptr,
+                                        &expBuf, exp.shapeInfo(),
+                                        nullptr);
 
     ASSERT_TRUE(exp.e<Nd4jLong>(0) == 4LL);
 #endif
@@ -140,15 +142,18 @@ TEST_F(NativeOpsTests, ExecIndexReduce_2) {
     printf("Unsupported for cuda now.\n");
 #else
     NDArray dimension = NDArrayFactory::create<int>({});
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimensionBuf(dimension.dataBuffer());
+
     ::execIndexReduce(nullptr,
                                    indexreduce::IndexMax,
-                                   x.buffer(), x.shapeInfo(),
-                                   nullptr, nullptr,
+                                   &xBuf, x.shapeInfo(), nullptr,
                                    nullptr,
-                                   exp.buffer(), exp.shapeInfo(),
-                                   nullptr, nullptr,
-                                   dimension.buffer(), dimension.shapeInfo(),
-                                   nullptr, nullptr);
+                                   &expBuf, exp.shapeInfo(),
+                                   nullptr,
+                                   &dimensionBuf, dimension.shapeInfo(),
+                                   nullptr);
 
     ASSERT_TRUE(exp.e<Nd4jLong>(0) == 24LL);
 #endif
@@ -166,16 +171,21 @@ TEST_F(NativeOpsTests, ExecBroadcast_1) {
 #else
     auto dimension = NDArrayFactory::create<int>('c', {1}, {1});
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+
     ::execBroadcast(nullptr,
                              broadcast::Add,
-                             x.buffer(), x.shapeInfo(),
-                             nullptr, nullptr,
-                             y.buffer(), y.shapeInfo(),
-                             nullptr, nullptr,
-                             exp.buffer(), exp.shapeInfo(),
-                             nullptr, nullptr,
-                             dimension.buffer(), dimension.shapeInfo(),
-                             nullptr, nullptr);
+                             &xBuf, x.shapeInfo(),
+                             nullptr,
+                             &yBuf, y.shapeInfo(),
+                             nullptr,
+                             &expBuf, exp.shapeInfo(),
+                             nullptr,
+                             &dimBuf, dimension.shapeInfo(),
+                             nullptr);
 
     ASSERT_TRUE(exp.e<float>(0) == 3.);
 #endif
@@ -194,17 +204,18 @@ printf("Unsupported for cuda now.\n");
     int dimd = 0;
     auto dimension = NDArrayFactory::create<int>('c', {1}, {dimd});
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+
     ::execBroadcastBool(nullptr,
         broadcast::EqualTo,
-        x.buffer(), x.shapeInfo(),
-        nullptr, nullptr,
-        y.buffer(), y.shapeInfo(),
-        nullptr, nullptr,
-        exp.buffer(), exp.shapeInfo(),
-        nullptr, nullptr,
-        nullptr,
-        dimension.buffer(), dimension.shapeInfo(),
-        nullptr, nullptr);
+        &xBuf, x.shapeInfo(), nullptr,
+        &yBuf, y.shapeInfo(), nullptr,
+        &expBuf, exp.shapeInfo(), nullptr, nullptr,
+        &dimBuf, dimension.shapeInfo(),
+        nullptr);
         ASSERT_TRUE(exp.e<bool>(1) && !exp.e<bool>(0));
 #endif
 
@@ -219,14 +230,15 @@ TEST_F(NativeOpsTests, ExecPairwise_1) {
 #ifdef __CUDABLAS__
     printf("Unsupported for cuda now.\n");
 #else
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execPairwiseTransform(nullptr,
                                pairwise::Add,
-                               x.buffer(), x.shapeInfo(),
-                               nullptr, nullptr,
-                               y.buffer(), y.shapeInfo(),
-                               nullptr, nullptr,
-                               exp.buffer(), exp.shapeInfo(),
-                               nullptr, nullptr,
+                               &xBuf, x.shapeInfo(), nullptr,
+                               &yBuf, y.shapeInfo(), nullptr,
+                               &expBuf, exp.shapeInfo(), nullptr,
                                nullptr);
     ASSERT_TRUE(exp.e<float>(5) == 8.);
 #endif
@@ -243,14 +255,15 @@ TEST_F(NativeOpsTests, ExecPairwise_2) {
 #ifdef __CUDABLAS__
     printf("Unsupported for cuda now.\n");
 #else
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execPairwiseTransformBool(nullptr,
                                    pairwise::And,
-                                   x.buffer(), x.shapeInfo(),
-                                   nullptr, nullptr,
-                                   y.buffer(), y.shapeInfo(),
-                                   nullptr, nullptr,
-                                   exp.buffer(), exp.shapeInfo(),
-                                   nullptr, nullptr,
+                                   &xBuf, x.shapeInfo(), nullptr,
+                                   &yBuf, y.shapeInfo(), nullptr,
+                                   &expBuf, exp.shapeInfo(), nullptr,
                                    nullptr);
     ASSERT_TRUE(exp.e<bool>(5) && !exp.e<bool>(4));
 #endif
@@ -266,14 +279,14 @@ TEST_F(NativeOpsTests, ReduceTest_1) {
     printf("Unsupported for cuda now.\n");
 #else
     auto dimension = NDArrayFactory::create<int>('c', {1}, {1});
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
 
     ::execReduceFloat(nullptr,
                            reduce::Mean,
-                           x.buffer(), x.shapeInfo(),
-                           nullptr, nullptr,
+                           &xBuf, x.shapeInfo(), nullptr,
                            nullptr,
-                           exp.buffer(), exp.shapeInfo(),
-                           nullptr, nullptr);
+                           &expBuf, exp.shapeInfo(), nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce Mean");
     ASSERT_TRUE(exp.e<float>(0) == 13.);
@@ -289,14 +302,14 @@ TEST_F(NativeOpsTests, ReduceTest_2) {
 #ifdef __CUDABLAS__
     printf("Unsupported for cuda now.\n");
 #else
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
 
     ::execReduceSame(nullptr,
                              reduce::Sum,
-                             x.buffer(), x.shapeInfo(),
-                             nullptr, nullptr,
+                             &xBuf, x.shapeInfo(), nullptr,
                              nullptr,
-                             exp.buffer(), exp.shapeInfo(),
-                             nullptr, nullptr);
+                             &expBuf, exp.shapeInfo(), nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce Sum");
     ASSERT_TRUE(exp.e<float>(0) == 325.);
@@ -312,14 +325,14 @@ TEST_F(NativeOpsTests, ReduceTest_3) {
 #ifdef __CUDABLAS__
     printf("Unsupported for cuda now.\n");
 #else
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
 
     ::execReduceBool(nullptr,
                             reduce::All,
-                            x.buffer(), x.shapeInfo(),
-                            nullptr, nullptr,
+                            &xBuf, x.shapeInfo(), nullptr,
                             nullptr,
-                            exp.buffer(), exp.shapeInfo(),
-                            nullptr, nullptr);
+                            &expBuf, exp.shapeInfo(), nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce All");
     ASSERT_TRUE(exp.e<bool>(0) == true);
@@ -335,14 +348,14 @@ TEST_F(NativeOpsTests, ReduceTest_4) {
 #ifdef __CUDABLAS__
     printf("Unsupported for cuda now.\n");
 #else
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
 
     ::execReduceLong(nullptr,
                             reduce::CountNonZero,
-                            x.buffer(), x.shapeInfo(),
-                            nullptr, nullptr,
+                            &xBuf, x.shapeInfo(), nullptr,
                             nullptr,
-                            exp.buffer(), exp.shapeInfo(),
-                            nullptr, nullptr);
+                            &expBuf, exp.shapeInfo(), nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce CountNonZero");
     ASSERT_TRUE(exp.e<Nd4jLong>(0) == 25LL);
@@ -359,15 +372,16 @@ TEST_F(NativeOpsTests, ReduceTest_5) {
     printf("Unsupported for cuda now.\n");
 #else
     auto dimension = NDArrayFactory::create<int>({0, 1});
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+
     ::execReduceLong2(nullptr,
                             reduce::CountNonZero,
-                            x.buffer(), x.shapeInfo(),
-                            nullptr, nullptr,
+                            &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                             nullptr,
-                            exp.buffer(), exp.shapeInfo(),
-                            nullptr, nullptr,
-                            dimension.buffer(), dimension.shapeInfo(),
-                            dimension.specialBuffer(), dimension.specialShapeInfo());
+                            &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                            &dimBuf, dimension.shapeInfo(), dimension.specialShapeInfo());
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce CountNonZero");
     ASSERT_TRUE(exp.e<Nd4jLong>(0) == 25LL);
@@ -389,15 +403,17 @@ TEST_F(NativeOpsTests, ReduceTest_6) {
     x.p(10, 0); x.p(11, 0);
     x.p(15, 0); x.p(16, 0); x.p(17, 0);
     x.p(20, 0); x.p(21, 0); x.p(22, 0); x.p(23, 0);
+
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execReduceLong2(nullptr,
                             reduce::CountNonZero,
-                            x.buffer(), x.shapeInfo(),
-                            nullptr, nullptr,
+                            &xBuf, x.shapeInfo(), nullptr,
                             nullptr,
-                            exp.buffer(), exp.shapeInfo(),
-                            nullptr, nullptr,
-                            dimension.buffer(), dimension.shapeInfo(),
-                            dimension.specialBuffer(), dimension.specialShapeInfo());
+                            &expBuf, exp.shapeInfo(), nullptr,
+                            &dimBuf, dimension.shapeInfo(), dimension.specialShapeInfo());
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce CountNonZero");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -421,15 +437,16 @@ TEST_F(NativeOpsTests, ReduceTest_7) {
     x.linspace(1.0);
     x.syncToDevice();
     dimension.syncToHost();
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execReduceFloat2(extra,
                              reduce::Mean,
-                             x.buffer(), x.shapeInfo(),
-                             x.specialBuffer(), x.specialShapeInfo(),
+                             &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                              nullptr,
-                             exp.buffer(), exp.shapeInfo(),
-                             exp.specialBuffer(), exp.specialShapeInfo(),
-                             dimension.buffer(), dimension.shapeInfo(),
-                             dimension.specialBuffer(), dimension.specialShapeInfo());
+                             &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                             &dimBuf, dimension.shapeInfo(), dimension.specialShapeInfo());
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce Mean");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -453,16 +470,16 @@ TEST_F(NativeOpsTests, ReduceTest_8) {
     x.syncToDevice();
 
     dimension.syncToHost();
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
 
     ::execReduceSame2(extra,
                             reduce::Sum,
-                            x.buffer(), x.shapeInfo(),
-                            x.specialBuffer(), x.specialShapeInfo(),
+                            &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                             nullptr,
-                            z.buffer(), z.shapeInfo(),
-                            z.specialBuffer(), z.specialShapeInfo(),
-                            dimension.buffer(), dimension.shapeInfo(),
-                            dimension.specialBuffer(), dimension.specialShapeInfo());
+                            &zBuf, z.shapeInfo(), z.specialShapeInfo(),
+                            &dimBuf, dimension.shapeInfo(), dimension.specialShapeInfo());
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce Sum");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -485,15 +502,17 @@ TEST_F(NativeOpsTests, ReduceTest_9) {
     x.syncToDevice();
 
     dimension.syncToHost();
+
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execReduceBool2(extra,
                             reduce::All,
-                            x.buffer(), x.shapeInfo(),
-                            x.specialBuffer(), x.specialShapeInfo(),
+                            &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                             nullptr,
-                            exp.buffer(), exp.shapeInfo(),
-                            exp.specialBuffer(), exp.specialShapeInfo(),
-                            dimension.buffer(), dimension.shapeInfo(),
-                            dimension.specialBuffer(), dimension.specialShapeInfo());
+                            &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                            &dimBuf, dimension.shapeInfo(), dimension.specialShapeInfo());
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce All");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -518,15 +537,16 @@ TEST_F(NativeOpsTests, Reduce3Test_1) {
     y.assign(2.);
     x.syncToDevice();
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execReduce3(extra,
                             reduce3::Dot,
-                            x.buffer(), x.shapeInfo(),
-                            x.specialBuffer(), x.specialShapeInfo(),
+                            &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                             nullptr,
-                            y.buffer(), y.shapeInfo(),
-                            y.specialBuffer(), y.specialShapeInfo(),
-                            exp.buffer(), exp.shapeInfo(),
-                            exp.specialBuffer(), exp.specialShapeInfo());
+                            &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                            &expBuf, exp.shapeInfo(), exp.specialShapeInfo());
     //z.printIndexedBuffer("Z");
     //exp.printIndexedBuffer("Reduce3 Dot");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -551,15 +571,16 @@ TEST_F(NativeOpsTests, Reduce3Test_2) {
     y.assign(2.);
     x.syncToDevice();
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execReduce3Scalar(extra,
                          reduce3::Dot,
-                         x.buffer(), x.shapeInfo(),
-                         x.specialBuffer(), x.specialShapeInfo(),
+                         &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                          nullptr,
-                         y.buffer(), y.shapeInfo(),
-                         y.specialBuffer(), y.specialShapeInfo(),
-                         exp.buffer(), exp.shapeInfo(),
-                         exp.specialBuffer(), exp.specialShapeInfo());
+                         &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                         &expBuf, exp.shapeInfo(), exp.specialShapeInfo());
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce3 Dot");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -585,17 +606,18 @@ TEST_F(NativeOpsTests, Reduce3Test_3) {
     x.syncToDevice();
     dimension.syncToHost();
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+
     ::execReduce3Tad(extra,
                          reduce3::Dot,
-                         x.buffer(), x.shapeInfo(),
-                         x.specialBuffer(), x.specialShapeInfo(),
+                         &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                          nullptr,
-                         y.buffer(), y.shapeInfo(),
-                         y.specialBuffer(), y.specialShapeInfo(),
-                         exp.buffer(), exp.shapeInfo(),
-                         exp.specialBuffer(), exp.specialShapeInfo(),
-                         dimension.buffer(), dimension.shapeInfo(),
-                         dimension.specialBuffer(), dimension.specialShapeInfo(),
+                         &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                         &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                         &dimBuf, dimension.shapeInfo(), dimension.specialShapeInfo(),
                          nullptr, nullptr, nullptr, nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce All");
@@ -630,17 +652,18 @@ TEST_F(NativeOpsTests, Reduce3Test_4) {
     auto hTADShapeInfoY = tadPackY.primaryShapeInfo();
     auto hTADOffsetsY = tadPackY.primaryOffsets();
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+
     ::execReduce3All(extra,
                          reduce3::Dot,
-                         x.buffer(), x.shapeInfo(),
-                         x.specialBuffer(), x.specialShapeInfo(),
+                         &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                          nullptr,
-                         y.buffer(), y.shapeInfo(),
-                         y.specialBuffer(), y.specialShapeInfo(),
-                         exp.buffer(), exp.shapeInfo(),
-                         exp.specialBuffer(), exp.specialShapeInfo(),
-                         dimension.buffer(), dimension.shapeInfo(),
-                         dimension.specialBuffer(), dimension.specialShapeInfo(),
+                         &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                         &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                         &dimBuf, dimension.shapeInfo(), dimension.specialShapeInfo(),
                          hTADShapeInfoX, hTADOffsetsX, hTADShapeInfoY, hTADOffsetsY);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce All");
@@ -667,14 +690,16 @@ TEST_F(NativeOpsTests, ScalarTest_1) {
     //y.assign(2.);
     x.syncToDevice();
     z.syncToDevice();
+
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execScalar(extra,
                             scalar::Multiply,
-                            x.buffer(), x.shapeInfo(),
-                            x.specialBuffer(), x.specialShapeInfo(),
-                            exp.buffer(), exp.shapeInfo(),
-                            exp.specialBuffer(), exp.specialShapeInfo(),
-                            y.buffer(), y.shapeInfo(),
-                            y.specialBuffer(), y.specialShapeInfo(), nullptr);
+                            &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                            &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                            &yBuf, y.shapeInfo(), y.specialShapeInfo(), nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce All");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -700,14 +725,16 @@ TEST_F(NativeOpsTests, ScalarTest_2) {
     //y.assign(2.);
     x.syncToDevice();
     z.syncToDevice();
+
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execScalarBool(extra,
                         scalar::GreaterThan,
-                        x.buffer(), x.shapeInfo(),
-                        x.specialBuffer(), x.specialShapeInfo(),
-                        exp.buffer(), exp.shapeInfo(),
-                        exp.specialBuffer(), exp.specialShapeInfo(),
-                        y.buffer(), y.shapeInfo(),
-                        y.specialBuffer(), y.specialShapeInfo(), nullptr);
+                        &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                        &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                        &yBuf, y.shapeInfo(), y.specialShapeInfo(), nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce All");
     ASSERT_TRUE(exp.e<bool>(5) == z.e<bool>(5) && exp.e<bool>(15) != z.e<bool>(15));
@@ -726,13 +753,14 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_1) {
     printf("Unsupported for CUDA platform yet.\n");
     return;
 #endif
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execSummaryStatsScalar(extra,
                         variance::SummaryStatsVariance,
-                        x.buffer(), x.shapeInfo(),
-                        x.specialBuffer(), x.specialShapeInfo(),
+                        &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                         nullptr,
-                        exp.buffer(), exp.shapeInfo(),
-                        exp.specialBuffer(), exp.specialShapeInfo(), false);
+                        &expBuf, exp.shapeInfo(), exp.specialShapeInfo(), false);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Standard Variance");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -751,13 +779,13 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_2) {
     printf("Unsupported for CUDA platform yet.\n");
     return;
 #endif
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
     ::execSummaryStats(extra,
                                     variance::SummaryStatsVariance,
-                                    x.buffer(), x.shapeInfo(),
-                                    x.specialBuffer(), x.specialShapeInfo(),
+                                    &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                                     nullptr,
-                                    exp.buffer(), exp.shapeInfo(),
-                                    exp.specialBuffer(), exp.specialShapeInfo(), false);
+                                    &expBuf, exp.shapeInfo(), exp.specialShapeInfo(), false);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Standard Variance");
     ASSERT_TRUE(exp.equalsTo(z));
@@ -777,15 +805,16 @@ TEST_F(NativeOpsTests, SummaryStatsScalarTest_3) {
     return;
 #endif
     auto dimensions = NDArrayFactory::create<int>({0, 1});
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimensions.dataBuffer());
+
     ::execSummaryStatsTad(extra,
                                     variance::SummaryStatsVariance,
-                                    x.buffer(), x.shapeInfo(),
-                                    x.specialBuffer(), x.specialShapeInfo(),
+                                    &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                                     nullptr,
-                                    exp.buffer(), exp.shapeInfo(),
-                                    exp.specialBuffer(), exp.specialShapeInfo(),
-                                    dimensions.buffer(), dimensions.shapeInfo(),
-                                    dimensions.specialBuffer(), dimensions.specialShapeInfo(),
+                                    &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                                    &dimBuf, dimensions.shapeInfo(), dimensions.specialShapeInfo(),
                                     false,
                                     nullptr, nullptr);
 //    x.printIndexedBuffer("Input");
@@ -807,13 +836,15 @@ TEST_F(NativeOpsTests, TransformTest_1) {
     return;
 #endif
     z.linspace(1.);
+
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execTransformFloat(extra,
                               transform::Sqrt,
-                              x.buffer(), x.shapeInfo(),
-                              x.specialBuffer(), x.specialShapeInfo(),
-
-                              exp.buffer(), exp.shapeInfo(),
-                              exp.specialBuffer(), exp.specialShapeInfo(),
+                              &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                              &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
                               nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Sqrt is");
@@ -834,13 +865,15 @@ TEST_F(NativeOpsTests, TransformTest_2) {
     return;
 #endif
     z.linspace(1.);
+
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execTransformSame(extra,
                                 transform::Square,
-                                z.buffer(), z.shapeInfo(),
-                                z.specialBuffer(), z.specialShapeInfo(),
-
-                                exp.buffer(), exp.shapeInfo(),
-                                exp.specialBuffer(), exp.specialShapeInfo(),
+                                &zBuf, z.shapeInfo(), z.specialShapeInfo(),
+                                &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
                                 nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Square is");
@@ -864,13 +897,14 @@ TEST_F(NativeOpsTests, TransformTest_3) {
     z.assign(true);
     x.p(24, -25);
     z.p(24, false);
+
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execTransformBool(extra,
                                 transform::IsPositive,
-                                x.buffer(), x.shapeInfo(),
-                                x.specialBuffer(), x.specialShapeInfo(),
-
-                                exp.buffer(), exp.shapeInfo(),
-                                exp.specialBuffer(), exp.specialShapeInfo(),
+                                &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                                &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
                                 nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("IsPositive");
@@ -894,13 +928,13 @@ TEST_F(NativeOpsTests, TransformTest_4) {
     return;
 #endif
     //z.linspace(1.);
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+
     ::execTransformStrict(extra,
                                 transform::Cosine,
-                                x.buffer(), x.shapeInfo(),
-                                x.specialBuffer(), x.specialShapeInfo(),
-
-                                exp.buffer(), exp.shapeInfo(),
-                                exp.specialBuffer(), exp.specialShapeInfo(),
+                                &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                                &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
                                 nullptr);
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Cosine");
@@ -932,17 +966,18 @@ TEST_F(NativeOpsTests, ScalarTadTest_1) {
     auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
     auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+
     ::execScalarTad(extra,
                         scalar::Multiply,
-                        x.buffer(), x.shapeInfo(),
-                        x.specialBuffer(), x.specialShapeInfo(),
-                        exp.buffer(), exp.shapeInfo(),
-                        exp.specialBuffer(), exp.specialShapeInfo(),
-                        y.buffer(), y.shapeInfo(),
-                        y.specialBuffer(), y.specialShapeInfo(),
+                        &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                        &expBuf, exp.shapeInfo(), exp.specialShapeInfo(),
+                        &yBuf, y.shapeInfo(), y.specialShapeInfo(),
                         nullptr,
-                        dimension.buffer(), dimension.shapeInfo(),
-                        dimension.specialBuffer(), dimension.specialShapeInfo(),
+                        &dimBuf, dimension.shapeInfo(), dimension.specialShapeInfo(),
                         tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("Reduce All");
@@ -977,17 +1012,21 @@ TEST_F(NativeOpsTests, ScalarTadTest_2) {
     auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
     z.assign(true);
 
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer expBuf(exp.dataBuffer());
+    OpaqueDataBuffer dimBuf(dimension.dataBuffer());
+
     ::execScalarBoolTad(extra,
                         scalar::And,
-                        x.buffer(), x.shapeInfo(),
-                        x.specialBuffer(), x.specialShapeInfo(),
-                        exp.buffer(), exp.shapeInfo(),
-                        exp.specialBuffer(), exp.specialShapeInfo(),
-                        y.buffer(), y.shapeInfo(),
-                        y.specialBuffer(), y.specialShapeInfo(),
+                        &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                        &expBuf, exp.shapeInfo(),
+                        exp.specialShapeInfo(),
+                        &yBuf, y.shapeInfo(),
+                        y.specialShapeInfo(),
                         nullptr,
-                        dimension.buffer(), dimension.shapeInfo(),
-                        dimension.specialBuffer(), dimension.specialShapeInfo(),
+                        &dimBuf, dimension.shapeInfo(),
+                        dimension.specialShapeInfo(),
                         tadPackX.primaryShapeInfo(), tadPackX.primaryOffsets(), tadPackZ.primaryShapeInfo(), tadPackZ.primaryOffsets());
 //    x.printIndexedBuffer("Input");
 //    exp.printIndexedBuffer("And");
@@ -1095,9 +1134,11 @@ TEST_F(NativeOpsTests, PullRowsTest_1) {
 #ifdef __CUDABLAS__
     nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
 
-    pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
-                z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+    pullRows(nativeStart, &xBuf, x.getShapeInfo(), x.getSpecialShapeInfo(),
+                &zBuf, z.getShapeInfo(), z.specialShapeInfo(),
                 4, pidx,
                 xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
                 zTadPack.platformShapeInfo(), zTadPack.platformOffsets());
@@ -1250,7 +1291,9 @@ TEST_F(NativeOpsTests, RandomTest_1) {
 #endif
     graph::RandomGenerator rng(1023, 119);
     double p = 0.5;
-    ::execRandom(extra, random::BernoulliDistribution, &rng, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &p);
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+
+    ::execRandom(extra, random::BernoulliDistribution, &rng, &zBuf, z.shapeInfo(), z.specialShapeInfo(), &p);
 }
 
 TEST_F(NativeOpsTests, RandomTest_2) {
@@ -1264,7 +1307,10 @@ TEST_F(NativeOpsTests, RandomTest_2) {
     x.linspace(0, 0.01);
     graph::RandomGenerator rng(1023, 119);
     double p = 0.5;
-    ::execRandom2(extra, random::DropOut, &rng, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &p);
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+
+    ::execRandom2(extra, random::DropOut, &rng, &xBuf, x.shapeInfo(), x.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &p);
 }
 
 TEST_F(NativeOpsTests, RandomTest_3) {
@@ -1280,7 +1326,12 @@ TEST_F(NativeOpsTests, RandomTest_3) {
     x.linspace(1, -0.01);
     graph::RandomGenerator rng(1023, 119);
     double p = 0.5;
-    ::execRandom3(extra, random::ProbablisticMerge, &rng, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &p);
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+
+    ::execRandom3(extra, random::ProbablisticMerge, &rng, &xBuf, x.shapeInfo(), x.specialShapeInfo(), &yBuf,
+            y.shapeInfo(), y.specialShapeInfo(), &zBuf, z.shapeInfo(), z.specialShapeInfo(), &p);
 }
 
 TEST_F(NativeOpsTests, RandomTest_4) {
@@ -1316,6 +1367,10 @@ TEST_F(NativeOpsTests, SortTests_2) {
 #ifdef __CUDABLAS__
     extras[1] = LaunchContext::defaultContext()->getCudaStream();
 #endif
+//    OpaqueDataBuffer xBuf(x.dataBuffer());
+//    OpaqueDataBuffer yBuf(y.dataBuffer());
+//    OpaqueDataBuffer expBuf(exp.dataBuffer());
+//    OpaqueDataBuffer dimBuf(exp.dataBuffer());
 
     ::sortByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), false);
     k.tickWriteDevice();
@@ -1539,6 +1594,13 @@ TEST_F(NativeOpsTests, CalculateOutputShapeTests_2) {
     //delete shapeList;
 
     ::deleteShapeList((Nd4jPointer) shapeList);
+}
+
+
+TEST_F(NativeOpsTests, interop_databuffer_tests_1) {
+    auto idb = ::allocateDataBuffer(100, 10, false);
+    auto ptr = ::dbPrimaryBuffer(idb);
+    ::deleteDataBuffer(idb);
 }
 
 //Uncomment when needed only - massive calculations

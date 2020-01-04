@@ -25,6 +25,8 @@
 #include <op_boilerplate.h>
 #include <string>
 #include <sstream>
+#include <vector>
+#include <NDArray.h>
 
 namespace nd4j {
     class ND4J_EXPORT StringUtils {
@@ -53,6 +55,36 @@ namespace nd4j {
 
             return result;
         }
+
+        /**
+         * This method returns number of needle matches within haystack
+         * PLEASE NOTE: this method operates on 8-bit arrays interpreted as uint8
+         *
+         * @param haystack
+         * @param haystackLength
+         * @param needle
+         * @param needleLength
+         * @return
+         */
+        static uint64_t countSubarrays(const void *haystack, uint64_t haystackLength, const void *needle, uint64_t needleLength);
+
+        /**
+         * This method returns number of bytes used for string NDArrays content
+         * PLEASE NOTE: this doesn't include header
+         *
+         * @param array
+         * @return
+         */
+        static uint64_t byteLength(const NDArray &array);
+
+        /**
+         * This method splits a string into substring by delimiter
+         *
+         * @param haystack
+         * @param delimiter
+         * @return
+         */
+        static std::vector<std::string> split(const std::string &haystack, const std::string &delimiter);
     };
 }
 

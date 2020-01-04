@@ -18,11 +18,9 @@ package org.nd4j.linalg.jcublas;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import lombok.var;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
-import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
@@ -34,12 +32,10 @@ import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
-import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -51,19 +47,12 @@ import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.*;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -216,7 +205,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray create(Collection<String> strings, long[] shape, char order) {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
-        val buffer = new Utf8Buffer(strings);
+        val buffer = new CudaUtf8Buffer(strings);
         val list = new ArrayList<String>(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
@@ -360,8 +349,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray concat(int dimension, INDArray... toConcat) {
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        Nd4j.getExecutioner().push();
 
         return Nd4j.exec(new Concat(dimension, toConcat))[0];
     }
@@ -517,9 +505,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(ret, source);
 
-        Pointer x = AtomicAllocator.getInstance().getPointer(source, context);
+        val x = ((BaseCudaDataBuffer) source.data()).getOpaqueDataBuffer();
+        val z = ((BaseCudaDataBuffer) ret.data()).getOpaqueDataBuffer();
         Pointer xShape = AtomicAllocator.getInstance().getPointer(source.shapeInfoDataBuffer(), context);
-        Pointer z = AtomicAllocator.getInstance().getPointer(ret, context);
         Pointer zShape = AtomicAllocator.getInstance().getPointer(ret.shapeInfoDataBuffer(), context);
 
         PointerPointer extras = new PointerPointer(AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
@@ -545,14 +533,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         nativeOps.pullRows(extras,
-                null,
-                (LongPointer) source.shapeInfoDataBuffer().addressPointer(),
-                x,
-                (LongPointer) xShape,
-                null,
-                (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                z,
-                (LongPointer) zShape,
+                x, (LongPointer) source.shapeInfoDataBuffer().addressPointer(), (LongPointer) xShape,
+                z, (LongPointer) ret.shapeInfoDataBuffer().addressPointer(), (LongPointer) zShape,
                 indexes.length,
                 (LongPointer) pIndex,
                 (LongPointer) tadShapeInfo,
@@ -601,7 +583,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
                 AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
-                xPointers[i] = point.getPointers().getDevicePointer().address();
+                xPointers[i] = point.getDevicePointer().address();
                 point.tickDeviceWrite();
             }
 
@@ -710,7 +692,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
                 AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
-                xPointers[i] = point.getPointers().getDevicePointer().address();
+                xPointers[i] = point.getDevicePointer().address();
                 point.tickDeviceWrite();
             }
 
@@ -1324,11 +1306,11 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         PointerPointer extraz = new PointerPointer(null, // not used
                 context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
 
+        val x = ((BaseCudaDataBuffer) tensor.data()).getOpaqueDataBuffer();
+
+
         nativeOps.tear(extraz,
-                    null,
-                    (LongPointer) tensor.shapeInfoDataBuffer().addressPointer(),
-                    AtomicAllocator.getInstance().getPointer(tensor, context),
-                    (LongPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
+                    x, (LongPointer) tensor.shapeInfoDataBuffer().addressPointer(), (LongPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
                     new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
                     (LongPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
                     (LongPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),

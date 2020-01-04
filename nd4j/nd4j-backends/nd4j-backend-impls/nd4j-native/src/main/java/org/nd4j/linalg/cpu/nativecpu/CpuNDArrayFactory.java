@@ -28,6 +28,9 @@ import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.compression.CompressionUtils;
+import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
+import org.nd4j.linalg.cpu.nativecpu.buffer.LongBuffer;
+import org.nd4j.linalg.cpu.nativecpu.buffer.Utf8Buffer;
 import org.nd4j.linalg.primitives.Pair;
 import org.bytedeco.javacpp.*;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -558,11 +561,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
             nativeOps.tear(null,
-                    tensor.data().pointer(), (LongPointer) tensor.shapeInfoDataBuffer().pointer(),
-                    null, null,
+                    ((BaseCpuDataBuffer) tensor.data()).getOpaqueDataBuffer(), (LongPointer) tensor.shapeInfoDataBuffer().pointer(), null,
                     targets, (LongPointer) result[0].shapeInfoDataBuffer().pointer(),
-                    (LongPointer) tadBuffers.getFirst().pointer(),
-                    new LongPointerWrapper(tadBuffers.getSecond().pointer())
+                    (LongPointer) tadBuffers.getFirst().pointer(), new LongPointerWrapper(tadBuffers.getSecond().pointer())
             );
 
         if (nativeOps.lastErrorCode() != 0)
@@ -701,10 +702,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
         nativeOps.pullRows(dummy,
-                    source.data().addressPointer(), (LongPointer) source.shapeInfoDataBuffer().addressPointer(),
-                    null, null,
-                    ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    null, null,
+                    ((BaseCpuDataBuffer) source.data()).getOpaqueDataBuffer(), (LongPointer) source.shapeInfoDataBuffer().addressPointer(), null,
+                    ((BaseCpuDataBuffer) ret.data()).getOpaqueDataBuffer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(), null,
                     indexes.length, pIndex,
                     (LongPointer) hostTadShapeInfo,
                     new LongPointerWrapper(hostTadOffsets),

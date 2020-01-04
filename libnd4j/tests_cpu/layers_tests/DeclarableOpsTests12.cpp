@@ -810,9 +810,10 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
 #ifdef __CUDABLAS__
     nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
-
-    pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
-                         z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    pullRows(nativeStart, &xBuf, x.getShapeInfo(), x.getSpecialShapeInfo(),
+                         &zBuf, z.getShapeInfo(), z.specialShapeInfo(),
                          4, pidx,
                          xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
                          zTadPack.platformShapeInfo(), zTadPack.platformOffsets());
@@ -844,8 +845,10 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
 #ifdef __CUDABLAS__
     nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
-    pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-                         z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    pullRows(nativeStart, &xBuf, x.getShapeInfo(), x.specialShapeInfo(),
+                         &zBuf, z.getShapeInfo(), z.specialShapeInfo(),
                          4, pidx,
                          xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
                          zTadPack.platformShapeInfo(), zTadPack.platformOffsets());

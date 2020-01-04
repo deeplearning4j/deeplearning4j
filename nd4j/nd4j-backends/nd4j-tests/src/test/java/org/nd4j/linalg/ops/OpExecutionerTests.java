@@ -309,7 +309,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         val arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
         val softMax = new SoftMax(arr);
         opExecutioner.exec((CustomOp) softMax);
-        assertEquals(getFailureMessage(), 1.0, softMax.outputArguments()[0].sumNumber().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(), 1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1);
     }
 
 
@@ -520,7 +520,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
 //        System.out.println("Data:" + input.data().length());
         val softMax = new SoftMax(input);
         Nd4j.getExecutioner().exec((CustomOp) softMax);
-        assertEquals(assertion, softMax.outputArguments()[0]);
+        assertEquals(assertion, softMax.outputArguments().get(0));
 
     }
 
@@ -559,7 +559,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
         val softMax = new SoftMax(arr);
         opExecutioner.exec((CustomOp) softMax);
-        assertEquals(getFailureMessage(), 1.0, softMax.outputArguments()[0].sumNumber().doubleValue(), 1e-1);
+        assertEquals(getFailureMessage(), 1.0, softMax.outputArguments().get(0).sumNumber().doubleValue(), 1e-1);
     }
 
     @Test

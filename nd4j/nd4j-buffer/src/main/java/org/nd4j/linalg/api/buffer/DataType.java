@@ -17,14 +17,28 @@
 package org.nd4j.linalg.api.buffer;
 
 public enum DataType {
+
     DOUBLE,
     FLOAT,
+
+    @Deprecated
     HALF,
+
+    @Deprecated
     LONG,
+
+    @Deprecated
     INT,
+
+    @Deprecated
     SHORT,
+
+    @Deprecated
     UBYTE,
+
+    @Deprecated
     BYTE,
+
     BOOL,
     UTF8,
     COMPRESSED,
@@ -33,6 +47,13 @@ public enum DataType {
     UINT32,
     UINT64,
     UNKNOWN;
+
+    public static final DataType FLOAT16 = DataType.HALF;
+    public static final DataType INT32 = DataType.INT;
+    public static final DataType INT64 = DataType.LONG;
+    public static final DataType INT16 = DataType.SHORT;
+    public static final DataType INT8 = DataType.BYTE;
+    public static final DataType UINT8 = DataType.UBYTE;
 
 
     public static DataType fromInt(int type) {
