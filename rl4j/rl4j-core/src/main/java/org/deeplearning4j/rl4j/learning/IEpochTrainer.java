@@ -23,9 +23,8 @@ import org.deeplearning4j.rl4j.mdp.MDP;
  *
  * @author Alexandre Boulanger
  */
-public interface IEpochTrainer {
+public interface IEpochTrainer extends EpochStepCounter {
     int getStepCounter();
-    int getEpochCounter();
     IHistoryProcessor getHistoryProcessor();
     MDP getMdp();
 }

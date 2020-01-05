@@ -20,6 +20,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
@@ -83,7 +84,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                              int epsilonNbStep, Random random) {
         super(conf);
         this.configuration = conf;
-        this.mdp = new LegacyMDPWrapper<O, Integer, DiscreteSpace>(mdp, this);
+        this.mdp = new LegacyMDPWrapper<O, Integer, DiscreteSpace>(mdp, null, this);
         qNetwork = dqn;
         targetQNetwork = dqn.clone();
         policy = new DQNPolicy(getQNetwork());
@@ -112,6 +113,12 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         accuReward = 0;
     }
 
+    @Override
+    public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
+        super.setHistoryProcessor(historyProcessor);
+        mdp.setHistoryProcessor(historyProcessor);
+    }
+
     /**
      * Single step of training
      * @param obs last obs
@@ -131,7 +138,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         Double maxQ = Double.NaN; //ignore if Nan for stats
 
         //if step of training, just repeat lastAction
-        if (getStepCounter() % skipFrame != 0) {
+        //if (getCurrentEpochStep() % skipFrame != 0) {
+        if (obs.isSkipped()) {
             action = lastAction;
         } else {
             INDArray qs = getQNetwork().output(obs);
@@ -150,7 +158,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         accuReward += stepReply.getReward() * configuration.getRewardFactor();
 
         //if it's not a skipped frame, you can do a step of training
-        if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
+        //if (getCurrentEpochStep() % skipFrame == 0 || stepReply.isDone()) {
+        if (!obs.isSkipped() || stepReply.isDone()) {
 
             Transition<Integer> trans = new Transition(obs, action, accuReward, stepReply.isDone(), nextObservation);
             getExpReplay().store(trans);

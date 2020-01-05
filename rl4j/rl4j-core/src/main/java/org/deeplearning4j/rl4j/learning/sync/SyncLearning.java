@@ -17,7 +17,6 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.IEpochTrainer;
 import org.deeplearning4j.rl4j.learning.ILearning;
@@ -25,7 +24,6 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.listener.*;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
@@ -101,14 +99,14 @@ public abstract class SyncLearning<O, A, AS extends ActionSpace<A>, NN extends N
 
                 postEpoch();
 
-                if(getEpochCounter() % progressMonitorFrequency == 0) {
+                if(getCurrentEpochStep() % progressMonitorFrequency == 0) {
                     canContinue = listeners.notifyTrainingProgress(this);
                     if (!canContinue) {
                         break;
                     }
                 }
 
-                log.info("Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
+                log.info("Epoch: " + getCurrentEpochStep() + ", reward: " + statEntry.getReward());
                 incrementEpoch();
             }
         }

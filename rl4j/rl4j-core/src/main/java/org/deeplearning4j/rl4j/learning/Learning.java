@@ -62,46 +62,6 @@ public abstract class Learning<O, A, AS extends ActionSpace<A>, NN extends Neura
             return arr.reshape(shape);
     }
 
-    public static <O, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp,
-                    IHistoryProcessor hp) {
-
-        O obs = mdp.reset();
-
-        int step = 0;
-        double reward = 0;
-
-        boolean isHistoryProcessor = hp != null;
-
-        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
-        int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
-
-        INDArray input = Learning.getInput(mdp, obs);
-        if (isHistoryProcessor)
-            hp.record(input);
-
-
-        while (step < requiredFrame && !mdp.isDone()) {
-
-            A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
-            if (step % skipFrame == 0 && isHistoryProcessor)
-                hp.add(input);
-
-            StepReply<O> stepReply = mdp.step(action);
-            reward += stepReply.getReward();
-            obs = stepReply.getObservation();
-
-            input = Learning.getInput(mdp, obs);
-            if (isHistoryProcessor)
-                hp.record(input);
-
-            step++;
-
-        }
-
-        return new InitMdp(step, obs, reward);
-
-    }
-
     public static int[] makeShape(int size, int[] shape) {
         int[] nshape = new int[shape.length + 1];
         nshape[0] = size;
@@ -131,7 +91,7 @@ public abstract class Learning<O, A, AS extends ActionSpace<A>, NN extends Neura
     }
 
     public void setHistoryProcessor(HistoryProcessor.Configuration conf) {
-        historyProcessor = new HistoryProcessor(conf);
+        setHistoryProcessor(new HistoryProcessor(conf));
     }
 
     public void setHistoryProcessor(IHistoryProcessor historyProcessor) {

@@ -19,10 +19,7 @@ package org.deeplearning4j.rl4j.policy;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.rl4j.learning.HistoryProcessor;
-import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
-import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.StepCountable;
+import org.deeplearning4j.rl4j.learning.*;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -57,8 +54,8 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
 
     @Override
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
-        RefacStepCountable stepCountable = new RefacStepCountable();
-        LegacyMDPWrapper<O, A, AS> mdpWrapper = new LegacyMDPWrapper<O, A, AS>(mdp, hp, stepCountable);
+        RefacEpochStepCounter epochStepCounter = new RefacEpochStepCounter();
+        LegacyMDPWrapper<O, A, AS> mdpWrapper = new LegacyMDPWrapper<O, A, AS>(mdp, hp, epochStepCounter);
 
         boolean isHistoryProcessor = hp != null;
         int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
@@ -70,11 +67,11 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
 
         A lastAction = mdpWrapper.getActionSpace().noOp();
         A action;
-        stepCountable.setStepCounter(initMdp.getSteps());
+        epochStepCounter.setCurrentEpochStep(initMdp.getSteps());
 
         while (!mdpWrapper.isDone()) {
 
-            if (stepCountable.getStepCounter() % skipFrame != 0) {
+            if (obs.isSkipped()) {
                 action = lastAction;
             } else {
                 action = nextAction(obs);
@@ -86,7 +83,7 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
             reward += stepReply.getReward();
 
             obs = stepReply.getObservation();
-            stepCountable.increment();
+            epochStepCounter.incrementEpochStep();
         }
 
         return reward;
@@ -119,19 +116,15 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
         return new Learning.InitMdp(step, observation, reward);
     }
 
-    private class RefacStepCountable implements StepCountable {
+    public class RefacEpochStepCounter implements EpochStepCounter {
 
         @Getter
         @Setter
-        private int stepCounter = 0;
+        private int currentEpochStep = 0;
 
-        public void increment() {
-            ++stepCounter;
+        public void incrementEpochStep() {
+            ++currentEpochStep;
         }
 
-        @Override
-        public int getStepCounter() {
-            return 0;
-        }
     }
 }
