@@ -26,6 +26,7 @@ import org.deeplearning4j.rl4j.learning.NeuralNetFetchable;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.util.ModelSerializer;
@@ -88,19 +89,38 @@ public class DataManager implements IDataManager {
             String json = new ObjectMapper().writeValueAsString(learning.getConfiguration());
             writeEntry(new ByteArrayInputStream(json.getBytes()), zipfile);
 
-            ZipEntry dqn = new ZipEntry("dqn.bin");
-            zipfile.putNextEntry(dqn);
+            try {
+                ZipEntry dqn = new ZipEntry("dqn.bin");
+                zipfile.putNextEntry(dqn);
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            if(learning instanceof NeuralNetFetchable) {
-                ((NeuralNetFetchable)learning).getNeuralNet().save(bos);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                if(learning instanceof NeuralNetFetchable) {
+                    ((NeuralNetFetchable)learning).getNeuralNet().save(bos);
+                }
+                bos.flush();
+                bos.close();
+
+                InputStream inputStream = new ByteArrayInputStream(bos.toByteArray());
+                writeEntry(inputStream, zipfile);
+            } catch (UnsupportedOperationException e) {
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                ByteArrayOutputStream bos2 = new ByteArrayOutputStream();
+                ((IActorCritic)((NeuralNetFetchable)learning).getNeuralNet()).save(bos, bos2);
+
+                bos.flush();
+                bos.close();
+                InputStream inputStream = new ByteArrayInputStream(bos.toByteArray());
+                ZipEntry value = new ZipEntry("value.bin");
+                zipfile.putNextEntry(value);
+                writeEntry(inputStream, zipfile);
+
+                bos2.flush();
+                bos2.close();
+                InputStream inputStream2 = new ByteArrayInputStream(bos2.toByteArray());
+                ZipEntry policy = new ZipEntry("policy.bin");
+                zipfile.putNextEntry(policy);
+                writeEntry(inputStream2, zipfile);
             }
-            bos.flush();
-            bos.close();
-
-            InputStream inputStream = new ByteArrayInputStream(bos.toByteArray());
-            writeEntry(inputStream, zipfile);
-
 
             if (learning.getHistoryProcessor() != null) {
                 ZipEntry hpconf = new ZipEntry("hpconf.bin");
@@ -268,7 +288,12 @@ public class DataManager implements IDataManager {
 
         save(getModelDir() + "/" + learning.getStepCounter() + ".training", learning);
         if(learning instanceof  NeuralNetFetchable) {
-            ((NeuralNetFetchable)learning).getNeuralNet().save(getModelDir() + "/" + learning.getStepCounter() + ".model");
+            try {
+                ((NeuralNetFetchable)learning).getNeuralNet().save(getModelDir() + "/" + learning.getStepCounter() + ".model");
+            } catch (UnsupportedOperationException e) {
+                String path = getModelDir() + "/" + learning.getStepCounter();
+                ((IActorCritic)((NeuralNetFetchable)learning).getNeuralNet()).save(path + "_value.model", path + "_policy.model");
+            }
         }
 
     }

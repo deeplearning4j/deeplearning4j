@@ -72,20 +72,23 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
     }
 
     public Integer nextAction(INDArray input) {
-        INDArray output = actorCritic.outputAll(input)[1];
-        if (rnd == null) {
-            return Learning.getMaxAction(output);
-        }
-        float rVal = rnd.nextFloat();
-        for (int i = 0; i < output.length(); i++) {
-            //System.out.println(i + " " + rVal + " " + output.getFloat(i));
-            if (rVal < output.getFloat(i)) {
-                return i;
-            } else
-                rVal -= output.getFloat(i);
-        }
+        // TODO: Figure out a nicer way to deal with thread-safety issues of Deeplearning4j
+        synchronized (ACPolicy.class) {
+            INDArray output = actorCritic.outputAll(input)[1];
+            if (rnd == null) {
+                return Learning.getMaxAction(output);
+            }
+            float rVal = rnd.nextFloat();
+            for (int i = 0; i < output.length(); i++) {
+                //System.out.println(i + " " + rVal + " " + output.getFloat(i));
+                if (rVal < output.getFloat(i)) {
+                    return i;
+                } else
+                    rVal -= output.getFloat(i);
+            }
 
-        throw new RuntimeException("Output from network is not a probability distribution: " + output);
+            throw new RuntimeException("Output from network is not a probability distribution: " + output);
+        }
     }
 
     public void save(String filename) throws IOException {
