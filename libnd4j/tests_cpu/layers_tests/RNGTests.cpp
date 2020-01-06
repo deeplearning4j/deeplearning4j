@@ -1003,3 +1003,204 @@ TEST_F(RNGTests, test_uniform_119) {
     auto status = op.execute({&x}, {&z}, {1.0, 2.0}, {}, {});
     ASSERT_EQ(Status::OK(), status);
 }
+
+TEST_F(RNGTests, test_multinomial_1) {
+    
+    NDArray probs('f', { 3, 3 }, { 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
+    NDArray expected('f', { 3, 3 }, { 0, 1, 2,  2, 0, 0,  1, 2, 1 }, nd4j::DataType::INT64);
+    NDArray output('f', { 3, 3 }, nd4j::DataType::INT64);
+    NDArray samples('f', { 1 }, { 3 }, nd4j::DataType::INT32);
+    
+    nd4j::ops::random_multinomial op;
+    RandomGenerator rng(1234, 1234);
+    ASSERT_EQ(Status::OK(),  op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64}, {}, false) );
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+   
+    NDArray probsZ('c', { 1, 3 }, { 0.3, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
+    NDArray expectedZ('c', { 3, 3 }, { 0, 0, 0,  0, 0, 0,  0, 0, 0 }, nd4j::DataType::INT64);
+
+    auto result = op.execute({ &probsZ, &samples }, { }, { 1, INT64 });
+    auto outputZ = result->at(0);
+    
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_TRUE(expectedZ.isSameShape(outputZ));
+    ASSERT_TRUE(expectedZ.equalsTo(outputZ));
+    delete result;
+}
+
+TEST_F(RNGTests, test_multinomial_2) {
+
+    NDArray samples('c', { 1 }, { 20 }, nd4j::DataType::INT32);
+    NDArray probs('c', { 3, 5 }, { 0.2, 0.3, 0.5,    0.3, 0.5, 0.2,  0.5, 0.2, 0.3,  0.35, 0.25, 0.3,  0.25, 0.25, 0.5 }, nd4j::DataType::FLOAT32);
+    NDArray expected('c', { 3, 20 }, { 0, 2, 0, 2, 0, 4, 2, 0, 1, 2, 0, 2, 3, 0, 0, 2, 4, 4, 1, 0, 2, 3, 2, 3, 0, 1, 3, 1, 1, 1, 2, 4, 3, 3, 1, 4, 4, 2, 0, 0, 3, 3, 3, 0, 0, 2, 2, 3, 3, 0,  0, 2, 3, 4, 2, 2, 3, 2, 1, 2   }, nd4j::DataType::INT64);
+    NDArray output('c', { 3, 20 }, nd4j::DataType::INT64);
+
+    nd4j::ops::random_multinomial op;
+    RandomGenerator rng(1234, 1234);
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, false));
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+    
+    NDArray probs2('c', { 5, 3 }, { 0.2, 0.3, 0.5,    0.3, 0.5, 0.2,  0.5, 0.2, 0.3,  0.35, 0.25, 0.3,  0.25, 0.25, 0.5 }, nd4j::DataType::FLOAT32);
+    NDArray expected2('c', { 20, 3 }, {  0, 2, 3, 2, 3, 3, 0, 2, 3, 2,  3, 0, 0, 0, 0, 4, 1, 2, 2, 3,  2, 3, 1, 3, 1, 1, 3, 2, 1, 0, 0, 2, 0, 2, 4, 2, 3, 3, 3, 0,  3, 4, 0, 1, 2, 2, 0, 2, 4, 4, 0, 4, 2, 2, 1, 0, 1, 0, 0, 2  }, nd4j::DataType::INT64);
+    NDArray output2('c', { 20, 3 }, nd4j::DataType::INT64);
+    
+    rng.setStates(1234, 1234);
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs2, &samples }, { &output2 }, {}, { 1, INT64 }, {}, false));
+    ASSERT_TRUE(expected2.isSameShape(output2));
+    ASSERT_TRUE(expected2.equalsTo(output2));
+}
+
+TEST_F(RNGTests, test_multinomial_3) {
+    
+    NDArray probs('c', {  4, 3 }, { 0.3, 0.3, 0.4,  0.3, 0.4, 0.3,  0.3, 0.3, 0.4,  0.4, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
+    NDArray  expected('c', { 4, 5 }, nd4j::DataType::INT64);
+    NDArray  output('c', { 4, 5 }, nd4j::DataType::INT64);
+    NDArray samples('c', { 1 }, { 5 }, nd4j::DataType::INT32);
+    RandomGenerator rng(1234, 1234);
+
+    nd4j::ops::random_multinomial op;
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &expected }, {}, { 0, INT64 }, {}, false));
+   
+    rng.setStates(1234, 1234);
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, false));
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+}
+
+TEST_F(RNGTests, test_multinomial_4) {
+
+    NDArray probs('c', { 3, 4 }, { 0.3, 0.3, 0.4, 0.3, 0.4, 0.3, 0.3, 0.3, 0.4, 0.4, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
+    NDArray  expected('c', { 5, 4 }, nd4j::DataType::INT64);
+    NDArray  output('c', { 5, 4 }, nd4j::DataType::INT64);
+    NDArray samples('c', { 1 }, { 5 }, nd4j::DataType::INT32);
+
+    RandomGenerator rng(1234, 1234);
+    nd4j::ops::random_multinomial op;
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &expected }, {}, { 1, INT64 }, {}, false));
+
+    rng.setStates(1234, 1234);
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 1, INT64 }, {}, false));
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+}
+
+TEST_F(RNGTests, test_multinomial_5) {
+    // multinomial as binomial if 2 classes used
+    int batchValue = 1;
+    int ClassValue = 2;
+    int Samples = 1000000;
+
+    NDArray samples('c', { 1 }, { 1.*Samples }, nd4j::DataType::INT32);
+    
+    NDArray probs('c', { ClassValue, batchValue }, { 1.0, 1.0 }, nd4j::DataType::FLOAT32);
+    
+    nd4j::ops::random_multinomial op;
+
+    NDArray  output('c', { Samples, batchValue }, nd4j::DataType::INT64);
+    RandomGenerator rng(1234, 1234);
+    
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 1 }, {}, false));
+    
+    auto deviation = output.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    auto mean = output.meanNumber();
+    // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
+    // theoretical values for binomial
+    ASSERT_NEAR(0.5, deviation.e<double>(0), 3e-3);
+    ASSERT_NEAR(0.5, mean.e<double>(0), 3e-3);
+    
+    for (int i = 0; i < output.lengthOf(); i++) {
+        auto value = output.e<Nd4jLong>(i);
+        ASSERT_TRUE(value >= 0 && value < ClassValue);
+    }
+
+    auto resultR = op.execute({ &probs, &samples }, { }, { 1 });
+    auto outputR = resultR->at(0);
+    ASSERT_EQ(Status::OK(), resultR->status());
+
+    deviation = outputR->varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    mean = outputR->meanNumber();
+    // printf("Random seed - Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
+    ASSERT_NEAR(0.5, deviation.e<double>(0), 35e-3);
+    ASSERT_NEAR(0.5, mean.e<double>(0), 35e-3);
+
+    for (int i = 0; i < outputR->lengthOf(); i++) {
+        auto value = outputR->e<Nd4jLong>(i);
+        ASSERT_TRUE(value >= 0 && value < ClassValue);
+    }
+
+    delete resultR;
+}
+
+
+TEST_F(RNGTests, test_multinomial_6) {
+
+    int batchValue = 1;
+    int ClassValue = 5;
+    int Samples = 1000000;
+    
+    NDArray samples('c', { 1 }, { 1. * Samples }, nd4j::DataType::INT32);
+
+    nd4j::ops::random_multinomial op;
+    NDArray probExpect('c', { ClassValue }, { 0.058, 0.096, 0.1576, 0.2598, 0.4287 }, nd4j::DataType::DOUBLE);
+
+    // without seed
+    NDArray probsR('c', { batchValue,  ClassValue }, { 1., 1.5, 2., 2.5, 3. }, nd4j::DataType::FLOAT32);
+
+    auto resultR = op.execute({ &probsR, &samples }, { }, { 0 });
+    auto outputR = resultR->at(0);
+    ASSERT_EQ(Status::OK(), resultR->status());
+
+    NDArray countsR('c', { ClassValue }, { 0, 0, 0, 0, 0 }, nd4j::DataType::DOUBLE);
+    
+    for (int i = 0; i < outputR->lengthOf(); i++) {
+        auto value = outputR->e<Nd4jLong>(i);
+        ASSERT_TRUE(value >= 0 && value < ClassValue);
+        double* z = countsR.bufferAsT<double>();
+        z[value] += 1;
+    }
+
+    for (int i = 0; i < countsR.lengthOf(); i++) {
+        auto c = countsR.e<double>(i);
+        auto p = probExpect.e<double>(i);
+        // printf("Get freq : %f  Expect freq: %f \n", c / Samples, p);
+        ASSERT_NEAR((c / Samples), p, 35e-3);
+    }
+
+    auto deviation = outputR->varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    auto mean = outputR->meanNumber();
+    // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
+    ASSERT_NEAR(1.2175, deviation.e<double>(0), 35e-3);
+    ASSERT_NEAR(2.906, mean.e<double>(0), 35e-3);
+
+    delete resultR;
+
+    RandomGenerator rng(1234, 1234);
+    NDArray probs('c', { batchValue, ClassValue }, { 1., 1.5, 2., 2.5, 3. }, nd4j::DataType::FLOAT32);
+    NDArray  output('c', { batchValue, Samples }, nd4j::DataType::INT64);
+    
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, false));
+
+    NDArray counts('c', { ClassValue }, { 0, 0, 0, 0, 0 }, nd4j::DataType::DOUBLE);
+    
+    for (int i = 0; i < output.lengthOf(); i++) {
+        auto value = output.e<Nd4jLong>(i);
+        ASSERT_TRUE(value >= 0 && value < ClassValue);
+        double* z = counts.bufferAsT<double>();
+        z[value] += 1;
+    }
+
+    for (int i = 0; i < counts.lengthOf(); i++) {
+        auto c = counts.e<double>(i);
+        auto p = probExpect.e<double>(i);
+        // printf("Get freq : %f  Expect freq: %f \n", c / Samples, p);
+        ASSERT_NEAR((c / Samples), p, 3e-3);
+    }
+
+    deviation = output.varianceNumber(variance::SummaryStatsStandardDeviation, false);
+    mean = output.meanNumber();
+    // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
+    ASSERT_NEAR(1.2175, deviation.e<double>(0), 3e-3);
+    ASSERT_NEAR(2.906, mean.e<double>(0), 3e-3);
+}

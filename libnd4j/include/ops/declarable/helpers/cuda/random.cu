@@ -27,6 +27,8 @@
 #include <ShapeUtils.h>
 #include <NDArrayFactory.h>
 #include <cuda_exception.h>
+#include <helpers/ConstantTadHelper.h>
+#include <PointersManager.h>
 
 namespace nd4j {
 namespace ops {
@@ -247,6 +249,116 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template void fillRandomUniform_, (LaunchContext* context,
             graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output), NUMERIC_TYPES);
+
+///////////////////////////////////////////////////////////////////
+// used https://en.wikipedia.org/wiki/Categorical_distribution
+// methods: gumbel trick + softmax + argmax
+template<typename X, typename Z>
+__global__ static void fillMultiNomialCuda_(graph::RandomGenerator* devRng, const void* vx, const Nd4jLong* xShapeInfo, 
+                                     void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong batchValue, 
+                                     const Nd4jLong numOfSamples, const Nd4jLong numOfClassX, 
+                                     const Nd4jLong dimA, const X minVal, const X maxVal) {
+                                  
+    
+    const X* x = reinterpret_cast<const X*>(vx);
+    Z* z = reinterpret_cast<Z*>(vz);
+   
+    __shared__ Nd4jLong xDimAstride, zDimAstride, xDimCstride, zDimCstride, dimC;
+
+    if (0 == threadIdx.x) {
+        dimC = (0 == dimA) ? 1 : 0;
+        zDimAstride = shape::stride(zShapeInfo)[dimA];
+        xDimAstride = shape::stride(xShapeInfo)[dimA];
+        zDimCstride = shape::stride(zShapeInfo)[dimC];
+        xDimCstride = shape::stride(xShapeInfo)[dimC];
+    }
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+    
+    for (Nd4jLong index = tid; index < batchValue*numOfSamples; index += gridDim.x * blockDim.x) {
+        
+        Nd4jLong nBatchIndex = index / numOfSamples;
+        Nd4jLong nSampleIndexInBatch = index - (nBatchIndex * numOfSamples);
+        
+        const X* xTad = x + (nBatchIndex * xDimCstride);
+        Z* zTad = z + (nBatchIndex * zDimCstride);
+        Z& arg = zTad[nSampleIndexInBatch * zDimAstride];
+        
+        X Max = -minVal;
+        Nd4jLong nSamplesPerBatch = nBatchIndex * numOfClassX * numOfSamples;
+        Nd4jLong nClassPerSamples = nSampleIndexInBatch * numOfClassX;
+        
+        for (Nd4jLong nClass = 0; nClass < numOfClassX; nClass++) {
+            Nd4jLong nIndex = nSamplesPerBatch + nClassPerSamples + nClass;
+            X tValue = (xTad[nClass * xDimAstride] - nd4j::math::nd4j_log<X, X>(-nd4j::math::nd4j_log<X, X>(devRng->relativeT<X>(nIndex, minVal, maxVal))));
+            if (tValue > Max) {
+                Max = tValue; 
+                arg = nClass;
+            }
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z>
+__host__ static void fillMultiNomialCudaLauncher(
+    const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t* stream,
+    graph::RandomGenerator* devRng, const void* vx, const Nd4jLong* xShapeInfo, 
+    void* vz, const Nd4jLong* zShapeInfo, 
+    const Nd4jLong batchValue, const Nd4jLong numOfSamples, 
+    const Nd4jLong numOfClassX, const Nd4jLong dimA){
+
+    const X minVal = DataTypeUtils::min<X>();
+    const X maxVal = 1.0;
+    
+    fillMultiNomialCuda_<X, Z> <<< blocksPerGrid, threadsPerBlock, 256, * stream >>> (
+        devRng, vx, xShapeInfo, vz, zShapeInfo, batchValue,
+        numOfSamples, numOfClassX, dimA, minVal, maxVal);
+}
+ 
+///////////////////////////////////////////////////////////////////
+void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, NDArray& input, NDArray& output, const Nd4jLong numOfSamples, const int dimC) {
+
+     Nd4jLong dimA = (0 == dimC) ? 1 : 0;
+
+     const Nd4jLong batchValue = output.sizeAt(dimC);
+     const Nd4jLong numOfClassX = input.sizeAt(dimA);
+     
+     const int threadsPerBlock = MAX_NUM_THREADS / 2;
+     const int blocksPerGrid = (batchValue * numOfSamples + threadsPerBlock - 1) / threadsPerBlock;
+    
+     PointersManager manager(context, "fillMultinomial");
+     graph::RandomGenerator *devRng;
+
+     auto err = cudaMalloc(&devRng, sizeof(graph::RandomGenerator));
+     if (err != 0) {
+         cuda_exception::build("fillRandomMultiNomial: Cannot allocate device memory for random generator due error", err);
+     }
+     err = cudaStreamSynchronize(*context->getCudaStream());
+     if (err != 0) {
+         cuda_exception::build("fillRandomMultiNomial: Cannot synchronize stream for random generator due error", err);
+     }
+     err = cudaMemcpyAsync(devRng, &rng, sizeof(graph::RandomGenerator), cudaMemcpyHostToDevice, *context->getCudaStream());
+     if (err != 0) {
+         cuda_exception::build("fillRandomMultiNomial: Cannot copy random generator to device", err);
+     }
+
+     NDArray::prepareSpecialUse({ &output }, { &input });
+     BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), fillMultiNomialCudaLauncher, 
+      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), devRng, input.getSpecialBuffer(), 
+       input.getSpecialShapeInfo(), output.specialBuffer(), 
+       output.specialShapeInfo(), batchValue, numOfSamples, 
+       numOfClassX, dimA), FLOAT_TYPES, INDEXING_TYPES);
+     NDArray::registerSpecialUse({ &output }, { &input });
+     manager.synchronize();
+
+     err = cudaFree(devRng);
+     if (err != 0) {
+         cuda_exception::build("fillRandomMultiNomial: Cannot deallocate device memory for random generator", err);
+     }
+     rng.rewindH(output.lengthOf() * numOfClassX);
+ }
 
 }
 }

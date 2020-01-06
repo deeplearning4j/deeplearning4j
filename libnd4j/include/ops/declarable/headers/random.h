@@ -49,6 +49,22 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_randomuniform)
         DECLARE_CUSTOM_OP(randomuniform, 1, 1, false, 0, 0);
         #endif
+        /*
+         * multinomial (categorical) random generator draws samples from a multinomial distribution
+         *
+         * Input array:
+         *    0 - 2D ndarray with unnormalized log-probabilities with shape [batch_size (N), num_classes (K)]
+         *    1 - array with one int value of samples number, number of independent samples to draw for each experiment 1,N.
+         * Int arguments:
+         *    0 - optional argument, corresponds to dimension with batch_size
+         *    1 - optional argument, integer type to use for the output. Default int64.
+         *
+         * Output array:
+         *    0 - 2D ndarray with the drawn samples of shape [batch_size, num_samples]
+         */
+        #if NOT_EXCLUDED(OP_random_multinomial)
+        DECLARE_CUSTOM_OP(random_multinomial, 2, 1, false, 0, 0);
+        #endif
 
         #if NOT_EXCLUDED(OP_random_normal)
         DECLARE_CUSTOM_OP(random_normal, 1, 1, true, 2, 0);
