@@ -850,7 +850,7 @@ TEST_F(ParityOpsTests, scatterMax_test1) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10, 2, 3, 4});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -867,7 +867,7 @@ TEST_F(ParityOpsTests, scatterMax_test2) {
     auto exp = NDArrayFactory::create<float>('c', {1, 4}, {10, 2, 30, 4});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&vec, &idc, &updates}, {}, {});
+    auto result = op.execute({&vec, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -884,7 +884,7 @@ TEST_F(ParityOpsTests, scatterMax_test3) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {10, 2, 30, 4, 5, 6, 7, 8});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -901,7 +901,7 @@ TEST_F(ParityOpsTests, scatterMax_test4) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 10, 10, 10, 5, 6, 7, 8});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {true});
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {true}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -918,7 +918,7 @@ TEST_F(ParityOpsTests, scatterMax_test5) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 3}, {10, 2, 10,   2, 10, 2,   2, 10, 2,   10, 2, 10});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -935,7 +935,7 @@ TEST_F(ParityOpsTests, scatterMax_test6) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {2, 1, 2, 1, 1, 2, 1, 2});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -953,7 +953,7 @@ TEST_F(ParityOpsTests, scatterMin_test1) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-1, 1, 3, 4});
 
     nd4j::ops::scatter_min op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -970,7 +970,7 @@ TEST_F(ParityOpsTests, scatterMin_test2) {
     auto exp = NDArrayFactory::create<float>('c', {1, 4}, {1, 1, 3, 1});
 
     nd4j::ops::scatter_min op;
-    auto result = op.execute({&vec, &idc, &updates}, {}, {});
+    auto result = op.execute({&vec, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -987,7 +987,7 @@ TEST_F(ParityOpsTests, scatterMin_test3) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 1, 3, 2, 5, 6, 7, 8});
 
     nd4j::ops::scatter_min op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
