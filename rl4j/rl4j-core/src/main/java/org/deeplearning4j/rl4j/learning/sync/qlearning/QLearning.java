@@ -22,7 +22,6 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.EpochStepCounter;
-import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
@@ -34,8 +33,8 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager.StatEntry;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -104,15 +103,16 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     protected abstract QLStepReturn<Observation> trainStep(Observation obs);
 
-    @Getter @Setter
+    @Getter
     private int currentEpochStep = 0;
 
     protected StatEntry trainEpoch() {
+        resetNetworks();
+
         InitMdp<Observation> initMdp = refacInitMdp();
         Observation obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();
-        currentEpochStep = initMdp.getSteps();
 
         Double startQ = Double.NaN;
         double meanQ = 0;
@@ -139,7 +139,6 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
             reward += stepR.getStepReply().getReward();
             obs = stepR.getStepReply().getObservation();
             incrementStep();
-            ++currentEpochStep;
         }
 
         meanQ /= (numQ + 0.001); //avoid div zero
@@ -149,39 +148,38 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
                         getEgPolicy().getEpsilon(), startQ, meanQ);
 
         return statEntry;
+    }
 
+    @Override
+    public void incrementStep() {
+        super.incrementStep();
+        ++currentEpochStep;
+    }
+
+    protected void resetNetworks() {
+        getQNetwork().reset();
+        getTargetQNetwork().reset();
     }
 
     private InitMdp<Observation> refacInitMdp() {
-        getQNetwork().reset();
-        getTargetQNetwork().reset();
+        currentEpochStep = 0;
 
-        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
-        IHistoryProcessor hp = getHistoryProcessor();
-
-        Observation observation = mdp.reset();
-
-        int step = 0;
         double reward = 0;
 
-        boolean isHistoryProcessor = hp != null;
+        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
+        Observation observation = mdp.reset();
 
-        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
-        int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
-
-        while (step < requiredFrame && !mdp.isDone()) {
-
-            A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
-
+        A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
+        while (observation.isSkipped() && !mdp.isDone()) {
             StepReply<Observation> stepReply = mdp.step(action);
+
             reward += stepReply.getReward();
             observation = stepReply.getObservation();
 
-            step++;
-
+            incrementStep();
         }
 
-        return new InitMdp(step, observation, reward);
+        return new InitMdp(0, observation, reward);
 
     }
 

@@ -88,7 +88,7 @@ public class AsyncThreadTest {
 
         // Assert
         assertEquals(numberOfEpochs, context.listener.statEntries.size());
-        int[] expectedStepCounter = new int[] { 2, 4, 6, 8, 10 };
+        int[] expectedStepCounter = new int[] { 10, 20, 30, 40, 50 };
         double expectedReward = (1.0 + 2.0 + 3.0 + 4.0 + 5.0 + 6.0 + 7.0 + 8.0) // reward from init
             + 1.0; // Reward from trainSubEpoch()
         for(int i = 0; i < numberOfEpochs; ++i) {
@@ -196,7 +196,9 @@ public class AsyncThreadTest {
         protected SubEpochReturn trainSubEpoch(Observation obs, int nstep) {
             asyncGlobal.increaseCurrentLoop();
             trainSubEpochParams.add(new TrainSubEpochParams(obs, nstep));
-            setStepCounter(getStepCounter() + nstep);
+            for(int i = 0; i < nstep; ++i) {
+                incrementStep();
+            }
             return new SubEpochReturn(nstep, null, 1.0, 1.0);
         }
 

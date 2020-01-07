@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -53,15 +52,6 @@ public abstract class Learning<O, A, AS extends ActionSpace<A>, NN extends Neura
         return Nd4j.argMax(vector, Integer.MAX_VALUE).getInt(0);
     }
 
-    public static <O, A, AS extends ActionSpace<A>> INDArray getInput(MDP<O, A, AS> mdp, O obs) {
-        INDArray arr = Nd4j.create(((Encodable)obs).toArray());
-        int[] shape = mdp.getObservationSpace().getShape();
-        if (shape.length == 1)
-            return arr.reshape(new long[] {1, arr.length()});
-        else
-            return arr.reshape(shape);
-    }
-
     public static int[] makeShape(int size, int[] shape) {
         int[] nshape = new int[shape.length + 1];
         nshape[0] = size;
@@ -82,12 +72,12 @@ public abstract class Learning<O, A, AS extends ActionSpace<A>, NN extends Neura
 
     public abstract NN getNeuralNet();
 
-    public int incrementStep() {
-        return stepCounter++;
+    public void incrementStep() {
+        stepCounter++;
     }
 
-    public int incrementEpoch() {
-        return epochCounter++;
+    public void incrementEpoch() {
+        epochCounter++;
     }
 
     public void setHistoryProcessor(HistoryProcessor.Configuration conf) {

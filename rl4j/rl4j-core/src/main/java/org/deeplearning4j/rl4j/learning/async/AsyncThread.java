@@ -159,7 +159,6 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
         SubEpochReturn subEpochReturn = trainSubEpoch(context.obs, maxSteps);
 
         context.obs = subEpochReturn.getLastObs();
-        currentEpochStep += subEpochReturn.getSteps();
         context.rewards += subEpochReturn.getReward();
         context.score = subEpochReturn.getScore();
     }
@@ -170,7 +169,6 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
 
         context.obs = initMdp.getLastObs();
         context.rewards = initMdp.getReward();
-        currentEpochStep = initMdp.getSteps();
 
         isEpochStarted = true;
         preEpoch();
@@ -206,32 +204,24 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
     protected abstract SubEpochReturn trainSubEpoch(Observation obs, int nstep);
 
     private Learning.InitMdp<Observation> refacInitMdp() {
-        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
-        IHistoryProcessor hp = getHistoryProcessor();
+        currentEpochStep = 0;
 
-        Observation observation = mdp.reset();
-
-        int step = 0;
         double reward = 0;
 
-        boolean isHistoryProcessor = hp != null;
+        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
+        Observation observation = mdp.reset();
 
-        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
-        int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
-
-        while (step < requiredFrame && !mdp.isDone()) {
-
-            A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
-
+        A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
+        while (observation.isSkipped() && !mdp.isDone()) {
             StepReply<Observation> stepReply = mdp.step(action);
+
             reward += stepReply.getReward();
             observation = stepReply.getObservation();
 
-            step++;
-
+            incrementStep();
         }
 
-        return new Learning.InitMdp(step, observation, reward);
+        return new Learning.InitMdp(0, observation, reward);
 
     }
 
