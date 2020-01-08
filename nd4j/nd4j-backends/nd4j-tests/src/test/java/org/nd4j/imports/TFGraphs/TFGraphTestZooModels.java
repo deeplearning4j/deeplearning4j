@@ -69,13 +69,9 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             // Missing Multinormal op, see https://github.com/eclipse/deeplearning4j/issues/7913
             "gpt-2_117M",
 
-            //2019/12/24 - https://github.com/eclipse/deeplearning4j/issues/8572
+            //AB 2020/01/08, all 3 - https://github.com/eclipse/deeplearning4j/issues/8603
             "ssd_mobilenet_v1_0.75_depth_300x300_coco14_sync_2018_07_03",
-
-            //2019/12/24 - https://github.com/eclipse/deeplearning4j/issues/8572
             "ssd_mobilenet_v1_coco_2018_01_28",
-
-            //2019/12/24 - https://github.com/eclipse/deeplearning4j/issues/8572
             "faster_rcnn_resnet101_coco_2018_01_28",
 
             //2019/06/24 - JVM crash on linux-x86_64-cpu-avx2 and -avx512 CI machines only - runs fine elsewhere
