@@ -300,7 +300,7 @@
         <mkl.version>2019.5</mkl.version>
         <opencv.version>4.2.0</opencv.version>
         <ffmpeg.version>4.2.2</ffmpeg.version>
-        <leptonica.version>1.78.0</leptonica.version>
+        <leptonica.version>1.79.0</leptonica.version>
         <hdf5.version>1.10.6</hdf5.version>
         <ale.version>0.6.1</ale.version>
         <gym.version>0.15.4</gym.version>
