@@ -3431,6 +3431,35 @@ TEST_F(DeclarableOpsTests10, batchnorm_test6) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, batchnorm_test7) {
+
+    NDArray input1('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
+    NDArray input2('c', {3,15,15,3}, nd4j::DataType::FLOAT32);
+    input2.permutei({0,3,1,2});
+
+    NDArray mean    ('c', {3}, {0, 0, 0}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {3}, {1, 1, 1}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {3}, {1, 1, 1}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {3}, {0, 0, 0}, nd4j::DataType::FLOAT32);
+
+    NDArray out1('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
+    NDArray out2('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
+
+    input1.linspace(-1012, 1);
+    input2.assign(input1);
+
+    nd4j::ops::batchnorm op;
+
+    auto res1 = op.execute({&input1, &mean, &variance, &gamma, &beta}, {&out1}, {1e-5}, {1,1,1}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, res1);
+
+    auto res2 = op.execute({&input2, &mean, &variance, &gamma, &beta}, {&out2}, {1e-5}, {1,1,1}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, res2);
+
+    ASSERT_TRUE(out1.equalsTo(out2));
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, bool_broadcast_test_1) {
 

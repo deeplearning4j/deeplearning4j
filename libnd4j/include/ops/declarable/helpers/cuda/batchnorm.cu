@@ -31,66 +31,66 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
-__global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
-									const void* vMean, const Nd4jLong* meanShapeInfo,
-									const void* vVariance, const Nd4jLong* varianceShapeInfo,
-									const void* vGamma, const Nd4jLong* gammaShapeInfo,
-									const void* vBeta, const Nd4jLong* betaShapeInfo,
-										  void* vz, const Nd4jLong* zShapeInfo,
-									const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets,
-									const Nd4jLong* zTadShapeInfo, const Nd4jLong* zTadOffsets,
-									const T epsilon) {
+// template<typename T>
+// __global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
+// 									const void* vMean, const Nd4jLong* meanShapeInfo,
+// 									const void* vVariance, const Nd4jLong* varianceShapeInfo,
+// 									const void* vGamma, const Nd4jLong* gammaShapeInfo,
+// 									const void* vBeta, const Nd4jLong* betaShapeInfo,
+// 										  void* vz, const Nd4jLong* zShapeInfo,
+// 									const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets,
+// 									const Nd4jLong* zTadShapeInfo, const Nd4jLong* zTadOffsets,
+// 									const T epsilon) {
 
-	const auto x    	= reinterpret_cast<const T*>(vx);
-          auto z        = reinterpret_cast<T*>(vz);
-	const auto mean 	= reinterpret_cast<const T*>(vMean);
-	const auto variance = reinterpret_cast<const T*>(vVariance);
-	const auto gamma    = reinterpret_cast<const T*>(vGamma);
-	const auto beta     = reinterpret_cast<const T*>(vBeta);
+// 	const auto x    	= reinterpret_cast<const T*>(vx);
+//           auto z        = reinterpret_cast<T*>(vz);
+// 	const auto mean 	= reinterpret_cast<const T*>(vMean);
+// 	const auto variance = reinterpret_cast<const T*>(vVariance);
+// 	const auto gamma    = reinterpret_cast<const T*>(vGamma);
+// 	const auto beta     = reinterpret_cast<const T*>(vBeta);
 
-    // maxRank = xRank = zRank, minRank = meanRank = varianceRank = gammaRank = betaRank
-    __shared__ Nd4jLong minLen, tadLen, totalThreads;
+//     // maxRank = xRank = zRank, minRank = meanRank = varianceRank = gammaRank = betaRank
+//     __shared__ Nd4jLong minLen, tadLen, totalThreads;
 
-    if (threadIdx.x == 0) {
-        totalThreads = gridDim.x * blockDim.x;
+//     if (threadIdx.x == 0) {
+//         totalThreads = gridDim.x * blockDim.x;
 
-        minLen = shape::length(meanShapeInfo);
-        tadLen = shape::length(xShapeInfo) / minLen;
-    }
-    __syncthreads();
+//         minLen = shape::length(meanShapeInfo);
+//         tadLen = shape::length(xShapeInfo) / minLen;
+//     }
+//     __syncthreads();
 
-    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+//     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    for (uint i = tid; i < minLen; i += totalThreads) {
+//     for (uint i = tid; i < minLen; i += totalThreads) {
 
-		const auto meanOffset     = shape::getIndexOffset(i, meanShapeInfo);
-    	const auto varianceOffset = shape::getIndexOffset(i, varianceShapeInfo);
+// 		const auto meanOffset     = shape::getIndexOffset(i, meanShapeInfo);
+//     	const auto varianceOffset = shape::getIndexOffset(i, varianceShapeInfo);
 
-    	T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
+//     	T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
 
-    	if(gamma != nullptr)
-    		sigmaInvGam *= gamma[shape::getIndexOffset(i, gammaShapeInfo)];
+//     	if(gamma != nullptr)
+//     		sigmaInvGam *= gamma[shape::getIndexOffset(i, gammaShapeInfo)];
 
-		auto betaOffset = 0;
-    	if(beta != nullptr)
-    		betaOffset = shape::getIndexOffset(i, betaShapeInfo);
+// 		auto betaOffset = 0;
+//     	if(beta != nullptr)
+//     		betaOffset = shape::getIndexOffset(i, betaShapeInfo);
 
-    	const auto xTad = x + xTadOffsets[i];
-    		  auto zTad = z + zTadOffsets[i];
+//     	const auto xTad = x + xTadOffsets[i];
+//     		  auto zTad = z + zTadOffsets[i];
 
-    	for (uint j = 0; j < tadLen; ++j) {
+//     	for (uint j = 0; j < tadLen; ++j) {
 
-    		const auto xTadOffset = shape::getIndexOffset(j, xTadShapeInfo);
-    		const auto zTadOffset = shape::getIndexOffset(j, zTadShapeInfo);
+//     		const auto xTadOffset = shape::getIndexOffset(j, xTadShapeInfo);
+//     		const auto zTadOffset = shape::getIndexOffset(j, zTadShapeInfo);
 
-    		zTad[zTadOffset] = (xTad[xTadOffset] - mean[meanOffset]) * sigmaInvGam;
+//     		zTad[zTadOffset] = (xTad[xTadOffset] - mean[meanOffset]) * sigmaInvGam;
 
-    		if(beta != nullptr)
-				zTad[zTadOffset] += beta[betaOffset];
-    	}
-    }
-}
+//     		if(beta != nullptr)
+// 				zTad[zTadOffset] += beta[betaOffset];
+//     	}
+//     }
+// }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -110,13 +110,12 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
     const auto gamma    = reinterpret_cast<const T*>(vGamma);
     const auto beta     = reinterpret_cast<const T*>(vBeta);
 
-    __shared__ int xRank, minRank;       // xRank == zRank. minRank = meanRank = varianceRank = gammaRank = betaRank
-    __shared__ Nd4jLong xLen, totalThreads, *sharedMem; // xLen = zLen
+    __shared__ int xRank, minRank;          // xRank == zRank, minRank = meanRank = varianceRank = gammaRank = betaRank
+    __shared__ Nd4jLong xLen, totalThreads; // xLen = zLen
 
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sharedMem    = reinterpret_cast<Nd4jLong*>(shmem);
+
         totalThreads = gridDim.x * blockDim.x;
 
         xLen    = shape::length(xShapeInfo);
@@ -125,7 +124,8 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
     }
     __syncthreads();
 
-    auto coords = sharedMem + threadIdx.x * xRank;
+    Nd4jLong coords[MAX_RANK];
+
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (uint i = tid; i < xLen; i += totalThreads) {
@@ -166,24 +166,24 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
 }
 
 ///////////////////////////////////////////////////////////////////
-template<typename T>
-__host__ static void batchnormCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
-											const void* vx, const Nd4jLong* xShapeInfo,
-                                           	const void* vMean, const Nd4jLong* meanShapeInfo,
-											const void* vVariance, const Nd4jLong* varianceShapeInfo,
-											const void* vGamma, const Nd4jLong* gammaShapeInfo,
-											const void* vBeta, const Nd4jLong* betaShapeInfo,
-												  void* vz, const Nd4jLong* zShapeInfo,
-											const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets,
-											const Nd4jLong* zTadShapeInfo, const Nd4jLong* zTadOffsets,
-											const double epsilon) {
+// template<typename T>
+// __host__ static void batchnormCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
+// 											const void* vx, const Nd4jLong* xShapeInfo,
+//                                            	const void* vMean, const Nd4jLong* meanShapeInfo,
+// 											const void* vVariance, const Nd4jLong* varianceShapeInfo,
+// 											const void* vGamma, const Nd4jLong* gammaShapeInfo,
+// 											const void* vBeta, const Nd4jLong* betaShapeInfo,
+// 												  void* vz, const Nd4jLong* zShapeInfo,
+// 											const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets,
+// 											const Nd4jLong* zTadShapeInfo, const Nd4jLong* zTadOffsets,
+// 											const double epsilon) {
 
-    batchnormCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vMean, meanShapeInfo, vVariance, varianceShapeInfo, vGamma, gammaShapeInfo, vBeta, betaShapeInfo, vz, zShapeInfo, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, static_cast<T>(epsilon));
-}
+//     batchnormCuda<T><<<blocksPerGrid, threadsPerBlock, 1024, *stream>>>(vx, xShapeInfo, vMean, meanShapeInfo, vVariance, varianceShapeInfo, vGamma, gammaShapeInfo, vBeta, betaShapeInfo, vz, zShapeInfo, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, static_cast<T>(epsilon));
+// }
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__host__ static void batchnormCudaLauncher2(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+__host__ static void batchnormCudaLauncher2(const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream,
                                             const void* vx, const Nd4jLong* xShapeInfo,
                                             const void* vMean, const Nd4jLong* meanShapeInfo,
                                             const void* vVariance, const Nd4jLong* varianceShapeInfo,
@@ -193,42 +193,41 @@ __host__ static void batchnormCudaLauncher2(const int blocksPerGrid, const int t
                                             const int numDims, const int* dims,
                                             const double epsilon) {
 
-    batchnormCuda2<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vMean, meanShapeInfo, vVariance, varianceShapeInfo, vGamma, gammaShapeInfo, vBeta, betaShapeInfo, vz, zShapeInfo, numDims, dims, static_cast<T>(epsilon));
+    batchnormCuda2<T><<<blocksPerGrid, threadsPerBlock, 512, *stream>>>(vx, xShapeInfo, vMean, meanShapeInfo, vVariance, varianceShapeInfo, vGamma, gammaShapeInfo, vBeta, betaShapeInfo, vz, zShapeInfo, numDims, dims, static_cast<T>(epsilon));
 }
 
 //////////////////////////////////////////////////////////////////////////
 void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
-	std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
+	// std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 
-	auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimsToExclude);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimsToExclude);
+	// auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimsToExclude);
+ //    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimsToExclude);
+
+ //    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+ //    const int blocksPerGrid = (mean->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+
+ //    PointersManager manager(input->getContext(), "batchnorm");
+
+ //    NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
+ //    BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher, (blocksPerGrid, threadsPerBlock, input->getContext()->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), mean->getSpecialBuffer(), mean->getSpecialShapeInfo(), variance->getSpecialBuffer(), variance->getSpecialShapeInfo(), gamma ? gamma->getSpecialBuffer() : nullptr, gamma ? gamma->getSpecialShapeInfo() : nullptr, beta ? beta->getSpecialBuffer() : nullptr, beta ? beta->getSpecialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets(), epsilon), FLOAT_TYPES);
+ //    NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
+
+ //    manager.synchronize();
+
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (mean->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int blocksPerGrid = (input->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
     PointersManager manager(input->getContext(), "batchnorm");
 
+    const int* dims = reinterpret_cast<int*>(manager.replicatePointer(axes.data(), axes.size() * sizeof(int)));
+
     NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
-    BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher, (blocksPerGrid, threadsPerBlock, input->getContext()->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), mean->getSpecialBuffer(), mean->getSpecialShapeInfo(), variance->getSpecialBuffer(), variance->getSpecialShapeInfo(), gamma ? gamma->getSpecialBuffer() : nullptr, gamma ? gamma->getSpecialShapeInfo() : nullptr, beta ? beta->getSpecialBuffer() : nullptr, beta ? beta->getSpecialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets(), epsilon), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher2, (blocksPerGrid, threadsPerBlock, input->getContext()->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), mean->getSpecialBuffer(), mean->getSpecialShapeInfo(), variance->getSpecialBuffer(), variance->getSpecialShapeInfo(), gamma ? gamma->getSpecialBuffer() : nullptr, gamma ? gamma->getSpecialShapeInfo() : nullptr, beta ? beta->getSpecialBuffer() : nullptr, beta ? beta->getSpecialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), axes.size(), dims, epsilon), FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
 
     manager.synchronize();
-
-
-    // const int threadsPerBlock = MAX_NUM_THREADS / 4;
-    // const int blocksPerGrid = (input->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    // const int sharedMem = sizeof(Nd4jLong) * threadsPerBlock * input->rankOf() + 128;
-
-    // PointersManager manager(input->getContext(), "batchnorm");
-
-    // const int* dims = reinterpret_cast<int*>(manager.replicatePointer(axes.data(), axes.size() * sizeof(int)));
-
-    // NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
-    // BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher2, (blocksPerGrid, threadsPerBlock, sharedMem, input->getContext()->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), mean->getSpecialBuffer(), mean->getSpecialShapeInfo(), variance->getSpecialBuffer(), variance->getSpecialShapeInfo(), gamma ? gamma->getSpecialBuffer() : nullptr, gamma ? gamma->getSpecialShapeInfo() : nullptr, beta ? beta->getSpecialBuffer() : nullptr, beta ? beta->getSpecialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), axes.size(), dims, epsilon), FLOAT_TYPES);
-    // NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
-
-    // manager.synchronize();
 }
 
 

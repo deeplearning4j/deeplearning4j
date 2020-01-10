@@ -422,13 +422,50 @@ TEST_F(PlaygroundTests, my) {
     delete variableSpace;
 }
 
-*/
+
+#include<ops/declarable/helpers/batchnorm.h>
 
 TEST_F(PlaygroundTests, my) {
 
-    NDArray a('c',{2,3,4}, nd4j::DataType::DOUBLE);
-    a({0,0, 0,1, 0,1}).printShapeInfo();
-    a({0,1, 0,0, 0,1}).printShapeInfo();
-    a({0,0, 0,1, 0,1}).printShapeInfo();
+    const int N = 10000;
+    const Nd4jLong dim0(128), dim1(128), dim2(128);
+
+    NDArray input('c', {dim0,dim1,dim2}, nd4j::DataType::DOUBLE);
+    NDArray mean('c', {dim1}, nd4j::DataType::DOUBLE);
+    NDArray variance('c', {dim1}, nd4j::DataType::DOUBLE);
+    NDArray gamma('c', {dim1}, nd4j::DataType::DOUBLE);
+    NDArray beta ('c', {dim1}, nd4j::DataType::DOUBLE);
+
+    NDArray output('c', {dim0,dim1,dim2}, nd4j::DataType::DOUBLE);
+
+    input.linspace(-100, 0.1);
+    mean.linspace(-50, 0.15);
+    variance.linspace(-5, 0.2);
+    gamma = 1.5;
+    beta = -2.5;
+
+    // warm up
+    ops::helpers::batchnorm(&input, &mean, &variance, &gamma, &beta, &output, {1}, 1e-5);
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int i = 0; i < N; ++i)
+        ops::helpers::batchnorm(&input, &mean, &variance, &gamma, &beta, &output, {1}, 1e-5);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/N).count();
+
+    printf("time: %li \n", time);
 
 }
+
+
+*/
+
+
+
+
+
+
+
+
+
