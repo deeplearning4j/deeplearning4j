@@ -77,6 +77,9 @@ namespace nd4j{
             DECLARE_PLATFORM(deconv2d_bp);
 
             DECLARE_PLATFORM(deconv3d_bp);
+
+            DECLARE_PLATFORM(depthwise_conv2d);
+            DECLARE_PLATFORM(depthwise_conv2d_bp);
         }
     }
 

@@ -591,21 +591,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests15, Test_depthwise_bp_1) {
-    auto in = NDArrayFactory::create<float>('c', {4, 8, 64, 64});
-    auto w = NDArrayFactory::create<float>('c', {2, 2, 8, 2});
-    auto b = NDArrayFactory::create<float>('c', {1, 16});
-    auto grad = NDArrayFactory::create<float>('c', {4, 16, 64, 64});
-
-    auto gradI = in.like();
-    auto gradW = w.like();
-    auto gradB = b.like();
-
-    nd4j:ops::depthwise_conv2d_bp op;
-    auto status = op.execute({&in, &w, &b, &grad}, {&gradI, &gradW, &gradB}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1, 0}, {});
-    ASSERT_EQ(Status::OK(), status);
-}
-
 TEST_F(DeclarableOpsTests15, test_matmul_bp_1) {
     auto a = NDArrayFactory::create<double>('c', {1, 3});
     auto b = NDArrayFactory::create<double>('c', {1, 4});

@@ -34,13 +34,13 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////////
 static void deconv2dMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output,
                             const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
-                            const int isSameMode) {
+                            const int paddingMode) {
 
-    // input [bS, iH, iW, iC] nchw, mkl doesn't support format nhwc
+    // input [bS, iC, iH, iW] nchw, mkl doesn't support format nhwc
     // weights [oC, iC, kH, kW] always, mkl doesn't support weights format [kH, kW, oC, iC]
     // bias [oC], may be nullptr
 
-    // output [bS, oH, oW, oC] nchw, mkl doesn't support format nhwc
+    // output [bS, oC, oH, oW] nchw, mkl doesn't support format nhwc
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
@@ -179,12 +179,12 @@ static void deconv2dMKLDNN(const NDArray* input, const NDArray* weights, const N
 //////////////////////////////////////////////////////////////////////////
 static void deconv2dBackPropMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB,
                                     const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
-                                    const int isSameMode) {
+                                    const int paddingMode) {
 
-    // input and gradI [bS, iH, iW, iC], mkl doesn't support ndhwc format
+    // input and gradI [bS, iC, iH, iW], mkl doesn't support ndhwc format
     // weights and gradW [oC, iC, kH, kW] always, mkl doesn't support weights format [kH, kW, oC, iC]
     // gradB [oC], may be nullptr
-    // gradO [bS, oH, oW, oC]
+    // gradO [bS, oC, oH, oW]
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
@@ -368,19 +368,19 @@ PLATFORM_IMPL(deconv2d) {
     int pW = INT_ARG(5);                                                        // paddings width
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
-    int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
+    int paddingMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // INT_ARG(9): 0-NCHW,  1-NHWC
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
-    std::vector<Nd4jLong>  expectedWeightsShape = {kH, kW, oC, iC};
+    std::vector<Nd4jLong> expectedWeightsShape = {kH, kW, oC, iC};
     REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0, "CUSTOM DECONV2D_MKLDNN OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
     if (bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DECONV2D_MKLDNN OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    if(isSameMode){                       // SAME
+    if(paddingMode){                       // SAME
         //Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward pass
         ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
     }
@@ -394,7 +394,7 @@ PLATFORM_IMPL(deconv2d) {
         output = new NDArray(output->permute({0,3,1,2}));     // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
     }
 
-    deconv2dMKLDNN(input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode);
+    deconv2dMKLDNN(input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode);
 
     delete weights;
 
@@ -419,14 +419,14 @@ PLATFORM_CHECK(deconv2d) {
 
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
-    int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
+    int paddingMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
 
     const DataType xType = input->dataType();
     const DataType wType = weights->dataType();
     const DataType zType = output->dataType();
     const DataType bType = bias != nullptr ? bias->dataType() : zType;
 
-    return block.isUseMKLDNN() && (dH <= 1 && dW <= 1 && !isSameMode) &&
+    return block.isUseMKLDNN() && (dH <= 1 && dW <= 1 && !paddingMode) &&
           (
             (xType==DataType::FLOAT32 && wType==DataType::FLOAT32 && bType==DataType::FLOAT32 && zType==DataType::FLOAT32) ||
             ((xType==DataType::UINT8 || xType==DataType::INT8) && wType==DataType::INT8 && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32) && bType == zType)
@@ -459,7 +459,7 @@ PLATFORM_IMPL(deconv2d_bp) {
     int pW = INT_ARG(5);                                                        // paddings width
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
-    int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
+    int paddingMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
@@ -467,7 +467,7 @@ PLATFORM_IMPL(deconv2d_bp) {
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
     int trueoH, trueoW;          // true output height, width
-    ConvolutionUtils::calcOutSizeDeconv2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
+    ConvolutionUtils::calcOutSizeDeconv2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, paddingMode);
 
     std::vector<Nd4jLong> expectedGradOShape  = ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1});
     std::vector<Nd4jLong> expectedWeightsShape = {kH, kW, oC, iC};
@@ -476,7 +476,7 @@ PLATFORM_IMPL(deconv2d_bp) {
     if(bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DECONV2D_MKLDNN_BP OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    if(isSameMode){                       // SAME
+    if(paddingMode){                       // SAME
         //Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward pass
         ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
     }
@@ -492,7 +492,7 @@ PLATFORM_IMPL(deconv2d_bp) {
         gradO = new NDArray(gradO->permute({0,3,1,2}));    // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
     }
 
-    deconv2dBackPropMKLDNN(input, weights, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode);
+    deconv2dBackPropMKLDNN(input, weights, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode);
 
     delete weights;
     delete gradW;
@@ -518,7 +518,7 @@ PLATFORM_CHECK(deconv2d_bp) {
 
     int dH = INT_ARG(6);                                                        // dilations height
     int dW = INT_ARG(7);                                                        // dilations width
-    int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
+    int paddingMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
 
     const DataType xType = input->dataType();
     const DataType wType = weights->dataType();
@@ -528,7 +528,7 @@ PLATFORM_CHECK(deconv2d_bp) {
     const DataType gradWType = gradW->dataType();
     const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
 
-    return block.isUseMKLDNN() && (dH <= 1 && dW <= 1 && !isSameMode) && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+    return block.isUseMKLDNN() && (dH <= 1 && dW <= 1 && !paddingMode) && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
 }
 
 
