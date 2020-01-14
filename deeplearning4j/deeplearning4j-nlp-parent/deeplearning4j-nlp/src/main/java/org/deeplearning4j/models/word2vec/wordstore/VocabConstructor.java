@@ -413,14 +413,14 @@ public class VocabConstructor<T extends SequenceElement> {
 
         if (buildHuffmanTree) {
 
-            if (limit > 0) {
+            if (limit > cache.numWords()+1) {
                 // we want to sort labels before truncating them, so we'll keep most important words
                 val words = new ArrayList<T>(cache.vocabWords());
-                Collections.sort(words);
+                Collections.reverseOrder(words);
 
                 // now rolling through them
-                for (val element : words) {
-                    if (element.getIndex() > limit && !element.isSpecial() && !element.isLabel())
+                for (val element : words.subList(limit, words.size()) {
+                    if (!element.isSpecial() && !element.isLabel())
                         cache.removeElement(element.getLabel());
                 }
             }
