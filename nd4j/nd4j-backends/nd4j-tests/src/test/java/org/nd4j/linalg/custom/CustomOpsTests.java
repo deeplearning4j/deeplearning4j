@@ -1208,6 +1208,18 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testLgamma() {
+        INDArray x = Nd4j.createFromArray(new double[]{0.1, 0.5, 0.7, 1.5, 1.7, 2.0, 2.5, 2.7, 3.}).reshape(3,3);
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                2.2527127 ,  0.5723649 ,  0.26086727,
+                -0.12078223, -0.09580769,        0.,
+                0.28468287,  0.4348206 ,  0.6931472
+        }).reshape(3,3);
+        INDArray[] ret = Nd4j.exec(new Lgamma(x));
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
     public void testRandomCrop() {
         INDArray x = Nd4j.createFromArray(new double[]{1.8, 2.5,  4.,  9., 2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1. }).reshape(2,2,4);
         INDArray shape = Nd4j.createFromArray(new int[] {1,2,3});

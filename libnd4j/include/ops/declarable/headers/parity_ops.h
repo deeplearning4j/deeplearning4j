@@ -527,6 +527,20 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(polygamma, 2, 1, false, 0, 0);
         #endif
 
+       /**
+        * This op calculates lgamma function lgamma(x) = log(Gamma(x))
+        *
+        * Input arrays:
+        *    0: x - input matrix
+        *
+        * Output array:
+        *    0: log of Gamma(x)
+        *
+        */
+        #if NOT_EXCLUDED(OP_lgamma)
+        DECLARE_OP(lgamma, 1, 1, true);
+        #endif
+
         /**
         * This op calculates digamma function psi(x) = derivative of log(Gamma(x))
         *

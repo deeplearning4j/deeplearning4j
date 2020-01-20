@@ -580,6 +580,29 @@ TEST_F(DeclarableOpsTests10, IGamma_Test2) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, LGamma_Test1) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 3}, {0.1, 0.5, 0.7, 1.5, 1.7, 2.0, 2.5, 2.7, 3.});
+
+    auto exp = NDArrayFactory::create<double>('c', {3,3}, {
+            2.2527127 ,  0.5723649 ,  0.26086727,
+            -0.12078223, -0.09580769,        0.,
+             0.28468287,  0.4348206 ,  0.6931472
+    });
+
+    nd4j::ops::lgamma op;
+    auto result = op.execute({&x}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto z = result->at(0);
+//    z->printBuffer("OUtput");
+//    exp.printBuffer("EXpect");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, range_test10) {
 
     auto limit = NDArrayFactory::create<double>('c', {1, 3, 4});
