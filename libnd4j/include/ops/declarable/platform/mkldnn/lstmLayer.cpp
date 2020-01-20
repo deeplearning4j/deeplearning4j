@@ -365,7 +365,7 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(lstmLayer) {
+PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 
     const auto dataFormat    = INT_ARG(0);    // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL], for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
     const auto directionMode = INT_ARG(1);    // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3)
@@ -493,7 +493,7 @@ PLATFORM_IMPL(lstmLayer) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(lstmLayer) {
+PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     const auto hasBiases  = B_ARG(0);   // indicates whether biases array is provided
     const auto hasInitH   = B_ARG(2);   // indicates whether initial output is provided
     const auto hasInitC   = B_ARG(3);   // indicates whether initial cell state is provided

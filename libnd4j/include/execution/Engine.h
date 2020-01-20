@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -18,16 +18,14 @@
 // @author raver119@gmail.com
 //
 
-#ifndef SD_EXECUTOR_H
-#define SD_EXECUTOR_H
+#ifndef SD_ENGINE_H
+#define SD_ENGINE_H
 
-namespace nd4j {
-    class Executor {
-    public:
-        static void execute() {
-            //
-        }
+namespace samediff {
+    enum Engine {
+        ENGINE_CPU = 0,
+        ENGINE_CUDA = 1,
     };
 }
 
-#endif //SD_EXECUTOR_H
+#endif //SD_ENGINE_H

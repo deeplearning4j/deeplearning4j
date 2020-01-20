@@ -27,6 +27,11 @@
 #include <dll.h>
 #include <RandomGenerator.h>
 #include <ops/declarable/OpDescriptor.h>
+#include <execution/Engine.h>
+
+#ifndef __STANDALONE_BUILD__
+#include <config.h>
+#endif
 
 namespace nd4j {
     namespace graph {
@@ -53,6 +58,8 @@ namespace nd4j {
             nd4j::ops::OpDescriptor* _opDescriptor;
             bool _useMKLDNN = nd4j::Environment::getInstance()->isUseMKLDNN();
 
+            // target engine for execution
+            samediff::Engine _engine = DEFAULT_ENGINE;
         public:
             explicit ContextPrototype(nd4j::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
@@ -83,6 +90,8 @@ namespace nd4j {
             std::vector<int>* getIArguments();
             std::vector<bool>* getBArguments();
             std::vector<int>* getAxis();
+
+            samediff::Engine engine();
 
             size_t numT();
             size_t numI();

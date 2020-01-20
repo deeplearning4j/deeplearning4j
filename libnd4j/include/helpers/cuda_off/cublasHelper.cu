@@ -25,6 +25,13 @@
 #include <exceptions/cuda_exception.h>
 #include <helpers/logger.h>
 #include <execution/AffinityManager.h>
+#include "config.h"
+
+#ifdef HAVE_CUDNN
+
+#include <cudnn.h>
+
+#endif
 
 namespace nd4j {
     std::mutex CublasHelper::_mutex;
@@ -47,6 +54,18 @@ namespace nd4j {
         return cusolverH;
     }
 
+    static void* cudnn_() {
+#ifdef HAVE_CUDNN
+        auto cudnnH = new cudnnHandle_t();
+        auto status = cudnnCreate(cudnnH);
+        if (status != CUDNN_STATUS_SUCCESS)
+            throw cuda_exception::build("cuDNN handle creation failed !", status);
+
+        return cudnnH;
+#endif
+        return nullptr;
+    }
+
     static void destroyHandle_(void* handle) {
         auto ch = reinterpret_cast<cublasHandle_t *>(handle);
         auto status = cublasDestroy_v2(*ch);
@@ -62,11 +81,13 @@ namespace nd4j {
         auto currentDevice = AffinityManager::currentDeviceId();
         _cache.resize(numDevices);
         _solvers.resize(numDevices);
+        _cudnn.resize(numDevices);
         for (int e = 0; e < numDevices; e++) {
             AffinityManager::setCurrentNativeDevice(e);
 
             _cache[e] = handle_();
             _solvers[e] = solver_();
+            _cudnn[e] = cudnn_();
         }
 
         // don't forget to restore back original device
@@ -88,6 +109,14 @@ namespace nd4j {
         _mutex.unlock();
 
         return _INSTANCE;
+    }
+
+    void* CublasHelper::cudnn() {
+        auto deviceId = AffinityManager::currentDeviceId();
+        if (deviceId < 0 || deviceId > _cudnn.size())
+            throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+
+        return _cudnn[deviceId];
     }
 
     void* CublasHelper::handle() {

@@ -29,6 +29,8 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <platform_boilerplate.h>
 
+using namespace samediff;
+
 
 namespace nd4j{
     namespace ops {
@@ -36,50 +38,51 @@ namespace nd4j{
             /**
              * Here we actually declare our platform helpers
              */
-            DECLARE_PLATFORM(conv2d);
+            DECLARE_PLATFORM(conv2d, ENGINE_CPU);
 
-            DECLARE_PLATFORM(conv2d_bp);
+            DECLARE_PLATFORM(conv2d_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(avgpool2d);
+            DECLARE_PLATFORM(avgpool2d, ENGINE_CPU);
 
-            DECLARE_PLATFORM(avgpool2d_bp);
+            DECLARE_PLATFORM(avgpool2d_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(maxpool2d);
+            DECLARE_PLATFORM(maxpool2d, ENGINE_CPU);
 
-            DECLARE_PLATFORM(maxpool2d_bp);
+            DECLARE_PLATFORM(maxpool2d_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(conv3dnew);
+            DECLARE_PLATFORM(conv3dnew, ENGINE_CPU);
 
-            DECLARE_PLATFORM(conv3dnew_bp);
+            DECLARE_PLATFORM(conv3dnew_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(maxpool3dnew);
+            DECLARE_PLATFORM(maxpool3dnew, ENGINE_CPU);
 
-            DECLARE_PLATFORM(maxpool3dnew_bp);
+            DECLARE_PLATFORM(maxpool3dnew_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(avgpool3dnew);
+            DECLARE_PLATFORM(avgpool3dnew, ENGINE_CPU);
 
-            DECLARE_PLATFORM(avgpool3dnew_bp);
+            DECLARE_PLATFORM(avgpool3dnew_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(lrn);
+            DECLARE_PLATFORM(lrn, ENGINE_CPU);
 
-            DECLARE_PLATFORM(batchnorm);
+            DECLARE_PLATFORM(batchnorm, ENGINE_CPU);
 
-            DECLARE_PLATFORM(batchnorm_bp);
+            DECLARE_PLATFORM(batchnorm_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(lstmLayer);
+            DECLARE_PLATFORM(lstmLayer, ENGINE_CPU);
 
-            DECLARE_PLATFORM(deconv2d);
+            DECLARE_PLATFORM(deconv2d, ENGINE_CPU);
 
-            DECLARE_PLATFORM(deconv2d_tf);
+            DECLARE_PLATFORM(deconv2d_tf, ENGINE_CPU);
 
-            DECLARE_PLATFORM(deconv3d);
+            DECLARE_PLATFORM(deconv3d, ENGINE_CPU);
 
-            DECLARE_PLATFORM(deconv2d_bp);
+            DECLARE_PLATFORM(deconv2d_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(deconv3d_bp);
+            DECLARE_PLATFORM(deconv3d_bp, ENGINE_CPU);
 
-            DECLARE_PLATFORM(depthwise_conv2d);
-            DECLARE_PLATFORM(depthwise_conv2d_bp);
+            DECLARE_PLATFORM(depthwise_conv2d, ENGINE_CPU);
+            
+            DECLARE_PLATFORM(depthwise_conv2d_bp, ENGINE_CPU);
         }
     }
 

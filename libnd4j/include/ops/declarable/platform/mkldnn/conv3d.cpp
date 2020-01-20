@@ -34,7 +34,7 @@ namespace ops       {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(conv3dnew) {
+PLATFORM_IMPL(conv3dnew, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(
             0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, iC, oC] always
@@ -150,7 +150,7 @@ PLATFORM_IMPL(conv3dnew) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(conv3dnew) {
+PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
     // we don't want to use mkldnn if cpu doesn't support avx/avx2
     if (::optimalLevel() < 2)
         return false;
@@ -167,7 +167,7 @@ PLATFORM_CHECK(conv3dnew) {
 
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(conv3dnew_bp) {
+PLATFORM_IMPL(conv3dnew_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(
             0);                                                // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(
@@ -374,7 +374,7 @@ PLATFORM_IMPL(conv3dnew_bp) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(conv3dnew_bp) {
+PLATFORM_CHECK(conv3dnew_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(
             0);                                                // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(

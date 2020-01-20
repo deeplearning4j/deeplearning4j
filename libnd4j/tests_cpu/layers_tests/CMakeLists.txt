@@ -135,12 +135,18 @@ elseif(CUDA_BLAS)
 
 	add_executable(runtests ${TEST_SOURCES})
 
-    message("MSVC runtime for tests: ${MSVC_RT_LIB}")
+    if (WIN32)
+        message("MSVC runtime for tests: ${MSVC_RT_LIB}")
+    endif()
 
     # applies to windows only
     set_property(TARGET runtests PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
     set_property(TARGET gtest PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
     set_property(TARGET gtest_main PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
-	target_link_libraries(runtests ${LIBND4J_NAME}static ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} gtest gtest_main)
+    if (HAVE_CUDNN)
+        message("CUDNN library: ${CUDNN}")
+    endif()
+
+	target_link_libraries(runtests ${LIBND4J_NAME}static ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN} gtest gtest_main)
 endif()

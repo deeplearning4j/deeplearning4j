@@ -375,7 +375,7 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     *dLdI += xMinusMean;
 }
 
-PLATFORM_IMPL(batchnorm) {
+PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
 
     auto input    = INPUT_VARIABLE(0);  // 2D:nc, 4D:nchw, 5D:ncdhw
     auto mean     = INPUT_VARIABLE(1);  // [c]
@@ -455,7 +455,7 @@ PLATFORM_IMPL(batchnorm) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(batchnorm) {
+PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
     // we don't want to use mkldnn if cpu doesn't support avx/avx2
     // if (::optimalLevel() < 2)
     //     return false;
@@ -632,7 +632,7 @@ PLATFORM_CHECK(batchnorm) {
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(batchnorm_bp) {
+PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
 
     NDArray* input    = INPUT_VARIABLE(0);                  // 2D:nc, 4D:nchw, 5D:ncdhw
     NDArray* mean     = INPUT_VARIABLE(1);                  // [c]
@@ -735,7 +735,7 @@ PLATFORM_IMPL(batchnorm_bp) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(batchnorm_bp) {
+PLATFORM_CHECK(batchnorm_bp, ENGINE_CPU) {
     NDArray* input    = INPUT_VARIABLE(0);      // 2D:nc, 4D:nchw, 5D:ncdhw
     NDArray* mean     = INPUT_VARIABLE(1);      // [c]
     NDArray* variance = INPUT_VARIABLE(2);      // [c]

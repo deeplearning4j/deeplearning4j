@@ -27,6 +27,7 @@
 #include <graph/VariableSpace.h>
 #include <graph/ContextPrototype.h>
 #include <memory/Workspace.h>
+#include <execution/Engine.h>
 
 // CUDA-specific includes
 #ifdef __CUDACC__
@@ -102,11 +103,12 @@ namespace nd4j {
             // this method returns workspace for object allocations
             nd4j::memory::Workspace* oWorkspace();
 
-
             void setVariableSpace(VariableSpace* variableSpace);
 
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
+
+            void setTargetEngine(samediff::Engine engine);
 
             VariableSpace *getVariableSpace();
 

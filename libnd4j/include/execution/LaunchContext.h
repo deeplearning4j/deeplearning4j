@@ -27,6 +27,7 @@
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
 #include <cuda_device_runtime_api.h>
+#include "config.h"
 #endif
 
 // used for MKLDNN etc
@@ -81,6 +82,7 @@ class ND4J_EXPORT LaunchContext {
 		int* getAllocationPointer() const;
 		void* getCublasHandle() const;
 		void* getCusolverHandle() const;
+		void* getCuDnnHandle() const;
 		cudaStream_t* getCudaStream() const;
 		cudaStream_t* getCudaSpecialStream() const;
 

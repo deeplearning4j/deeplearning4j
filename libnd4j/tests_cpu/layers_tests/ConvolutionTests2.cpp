@@ -2416,7 +2416,7 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_9) {
     ASSERT_EQ(Status::OK(), results->status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
-    ASSERT_TRUE(expOutput.equalsTo(output));
+    ASSERT_TRUE(expOutput.equalsTo(output, 1e-4));
 
     delete results;
 }

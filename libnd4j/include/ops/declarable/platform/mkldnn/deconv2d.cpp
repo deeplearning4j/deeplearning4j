@@ -349,7 +349,7 @@ static void deconv2dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv2d) {
+PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, oC, iC] always
@@ -406,7 +406,7 @@ PLATFORM_IMPL(deconv2d) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(deconv2d) {
+PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
     // we don't want to use mkldnn if cpu doesn't support avx/avx2
     // if (::optimalLevel() < 2)
     //     return false;
@@ -435,7 +435,7 @@ PLATFORM_CHECK(deconv2d) {
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv2d_bp) {
+PLATFORM_IMPL(deconv2d_bp, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, oC, iC] always
@@ -506,7 +506,7 @@ PLATFORM_IMPL(deconv2d_bp) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(deconv2d_bp) {
+PLATFORM_CHECK(deconv2d_bp, ENGINE_CPU) {
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, oC, iC] always
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]

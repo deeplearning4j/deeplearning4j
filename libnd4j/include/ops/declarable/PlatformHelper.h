@@ -22,6 +22,7 @@
 #define SD_PLATFORMHELPER_H
 
 #include <ShapeUtils.h>
+#include <execution/Engine.h>
 #include <graph/Context.h>
 #include <string>
 #include <pointercast.h>
@@ -35,17 +36,22 @@ namespace  nd4j {
              */
             class ND4J_EXPORT PlatformHelper {
             protected:
+                // target engine for this impl
+                samediff::Engine _engine;
+
                 // name of the operation this helper is built for
                 std::string _name;
 
                 // hash of the operation this helper is built for
                 Nd4jLong _hash;
             public:
-                PlatformHelper(const char *name);
+                PlatformHelper(const char *name, samediff::Engine engine);
 
                 ~PlatformHelper() = default;
 
                 std::string name();
+
+                samediff::Engine engine();
 
                 Nd4jLong hash();
 

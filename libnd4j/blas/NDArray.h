@@ -940,6 +940,7 @@ namespace nd4j {
         template <typename T>
         std::vector<T> getBufferAsVector();
         std::vector<Nd4jLong> getShapeAsVector() const;
+        std::vector<int> getShapeAsVectorInt() const;
         std::vector<Nd4jLong> getShapeInfoAsVector();
         std::vector<int64_t> getShapeInfoAsFlatVector();
         std::vector<int64_t> getShapeAsFlatVector();

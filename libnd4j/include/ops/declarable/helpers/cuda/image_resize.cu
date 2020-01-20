@@ -1121,8 +1121,12 @@ namespace helpers {
         I const* cropSizes = reinterpret_cast<I const*>(cropSize->getSpecialBuffer());
         T* outBuf = reinterpret_cast<T*>(crops->specialBuffer());
 
+        int threadsPerBlock = math::nd4j_max(imageHeight * imageWidth, cropHeight * cropWidth);
+        if(threadsPerBlock > MAX_NUM_THREADS/4)
+            threadsPerBlock = MAX_NUM_THREADS/4;
+
         NDArray::prepareSpecialUse({crops}, {images, boxes, indices, cropSize});
-        cropAndResizeKernel<T,Z,I><<<batchSize, math::nd4j_max(imageHeight * imageWidth, cropHeight * cropWidth), 512, *stream>>>(imagesBuf, images->getSpecialShapeInfo(), boxesBuf, boxes->getSpecialShapeInfo(), indexBuf, indices->getSpecialShapeInfo(),
+        cropAndResizeKernel<T,Z,I><<<batchSize, threadsPerBlock, 256, *stream>>>(imagesBuf, images->getSpecialShapeInfo(), boxesBuf, boxes->getSpecialShapeInfo(), indexBuf, indices->getSpecialShapeInfo(),
                 cropSizes, cropSize->getSpecialShapeInfo(), method, extrapolationVal, outBuf, crops->specialShapeInfo(), numBoxes, cropHeight, cropWidth, batchSize, imageHeight, imageWidth, depth);
         NDArray::registerSpecialUse({crops}, {images, boxes, indices, cropSize});
     }

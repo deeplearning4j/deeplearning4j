@@ -362,7 +362,7 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
 
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(depthwise_conv2d) {
+PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, mC] always
@@ -400,7 +400,7 @@ PLATFORM_IMPL(depthwise_conv2d) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(depthwise_conv2d) {
+PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
     // we don't want to use mkldnn if cpu doesn't support avx/avx2
     if (::optimalLevel() < 2)
         return false;
@@ -427,7 +427,7 @@ PLATFORM_CHECK(depthwise_conv2d) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(depthwise_conv2d_bp) {
+PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always
@@ -476,7 +476,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_CHECK(depthwise_conv2d_bp) {
+PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always

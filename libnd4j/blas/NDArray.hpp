@@ -445,6 +445,16 @@ std::vector<Nd4jLong> NDArray::getShapeAsVector() const {
 }
 
 ////////////////////////////////////////////////////////////////////////
+std::vector<int> NDArray::getShapeAsVectorInt() const {
+
+    std::vector<int> vector(this->rankOf());
+    for (int e = 0; e < this->rankOf(); e++)
+        vector[e] = static_cast<int>(this->sizeAt(e));
+
+    return vector;
+}
+
+////////////////////////////////////////////////////////////////////////
 std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
     int magicNumber = shape::shapeInfoLength(this->rankOf());
     std::vector<int64_t> vector(magicNumber);
@@ -625,7 +635,7 @@ void NDArray::assign(const NDArray& other, bool allowParallelism) {
         if (other.lengthOf() != lengthOf()) {
             auto shapeThis = ShapeUtils::shapeAsString(this);
             auto shapeThat = ShapeUtils::shapeAsString(&other);
-            nd4j_printf("Can't assign new value to the array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
+            nd4j_printf("Can't assign array: this shape %s; other shape: %s\n", shapeThis.c_str(), shapeThat.c_str());
             throw std::runtime_error("NDArray::assign: lengths of arrays are mismatched");
         }
 

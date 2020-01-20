@@ -28,11 +28,12 @@
 #include <ops/declarable/helpers/convolutions.h>
 
 using namespace dnnl;
+using namespace samediff;
 
 namespace nd4j {
     namespace ops {
         namespace platforms {
-            PLATFORM_IMPL(avgpool2d) {
+            PLATFORM_IMPL(avgpool2d, ENGINE_CPU) {
                 auto input = INPUT_VARIABLE(0);
 
                 REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead",
@@ -128,7 +129,7 @@ namespace nd4j {
                 return Status::OK();
             }
 
-            PLATFORM_CHECK(avgpool2d) {
+            PLATFORM_CHECK(avgpool2d, ENGINE_CPU) {
                 auto input = INPUT_VARIABLE(0);
                 auto output = OUTPUT_VARIABLE(0);
 

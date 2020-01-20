@@ -38,6 +38,19 @@ public:
     }
 };
 
+template <typename T>
+class TypedDeclarableOpsTests13 : public testing::Test {
+public:
+
+    TypedDeclarableOpsTests13() {
+        printf("\n");
+        fflush(stdout);
+    }
+};
+
+typedef ::testing::Types<double, float> TestingTypes;
+TYPED_TEST_CASE(TypedDeclarableOpsTests13, TestingTypes);
+
 TEST_F(DeclarableOpsTests13, test_pow_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2}, {2.f, 2.f, 2.f, 2.f});
     auto y = NDArrayFactory::create<int>('c', {2}, {3, 3});
@@ -1948,3 +1961,289 @@ TEST_F(DeclarableOpsTests13, lstmLayer_12) {
 }
 
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batchnorm_test1) {
+
+    NDArray input   ('c', {2,4}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5f, 0.7f, 0.9f,  1.1f},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10.f, 20.f, -10.f, -20.f},     nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {2,4}, {11.61218734f,  18.52390321f,  -8.67185076f, -21.28716864f, 10.93337162f,  19.14541765f, -9.26213931f, -20.71509369f}, nd4j::DataType::FLOAT32);
+
+    input.linspace(0.1, 0.1);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+    // output->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test2) {
+
+    auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
+    auto mean     = NDArrayFactory::create<TypeParam>('c', {4});
+    auto variance = NDArrayFactory::create<TypeParam>('c', {4});
+    auto gamma    = NDArrayFactory::create<TypeParam>('c', {4});
+    auto beta     = NDArrayFactory::create<TypeParam>('c', {4});
+
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-0.52733537f, -0.35763144f, -0.18792751f, -0.01822358f, 0.15148035f, 0.32118428f, 0.49088821f, 0.66059214f, 0.83029607f, 1.f, 1.16970393f, 1.33940786f,
+                                            1.50911179f, 1.67881572f, 1.84851965f, 2.01822358f, 2.18792751f, 2.35763144f, 2.52733537f, 2.6970393f, 2.86674323f, 3.03644717f, 3.2061511f, 3.37585503f});
+
+    input.linspace(0.1, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    beta.assign(1.);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+    // output->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test3) {
+
+    auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
+    auto mean     = NDArrayFactory::create<TypeParam>('c', {3}, {1.05f, 1.1f, 1.15f});
+    auto variance = NDArrayFactory::create<TypeParam>('c', {3}, {0.5f, 0.6f, 0.7f});
+    auto gamma    = NDArrayFactory::create<TypeParam>('c', {3}, {1.2f, 1.3f, 1.4f});
+    auto beta     = NDArrayFactory::create<TypeParam>('c', {3}, {0.1f, 0.2f, 0.3f});
+
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734f, -1.34248341f, -1.17277948f, -1.00307555f, -0.80696728f, -0.6391394f, -0.47131152f, -0.30348364f, -0.11832703f, 0.04900378f, 0.21633459f, 0.38366541f,
+                                            0.52425983f, 0.69396376f, 0.86366769f, 1.03337162f, 1.20696728f, 1.37479516f, 1.54262304f, 1.71045092f, 1.8896427f, 2.05697351f, 2.22430432f, 2.39163513f});
+
+    input.linspace(0.1, 0.1);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test4) {
+
+    auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
+    auto mean     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.05f, 1.1f, 1.15f, 1.2f, 1.25f, 1.3f, 1.35f, 1.4f});
+    auto variance = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.f, 1.1f, 1.2f});
+    auto gamma    = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f});
+    auto beta     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.66f, 0.7f, 0.8f});
+
+    auto expected = NDArrayFactory::create<TypeParam>('c', {2,3,4}, {-1.51218734f, -1.31045092f, -1.12231189f, -0.9416324f, -0.83337162f, -0.6391394f, -0.45298865f, -0.2708162f, -0.1545559f, 0.03217212f, 0.21633459f, 0.4f,
+                                            0.58432694f, 0.82999915f, 0.95743373f, 1.14688951f, 1.25894242f, 1.50999575f, 1.64392367f, 1.84066852f, 1.93355791f, 2.18999235f, 2.33041362f, 2.53444754f});
+
+    input.linspace(0.1, 0.1);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,0,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batchnorm_test5) {
+
+    NDArray input   ('c', {2,4,2,2}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5f, 0.7f, 0.9f,  1.1f},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10.f, 20.f, -10.f, -20.f},     nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {2,4,2,2}, { 11.612187f,  11.442483f,  11.272779f,  11.103076f,  18.990039f,  19.145418f,  19.300796f,  19.456175f,  -9.557284f,  -9.704856f,  -9.852428f, -10.f, -20.f,
+                                      -19.856981f, -19.713963f, -19.570944f,   8.896924f,   8.727221f,   8.557517f,   8.387813f,  21.476097f,  21.631475f,  21.786854f,  21.942233f, -11.918438f,
+                                       -12.06601f, -12.213582f, -12.361154f,   -17.7117f, -17.568681f, -17.425663f, -17.282644f}, nd4j::DataType::FLOAT32);
+    input.linspace(0.1, 0.1);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+    // output->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batchnorm_test6) {
+
+    NDArray input   ('c', {2,2,2,4}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05f, 1.15f, 1.2f, 1.3f}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5f, 0.7f, 0.9,  1.1f},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2f, 1.3f, -1.4f, 1.5f}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10.f, 20.f, -10.f, -20.f},     nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {2,2,2,4}, {11.612187f,  18.523903f,  -8.671851f, -21.287169f,  10.933372f,  19.145418f,  -9.262139f, -20.715094f,  10.254556f,  19.766932f,  -9.852428f, -20.143019f,   9.57574f,
+                                      20.388447f, -10.442716f, -19.570944f,   8.896924f,  21.009961f, -11.033005f, -18.998869f,   8.218109f,  21.631475f, -11.623294f, -18.426794f,   7.539293f,  22.25299f,
+                                     -12.213582f, -17.854719f,   6.860477f,  22.874504f, -12.803871f, -17.282644f}, nd4j::DataType::FLOAT32);
+    input.linspace(0.1, 0.1);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batchnorm_test7) {
+
+    NDArray input1('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
+    NDArray input2('c', {3,15,15,3}, nd4j::DataType::FLOAT32);
+    input2.permutei({0,3,1,2});
+
+    NDArray mean    ('c', {3}, {0, 0, 0}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {3}, {1, 1, 1}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {3}, {1, 1, 1}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {3}, {0, 0, 0}, nd4j::DataType::FLOAT32);
+
+    NDArray out1('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
+    NDArray out2('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
+
+    input1.linspace(-1012, 1);
+    input2.assign(input1);
+
+    nd4j::ops::batchnorm op;
+
+    auto res1 = op.execute({&input1, &mean, &variance, &gamma, &beta}, {&out1}, {1e-5}, {1,1,1}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, res1);
+
+    auto res2 = op.execute({&input2, &mean, &variance, &gamma, &beta}, {&out2}, {1e-5}, {1,1,1}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, res2);
+
+    ASSERT_TRUE(out1.equalsTo(out2));
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batchnorm_test8) {
+
+    NDArray input('c', {2,3,4,5}, nd4j::DataType::FLOAT32);
+
+    NDArray mean    ('c', {1,3,4,5}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {1,3,4,5}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {1,3,4,5}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {1,3,4,5}, nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {2,3,4,5}, {-105.019394, -103.322357, -101.625313, -99.928276, -98.231239, -96.534195, -94.837158, -93.140121, -91.443077, -89.746040, -88.049004, -86.351959, -84.654922,
+                        -82.957886, -81.260841, -79.563805, -77.866768, -76.169724, -74.472687, -72.775650, -71.078606, -69.381569, -67.684532, -65.987488, -64.290451, -62.593414,
+                        -60.896374, -59.199333, -57.502296, -55.805256, -54.108215, -52.411179, -50.714138, -49.017097, -47.320061, -45.623020, -43.925980, -42.228943, -40.531902,
+                        -38.834862, -37.137825, -35.440784, -33.743744, -32.046707, -30.349667, -28.652628, -26.955589, -25.258549, -23.561510, -21.864471, -20.167431, -18.470392,
+                        -16.773354, -15.076314, -13.379274, -11.682236, -9.985196, -8.288157, -6.591118, -4.894078, -3.197039, -1.500000, 0.197039, 1.894078, 3.591118, 5.288157,
+                        6.985196, 8.682236, 10.379274, 12.076314, 13.773354, 15.470392, 17.167431, 18.864471, 20.561510, 22.258549, 23.955589, 25.652628, 27.349667, 29.046707, 30.743744,
+                        32.440784, 34.137825, 35.834862, 37.531902, 39.228943, 40.925980, 42.623020, 44.320061, 46.017097, 47.714138, 49.411179, 51.108215, 52.805256, 54.502296, 56.199333,
+                        57.896374, 59.593414, 61.290451, 62.987488, 64.684532, 66.381569, 68.078606, 69.775650, 71.472687, 73.169724, 74.866768, 76.563805, 78.260841, 79.957886, 81.654922,
+                        83.351959, 85.049004, 86.746040, 88.443077, 90.140121, 91.837158, 93.534195, 95.231239, 96.928276}, nd4j::DataType::FLOAT32);
+
+    input.linspace(-60, 1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    beta.assign(-1.5);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1, 1,2,3});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batchnorm_test9) {
+
+    NDArray input('c', {2,3,3,3,3}, nd4j::DataType::FLOAT32);
+
+    NDArray mean    ('c', {1,3,3,3,3}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {1,3,3,3,3}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {1,3,3,3,3}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {1,3,3,3,3}, nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {2,3,3,3,3}, {-138.960175, -137.263138, -135.566101, -133.869064, -132.172028, -130.474976, -128.777954, -127.080902, -125.383865, -123.686829, -121.989784, -120.292747,
+                            -118.595711, -116.898666, -115.201630, -113.504593, -111.807549, -110.110512, -108.413475, -106.716431, -105.019394, -103.322357, -101.625313, -99.928276,
+                            -98.231239, -96.534195, -94.837158, -93.140121, -91.443077, -89.746040, -88.049004, -86.351959, -84.654922, -82.957886, -81.260841, -79.563805, -77.866768,
+                            -76.169724, -74.472687, -72.775650, -71.078606, -69.381569, -67.684532, -65.987488, -64.290451, -62.593414, -60.896374, -59.199333, -57.502296, -55.805256,
+                            -54.108215, -52.411179, -50.714138, -49.017097, -47.320061, -45.623020, -43.925980, -42.228943, -40.531902, -38.834862, -37.137825, -35.440784, -33.743744,
+                            -32.046707, -30.349667, -28.652628, -26.955589, -25.258549, -23.561510, -21.864471, -20.167431, -18.470392, -16.773354, -15.076314, -13.379274, -11.682236,
+                            -9.985196, -8.288157, -6.591118, -4.894078, -3.197039, -1.500000, 0.197039, 1.894078, 3.591118, 5.288157, 6.985196, 8.682236, 10.379274, 12.076314, 13.773354,
+                            15.470392, 17.167431, 18.864471, 20.561510, 22.258549, 23.955589, 25.652628, 27.349667, 29.046707, 30.743744, 32.440784, 34.137825, 35.834862, 37.531902, 39.228943,
+                            40.925980, 42.623020, 44.320061, 46.017097, 47.714138, 49.411179, 51.108215, 52.805256, 54.502296, 56.199333, 57.896374, 59.593414, 61.290451, 62.987488, 64.684532,
+                            66.381569, 68.078606, 69.775650, 71.472687, 73.169724, 74.866768, 76.563805, 78.260841, 79.957886, 81.654922, 83.351959, 85.049004, 86.746040, 88.443077, 90.140121,
+                            91.837158, 93.534195, 95.231239, 96.928276, 98.625313, 100.322357, 102.019394, 103.716431, 105.413475, 107.110512, 108.807549, 110.504593, 112.201630, 113.898666,
+                            115.595711, 117.292747, 118.989784, 120.686829, 122.383865, 124.080902, 125.777946, 127.474976, 129.172028, 130.869064, 132.566101, 134.263138}, nd4j::DataType::FLOAT32);
+
+    input.linspace(-80, 1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    beta.assign(-1.5);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1, 1,2,3,4});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+    // output->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShape(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}

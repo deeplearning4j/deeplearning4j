@@ -41,8 +41,10 @@ namespace nd4j {
             static inline void calcOutSizePool2D(int& oH, int& oW, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int iH, const int iW, const int paddingMode) {
 
                 if(paddingMode == 0) {             // valid
-                    oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-                    oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
+                    // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
+                    // oW = (iW - (kW + (kW-1)*(dW-1)) + 2*pW)/sW + 1;
+                    oH = (iH - ((kH - 1) * dH + 1) + 2 * pH) / sH + 1;
+                    oW = (iW - ((kW - 1) * dW + 1) + 2 * pW) / sW + 1;
                 }
                 else if (paddingMode == 1) {       // same
                     oH = (int) math::nd4j_ceil<double, double>(iH * 1. / sH);
@@ -57,9 +59,9 @@ namespace nd4j {
             static inline void calcOutSizePool3D(int& oD, int& oH, int& oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int iD, const int iH, const int iW, const int paddingMode) {
 
                 if(paddingMode == 0) {             // valid
-                    oD = (iD - (kD + (kD - 1) * (dD - 1)) + 2 * pD) / sD + 1;
-                    oH = (iH - (kH + (kH - 1) * (dH - 1)) + 2 * pH) / sH + 1;
-                    oW = (iW - (kW + (kW - 1) * (dW - 1)) + 2 * pW) / sW + 1;
+                    oD = (iD - ((kD - 1) * dD + 1) + 2 * pD) / sD + 1;
+                    oH = (iH - ((kH - 1) * dH + 1) + 2 * pH) / sH + 1;
+                    oW = (iW - ((kW - 1) * dW + 1) + 2 * pW) / sW + 1;
                 }
                 else if(paddingMode == 1) {        // same
                     oD = (int) nd4j::math::nd4j_ceil<double, double>(iD * 1. / sD);

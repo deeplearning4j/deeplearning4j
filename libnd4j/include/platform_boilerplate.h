@@ -21,25 +21,37 @@
 #ifndef SD_PLATFORM_BOILERPLATE_H
 #define SD_PLATFORM_BOILERPLATE_H
 
-
-#define DECLARE_PLATFORM(NAME)      class ND4J_EXPORT PLATFORM_##NAME : public PlatformHelper {\
-                                    public: \
-                                        PLATFORM_##NAME() :  PlatformHelper(#NAME) { } \
-                                        bool isUsable(graph::Context &context) override; \
-                                        Nd4jStatus invokeHelper(graph::Context &context) override; \
-                                    };
-
-#define PLATFORM_IMPL(NAME)         struct ND4J_EXPORT __registratorPlatformHelper_##NAME { \
-                                        __registratorPlatformHelper_##NAME() { \
-                                            auto helper = new PLATFORM_##NAME(); \
-                                            OpRegistrator::getInstance()->registerHelper(helper); \
-                                        } \
-                                    }; \
-                                    static __registratorPlatformHelper_##NAME platformHelper_##NAME; \
-                                    Nd4jStatus PLATFORM_##NAME::invokeHelper(nd4j::graph::Context &block)
+#include <execution/Engine.h>
 
 
-#define PLATFORM_CHECK(NAME)        bool PLATFORM_##NAME::isUsable(graph::Context &block)
+
+#define CONCATP(A,B) A ##_##B
+
+
+#define DECLARE_PLATFORM_F(NAME, ENGINE, CNAME)      class ND4J_EXPORT PLATFORM_##CNAME : public PlatformHelper {\
+                                                     public: \
+                                                        PLATFORM_##CNAME() :  PlatformHelper(#NAME, samediff::Engine::ENGINE) { } \
+                                                        bool isUsable(graph::Context &context) override; \
+                                                        Nd4jStatus invokeHelper(graph::Context &context) override; \
+                                                    };
+
+#define DECLARE_PLATFORM(NAME, ENGINE) DECLARE_PLATFORM_F(NAME, ENGINE, NAME ##_## ENGINE)
+
+#define PLATFORM_IMPL_F(NAME, ENGINE, CNAME)         struct ND4J_EXPORT __registratorPlatformHelper_##CNAME { \
+                                                        __registratorPlatformHelper_##CNAME() { \
+                                                            auto helper = new PLATFORM_##CNAME(); \
+                                                            OpRegistrator::getInstance()->registerHelper(helper); \
+                                                        } \
+                                                    }; \
+                                                    static __registratorPlatformHelper_##CNAME platformHelper_##CNAME; \
+                                                    Nd4jStatus PLATFORM_##CNAME::invokeHelper(nd4j::graph::Context &block)
+
+
+#define PLATFORM_IMPL(NAME, ENGINE) PLATFORM_IMPL_F(NAME, ENGINE, NAME ##_## ENGINE)
+
+
+#define PLATFORM_CHECK_F(NAME, ENGINE, CNAME)        bool PLATFORM_##CNAME::isUsable(graph::Context &block)
+#define PLATFORM_CHECK(NAME, ENGINE) PLATFORM_CHECK_F(NAME, ENGINE, NAME ##_## ENGINE)
 
 
 #endif //SD_PLATFORM_BOILERPLATE_H

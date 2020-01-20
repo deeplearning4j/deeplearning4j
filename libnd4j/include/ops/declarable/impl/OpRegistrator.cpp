@@ -173,15 +173,18 @@ namespace nd4j {
         }
 
         void OpRegistrator::registerHelper(nd4j::ops::platforms::PlatformHelper* op) {
-            if (_helpersLH.count(op->hash()) > 0)
+            std::pair<Nd4jLong, samediff::Engine> p = {op->hash(), op->engine()};
+            if (_helpersLH.count(p) > 0)
                 throw std::runtime_error("Tried to double register PlatformHelper");
 
             _uniqueH.emplace_back(op);
 
-            std::pair<std::string, nd4j::ops::platforms::PlatformHelper*> pair(op->name(), op);
+            nd4j_debug("Adding helper for op \"%s\": [%lld - %i]\n", op->name().c_str(), op->hash(), (int) op->engine());
+
+            std::pair<std::pair<std::string, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> pair({op->name(), op->engine()}, op);
             _helpersH.insert(pair);
 
-            std::pair<Nd4jLong, nd4j::ops::platforms::PlatformHelper*> pair2(op->hash(), op);
+            std::pair<std::pair<Nd4jLong, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> pair2(p, op);
             _helpersLH.insert(pair2);
         }
 
@@ -227,15 +230,17 @@ namespace nd4j {
             return _declarablesD.at(name);
         }
 
-        nd4j::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash) {
-            if (_helpersLH.count(hash) == 0)
+        nd4j::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash, samediff::Engine engine) {
+            std::pair<Nd4jLong, samediff::Engine> p = {hash, engine};
+            if (_helpersLH.count(p) == 0)
                 throw std::runtime_error("Requested helper can't be found");
 
-            return _helpersLH[hash];
+            return _helpersLH[p];
         }
 
-        bool OpRegistrator::hasHelper(Nd4jLong hash) {
-            return _helpersLH.count(hash) > 0;
+        bool OpRegistrator::hasHelper(Nd4jLong hash, samediff::Engine engine) {
+            std::pair<Nd4jLong, samediff::Engine> p = {hash, engine};
+            return _helpersLH.count(p) > 0;
         }
 
         int OpRegistrator::numberOfOperations() {

@@ -247,8 +247,10 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_3) {
     auto res = cudaStreamSynchronize(*stream);
     ASSERT_EQ(0, res);
     //double* localBuffer = ;
+    z.syncToHost();
     cudaMemcpy(z.buffer(), z.specialBuffer(), z.lengthOf() * z.sizeOfT(), cudaMemcpyDeviceToHost);
     res = cudaStreamSynchronize(*stream);
+    z.tickWriteHost();
     ASSERT_EQ(0, res);
 
     //

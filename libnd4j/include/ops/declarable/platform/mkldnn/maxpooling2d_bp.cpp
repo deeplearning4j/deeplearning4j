@@ -32,7 +32,7 @@ using namespace dnnl;
 namespace nd4j {
     namespace ops {
         namespace platforms {
-            PLATFORM_IMPL(maxpool2d_bp) {
+            PLATFORM_IMPL(maxpool2d_bp, ENGINE_CPU) {
                 auto input = INPUT_VARIABLE(
                         0);                          // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
                 auto gradO = INPUT_VARIABLE(
@@ -163,7 +163,7 @@ namespace nd4j {
                 return Status::OK();
             }
 
-            PLATFORM_CHECK(maxpool2d_bp) {
+            PLATFORM_CHECK(maxpool2d_bp, ENGINE_CPU) {
                 auto input = INPUT_VARIABLE(0);
                 auto output = OUTPUT_VARIABLE(0);
 

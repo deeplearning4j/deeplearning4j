@@ -360,7 +360,7 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv3d) {
+PLATFORM_IMPL(deconv3d, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, oC, iC] always
@@ -421,7 +421,7 @@ PLATFORM_IMPL(deconv3d) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(deconv3d) {
+PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
     // we don't want to use mkldnn if cpu doesn't support avx/avx2
     // if (::optimalLevel() < 2)
     //     return false;
@@ -451,7 +451,7 @@ PLATFORM_CHECK(deconv3d) {
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv3d_bp) {
+PLATFORM_IMPL(deconv3d_bp, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kD, kH, kW, oC, iC] always
@@ -525,7 +525,7 @@ PLATFORM_IMPL(deconv3d_bp) {
 }
 
 
-PLATFORM_CHECK(deconv3d_bp) {
+PLATFORM_CHECK(deconv3d_bp, ENGINE_CPU) {
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iD, iH, iW, iC] (NHWC) or [bS, iD, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kD, kH, kW, oC, iC] always
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
