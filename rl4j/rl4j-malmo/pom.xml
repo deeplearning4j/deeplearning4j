@@ -34,6 +34,11 @@
     
     <dependencies>
         <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20190722</version>
+        </dependency>
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>rl4j-api</artifactId>
             <version>${project.version}</version>
@@ -44,4 +49,13 @@
         	<version>0.30.0</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-10.2</id>
+        </profile>
+    </profiles>
 </project>

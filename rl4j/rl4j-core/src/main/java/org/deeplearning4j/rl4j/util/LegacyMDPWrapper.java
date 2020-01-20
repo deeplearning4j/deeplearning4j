@@ -47,7 +47,10 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
             return historyProcessor;
         }
 
-        return learning.getHistoryProcessor();
+        if (learning != null) {
+            return learning.getHistoryProcessor();
+        }
+        return null;
     }
 
     public void setHistoryProcessor(IHistoryProcessor historyProcessor) {

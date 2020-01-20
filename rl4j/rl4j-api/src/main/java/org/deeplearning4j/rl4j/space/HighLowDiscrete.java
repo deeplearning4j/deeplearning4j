@@ -14,23 +14,29 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.gym;
+package org.deeplearning4j.rl4j.space;
 
 import lombok.Value;
-import org.json.JSONObject;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * @param <T> type of observation
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/6/16.
- *
- *  StepReply is the container for the data returned after each step(action).
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/26/16.
  */
 @Value
-public class StepReply<T> {
+public class HighLowDiscrete extends DiscreteSpace {
 
-    T observation;
-    double reward;
-    boolean done;
-    JSONObject info;
+    //size of the space also defined as the number of different actions
+    INDArray matrix;
 
+    public HighLowDiscrete(INDArray matrix) {
+        super(matrix.rows());
+        this.matrix = matrix;
+    }
+
+    @Override
+    public Object encode(Integer a) {
+        INDArray m = matrix.dup();
+        m.put(a - 1, 0, matrix.getDouble(a - 1, 1));
+        return m;
+    }
 }

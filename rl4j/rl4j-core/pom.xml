@@ -44,11 +44,6 @@
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>gym-java-client</artifactId>
-            <version>${dl4j.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.bytedeco</groupId>
@@ -111,27 +106,10 @@
 
     <profiles>
         <profile>
-            <id>nd4j-tests-cpu</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
+            <id>test-nd4j-native</id>
         </profile>
-
         <profile>
-            <id>nd4j-tests-cuda</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.2</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
+            <id>test-nd4j-cuda-10.2</id>
         </profile>
     </profiles>
 </project>
