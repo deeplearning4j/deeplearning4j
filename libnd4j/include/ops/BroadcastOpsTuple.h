@@ -52,6 +52,9 @@ namespace nd4j {
         static BroadcastOpsTuple Subtract();
         static BroadcastOpsTuple IGamma();
         static BroadcastOpsTuple IGammac();
+
+        static BroadcastOpsTuple Pow();
+        static BroadcastOpsTuple PowDerivative();
     };
 }
 

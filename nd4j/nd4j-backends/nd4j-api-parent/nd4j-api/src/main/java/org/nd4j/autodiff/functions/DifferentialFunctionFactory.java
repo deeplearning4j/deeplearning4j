@@ -92,20 +92,7 @@ import org.nd4j.linalg.api.ops.impl.reduce.TensorMmul;
 import org.nd4j.linalg.api.ops.impl.reduce.ZeroFraction;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.CumProdBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.CumSumBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.DotBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.MaxBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.MinBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.Norm1Bp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.Norm2Bp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.NormMaxBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.ProdBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.SquaredNormBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.StandardDeviationBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.VarianceBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
 import org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul;
 import org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
@@ -1418,6 +1405,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable powDerivative(SDVariable iX, double pow) {
         return new PowDerivative(sameDiff(), iX, false, pow).outputVariable();
+    }
+
+    public SDVariable[] powBp(SDVariable x, SDVariable pow, SDVariable gradient) {
+        return new PowBp(sameDiff(), x, pow, gradient).outputVariables();
     }
 
     public SDVariable mishDerivative(SDVariable iX) {

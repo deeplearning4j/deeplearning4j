@@ -1090,7 +1090,7 @@ TEST_F(RNGTests, test_multinomial_5) {
     // multinomial as binomial if 2 classes used
     int batchValue = 1;
     int ClassValue = 2;
-    int Samples = 1000000;
+    int Samples = 100000;
 
     NDArray samples('c', { 1 }, { 1.*Samples }, nd4j::DataType::INT32);
     
@@ -1107,8 +1107,8 @@ TEST_F(RNGTests, test_multinomial_5) {
     auto mean = output.meanNumber();
     // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
     // theoretical values for binomial
-    ASSERT_NEAR(0.5, deviation.e<double>(0), 3e-3);
-    ASSERT_NEAR(0.5, mean.e<double>(0), 3e-3);
+    ASSERT_NEAR(0.5, deviation.e<double>(0), 4e-3); // 1000000 3e-3);
+    ASSERT_NEAR(0.5, mean.e<double>(0), 4e-3); // 1000000 3e-3);
     
     for (int i = 0; i < output.lengthOf(); i++) {
         auto value = output.e<Nd4jLong>(i);
@@ -1122,8 +1122,8 @@ TEST_F(RNGTests, test_multinomial_5) {
     deviation = outputR->varianceNumber(variance::SummaryStatsStandardDeviation, false);
     mean = outputR->meanNumber();
     // printf("Random seed - Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
-    ASSERT_NEAR(0.5, deviation.e<double>(0), 35e-3);
-    ASSERT_NEAR(0.5, mean.e<double>(0), 35e-3);
+    ASSERT_NEAR(0.5, deviation.e<double>(0), 45e-3); // 1000000 35e-3);
+    ASSERT_NEAR(0.5, mean.e<double>(0), 45e-3); // 1000000 35e-3);
 
     for (int i = 0; i < outputR->lengthOf(); i++) {
         auto value = outputR->e<Nd4jLong>(i);
@@ -1138,7 +1138,7 @@ TEST_F(RNGTests, test_multinomial_6) {
 
     int batchValue = 1;
     int ClassValue = 5;
-    int Samples = 1000000;
+    int Samples = 100000;
     
     NDArray samples('c', { 1 }, { 1. * Samples }, nd4j::DataType::INT32);
 
@@ -1165,14 +1165,14 @@ TEST_F(RNGTests, test_multinomial_6) {
         auto c = countsR.e<double>(i);
         auto p = probExpect.e<double>(i);
         // printf("Get freq : %f  Expect freq: %f \n", c / Samples, p);
-        ASSERT_NEAR((c / Samples), p, 35e-3);
+        ASSERT_NEAR((c / Samples), p, 45e-3); // 1000000 35e-3);
     }
 
     auto deviation = outputR->varianceNumber(variance::SummaryStatsStandardDeviation, false);
     auto mean = outputR->meanNumber();
     // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
-    ASSERT_NEAR(1.2175, deviation.e<double>(0), 35e-3);
-    ASSERT_NEAR(2.906, mean.e<double>(0), 35e-3);
+    ASSERT_NEAR(1.2175, deviation.e<double>(0), 45e-3); // 1000000 35e-3);
+    ASSERT_NEAR(2.906, mean.e<double>(0), 45e-3); // 1000000 35e-3);
 
     delete resultR;
 
@@ -1195,12 +1195,12 @@ TEST_F(RNGTests, test_multinomial_6) {
         auto c = counts.e<double>(i);
         auto p = probExpect.e<double>(i);
         // printf("Get freq : %f  Expect freq: %f \n", c / Samples, p);
-        ASSERT_NEAR((c / Samples), p, 3e-3);
+        ASSERT_NEAR((c / Samples), p, 4e-3); // 1000000 3e-3);
     }
 
     deviation = output.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     mean = output.meanNumber();
     // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
-    ASSERT_NEAR(1.2175, deviation.e<double>(0), 3e-3);
-    ASSERT_NEAR(2.906, mean.e<double>(0), 3e-3);
+    ASSERT_NEAR(1.2175, deviation.e<double>(0), 5e-3); // 1000000 3e-3);
+    ASSERT_NEAR(2.906, mean.e<double>(0), 5e-3); // 1000000 3e-3);
 }

@@ -16,6 +16,7 @@
 
 //
 // @author raver119@gmail.com
+// @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
 
 #include <op_boilerplate.h>
@@ -25,7 +26,7 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
-    namespace ops {
+namespace ops {
         BROADCASTABLE_OP_IMPL(Pow, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
@@ -51,7 +52,76 @@ namespace nd4j {
                 ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS})
                 ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
         }
-    }
+
+       CUSTOM_OP_IMPL(Pow_bp, 3, 2, false, 0, 0) {
+
+           auto x = INPUT_VARIABLE(0);
+           auto y = INPUT_VARIABLE(1);
+           auto dLdz = INPUT_VARIABLE(2);
+       
+           auto dLdx = OUTPUT_VARIABLE(0);
+           auto dLdy = OUTPUT_VARIABLE(1);
+       
+           Nd4jLong* dLdzShapeInfo = nullptr;
+           const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
+           REQUIRE_TRUE(areShapesBroadcastable, 0, "POW_BP OP: the shapes of x %s"
+               " and y %s are not suitable for broadcast !", 
+               ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
+           REQUIRE_TRUE(shape::equalsSoft(dLdz->shapeInfo(), dLdzShapeInfo), 0, 
+               "POW_BP OP: wrong shape of next epsilon array (dLdOut),"
+               " expected is %s, but got %s instead !", 
+               ShapeUtils::shapeAsString(dLdzShapeInfo).c_str(), ShapeUtils::shapeAsString(dLdz).c_str());
+       
+           // dL/dy = x^y * log(x) * dL/dz
+           auto temp = x->applyTrueBroadcast(BroadcastOpsTuple::Pow(), *y); // a = x^y
+           x->applyTransform(transform::Log, *dLdx); // b = log(x)
+           dLdx->applyScalar(nd4j::scalar::ReplaceNans, 0, *dLdx);
+           temp *= *dLdx; // c = b*a
+           temp *= *dLdz; // dL/dy = c * dL/dz
+           if (dLdy->isSameShape(*dLdz)) {
+               dLdy->assign(temp); 
+           }
+           else {
+               std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
+               dLdy->assign(temp.reduceAlongDimension(reduce::Sum, axesForY)); // dL/dy = sum(c * dL/dz)
+           }
+           
+           // dL/dx = y*x^(y-1) * dL/dz 
+           x->applyTrueBroadcast(BroadcastOpsTuple::PowDerivative(), *y, temp); // a = y*x^(y-1)
+           temp *= *dLdz; // dLdx = a*dL/dz
+
+           if (dLdx->isSameShape(*dLdz)) {
+               dLdx->assign(temp); // dLdx = a*dL/dz
+           }
+           else {
+               std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
+               dLdx->assign(temp.reduceAlongDimension(reduce::Sum, axesForX)); // dLdx = a*dL/dz
+           }
+       
+           return Status::OK();
+       }
+       
+       DECLARE_SHAPE_FN(Pow_bp) {
+       
+           auto xShapeInfo = inputShape->at(0);
+           auto yShapeInfo = inputShape->at(1);
+       
+           Nd4jLong* dLdxShapeInfo = nullptr;
+           Nd4jLong* dLdyShapeInfo = nullptr;
+       
+           COPY_SHAPE(xShapeInfo, dLdxShapeInfo);
+           COPY_SHAPE(yShapeInfo, dLdyShapeInfo);
+       
+           return SHAPELIST(CONSTANT(dLdxShapeInfo), CONSTANT(dLdyShapeInfo));
+       }
+       
+       DECLARE_TYPES(Pow_bp) {
+           getOpDescriptor()
+               ->setAllowedInputTypes({ ALL_FLOATS, ALL_INTS })
+               ->setAllowedOutputTypes({ ALL_FLOATS }); // TODO maybe wourth to add ALL_INTS
+       }
+
+}
 }
 
 #endif

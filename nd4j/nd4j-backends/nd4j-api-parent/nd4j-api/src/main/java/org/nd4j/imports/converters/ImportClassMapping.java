@@ -230,6 +230,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.scalar.LogX.class,
             org.nd4j.linalg.api.ops.impl.scalar.Pow.class,
             org.nd4j.linalg.api.ops.impl.scalar.PowDerivative.class,
+            org.nd4j.linalg.api.ops.impl.reduce.bp.PowBp.class,
             org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear.class,
             org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinearDerivative.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.ThresholdRelu.class,

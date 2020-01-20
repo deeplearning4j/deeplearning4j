@@ -1280,3 +1280,334 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_7) {
 
     delete result;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test1) {
+
+    // same shape
+    NDArray x('c', { 2,2,2 }, { 4,3,2,5,7,8,-9,-12 }, nd4j::DataType::FLOAT32);
+    NDArray y('c', { 2,2,2 }, { 2,3,-2,4,-1,-4,10,8 }, nd4j::DataType::FLOAT32);
+
+
+    NDArray dLdz('c', { 2,2,2 }, nd4j::DataType::FLOAT32);
+    NDArray dLdxExp('c', { 2,2,2 }, { 8,  27, -0.25,  500, -0.0204082, -0.000122, -3.87420e+09, -2.86654e+08 }, nd4j::DataType::FLOAT32);
+    NDArray dLdyExp('c', { 2,2,2 }, { 22.18071, 29.66253, 0.17329, 1005.89874, 0.27799, 0.00051, 0, 0 }, nd4j::DataType::FLOAT32);
+
+    dLdz.assign(1.0);
+
+    nd4j::ops::Pow_bp op;
+    auto results = op.execute({ &x, &y, &dLdz }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto* dLdx = results->at(0);
+    auto* dLdy = results->at(1);
+
+    ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
+    ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
+    ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
+    ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test2) {
+
+    NDArray x('c', { 1,2,3 }, nd4j::DataType::FLOAT32);
+    NDArray y('c', { 3,2,1 }, nd4j::DataType::FLOAT32);
+    NDArray dLdz('c', { 3,2,3 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdxExp('c', { 1,2,3 }, { 16.8, 19.2, 21.6, 24., 26.4, 28.8 }, nd4j::DataType::FLOAT32);
+    NDArray dLdyExp('c', { 3,2,1 }, { 13.30843, 33.27106, 53.2337, 73.19634, 93.15898, 113.12162 }, nd4j::DataType::FLOAT32);
+
+    x.assign(4.0);
+    y.assign(2.0);
+    dLdz.linspace(0.1, 0.1);
+
+    nd4j::ops::Pow_bp op;
+    auto results = op.execute({ &x, &y, &dLdz }, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto* dLdx = results->at(0);
+    auto* dLdy = results->at(1);
+
+    ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
+    ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
+    ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
+    ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
+
+    delete results;
+
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test3) {
+
+    // y - same shape as dLdz
+    NDArray xY('c', { 1,2,3 }, nd4j::DataType::FLOAT32);
+    NDArray yY('c', { 3,2,3 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdxExpY('c', { 1,2,3 }, { 16.8, 19.2, 21.6, 24. , 26.4, 28.8 }, nd4j::DataType::FLOAT32);
+    NDArray dLdyExpY('c', { 3,2,3 }, { 2.21807,  4.43614,  6.65421, 8.87228, 11.09035, 13.30843, 15.5265 , 17.74457, 19.96264, 22.18071, 24.39878, 26.61685, 28.83492, 31.05299, 33.27106, 35.48914, 37.70721, 39.92528 }, nd4j::DataType::FLOAT32);
+    NDArray dLdz('c', { 3,2,3 }, nd4j::DataType::FLOAT32);
+
+    xY.assign(4.0);
+    yY.assign(2.0);
+    dLdz.linspace(0.1, 0.1);
+
+    nd4j::ops::Pow_bp op;
+    auto resultsY = op.execute({ &xY, &yY, &dLdz }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsY->status());
+
+    auto* dLdxY = resultsY->at(0);
+    auto* dLdyY = resultsY->at(1);
+
+    ASSERT_TRUE(dLdxExpY.isSameShape(dLdxY));
+    ASSERT_TRUE(dLdxExpY.equalsTo(dLdxY));
+    ASSERT_TRUE(dLdyExpY.isSameShape(dLdyY));
+    ASSERT_TRUE(dLdyExpY.equalsTo(dLdyY));
+
+    delete resultsY;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test4) {
+
+    // x - same shape ad dLdz
+    NDArray yX('c', { 1,2,3 }, nd4j::DataType::FLOAT32);
+    NDArray xX('c', { 3,2,3 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdxExpX('c', { 3,2,3 }, { 3.2,  6.4,  9.6, 12.8, 16. , 19.2, 22.4, 25.6, 28.8, 32. , 35.2, 38.4, 41.6, 44.8, 48., 51.2, 54.4, 57.6 }, nd4j::DataType::FLOAT32);
+    NDArray dLdyExpX('c', { 1,2,3 }, { 23.28975, 26.61685, 29.94396, 33.27106, 36.59817, 39.92528 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdz('c', { 3,2,3 }, nd4j::DataType::FLOAT32);
+    dLdz.linspace(0.1, 0.1);
+
+    nd4j::ops::Pow_bp op;
+
+    xX.assign(2.0);
+    yX.assign(4.0);
+
+    auto resultsX = op.execute({ &xX, &yX, &dLdz }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsX->status());
+
+    auto* dLdxX = resultsX->at(0);
+    auto* dLdyX = resultsX->at(1);
+
+    ASSERT_TRUE(dLdxExpX.isSameShape(dLdxX));
+    ASSERT_TRUE(dLdxExpX.equalsTo(dLdxX));
+    ASSERT_TRUE(dLdyExpX.isSameShape(dLdyX));
+    ASSERT_TRUE(dLdyExpX.equalsTo(dLdyX));
+
+    delete resultsX;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test5) {
+
+    // both single array
+    NDArray xConst('c', { 1 }, nd4j::DataType::FLOAT32);
+    NDArray yConst('c', { 1 }, nd4j::DataType::FLOAT32);
+    NDArray dLdz('c', { 1 }, nd4j::DataType::FLOAT32);
+    NDArray dLdxExp('c', { 1 }, nd4j::DataType::FLOAT32);
+    NDArray dLdyExp('c', { 1 }, nd4j::DataType::FLOAT32);
+
+    xConst.assign(3.0);
+    yConst.assign(4.0);
+    dLdz.assign(1.0);
+
+    dLdxExp.assign(4.0 * pow(3, 3));
+    dLdyExp.assign(pow(3, 4) * log(3));
+
+    nd4j::ops::Pow_bp op;
+    auto results = op.execute({ &xConst, &yConst, &dLdz }, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto* dLdx = results->at(0);
+    auto* dLdy = results->at(1);
+
+    ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
+    ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
+
+    ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
+    ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test6) {
+
+    // x single array
+    NDArray xConst('c', { 1 }, nd4j::DataType::FLOAT32);
+    NDArray y('c', { 2, 2, 2 }, nd4j::DataType::FLOAT32);
+    NDArray dLdzC('c', { 2, 2, 2 }, nd4j::DataType::FLOAT32);
+
+    xConst.assign(2.0);
+    y.assign(4.0);
+    dLdzC.linspace(0.1, 0.1);
+
+    NDArray dLdxExpXC('c', { 1 }, { 115.2 }, nd4j::DataType::FLOAT32);
+    NDArray dLdyExpXC('c', { 2, 2, 2 }, { 1.10904, 2.21807, 3.32711, 4.43614, 5.54518, 6.65421, 7.76325, 8.87228 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::Pow_bp op;
+    auto resultsXC = op.execute({ &xConst, &y, &dLdzC }, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, resultsXC->status());
+
+    auto* dLdxXC = resultsXC->at(0);
+    auto* dLdyXC = resultsXC->at(1);
+
+    ASSERT_TRUE(dLdxExpXC.isSameShape(dLdxXC));
+    ASSERT_TRUE(dLdxExpXC.equalsTo(dLdxXC));
+    ASSERT_TRUE(dLdyExpXC.isSameShape(dLdyXC));
+    ASSERT_TRUE(dLdyExpXC.equalsTo(dLdyXC));
+
+    delete resultsXC;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test7) {
+
+    // Y - scalar
+    auto Y = NDArrayFactory::create<float>(2.f);
+    NDArray x('c', { 2, 2, 2 }, nd4j::DataType::FLOAT32);
+    NDArray dLdzC('c', { 2, 2, 2 }, nd4j::DataType::FLOAT32);
+    
+    dLdzC.linspace(0.1, 0.1);
+    x = 4.f;
+
+    NDArray dLdxExpYs('c', { 2, 2, 2 }, { 0.8, 1.6, 2.4, 3.2, 4., 4.8, 5.6, 6.4 }, nd4j::DataType::FLOAT32);
+
+    auto dLdyExpYs = NDArrayFactory::create<float>(79.85056f);
+
+    nd4j::ops::Pow_bp op;
+    auto resultsYs = op.execute({ &x, &Y, &dLdzC }, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, resultsYs->status());
+
+    auto* dLdxY = resultsYs->at(0);
+    auto* dLdyY = resultsYs->at(1);
+
+    ASSERT_TRUE(dLdxExpYs.isSameShape(dLdxY));
+    ASSERT_TRUE(dLdxExpYs.equalsTo(dLdxY));
+    ASSERT_TRUE(dLdyExpYs.isSameShape(dLdyY));
+    ASSERT_TRUE(dLdyExpYs.equalsTo(dLdyY));
+
+    delete resultsYs;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test8) {
+    // both scalars
+
+    auto X = NDArrayFactory::create<float>(4.f);
+    auto Y = NDArrayFactory::create<float>(2.f);
+    NDArray dLdz = NDArrayFactory::create<float>(0.1f);
+
+    NDArray dLdxExp = NDArrayFactory::create<float>(2.f*4.f*0.1f);
+
+    NDArray dLdyExp = NDArrayFactory::create<float>(pow(4.f, 2.f) * log(4.f) * 0.1f);
+
+    nd4j::ops::Pow_bp op;
+    auto results = op.execute({ &X, &Y, &dLdz }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto* dLdx = results->at(0);
+    auto* dLdy = results->at(1);
+
+    ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
+    ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
+    ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
+    ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test9) {
+
+    nd4j::ops::Pow_bp op;
+    // diff shapes
+    NDArray x('c', { 3,2,1 }, nd4j::DataType::FLOAT32);
+    NDArray y('c', { 1,2,3 }, nd4j::DataType::FLOAT32);
+    NDArray dLdz('c', { 3,2,3 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdxExp('c', { 3,2,1 }, { 4.8, 12., 19.2, 26.4, 33.6, 40.8 }, nd4j::DataType::FLOAT32);
+    NDArray dLdyExp('c', { 1,2,3 }, { 46.57949, 53.2337 , 59.88792, 66.54213, 73.19634, 79.85056 }, nd4j::DataType::FLOAT32);
+
+    x.assign(4.0);
+    y.assign(2.0);
+    dLdz.linspace(0.1, 0.1);
+
+    auto results = op.execute({ &x, &y, &dLdz }, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto* dLdx = results->at(0);
+    auto* dLdy = results->at(1);
+
+    ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
+    ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
+    ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
+    ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test10) {
+
+    // diff shapes broadcastable
+    NDArray yB('c', { 1,2,3,1 }, nd4j::DataType::FLOAT32);
+    NDArray xB('c', { 2,3,1 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdyExpB('c', { 1,2,3,1 }, { 2.21807, 4.43614, 6.65421, 8.87228, 11.09035, 13.30843 }, nd4j::DataType::FLOAT32);
+    NDArray dLdxExpB('c', { 2,3,1 }, { 0.8, 1.6, 2.4, 3.2, 4., 4.8 }, nd4j::DataType::FLOAT32);
+    NDArray dLdzB('c', { 1,2,3,1 }, nd4j::DataType::FLOAT32);
+
+    dLdzB.linspace(0.1, 0.1);
+    xB.assign(4.0);
+    yB.assign(2.0);
+
+    nd4j::ops::Pow_bp op;
+    auto resultsB = op.execute({ &xB, &yB, &dLdzB }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsB->status());
+
+    auto* dLdxB = resultsB->at(0);
+    auto* dLdyB = resultsB->at(1);
+
+    ASSERT_TRUE(dLdxExpB.isSameShape(dLdxB));
+    ASSERT_TRUE(dLdxExpB.equalsTo(dLdxB));
+
+    ASSERT_TRUE(dLdyExpB.isSameShape(dLdyB));
+    ASSERT_TRUE(dLdyExpB.equalsTo(dLdyB));
+
+    delete resultsB;
+}
+
+TEST_F(DeclarableOpsTests15, Pow_BP_Test11) {
+
+    NDArray xB('c', { 3,2,1 }, { .4, 3, 5, .8, -9, -12 }, nd4j::DataType::FLOAT32);
+    NDArray yB('c', { 1,2,3 }, { 3, -2, .4, -4, 10, .8 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdxExpB('c', { 3,2,1 }, { -5.994056, 39366.191406, 7.508829, -2.223537, -std::numeric_limits<float>::quiet_NaN(), -std::numeric_limits<float>::quiet_NaN() }, nd4j::DataType::FLOAT32);
+    NDArray dLdyExpB('c', { 1,2,3 }, { 20.11211,  -1.119612, -std::numeric_limits<float>::quiet_NaN(), -0.1076, 12974.389648, -std::numeric_limits<float>::quiet_NaN() }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdzB('c', { 3,2,3 }, { .1,.2,.3, .1,.2,.3, .1,.4,.1, .2,.1,.1, .3,.1,.5, .1, .7, .1 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::Pow_bp op;
+    auto resultsB = op.execute({ &xB, &yB, &dLdzB }, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsB->status());
+    auto* dLdxB = resultsB->at(0);
+    auto* dLdyB = resultsB->at(1);
+
+    ASSERT_TRUE(dLdxExpB.isSameShape(dLdxB));
+    for (int i = 0; i < dLdxB->lengthOf(); ++i) {
+        if (!nd4j::math::nd4j_isnan(dLdxB->e<float>(i)) && !nd4j::math::nd4j_isnan(dLdxExpB.e<float>(i)))
+            ASSERT_NEAR(dLdxB->e<float>(i), dLdxExpB.e<float>(i), 0.00001);
+    }
+
+    ASSERT_TRUE(dLdyExpB.isSameShape(dLdyB));
+    for (int i = 0; i < dLdyB->lengthOf(); ++i) {
+        if (!nd4j::math::nd4j_isnan(dLdyB->e<float>(i)) && !nd4j::math::nd4j_isnan(dLdyExpB.e<float>(i)))
+            ASSERT_NEAR(dLdyB->e<float>(i), dLdyExpB.e<float>(i), 0.00001);
+    }
+
+    delete resultsB;
+}

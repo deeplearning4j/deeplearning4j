@@ -921,4 +921,60 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             assertNull(err, err);
         }
     }
+
+    @Test
+    public void testPowBP() {
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+
+            INDArray preReduceInput_1 = Nd4j.createFromArray(new double[]{
+                    4,3,2,5,7,8,-9,-12
+            }).reshape(2,2,2);
+            INDArray preReduceInput_2 = Nd4j.createFromArray(new double[]{
+                    2,3,-2,4,-1,-4,10,8
+            }).reshape(2,2,2);
+            INDArray preReduceInput_3 = Nd4j.linspace(1, 8, 8).reshape(2, 2,2);
+            INDArray gradOutput = Nd4j.valueArrayOf(new long[]{2, 2, 2}, 1.0);
+            INDArray dLdInExpected_1 = Nd4j.createFromArray(new double[]{
+                    8,  27, -0.25,  500, -0.0204082, -0.000122, -3.87420e+09, -2.86654e+08
+            }).reshape(2,2,2);
+            INDArray dLdInExpected_2 = Nd4j.createFromArray(new double[]{
+                    22.18071, 29.66253, 0.17329, 1005.89874, 0.27799, 0.00051, 0, 0
+            }).reshape(2,2,2);
+            INDArray output1 = Nd4j.createUninitialized(2, 2,2);
+            INDArray output2 = Nd4j.createUninitialized(2, 2,2);
+
+            String err = OpValidation.validate(new OpTestCase(new PowBp(preReduceInput_1, preReduceInput_2,
+                    gradOutput, output1, output2))
+                    .expectedOutput(0, dLdInExpected_1).expectedOutput(1, dLdInExpected_2));
+
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testPowBP1() {
+
+            INDArray preReduceInput_1 = Nd4j.createFromArray(new float[]{
+                     0.0714f,    0.4735f,   -0.1249f,    0.4482f,
+                   -0.1376f,    0.5218f,    0.5558f,    0.2444f,
+                   -0.5297f,    0.4291f,    0.4913f,   -0.1178f
+            }).reshape(3,4);
+            INDArray preReduceInput_2 = Nd4j.scalar(2.0000f);
+
+            INDArray gradOutput = Nd4j.valueArrayOf(new long[]{3, 4}, 1.0f);
+
+            INDArray output1 = Nd4j.createUninitialized(DataType.FLOAT, 3,4);
+            INDArray output2 = Nd4j.scalar(DataType.FLOAT, 1.0); //Nd4j.createUninitialized(DataType.FLOAT, 3,4);
+
+            INDArray expected1 = Nd4j.createFromArray(new float[]{
+                    0.1428f,    0.9470f,   -0.2498f,    0.8964f,
+                   -0.2752f,    1.0436f,    1.1116f,    0.4888f,
+                   -1.0594f,    0.8582f,    0.9826f,   -0.2356f
+            }).reshape(3,4);
+            INDArray expected2 = Nd4j.scalar(DataType.FLOAT, -1.112316132);
+            String err = OpValidation.validate(new OpTestCase(new PowBp(preReduceInput_1, preReduceInput_2,
+                    gradOutput, output1, output2)).expectedOutput(0, expected1).expectedOutput(1, expected2));
+            assertNull(err);
+    }
 }

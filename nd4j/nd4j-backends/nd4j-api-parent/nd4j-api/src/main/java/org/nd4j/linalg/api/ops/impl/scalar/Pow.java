@@ -19,7 +19,9 @@ package org.nd4j.linalg.api.ops.impl.scalar;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
@@ -29,6 +31,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -89,9 +92,8 @@ public class Pow extends BaseScalarOp {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> i_v1) {
+    public List<SDVariable> doDiff(List<SDVariable> i_v1) {        
         SDVariable g = f().powDerivative(arg(), this.pow).mul(i_v1.get(0));
         return Arrays.asList(g);
     }
-
 }
