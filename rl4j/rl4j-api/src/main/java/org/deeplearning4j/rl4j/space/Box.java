@@ -16,33 +16,22 @@
 
 package org.deeplearning4j.rl4j.space;
 
-import lombok.Value;
-import org.json.JSONArray;
-import org.nd4j.linalg.api.ndarray.INDArray;
-
-
 /**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/26/16.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
+ *
+ * A Box observation
+ *
+ * @see <a href="https://gym.openai.com/envs#box2d">https://gym.openai.com/envs#box2d</a>
  */
-@Value
-public class HighLowDiscrete extends DiscreteSpace {
+public class Box implements Encodable {
 
-    //size of the space also defined as the number of different actions
-    INDArray matrix;
+    private final double[] array;
 
-    public HighLowDiscrete(INDArray matrix) {
-        super(matrix.rows());
-        this.matrix = matrix;
+    public Box(double[] arr) {
+        this.array = arr;
     }
 
-    @Override
-    public Object encode(Integer a) {
-        JSONArray jsonArray = new JSONArray();
-        for (int i = 0; i < size; i++) {
-            jsonArray.put(matrix.getDouble(i, 0));
-        }
-        jsonArray.put(a - 1, matrix.getDouble(a - 1, 1));
-        return jsonArray;
+    public double[] toArray() {
+        return array;
     }
-
 }

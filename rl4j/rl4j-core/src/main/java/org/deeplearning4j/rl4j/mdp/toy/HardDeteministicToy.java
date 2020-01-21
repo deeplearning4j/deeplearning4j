@@ -23,7 +23,6 @@ import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
-import org.json.JSONObject;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -104,7 +103,7 @@ public class HardDeteministicToy implements MDP<HardToyState, Integer, DiscreteS
         if (a == maxIndex(hardToyState.getValues()))
             reward += 1;
         hardToyState = states[hardToyState.getStep() + 1];
-        return new StepReply(hardToyState, reward, isDone(), new JSONObject("{}"));
+        return new StepReply(hardToyState, reward, isDone(), null);
     }
 
     public HardDeteministicToy newInstance() {

@@ -26,7 +26,6 @@ import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
-import org.json.JSONObject;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -80,7 +79,7 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
     public StepReply<SimpleToyState> step(Integer a) {
         double reward = (simpleToyState.getStep() % 2 == 0) ? 1 - a : a;
         simpleToyState = new SimpleToyState(simpleToyState.getI() + 1, simpleToyState.getStep() + 1);
-        return new StepReply<>(simpleToyState, reward, isDone(), new JSONObject("{}"));
+        return new StepReply<>(simpleToyState, reward, isDone(), null);
     }
 
     public SimpleToy newInstance() {

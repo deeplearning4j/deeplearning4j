@@ -7,7 +7,6 @@ Welcome to the new monorepo of Deeplearning4j that contains the source code for 
  * https://github.com/eclipse/deeplearning4j/tree/master/datavec
  * https://github.com/eclipse/deeplearning4j/tree/master/arbiter
  * https://github.com/eclipse/deeplearning4j/tree/master/nd4s
- * https://github.com/eclipse/deeplearning4j/tree/master/gym-java-client
  * https://github.com/eclipse/deeplearning4j/tree/master/rl4j
  * https://github.com/eclipse/deeplearning4j/tree/master/scalnet
  * https://github.com/eclipse/deeplearning4j/tree/master/pydl4j

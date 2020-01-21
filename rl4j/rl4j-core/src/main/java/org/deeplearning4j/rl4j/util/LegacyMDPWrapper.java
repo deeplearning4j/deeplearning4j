@@ -32,9 +32,12 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
     }
 
     private IHistoryProcessor getHistoryProcessor() {
-        return historyProcessor;
+        if(historyProcessor != null) {
+            return historyProcessor;
+        }
+        
+        return null;
     }
-
     public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
         this.historyProcessor = historyProcessor;
     }
