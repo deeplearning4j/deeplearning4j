@@ -1,6 +1,8 @@
 package org.deeplearning4j.rl4j.util;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.EpochStepCounter;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
@@ -18,7 +20,10 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
     private final MDP<O, A, AS> wrappedMDP;
     @Getter
     private final WrapperObservationSpace observationSpace;
+
+    @Getter(AccessLevel.PRIVATE) @Setter(AccessLevel.PUBLIC)
     private IHistoryProcessor historyProcessor;
+
     private final EpochStepCounter epochStepCounter;
 
     private int skipFrame = 1;
@@ -29,17 +34,6 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
         this.observationSpace = new WrapperObservationSpace(wrappedMDP.getObservationSpace().getShape());
         this.historyProcessor = historyProcessor;
         this.epochStepCounter = epochStepCounter;
-    }
-
-    private IHistoryProcessor getHistoryProcessor() {
-        if(historyProcessor != null) {
-            return historyProcessor;
-        }
-        
-        return null;
-    }
-    public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
-        this.historyProcessor = historyProcessor;
     }
 
     @Override
