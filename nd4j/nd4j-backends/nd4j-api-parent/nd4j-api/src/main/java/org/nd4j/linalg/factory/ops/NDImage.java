@@ -25,25 +25,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
-public class NDIMAGE {
-  public NDIMAGE() {
+public class NDImage {
+  public NDImage() {
   }
 
   /**
    * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.<br>
-   * <br>
-   * @param image              Input image, with shape [batch, height, width, channels]<br>
-   * @param cropBoxes          Float32 crop, shape [numBoxes, 4] with values in range 0 to 1<br>
-   * @param boxIndices         Indices: which image (index to dimension 0) the cropBoxes belong to. Rank 1, shape [numBoxes]<br>
-   * @param cropOutSize        Output size for the images - int32, rank 1 with values [outHeight, outWidth]<br>
-   * @param extrapolationValue Used for extrapolation, when applicable. 0.0 should be used for the default<br>
-   * @return Cropped and resized images<br>
-   *     <br>
    *
    * @param image Input image, with shape [batch, height, width, channels] (NUMERIC type)
    * @param cropBoxes Float32 crop, shape [numBoxes, 4] with values in range 0 to 1 (NUMERIC type)
    * @param boxIndices Indices: which image (index to dimension 0) the cropBoxes belong to. Rank 1, shape [numBoxes] (NUMERIC type)
-   * @param cropOutSize Output size for the images - int32, rank 1 with values [outHeight, outWidth] (NUMERIC type)
+   * @param cropOutSize Output size for the images - int32, rank 1 with values [outHeight, outWidth] (INT type)
    * @param extrapolationValue Used for extrapolation, when applicable. 0.0 should be used for the default
    * @return output Cropped and resized images (NUMERIC type)
    */
@@ -52,14 +44,30 @@ public class NDIMAGE {
     NDValidation.validateNumerical("CropAndResize", "image", image);
     NDValidation.validateNumerical("CropAndResize", "cropBoxes", cropBoxes);
     NDValidation.validateNumerical("CropAndResize", "boxIndices", boxIndices);
-    NDValidation.validateNumerical("CropAndResize", "cropOutSize", cropOutSize);
+    NDValidation.validateInteger("CropAndResize", "cropOutSize", cropOutSize);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.CropAndResize(image, cropBoxes, boxIndices, cropOutSize, extrapolationValue))[0];
   }
 
   /**
+   * Given an input image and some crop boxes, extract out the image subsets and resize them to the specified size.<br>
+   *
+   * @param image Input image, with shape [batch, height, width, channels] (NUMERIC type)
+   * @param cropBoxes Float32 crop, shape [numBoxes, 4] with values in range 0 to 1 (NUMERIC type)
+   * @param boxIndices Indices: which image (index to dimension 0) the cropBoxes belong to. Rank 1, shape [numBoxes] (NUMERIC type)
+   * @param cropOutSize Output size for the images - int32, rank 1 with values [outHeight, outWidth] (INT type)
+   * @return output Cropped and resized images (NUMERIC type)
+   */
+  public INDArray cropAndResize(INDArray image, INDArray cropBoxes, INDArray boxIndices,
+      INDArray cropOutSize) {
+    NDValidation.validateNumerical("CropAndResize", "image", image);
+    NDValidation.validateNumerical("CropAndResize", "cropBoxes", cropBoxes);
+    NDValidation.validateNumerical("CropAndResize", "boxIndices", boxIndices);
+    NDValidation.validateInteger("CropAndResize", "cropOutSize", cropOutSize);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.CropAndResize(image, cropBoxes, boxIndices, cropOutSize, 0.0))[0];
+  }
+
+  /**
    * Adjusts contrast of RGB or grayscale images.<br>
-   * @param in images to adjust. 3D shape or higher.<br>
-   * @param factor float multiplier for adjusting contrast.<br>
    * @return Contrast-adjusted image<br>
    *     <br>
    *
@@ -74,9 +82,7 @@ public class NDIMAGE {
 
   /**
    * Adjust hue of RGB image<br>
-   * @param in RGB image as 3D array<br>
-   * @param delta value to add to hue channel<br>
-   * @return adjusted image<br>
+   * <br>
    *     <br>
    *
    * @param in image as 3D array (NUMERIC type)
@@ -90,10 +96,6 @@ public class NDIMAGE {
 
   /**
    * Adjust saturation of RGB images<br>
-   * @param in RGB image as 3D array<br>
-   * @param factor factor for saturation<br>
-   * @return adjusted image<br>
-   *     <br>
    *
    * @param in RGB image as 3D array (NUMERIC type)
    * @param factor factor for saturation
@@ -107,19 +109,12 @@ public class NDIMAGE {
   /**
    * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension.<br>
    * <br>
-   * @param image    Input image to extract image patches from - shape [batch, height, width, channels]<br>
-   * @param kSizes   Kernel size - size of the image patches, [height, width]<br>
-   * @param strides  Stride in the input dimension for extracting image patches, [stride_height, stride_width]<br>
-   * @param rates    Usually [1,1]. Equivalent to dilation rate in dilated convolutions - how far apart the output pixels<br>
-   *                 in the patches should be, in the input. A dilation of [a,b] means every {@code a}th pixel is taken<br>
-   *                 along the height/rows dimension, and every {@code b}th pixel is take along the width/columns dimension<br>
-   * @param sameMode Padding algorithm. If true: use Same padding<br>
-   * @return The extracted image patches<br>
+   * <br>
    *     <br>
    *
    * @param image Input image to extract image patches from - shape [batch, height, width, channels] (NUMERIC type)
-   * @param kSizes Kernel size - size of the image patches, [height, width] (Size: AtLeast(min=0))
-   * @param strides Stride in the input dimension for extracting image patches, [stride_height, stride_width] (Size: AtLeast(min=0))
+   * @param kSizes Kernel size - size of the image patches, [height, width] (Size: Exactly(count=2))
+   * @param strides Stride in the input dimension for extracting image patches, [stride_height, stride_width] (Size: Exactly(count=2))
    * @param rates Usually [1,1]. Equivalent to dilation rate in dilated convolutions - how far apart the output pixels
    *                  in the patches should be, in the input. A dilation of [a,b] means every {@code a}th pixel is taken
    *                  along the height/rows dimension, and every {@code b}th pixel is take along the width/columns dimension (Size: AtLeast(min=0))
@@ -129,16 +124,15 @@ public class NDIMAGE {
   public INDArray extractImagePatches(INDArray image, int[] kSizes, int[] strides, int[] rates,
       boolean sameMode) {
     NDValidation.validateNumerical("extractImagePatches", "image", image);
-    Preconditions.checkArgument(kSizes.length >= 0, "kSizes has incorrect size/length. Expected: kSizes.length >= 0, got %s", kSizes.length);
-    Preconditions.checkArgument(strides.length >= 0, "strides has incorrect size/length. Expected: strides.length >= 0, got %s", strides.length);
+    Preconditions.checkArgument(kSizes.length == 2, "kSizes has incorrect size/length. Expected: kSizes.length == 2, got %s", kSizes.length);
+    Preconditions.checkArgument(strides.length == 2, "strides has incorrect size/length. Expected: strides.length == 2, got %s", strides.length);
     Preconditions.checkArgument(rates.length >= 0, "rates has incorrect size/length. Expected: rates.length >= 0, got %s", rates.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(image, kSizes, strides, rates, sameMode))[0];
   }
 
   /**
    * Converting image from HSV to RGB format<br>
-   * @param input 3D image<br>
-   * @return 3D image<br>
+   * <br>
    *     <br>
    *
    * @param input 3D image (NUMERIC type)
@@ -151,13 +145,7 @@ public class NDIMAGE {
 
   /**
    * Greedily selects a subset of bounding boxes in descending order of score<br>
-   * @param boxes    2D array of shape [num_boxes,4]<br>
-   * @param scores   vector of shape [num_boxes]<br>
-   * @param maxOutSize scalar representing the maximum number of boxes to be selected<br>
-   * @param iouThreshold  float - threshold for deciding whether boxes overlap too much with respect to IOU<br>
-   * @param scoreThreshold float - threshold for deciding when to remove boxes based on score<br>
-   * @return vectort of shape [M] representing the selected indices from the boxes tensor, where M <= max_output_size<br>
-   *     <br>
+   *      <br>
    *
    * @param boxes Might be null. Name for the output variable (NUMERIC type)
    * @param scores vector of shape [num_boxes] (NUMERIC type)
@@ -175,10 +163,6 @@ public class NDIMAGE {
 
   /**
    * Randomly crops image<br>
-   * @param input input array<br>
-   * @param shape shape for crop<br>
-   * @return cropped array<br>
-   *     <br>
    *
    * @param input input array (NUMERIC type)
    * @param shape shape for crop (NUMERIC type)
@@ -192,9 +176,6 @@ public class NDIMAGE {
 
   /**
    * Converting array from HSV to RGB format<br>
-   * @param input 3D image<br>
-   * @return 3D image<br>
-   *     <br>
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -206,8 +187,7 @@ public class NDIMAGE {
 
   /**
    * Converting array from RGB to YIQ format<br>
-   * @param input 3D image<br>
-   * @return 3D image<br>
+   * <br>
    *     <br>
    *
    * @param input 3D image (NUMERIC type)
@@ -220,8 +200,7 @@ public class NDIMAGE {
 
   /**
    * Converting array from RGB to YUV format<br>
-   * @param input 3D image<br>
-   * @return 3D image<br>
+   * <br>
    *     <br>
    *
    * @param input 3D image (NUMERIC type)
@@ -234,8 +213,7 @@ public class NDIMAGE {
 
   /**
    * Converting image from YIQ to RGB format<br>
-   * @param input 3D image<br>
-   * @return 3D image<br>
+   * <br>
    *     <br>
    *
    * @param input 3D image (NUMERIC type)
@@ -248,8 +226,7 @@ public class NDIMAGE {
 
   /**
    * Converting image from YUV to RGB format<br>
-   * @param input 3D image<br>
-   * @return 3D image<br>
+   * <br>
    *     <br>
    *
    * @param input 3D image (NUMERIC type)
