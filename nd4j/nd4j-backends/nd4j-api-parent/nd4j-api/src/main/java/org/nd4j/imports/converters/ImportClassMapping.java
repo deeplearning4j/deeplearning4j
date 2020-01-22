@@ -622,7 +622,8 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.Igamma.class,
             org.nd4j.linalg.api.ops.custom.Igammac.class,
             org.nd4j.linalg.api.ops.custom.Digamma.class,
-            org.nd4j.linalg.api.ops.custom.Lu.class
+            org.nd4j.linalg.api.ops.custom.Lu.class,
+            org.nd4j.linalg.api.ops.custom.TriangularSolve.class
     );
 
     static {

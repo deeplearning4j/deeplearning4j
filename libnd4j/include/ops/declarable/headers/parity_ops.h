@@ -1042,6 +1042,25 @@ namespace nd4j {
         #endif
 
         /**
+         * triangular_solve op. - reverse Gaussian method for solve systems of linear equations.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M) - left parts of equations
+         *    1 - the tensor with dimension (x * y * z * ::: * M * K) - right parts of equations
+         *
+         * boolean args:
+         *    0 - lower - default is true (optional) - left part is lower triangular matrix
+         *    1 - adjoint - default is false (optional) - indicate input matrix or its adjoint (hermitian addition) should be used
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: * M * K) with solutions
+         *
+         */
+        #if NOT_EXCLUDED(OP_triangular_solve)
+        DECLARE_CUSTOM_OP(triangular_solve, 2, 1, true, 0, 0);
+        #endif
+
+        /**
          * lu op. - make LUP decomposition of given batch of 2D square matricies
          *
          * input params:

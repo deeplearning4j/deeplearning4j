@@ -2734,3 +2734,157 @@ TEST_F(DeclarableOpsTests12, LU_Test_4_2) {
     ASSERT_TRUE(expP.equalsTo(p));
     delete res;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TriangularSolve_Test_1) {
+
+    auto a = NDArrayFactory::create<float>('c', {4, 4}, {
+            3.f,  0.f,  0.f,  0.f,
+            2.f,  1.f,  0.f,  0.f,
+            1.f,  0.f,  1.f,  0.f,
+            1.f,  1.f,  1.f,  1.f
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {4, 1}, {
+            4.f, 2.f, 4.f, 2.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {4, 1}, {
+            1.333333f,      -0.6666667f,         2.6666667f,        -1.3333333f });
+
+    nd4j::ops::triangular_solve op;
+
+    auto res = op.execute({&a, &b}, {}, {});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("TriangularSolve");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TriangularSolve_Test_2) {
+
+    auto a = NDArrayFactory::create<float>('c', {4, 4}, {
+             1.f,  1.f,  1.f,  1.f,
+             0.f,  1.f,  1.f,  0.f,
+             0.f,  0.f,  2.f,  1.f,
+             0.f,  0.f,  0.f,  3.f,
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {4, 1}, {
+            2.f, 4.f, 2.f, 4.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {4, 1}, {
+            2.f,      4.f,         1.f,        1.3333333f });
+
+    nd4j::ops::triangular_solve op;
+
+    auto res = op.execute({&a, &b}, {}, {});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("TriangularSolve");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TriangularSolve_Test_3) {
+
+    auto a = NDArrayFactory::create<float>('c', {2, 4, 4}, {
+            3.f,  0.f,  0.f,  0.f,
+            2.f,  1.f,  0.f,  0.f,
+            1.f,  0.f,  1.f,  0.f,
+            1.f,  1.f,  1.f,  1.f,
+
+            3.f,  0.f,  0.f,  0.f,
+            2.f,  1.f,  0.f,  0.f,
+            1.f,  0.f,  1.f,  0.f,
+            1.f,  1.f,  1.f,  1.f
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {2, 4, 1}, {
+            4.f, 2.f, 4.f, 2.f,
+            4.f, 2.f, 4.f, 2.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {2, 4, 1}, {
+            1.333333f,      -0.6666667f,         2.6666667f,        -1.3333333f,
+            1.333333f,      -0.6666667f,         2.6666667f,        -1.3333333f
+    });
+
+    nd4j::ops::triangular_solve op;
+
+    auto res = op.execute({&a, &b}, {}, {});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("TriangularSolve");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TriangularSolve_Test_4) {
+
+    auto a = NDArrayFactory::create<float>('c', {4, 4}, {
+            1.f,  1.f,  1.f,  1.f,
+            0.f,  1.f,  1.f,  0.f,
+            0.f,  0.f,  2.f,  1.f,
+            0.f,  0.f,  0.f,  3.f,
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {4, 1}, {
+            2.f, 4.f, 2.f, 4.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {4, 1}, {
+           -3.3333333f,      3.6666666f,         0.333333f,        1.3333333f
+    });
+
+    nd4j::ops::triangular_solve op;
+
+    auto res = op.execute({&a, &b}, {}, {}, {false});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("TriangularSolve");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TriangularSolve_Test_5) {
+
+    auto a = NDArrayFactory::create<float>('c', {4, 4}, {
+            5.f,  1., -3.f,  3.f,
+            0.f,  1.f,  1.f, -1.f,
+            0.f,  0.f,  2.f, -9.f,
+            0.f,  0.f,  0.f,  4.f
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {4, 1}, {
+             5.f,             2.f,             0.f,            -3.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {4, 1}, {
+            1.f,      1.f,         1.f,        1.f
+    });
+
+    nd4j::ops::triangular_solve op;
+
+    auto res = op.execute({&a, &b}, {}, {}, {false, true});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+    z->printIndexedBuffer("TriangularSolve with adjoint");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}

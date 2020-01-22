@@ -1653,4 +1653,27 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray[] ret = Nd4j.exec(op);
         assertArrayEquals(image.shape(), ret[0].shape());
     }
+
+    @Test
+    public void testTriangularSolve() {
+        INDArray a = Nd4j.createFromArray(new float[]{
+                3.f, 0.f, 0.f, 0.f,
+                2.f, 1.f, 0.f, 0.f,
+                1.f, 0.f, 1.f, 0.f,
+                1.f, 1.f, 1.f, 1.f
+        }).reshape(4, 4);
+
+        INDArray b = Nd4j.createFromArray(new float[]{
+                4.f, 2.f, 4.f, 2.f
+        }).reshape(4, 1);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                1.333333f, -0.6666667f, 2.6666667f, -1.3333333f
+        }).reshape(4, 1);
+
+        val op = new TriangularSolve(a, b, true, false);
+        INDArray[] ret = Nd4j.exec(op);
+
+        assertEquals(expected, ret[0]);
+    }
 }
