@@ -162,8 +162,24 @@ namespace nd4j {
          * Input : batched tensor with rank >=2
          * Output: tensor with rank lesser by 1 from input
          */
+        #if NOT_EXCLUDED(OP_matrix_diag_part)
         DECLARE_CUSTOM_OP(matrix_diag_part, 1, 1, false, 0, 0);
+        #endif
 
+        /**
+         * QR decomposition: A = QR, where Q is ortogonal (Q * QT = I) and R is upper triangular.
+         * For A (MxN) Q is M x M and R is (NxN). 
+         *
+         * Input : 
+         *    0 - float (or complex float) tensor with shape {.,..,...,M,N} - batch of float matricies
+         *
+         * Output: 
+         *    0 - float tensor with shape {.,..,...,MxN} - batch of ortogonal matricies {Qs}
+         *    1 - float tensor with shape {.,..,...,NxN} - batch of upper triangular matricies {Rs}
+         */
+        #if NOT_EXCLUDED(OP_qr)
+        DECLARE_CUSTOM_OP(qr, 1, 2, false, 0, 0);
+        #endif
 
         /**
          * This operation takes 2 arrays: original values, and values to be excluded. And returns 2 arrays: values left after exclusion, and indices in original array for surivals.

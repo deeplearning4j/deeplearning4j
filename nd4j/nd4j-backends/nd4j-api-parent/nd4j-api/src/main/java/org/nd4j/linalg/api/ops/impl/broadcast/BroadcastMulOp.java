@@ -77,7 +77,7 @@ public class BroadcastMulOp extends BaseBroadcastOp {
 
     @Override
     public String tensorflowName() {
-        return "mul";
+        return "Mul";
     }
 
     @Override

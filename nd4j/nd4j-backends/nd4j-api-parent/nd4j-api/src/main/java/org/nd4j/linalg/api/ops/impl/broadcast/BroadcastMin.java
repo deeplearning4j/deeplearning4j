@@ -83,7 +83,7 @@ public class BroadcastMin extends BaseBroadcastOp {
 
     @Override
     public String tensorflowName() {
-        return "min";
+        return "Min";
     }
 
     @Override

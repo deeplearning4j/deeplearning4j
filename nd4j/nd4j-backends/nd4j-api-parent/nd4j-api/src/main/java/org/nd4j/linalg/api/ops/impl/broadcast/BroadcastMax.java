@@ -83,7 +83,7 @@ public class BroadcastMax extends BaseBroadcastOp {
 
     @Override
     public String tensorflowName() {
-        return "max";
+        return "Max";
     }
 
     @Override

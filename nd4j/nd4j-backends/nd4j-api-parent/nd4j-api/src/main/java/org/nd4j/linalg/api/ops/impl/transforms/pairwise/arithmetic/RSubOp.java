@@ -63,7 +63,7 @@ public class RSubOp extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "sub";
+        return "Sub";
     }
 
     public RSubOp( INDArray[] inputs, INDArray[] outputs) {

@@ -326,6 +326,6 @@ public class TensorMmul extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "matmul";
+        return "MatMul";
     }
 }
