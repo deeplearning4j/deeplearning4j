@@ -18,6 +18,7 @@ package org.nd4j.aeron.ipc;
 
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.time.StopWatch;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -57,7 +58,10 @@ public class AeronNDArraySerdeTest extends BaseND4JTest {
 
 
     @Test
+    @Ignore // timeout, skip step ignored
     public void testToAndFromCompressedLarge() {
+        skipUnlessIntegrationTests();
+
         INDArray arr = Nd4j.zeros((int) 1e7);
         INDArray compress = Nd4j.getCompressor().compress(arr, "GZIP");
         assertTrue(compress.isCompressed());

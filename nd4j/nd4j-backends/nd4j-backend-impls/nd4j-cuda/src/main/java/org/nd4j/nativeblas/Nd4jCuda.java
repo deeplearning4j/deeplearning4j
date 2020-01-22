@@ -726,6 +726,39 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
 // #endif //DEV_TESTS_ERRORREFERENCE_H
 
 
+// Parsed from execution/Engine.h
+
+/*******************************************************************************
+ * Copyright (c) 2019 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef SD_ENGINE_H
+// #define SD_ENGINE_H
+    /** enum samediff::Engine */
+    public static final int
+        ENGINE_CPU = 0,
+        ENGINE_CUDA = 1;
+
+
+// #endif //SD_ENGINE_H
+
+
 // Parsed from memory/MemoryType.h
 
 //
@@ -4147,6 +4180,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  these methods suited for FlatBuffers use
         */
         public native @Cast("Nd4jLong*") @StdVector LongPointer getShapeAsVector();
+        public native @StdVector IntPointer getShapeAsVectorInt();
         public native @Cast("Nd4jLong*") @StdVector LongPointer getShapeInfoAsVector();
         public native @Cast("int64_t*") @StdVector LongPointer getShapeInfoAsFlatVector();
         public native @Cast("int64_t*") @StdVector LongPointer getShapeAsFlatVector();
@@ -6187,6 +6221,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <graph/VariableSpace.h>
 // #include <graph/ContextPrototype.h>
 // #include <memory/Workspace.h>
+// #include <execution/Engine.h>
 
 // CUDA-specific includes
 // #ifdef __CUDACC__
@@ -6237,11 +6272,12 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             // this method returns workspace for object allocations
             public native Workspace oWorkspace();
 
-
             public native void setVariableSpace(VariableSpace variableSpace);
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+
+            public native void setTargetEngine(@Cast("samediff::Engine") int engine);
 
             public native VariableSpace getVariableSpace();
 
@@ -6395,6 +6431,11 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <dll.h>
 // #include <RandomGenerator.h>
 // #include <ops/declarable/OpDescriptor.h>
+// #include <execution/Engine.h>
+
+// #ifndef __STANDALONE_BUILD__
+// #include <config.h>
+// #endif
 
         @Namespace("nd4j::graph") @NoOffset public static class ContextPrototype extends Pointer {
             static { Loader.load(); }
@@ -6439,6 +6480,8 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             public native @StdVector IntPointer getIArguments();
             public native @Cast("bool*") @StdVector BooleanPointer getBArguments();
             public native @StdVector IntPointer getAxis();
+
+            public native @Cast("samediff::Engine") int engine();
 
             public native @Cast("size_t") long numT();
             public native @Cast("size_t") long numI();
@@ -9004,6 +9047,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define SD_PLATFORMHELPER_H
 
 // #include <ShapeUtils.h>
+// #include <execution/Engine.h>
 // #include <graph/Context.h>
 // #include <string>
 // #include <pointercast.h>
@@ -9018,6 +9062,8 @@ public static final int PREALLOC_SIZE = 33554432;
             
 
                 public native @StdString BytePointer name();
+
+                public native @Cast("samediff::Engine") int engine();
 
                 public native @Cast("Nd4jLong") long hash();
 
@@ -9632,6 +9678,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #include <mutex>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <ops/declarable/PlatformHelper.h>
+// #include <execution/Engine.h>
 
 // handlers part
 // #include <cstdlib>
@@ -9669,13 +9716,13 @@ public static final int PREALLOC_SIZE = 33554432;
 
             public native void registerHelper(PlatformHelper op);
 
-            public native @Cast("bool") boolean hasHelper(@Cast("Nd4jLong") long hash);
+            public native @Cast("bool") boolean hasHelper(@Cast("Nd4jLong") long hash, @Cast("samediff::Engine") int engine);
 
             public native DeclarableOp getOperation(@Cast("char*") String name);
             public native DeclarableOp getOperation(@Cast("char*") BytePointer name);
             public native DeclarableOp getOperation(@Cast("Nd4jLong") long hash);
 
-            public native PlatformHelper getPlatformHelper(@Cast("Nd4jLong") long hash);
+            public native PlatformHelper getPlatformHelper(@Cast("Nd4jLong") long hash, @Cast("samediff::Engine") int engine);
 
             public native @Cast("Nd4jLong*") @StdVector LongPointer getAllHashes();
 
@@ -9801,6 +9848,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #include <cuda_runtime_api.h>
 // #include <cuda_runtime.h>
 // #include <cuda_device_runtime_api.h>
+// #include "config.h"
 // #endif
 
 // used for MKLDNN etc

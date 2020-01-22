@@ -747,6 +747,39 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 // #endif //DEV_TESTS_ERRORREFERENCE_H
 
 
+// Parsed from execution/Engine.h
+
+/*******************************************************************************
+ * Copyright (c) 2019 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef SD_ENGINE_H
+// #define SD_ENGINE_H
+    /** enum samediff::Engine */
+    public static final int
+        ENGINE_CPU = 0,
+        ENGINE_CUDA = 1;
+
+
+// #endif //SD_ENGINE_H
+
+
 // Parsed from Environment.h
 
 /*******************************************************************************
@@ -4150,6 +4183,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  these methods suited for FlatBuffers use
         */
         public native @Cast("Nd4jLong*") @StdVector LongPointer getShapeAsVector();
+        public native @StdVector IntPointer getShapeAsVectorInt();
         public native @Cast("Nd4jLong*") @StdVector LongPointer getShapeInfoAsVector();
         public native @Cast("int64_t*") @StdVector LongPointer getShapeInfoAsFlatVector();
         public native @Cast("int64_t*") @StdVector LongPointer getShapeAsFlatVector();
@@ -6190,6 +6224,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <graph/VariableSpace.h>
 // #include <graph/ContextPrototype.h>
 // #include <memory/Workspace.h>
+// #include <execution/Engine.h>
 
 // CUDA-specific includes
 // #ifdef __CUDACC__
@@ -6240,11 +6275,12 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             // this method returns workspace for object allocations
             public native Workspace oWorkspace();
 
-
             public native void setVariableSpace(VariableSpace variableSpace);
 
             public native RandomBuffer getRNG();
             public native void setRNG(RandomBuffer rng);
+
+            public native void setTargetEngine(@Cast("samediff::Engine") int engine);
 
             public native VariableSpace getVariableSpace();
 
@@ -6398,6 +6434,11 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <dll.h>
 // #include <RandomGenerator.h>
 // #include <ops/declarable/OpDescriptor.h>
+// #include <execution/Engine.h>
+
+// #ifndef __STANDALONE_BUILD__
+// #include <config.h>
+// #endif
 
         @Namespace("nd4j::graph") @NoOffset public static class ContextPrototype extends Pointer {
             static { Loader.load(); }
@@ -6442,6 +6483,8 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             public native @StdVector IntPointer getIArguments();
             public native @Cast("bool*") @StdVector BooleanPointer getBArguments();
             public native @StdVector IntPointer getAxis();
+
+            public native @Cast("samediff::Engine") int engine();
 
             public native @Cast("size_t") long numT();
             public native @Cast("size_t") long numI();
@@ -11319,6 +11362,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define SD_PLATFORMHELPER_H
 
 // #include <ShapeUtils.h>
+// #include <execution/Engine.h>
 // #include <graph/Context.h>
 // #include <string>
 // #include <pointercast.h>
@@ -11333,6 +11377,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             
 
                 public native @StdString BytePointer name();
+
+                public native @Cast("samediff::Engine") int engine();
 
                 public native @Cast("Nd4jLong") long hash();
 
@@ -11843,6 +11889,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <mutex>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <ops/declarable/PlatformHelper.h>
+// #include <execution/Engine.h>
 
 // handlers part
 // #include <cstdlib>
@@ -11880,13 +11927,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
             public native void registerHelper(PlatformHelper op);
 
-            public native @Cast("bool") boolean hasHelper(@Cast("Nd4jLong") long hash);
+            public native @Cast("bool") boolean hasHelper(@Cast("Nd4jLong") long hash, @Cast("samediff::Engine") int engine);
 
             public native DeclarableOp getOperation(@Cast("char*") String name);
             public native DeclarableOp getOperation(@Cast("char*") BytePointer name);
             public native DeclarableOp getOperation(@Cast("Nd4jLong") long hash);
 
-            public native PlatformHelper getPlatformHelper(@Cast("Nd4jLong") long hash);
+            public native PlatformHelper getPlatformHelper(@Cast("Nd4jLong") long hash, @Cast("samediff::Engine") int engine);
 
             public native @Cast("Nd4jLong*") @StdVector LongPointer getAllHashes();
 
@@ -14098,6 +14145,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public Pow() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
+                                                                                }
+        @Namespace("nd4j::ops") public static class Pow_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public Pow_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public Pow_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public Pow_bp position(long position) {
+                return (Pow_bp)super.position(position);
+            }
+        
+                                                                                    public Pow_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
 
@@ -16746,7 +16808,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17899,6 +17961,34 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+       /**
+        * This op calculates lgamma function lgamma(x) = log(Gamma(x))
+        *
+        * Input arrays:
+        *    0: x - input matrix
+        *
+        * Output array:
+        *    0: log of Gamma(x)
+        *
+        */
+//         #if NOT_EXCLUDED(OP_lgamma)
+        @Namespace("nd4j::ops") public static class lgamma extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public lgamma(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public lgamma(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public lgamma position(long position) {
+                return (lgamma)super.position(position);
+            }
+        
+                                                    public lgamma() { super((Pointer)null); allocate(); }
+                                                    private native void allocate();
+                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                }
+//         #endif
+
         /**
         * This op calculates digamma function psi(x) = derivative of log(Gamma(x))
         *
@@ -18929,6 +19019,39 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
+//         #endif
+
+        /**
+         * triangular_solve op. - reverse Gaussian method for solve systems of linear equations.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M) - left parts of equations
+         *    1 - the tensor with dimension (x * y * z * ::: * M * K) - right parts of equations
+         *
+         * boolean args:
+         *    0 - lower - default is true (optional) - left part is lower triangular matrix
+         *    1 - adjoint - default is false (optional) - indicate input matrix or its adjoint (hermitian addition) should be used
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: * M * K) with solutions
+         *
+         */
+//         #if NOT_EXCLUDED(OP_triangular_solve)
+        @Namespace("nd4j::ops") public static class triangular_solve extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public triangular_solve(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public triangular_solve(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public triangular_solve position(long position) {
+                return (triangular_solve)super.position(position);
+            }
+        
+                                                                                    public triangular_solve() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**
@@ -20395,6 +20518,41 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
        /**
+        * This op make area interpolated resize (as OpenCV INTER_AREA algorithm) for given tensor
+        *
+        * input array:
+        *    0 - images - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - size -   1D-Tensor with 2 values (newWidth, newHeight) (if missing a pair of integer args should be provided).
+        *
+        * int args: - proveded only when size tensor is missing
+        *    0 - new height
+        *    1 - new width
+        * boolean args:
+        *    0 - align_corners - optional (default is false)
+        *
+        * output array:
+        *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
+        *
+        */
+//         #if NOT_EXCLUDED(OP_resize_area)
+        @Namespace("nd4j::ops") public static class resize_area extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public resize_area(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public resize_area(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public resize_area position(long position) {
+                return (resize_area)super.position(position);
+            }
+        
+                                                                                    public resize_area() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+       /**
         * This op make interpolated resize for given tensor with given algorithm.
         * Supported algorithms are bilinear, bicubic, nearest_neighbor.
         * Need to implement to full compatibility with TF: lanczos5, gaussian, area and mitchellcubic
@@ -21158,6 +21316,36 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public randomuniform() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+        /*
+         * multinomial (categorical) random generator draws samples from a multinomial distribution
+         *
+         * Input array:
+         *    0 - 2D ndarray with unnormalized log-probabilities with shape [batch_size (N), num_classes (K)]
+         *    1 - array with one int value of samples number, number of independent samples to draw for each experiment 1,N.
+         * Int arguments:
+         *    0 - optional argument, corresponds to dimension with batch_size
+         *    1 - optional argument, integer type to use for the output. Default int64.
+         *
+         * Output array:
+         *    0 - 2D ndarray with the drawn samples of shape [batch_size, num_samples]
+         */
+//         #if NOT_EXCLUDED(OP_random_multinomial)
+        @Namespace("nd4j::ops") public static class random_multinomial extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public random_multinomial(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public random_multinomial(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public random_multinomial position(long position) {
+                return (random_multinomial)super.position(position);
+            }
+        
+                                                                                    public random_multinomial() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
