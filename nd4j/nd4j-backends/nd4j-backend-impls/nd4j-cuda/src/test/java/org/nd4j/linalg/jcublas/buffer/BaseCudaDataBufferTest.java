@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.workspace.CudaWorkspace;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -20,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class BaseCudaDataBufferTest {
+public class BaseCudaDataBufferTest extends BaseND4JTest {
 
     @Before
     public void setUp() {

@@ -242,7 +242,7 @@ public class IndexedTailTest extends BaseDL4JTest {
         final long[] sums = new long[numReaders];
         val readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
-            val f = e;
+            final int f = e;
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -297,7 +297,7 @@ public class IndexedTailTest extends BaseDL4JTest {
         final long[] sums = new long[numReaders];
         val readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
-            val f = e;
+            final int f = e;
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -371,7 +371,7 @@ public class IndexedTailTest extends BaseDL4JTest {
         final long[] sums = new long[numReaders];
         val readers = new ArrayList<Thread>();
         for (int e = 0; e < numReaders; e++) {
-            val f = e;
+            final int f = e;
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {

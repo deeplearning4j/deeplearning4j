@@ -36,6 +36,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.Arrays;
 import java.util.stream.LongStream;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * @author raver119@gmail.com
  */
@@ -92,7 +94,7 @@ public class SortCooTests extends BaseNd4jTest {
 
 //        log.info("New indices: {}", Arrays.toString(idx.asInt()));
 
-        assertArrayEquals(expIndices, idx.asInt());
+        assertArrayEquals(expIndices, idx.asLong());
         assertArrayEquals(expValues, val.asDouble(), 1e-5);
     }
 
@@ -121,7 +123,7 @@ public class SortCooTests extends BaseNd4jTest {
         NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndices(null, (LongPointer) idx.addressPointer(),
                 val.addressPointer(), 3, 3);
 
-        assertArrayEquals(expIndices, idx.asInt());
+        assertArrayEquals(expIndices, idx.asLong());
         assertArrayEquals(expValues, val.asDouble(), 1e-5);
     }
 
@@ -277,7 +279,7 @@ public class SortCooTests extends BaseNd4jTest {
 
         // just check the indices. sortSparseCooIndicesSort1 and sortSparseCooIndicesSort2 checks that
         // indices and values are both swapped. This test just makes sure index sort works for larger arrays.
-        assertArrayEquals(expIndices, idx.asInt());
+        assertArrayEquals(expIndices, idx.asLong());
     }
     @Override
     public char ordering() {

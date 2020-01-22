@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
 import org.deeplearning4j.arbiter.optimize.genetic.TestCrossoverOperator;
@@ -23,7 +24,7 @@ import org.deeplearning4j.arbiter.optimize.genetic.TestPopulationInitializer;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class CrossoverOperatorTests {
+public class CrossoverOperatorTests extends BaseDL4JTest {
 
     @Test
     public void CrossoverOperator_initializeInstance_ShouldInitPopulationModel() throws IllegalAccessException {

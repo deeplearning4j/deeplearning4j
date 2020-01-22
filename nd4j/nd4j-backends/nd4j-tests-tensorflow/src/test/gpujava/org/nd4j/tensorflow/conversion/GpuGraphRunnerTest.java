@@ -17,6 +17,7 @@
 
 package org.nd4j.tensorflow.conversion;
 
+import org.nd4j.BaseND4JTest;
 import org.nd4j.shade.protobuf.util.JsonFormat;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
@@ -37,7 +38,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class GpuGraphRunnerTest {
+public class GpuGraphRunnerTest extends BaseND4JTest {
 
     @Test
     public void testGraphRunner() throws Exception {

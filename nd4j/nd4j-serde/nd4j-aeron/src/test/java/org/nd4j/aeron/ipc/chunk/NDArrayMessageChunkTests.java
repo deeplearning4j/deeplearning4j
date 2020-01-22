@@ -18,6 +18,7 @@ package org.nd4j.aeron.ipc.chunk;
 
 import org.agrona.DirectBuffer;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.util.BufferUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -30,7 +31,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 11/20/16.
  */
-public class NDArrayMessageChunkTests {
+public class NDArrayMessageChunkTests extends BaseND4JTest {
 
     @Test
     public void testChunkSerialization() {

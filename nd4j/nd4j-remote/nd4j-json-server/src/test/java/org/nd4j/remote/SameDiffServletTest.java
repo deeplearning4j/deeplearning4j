@@ -7,6 +7,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -18,7 +19,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-public class SameDiffServletTest {
+public class SameDiffServletTest extends BaseND4JTest {
 
     private SameDiffJsonModelServer server;
 

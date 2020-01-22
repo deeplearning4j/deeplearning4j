@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.parameter;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
@@ -25,7 +26,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestParameterSpaces {
+public class TestParameterSpaces extends BaseDL4JTest {
 
 
     @Test

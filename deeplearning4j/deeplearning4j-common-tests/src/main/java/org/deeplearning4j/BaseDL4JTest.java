@@ -24,6 +24,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
 import org.junit.rules.Timeout;
+import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -36,6 +37,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.junit.Assume.assumeTrue;
+
 @Slf4j
 public abstract class BaseDL4JTest {
 
@@ -46,6 +49,17 @@ public abstract class BaseDL4JTest {
 
     protected long startTime;
     protected int threadCountBefore;
+
+    private final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
+
+    /**
+     * Override this to specify the number of threads for C++ execution, via
+     * {@link org.nd4j.linalg.factory.Environment#setMaxMasterThreads(int)}
+     * @return Number of threads to use for C++ op execution
+     */
+    public int numThreads(){
+        return DEFAULT_THREADS;
+    }
 
     /**
      * Override this method to set the default timeout for methods in the test class
@@ -72,6 +86,28 @@ public abstract class BaseDL4JTest {
         return getDataType();
     }
 
+    protected Boolean integrationTest;
+
+    /**
+     * @return True if integration tests maven profile is enabled, false otherwise.
+     */
+    public boolean isIntegrationTests(){
+        if(integrationTest == null){
+            String prop = System.getenv("DL4J_INTEGRATION_TESTS");
+            integrationTest = Boolean.parseBoolean(prop);
+        }
+        return integrationTest;
+    }
+
+    /**
+     * Call this as the first line of a test in order to skip that test, only when the integration tests maven profile is not enabled.
+     * This can be used to dynamically skip integration tests when the integration test profile is not enabled.
+     * Note that the integration test profile is not enabled by default - "integration-tests" profile
+     */
+    public void skipUnlessIntegrationTests(){
+        assumeTrue("Skipping integration test - integration profile is not enabled", isIntegrationTests());
+    }
+
     @Before
     public void beforeTest(){
         log.info("{}.{}", getClass().getSimpleName(), name.getMethodName());
@@ -81,6 +117,14 @@ public abstract class BaseDL4JTest {
         Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j.setDefaultDataTypes(getDataType(), getDefaultFPDataType());
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
+        Nd4j.getExecutioner().enableDebugMode(false);
+        Nd4j.getExecutioner().enableVerboseMode(false);
+        int numThreads = numThreads();
+        Preconditions.checkState(numThreads > 0, "Number of threads must be > 0");
+        if(numThreads != Nd4j.getEnvironment().maxMasterThreads()) {
+            Nd4j.getEnvironment().setMaxMasterThreads(numThreads);
+        }
         startTime = System.currentTimeMillis();
         threadCountBefore = ManagementFactory.getThreadMXBean().getThreadCount();
     }

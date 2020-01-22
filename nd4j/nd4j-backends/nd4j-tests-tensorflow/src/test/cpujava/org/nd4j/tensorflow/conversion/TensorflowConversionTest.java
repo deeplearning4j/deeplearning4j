@@ -18,6 +18,7 @@ package org.nd4j.tensorflow.conversion;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -29,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-public class TensorflowConversionTest {
+public class TensorflowConversionTest extends BaseND4JTest {
 
     @Test
     public void testView() {

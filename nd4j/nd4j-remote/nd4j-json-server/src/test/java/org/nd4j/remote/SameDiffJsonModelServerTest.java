@@ -19,6 +19,7 @@ package org.nd4j.remote;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.remote.clients.JsonRemoteInference;
@@ -35,7 +36,7 @@ import java.util.concurrent.Future;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class SameDiffJsonModelServerTest {
+public class SameDiffJsonModelServerTest extends BaseND4JTest {
 
     @Test
     public void basicServingTest_1() throws Exception {

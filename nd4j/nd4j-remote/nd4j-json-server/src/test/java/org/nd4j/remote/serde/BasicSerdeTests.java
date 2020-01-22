@@ -2,12 +2,13 @@ package org.nd4j.remote.serde;
 
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.remote.clients.serde.impl.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class BasicSerdeTests {
+public class BasicSerdeTests extends BaseND4JTest {
     private final static DoubleArraySerde doubleArraySerde = new DoubleArraySerde();
     private final static FloatArraySerde floatArraySerde = new FloatArraySerde();
     private final static StringSerde stringSerde = new StringSerde();

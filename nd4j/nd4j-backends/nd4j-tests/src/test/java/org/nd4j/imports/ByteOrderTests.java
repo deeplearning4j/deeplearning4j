@@ -33,6 +33,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j

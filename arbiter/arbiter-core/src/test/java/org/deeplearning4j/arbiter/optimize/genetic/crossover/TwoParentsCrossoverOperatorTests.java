@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.TwoParentsCrossoverOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.TwoParentSelection;
@@ -27,7 +28,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-public class TwoParentsCrossoverOperatorTests {
+public class TwoParentsCrossoverOperatorTests extends BaseDL4JTest {
 
     class TestTwoParentsCrossoverOperator extends TwoParentsCrossoverOperator {
 

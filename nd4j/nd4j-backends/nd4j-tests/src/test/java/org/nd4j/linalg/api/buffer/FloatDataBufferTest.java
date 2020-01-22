@@ -37,8 +37,7 @@ import org.nd4j.linalg.util.SerializationUtils;
 import java.io.*;
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Float data buffer tests

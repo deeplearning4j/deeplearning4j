@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.*;
 import org.junit.rules.Timeout;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -40,7 +41,7 @@ import static org.junit.Assert.*;
 @Slf4j
 @Ignore
 @Deprecated
-public class ClipboardTest {
+public class ClipboardTest extends BaseND4JTest {
     @Before
     public void setUp() throws Exception {
 

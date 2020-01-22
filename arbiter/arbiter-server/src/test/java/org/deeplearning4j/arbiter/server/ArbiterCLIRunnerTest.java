@@ -18,6 +18,7 @@ package org.deeplearning4j.arbiter.server;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
@@ -52,7 +53,7 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 3/12/17.
  */
 @Slf4j
-public class ArbiterCLIRunnerTest {
+public class ArbiterCLIRunnerTest extends BaseDL4JTest {
 
 
     @Test

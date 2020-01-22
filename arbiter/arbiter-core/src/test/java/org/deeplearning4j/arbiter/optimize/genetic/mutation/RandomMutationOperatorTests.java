@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.mutation;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.mutation.RandomMutationOperator;
 import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
 import org.junit.Assert;
@@ -24,7 +25,7 @@ import org.junit.Test;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
-public class RandomMutationOperatorTests {
+public class RandomMutationOperatorTests extends BaseDL4JTest {
     @Test
     public void RandomMutationOperator_DefaultBuild_ShouldNotBeNull() {
         RandomMutationOperator sut = new RandomMutationOperator.Builder().build();

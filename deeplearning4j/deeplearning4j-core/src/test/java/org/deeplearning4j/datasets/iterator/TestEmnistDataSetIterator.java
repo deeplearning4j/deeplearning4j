@@ -46,17 +46,17 @@ public class TestEmnistDataSetIterator extends BaseDL4JTest {
     @Test
     public void testEmnistDataSetIterator() throws Exception {
 
-        //        EmnistFetcher fetcher = new EmnistFetcher(EmnistDataSetIterator.Set.COMPLETE);
-        //        File baseEmnistDir = fetcher.getFILE_DIR();
-        //        if(baseEmnistDir.exists()){
-        //            FileUtils.deleteDirectory(baseEmnistDir);
-        //        }
-        //        assertFalse(baseEmnistDir.exists());
-
 
         int batchSize = 128;
 
-        for (EmnistDataSetIterator.Set s : EmnistDataSetIterator.Set.values()) {
+        EmnistDataSetIterator.Set[] sets;
+        if(isIntegrationTests()){
+            sets = EmnistDataSetIterator.Set.values();
+        } else {
+            sets = new EmnistDataSetIterator.Set[]{EmnistDataSetIterator.Set.MNIST, EmnistDataSetIterator.Set.LETTERS};
+        }
+
+        for (EmnistDataSetIterator.Set s : sets) {
             boolean isBalanced = EmnistDataSetIterator.isBalanced(s);
             int numLabels = EmnistDataSetIterator.numLabels(s);
             INDArray labelCounts = null;

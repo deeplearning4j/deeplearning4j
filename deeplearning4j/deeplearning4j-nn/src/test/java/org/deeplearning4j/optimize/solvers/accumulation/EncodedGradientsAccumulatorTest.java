@@ -45,9 +45,15 @@ public class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
      */
     @Test
     public void testStore1() throws Exception {
-        int numParams = 100000;
-
-        int workers[] = new int[] {2, 4, 8};
+        int numParams;
+        int[] workers;
+        if(isIntegrationTests()){
+            numParams = 100000;
+            workers = new int[] {2, 4, 8};
+        } else {
+            numParams = 10000;
+            workers = new int[] {2, 3};
+        }
 
         for (int numWorkers : workers) {
             EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3),null, null, false);
@@ -77,7 +83,13 @@ public class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
      */
     @Test
     public void testEncodingLimits1() throws Exception {
-        int numParams = 100000;
+        int numParams;
+        if(isIntegrationTests()){
+            numParams = 100000;
+        } else {
+            numParams = 10000;
+        }
+
 
         EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, null, false);
         for (int e = 10; e < numParams / 5; e++) {

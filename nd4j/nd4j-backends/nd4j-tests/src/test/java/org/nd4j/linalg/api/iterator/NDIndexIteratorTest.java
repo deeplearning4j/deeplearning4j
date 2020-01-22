@@ -24,6 +24,8 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * @author Adam Gibson
  */

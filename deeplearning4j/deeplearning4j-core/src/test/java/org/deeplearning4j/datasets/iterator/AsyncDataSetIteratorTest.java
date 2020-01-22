@@ -78,8 +78,16 @@ public class AsyncDataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     public void hasNextWithResetAndLoad() throws Exception {
+        int[] prefetchSizes;
+        if(isIntegrationTests()){
+            prefetchSizes = new int[]{2, 3, 4, 5, 6, 7, 8};
+        } else {
+            prefetchSizes = new int[]{2, 3, 8};
+        }
+
+
         for (int iter = 0; iter < ITERATIONS; iter++) {
-            for (int prefetchSize = 2; prefetchSize <= 8; prefetchSize++) {
+            for(int prefetchSize : prefetchSizes){
                 AsyncDataSetIterator iterator = new AsyncDataSetIterator(backIterator, prefetchSize);
                 TestDataSetConsumer consumer = new TestDataSetConsumer(EXECUTION_SMALL);
                 int cnt = 0;
@@ -161,8 +169,14 @@ public class AsyncDataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testVariableTimeSeries1() throws Exception {
+        int numBatches = isIntegrationTests() ? 1000 : 100;
+        int batchSize = isIntegrationTests() ? 32 : 8;
+        int timeStepsMin = 10;
+        int timeStepsMax = isIntegrationTests() ? 500 : 100;
+        int valuesPerTimestep = isIntegrationTests() ? 128 : 16;
+
         AsyncDataSetIterator adsi = new AsyncDataSetIterator(
-                        new VariableTimeseriesGenerator(1192, 1000, 32, 128, 10, 500, 10), 2, true);
+                        new VariableTimeseriesGenerator(1192, numBatches, batchSize, valuesPerTimestep, timeStepsMin, timeStepsMax, 10), 2, true);
 
         for (int e = 0; e < 10; e++) {
             int cnt = 0;

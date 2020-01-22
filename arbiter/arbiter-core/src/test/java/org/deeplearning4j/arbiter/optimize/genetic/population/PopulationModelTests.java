@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.population;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.culling.CullOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
@@ -27,7 +28,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-public class PopulationModelTests {
+public class PopulationModelTests extends BaseDL4JTest {
 
     private class TestCullOperator implements CullOperator {
 

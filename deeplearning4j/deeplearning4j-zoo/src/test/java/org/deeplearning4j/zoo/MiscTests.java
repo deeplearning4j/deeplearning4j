@@ -32,6 +32,11 @@ import java.io.File;
 
 public class MiscTests extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
     @Test
     public void testTransferVGG() throws Exception {
         //https://github.com/deeplearning4j/deeplearning4j/issues/5167

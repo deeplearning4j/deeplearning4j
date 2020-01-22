@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.ClientRouter;
@@ -39,7 +40,7 @@ import static org.junit.Assert.*;
  */
 @Ignore
 @Deprecated
-public class RoutedTransportTest {
+public class RoutedTransportTest extends BaseND4JTest {
     @Before
     public void setUp() throws Exception {
 

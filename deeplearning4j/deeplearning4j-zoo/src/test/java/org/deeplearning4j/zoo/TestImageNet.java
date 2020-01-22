@@ -58,6 +58,11 @@ import static org.junit.Assert.assertTrue;
 public class TestImageNet extends BaseDL4JTest {
 
     @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
+    @Override
     public DataType getDataType(){
         return DataType.FLOAT;
     }

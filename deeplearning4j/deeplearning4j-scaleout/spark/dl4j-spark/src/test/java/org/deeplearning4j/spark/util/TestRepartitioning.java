@@ -42,6 +42,11 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestRepartitioning extends BaseSparkTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return isIntegrationTests() ? 240000 : 60000;
+    }
+
     @Test
     public void testRepartitioning() {
         List<String> list = new ArrayList<>();
@@ -66,7 +71,12 @@ public class TestRepartitioning extends BaseSparkTest {
     @Test
     public void testRepartitioning2() throws Exception {
 
-        int[] ns = {320, 321, 25600, 25601, 25615};
+        int[] ns;
+        if(isIntegrationTests()){
+            ns = new int[]{320, 321, 25600, 25601, 25615};
+        } else {
+            ns = new int[]{320, 2561};
+        }
 
         for (int n : ns) {
 

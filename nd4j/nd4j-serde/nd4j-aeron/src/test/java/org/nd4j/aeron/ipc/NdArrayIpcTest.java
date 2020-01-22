@@ -22,6 +22,7 @@ import org.agrona.CloseHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertFalse;
 /**
  * Created by agibsonccc on 9/22/16.
  */
-public class NdArrayIpcTest {
+public class NdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
     private Aeron.Context ctx;
@@ -44,21 +45,32 @@ public class NdArrayIpcTest {
     private int streamId = 10;
     private int length = (int) 1e7;
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
     @Before
     public void before() {
-        MediaDriver.Context ctx = AeronUtil.getMediaDriverContext(length);
-        mediaDriver = MediaDriver.launchEmbedded(ctx);
-        System.out.println("Using media driver directory " + mediaDriver.aeronDirectoryName());
-        System.out.println("Launched media driver");
+        if(isIntegrationTests()) {
+            MediaDriver.Context ctx = AeronUtil.getMediaDriverContext(length);
+            mediaDriver = MediaDriver.launchEmbedded(ctx);
+            System.out.println("Using media driver directory " + mediaDriver.aeronDirectoryName());
+            System.out.println("Launched media driver");
+        }
     }
 
     @After
     public void after() {
-        CloseHelper.quietClose(mediaDriver);
+        if(isIntegrationTests()) {
+            CloseHelper.quietClose(mediaDriver);
+        }
     }
 
     @Test
     public void testMultiThreadedIpc() throws Exception {
+        skipUnlessIntegrationTests();   //Long-running test - don't run as part of unit tests by default
+
         ExecutorService executorService = Executors.newFixedThreadPool(4);
         INDArray arr = Nd4j.scalar(1.0);
 
@@ -139,6 +151,8 @@ public class NdArrayIpcTest {
 
     @Test
     public void testIpc() throws Exception {
+        skipUnlessIntegrationTests();   //Long-running test - don't run as part of unit tests by default
+
         INDArray arr = Nd4j.scalar(1.0);
 
 

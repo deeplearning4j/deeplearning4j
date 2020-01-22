@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,19 +15,20 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.parameterserver;
-
+package org.nd4j;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.junit.rules.Timeout;
+import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 
@@ -35,50 +37,106 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.junit.Assume.assumeTrue;
 
-/**
- * Base Nd4j test
- * @author Adam Gibson
- */
 @Slf4j
-public abstract class BaseNd4jTest {
+public abstract class BaseND4JTest {
 
     @Rule
-    public TestName testName = new TestName();
+    public TestName name = new TestName();
+    @Rule
+    public Timeout timeout = Timeout.millis(getTimeoutMilliseconds());
 
     protected long startTime;
     protected int threadCountBefore;
 
-    public BaseNd4jTest(){
-        //Suppress ND4J initialization - don't need this logged for every test...
-        System.setProperty(ND4JSystemProperties.LOG_INITIALIZATION, "false");
-        System.gc();
+    /**
+     * Override this method to set the default timeout for methods in the test class
+     */
+    public long getTimeoutMilliseconds(){
+        return 30000;
     }
 
+    /**
+     * Override this to set the profiling mode for the tests defined in the child class
+     */
+    public OpExecutioner.ProfilingMode getProfilingMode(){
+        return OpExecutioner.ProfilingMode.SCOPE_PANIC;
+    }
+
+    /**
+     * Override this to set the datatype of the tests defined in the child class
+     */
+    public DataType getDataType(){
+        return DataType.DOUBLE;
+    }
+
+    /**
+     * Override this to set the datatype of the tests defined in the child class
+     */
+    public DataType getDefaultFPDataType(){
+        return getDataType();
+    }
+
+    private final int DEFAULT_THREADS = Runtime.getRuntime().availableProcessors();
+
+    /**
+     * Override this to specify the number of threads for C++ execution, via
+     * {@link org.nd4j.linalg.factory.Environment#setMaxMasterThreads(int)}
+     * @return Number of threads to use for C++ op execution
+     */
+    public int numThreads(){
+        return DEFAULT_THREADS;
+    }
+
+    protected Boolean integrationTest;
+
+    /**
+     * @return True if integration tests maven profile is enabled, false otherwise.
+     */
+    public boolean isIntegrationTests(){
+        if(integrationTest == null){
+            String prop = System.getenv("DL4J_INTEGRATION_TESTS");
+            integrationTest = Boolean.parseBoolean(prop);
+        }
+        return integrationTest;
+    }
+
+    /**
+     * Call this as the first line of a test in order to skip that test, only when the integration tests maven profile is not enabled.
+     * This can be used to dynamically skip integration tests when the integration test profile is not enabled.
+     * Note that the integration test profile is not enabled by default - "integration-tests" profile
+     */
+    public void skipUnlessIntegrationTests(){
+        assumeTrue("Skipping integration test - integration profile is not enabled", isIntegrationTests());
+    }
 
     @Before
-    public void before() throws Exception {
-        log.info("Running " + getClass().getName() + "." + testName.getMethodName());
+    public void beforeTest(){
+        log.info("{}.{}", getClass().getSimpleName(), name.getMethodName());
+        //Suppress ND4J initialization - don't need this logged for every test...
+        System.setProperty(ND4JSystemProperties.LOG_INITIALIZATION, "false");
+        System.setProperty(ND4JSystemProperties.ND4J_IGNORE_AVX, "true");
+        Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
+        Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
+        Nd4j.setDefaultDataTypes(getDataType(), getDefaultFPDataType());
         Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().build());
         Nd4j.getExecutioner().enableDebugMode(false);
         Nd4j.getExecutioner().enableVerboseMode(false);
-        Nd4j.setDefaultDataTypes(DataType.DOUBLE, DataType.DOUBLE);
+        int numThreads = numThreads();
+        Preconditions.checkState(numThreads > 0, "Number of threads must be > 0");
+        if(numThreads != Nd4j.getEnvironment().maxMasterThreads()) {
+            Nd4j.getEnvironment().setMaxMasterThreads(numThreads);
+        }
         startTime = System.currentTimeMillis();
         threadCountBefore = ManagementFactory.getThreadMXBean().getThreadCount();
     }
 
     @After
-    public void after() throws Exception {
-        long totalTime = System.currentTimeMillis() - startTime;
-        Nd4j.getMemoryManager().purgeCaches();
-
-        logTestCompletion(totalTime);
-        Nd4j.getExecutioner().enableDebugMode(false);
-        Nd4j.getExecutioner().enableVerboseMode(false);
-
+    public void afterTest(){
         //Attempt to keep workspaces isolated between tests
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
-        val currWS = Nd4j.getMemoryManager().getCurrentWorkspace();
+        MemoryWorkspace currWS = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
         if(currWS != null){
             //Not really safe to continue testing under this situation... other tests will likely fail with obscure
@@ -86,9 +144,7 @@ public abstract class BaseNd4jTest {
             log.error("Open workspace leaked from test! Exiting - {}, isOpen = {} - {}", currWS.getId(), currWS.isScopeActive(), currWS);
             System.exit(1);
         }
-    }
 
-    public void logTestCompletion( long totalTime){
         StringBuilder sb = new StringBuilder();
         long maxPhys = Pointer.maxPhysicalBytes();
         long maxBytes = Pointer.maxBytes();
@@ -99,8 +155,10 @@ public abstract class BaseNd4jTest {
         long jvmMax = Runtime.getRuntime().maxMemory();
 
         int threadsAfter = ManagementFactory.getThreadMXBean().getThreadCount();
-        sb.append(getClass().getSimpleName()).append(".").append(testName.getMethodName())
-                .append(": ").append(totalTime).append(" ms")
+
+        long duration = System.currentTimeMillis() - startTime;
+        sb.append(getClass().getSimpleName()).append(".").append(name.getMethodName())
+                .append(": ").append(duration).append(" ms")
                 .append(", threadCount: (").append(threadCountBefore).append("->").append(threadsAfter).append(")")
                 .append(", jvmTotal=").append(jvmTotal)
                 .append(", jvmMax=").append(jvmMax)

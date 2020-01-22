@@ -63,6 +63,7 @@
         <module>nd4j-uberjar</module>
         <module>nd4j-tensorflow</module>
         <module>nd4j-remote</module>
+        <module>nd4j-common-tests</module>
     </modules>
 
     <dependencyManagement>

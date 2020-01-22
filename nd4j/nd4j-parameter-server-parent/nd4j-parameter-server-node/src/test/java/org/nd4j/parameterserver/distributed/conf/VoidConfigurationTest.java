@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import static org.junit.Assert.*;
@@ -27,7 +28,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
-public class VoidConfigurationTest {
+public class VoidConfigurationTest extends BaseND4JTest {
 
     @Rule
     public Timeout globalTimeout = Timeout.seconds(30);

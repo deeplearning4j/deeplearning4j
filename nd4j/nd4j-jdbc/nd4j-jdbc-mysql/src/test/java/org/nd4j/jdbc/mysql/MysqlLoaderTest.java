@@ -19,6 +19,7 @@ package org.nd4j.jdbc.mysql;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -26,7 +27,7 @@ import java.sql.Blob;
 
 import static org.junit.Assert.assertEquals;
 
-public class MysqlLoaderTest {
+public class MysqlLoaderTest extends BaseND4JTest {
 
 
     //simple litmus test, unfortunately relies on an external database

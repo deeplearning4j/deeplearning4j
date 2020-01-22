@@ -406,11 +406,11 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
         double simD = arraysSimilarity(day1, day2);
         double simN = arraysSimilarity(night1, night2);
 
-        logger.info("Vec1 day: " + day1);
-        logger.info("Vec2 day: " + day2);
+//        logger.info("Vec1 day: " + day1);
+//        logger.info("Vec2 day: " + day2);
 
-        logger.info("Vec1 night: " + night1);
-        logger.info("Vec2 night: " + night2);
+//        logger.info("Vec1 night: " + night1);
+//        logger.info("Vec2 night: " + night2);
 
         logger.info("Day/day cross-model similarity: " + simD);
         logger.info("Night/night cross-model similarity: " + simN);

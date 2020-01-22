@@ -45,7 +45,7 @@ public class LossOpValidation extends BaseOpValidation {
     }
 
     @Override
-    public long testTimeoutMilliseconds() {
+    public long getTimeoutMilliseconds() {
         return 90000L;
     }
 

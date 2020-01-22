@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.RandomTwoParentSelection;
 import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
@@ -26,7 +27,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RandomTwoParentSelectionTests {
+public class RandomTwoParentSelectionTests extends BaseDL4JTest {
     @Test
     public void RandomTwoParentSelection_ShouldReturnTwoDifferentParents() {
         RandomGenerator rng = new TestRandomGenerator(new int[] {1, 1, 1, 0}, null);

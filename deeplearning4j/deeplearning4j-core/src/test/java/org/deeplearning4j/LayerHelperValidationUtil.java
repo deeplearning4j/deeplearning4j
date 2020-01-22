@@ -158,7 +158,7 @@ public class LayerHelperValidationUtil {
                         double d2 = arr2.dup('c').getDouble(idx);
                         System.out.println("Different values at index " + idx + ": " + d1 + ", " + d2 + " - RE = " + maxRE);
                     }
-                    assertTrue(s + layerName + "activations - max RE: " + maxRE, maxRE < t.getMaxRelError());
+                    assertTrue(s + layerName + " activations - max RE: " + maxRE, maxRE < t.getMaxRelError());
                     log.info("Forward pass, max relative error: " + layerName + " - " + maxRE);
                 }
 

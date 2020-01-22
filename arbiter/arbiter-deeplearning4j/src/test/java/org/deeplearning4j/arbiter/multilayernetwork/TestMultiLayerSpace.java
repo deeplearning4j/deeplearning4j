@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.TestUtils;
@@ -86,7 +87,7 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-public class TestMultiLayerSpace {
+public class TestMultiLayerSpace extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

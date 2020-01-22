@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed.v2.util;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 
@@ -32,7 +33,7 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class MeshOrganizerTest {
+public class MeshOrganizerTest extends BaseND4JTest {
 
     @Test(timeout = 1000L)
     public void testDescendantsCount_1() {
@@ -165,8 +166,8 @@ public class MeshOrganizerTest {
             nodes.add(node);
         }
 
-        for (val n:nodes)
-            log.info("Number of downstreams: [{}]", n.numberOfDownstreams());
+//        for (val n:nodes)
+//            log.info("Number of downstreams: [{}]", n.numberOfDownstreams());
 
         log.info("Going for first clone");
         val clone1 = mesh.clone();

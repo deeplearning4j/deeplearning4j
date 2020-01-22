@@ -62,8 +62,8 @@ public class ParallelWrapperTest extends BaseDL4JTest {
         int seed = 123;
 
         log.info("Load data....");
-        DataSetIterator mnistTrain = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, true, 12345), 100);
-        DataSetIterator mnistTest = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, false, 12345), 10);
+        DataSetIterator mnistTrain = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, true, 12345), 15);
+        DataSetIterator mnistTest = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(batchSize, false, 12345), 4);
 
         assertTrue(mnistTrain.hasNext());
         val t0 = mnistTrain.next();

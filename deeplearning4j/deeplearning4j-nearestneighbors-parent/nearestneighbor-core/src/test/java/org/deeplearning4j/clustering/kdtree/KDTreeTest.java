@@ -177,7 +177,7 @@ public class KDTreeTest extends BaseDL4JTest {
     @Test
     public void testKNN() {
         int dimensions = 512;
-        int vectorsNo = 50000;
+        int vectorsNo = isIntegrationTests() ? 50000 : 1000;
         // make a KD-tree of dimension {#dimensions}
         Stopwatch stopwatch = Stopwatch.createStarted();
         KDTree kdTree = new KDTree(dimensions);

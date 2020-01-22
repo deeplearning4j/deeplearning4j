@@ -37,8 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Tests comparing Nd4j ops to other libraries
@@ -59,7 +58,7 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @Before
     public void before() throws Exception {
-        super.before();
+        super.beforeTest();
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(SEED);
 
@@ -67,7 +66,7 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @After
     public void after() throws Exception {
-        super.after();
+        super.afterTest();
         DataTypeUtil.setDTypeForContext(initialType);
     }
 
@@ -197,7 +196,7 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
                     INDArray gemv = m.mmul(v);
                     RealMatrix gemv2 = rm.multiply(rv);
 
-                    assertArrayEquals(new int[] {rows, 1}, gemv.shape());
+                    assertArrayEquals(new long[] {rows, 1}, gemv.shape());
                     assertArrayEquals(new int[] {rows, 1},
                                     new int[] {gemv2.getRowDimension(), gemv2.getColumnDimension()});
 

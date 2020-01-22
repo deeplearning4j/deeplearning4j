@@ -303,8 +303,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             INDArray delta = Nd4j.create(new int[] {50, 64, 8, 8}, new int[] {64, 3200, 8, 1}, 'c');
             delta = delta.permute(1, 0, 2, 3);
 
-            assertArrayEquals(new int[] {64, 50, 8, 8}, delta.shape());
-            assertArrayEquals(new int[] {3200, 64, 8, 1}, delta.stride());
+            assertArrayEquals(new long[] {64, 50, 8, 8}, delta.shape());
+            assertArrayEquals(new long[] {3200, 64, 8, 1}, delta.stride());
 
             INDArray delta2d = Shape.newShapeNoCopy(delta, new int[] {outDepth, miniBatch * outH * outW}, false);
 

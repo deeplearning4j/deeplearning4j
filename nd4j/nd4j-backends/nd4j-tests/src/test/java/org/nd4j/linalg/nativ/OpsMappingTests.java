@@ -60,7 +60,7 @@ public class OpsMappingTests extends BaseNd4jTest {
     }
 
     @Override
-    public long testTimeoutMilliseconds() {
+    public long getTimeoutMilliseconds() {
         return 90000L;
     }
 

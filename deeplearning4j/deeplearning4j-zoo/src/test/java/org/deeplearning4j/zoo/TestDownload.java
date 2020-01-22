@@ -48,6 +48,11 @@ import static org.junit.Assert.assertEquals;
 @Slf4j
 public class TestDownload extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return isIntegrationTests() ? 480000L : 60000L;
+    }
+
     @ClassRule
     public static TemporaryFolder testDir = new TemporaryFolder();
     private static File f;
@@ -67,12 +72,20 @@ public class TestDownload extends BaseDL4JTest {
     public void testDownloadAllModels() throws Exception {
 
         // iterate through each available model
-        ZooModel[] models = new ZooModel[]{
-                LeNet.builder().build(),
-                SimpleCNN.builder().build(),
-                UNet.builder().build(),
-                NASNet.builder().build()
-        };
+        ZooModel[] models;
+
+        if(isIntegrationTests()){
+            models = new ZooModel[]{
+                    LeNet.builder().build(),
+                    SimpleCNN.builder().build(),
+                    UNet.builder().build(),
+                    NASNet.builder().build()};
+        } else {
+            models = new ZooModel[]{
+                    LeNet.builder().build(),
+                    SimpleCNN.builder().build()};
+        }
+
 
 
         for (int i = 0; i < models.length; i++) {

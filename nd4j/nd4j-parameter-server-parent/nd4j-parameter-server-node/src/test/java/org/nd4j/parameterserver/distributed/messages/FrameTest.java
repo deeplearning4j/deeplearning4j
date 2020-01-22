@@ -20,6 +20,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -37,7 +38,7 @@ import static org.junit.Assert.*;
  */
 @Ignore
 @Deprecated
-public class FrameTest {
+public class FrameTest extends BaseND4JTest {
     @Before
     public void setUp() throws Exception {
 

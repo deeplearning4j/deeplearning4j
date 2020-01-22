@@ -476,7 +476,7 @@ public class EvalTest extends BaseDL4JTest {
 
         net.setListeners(new EvaluativeListener(iterTest, 3));
 
-        for( int i=0; i<10; i++ ){
+        for( int i=0; i<3; i++ ){
             net.fit(iter);
         }
     }

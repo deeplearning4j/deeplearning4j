@@ -252,7 +252,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         System.out.println(Arrays.toString(shape));
 
         // this is NHWC weights. will be changed soon.
-        assertArrayEquals(new int[]{5,5,1,32}, shape);
+        assertArrayEquals(new long[]{5,5,1,32}, shape);
         System.out.println(convNode);
     }
 

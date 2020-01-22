@@ -33,8 +33,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 04/11/2016.

@@ -21,6 +21,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.io.StringUtils;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -39,7 +40,7 @@ import static org.junit.Assert.*;
  */
 @Ignore
 @Deprecated
-public class InterleavedRouterTest {
+public class InterleavedRouterTest extends BaseND4JTest {
     VoidConfiguration configuration;
     Transport transport;
     long originator;

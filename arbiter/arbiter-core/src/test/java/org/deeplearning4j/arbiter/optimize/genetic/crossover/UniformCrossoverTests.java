@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.UniformCrossover;
 import org.deeplearning4j.arbiter.optimize.genetic.TestParentSelection;
@@ -24,7 +25,7 @@ import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class UniformCrossoverTests {
+public class UniformCrossoverTests extends BaseDL4JTest {
 
     @Test
     public void UniformCrossover_BelowCrossoverRate_ShouldReturnParent0() {

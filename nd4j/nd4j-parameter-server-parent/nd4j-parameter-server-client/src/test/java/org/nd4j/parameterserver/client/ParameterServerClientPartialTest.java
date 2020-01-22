@@ -24,11 +24,11 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.BaseNd4jTest;
 import org.nd4j.parameterserver.ParameterServerListener;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
  * Created by agibsonccc on 10/3/16.
  */
 @Slf4j
-public class ParameterServerClientPartialTest extends BaseNd4jTest {
+public class ParameterServerClientPartialTest extends BaseND4JTest {
     private static MediaDriver mediaDriver;
     private static Aeron.Context ctx;
     private static ParameterServerSubscriber masterNode, slaveNode;

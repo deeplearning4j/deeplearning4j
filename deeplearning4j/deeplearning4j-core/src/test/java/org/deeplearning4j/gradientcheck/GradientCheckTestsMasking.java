@@ -142,9 +142,9 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345L);
 
         int timeSeriesLength = 5;
-        int nIn = 5;
+        int nIn = 3;
         int layerSize = 3;
-        int nOut = 3;
+        int nOut = 2;
 
         int miniBatchSize = 2;
 
@@ -170,24 +170,16 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
 
-            Random r = new Random(12345L);
             INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength}, 'f').subi(0.5);
 
-            INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
-            for (int i = 0; i < miniBatchSize; i++) {
-                for (int j = 0; j < nIn; j++) {
-                    labels.putScalar(i, r.nextInt(nOut), j, 1.0);
-                }
-            }
+            INDArray labels = TestUtils.randomOneHotTimeSeries(miniBatchSize, nOut, timeSeriesLength);
 
             if (PRINT_RESULTS) {
                 System.out.println("testBidirectionalLSTMMasking() - testNum = " + testNum++);
-//                for (int j = 0; j < mln.getnLayers(); j++)
-//                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
-                    .labels(labels).inputMask(mask).labelMask(mask).subset(true).maxPerParam(16));
+                    .labels(labels).inputMask(mask).labelMask(mask).subset(true).maxPerParam(12));
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);

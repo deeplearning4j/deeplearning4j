@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -54,7 +55,7 @@ import static org.junit.Assert.*;
 @Slf4j
 @Ignore
 @Deprecated
-public class VoidParameterServerTest {
+public class VoidParameterServerTest extends BaseND4JTest {
     private static List<String> localIPs;
     private static List<String> badIPs;
     private static final Transport transport = new MulticastTransport();

@@ -47,6 +47,12 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-parameter-server-node_2.11</artifactId>
             <version>${nd4j.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>net.jpountz.lz4</groupId>
+                    <artifactId>lz4</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

@@ -25,10 +25,10 @@ import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.BaseNd4jTest;
 import org.nd4j.parameterserver.client.ParameterServerClient;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +39,7 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 10/5/16.
  */
 @Slf4j
-public class RemoteParameterServerClientTests extends BaseNd4jTest {
+public class RemoteParameterServerClientTests extends BaseND4JTest {
     private int parameterLength = 1000;
     private Aeron.Context ctx;
     private MediaDriver mediaDriver;

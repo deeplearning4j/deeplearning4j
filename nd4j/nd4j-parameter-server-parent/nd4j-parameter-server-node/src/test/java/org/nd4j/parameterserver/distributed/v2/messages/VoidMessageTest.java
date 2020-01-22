@@ -19,13 +19,14 @@ package org.nd4j.parameterserver.distributed.v2.messages;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeRequest;
 
 import static org.junit.Assert.*;
 
 @Slf4j
-public class VoidMessageTest {
+public class VoidMessageTest extends BaseND4JTest {
     @Test
     public void testHandshakeSerialization_1() throws Exception {
         val req = new HandshakeRequest();

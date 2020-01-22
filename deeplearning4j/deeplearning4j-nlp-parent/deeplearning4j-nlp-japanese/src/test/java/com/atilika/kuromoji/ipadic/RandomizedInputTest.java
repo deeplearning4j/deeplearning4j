@@ -45,19 +45,19 @@ public class RandomizedInputTest extends RandomizedTest {
     private Tokenizer tokenizer = new Tokenizer();
 
     @Test
-    @Repeat(iterations = 50)
+    @Repeat(iterations = 10)
     public void testRandomizedUnicodeInput() {
         assertCanTokenizeString(randomUnicodeOfLength(LENGTH), tokenizer);
     }
 
     @Test
-    @Repeat(iterations = 50)
+    @Repeat(iterations = 10)
     public void testRandomizedRealisticUnicodeInput() {
         assertCanTokenizeString(randomRealisticUnicodeOfLength(LENGTH), tokenizer);
     }
 
     @Test
-    @Repeat(iterations = 50)
+    @Repeat(iterations = 10)
     public void testRandomizedAsciiInput() {
         assertCanTokenizeString(randomAsciiOfLength(LENGTH), tokenizer);
     }

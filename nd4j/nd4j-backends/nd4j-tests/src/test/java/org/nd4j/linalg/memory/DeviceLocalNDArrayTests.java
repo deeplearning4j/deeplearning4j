@@ -31,6 +31,7 @@ import org.nd4j.linalg.util.DeviceLocalNDArray;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j

@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
@@ -49,7 +50,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 02/02/2017.
  */
-public class TestJson {
+public class TestJson extends BaseDL4JTest {
 
     protected static ObjectMapper getObjectMapper(JsonFactory factory) {
         ObjectMapper om = new ObjectMapper(factory);

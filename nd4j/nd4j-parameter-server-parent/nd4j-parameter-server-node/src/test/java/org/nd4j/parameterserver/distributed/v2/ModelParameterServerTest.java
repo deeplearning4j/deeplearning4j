@@ -20,6 +20,7 @@ import io.reactivex.functions.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -46,7 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class ModelParameterServerTest {
+public class ModelParameterServerTest extends BaseND4JTest {
     private static final String rootId = "ROOT_NODE";
 
     @Test(timeout = 20000L)

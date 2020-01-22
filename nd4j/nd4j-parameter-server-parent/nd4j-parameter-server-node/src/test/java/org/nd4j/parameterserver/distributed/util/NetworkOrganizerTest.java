@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.*;
 import org.junit.rules.Timeout;
+import org.nd4j.BaseND4JTest;
 
 import java.util.*;
 
@@ -29,7 +30,7 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class NetworkOrganizerTest {
+public class NetworkOrganizerTest extends BaseND4JTest {
     @Before
     public void setUp() throws Exception {
 

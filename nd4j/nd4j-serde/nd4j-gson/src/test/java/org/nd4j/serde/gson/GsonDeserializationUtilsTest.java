@@ -17,13 +17,14 @@
 package org.nd4j.serde.gson;
 
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-public class GsonDeserializationUtilsTest {
+public class GsonDeserializationUtilsTest extends BaseND4JTest {
     @Test
     public void deserializeRawJson_PassInInRank3Array_ExpectCorrectDeserialization() {
         String serializedRawArray = "[[[1.00, 11.00, 3.00],\n" + "[13.00, 5.00, 15.00],\n" + "[7.00, 17.00, 9.00]]]";

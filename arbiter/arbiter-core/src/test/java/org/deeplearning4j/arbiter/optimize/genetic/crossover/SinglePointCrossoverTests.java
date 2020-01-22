@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.SinglePointCrossover;
 import org.deeplearning4j.arbiter.optimize.genetic.TestParentSelection;
@@ -24,7 +25,7 @@ import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class SinglePointCrossoverTests {
+public class SinglePointCrossoverTests extends BaseDL4JTest {
     @Test
     public void SinglePointCrossover_BelowCrossoverRate_ShouldReturnParent0() {
         RandomGenerator rng = new TestRandomGenerator(null, new double[] {1.0});

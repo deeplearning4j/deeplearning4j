@@ -2434,8 +2434,6 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testPermute4(){
-        Nd4j.getExecutioner().enableDebugMode(true);
-        Nd4j.getExecutioner().enableVerboseMode(true);
         INDArray in = Nd4j.linspace(DataType.FLOAT, 1, 6, 1).reshape(3,2);
         INDArray permute = Nd4j.createFromArray(1,0);
 

@@ -453,8 +453,8 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         tempDirF.deleteOnExit();
 
         int dataSetObjSize = 1;
-        int batchSizePerExecutor = 16;
-        int numSplits = 5;
+        int batchSizePerExecutor = 4;
+        int numSplits = 3;
         int averagingFrequency = 3;
         int totalExamples = numExecutors() * batchSizePerExecutor * numSplits * averagingFrequency;
         DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize, totalExamples, false);
@@ -506,7 +506,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         INDArray paramsAfter = sparkNet.getNetwork().params().dup();
         assertNotEquals(paramsBefore, paramsAfter);
 
-        Thread.sleep(2000);
+        Thread.sleep(200);
         SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
 
         //Expect
@@ -517,7 +517,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         assertEquals(numSplits * numExecutors() * averagingFrequency, list.size());
         for (EventStats es : list) {
             ExampleCountEventStats e = (ExampleCountEventStats) es;
-            assertTrue(batchSizePerExecutor * averagingFrequency - 10 >= e.getTotalExampleCount());
+            assertTrue(batchSizePerExecutor * averagingFrequency >= e.getTotalExampleCount());
         }
 
 
@@ -535,9 +535,9 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         tempDirF.deleteOnExit();
         tempDirF2.deleteOnExit();
 
-        int dataSetObjSize = 5;
-        int batchSizePerExecutor = 25;
-        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize, 1000, false);
+        int dataSetObjSize = 4;
+        int batchSizePerExecutor = 8;
+        DataSetIterator iter = new MnistDataSetIterator(dataSetObjSize, 128, false);
         int i = 0;
         while (iter.hasNext()) {
             File nextFile = new File(tempDirF, i + ".bin");
@@ -981,7 +981,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                 .setOutputs("out")
                 .build();
 
-        DataSetIterator iter = new IrisDataSetIterator(1, 150);
+        DataSetIterator iter = new IrisDataSetIterator(1, 50);
 
         List<DataSet> l = new ArrayList<>();
         while(iter.hasNext()){
@@ -992,9 +992,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
         int rddDataSetNumExamples = 1;
-        int averagingFrequency = 3;
+        int averagingFrequency = 2;
+        int batch = 2;
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(rddDataSetNumExamples)
-                .averagingFrequency(averagingFrequency).batchSizePerWorker(rddDataSetNumExamples)
+                .averagingFrequency(averagingFrequency).batchSizePerWorker(batch)
                 .saveUpdater(true).workerPrefetchNumBatches(0).build();
         Nd4j.getRandom().setSeed(12345);
 
@@ -1003,7 +1004,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         SparkComputationGraph sn2 = new SparkComputationGraph(sc, conf2.clone(), tm);
 
 
-        for(int i=0; i<4; i++ ){
+        for(int i=0; i<3; i++ ){
             assertEquals(i, sn1.getNetwork().getLayerWiseConfigurations().getEpochCount());
             assertEquals(i, sn2.getNetwork().getConfiguration().getEpochCount());
             sn1.fit(rdd);

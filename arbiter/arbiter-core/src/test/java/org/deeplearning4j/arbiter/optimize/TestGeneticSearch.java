@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
@@ -32,7 +33,7 @@ import org.deeplearning4j.arbiter.optimize.runner.listener.impl.LoggingStatusLis
 import org.junit.Assert;
 import org.junit.Test;
 
-public class TestGeneticSearch {
+public class TestGeneticSearch extends BaseDL4JTest {
     public class TestSelectionOperator extends SelectionOperator {
 
         @Override

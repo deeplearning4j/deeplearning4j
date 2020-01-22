@@ -41,6 +41,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -229,7 +230,7 @@ public class Nd4jTest extends BaseNd4jTest {
         ByteBuffer floatBuffer = pointer1.asByteBuffer();
         byte[] dataTwo = new byte[floatBuffer.capacity()];
         floatBuffer.get(dataTwo);
-        Assert.assertArrayEquals(originalData,dataTwo);
+        assertArrayEquals(originalData,dataTwo);
         floatBuffer.position(0);
 
         DataBuffer dataBuffer = Nd4j.createBuffer(new FloatPointer(floatBuffer.asFloatBuffer()),linspace.length(), DataType.FLOAT);

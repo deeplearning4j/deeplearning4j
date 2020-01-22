@@ -92,13 +92,13 @@ public class SPTreeTest extends BaseDL4JTest {
     @Test
     //@Ignore
     public void testLargeTree() {
-        int num = 100000;
+        int num = isIntegrationTests() ? 100000 : 1000;
         StopWatch watch = new StopWatch();
         watch.start();
         INDArray arr = Nd4j.linspace(1, num, num, Nd4j.dataType()).reshape(num, 1);
         SpTree tree = new SpTree(arr);
         watch.stop();
-        System.out.println("Tree created in " + watch);
+        System.out.println("Tree of size " + num + " created in " + watch);
     }
 
 }

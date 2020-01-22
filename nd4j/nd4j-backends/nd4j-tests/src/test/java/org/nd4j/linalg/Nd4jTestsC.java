@@ -133,13 +133,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Override
-    public long testTimeoutMilliseconds() {
+    public long getTimeoutMilliseconds() {
         return 90000;
     }
 
     @Before
     public void before() throws Exception {
-        super.before();
+        super.beforeTest();
         Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         Nd4j.getExecutioner().enableDebugMode(false);
@@ -148,7 +148,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @After
     public void after() throws Exception {
-        super.after();
+        super.afterTest();
         Nd4j.setDataType(initialType);
     }
 
@@ -5331,7 +5331,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testNativeSort3() {
-        INDArray array = Nd4j.linspace(1, 1048576, 1048576, DataType.DOUBLE).reshape(1, -1);
+        int length = isIntegrationTests() ? 1048576 : 16484;
+        INDArray array = Nd4j.linspace(1, length, length, DataType.DOUBLE).reshape(1, -1);
         INDArray exp = array.dup();
         Nd4j.shuffle(array, 0);
 
@@ -7196,19 +7197,19 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         for( int i=-3; i<3; i++ ){
             INDArray out = Nd4j.stack(i, in, in2);
-            int[] expShape;
+            long[] expShape;
             switch (i){
                 case -3:
                 case 0:
-                    expShape = new int[]{2,3,4};
+                    expShape = new long[]{2,3,4};
                     break;
                 case -2:
                 case 1:
-                    expShape = new int[]{3,2,4};
+                    expShape = new long[]{3,2,4};
                     break;
                 case -1:
                 case 2:
-                    expShape = new int[]{3,4,2};
+                    expShape = new long[]{3,4,2};
                     break;
                 default:
                     throw new RuntimeException(String.valueOf(i));
@@ -7602,6 +7603,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         String wsName = "testRollingMeanWs";
         try {
             System.gc();
+            int iterations1 = isIntegrationTests() ? 5 : 2;
             for (int e = 0; e < 5; e++) {
                 try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {
                     val array = Nd4j.create(DataType.FLOAT, 32, 128, 256, 256);
@@ -7609,7 +7611,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 }
             }
 
-            int iterations = 20;
+            int iterations = isIntegrationTests() ? 20 : 3;
             val timeStart = System.nanoTime();
             for (int e = 0; e < iterations; e++) {
                 try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsconf, wsName)) {

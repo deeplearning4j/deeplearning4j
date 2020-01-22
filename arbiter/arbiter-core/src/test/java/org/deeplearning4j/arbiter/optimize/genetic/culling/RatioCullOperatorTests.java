@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.culling;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.culling.RatioCullOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
@@ -27,7 +28,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.List;
 
-public class RatioCullOperatorTests {
+public class RatioCullOperatorTests extends BaseDL4JTest {
 
     class TestRatioCullOperator extends RatioCullOperator {
 

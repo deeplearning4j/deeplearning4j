@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.utils.CrossoverPointsGenerator;
 import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
 import org.junit.Assert;
@@ -24,7 +25,7 @@ import org.junit.Test;
 
 import java.util.Deque;
 
-public class CrossoverPointsGeneratorTests {
+public class CrossoverPointsGeneratorTests extends BaseDL4JTest {
 
     @Test
     public void CrossoverPointsGenerator_FixedNumberCrossovers() {

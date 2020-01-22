@@ -16,9 +16,6 @@
 
 package org.nd4j.autodiff.opvalidation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -45,6 +42,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
+
+import static org.junit.Assert.*;
 
 @Slf4j
 public class LayerOpValidation extends BaseOpValidation {
