@@ -81,7 +81,7 @@ public class CropAndResize extends DynamicCustomOp {
 
 
 
-    }
+    
 
     @Override
     public String opName() {
