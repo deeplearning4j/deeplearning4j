@@ -1087,6 +1087,304 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test8) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
+
+    NDArray input    = NDArrayFactory::create<double>('c', {1, 3, 3, 4});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 6, 6, 4}, {
+             1.f,  2.f,  3.f,  4.f,
+             1.f,  2.f,  3.f,  4.f,
+             5.f,  6.f,  7.f,  8.f,
+             5.f,  6.f,  7.f,  8.f,
+             9.f, 10.f, 11.f, 12.f,
+             9.f, 10.f, 11.f, 12.f,
+
+             1.f,  2.f,  3.f,  4.f,
+             1.f,  2.f,  3.f,  4.f,
+             5.f,  6.f,  7.f,  8.f,
+             5.f,  6.f,  7.f,  8.f,
+             9.f, 10.f, 11.f, 12.f,
+             9.f, 10.f, 11.f, 12.f,
+
+            13.f, 14.f, 15.f, 16.f,
+            13.f, 14.f, 15.f, 16.f,
+            17.f, 18.f, 19.f, 20.f,
+            17.f, 18.f, 19.f, 20.f,
+            21.f, 22.f, 23.f, 24.f,
+            21.f, 22.f, 23.f, 24.f,
+
+            13.f, 14.f, 15.f, 16.f,
+            13.f, 14.f, 15.f, 16.f,
+            17.f, 18.f, 19.f, 20.f,
+            17.f, 18.f, 19.f, 20.f,
+            21.f, 22.f, 23.f, 24.f,
+            21.f, 22.f, 23.f, 24.f,
+
+            25.f, 26.f, 27.f, 28.f,
+            25.f, 26.f, 27.f, 28.f,
+            29.f, 30.f, 31.f, 32.f,
+            29.f, 30.f, 31.f, 32.f,
+            33.f, 34.f, 35.f, 36.f,
+            33.f, 34.f, 35.f, 36.f,
+
+            25.f, 26.f, 27.f, 28.f,
+            25.f, 26.f, 27.f, 28.f,
+            29.f, 30.f, 31.f, 32.f,
+            29.f, 30.f, 31.f, 32.f,
+            33.f, 34.f, 35.f, 36.f,
+            33.f, 34.f, 35.f, 36.f    });
+    input.linspace(1);
+    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.execute({&input, &size}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+//    result->printBuffer("Area Resized to 6x6");
+//    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test2) {
+
+    NDArray input    = NDArrayFactory::create<float>('c', {1, 3, 3, 1});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 6, 6, 1}, {
+            1.f, 1.f, 2.f, 2.f, 3.f, 3.f,
+            1.f, 1.f, 2.f, 2.f, 3.f, 3.f,
+            4.f, 4.f, 5.f, 5.f, 6.f, 6.f,
+            4.f, 4.f, 5.f, 5.f, 6.f, 6.f,
+            7.f, 7.f, 8.f, 8.f, 9.f, 9.f,
+            7.f, 7.f, 8.f, 8.f, 9.f, 9.f
+    });
+    input.linspace(1);
+    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.execute({&input, &size}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+//    result->printBuffer("Area Resized to 6x6");
+//    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test3) {
+
+    NDArray input    = NDArrayFactory::create<float>('c', {1, 3, 3, 3});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 6, 6, 3}, {
+         1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+         1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+        10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+        10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+        19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f,
+        19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f
+    });
+    input.linspace(1);
+    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.execute({&input, &size}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+//    result->printBuffer("Area Resized to 6x6");
+//    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test4) {
+
+    NDArray input    = NDArrayFactory::create<float>('c', {2, 3, 3, 3}, {
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27
+    });
+
+    NDArray expected = NDArrayFactory::create<float>('c', {2, 6, 6, 3}, {
+         1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+         1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+        10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+        10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+        19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f,
+        19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f,
+
+         1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+         1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+        10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+        10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+        19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f,
+        19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f
+    });
+    //input.linspace(1);
+    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.execute({&input, &size}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+//    result->printBuffer("Area Resized to 6x6");
+//    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test5) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {2, 3, 3, 3}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27
+    });
+
+    NDArray expected = NDArrayFactory::create<float>('c', {2, 6, 6, 3}, {
+            1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+            1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+            10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+            10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+            19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f,
+            19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f,
+
+            1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+            1.f,  2.f,  3.f,   1.f,  2.f,  3.f,   4.f,  5.f,  6.f,   4.f,  5.f,  6.f,   7.f,  8.f,  9.f,   7.f,  8.f,  9.f,
+            10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+            10.f, 11.f, 12.f,  10.f, 11.f, 12.f,  13.f, 14.f, 15.f,  13.f, 14.f, 15.f,  16.f, 17.f, 18.f,  16.f, 17.f, 18.f,
+            19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f,
+            19.f, 20.f, 21.f,  19.f, 20.f, 21.f,  22.f, 23.f, 24.f,  22.f, 23.f, 24.f,  25.f, 26.f, 27.f,  25.f, 26.f, 27.f
+    });
+    //input.linspace(1);
+    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.execute({&input, &size}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+//    result->printBuffer("Area Resized to 6x6");
+//    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test6) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {2, 3, 3, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9,
+            1, 2, 3, 4, 5, 6, 7, 8, 9
+    });
+
+    NDArray expected = NDArrayFactory::create<float>('c', {2, 6, 6, 1}, {
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+           2.5f,            2.5f,             3.f,            3.5f,           3.5f,          4.5f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            7.f,             7.f,            7.5f,            8.f,            8.f,            9.f,
+
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+           2.5f,            2.5f,             3.f,           3.5f,           3.5f,           4.5f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            7.f,             7.f,            7.5f,            8.f,            8.f,            9.f
+    });
+    //input.linspace(1);
+    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.execute({&input, &size}, {}, {}, {true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+    result->printBuffer("Area Resized to 6x6");
+    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test7) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {2, 3, 3, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9,
+            1, 2, 3, 4, 5, 6, 7, 8, 9
+    });
+
+    NDArray expected = NDArrayFactory::create<float>('c', {2, 6, 6, 1}, {
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+            2.5f,            2.5f,             3.f,            3.5f,           3.5f,          4.5f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            7.f,             7.f,            7.5f,            8.f,            8.f,            9.f,
+
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+            2.5f,            2.5f,             3.f,           3.5f,           3.5f,           4.5f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            7.f,             7.f,            7.5f,            8.f,            8.f,            9.f
+    });
+    //input.linspace(1);
+//    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.execute({&input}, {}, {6, 6}, {true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+    result->printBuffer("Area Resized to 6x6");
+    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test8) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 3, 3, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9
+    });
+
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 6, 6, 1}, {
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+            1.f,             1.f,            1.5f,            2.f,            2.f,            3.f,
+            2.5f,            2.5f,             3.f,           3.5f,           3.5f,           4.5f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            4.f,             4.f,            4.5f,            5.f,            5.f,            6.f,
+            7.f,             7.f,            7.5f,            8.f,            8.f,            9.f
+    });
+    //input.linspace(1);
+//    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.execute({&input}, {}, {6, 6}, {true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+    result->printBuffer("Area Resized to 6x6");
+    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {
 

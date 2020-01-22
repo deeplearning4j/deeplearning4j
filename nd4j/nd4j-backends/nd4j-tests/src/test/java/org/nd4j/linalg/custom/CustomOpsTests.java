@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.controlflow.Where;
 import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
 import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
+import org.nd4j.linalg.api.ops.impl.image.ResizeArea;
 import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
@@ -966,6 +967,33 @@ public class CustomOpsTests extends BaseNd4jTest {
         boolean align = false;
         val op = new ResizeBilinear(x, z, 10, 10, align, false);
         Nd4j.exec(op);
+    }
+
+    @Test
+    public void testResizeArea1() {
+
+        INDArray x = Nd4j.rand(DataType.FLOAT, 1, 2,3,4);
+        INDArray z = Nd4j.createUninitialized(DataType.FLOAT, 1, 10, 10, 4);
+        ResizeArea op = new ResizeArea(x, z, 10, 10, false);
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testResizeArea2() {
+
+        INDArray image = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 9 ).reshape(1,3,3,1);
+        INDArray output = Nd4j.createUninitialized(DataType.FLOAT, 1, 6, 6, 1);
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                1.f, 1.f, 2.f, 2.f, 3.f, 3.f,
+                1.f, 1.f, 2.f, 2.f, 3.f, 3.f,
+                4.f, 4.f, 5.f, 5.f, 6.f, 6.f,
+                4.f, 4.f, 5.f, 5.f, 6.f, 6.f,
+                7.f, 7.f, 8.f, 8.f, 9.f, 9.f,
+                7.f, 7.f, 8.f, 8.f, 9.f, 9.f
+        }).reshape(1,6,6,1);
+        ResizeArea op = new ResizeArea(image, output, 6, 6, false);
+        Nd4j.exec(op);
+        assertEquals(expected, output);
     }
 
     @Test

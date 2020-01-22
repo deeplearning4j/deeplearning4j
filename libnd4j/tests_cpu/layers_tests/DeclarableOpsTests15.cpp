@@ -537,6 +537,20 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_4) {
 
 }
 
+TEST_F(DeclarableOpsTests15, Test_BitCast_4_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 2});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {4607182418800017408LL, 4611686018427387904LL}); // as TF 4607182418800017408, 4611686018427387904
+    x.linspace(1.);
+    nd4j::ops::bitcast op;
+
+    auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+    //    e.printIndexedBuffer("Double to int64");
+    auto res = result->at(0);
+    ASSERT_EQ(*res, e);
+    delete result;
+}
+
 
 TEST_F(DeclarableOpsTests15, Test_BitCast_5) {
     auto x = NDArrayFactory::create<float16>('c', {4, 4}, {
