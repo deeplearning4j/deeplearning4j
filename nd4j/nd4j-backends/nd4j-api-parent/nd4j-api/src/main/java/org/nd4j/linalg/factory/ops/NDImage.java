@@ -68,8 +68,6 @@ public class NDImage {
 
   /**
    * Adjusts contrast of RGB or grayscale images.<br>
-   * @return Contrast-adjusted image<br>
-   *     <br>
    *
    * @param in images to adjust. 3D shape or higher (NUMERIC type)
    * @param factor multiplier for adjusting contrast
@@ -81,9 +79,7 @@ public class NDImage {
   }
 
   /**
-   * Adjust hue of RGB image<br>
-   * <br>
-   *     <br>
+   * Adjust hue of RGB image <br>
    *
    * @param in image as 3D array (NUMERIC type)
    * @param delta value to add to hue channel
@@ -107,10 +103,7 @@ public class NDImage {
   }
 
   /**
-   * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension.<br>
-   * <br>
-   * <br>
-   *     <br>
+   * Given an input image, extract out image patches (of size kSizes - h x w) and place them in the depth dimension. <br>
    *
    * @param image Input image to extract image patches from - shape [batch, height, width, channels] (NUMERIC type)
    * @param kSizes Kernel size - size of the image patches, [height, width] (Size: Exactly(count=2))
@@ -131,9 +124,7 @@ public class NDImage {
   }
 
   /**
-   * Converting image from HSV to RGB format<br>
-   * <br>
-   *     <br>
+   * Converting image from HSV to RGB format <br>
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -145,7 +136,6 @@ public class NDImage {
 
   /**
    * Greedily selects a subset of bounding boxes in descending order of score<br>
-   *      <br>
    *
    * @param boxes Might be null. Name for the output variable (NUMERIC type)
    * @param scores vector of shape [num_boxes] (NUMERIC type)
@@ -186,9 +176,7 @@ public class NDImage {
   }
 
   /**
-   * Converting array from RGB to YIQ format<br>
-   * <br>
-   *     <br>
+   * Converting array from RGB to YIQ format <br>
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -199,9 +187,7 @@ public class NDImage {
   }
 
   /**
-   * Converting array from RGB to YUV format<br>
-   * <br>
-   *     <br>
+   * Converting array from RGB to YUV format <br>
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -212,9 +198,7 @@ public class NDImage {
   }
 
   /**
-   * Converting image from YIQ to RGB format<br>
-   * <br>
-   *     <br>
+   * Converting image from YIQ to RGB format <br>
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
@@ -225,9 +209,7 @@ public class NDImage {
   }
 
   /**
-   * Converting image from YUV to RGB format<br>
-   * <br>
-   *     <br>
+   * Converting image from YUV to RGB format <br>
    *
    * @param input 3D image (NUMERIC type)
    * @return output 3D image (NUMERIC type)
