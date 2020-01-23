@@ -16,10 +16,15 @@
 
 package org.nd4j.autodiff.validation;
 
+import org.nd4j.linalg.api.ops.custom.*;
+import org.nd4j.linalg.api.ops.impl.image.ResizeArea;
+import org.nd4j.linalg.api.ops.impl.image.ResizeBicubic;
+import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.api.ops.impl.reduce.HashCode;
 import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinearDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.HistogramFixedWidth;
 import org.nd4j.shade.guava.collect.ImmutableSet;
 import org.nd4j.shade.guava.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
@@ -38,10 +43,6 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
-import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
-import org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize;
-import org.nd4j.linalg.api.ops.custom.SpTreeCell;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.loss.bp.*;
@@ -1116,7 +1117,27 @@ public class OpValidation {
                 LogicalOr.class,
                 LogicalXor.class,
 
-                Histogram.class
+                Histogram.class,
+
+                AdjustSaturation.class,
+                AdjustContrast.class,
+                AdjustContrastV2.class,
+                AdjustHue.class,
+                HsvToRgb.class,
+                RgbToHsv.class,
+                YuvToRgb.class,
+                RgbToYuv.class,
+                RandomCrop.class,
+                ResizeArea.class,
+                ResizeBicubic.class,
+                ResizeBilinear.class,
+
+                BitCast.class,
+                ToggleBits.class,
+                HistogramFixedWidth.class,
+                BitwiseAnd.class,
+                BitwiseOr.class,
+                BitwiseXor.class
         );
 
         return new HashSet<>(list);

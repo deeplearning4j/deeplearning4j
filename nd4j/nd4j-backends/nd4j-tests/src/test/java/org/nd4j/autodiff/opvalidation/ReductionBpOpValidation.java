@@ -19,9 +19,13 @@ package org.nd4j.autodiff.opvalidation;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
@@ -976,5 +980,32 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             String err = OpValidation.validate(new OpTestCase(new PowBp(preReduceInput_1, preReduceInput_2,
                     gradOutput, output1, output2)).expectedOutput(0, expected1).expectedOutput(1, expected2));
             assertNull(err);
+    }
+
+    @Test
+    public void testDotBP() {
+        for (boolean keepDims : new boolean[]{false, true}) {
+
+            INDArray preReduceInput1 = Nd4j.linspace(1,12,12).reshape(3,4);
+            INDArray preReduceInput2 = Nd4j.linspace(1,12,12).reshape(3,4);
+            INDArray dLdInExpected1 = Nd4j.createFromArray(new double[]{
+                    0.5000, 1.0000, 1.5000, 2.0000,
+                    2.5000, 3.0000, 3.5000, 4.0000,
+                    4.5000, 5.0000, 5.5000, 6.0000
+            }).reshape(3, 4);
+            INDArray dLdInExpected2 = Nd4j.createFromArray(new double[]{
+                    0.5000, 1.0000, 1.5000, 2.0000,
+                    2.5000, 3.0000, 3.5000, 4.0000,
+                    4.5000, 5.0000, 5.5000, 6.0000
+            }).reshape(3, 4);
+            INDArray dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
+            INDArray output1 = Nd4j.createUninitialized(3, 4);
+            INDArray output2 = Nd4j.createUninitialized(3, 4);
+            String err = OpValidation.validate(new OpTestCase(new DotBp(preReduceInput1, preReduceInput2, dLdOut,
+                    output1, output2, keepDims))
+                    .expectedOutput(0, dLdInExpected1).expectedOutput(1, dLdInExpected2));
+
+            assertNull(err);
+        }
     }
 }

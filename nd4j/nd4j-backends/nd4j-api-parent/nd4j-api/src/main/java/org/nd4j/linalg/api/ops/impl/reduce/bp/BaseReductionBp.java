@@ -96,6 +96,13 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
         addArgs();
     }
 
+    public BaseReductionBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, int... dimensions){
+        super(null, new INDArray[]{origInput1, origInput2, gradAtOutput}, new INDArray[]{output1, output2});
+        this.keepDims = keepDims;
+        this.dimensions = dimensions;
+        addArgs();
+    }
+
     public BaseReductionBp(){}
 
     protected void addArgs(){

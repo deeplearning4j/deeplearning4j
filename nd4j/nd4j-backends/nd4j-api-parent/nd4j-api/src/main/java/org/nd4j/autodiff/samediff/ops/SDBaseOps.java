@@ -787,9 +787,9 @@ public abstract class SDBaseOps {
      * @param number Number of values to generate
      * @return SDVariable with linearly spaced elements
      */
-    public SDVariable linspace(DataType dataType, double start, double stop, long number) {
+    /*public SDVariable linspace(DataType dataType, double start, double stop, long number) {
         return linspace(dataType, start, stop, number);
-    }
+    }*/
 
     /**
      * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
