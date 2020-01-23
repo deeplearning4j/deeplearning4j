@@ -107,6 +107,13 @@ public class HistoryProcessor implements IHistoryProcessor {
         return array;
     }
 
+    public boolean isHistoryReady() {
+        return history.size() == conf.getHistoryLength();
+    }
+
+    public void reset() {
+        history.clear();
+    }
 
     private INDArray transform(INDArray raw) {
         long[] shape = raw.shape();

@@ -46,6 +46,9 @@ public interface IHistoryProcessor {
 
     boolean isMonitoring();
 
+    boolean isHistoryReady();
+    void reset();
+
     /** Returns the scale of the arrays returned by {@link #getHistory()}, typically 255. */
     double getScale();
 

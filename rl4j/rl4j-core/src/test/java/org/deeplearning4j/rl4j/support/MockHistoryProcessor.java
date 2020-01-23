@@ -19,6 +19,8 @@ public class MockHistoryProcessor implements IHistoryProcessor {
     public final ArrayList<INDArray> recordCalls;
     public final ArrayList<INDArray> addCalls;
 
+    private int currentHistorySize = 0;
+
     public MockHistoryProcessor(Configuration config) {
 
         this.config = config;
@@ -43,13 +45,14 @@ public class MockHistoryProcessor implements IHistoryProcessor {
 
     @Override
     public void record(INDArray image) {
-        recordCalls.add(image);
+        recordCalls.add(image.dup());
     }
 
     @Override
     public void add(INDArray image) {
-        addCalls.add(image);
+        addCalls.add(image.dup());
         history.add(image);
+        ++currentHistorySize;
     }
 
     @Override
@@ -65,6 +68,16 @@ public class MockHistoryProcessor implements IHistoryProcessor {
     @Override
     public boolean isMonitoring() {
         return false;
+    }
+
+    @Override
+    public boolean isHistoryReady() {
+        return currentHistorySize >= config.getHistoryLength();
+    }
+
+    @Override
+    public void reset() {
+        currentHistorySize = 0;
     }
 
     @Override
