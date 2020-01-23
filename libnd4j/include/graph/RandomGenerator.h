@@ -28,6 +28,7 @@
 #include <chrono>
 #include <array/DataTypeUtils.h>
 #include <helpers/logger.h>
+#include <stdexcept>
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -46,7 +47,10 @@ namespace nd4j {
         public:
             void *operator new(size_t len) {
                 void *ptr;
-                cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
+                auto res = cudaHostAlloc(&ptr, len, cudaHostAllocDefault);
+                if (res != 0)
+                    throw std::runtime_error("CudaManagedRandomGenerator: failed to allocate memory");
+
                 return ptr;
              }
 
