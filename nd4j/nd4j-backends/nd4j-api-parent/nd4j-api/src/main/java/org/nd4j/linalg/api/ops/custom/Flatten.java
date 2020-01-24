@@ -17,6 +17,8 @@
 package org.nd4j.linalg.api.ops.custom;
 
 import lombok.val;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
@@ -45,6 +47,10 @@ public class Flatten extends DynamicCustomOp {
         this(output.ordering(), inputs);
 
         outputArguments.add(output);
+    }
+
+    public Flatten(SameDiff sameDiff, SDVariable... inputs) {
+        super(sameDiff, inputs);
     }
 
     @Override

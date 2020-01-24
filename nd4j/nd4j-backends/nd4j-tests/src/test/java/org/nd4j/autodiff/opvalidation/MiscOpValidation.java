@@ -32,8 +32,12 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.StopGradient;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.OneHot;
 import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
@@ -1763,5 +1767,360 @@ public class MiscOpValidation extends BaseOpValidation {
 
         assertEquals(exp, out);         //Values in x not in y
         assertEquals(exp, outIdx);      //Indices of the values in x not in y
+    }
+
+    @Test
+    public void testDivideNoNan() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new DivideNoNan(sameDiff, input1, input2).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testDigamma() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        SDVariable input1 = sameDiff.var(in1);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new Digamma(sameDiff, input1).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testFlatten() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new Flatten(sameDiff, input1).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testFusedBatchNorm() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in3 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in4 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in5 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+        SDVariable input3 = sameDiff.var(in3);
+        SDVariable input4 = sameDiff.var(in4);
+        SDVariable input5 = sameDiff.var(in5);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new FusedBatchNorm(sameDiff, input1, input2, input3, input4, input5).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testIgamma() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new Igamma(sameDiff, input1, input2).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testIgammaC() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new Igammac(sameDiff, input1, input2).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testLgamma() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in3 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in4 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+        SDVariable input3 = sameDiff.var(in3);
+        SDVariable input4 = sameDiff.var(in4);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new Lgamma(sameDiff, input1).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testLu() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in3 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in4 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+        SDVariable input3 = sameDiff.var(in3);
+        SDVariable input4 = sameDiff.var(in4);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new Lu(sameDiff, input1).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testMatrixBandPart() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in3 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in4 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+        SDVariable input3 = sameDiff.var(in3);
+        SDVariable input4 = sameDiff.var(in4);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new MatrixBandPart(sameDiff, input1, input2, input3).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testPolygamma() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in3 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in4 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+        SDVariable input3 = sameDiff.var(in3);
+        SDVariable input4 = sameDiff.var(in4);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new Polygamma(sameDiff, input1, input2).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testTriangularSolve() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+
+        SDVariable lower = sameDiff.constant(Nd4j.scalar(false));
+        SDVariable adjoint = sameDiff.constant(Nd4j.scalar(false));
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new TriangularSolve(sameDiff, input1, input2, lower, adjoint).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testBiasAdd() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+
+        SDVariable lower = sameDiff.constant(Nd4j.scalar(false));
+        SDVariable adjoint = sameDiff.constant(Nd4j.scalar(false));
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new BiasAdd(sameDiff, input1, input2, false).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testBiasAddGrad() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in3 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+        SDVariable input3 = sameDiff.var(in3);
+
+        SDVariable lower = sameDiff.constant(Nd4j.scalar(false));
+        SDVariable adjoint = sameDiff.constant(Nd4j.scalar(false));
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                107.0000,  140.0000,  179.0000,  224.0000
+        }).reshape(1,4);
+
+        SDVariable output = new BiasAddGrad(sameDiff, input1, input2, input3, false).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 }
