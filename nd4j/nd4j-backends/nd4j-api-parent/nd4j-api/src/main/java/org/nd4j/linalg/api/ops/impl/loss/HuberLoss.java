@@ -20,6 +20,7 @@ import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +39,10 @@ public class HuberLoss extends BaseLoss {
         Preconditions.checkState(delta >= 0.0, "Delta must be >= 0.0. Got: %s", delta);
         this.delta = delta;
         tArguments.add(delta);
+    }
+
+    public HuberLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double delta){
+        //TODO: Implement.
     }
 
     public HuberLoss(){ }
