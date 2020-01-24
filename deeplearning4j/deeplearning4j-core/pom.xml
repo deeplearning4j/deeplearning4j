@@ -153,6 +153,17 @@
             <version>${jaxb.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Dependencies for dl4j-perf subproject --> 
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-json</artifactId>
+            <version>${oshi.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>${oshi.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>

@@ -140,8 +140,6 @@
         <module>deeplearning4j-nearestneighbors-parent</module>
         <module>deeplearning4j-data</module>
         <module>deeplearning4j-manifold</module>
-        <module>deeplearning4j-util</module>
-        <module>dl4j-perf</module>
         <module>dl4j-integration-tests</module>
         <module>deeplearning4j-common</module>
         <module>deeplearning4j-remote</module>

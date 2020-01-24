@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -44,9 +45,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Slf4j
 public class IndexedTail {
     // here we store positions of individual consumers
+    @Getter
     protected ConcurrentHashMap<Long, AtomicLong> positions = new ConcurrentHashMap<>();
 
     // here we store individual updates
+    @Getter
     protected Map<Long, INDArray> updates = new ConcurrentHashMap<>();
 
     // simple counter for new updates
@@ -67,6 +70,7 @@ public class IndexedTail {
     protected final boolean allowCollapse;
     protected final long[] shape;
     protected final int collapseThreshold = 32;
+    @Getter
     protected AtomicBoolean collapsedMode = new AtomicBoolean(false);
     protected AtomicLong collapsedIndex = new AtomicLong(-1);
 
@@ -148,7 +152,7 @@ public class IndexedTail {
         }
     }
 
-    protected long firstNotAppliedIndexEverywhere() {
+    public long firstNotAppliedIndexEverywhere() {
         long maxIdx = -1;
 
         // if there's no updates posted yet - just return negative value
@@ -163,7 +167,7 @@ public class IndexedTail {
         return maxIdx + 1;
     }
 
-    protected long maxAppliedIndexEverywhere() {
+    public long maxAppliedIndexEverywhere() {
         long maxIdx = Long.MAX_VALUE;
         for (val v:positions.values()) {
             if (v.get() < maxIdx)
@@ -212,7 +216,7 @@ public class IndexedTail {
         return getDelta(Thread.currentThread().getId());
     }
 
-    protected long getDelta(long threadId) {
+    public long getDelta(long threadId) {
         return getGlobalPosition() - getLocalPosition(threadId);
     }
 
@@ -293,7 +297,7 @@ public class IndexedTail {
     /**
      * This method does maintenance of updates within
      */
-    protected synchronized void maintenance() {
+    public synchronized void maintenance() {
         // first of all we're checking, if all consumers were already registered. if not - just no-op.
         if (positions.size() < expectedConsumers) {
             log.trace("Skipping maintanance due to not all expected consumers shown up: [{}] vs [{}]", positions.size(), expectedConsumers);
@@ -326,7 +330,7 @@ public class IndexedTail {
      * This method returns actual number of updates stored within tail
      * @return
      */
-    protected int updatesSize() {
+    public int updatesSize() {
         return updates.size();
     }
 
@@ -348,11 +352,11 @@ public class IndexedTail {
         return result;
     }
 
-    protected boolean isDead() {
+    public boolean isDead() {
         return dead.get();
     }
 
-    protected void notifyDead() {
+    public void notifyDead() {
         dead.set(true);
     }
 

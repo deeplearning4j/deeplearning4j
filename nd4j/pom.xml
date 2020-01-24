@@ -56,8 +56,6 @@
         <module>nd4j-jdbc</module>
         <module>nd4j-serde</module>
         <module>nd4j-common</module>
-        <module>nd4j-buffer</module>
-        <module>nd4j-context</module>
         <module>nd4j-backends</module>
         <module>nd4j-parameter-server-parent</module>
         <module>nd4j-uberjar</module>

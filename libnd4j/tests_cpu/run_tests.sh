@@ -39,6 +39,7 @@ do
 done
 
 CHIP="${CHIP:-cpu}"
+export GTEST_OUTPUT="xml:../target/surefire-reports/TEST-${CHIP}-results.xml"
 
 # On Mac, make sure it can find libraries for GCC
 export DYLD_LIBRARY_PATH=/usr/local/lib/gcc/8/:/usr/local/lib/gcc/7/:/usr/local/lib/gcc/6/:/usr/local/lib/gcc/5/
@@ -47,8 +48,9 @@ export DYLD_LIBRARY_PATH=/usr/local/lib/gcc/8/:/usr/local/lib/gcc/7/:/usr/local/
 if [ -n "$BUILD_PATH" ]; then
     if which cygpath; then
         BUILD_PATH=$(cygpath -p $BUILD_PATH)
+        export GTEST_OUTPUT="xml:'..\target\surefire-reports\TEST-${CHIP}-results.xml'"
     fi
     export PATH="$PATH:$BUILD_PATH"
 fi
 
-../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_output="xml:../target/surefire-reports/TEST-${CHIP}-results.xml"
+../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests

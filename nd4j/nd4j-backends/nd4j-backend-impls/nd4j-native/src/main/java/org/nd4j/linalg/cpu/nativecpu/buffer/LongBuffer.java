@@ -124,6 +124,7 @@ public class LongBuffer extends BaseCpuDataBuffer {
         indexer = LongIndexer.create((LongPointer) this.pointer);
 
         // we still want this buffer to have native representation
+
         ptrDataBuffer = NativeOpsHolder.getInstance().getDeviceNativeOps().allocateDataBuffer(0, DataType.INT64.toInt(), false);
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetPrimaryBuffer(ptrDataBuffer, this.pointer, numberOfElements);
 

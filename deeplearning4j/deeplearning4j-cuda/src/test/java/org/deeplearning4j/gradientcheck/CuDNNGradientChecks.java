@@ -305,7 +305,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
         Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, false, -1, excludeParams, null);
 
         assertTrue(gradOK);
     }
@@ -417,7 +417,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 32);
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 32, null, null);
 
         assertTrue(gradOK);
     }
@@ -655,9 +655,12 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
             };
 
             log.info("*** Starting test: " + msg + " ***");
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, null,
-                    false, -1, null, c);
+            boolean gradOK = GradientCheckUtil.checkGradients(
+                    new GradientCheckUtil.MLNConfig().net(mln).epsilon(DEFAULT_EPS)
+                            .maxRelError(DEFAULT_MAX_REL_ERROR).minAbsoluteError(DEFAULT_MIN_ABS_ERROR)
+                            .print(PRINT_RESULTS ? GradientCheckUtil.PrintMode.ZEROS : GradientCheckUtil.PrintMode.FAILURES_ONLY)
+                            .exitOnFirstError(RETURN_ON_FIRST_FAILURE)
+                            .input(f).labels(l).callEachIter(c));
 
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(mln);
@@ -691,7 +694,7 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
         Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
         boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, excludeParams);
+                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, null, null, false, -1, excludeParams, null);
 
         assertTrue(gradOK);
 
