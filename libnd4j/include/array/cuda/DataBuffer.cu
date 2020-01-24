@@ -132,6 +132,12 @@ void DataBuffer::deleteSpecial() {
         RELEASE_SPECIAL(p, _workspace);
         _specialBuffer = nullptr;
         _isOwnerSpecial = false;
+
+        // count out towards DataBuffer device, only if we're not in workspace
+        if (_workspace == nullptr) {
+            nd4j::memory::MemoryCounter::getInstance()->countOut(_deviceId, getLenInBytes());
+            nd4j::memory::MemoryCounter::getInstance()->countOut(nd4j::memory::MemoryType::DEVICE, getLenInBytes());
+        }
     }
 }
 
