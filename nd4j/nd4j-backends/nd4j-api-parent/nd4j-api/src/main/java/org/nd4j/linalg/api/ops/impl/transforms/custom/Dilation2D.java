@@ -81,6 +81,10 @@ public class Dilation2D extends DynamicCustomOp {
 
     }
 
+    public Dilation2D(INDArray df, INDArray weights, INDArray strides, INDArray rates, INDArray isSameMode) {
+    }
+
+
     protected void addArgs() {
         addIArgument(isSameMode ? 1 : 0,
                 r0, r1, r2, r3,

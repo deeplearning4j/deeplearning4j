@@ -73,6 +73,19 @@ public class DeConv2D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
+    public DeConv2D(INDArray layerInput, INDArray weights, DeConv2DConfig deConv2DConfig) {
+        this(wrapFilterNull(layerInput, weights), wrapOrNull(null), deConv2DConfig);
+    }
+
+    public DeConv2D(INDArray layerInput, INDArray weights, INDArray bias, DeConv2DConfig deConv2DConfig) {
+        this(wrapFilterNull(layerInput, weights, bias), wrapOrNull(null), deConv2DConfig);
+    }
+
+    public DeConv2D(INDArray inputs, DeConv2DConfig deConv2DConfig) {
+        this(wrapFilterNull(inputs), wrapOrNull(null), deConv2DConfig);
+    }
+
+
     @Override
     public long[] iArgs() {
         if (iArguments.size() == 0)

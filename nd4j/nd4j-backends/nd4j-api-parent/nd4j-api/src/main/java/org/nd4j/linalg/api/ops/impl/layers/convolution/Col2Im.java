@@ -61,6 +61,13 @@ public class Col2Im extends DynamicCustomOp {
 
     public Col2Im() {}
 
+    public Col2Im(INDArray[] in, Conv2DConfig conv2DConfig) {
+        super("col2Im",in,null);
+        this.conv2DConfig = conv2DConfig;
+    }
+
+
+
     protected void addArgs() {
         addIArgument(conv2DConfig.getSH());
         addIArgument(conv2DConfig.getSW());

@@ -50,6 +50,11 @@ public class MaxPooling3D extends Pooling3D {
         super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.MAX);
     }
 
+    public MaxPooling3D(INDArray input, Pooling3DConfig pooling3DConfig) {
+        super(null, null, new INDArray[]{input}, wrapOrNull(null), false, pooling3DConfig, Pooling3DType.MAX);
+
+    }
+
     @Override
     public boolean isConfigProperties() {
         return true;

@@ -49,8 +49,18 @@ public class AvgPooling2D extends DynamicCustomOp {
 
     protected Pooling2DConfig config;
 
+
     public enum Pooling2DType {
         MAX, AVG, PNORM,
+    }
+
+    public AvgPooling2D(INDArray input, Pooling2DConfig pooling2DConfig) {
+        super(new INDArray[]{input},null);
+        config.setType(Pooling2D.Pooling2DType.AVG);
+
+        this.config = config;
+        addArgs();
+
     }
 
 
