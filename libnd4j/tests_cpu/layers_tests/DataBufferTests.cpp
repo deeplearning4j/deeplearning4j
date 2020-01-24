@@ -48,7 +48,7 @@ TEST_F(DataBufferTests, test_alloc_limit_1) {
     auto odUse = MemoryCounter::getInstance()->allocatedDevice(deviceId);
     auto ogUse = MemoryCounter::getInstance()->allocatedGroup(MemoryType::HOST);
 
-    auto limitSize = 150 * 1024 * 1024;
+    auto limitSize = odUse + (150 * 1024 * 1024);
     auto allocSize = 100000000;
 
     MemoryCounter::getInstance()->setDeviceLimit(deviceId, odLimit + limitSize);

@@ -51,7 +51,7 @@ TEST_F(DataBufferTestsCuda, test_alloc_limit_1) {
     auto opUse = MemoryCounter::getInstance()->allocatedGroup(MemoryType::HOST);
     auto osUse = MemoryCounter::getInstance()->allocatedGroup(MemoryType::DEVICE);
 
-    auto limitSize = 150000000;
+    auto limitSize = odUse + 150000000;
     auto allocSize = 100000000;
 
     MemoryCounter::getInstance()->setDeviceLimit(deviceId, odLimit + limitSize);
@@ -72,7 +72,7 @@ TEST_F(DataBufferTestsCuda, test_alloc_limit_1) {
 
     // this allocation should fail, since we're allocating too much
     try {
-        DataBuffer bufferFailed(allocSize, DataType::INT32);
+        DataBuffer bufferFailed(allocSize + 1, DataType::INT32);
         ASSERT_TRUE(false);
     } catch (allocation_exception &e) {
         // we expect exception here
