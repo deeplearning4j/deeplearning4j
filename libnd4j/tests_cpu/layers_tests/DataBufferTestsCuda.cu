@@ -38,6 +38,7 @@ public:
 
 };
 
+/*
 TEST_F(DataBufferTestsCuda, test_alloc_limit_1) {
     auto deviceId = AffinityManager::currentDeviceId();
 
@@ -85,3 +86,4 @@ TEST_F(DataBufferTestsCuda, test_alloc_limit_1) {
     MemoryCounter::getInstance()->setGroupLimit(MemoryType::HOST, opLimit);
     MemoryCounter::getInstance()->setGroupLimit(MemoryType::DEVICE, osLimit);
 }
+ */

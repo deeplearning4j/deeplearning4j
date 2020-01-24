@@ -1055,15 +1055,7 @@ namespace helpers {
 
     template <typename T>
     static __global__ void resizeAreaKernel(ImageResizerState const* pSt, CachedInterpolation const* caches, float scale,
-            T const* inputPtr, Nd4jLong* inputShape, float* outputPtr, Nd4jLong* outputShape) {
-
-        __shared__ ScaleCache<T>* sharedPtr;
-
-        if (threadIdx.x == 0) {
-            extern __shared__ char shared[];
-            sharedPtr = reinterpret_cast<ScaleCache<T>*>(shared);
-        }
-        __syncthreads();
+            T const* inputPtr, Nd4jLong* inputShape, float* outputPtr, Nd4jLong* outputShape, ScaleCache<T>* cachePool) { //batch * outWidth * outHeight
 
         for (auto batch = blockIdx.x; batch < pSt->batchSize; batch += gridDim.x) {
             for (auto y = threadIdx.x; y < pSt->outHeight; y += blockDim.x) {
@@ -1074,7 +1066,7 @@ namespace helpers {
                 const Nd4jLong yStart = math::nd4j_floor<float, Nd4jLong>(inY);
                 const Nd4jLong yEnd = math::nd4j_ceil<float, Nd4jLong>(inY1);
                 auto scalesDim = yEnd - yStart;
-                auto yScaleCache = sharedPtr + scalesDim * y * sizeof(ScaleCache<T>);
+                auto yScaleCache = cachePool + (batch * pSt->outWidth + y) * scalesDim * sizeof(ScaleCache<T>);
 
                 //auto startPtr = sharedPtr + y * scalesDim * sizeof(float);
                 //float* yScales = yScalesShare + y * sizeof(float) * scalesDim;//reinterpret_cast<float*>(startPtr); //shared + y * scalesDim * y + scalesDim * sizeof(T const *) [scalesDim];
@@ -1122,10 +1114,12 @@ namespace helpers {
         ImageResizerState* pSt;
         auto err = cudaMalloc(&pSt, sizeof(ImageResizerState));
         err = cudaMemcpyAsync(pSt, &st, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
-
+        ScaleCache<T>* cachePool;
+        err = cudaMalloc(&cachePool, sizeof(ScaleCache<T>) * st.batchSize * st.outWidth * st.outHeight);
         resizeAreaKernel<T><<<128, 4, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->getSpecialShapeInfo(), outputPtr,
-                output->specialShapeInfo());
+                output->specialShapeInfo(), cachePool);
         err = cudaStreamSynchronize(*stream);
+        err = cudaFree(cachePool);
         err = cudaFree(pSt);
     }
 // ------------------------------------------------------------------------------------------------------------------ //
@@ -1138,7 +1132,7 @@ namespace helpers {
         auto stream = context->getCudaStream();
         if (Status::OK() == res) {
             CachedInterpolation* xCached;
-            (st.outWidth);
+            //(st.outWidth);
             auto err = cudaMalloc(&xCached, sizeof(CachedInterpolation) * st.outWidth);
             NDArray::prepareSpecialUse({output}, {image});
             fillInterpolationCache<<<128, 128, 256, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
