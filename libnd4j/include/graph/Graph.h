@@ -23,7 +23,7 @@
 
 #include <list>
 #include <algorithm>
-#include <map>
+#include <unordered_map>
 //#include <NDArray.h>
 #include <graph/Node.h>
 #include <graph/Stash.h>

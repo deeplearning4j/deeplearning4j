@@ -27,6 +27,7 @@
 #include <stdexcept>
 #include <array/DataType.h>
 #include <types/pair.h>
+#include <pointercast.h>
 
 namespace nd4j{
     class ND4J_EXPORT Environment {
@@ -97,9 +98,29 @@ namespace nd4j{
         int maxMasterThreads();
         void setMaxMasterThreads(int max);
 
+        /*
+         * Legacy memory limits API, still used in new API as simplified version
+         */
         void setMaxPrimaryMemory(uint64_t maxBytes);
         void setMaxSpecialyMemory(uint64_t maxBytes);
         void setMaxDeviceMemory(uint64_t maxBytes);
+
+        uint64_t maxPrimaryMemory();
+        uint64_t maxSpecialMemory();
+        ////////////////////////
+
+        /*
+         * Methods for memory limits/counters
+         */
+        void setGroupLimit(int group, Nd4jLong numBytes);
+        void setDeviceLimit(int deviceId, Nd4jLong numBytes);
+
+        Nd4jLong getGroupLimit(int group);
+        Nd4jLong getDeviceLimit(int deviceId);
+
+        Nd4jLong getGroupCounter(int group);
+        Nd4jLong  getDeviceCounter(int deviceId);
+        ////////////////////////
 
         bool isUseMKLDNN() { return _useMKLDNN.load(); }
         void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN.store(useMKLDNN); }

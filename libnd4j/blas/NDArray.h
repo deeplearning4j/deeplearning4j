@@ -44,6 +44,7 @@
 #include <execution/AffinityManager.h>
 #include <memory>
 #include <array/InteropDataBuffer.h>
+#include <memory/MemoryCounter.h>
 
 
 namespace nd4j {

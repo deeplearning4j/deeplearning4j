@@ -573,7 +573,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 // #define DEV_TESTS_CONSTANTDESCRIPTOR_H
 
 // #include <array/DataType.h>
-// #include <map>
+// #include <unordered_map>
 // #include <vector>
 // #include <pointercast.h>
 // #include <dll.h>
@@ -811,6 +811,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 // #include <stdexcept>
 // #include <array/DataType.h>
 // #include <types/pair.h>
+// #include <pointercast.h>
     @Namespace("nd4j") @NoOffset public static class Environment extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -849,9 +850,29 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
         public native int maxMasterThreads();
         public native void setMaxMasterThreads(int max);
 
+        /*
+         * Legacy memory limits API, still used in new API as simplified version
+         */
         public native void setMaxPrimaryMemory(@Cast("uint64_t") long maxBytes);
         public native void setMaxSpecialyMemory(@Cast("uint64_t") long maxBytes);
         public native void setMaxDeviceMemory(@Cast("uint64_t") long maxBytes);
+
+        public native @Cast("uint64_t") long maxPrimaryMemory();
+        public native @Cast("uint64_t") long maxSpecialMemory();
+        ////////////////////////
+
+        /*
+         * Methods for memory limits/counters
+         */
+        public native void setGroupLimit(int group, @Cast("Nd4jLong") long numBytes);
+        public native void setDeviceLimit(int deviceId, @Cast("Nd4jLong") long numBytes);
+
+        public native @Cast("Nd4jLong") long getGroupLimit(int group);
+        public native @Cast("Nd4jLong") long getDeviceLimit(int deviceId);
+
+        public native @Cast("Nd4jLong") long getGroupCounter(int group);
+        public native @Cast("Nd4jLong") long getDeviceCounter(int deviceId);
+        ////////////////////////
 
         public native @Cast("bool") boolean isUseMKLDNN();
         public native void setUseMKLDNN(@Cast("bool") boolean useMKLDNN);
@@ -1020,6 +1041,7 @@ bool verbose = false;
 // #include <graph/execution/LogicExecutor.h>
 // #include <graph/ResultWrapper.h>
 // #include <DebugInfo.h>
+// #include <memory/MemoryCounter.h>
 
 /**
  * This function returns last error code stored,
@@ -3594,6 +3616,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <execution/AffinityManager.h>
 // #include <memory>
 // #include <array/InteropDataBuffer.h>
+// #include <memory/MemoryCounter.h>
 
 
 
@@ -4859,7 +4882,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // #include <string>
 // #include <atomic>
-// #include <map>
+// #include <unordered_map>
 // #include <NDArray.h>
 // #include <memory/Workspace.h>
 // #include <dll.h>
@@ -5010,6 +5033,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <chrono>
 // #include <array/DataTypeUtils.h>
 // #include <helpers/logger.h>
+// #include <stdexcept>
 
 // #ifdef __CUDACC__
 // #endif
@@ -5461,7 +5485,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 //#include <graph/Block.h>
 // #include <NDArray.h>
-// #include <map>
+// #include <unordered_map>
 // #include <string>
 // #include <atomic>
 // #include <pointercast.h>
@@ -5552,7 +5576,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <op_boilerplate.h>
 // #include <dll.h>
 // #include <vector>
-// #include <map>
+// #include <unordered_map>
 // #include <graph/Scope.h>
 // #include <Status.h>
 // #include <graph/VariableSpace.h>
@@ -5668,7 +5692,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <string>
 // #include <vector>
 // #include <list>
-// #include <map>
+// #include <unordered_map>
 // #include <mutex>
 // #include <NDArray.h>
 // #include <array/NDArrayList.h>
@@ -11885,7 +11909,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #include <pointercast.h>
 // #include <vector>
-// #include <map>
+// #include <unordered_map>
 // #include <mutex>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <ops/declarable/PlatformHelper.h>
@@ -17106,6 +17130,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Input : batched tensor with rank >=2
          * Output: tensor with rank lesser by 1 from input
          */
+//         #if NOT_EXCLUDED(OP_matrix_diag_part)
         @Namespace("nd4j::ops") public static class matrix_diag_part extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -17121,7 +17146,36 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+//         #endif
 
+        /**
+         * QR decomposition: A = QR, where Q is ortogonal (Q * QT = I) and R is upper triangular.
+         * For A (MxN) Q is M x M and R is (NxN). 
+         *
+         * Input : 
+         *    0 - float (or complex float) tensor with shape {.,..,...,M,N} - batch of float matricies
+         *
+         * Output: 
+         *    0 - float tensor with shape {.,..,...,MxN} - batch of ortogonal matricies {Qs}
+         *    1 - float tensor with shape {.,..,...,NxN} - batch of upper triangular matricies {Rs}
+         */
+//         #if NOT_EXCLUDED(OP_qr)
+        @Namespace("nd4j::ops") public static class qr extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public qr(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public qr(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public qr position(long position) {
+                return (qr)super.position(position);
+            }
+        
+                                                                                    public qr() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
 
         /**
          * This operation takes 2 arrays: original values, and values to be excluded. And returns 2 arrays: values left after exclusion, and indices in original array for surivals.
@@ -23687,7 +23741,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifndef DEV_TESTS_SHAPEDESCRIPTOR_H
 // #define DEV_TESTS_SHAPEDESCRIPTOR_H
 
-// #include <map>
+// #include <unordered_map>
 // #include <vector>
 // #include <dll.h>
 // #include <pointercast.h>

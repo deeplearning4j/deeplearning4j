@@ -18,18 +18,23 @@
 package org.nd4j.nativeblas;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
+
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * This class is a opaque pointer to InteropDataBuffer, used for Java/C++ interop related to INDArray DataBuffer
  *
  * @author saudet
+ * @author raver119@gmail.com
  */
+@Slf4j
 public class OpaqueDataBuffer extends Pointer {
     // TODO: make this configurable
-    private static final int MAX_TRIES = 3;
+    private static final int MAX_TRIES = 5;
 
     public OpaqueDataBuffer(Pointer p) { super(p); }
 
@@ -53,11 +58,13 @@ public class OpaqueDataBuffer extends Pointer {
                 // check error code
                 ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
                 if (ec != 0) {
-                    if (em == null)
-                        em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+                    em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
 
                     // if allocation failed it might be caused by casual OOM, so we'll try GC
                     System.gc();
+
+                    // sleeping for 50ms
+                    Thread.sleep(50);
                 } else {
                     // just return the buffer
                     return buffer;
@@ -89,11 +96,12 @@ public class OpaqueDataBuffer extends Pointer {
                 // check error code
                 ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
                 if (ec != 0) {
-                    if (em == null)
-                        em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+                    em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
 
                     // if expansion failed it might be caused by casual OOM, so we'll try GC
                     System.gc();
+
+                    Thread.sleep(50);
                 } else {
                     // just return
                     return;
@@ -126,11 +134,13 @@ public class OpaqueDataBuffer extends Pointer {
                 // check error code
                 ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
                 if (ec != 0) {
-                    if (em == null)
-                        em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+                    em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
 
                     // if view creation failed it might be caused by casual OOM, so we'll try GC
                     System.gc();
+
+                    // sleeping to let gc kick in
+                    Thread.sleep(50);
                 } else {
                     // just return
                     return buffer;

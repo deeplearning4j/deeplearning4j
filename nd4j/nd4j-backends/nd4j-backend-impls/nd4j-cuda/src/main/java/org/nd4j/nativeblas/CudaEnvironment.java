@@ -167,4 +167,29 @@ public class CudaEnvironment implements Environment {
     public boolean isCPU() {
         return e.isCPU();
     }
+
+    @Override
+    public void setGroupLimit(int group, long numBytes) {
+        e.setGroupLimit(group, numBytes);
+    }
+
+    @Override
+    public void setDeviceLimit(int deviceId, long numBytes) {
+        e.setDeviceLimit(deviceId, numBytes);
+    }
+
+    @Override
+    public long getGroupLimit(int group) {
+        return e.getGroupLimit(group);
+    }
+
+    @Override
+    public long getDeviceLimit(int deviceId) {
+        return e.getDeviceLimit(deviceId);
+    }
+
+    @Override
+    public long getDeviceCouner(int deviceId) {
+        return e.getDeviceCounter(deviceId);
+    }
 }

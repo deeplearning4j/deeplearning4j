@@ -26,6 +26,7 @@
 #include <helpers/StringUtils.h>
 #include <thread>
 #include <helpers/logger.h>
+#include <memory/MemoryCounter.h>
 
 #ifdef _OPENMP
 
@@ -291,11 +292,19 @@ namespace nd4j {
     }
 
     void Environment::setMaxThreads(int max) {
+        // FIXME: not possible at this moment, since maxThreads is limited by number of threads in pool. however we can allocate more threads if we want
         //_maxThreads.store(max);
     }
 
     void Environment::setMaxMasterThreads(int max) {
-        //_maxMasterThreads = max;
+        if (max > maxThreads()) {
+            max = maxThreads();
+        }
+
+        if (max < 1)
+            return;
+
+        _maxMasterThreads = max;
     }
 
     bool Environment::precisionBoostAllowed() {
@@ -332,6 +341,38 @@ namespace nd4j {
 
     void Environment::allowHelpers(bool reallyAllow) {
         _allowHelpers.store(reallyAllow);
+    }
+
+    void Environment::setGroupLimit(int group, Nd4jLong numBytes) {
+        nd4j::memory::MemoryCounter::getInstance()->setGroupLimit((nd4j::memory::MemoryType) group, numBytes);
+    }
+
+    void Environment::setDeviceLimit(int deviceId, Nd4jLong numBytes) {
+        nd4j::memory::MemoryCounter::getInstance()->setDeviceLimit(deviceId, numBytes);
+    }
+
+    Nd4jLong Environment::getGroupLimit(int group) {
+        return nd4j::memory::MemoryCounter::getInstance()->groupLimit((nd4j::memory::MemoryType) group);
+    }
+
+    Nd4jLong Environment::getDeviceLimit(int deviceId) {
+        return nd4j::memory::MemoryCounter::getInstance()->deviceLimit(deviceId);
+    }
+
+    Nd4jLong Environment::getGroupCounter(int group) {
+        return nd4j::memory::MemoryCounter::getInstance()->allocatedGroup((nd4j::memory::MemoryType) group);
+    }
+
+    Nd4jLong Environment::getDeviceCounter(int deviceId) {
+        return nd4j::memory::MemoryCounter::getInstance()->allocatedDevice(deviceId);
+    }
+
+    uint64_t Environment::maxPrimaryMemory() {
+        return _maxTotalPrimaryMemory.load();
+    }
+
+    uint64_t Environment::maxSpecialMemory() {
+        return _maxTotalSpecialMemory.load();
     }
 
     nd4j::Environment *nd4j::Environment::_instance = 0;

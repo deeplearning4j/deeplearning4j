@@ -23,6 +23,9 @@
 #include <DataTypeUtils.h>
 #include <op_boilerplate.h>
 #include <exceptions/cuda_exception.h>
+#include <execution/AffinityManager.h>
+#include <memory/MemoryCounter.h>
+#include <exceptions/allocation_exception.h>
 
 namespace nd4j {
     void DataBuffer::expand(const uint64_t size) {
@@ -64,8 +67,20 @@ namespace nd4j {
 void DataBuffer::allocateSpecial() {
 
     if (_specialBuffer == nullptr && getLenInBytes() > 0) {
+        auto deviceId = nd4j::AffinityManager::currentDeviceId();
+
+        if (_workspace == nullptr)
+            if (!nd4j::memory::MemoryCounter::getInstance()->validate(getLenInBytes()))
+                throw nd4j::allocation_exception::build("Requested amount exceeds device limits", nd4j::memory::MemoryCounter::getInstance()->deviceLimit(deviceId), getLenInBytes());
+
+
         ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
         _isOwnerSpecial = true;
+
+        if (_workspace == nullptr) {
+            nd4j::memory::MemoryCounter::getInstance()->countIn(deviceId, getLenInBytes());
+            nd4j::memory::MemoryCounter::getInstance()->countIn(nd4j::memory::MemoryType::DEVICE, getLenInBytes());
+        }
     }
 }
 

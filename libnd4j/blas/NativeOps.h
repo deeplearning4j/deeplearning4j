@@ -76,6 +76,7 @@ bool verbose = false;
 #include <graph/execution/LogicExecutor.h>
 #include <graph/ResultWrapper.h>
 #include <DebugInfo.h>
+#include <memory/MemoryCounter.h>
 
 typedef nd4j::InteropDataBuffer OpaqueDataBuffer;
 

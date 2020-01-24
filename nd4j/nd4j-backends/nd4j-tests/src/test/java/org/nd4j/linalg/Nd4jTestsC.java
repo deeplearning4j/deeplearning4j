@@ -459,7 +459,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testSubiRowVector() {
         INDArray oneThroughFour = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape('c', 2, 2);
-        INDArray row1 = oneThroughFour.getRow(1);
+        INDArray row1 = oneThroughFour.getRow(1).dup();
         oneThroughFour.subiRowVector(row1);
         INDArray result = Nd4j.create(new double[] {-2, -2, 0, 0}, new long[] {2, 2});
         assertEquals(getFailureMessage(), result, oneThroughFour);

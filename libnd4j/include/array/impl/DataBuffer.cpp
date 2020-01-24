@@ -23,6 +23,8 @@
 #include <helpers/logger.h>
 #include <array/DataTypeUtils.h>
 #include <execution/AffinityManager.h>
+#include <memory/MemoryCounter.h>
+#include <exceptions/allocation_exception.h>
 
 namespace nd4j {
     ///// IMLEMENTATION OF COMMON METHODS /////
@@ -232,14 +234,35 @@ namespace nd4j {
     void DataBuffer::allocatePrimary() {
 
         if (_primaryBuffer == nullptr && getLenInBytes() > 0) {
+            auto deviceId = nd4j::AffinityManager::currentDeviceId();
+            // check if this allocation won't bring us above limit
+            if (_workspace == nullptr) {
+                if (Environment::getInstance()->isCPU()) {
+                    // on cpu backend we validate against device 0 for now
+                    if (!nd4j::memory::MemoryCounter::getInstance()->validate(getLenInBytes()))
+                        throw nd4j::allocation_exception::build("Requested amount exceeds HOST device limits", nd4j::memory::MemoryCounter::getInstance()->deviceLimit(deviceId), getLenInBytes());
+                } else {
+                    // in heterogenous mode we valdate against device group
+                    if (!nd4j::memory::MemoryCounter::getInstance()->validateGroup(nd4j::memory::MemoryType::HOST, getLenInBytes()))
+                        throw nd4j::allocation_exception::build("Requested amount exceeds HOST group limits", nd4j::memory::MemoryCounter::getInstance()->groupLimit(nd4j::memory::MemoryType::HOST), getLenInBytes());
+                }
+            }
+
             ALLOCATE(_primaryBuffer, _workspace, getLenInBytes(), int8_t);
             _isOwnerPrimary = true;
+
+            // count in towards current deviceId if we're not in workspace mode
+            if (_workspace == nullptr) {
+                if (Environment::getInstance()->isCPU()) // we don't want this counter to be added to CUDA device
+                    nd4j::memory::MemoryCounter::getInstance()->countIn(deviceId, getLenInBytes());
+
+                nd4j::memory::MemoryCounter::getInstance()->countIn(nd4j::memory::MemoryType::HOST, getLenInBytes());
+            }
         }
     }
 
 ////////////////////////////////////////////////////////////////////////
     void DataBuffer::setAllocFlags(const bool isOwnerPrimary, const bool isOwnerSpecial) {
-
         _isOwnerPrimary = isOwnerPrimary;
         _isOwnerSpecial = isOwnerSpecial;
     }
@@ -252,6 +275,15 @@ namespace nd4j {
             RELEASE(p, _workspace);
             _primaryBuffer = nullptr;
             _isOwnerPrimary = false;
+
+
+            // count out towards DataBuffer device, only if we're not in workspace
+            if (_workspace == nullptr) {
+                if (Environment::getInstance()->isCPU())
+                    nd4j::memory::MemoryCounter::getInstance()->countOut(_deviceId, getLenInBytes());
+
+                nd4j::memory::MemoryCounter::getInstance()->countOut(nd4j::memory::MemoryType::HOST, getLenInBytes());
+            }
         }
     }
 

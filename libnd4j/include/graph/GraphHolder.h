@@ -20,7 +20,7 @@
 
 #include <helpers/logger.h>
 #include <pointercast.h>
-#include <map>
+#include <unordered_map>
 #include <graph/Graph.h>
 #include <helpers/SimpleReadWriteLock.h>
 #include <exceptions/unknown_graph_exception.h>

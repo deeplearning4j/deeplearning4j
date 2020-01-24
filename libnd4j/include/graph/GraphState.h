@@ -25,7 +25,7 @@
 #include <op_boilerplate.h>
 #include <dll.h>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <graph/Scope.h>
 #include <Status.h>
 #include <graph/VariableSpace.h>

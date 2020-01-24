@@ -22,7 +22,7 @@
 #include <ops/declarable/helpers/segment.h>
 #include <ShapeUtils.h>
 #include <execution/Threads.h>
-#include <map>
+#include <unordered_map>
 
 namespace nd4j {
 namespace ops {

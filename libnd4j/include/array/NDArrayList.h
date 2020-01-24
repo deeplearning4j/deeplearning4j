@@ -25,7 +25,7 @@
 
 #include <string>
 #include <atomic>
-#include <map>
+#include <unordered_map>
 #include <NDArray.h>
 #include <memory/Workspace.h>
 #include <dll.h>

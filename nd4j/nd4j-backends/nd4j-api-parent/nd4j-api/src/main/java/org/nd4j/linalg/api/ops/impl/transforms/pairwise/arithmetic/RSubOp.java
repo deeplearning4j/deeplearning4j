@@ -63,7 +63,7 @@ public class RSubOp extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "Sub";
+        throw new NoOpNameFoundException("No TensorFlow op name found for: " + getClass().getName());
     }
 
     public RSubOp( INDArray[] inputs, INDArray[] outputs) {

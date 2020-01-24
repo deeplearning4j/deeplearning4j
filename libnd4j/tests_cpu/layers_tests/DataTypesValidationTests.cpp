@@ -30,8 +30,6 @@
 #include <helpers/RandomLauncher.h>
 
 using namespace nd4j;
-
-using namespace nd4j;
 using namespace nd4j::graph;
 
 class DataTypesValidationTests : public testing::Test {

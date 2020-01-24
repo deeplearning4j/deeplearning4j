@@ -82,4 +82,39 @@ public interface Environment {
 
     /** Return true if the backend is a CPU backend, or false otherwise */
     boolean isCPU();
+
+    /**
+     * This method allows to set memory limit for a specific group of devices. I.e. CUDA or CPU
+     * @param group
+     * @param numBytes
+     */
+    void setGroupLimit(int group, long numBytes);
+
+    /**
+     * This method allows to set memory limit for a specific device. I.e. GPU_0
+     * @param deviceId
+     * @param numBytes
+     */
+    void setDeviceLimit(int deviceId, long numBytes);
+
+    /**
+     * This method returns current group limit
+     * @param group
+     * @return
+     */
+    long getGroupLimit(int group);
+
+    /**
+     * This method returns current device limit
+     * @param deviceId
+     * @return
+     */
+    long getDeviceLimit(int deviceId);
+
+    /**
+     * This method returns current allocated amount for a specific device. I.e. GPU_0
+     * @param deviceId
+     * @return
+     */
+    long getDeviceCouner(int deviceId);
 }

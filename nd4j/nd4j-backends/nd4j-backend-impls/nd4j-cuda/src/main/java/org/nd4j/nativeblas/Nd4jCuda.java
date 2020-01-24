@@ -495,7 +495,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
 // #define DEV_TESTS_CONSTANTDESCRIPTOR_H
 
 // #include <array/DataType.h>
-// #include <map>
+// #include <unordered_map>
 // #include <vector>
 // #include <pointercast.h>
 // #include <dll.h>
@@ -808,6 +808,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
 // #include <stdexcept>
 // #include <array/DataType.h>
 // #include <types/pair.h>
+// #include <pointercast.h>
     @Namespace("nd4j") @NoOffset public static class Environment extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -846,9 +847,29 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
         public native int maxMasterThreads();
         public native void setMaxMasterThreads(int max);
 
+        /*
+         * Legacy memory limits API, still used in new API as simplified version
+         */
         public native void setMaxPrimaryMemory(@Cast("uint64_t") long maxBytes);
         public native void setMaxSpecialyMemory(@Cast("uint64_t") long maxBytes);
         public native void setMaxDeviceMemory(@Cast("uint64_t") long maxBytes);
+
+        public native @Cast("uint64_t") long maxPrimaryMemory();
+        public native @Cast("uint64_t") long maxSpecialMemory();
+        ////////////////////////
+
+        /*
+         * Methods for memory limits/counters
+         */
+        public native void setGroupLimit(int group, @Cast("Nd4jLong") long numBytes);
+        public native void setDeviceLimit(int deviceId, @Cast("Nd4jLong") long numBytes);
+
+        public native @Cast("Nd4jLong") long getGroupLimit(int group);
+        public native @Cast("Nd4jLong") long getDeviceLimit(int deviceId);
+
+        public native @Cast("Nd4jLong") long getGroupCounter(int group);
+        public native @Cast("Nd4jLong") long getDeviceCounter(int deviceId);
+        ////////////////////////
 
         public native @Cast("bool") boolean isUseMKLDNN();
         public native void setUseMKLDNN(@Cast("bool") boolean useMKLDNN);
@@ -1017,6 +1038,7 @@ bool verbose = false;
 // #include <graph/execution/LogicExecutor.h>
 // #include <graph/ResultWrapper.h>
 // #include <DebugInfo.h>
+// #include <memory/MemoryCounter.h>
 
 /**
  * This function returns last error code stored,
@@ -3591,6 +3613,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <execution/AffinityManager.h>
 // #include <memory>
 // #include <array/InteropDataBuffer.h>
+// #include <memory/MemoryCounter.h>
 
 
 
@@ -4856,7 +4879,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // #include <string>
 // #include <atomic>
-// #include <map>
+// #include <unordered_map>
 // #include <NDArray.h>
 // #include <memory/Workspace.h>
 // #include <dll.h>
@@ -5007,6 +5030,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <chrono>
 // #include <array/DataTypeUtils.h>
 // #include <helpers/logger.h>
+// #include <stdexcept>
 
 // #ifdef __CUDACC__
 // #endif
@@ -5458,7 +5482,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 //#include <graph/Block.h>
 // #include <NDArray.h>
-// #include <map>
+// #include <unordered_map>
 // #include <string>
 // #include <atomic>
 // #include <pointercast.h>
@@ -5549,7 +5573,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <op_boilerplate.h>
 // #include <dll.h>
 // #include <vector>
-// #include <map>
+// #include <unordered_map>
 // #include <graph/Scope.h>
 // #include <Status.h>
 // #include <graph/VariableSpace.h>
@@ -5665,7 +5689,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <string>
 // #include <vector>
 // #include <list>
-// #include <map>
+// #include <unordered_map>
 // #include <mutex>
 // #include <NDArray.h>
 // #include <array/NDArrayList.h>
@@ -9674,7 +9698,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #include <pointercast.h>
 // #include <vector>
-// #include <map>
+// #include <unordered_map>
 // #include <mutex>
 // #include <ops/declarable/DeclarableOp.h>
 // #include <ops/declarable/PlatformHelper.h>
@@ -9939,7 +9963,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #ifndef DEV_TESTS_SHAPEDESCRIPTOR_H
 // #define DEV_TESTS_SHAPEDESCRIPTOR_H
 
-// #include <map>
+// #include <unordered_map>
 // #include <vector>
 // #include <dll.h>
 // #include <pointercast.h>

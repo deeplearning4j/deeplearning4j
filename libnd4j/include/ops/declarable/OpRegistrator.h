@@ -23,7 +23,7 @@
 
 #include <pointercast.h>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <mutex>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/PlatformHelper.h>
