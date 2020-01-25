@@ -17,9 +17,10 @@
 package org.nd4j.systeminfo;
 
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.systeminfo.SystemInfo;
 
-public class TestSystemInfo {
+public class TestSystemInfo extends BaseND4JTest {
     @Test
     public void testSystemInfo(){
         SystemInfo.printSystemInfo();

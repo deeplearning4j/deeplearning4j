@@ -45,7 +45,7 @@ public class SDLoss extends SDOps {
      */
     private SDVariable getWeights(SDVariable weights, String name, SDVariable predictions){
         String weightName = (name == null) ? null : name + "/weight";
-        return (weights == null) ? null : sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0));
+        return (weights == null) ? sd.constant(weightName, Nd4j.scalar(predictions.dataType(), 1.0)) : weights;
     }
 
     /**
