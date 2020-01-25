@@ -40,7 +40,7 @@ public class DataManagerTrainingListener implements TrainingListener {
             if (trainer instanceof AsyncThread) {
                 filename += ((AsyncThread) trainer).getThreadNumber() + "-";
             }
-            filename += trainer.getCurrentEpochStep() + "-" + trainer.getStepCounter() + ".mp4";
+            filename += trainer.getEpochCounter() + "-" + trainer.getStepCounter() + ".mp4";
             hp.startMonitor(filename, shape);
         }
 

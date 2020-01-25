@@ -138,6 +138,11 @@ public class DataManagerTrainingListenerTest {
         }
 
         @Override
+        public int getEpochCounter() {
+            return 0;
+        }
+
+        @Override
         public int getCurrentEpochStep() {
             return 0;
         }
