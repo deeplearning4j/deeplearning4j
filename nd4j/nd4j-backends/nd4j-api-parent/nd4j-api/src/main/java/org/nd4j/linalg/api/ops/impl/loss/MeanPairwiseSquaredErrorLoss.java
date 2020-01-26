@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.loss;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +32,10 @@ import java.util.List;
 public class MeanPairwiseSquaredErrorLoss extends BaseLoss {
     public MeanPairwiseSquaredErrorLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels){
         super(sameDiff, lossReduce, predictions, weights, labels);
+    }
+
+    public MeanPairwiseSquaredErrorLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce){
+        //TODO: Implement.
     }
 
     public MeanPairwiseSquaredErrorLoss(){ }

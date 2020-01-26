@@ -24,6 +24,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
@@ -47,6 +48,9 @@ public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{labels, logits}, false);
     }
 
+    public SparseSoftmaxCrossEntropyLossWithLogits(INDArray logits, INDArray labels){
+        //TODO: implement.
+    }
 
     public void addArgs() {
     }
