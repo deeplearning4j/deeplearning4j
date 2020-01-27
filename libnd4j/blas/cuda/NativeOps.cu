@@ -3780,6 +3780,13 @@ void ctxAllowHelpers(OpaqueContext* ptr, bool reallyAllow) {
     ptr->allowHelpers(reallyAllow);
 }
 
+void ctxSetExecutionMode(OpaqueContext* ptr, int execMode) {
+    if (execMode < 0 || execMode > 2)
+        execMode = 0;
+
+    ptr->setExecutionMode((samediff::ExecutionMode) execMode);
+}
+
 OpaqueDataBuffer* allocateDataBuffer(Nd4jLong elements, int dataType, bool allocateBoth) {
     try {
         auto dtype = DataTypeUtils::fromInt(dataType);

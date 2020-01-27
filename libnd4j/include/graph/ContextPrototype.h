@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -28,6 +29,7 @@
 #include <RandomGenerator.h>
 #include <ops/declarable/OpDescriptor.h>
 #include <execution/Engine.h>
+#include <execution/ExecutionMode.h>
 
 #ifndef __STANDALONE_BUILD__
 #include <config.h>
@@ -60,6 +62,8 @@ namespace nd4j {
 
             // target engine for execution
             samediff::Engine _engine = DEFAULT_ENGINE;
+
+            samediff::ExecutionMode _execMode = samediff::ExecutionMode::MODE_UNDEFINED;
         public:
             explicit ContextPrototype(nd4j::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;

@@ -780,6 +780,40 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 // #endif //SD_ENGINE_H
 
 
+// Parsed from execution/ExecutionMode.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef SD_EXECUTIONMODE_H
+// #define SD_EXECUTIONMODE_H
+    /** enum samediff::ExecutionMode */
+    public static final int
+        MODE_UNDEFINED = 0,
+        MODE_TRAINING = 1,
+        MODE_INFERENCE = 2;
+
+
+// #endif //SD_EXECUTIONMODE_H
+
+
 // Parsed from Environment.h
 
 /*******************************************************************************
@@ -3058,6 +3092,7 @@ public native OpaqueContext createGraphContext(int nodeId);
 public native OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext ptr);
 public native void ctxAllowHelpers(OpaqueContext ptr, @Cast("bool") boolean reallyAllow);
 public native void ctxShapeFunctionOverride(OpaqueContext ptr, @Cast("bool") boolean reallyOverride);
+public native void ctxSetExecutionMode(OpaqueContext ptr, int execMode);
 public native void markGraphContextInplace(OpaqueContext ptr, @Cast("bool") boolean reallyInplace);
 public native void setGraphContextCudaContext(OpaqueContext ptr, Pointer stream, Pointer reductionPointer, Pointer allocationPointer);
 public native void setGraphContextInputArray(OpaqueContext ptr, int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
@@ -6419,6 +6454,12 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
             public native void setShapeFunctionOverride(@Cast("bool") boolean reallyOverride);
             public native @Cast("bool") boolean shapeFunctionOverride();
+
+            public native @Cast("samediff::ExecutionMode") int executionMode();
+            public native void setExecutionMode(@Cast("samediff::ExecutionMode") int executionMode);
+
+            public native @Cast("bool") boolean isTraining();
+            public native @Cast("bool") boolean isInference();
         }
     
 
@@ -6459,6 +6500,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <RandomGenerator.h>
 // #include <ops/declarable/OpDescriptor.h>
 // #include <execution/Engine.h>
+// #include <execution/ExecutionMode.h>
 
 // #ifndef __STANDALONE_BUILD__
 // #include <config.h>

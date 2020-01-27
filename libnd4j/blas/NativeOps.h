@@ -1600,6 +1600,7 @@ ND4J_EXPORT OpaqueContext* createGraphContext(int nodeId);
 ND4J_EXPORT OpaqueRandomGenerator* getGraphContextRandomGenerator(OpaqueContext* ptr);
 ND4J_EXPORT void ctxAllowHelpers(OpaqueContext* ptr, bool reallyAllow);
 ND4J_EXPORT void ctxShapeFunctionOverride(OpaqueContext* ptr, bool reallyOverride);
+ND4J_EXPORT void ctxSetExecutionMode(OpaqueContext* ptr, int execMode);
 ND4J_EXPORT void markGraphContextInplace(OpaqueContext* ptr, bool reallyInplace);
 ND4J_EXPORT void setGraphContextCudaContext(OpaqueContext* ptr, void *stream, void *reductionPointer, void *allocationPointer);
 ND4J_EXPORT void setGraphContextInputArray(OpaqueContext* ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);

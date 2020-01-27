@@ -535,6 +535,22 @@ namespace nd4j {
         bool Context::shapeFunctionOverride() {
             return _shapeFunctionOverride;
         }
+
+        samediff::ExecutionMode Context::executionMode() {
+            return _execMode;
+        }
+
+        void Context::setExecutionMode(samediff::ExecutionMode executionMode) {
+            _execMode = executionMode;
+        }
+
+        bool Context::isTraining() {
+            return _execMode == samediff::ExecutionMode::MODE_TRAINING;
+        }
+
+        bool Context::isInference() {
+            return _execMode == samediff::ExecutionMode::MODE_INFERENCE;
+        }
     }
 }
 

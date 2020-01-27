@@ -142,4 +142,17 @@ public interface OpContext extends AutoCloseable {
      * @param reallyOverride
      */
     void shapeFunctionOverride(boolean reallyOverride);
+
+    /**
+     * This method returns current execution mode for Context
+     * @return
+     */
+    ExecutionMode getExecutionMode();
+
+    /**
+     * This method allows to set certain execution mode
+     *
+     * @param mode
+     */
+    void setExecutionMode(ExecutionMode mode);
 }
