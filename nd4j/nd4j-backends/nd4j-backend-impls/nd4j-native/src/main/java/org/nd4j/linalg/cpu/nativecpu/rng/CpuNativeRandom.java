@@ -17,13 +17,10 @@
 package org.nd4j.linalg.cpu.nativecpu.rng;
 
 import org.bytedeco.javacpp.PointerPointer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueRandomGenerator;
 import org.nd4j.rng.NativeRandom;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * CPU implementation for NativeRandom

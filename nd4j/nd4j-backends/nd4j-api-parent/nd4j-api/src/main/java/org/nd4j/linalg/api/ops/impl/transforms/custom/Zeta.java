@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -24,7 +23,6 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 

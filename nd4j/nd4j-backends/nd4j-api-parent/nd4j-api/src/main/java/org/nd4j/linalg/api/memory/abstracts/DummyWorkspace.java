@@ -14,9 +14,8 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.abstracts;
+package org.nd4j.linalg.api.memory.abstracts;
 
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;

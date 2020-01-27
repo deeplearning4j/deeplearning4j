@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.ops.random;
 
 import lombok.NoArgsConstructor;
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -29,7 +28,6 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 

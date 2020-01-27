@@ -24,7 +24,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
-import org.nd4j.linalg.primitives.Pair;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;

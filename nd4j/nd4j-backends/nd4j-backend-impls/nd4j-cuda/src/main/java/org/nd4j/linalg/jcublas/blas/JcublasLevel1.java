@@ -21,7 +21,6 @@ import org.bytedeco.javacpp.*;
 import org.nd4j.base.Preconditions;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -36,7 +35,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaExecutioner;
-import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jBlas;
@@ -45,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import org.bytedeco.cuda.cudart.*;
 import org.bytedeco.cuda.cublas.*;
-import static org.bytedeco.cuda.global.cudart.*;
+
 import static org.bytedeco.cuda.global.cublas.*;
 
 /**

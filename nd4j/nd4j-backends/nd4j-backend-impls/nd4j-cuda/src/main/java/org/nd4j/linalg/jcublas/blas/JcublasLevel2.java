@@ -22,8 +22,6 @@ import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.linalg.api.blas.impl.BaseLevel2;
-import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import org.bytedeco.cuda.cudart.*;
 import org.bytedeco.cuda.cublas.*;
-import static org.bytedeco.cuda.global.cudart.*;
+
 import static org.bytedeco.cuda.global.cublas.*;
 import static org.nd4j.linalg.jcublas.blas.CudaBlas.convertTranspose;
 

@@ -16,11 +16,8 @@
 
 package org.nd4j.autodiff.execution;
 
-import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -45,7 +42,6 @@ import org.nd4j.nativeblas.OpaqueResultWrapper;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
 
 /**

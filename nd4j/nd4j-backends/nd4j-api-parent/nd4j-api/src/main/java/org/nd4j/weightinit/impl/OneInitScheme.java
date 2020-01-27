@@ -19,7 +19,6 @@ package org.nd4j.weightinit.impl;
 import lombok.Builder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.weightinit.BaseWeightInitScheme;
 import org.nd4j.weightinit.WeightInit;

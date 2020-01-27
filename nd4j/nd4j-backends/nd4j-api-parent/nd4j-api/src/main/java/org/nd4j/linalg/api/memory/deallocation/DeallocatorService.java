@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.deallocation;
+package org.nd4j.linalg.api.memory.deallocation;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

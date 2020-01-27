@@ -29,13 +29,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.tensorflow.conversion.graphrunner.SavedModelConfig;
 import org.tensorflow.framework.MetaGraphDef;
-import org.tensorflow.framework.SavedModel;
 import org.tensorflow.framework.SignatureDef;
 import org.tensorflow.framework.TensorInfo;
 
 import java.io.IOException;
-import java.lang.Thread;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;

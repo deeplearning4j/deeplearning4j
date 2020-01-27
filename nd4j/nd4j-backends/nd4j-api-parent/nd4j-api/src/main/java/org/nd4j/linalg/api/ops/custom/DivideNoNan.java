@@ -15,7 +15,6 @@
  ******************************************************************************/
 package org.nd4j.linalg.api.ops.custom;
 
-import org.apache.commons.math3.analysis.function.Divide;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;

@@ -17,7 +17,6 @@
 package org.nd4j.evaluation;
 
 import org.junit.Test;
-import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.evaluation.classification.EvaluationCalibration;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;

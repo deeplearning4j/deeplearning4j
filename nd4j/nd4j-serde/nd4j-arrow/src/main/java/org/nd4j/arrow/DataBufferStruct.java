@@ -26,7 +26,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 
 public class DataBufferStruct extends Struct {
 

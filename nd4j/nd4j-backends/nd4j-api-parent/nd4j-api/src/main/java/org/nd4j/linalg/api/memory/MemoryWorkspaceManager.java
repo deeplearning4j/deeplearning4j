@@ -16,10 +16,8 @@
 
 package org.nd4j.linalg.api.memory;
 
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 
-import edu.umd.cs.findbugs.annotations.NonNull;
 import org.nd4j.linalg.api.memory.enums.DebugMode;
 
 import java.util.List;

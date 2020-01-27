@@ -38,8 +38,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.*;
 
 /**

@@ -19,7 +19,6 @@ package org.nd4j.linalg.checkutil;
 import lombok.val;
 import org.apache.commons.math3.linear.BlockRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;

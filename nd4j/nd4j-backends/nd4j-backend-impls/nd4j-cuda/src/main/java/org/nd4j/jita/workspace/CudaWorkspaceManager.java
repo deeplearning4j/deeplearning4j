@@ -21,8 +21,8 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.DebugMode;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
-import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
+import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
+import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
 
 /**
  * @author raver119@gmail.com

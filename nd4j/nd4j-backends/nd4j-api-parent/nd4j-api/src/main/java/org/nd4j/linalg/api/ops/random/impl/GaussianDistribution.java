@@ -27,9 +27,7 @@ import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * This Op generates normal distribution over provided mean and stddev

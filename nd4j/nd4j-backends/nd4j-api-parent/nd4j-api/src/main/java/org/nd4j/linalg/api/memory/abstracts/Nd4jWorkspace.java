@@ -14,16 +14,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.abstracts;
+package org.nd4j.linalg.api.memory.abstracts;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -32,14 +30,12 @@ import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.MemoryManager;
+import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.linalg.util.ND4JFileUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;

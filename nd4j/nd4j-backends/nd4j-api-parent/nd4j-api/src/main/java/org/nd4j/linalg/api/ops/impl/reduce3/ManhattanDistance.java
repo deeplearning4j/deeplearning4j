@@ -18,11 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce3;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;

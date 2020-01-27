@@ -40,7 +40,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOpsHolder;
 

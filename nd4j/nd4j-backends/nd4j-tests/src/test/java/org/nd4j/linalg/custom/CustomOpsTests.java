@@ -16,10 +16,8 @@
 
 package org.nd4j.linalg.custom;
 
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -53,7 +51,6 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static java.lang.Float.NaN;

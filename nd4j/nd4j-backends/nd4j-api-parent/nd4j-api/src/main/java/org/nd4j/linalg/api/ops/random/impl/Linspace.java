@@ -17,24 +17,17 @@
 package org.nd4j.linalg.api.ops.random.impl;
 
 import lombok.NonNull;
-import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Linspace/arange Op implementation, generates from..to distribution within Z

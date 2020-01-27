@@ -20,13 +20,10 @@ package org.nd4j.jita.flow.impl;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
-import org.bytedeco.javacpp.DoublePointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
-import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.concurrency.EventsProvider;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -34,19 +31,13 @@ import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.JCublasNDArray;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.memory.MemcpyDirection;
-import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 /**
  * @author raver119@gmail.com

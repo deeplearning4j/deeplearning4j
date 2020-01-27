@@ -15,7 +15,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
 import java.util.Arrays;

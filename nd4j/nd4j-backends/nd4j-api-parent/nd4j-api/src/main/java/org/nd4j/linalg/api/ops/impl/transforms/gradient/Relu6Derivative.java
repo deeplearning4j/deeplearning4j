@@ -27,7 +27,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
-import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 
 /**
  * Derivative of Rectified linear unit 6, i.e. min(max(input, cutoff), 6), where cutoff can be chosen.

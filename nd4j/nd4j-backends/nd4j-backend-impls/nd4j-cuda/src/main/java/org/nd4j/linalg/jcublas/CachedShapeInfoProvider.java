@@ -16,9 +16,7 @@
 
 package org.nd4j.linalg.jcublas;
 
-import lombok.val;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.jita.constant.ProtectedCudaShapeInfoProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;

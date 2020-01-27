@@ -18,7 +18,6 @@ package org.nd4j.evaluation;
 
 import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
 import org.junit.Test;
 import org.nd4j.evaluation.custom.CustomEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;

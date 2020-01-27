@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;

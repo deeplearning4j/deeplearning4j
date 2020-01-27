@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 
 import static org.junit.Assert.*;
 

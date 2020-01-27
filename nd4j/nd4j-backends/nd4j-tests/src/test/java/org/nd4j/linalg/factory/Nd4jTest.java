@@ -19,7 +19,6 @@ package org.nd4j.linalg.factory;
 import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;

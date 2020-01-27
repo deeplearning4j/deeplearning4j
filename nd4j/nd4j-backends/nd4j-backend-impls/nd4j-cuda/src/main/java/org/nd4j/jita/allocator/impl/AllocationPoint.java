@@ -23,10 +23,8 @@ import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.garbage.GarbageBufferReference;
-import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.pointers.cuda.cudaEvent_t;
 import org.nd4j.jita.allocator.time.TimeProvider;
-import org.nd4j.jita.allocator.time.providers.MillisecondsProvider;
 import org.nd4j.jita.allocator.time.providers.OperativeProvider;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -38,14 +36,7 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This class describes top-level allocation unit.

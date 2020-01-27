@@ -17,11 +17,9 @@
 package org.nd4j.evaluation;
 
 import org.junit.Test;
-import org.nd4j.evaluation.classification.EvaluationBinary;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCBinary;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
-import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;

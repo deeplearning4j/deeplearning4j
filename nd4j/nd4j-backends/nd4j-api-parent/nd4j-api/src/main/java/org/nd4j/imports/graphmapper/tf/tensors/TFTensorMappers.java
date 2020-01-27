@@ -1,6 +1,5 @@
 package org.nd4j.imports.graphmapper.tf.tensors;
 
-import org.nd4j.shade.protobuf.Descriptors;
 import org.bytedeco.javacpp.indexer.Bfloat16ArrayIndexer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -9,10 +8,8 @@ import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.TensorProto;
-import org.tensorflow.framework.TensorShapeProto;
 
 import java.nio.*;
-import java.util.Map;
 
 public class TFTensorMappers {
 

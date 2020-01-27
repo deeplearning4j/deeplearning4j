@@ -15,9 +15,6 @@
  ******************************************************************************/
 package org.nd4j.autodiff.listeners.profiler.comparison;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;

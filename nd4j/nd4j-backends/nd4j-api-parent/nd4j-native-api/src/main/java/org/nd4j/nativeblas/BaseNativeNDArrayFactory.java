@@ -18,7 +18,6 @@ package org.nd4j.nativeblas;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -30,8 +29,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.MemcpyDirection;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.api.memory.MemcpyDirection;
 
 import java.io.File;
 import java.io.FileInputStream;

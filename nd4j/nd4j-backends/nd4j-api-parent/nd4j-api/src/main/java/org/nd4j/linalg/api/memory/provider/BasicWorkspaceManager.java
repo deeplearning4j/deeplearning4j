@@ -14,27 +14,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.provider;
+package org.nd4j.linalg.api.memory.provider;
 
 import com.jakewharton.byteunits.BinaryByteUnit;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
+import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
-import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
-import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.SynchronizedObject;
 
-import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 

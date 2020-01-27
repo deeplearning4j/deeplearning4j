@@ -32,7 +32,6 @@ import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.serde.json.JsonMappers;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 
 import java.io.IOException;

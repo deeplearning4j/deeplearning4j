@@ -16,9 +16,7 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import lombok.Data;
 import lombok.NonNull;
-import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
@@ -27,15 +25,12 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
-import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * Cuda double  buffer

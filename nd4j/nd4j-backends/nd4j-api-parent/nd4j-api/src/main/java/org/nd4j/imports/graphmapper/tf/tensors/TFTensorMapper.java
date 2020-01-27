@@ -2,7 +2,6 @@ package org.nd4j.imports.graphmapper.tf.tensors;
 
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.tensorflow.framework.TensorProto;
 
 import java.nio.Buffer;
 import java.nio.ByteBuffer;

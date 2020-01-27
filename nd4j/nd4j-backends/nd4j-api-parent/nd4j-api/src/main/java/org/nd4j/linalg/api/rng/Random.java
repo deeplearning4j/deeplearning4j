@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.rng;
 
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

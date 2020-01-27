@@ -18,9 +18,7 @@ package org.nd4j.linalg.jcublas.rng;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.PointerPointer;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueRandomGenerator;

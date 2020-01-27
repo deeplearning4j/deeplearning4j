@@ -14,28 +14,25 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.deallocation;
-
-import lombok.Data;
-import org.nd4j.linalg.api.memory.Deallocatable;
-import org.nd4j.linalg.api.memory.Deallocator;
-
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
+package org.nd4j.linalg.api.memory.stash;
 
 /**
- * This method implements WeakReference for Deallocatable objects
  * @author raver119@gmail.com
  */
-@Data
-public class DeallocatableReference extends WeakReference<Deallocatable> {
-    private String id;
-    private Deallocator deallocator;
+public class BasicStashManager implements StashManager {
 
-    public DeallocatableReference(Deallocatable referent, ReferenceQueue<? super Deallocatable> q) {
-        super(referent, q);
+    @Override
+    public <T> boolean checkIfStashExists(T stashId) {
+        return false;
+    }
 
-        this.id = referent.getUniqueId();
-        this.deallocator = referent.deallocator();
+    @Override
+    public <T> Stash<T> getStash(T stashId) {
+        return null;
+    }
+
+    @Override
+    public <T> Stash<T> createStashIfNotExists(T stashId) {
+        return null;
     }
 }

@@ -28,9 +28,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * BernoulliDistribution implementation

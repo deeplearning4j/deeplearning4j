@@ -19,8 +19,6 @@ package org.nd4j.jita.allocator.tad;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.jita.conf.Configuration;
-import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.TadDescriptor;

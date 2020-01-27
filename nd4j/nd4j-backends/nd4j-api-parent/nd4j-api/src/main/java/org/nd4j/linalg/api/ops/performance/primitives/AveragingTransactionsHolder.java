@@ -16,18 +16,13 @@
 
 package org.nd4j.linalg.api.ops.performance.primitives;
 
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.api.memory.MemcpyDirection;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**

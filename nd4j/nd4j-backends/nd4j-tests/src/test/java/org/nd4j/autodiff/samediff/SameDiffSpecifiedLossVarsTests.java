@@ -27,10 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.*;

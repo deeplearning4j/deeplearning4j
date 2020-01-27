@@ -23,9 +23,8 @@ import org.nd4j.linalg.api.memory.AllocationsTracker;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.BasicMemoryManager;
+import org.nd4j.linalg.api.memory.BasicMemoryManager;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Map;

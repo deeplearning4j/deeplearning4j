@@ -25,7 +25,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /**

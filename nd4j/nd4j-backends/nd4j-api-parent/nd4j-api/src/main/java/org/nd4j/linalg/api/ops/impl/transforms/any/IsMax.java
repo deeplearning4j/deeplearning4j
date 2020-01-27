@@ -16,16 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.any;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;

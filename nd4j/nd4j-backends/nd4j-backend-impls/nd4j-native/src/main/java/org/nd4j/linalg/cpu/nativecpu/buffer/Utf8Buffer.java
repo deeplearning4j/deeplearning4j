@@ -24,7 +24,6 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;

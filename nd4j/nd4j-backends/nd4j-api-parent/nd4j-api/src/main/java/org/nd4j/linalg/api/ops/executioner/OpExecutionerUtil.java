@@ -16,8 +16,6 @@
 
 package org.nd4j.linalg.api.ops.executioner;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -25,15 +23,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.profiler.OpProfiler;
-import org.nd4j.linalg.profiler.ProfilerConfig;
-import org.nd4j.linalg.util.ArrayUtil;
-
-import java.util.Arrays;
 
 /**Utility functions for the DefaultOpExecutioner
  * @author Alex Black
