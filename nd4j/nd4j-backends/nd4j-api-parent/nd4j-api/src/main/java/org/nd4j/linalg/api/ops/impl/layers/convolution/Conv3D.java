@@ -70,11 +70,11 @@ public class Conv3D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public Conv3D(INDArray input, INDArray weights, Conv3DConfig conv3DConfig) {
+    public Conv3D(@NonNull INDArray input,@NonNull INDArray weights, Conv3DConfig conv3DConfig) {
         this(wrapFilterNull(input, weights), null, conv3DConfig);
     }
 
-    public Conv3D(INDArray input, INDArray weights, INDArray bias, Conv3DConfig conv3DConfig) {
+    public Conv3D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, Conv3DConfig conv3DConfig) {
         this(wrapFilterNull(input, weights, bias) , null, conv3DConfig);
     }
 

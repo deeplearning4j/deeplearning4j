@@ -24,6 +24,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.enums.DataFormat;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -64,6 +65,13 @@ public class DepthToSpace extends DynamicCustomOp {
         this.dataFormat = dataFormat;
         boolean isNHWC = dataFormat.equals("NHWC");
         addIArgument(blockSize, isNHWC ? 1 : 0);
+    }
+
+    public DepthToSpace(INDArray x, int blockSize, DataFormat dataFormat) {
+        super(null, x,null,null,null);
+        this.blockSize = blockSize;
+        this.dataFormat = dataFormat.toString();
+
     }
 
 

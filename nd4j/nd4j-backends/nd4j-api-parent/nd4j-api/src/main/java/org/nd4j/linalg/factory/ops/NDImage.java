@@ -155,12 +155,12 @@ public class NDImage {
    * Randomly crops image<br>
    *
    * @param input input array (NUMERIC type)
-   * @param shape shape for crop (NUMERIC type)
+   * @param shape shape for crop (INT type)
    * @return output cropped array (NUMERIC type)
    */
   public INDArray randomCrop(INDArray input, INDArray shape) {
     NDValidation.validateNumerical("randomCrop", "input", input);
-    NDValidation.validateNumerical("randomCrop", "shape", shape);
+    NDValidation.validateInteger("randomCrop", "shape", shape);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.RandomCrop(input, shape))[0];
   }
 

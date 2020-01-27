@@ -58,12 +58,14 @@ public class Im2col extends DynamicCustomOp {
 
     public Im2col() {}
 
-    public Im2col(INDArray[] in, Conv2DConfig conv2DConfig) {
-        super("im2Col", in, null);
+    public Im2col(INDArray in, Conv2DConfig conv2DConfig) {
+        super("im2Col",in,null,null,null);
         this.conv2DConfig = conv2DConfig;
         addArgs();
 
     }
+
+
 
     protected void addArgs() {
         addIArgument(conv2DConfig.getKH());

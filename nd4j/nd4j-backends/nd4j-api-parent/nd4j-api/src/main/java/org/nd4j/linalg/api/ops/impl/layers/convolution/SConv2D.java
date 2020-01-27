@@ -54,6 +54,10 @@ public class SConv2D extends Conv2D {
 
     public SConv2D() {}
 
+    public SConv2D(@NonNull INDArray inputs, Conv2DConfig conv2DConfig) {
+        super(inputs, conv2DConfig);
+    }
+
     @Override
     public String opName() {
         return "sconv2d";

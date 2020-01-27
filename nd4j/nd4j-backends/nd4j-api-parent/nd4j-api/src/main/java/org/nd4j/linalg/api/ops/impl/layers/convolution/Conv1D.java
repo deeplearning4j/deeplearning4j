@@ -64,11 +64,11 @@ public class Conv1D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public Conv1D(INDArray input, INDArray weights, INDArray bias, Conv1DConfig conv1DConfig) {
+    public Conv1D( @NonNull INDArray input, @NonNull INDArray weights, INDArray bias, Conv1DConfig conv1DConfig) {
         this(wrapFilterNull(input, weights, bias), null, conv1DConfig);
     }
 
-    public Conv1D(INDArray input, INDArray weights, Conv1DConfig conv1DConfig) {
+    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights, Conv1DConfig conv1DConfig) {
         this(wrapFilterNull(input, weights), null, conv1DConfig);
     }
 

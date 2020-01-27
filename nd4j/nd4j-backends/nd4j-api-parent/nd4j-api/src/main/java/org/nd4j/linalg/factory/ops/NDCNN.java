@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.enums.DataFormat;
 
 public class NDCNN {
   public NDCNN() {
@@ -72,9 +73,8 @@ public class NDCNN {
    * @param Pooling3DConfig Configuration Object
    * @return output after applying average pooling on the input (NUMERIC type)
    */
-  public INDArray avgPooling3d(INDArray[] input, Pooling3DConfig Pooling3DConfig) {
+  public INDArray avgPooling3d(INDArray input, Pooling3DConfig Pooling3DConfig) {
     NDValidation.validateNumerical("avgPooling3d", "input", input);
-    Preconditions.checkArgument(input.length == 5, "input has incorrect size/length. Expected: input.length == 5, got %s", input.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D(input, Pooling3DConfig))[0];
   }
 
@@ -83,15 +83,17 @@ public class NDCNN {
    * Reduces input batch dimension by rearranging data into a larger spatial dimensions<br>
    *
    * @param x Input variable. 4d input (NUMERIC type)
-   * @param blocks Block size, in the height/width dimension (NUMERIC type)
-   * @param crops Optional 2d int[] array: values [[crop top, crop bottom], [crop left, crop right]] (NUMERIC type)
+   * @param blocks Block size, in the height/width dimension (Size: Exactly(count=2))
+   * @param croppingTop  (Size: Exactly(count=2))
+   * @param croppingBottom  (Size: Exactly(count=2))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray batchToSpace(INDArray x, INDArray blocks, INDArray crops) {
+  public INDArray batchToSpace(INDArray x, int[] blocks, int[] croppingTop, int... croppingBottom) {
     NDValidation.validateNumerical("batchToSpace", "x", x);
-    NDValidation.validateNumerical("batchToSpace", "blocks", blocks);
-    NDValidation.validateNumerical("batchToSpace", "crops", crops);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace(x, blocks, crops))[0];
+    Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
+    Preconditions.checkArgument(croppingTop.length == 2, "croppingTop has incorrect size/length. Expected: croppingTop.length == 2, got %s", croppingTop.length);
+    Preconditions.checkArgument(croppingBottom.length == 2, "croppingBottom has incorrect size/length. Expected: croppingBottom.length == 2, got %s", croppingBottom.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace(x, blocks, croppingTop, croppingBottom))[0];
   }
 
   /**
@@ -102,9 +104,8 @@ public class NDCNN {
    * @param Conv2DConfig Configuration Object
    * @return output Col2Im output variable (NUMERIC type)
    */
-  public INDArray col2Im(INDArray[] in, Conv2DConfig Conv2DConfig) {
+  public INDArray col2Im(INDArray in, Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("col2Im", "in", in);
-    Preconditions.checkArgument(in.length == 6, "in has incorrect size/length. Expected: in.length == 6, got %s", in.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im(in, Conv2DConfig))[0];
   }
 
@@ -304,14 +305,12 @@ public class NDCNN {
    *
    * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
    *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
-   * @param blockSize Block size, in the height/width dimension (NUMERIC type)
-   * @param dataFormat Data format: NCHW or NHWC (NUMERIC type)
+   * @param blockSize Block size, in the height/width dimension
+   * @param dataFormat Data format: "NCHW" or "NHWC"
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray depthToSpace(INDArray x, INDArray blockSize, INDArray dataFormat) {
+  public INDArray depthToSpace(INDArray x, int blockSize, DataFormat dataFormat) {
     NDValidation.validateNumerical("depthToSpace", "x", x);
-    NDValidation.validateNumerical("depthToSpace", "blockSize", blockSize);
-    NDValidation.validateNumerical("depthToSpace", "dataFormat", dataFormat);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace(x, blockSize, dataFormat))[0];
   }
 
@@ -366,18 +365,17 @@ public class NDCNN {
    *
    * @param df  (NUMERIC type)
    * @param weights df (NUMERIC type)
-   * @param strides weights (NUMERIC type)
-   * @param rates strides (NUMERIC type)
-   * @param isSameMode isSameMode (NUMERIC type)
+   * @param strides weights (Size: Exactly(count=2))
+   * @param rates strides (Size: Exactly(count=2))
+   * @param isSameMode isSameMode
    * @return output Computed the grayscale dilation of 4-D input and 3-D filters tensors. (NUMERIC type)
    */
-  public INDArray dilation2D(INDArray df, INDArray weights, INDArray strides, INDArray rates,
-      INDArray isSameMode) {
+  public INDArray dilation2D(INDArray df, INDArray weights, int[] strides, int[] rates,
+      boolean isSameMode) {
     NDValidation.validateNumerical("dilation2D", "df", df);
     NDValidation.validateNumerical("dilation2D", "weights", weights);
-    NDValidation.validateNumerical("dilation2D", "strides", strides);
-    NDValidation.validateNumerical("dilation2D", "rates", rates);
-    NDValidation.validateNumerical("dilation2D", "isSameMode", isSameMode);
+    Preconditions.checkArgument(strides.length == 2, "strides has incorrect size/length. Expected: strides.length == 2, got %s", strides.length);
+    Preconditions.checkArgument(rates.length == 2, "rates has incorrect size/length. Expected: rates.length == 2, got %s", rates.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D(df, weights, strides, rates, isSameMode))[0];
   }
 
@@ -408,9 +406,8 @@ public class NDCNN {
    * @param Conv2DConfig Configuration Object
    * @return output Im2Col output variable (NUMERIC type)
    */
-  public INDArray im2Col(INDArray[] in, Conv2DConfig Conv2DConfig) {
+  public INDArray im2Col(INDArray in, Conv2DConfig Conv2DConfig) {
     NDValidation.validateNumerical("im2Col", "in", in);
-    Preconditions.checkArgument(in.length == 4, "in has incorrect size/length. Expected: in.length == 4, got %s", in.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col(in, Conv2DConfig))[0];
   }
 
@@ -498,14 +495,16 @@ public class NDCNN {
    *
    * @param x Input variable. 4d input (NUMERIC type)
    * @param blocks Block size, in the height/width dimension (Size: Exactly(count=2))
-   * @param padding Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]] (Size: AtLeast(min=2))
+   * @param paddingTop Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]] (Size: Exactly(count=2))
+   * @param paddingBottom Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]] (Size: Exactly(count=2))
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray spaceToBatch(INDArray x, int[] blocks, int... padding) {
+  public INDArray spaceToBatch(INDArray x, int[] blocks, int[] paddingTop, int... paddingBottom) {
     NDValidation.validateNumerical("spaceToBatch", "x", x);
     Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
-    Preconditions.checkArgument(padding.length >= 2, "padding has incorrect size/length. Expected: padding.length >= 2, got %s", padding.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch(x, blocks, padding))[0];
+    Preconditions.checkArgument(paddingTop.length == 2, "paddingTop has incorrect size/length. Expected: paddingTop.length == 2, got %s", paddingTop.length);
+    Preconditions.checkArgument(paddingBottom.length == 2, "paddingBottom has incorrect size/length. Expected: paddingBottom.length == 2, got %s", paddingBottom.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch(x, blocks, paddingTop, paddingBottom))[0];
   }
 
   /**
@@ -516,14 +515,12 @@ public class NDCNN {
    *
    * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
    *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
-   * @param blockSize  Block size, in the height/width dimension (NUMERIC type)
-   * @param dataFormat Data format: "NCHW" or "NHWC" (NUMERIC type)
+   * @param blockSize  Block size, in the height/width dimension
+   * @param dataFormat Data format: "NCHW" or "NHWC"
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray spaceToDepth(INDArray x, INDArray blockSize, INDArray dataFormat) {
+  public INDArray spaceToDepth(INDArray x, int blockSize, DataFormat dataFormat) {
     NDValidation.validateNumerical("spaceToDepth", "x", x);
-    NDValidation.validateNumerical("spaceToDepth", "blockSize", blockSize);
-    NDValidation.validateNumerical("spaceToDepth", "dataFormat", dataFormat);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth(x, blockSize, dataFormat))[0];
   }
 
@@ -532,12 +529,11 @@ public class NDCNN {
    * scale is used for both height and width dimensions. <br>
    *
    * @param input Input in NCHW format (NUMERIC type)
-   * @param scale The scale for both height and width dimensions. (NUMERIC type)
+   * @param scale The scale for both height and width dimensions.
    * @return output Upsampled input (NUMERIC type)
    */
-  public INDArray upsampling2d(INDArray input, INDArray scale) {
+  public INDArray upsampling2d(INDArray input, int scale) {
     NDValidation.validateNumerical("upsampling2d", "input", input);
-    NDValidation.validateNumerical("upsampling2d", "scale", scale);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scale))[0];
   }
 
@@ -545,16 +541,15 @@ public class NDCNN {
    * 2D Convolution layer operation - Upsampling 2d <br>
    *
    * @param input Input in NCHW format (NUMERIC type)
-   * @param nchw If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format (NUMERIC type)
    * @param scaleH Scale to upsample in height dimension (NUMERIC type)
    * @param scaleW Scale to upsample in width dimension (NUMERIC type)
+   * @param nchw If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
    * @return output Upsampled input (NUMERIC type)
    */
-  public INDArray upsampling2d(INDArray input, INDArray nchw, INDArray scaleH, INDArray scaleW) {
+  public INDArray upsampling2d(INDArray input, INDArray scaleH, INDArray scaleW, boolean nchw) {
     NDValidation.validateNumerical("upsampling2d", "input", input);
-    NDValidation.validateNumerical("upsampling2d", "nchw", nchw);
     NDValidation.validateNumerical("upsampling2d", "scaleH", scaleH);
     NDValidation.validateNumerical("upsampling2d", "scaleW", scaleW);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, nchw, scaleH, scaleW))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scaleH, scaleW, nchw))[0];
   }
 }

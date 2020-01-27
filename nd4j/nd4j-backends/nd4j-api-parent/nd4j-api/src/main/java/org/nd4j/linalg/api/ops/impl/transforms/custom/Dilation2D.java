@@ -81,7 +81,26 @@ public class Dilation2D extends DynamicCustomOp {
 
     }
 
-    public Dilation2D(INDArray df, INDArray weights, INDArray strides, INDArray rates, INDArray isSameMode) {
+    public Dilation2D(INDArray df, INDArray weights,int[] strides, int[] rates, boolean isSameMode) {
+        super(null, new INDArray[]{df, weights},null);
+        this.isSameMode = isSameMode;
+
+        if (rates.length < 4)
+            throw new IllegalArgumentException("Dilation rate length must be 4.");
+        if (strides.length < 4)
+            throw new IllegalArgumentException("Strides length must be 4.");
+
+        r0 = rates[0];
+        r1 = rates[1];
+        r2 = rates[2];
+        r3 = rates[3];
+        s0 = strides[0];
+        s1 = strides[1];
+        s2 = strides[2];
+        s3 = strides[3];
+        addArgs();
+
+
     }
 
 

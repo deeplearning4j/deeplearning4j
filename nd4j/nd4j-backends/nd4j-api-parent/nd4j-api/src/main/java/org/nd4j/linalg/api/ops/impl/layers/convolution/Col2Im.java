@@ -61,8 +61,8 @@ public class Col2Im extends DynamicCustomOp {
 
     public Col2Im() {}
 
-    public Col2Im(INDArray[] in, Conv2DConfig conv2DConfig) {
-        super("col2Im",in,null);
+    public Col2Im(INDArray in, Conv2DConfig conv2DConfig) {
+        super("col2Im",in,null,null,null);
         this.conv2DConfig = conv2DConfig;
     }
 

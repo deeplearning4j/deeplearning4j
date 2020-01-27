@@ -40,6 +40,7 @@ import java.util.Map;
 @Getter
 public class MaxPooling3D extends Pooling3D {
     public MaxPooling3D() {
+        super(null, null, input, null, false, pooling3DConfig, Pooling3DType.AVG);
     }
 
     public MaxPooling3D(SameDiff sameDiff, SDVariable input, Pooling3DConfig config) {
@@ -51,7 +52,7 @@ public class MaxPooling3D extends Pooling3D {
     }
 
     public MaxPooling3D(INDArray input, Pooling3DConfig pooling3DConfig) {
-        super(null, null, new INDArray[]{input}, wrapOrNull(null), false, pooling3DConfig, Pooling3DType.MAX);
+        super(null, null, new INDArray[]{input},null, false, pooling3DConfig, Pooling3DType.MAX);
 
     }
 
