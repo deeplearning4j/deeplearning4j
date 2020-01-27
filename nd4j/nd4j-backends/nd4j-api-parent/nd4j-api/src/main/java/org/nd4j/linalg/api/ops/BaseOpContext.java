@@ -16,7 +16,9 @@
 
 package org.nd4j.linalg.api.ops;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -34,6 +36,10 @@ public abstract class BaseOpContext implements OpContext {
     protected List<Double> fastpath_d = new ArrayList<>();
     protected List<Boolean> fastpath_b = new ArrayList<>();
     protected List<Long> fastpath_i = new ArrayList<>();
+
+    @Setter()
+    @Getter
+    protected ExecutionMode executionMode = ExecutionMode.UNDEFINED;
 
     @Override
     public void setIArguments(long... arguments) {

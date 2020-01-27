@@ -42,6 +42,7 @@ import java.util.Scanner;
                                               "array/TadPack.h",
                                               "execution/ErrorReference.h",
                                               "execution/Engine.h",
+                                              "execution/ExecutionMode.h",
                                               "Environment.h",
                                               "types/utf8string.h",
                                               "NativeOps.h",

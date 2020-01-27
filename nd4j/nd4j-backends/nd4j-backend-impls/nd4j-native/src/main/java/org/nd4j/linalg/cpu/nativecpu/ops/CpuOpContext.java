@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOpContext;
+import org.nd4j.linalg.api.ops.ExecutionMode;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.cpu.nativecpu.buffer.BaseCpuDataBuffer;
 import org.nd4j.linalg.primitives.Pair;
@@ -117,5 +118,11 @@ public class CpuOpContext extends BaseOpContext implements OpContext {
     @Override
     public void shapeFunctionOverride(boolean reallyOverride) {
         nativeOps.ctxShapeFunctionOverride(context, reallyOverride);
+    }
+
+    @Override
+    public void setExecutionMode(@NonNull ExecutionMode mode) {
+        super.setExecutionMode(mode);
+        nativeOps.ctxSetExecutionMode(context, mode.ordinal());
     }
 }

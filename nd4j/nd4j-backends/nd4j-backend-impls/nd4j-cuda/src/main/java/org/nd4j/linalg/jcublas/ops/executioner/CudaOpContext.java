@@ -27,6 +27,7 @@ import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOpContext;
+import org.nd4j.linalg.api.ops.ExecutionMode;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
@@ -125,5 +126,11 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
     @Override
     public void shapeFunctionOverride(boolean reallyOverride) {
         nativeOps.ctxShapeFunctionOverride(context, reallyOverride);
+    }
+
+    @Override
+    public void setExecutionMode(@NonNull ExecutionMode mode) {
+        super.setExecutionMode(mode);
+        nativeOps.ctxSetExecutionMode(context, mode.ordinal());
     }
 }
