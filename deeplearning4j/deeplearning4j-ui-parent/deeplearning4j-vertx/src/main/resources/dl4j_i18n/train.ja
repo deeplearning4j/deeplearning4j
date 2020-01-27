@@ -4,5 +4,5 @@ train.nav.model=モデル
 train.nav.system=システム
 train.nav.userguide=ユーザーガイド
 train.nav.language=言語
-train.session.label=Session
-train.session.worker.label=Worker
+train.session.label=セッション
+train.session.worker.label=ワーカー

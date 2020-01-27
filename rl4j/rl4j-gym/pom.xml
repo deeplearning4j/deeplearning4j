@@ -39,9 +39,18 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>gym-java-client</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>gym-platform</artifactId>
+            <version>${gym.version}-${javacpp-presets.version}</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-10.2</id>
+        </profile>
+    </profiles>
 </project>

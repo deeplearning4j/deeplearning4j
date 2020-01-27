@@ -20,6 +20,7 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
@@ -63,6 +64,11 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
 
     public IActorCritic getNeuralNet() {
         return actorCritic;
+    }
+
+    @Override
+    public Integer nextAction(Observation obs) {
+        return nextAction(obs.getData());
     }
 
     public Integer nextAction(INDArray input) {

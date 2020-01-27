@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
+import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -46,13 +47,13 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     @Getter
     final protected A3CDiscrete.A3CConfiguration conf;
     @Getter
-    final protected AsyncGlobal<IActorCritic> asyncGlobal;
+    final protected IAsyncGlobal<IActorCritic> asyncGlobal;
     @Getter
     final protected int threadNumber;
 
     final private Random rnd;
 
-    public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal,
+    public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IAsyncGlobal<IActorCritic> asyncGlobal,
                              A3CDiscrete.A3CConfiguration a3cc, int deviceNum, TrainingListenerList listeners,
                              int threadNumber) {
         super(asyncGlobal, mdp, listeners, threadNumber, deviceNum);

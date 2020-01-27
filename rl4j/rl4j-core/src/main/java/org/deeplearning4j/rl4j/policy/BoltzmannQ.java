@@ -17,6 +17,7 @@
 package org.deeplearning4j.rl4j.policy;
 
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
@@ -41,6 +42,11 @@ public class BoltzmannQ<O extends Encodable> extends Policy<O, Integer> {
 
     public IDQN getNeuralNet() {
         return dqn;
+    }
+
+    @Override
+    public Integer nextAction(Observation obs) {
+        return nextAction(obs.getData());
     }
 
     public Integer nextAction(INDArray input) {

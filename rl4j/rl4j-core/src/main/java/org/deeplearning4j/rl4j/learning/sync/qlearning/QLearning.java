@@ -150,6 +150,9 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     }
 
     private InitMdp<Observation> refacInitMdp() {
+        getQNetwork().reset();
+        getTargetQNetwork().reset();
+
         LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
         IHistoryProcessor hp = getHistoryProcessor();
 

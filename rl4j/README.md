@@ -32,10 +32,6 @@ Comments are welcome on our gitter channel:
 
 # Quickstart
 
-** INSTALL rl4j-api before installing all (see below)!**
-
-* mvn install -pl rl4j-api
-* [if you want rl4j-gym too] Download and mvn install: [gym-java-client](https://github.com/eclipse/deeplearning4j/tree/master/gym-java-client)
 * mvn install
 
 # Visualisation
@@ -44,9 +40,7 @@ Comments are welcome on our gitter channel:
 
 # Quicktry cartpole:
 
-* Install [gym-http-api](https://github.com/openai/gym-http-api).
-* launch http api server.
-* run with this [main](https://github.com/rubenfiszel/rl4j-examples/blob/master/src/main/java/org/deeplearning4j/rl4j/Cartpole.java)
+* run with this [main](https://github.com/eclipse/deeplearning4j-examples/blob/master/rl4j-examples/src/main/java/org/deeplearning4j/examples/rl4j/Cartpole.java)
 
 # Doom
 
@@ -83,4 +77,4 @@ Doom is not ready yet but you can make it work if you feel adventurous with some
 
 * Continuous control
 * Policy Gradient
-* Update gym-java-client when gym-http-api gets compatible with pixels environments to play with Pong, Doom, etc ..
+* Update rl4j-gym to make it compatible with pixels environments to play with Pong, Doom, etc ..

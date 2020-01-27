@@ -39,4 +39,13 @@
             <version>${project.version}</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-10.2</id>
+        </profile>
+    </profiles>
 </project>

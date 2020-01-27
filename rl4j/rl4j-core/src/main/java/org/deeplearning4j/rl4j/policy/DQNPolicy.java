@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -42,6 +43,11 @@ public class DQNPolicy<O extends Encodable> extends Policy<O, Integer> {
 
     public IDQN getNeuralNet() {
         return dqn;
+    }
+
+    @Override
+    public Integer nextAction(Observation obs) {
+        return nextAction(obs.getData());
     }
 
     public Integer nextAction(INDArray input) {
