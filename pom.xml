@@ -293,11 +293,11 @@
 
         <python.version>3.7.6</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
-        <numpy.version>1.18.0</numpy.version>
+        <numpy.version>1.18.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
         <openblas.version>0.3.7</openblas.version>
-        <mkl.version>2019.5</mkl.version>
+        <mkl.version>2020.0</mkl.version>
         <opencv.version>4.2.0</opencv.version>
         <ffmpeg.version>4.2.2</ffmpeg.version>
         <leptonica.version>1.79.0</leptonica.version>
