@@ -143,7 +143,7 @@ namespace nd4j {
                 cudaFreeHost((void *)this->_ptrHost);
 
             if (this->_allocatedDevice && !_externalized)
-                cudaFree((void *)this->_ptrHost);
+                cudaFree((void *)this->_ptrDevice);
 
             freeSpills();
         }

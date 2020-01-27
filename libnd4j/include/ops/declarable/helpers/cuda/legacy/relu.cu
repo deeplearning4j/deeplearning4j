@@ -33,7 +33,7 @@ namespace nd4j {
                     return x > (T) 0.f ? y : T(0.f);
                 };
 
-                theFirst->applyPairwiseLambda(theSecond, functor, nullptr);
+                theFirst->applyPairwiseLambda(*theSecond, functor, *theFirst);
             }
 
             void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond) {
@@ -46,7 +46,7 @@ namespace nd4j {
                     return x > (T)0.f ? y : T(0.f);
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -59,7 +59,7 @@ namespace nd4j {
                     return x > (T)0.f && x < (T)6.f? y : T(0.f);
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void relu6Derivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -75,7 +75,7 @@ namespace nd4j {
                     return x < 0 ? alphaT * y : y;
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void leakyReluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
@@ -91,7 +91,7 @@ namespace nd4j {
                     return y * nd4j::math::nd4j_eluderivative<T,T>(x, alphaT);
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void eluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
@@ -104,7 +104,7 @@ namespace nd4j {
                     return y * simdOps::SELUDerivative<T>::op(x, nullptr);
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void seluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {

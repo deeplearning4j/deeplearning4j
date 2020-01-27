@@ -423,7 +423,7 @@ TEST_F(DeclarableOpsTests5, Log1p_test1) {
     //  auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
 //    auto exp = NDArrayFactory::create<float>('c', {3,3});
     nd4j::ops::Log1p op;
-    y.applyTransform(nd4j::transform::Log, nullptr, nullptr);
+    y.applyTransform(nd4j::transform::Log, y);
     auto result = op.execute({&matrix}, {}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -2737,7 +2737,7 @@ TEST_F(DeclarableOpsTests5, ELU_1) {
     auto exp     = NDArrayFactory::create<double>('c', {2, 2, 2}, { -0.63212055,  2. , 1.5, -0.753403, 1.,   2.,  2.,   1.});
     auto res     = NDArrayFactory::create<double>('c', {2, 2, 2});
 
-    input.applyScalar(nd4j::scalar::ELU, 1.f, &res);
+    input.applyScalar(nd4j::scalar::ELU, 1.f, res);
 
     ASSERT_TRUE(res.equalsTo(&exp));
 }

@@ -122,35 +122,32 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-void NDArray::fillAsTriangular(const float val, int lower, int upper, const char direction, NDArray* target) {
+void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& target, const char direction) {
 
     if (isS())
         throw std::runtime_error("NDArray::fillAsTriangular: you can't use this method on String array!");
 
-    if(target == nullptr)
-        target = this;
-
-    if(!isSameShape(target) && !(rankOf() == 1 && target->rankOf() == 2 && sizeAt(0) == target->sizeAt(0) && sizeAt(0) == target->sizeAt(1)))
+    if(!isSameShape(target) && !(rankOf() == 1 && target.rankOf() == 2 && sizeAt(0) == target.sizeAt(0) && sizeAt(0) == target.sizeAt(1)))
         throw std::string("NDArray::fillAsTriangular method: wrong shape of target array !");
 
      if (direction == 'u')
-        lower = -target->sizeAt(-2);
+        lower = -target.sizeAt(-2);
     else if (direction == 'l')
-        upper = target->sizeAt(-1);
+        upper = target.sizeAt(-1);
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (target->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(decltype(*target->getShapeInfo())) * target->rankOf() + 128;
+    const int blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(decltype(*target.getShapeInfo())) * target.rankOf() + 128;
 
     PointersManager manager(getContext(), "NDArray::fillAsTriangular");
 
-    NDArray::prepareSpecialUse({target}, {this});
-    fillAsTriangularCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *getContext()->getCudaStream()>>>(getPlatformBuffer(), getPlatformShapeInfo(), target->getPlatformBuffer(), target->getPlatformShapeInfo(), static_cast<T>(val), lower, upper);
-    NDArray::registerSpecialUse({target}, {this});
+    NDArray::prepareSpecialUse({&target}, {this});
+    fillAsTriangularCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *getContext()->getCudaStream()>>>(getPlatformBuffer(), getPlatformShapeInfo(), target.getPlatformBuffer(), target.getPlatformShapeInfo(), static_cast<T>(val), lower, upper);
+    NDArray::registerSpecialUse({&target}, {this});
 
     manager.synchronize();
 }
-BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void NDArray::fillAsTriangular, (const float val, int lower, int upper, const char direction, NDArray* target), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void NDArray::fillAsTriangular, (const float val, int lower, int upper, NDArray& target, const char direction), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -239,7 +236,7 @@ void NDArray::synchronize(const char* msg) const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
 
     for (const auto& a : readList)
         if(a != nullptr)
@@ -255,7 +252,7 @@ void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& wri
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
+void NDArray::registerSpecialUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList) {
 
     for (const auto& p : readList)
         if(p != nullptr)
@@ -267,7 +264,7 @@ void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& wr
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
 
     for (const auto& a : readList)
         if(a != nullptr)
@@ -283,7 +280,7 @@ void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& wri
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
+void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList) {
 
     for (const auto& p : readList)
         if(p != nullptr)
@@ -457,21 +454,21 @@ BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher, (const int blocksPerGrid
 
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
-NDArray* NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
+NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
 
-    auto output = new NDArray('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(),  getContext());
+    NDArray output('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(),  getContext());
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (output->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = output->rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = output.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
 
     PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
 
     const int* reps = reinterpret_cast<int*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(int)));
 
-    prepareSpecialUse({output}, {this});
-    BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), getSpecialBuffer(), getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), reps, repeats.size(), axis), LIBND4J_TYPES);
-    prepareSpecialUse({output}, {this});
+    prepareSpecialUse({&output}, {this});
+    BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), getSpecialBuffer(), getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), reps, repeats.size(), axis), LIBND4J_TYPES);
+    prepareSpecialUse({&output}, {this});
 
     manager.synchronize();
 

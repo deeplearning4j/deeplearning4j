@@ -60,7 +60,7 @@ public class CSVSparkTransformTest {
         Base64NDArrayBody body = csvSparkTransform.toArray(new SingleCSVRecord(values));
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
         assertTrue(fromBase64.isVector());
-        System.out.println("Base 64ed array " + fromBase64);
+//        System.out.println("Base 64ed array " + fromBase64);
     }
 
     @Test
@@ -125,7 +125,7 @@ public class CSVSparkTransformTest {
 
         SequenceBatchCSVRecord transformed = csvSparkTransform.transformSequence(sequenceBatchCSVRecord);
         assertNotNull(transformed.getRecords());
-        System.out.println(transformed);
+//        System.out.println(transformed);
 
 
     }
@@ -153,7 +153,8 @@ public class CSVSparkTransformTest {
                         new SingleCSVRecord(data2)));
 
         final CSVSparkTransform transform = new CSVSparkTransform(transformProcess);
-        System.out.println(transform.transformSequenceIncremental(batchCsvRecord));
+//        System.out.println(transform.transformSequenceIncremental(batchCsvRecord));
+        transform.transformSequenceIncremental(batchCsvRecord);
         assertEquals(3,Nd4jBase64.fromBase64(transform.transformSequenceArrayIncremental(batchCsvRecord).getNdarray()).rank());
 
     }

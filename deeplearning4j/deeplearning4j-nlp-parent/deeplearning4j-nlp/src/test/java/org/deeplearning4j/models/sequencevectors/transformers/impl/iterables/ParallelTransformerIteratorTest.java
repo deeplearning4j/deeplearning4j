@@ -55,7 +55,7 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
 
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void hasNext() throws Exception {
         SentenceIterator iterator = new BasicLineIterator(Resources.asFile("big/raw_sentences.txt"));
 
@@ -77,7 +77,7 @@ public class ParallelTransformerIteratorTest extends BaseDL4JTest {
         assertEquals(97162, cnt);
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testSpeedComparison1() throws Exception {
         SentenceIterator iterator = new MutipleEpochsSentenceIterator(
                         new BasicLineIterator(Resources.asFile("big/raw_sentences.txt")), 25);

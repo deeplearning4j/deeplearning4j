@@ -82,7 +82,7 @@ namespace nd4j {
         // now we actually apply quantization
         auto func = PRAGMA_THREADS_FOR {
             for (auto e = start; e < stop; e += increment) {
-                rz[e] = static_cast<char>(nd4j::math::nd4j_round<float, char>(1.0f * x[e] / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
+                rz[e] = static_cast<char>(nd4j::math::nd4j_round<float, char>( 1.0f * static_cast<float>(x[e]) / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
             }
         };
 
@@ -180,7 +180,7 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
             for (auto e = start; e < stop; e += increment) {
                 int el = x[e];
                 int ael = nd4j::math::nd4j_abs<int>(el) - 1;
-                z[ael] += el > 0 ? threshold : -threshold;
+                z[ael] += el > 0 ? static_cast<T>(threshold) : static_cast<T>(-threshold);
             }
         };
 

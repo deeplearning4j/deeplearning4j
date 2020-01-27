@@ -31,8 +31,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
-import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
-import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
+import org.nd4j.linalg.api.ops.random.custom.*;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
@@ -90,7 +89,7 @@ public class RandomTests extends BaseNd4jTest {
                         Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), Nd4j.getRandom());
 
 
-        log.info("arr: {}", arr.data().asDouble());
+//        log.info("arr: {}", arr.data().asDouble());
         assertEquals(exp, arr);
     }
 
@@ -107,8 +106,8 @@ public class RandomTests extends BaseNd4jTest {
         UniformDistribution distribution2 = new UniformDistribution(z2, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution2, random2);
 
-        System.out.println("Data: " + z1);
-        System.out.println("Data: " + z2);
+//        System.out.println("Data: " + z1);
+//        System.out.println("Data: " + z2);
         for (int e = 0; e < z1.length(); e++) {
             double val = z1.getDouble(e);
             assertTrue(val >= 1.0 && val <= 2.0);
@@ -137,8 +136,8 @@ public class RandomTests extends BaseNd4jTest {
 
         log.info("States cpu: {}/{}", random1.rootState(), random1.nodeState());
 
-        System.out.println("Data: " + z1);
-        System.out.println("Data: " + z2);
+//        System.out.println("Data: " + z1);
+//        System.out.println("Data: " + z2);
         for (int e = 0; e < z1.length(); e++) {
             double val = z1.getDouble(e);
             assertTrue(val >= 1.0 && val <= 2.0);
@@ -158,8 +157,8 @@ public class RandomTests extends BaseNd4jTest {
         UniformDistribution distribution2 = new UniformDistribution(z2, 1.0, 2.0);
         Nd4j.getExecutioner().exec(distribution2, random1);
 
-        System.out.println("Data: " + z1);
-        System.out.println("Data: " + z2);
+//        System.out.println("Data: " + z1);
+//        System.out.println("Data: " + z2);
 
         assertNotEquals(z1, z2);
     }
@@ -405,7 +404,7 @@ public class RandomTests extends BaseNd4jTest {
         Distribution nd = new NormalDistribution(random1, 0.0, 1.0);
         Nd4j.sort(z1, true);
 
-        System.out.println("Data for Anderson-Darling: " + z1);
+//        System.out.println("Data for Anderson-Darling: " + z1);
 
         for (int i = 0; i < n; i++) {
 
@@ -435,7 +434,7 @@ public class RandomTests extends BaseNd4jTest {
         Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
 
 
-        log.info("1: ----------------");
+//        log.info("1: ----------------");
 
         INDArray z0 = Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(DataType.DOUBLE, 1000000), 0.0, 1.0));
 
@@ -444,7 +443,7 @@ public class RandomTests extends BaseNd4jTest {
 
         random1.setSeed(119);
 
-        log.info("2: ----------------");
+//        log.info("2: ----------------");
 
         INDArray z1 = Nd4j.zeros(DataType.DOUBLE, 55000000);
         INDArray z2 = Nd4j.zeros(DataType.DOUBLE, 55000000);
@@ -452,16 +451,16 @@ public class RandomTests extends BaseNd4jTest {
         GaussianDistribution op1 = new GaussianDistribution(z1, 0.0, 1.0);
         Nd4j.getExecutioner().exec(op1, random1);
 
-        log.info("2: ----------------");
+//        log.info("2: ----------------");
 
         //log.info("End: [{}, {}, {}, {}]", z1.getFloat(29000000), z1.getFloat(29000001), z1.getFloat(29000002), z1.getFloat(29000003));
 
         //log.info("Sum: {}", z1.sumNumber().doubleValue());
-        log.info("Sum2: {}", z2.sumNumber().doubleValue());
+//        log.info("Sum2: {}", z2.sumNumber().doubleValue());
 
 
         INDArray match = Nd4j.getExecutioner().exec(new MatchCondition(z1, Conditions.isNan()));
-        log.info("NaNs: {}", match);
+//        log.info("NaNs: {}", match);
         assertEquals(0.0f, match.getFloat(0), 0.01f);
 
         /*
@@ -482,14 +481,14 @@ public class RandomTests extends BaseNd4jTest {
     public void testSum_119() {
         INDArray z2 = Nd4j.zeros(DataType.DOUBLE, 55000000);
         val sum = z2.sumNumber().doubleValue();
-        log.info("Sum2: {}", sum);
+//        log.info("Sum2: {}", sum);
         assertEquals(0.0, sum, 1e-5);
     }
 
     @Test
     public void testLegacyDistribution1() {
         NormalDistribution distribution = new NormalDistribution(new DefaultRandom(), 0.0, 1.0);
-        INDArray z1 = distribution.sample(new int[] {1, 30000000});
+        INDArray z1 = distribution.sample(new int[] {1, 1000000});
 
         assertEquals(0.0, z1.meanNumber().doubleValue(), 0.01);
         assertEquals(1.0, z1.stdNumber().doubleValue(), 0.01);
@@ -1372,7 +1371,7 @@ public class RandomTests extends BaseNd4jTest {
 
         val array = dist.sample(new int[] {6, 9});
 
-        log.info("Array: {}", array);
+//        log.info("Array: {}", array);
     }
 
     @Test
@@ -1381,7 +1380,7 @@ public class RandomTests extends BaseNd4jTest {
 
         val array = dist.sample(new int[] {9, 6});
 
-        log.info("Array: {}", array);
+//        log.info("Array: {}", array);
     }
 
     @Test
@@ -1390,7 +1389,7 @@ public class RandomTests extends BaseNd4jTest {
 
         val array = dist.sample(new int[] {9, 9});
 
-        log.info("Array: {}", array);
+//        log.info("Array: {}", array);
     }
 
     @Test
@@ -1399,7 +1398,7 @@ public class RandomTests extends BaseNd4jTest {
         int numBatches = 1;
 
         for( int t=0; t<10; t++ ) {
-            System.out.println(t);
+//            System.out.println(t);
             numBatches = t;
 
             List<INDArray> initial = getList(numBatches);
@@ -1426,7 +1425,7 @@ public class RandomTests extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(12345);
         INDArray arr = Nd4j.create(DataType.DOUBLE, 100);
         Nd4j.exec(new BernoulliDistribution(arr, 0.5));
-        System.out.println(arr);
+//        System.out.println(arr);
         double sum = arr.sumNumber().doubleValue();
         assertTrue(String.valueOf(sum), sum > 0.0 && sum < 100.0);
     }
@@ -1471,6 +1470,44 @@ public class RandomTests extends BaseNd4jTest {
         Nd4j.exec(new RandomBernoulli(Nd4j.createFromArray(10L), out2, 0.5));
 
         assertEquals(out1, out2);
+    }
+
+    @Test
+    public void testGamma(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray shape = Nd4j.createFromArray(new int[] {1,3});
+        INDArray alpha = Nd4j.rand(1,3);
+        val randomGamma = new RandomGamma(shape, alpha, null);
+        INDArray[] res = Nd4j.exec(randomGamma);
+
+        val randomGamma1 = new RandomGamma(shape, alpha, null);
+        INDArray[] res1 = Nd4j.exec(randomGamma1);
+        assertEquals(res[0], res1[0]);
+    }
+
+    @Test
+    public void testPoisson(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray shape = Nd4j.createFromArray(new int[] {1,3});
+        INDArray alpha = Nd4j.rand(1,3);
+        val randomPoisson = new RandomPoisson(shape, alpha);
+        INDArray[] res = Nd4j.exec(randomPoisson);
+
+        val randomPoisson1 = new RandomPoisson(shape, alpha);
+        INDArray[] res1 = Nd4j.exec(randomPoisson1);
+        assertEquals(res[0], res1[0]);
+    }
+
+    @Test
+    public void testShuffle(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray alpha = Nd4j.rand(1,3);
+        val randomShuffle = new RandomShuffle(alpha);
+        INDArray[] res = Nd4j.exec(randomShuffle);
+
+        val randomShuffle1 = new RandomShuffle(alpha);
+        INDArray[] res1 = Nd4j.exec(randomShuffle1);
+        assertEquals(res[0], res1[0]);
     }
 
     @Override

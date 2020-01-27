@@ -43,6 +43,8 @@ enum DType:byte {
     QINT16,
     BFLOAT16 = 17,
     UTF8 = 50,
+    UTF16 = 51,
+    UTF32 = 52,
 }
 
 // this structure describe NDArray

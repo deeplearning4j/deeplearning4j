@@ -834,12 +834,17 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
     auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {0,1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dims});
+    OpaqueDataBuffer xBuf(x.dataBuffer());
+    OpaqueDataBuffer yBuf(y.dataBuffer());
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    OpaqueDataBuffer dimBuf(dims.dataBuffer());
 
-    execReduce3Tad(extraPointers, 2, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+    execReduce3Tad(extraPointers, 2, &xBuf, x.shapeInfo(), x.specialShapeInfo(),
                           nullptr,
-                        y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-                        dims.buffer(), dims.shapeInfo(), dims.specialBuffer(), dims.specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+                        &yBuf, y.shapeInfo(), y.specialShapeInfo(),
+                        &zBuf, z.shapeInfo(), z.specialShapeInfo(),
+                        &dimBuf, dims.shapeInfo(), dims.specialShapeInfo(), packX.platformShapeInfo(),
+                        packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
 
     NDArray::registerSpecialUse({&z}, {&x, &y, &dims});
 
@@ -981,10 +986,14 @@ TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
 
     NDArray::prepareSpecialUse({&arrayZ}, {&arrayX, &arrayY});
 
+    OpaqueDataBuffer xBuf(arrayX.dataBuffer());
+    OpaqueDataBuffer yBuf(arrayY.dataBuffer());
+    OpaqueDataBuffer zBuf(arrayZ.dataBuffer());
+
     execPairwiseTransform(nullptr, pairwise::Add,
-                              arrayX.buffer(), arrayX.shapeInfo(), arrayX.getSpecialBuffer(), arrayX.getSpecialShapeInfo(),
-                              arrayY.buffer(), arrayY.shapeInfo(), arrayY.getSpecialBuffer(), arrayY.getSpecialShapeInfo(),
-                              arrayZ.buffer(), arrayZ.shapeInfo(), arrayZ.getSpecialBuffer(), arrayZ.getSpecialShapeInfo(),
+                              &xBuf, arrayX.shapeInfo(), arrayX.getSpecialShapeInfo(),
+                              &yBuf, arrayY.shapeInfo(), arrayY.getSpecialShapeInfo(),
+                              &zBuf, arrayZ.shapeInfo(), arrayZ.getSpecialShapeInfo(),
                               nullptr);
 
     NDArray::registerSpecialUse({&arrayZ}, {&arrayX, &arrayY});
@@ -1220,28 +1229,28 @@ TEST_F(JavaInteropTests, test_bfloat16_rng) {
     auto z = NDArrayFactory::create<bfloat16>('c', {10});
     RandomGenerator rng(119, 323841120L);
     bfloat16 args[2] = {(bfloat16) 0.0f, (bfloat16) 1.0f};
-    execRandom(nullptr, nd4j::random::Ops::UniformDistribution, &rng, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), args);
+    OpaqueDataBuffer zBuf(z.dataBuffer());
+    execRandom(nullptr, nd4j::random::Ops::UniformDistribution, &rng, &zBuf, z.shapeInfo(), z.specialShapeInfo(), args);
 
     //z.printIndexedBuffer("z");
-
     ASSERT_TRUE(z.sumNumber().e<float>(0) > 0);
 }
 
 TEST_F(JavaInteropTests, test_ismax_view) {
     auto original = NDArrayFactory::create<double>('c', {2, 3, 40});
     auto v = original.subarray({NDIndex::all(), NDIndex::all(), NDIndex::interval(0, 40, 2)});
-    v->assign(1.0);
+    v.assign(1.0);
 
-    auto e = v->like();
+    auto e = v.like();
     auto t = e.tensorAlongDimension(0, {0, 1});
-    t->assign(1.0);
+    t.assign(1.0);
 
-    auto z = v->ulike();
+    auto z = v.ulike();
 
 
     Nd4jLong iArgs[] = {2L, 0L};
     Context ctx(1);
-    ctx.setInputArray(0, v->buffer(), v->shapeInfo(), v->specialBuffer(), v->specialShapeInfo());
+    ctx.setInputArray(0, v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo());
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
     ctx.setIArguments(iArgs, 1);
 
@@ -1249,9 +1258,6 @@ TEST_F(JavaInteropTests, test_ismax_view) {
     op.execute(&ctx);
 
     ASSERT_EQ(e, z);
-
-    delete v;
-    delete t;
 }
 
 TEST_F(JavaInteropTests, test_size_dtype_1) {
@@ -1268,6 +1274,64 @@ TEST_F(JavaInteropTests, test_size_dtype_1) {
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(e, z);
+}
+
+TEST_F(JavaInteropTests, test_expandable_array_op_1) {
+    auto x = NDArrayFactory::string('c', {2}, {"first string", "second"});
+    auto d = NDArrayFactory::string(" ");
+
+    auto z0 = NDArrayFactory::create<Nd4jLong>('c', {6});
+    auto z1 = NDArrayFactory::string('c', {3}, {"", "", ""});
+
+    auto exp0 = NDArrayFactory::create<Nd4jLong>({0,0, 0,1, 1,0});
+    auto exp1 = NDArrayFactory::string('c', {3}, {"first", "string", "second"});
+
+    InteropDataBuffer iz0(z0.dataBuffer());
+    InteropDataBuffer iz1(z1.dataBuffer());
+
+    Context ctx(1);
+    ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
+    ctx.setInputArray(1, d.buffer(), d.shapeInfo(), d.specialBuffer(), d.specialShapeInfo());
+    ctx.setOutputArray(0, &iz0, z0.shapeInfo(), z0.specialShapeInfo());
+    ctx.setOutputArray(1, &iz1, z1.shapeInfo(), z1.specialShapeInfo());
+
+    nd4j::ops::compat_string_split op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(exp0, z0);
+    ASSERT_EQ(exp1, z1);
+}
+
+TEST_F(JavaInteropTests, test_workspace_backed_arrays_1) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
+    auto x = NDArrayFactory::create<double>('c', {4, 3, 4, 4});
+    auto y = NDArrayFactory::create<double>('c', {4, 3, 3, 3});
+    auto z = NDArrayFactory::create<double>('c', {4, 3, 4, 4});
+
+    double buffer[2048];
+
+    InteropDataBuffer ix(0, DataType::DOUBLE, false);
+    InteropDataBuffer iy(0, DataType::DOUBLE, false);
+    InteropDataBuffer iz(0, DataType::DOUBLE, false);
+
+    // we're imitating workspace-managed array here
+    ix.setPrimary(buffer + 64, x.lengthOf());
+    iy.setPrimary(buffer + 64 + x.lengthOf(), y.lengthOf());
+    iz.setPrimary(buffer + 64 + x.lengthOf() + y.lengthOf(), z.lengthOf());
+
+    Context ctx(1);
+    ctx.setInputArray(0, &ix, x.shapeInfo(), x.specialShapeInfo());
+    ctx.setInputArray(1, &iy, y.shapeInfo(), y.specialShapeInfo());
+    ctx.setOutputArray(0, &iz, z.shapeInfo(), z.specialShapeInfo());
+
+    ctx.setIArguments({2, 2, 1, 1, 0, 0, 1, 1, 0, 0, 0});
+
+    nd4j::ops::maxpool2d_bp op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
 }
 
 /*

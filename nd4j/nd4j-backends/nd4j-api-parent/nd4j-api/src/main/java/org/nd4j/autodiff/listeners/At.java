@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.listeners;
 
 import lombok.*;
+import org.nd4j.autodiff.samediff.internal.FrameIter;
 
 /**
  *
@@ -20,13 +21,14 @@ public class At {
     private int iteration;
     private int trainingThreadNum;
     private long javaThreadNum;
+    private FrameIter frameIter;
     private Operation operation;
 
     /**
      * @return A new instance with everything set to 0, and operation set to INFERENCE
      */
     public static At defaultAt(){
-        return new At(0, 0, 0, 0, Operation.INFERENCE);
+        return new At(0, 0, 0, 0, null, Operation.INFERENCE);
     }
 
     /**
@@ -34,7 +36,7 @@ public class At {
      * @return A new instance with everything set to 0, except for the specified operation
      */
     public static At defaultAt(@NonNull Operation op){
-        return new At(0, 0, 0, 0, op);
+        return new At(0, 0, 0, 0, null, op);
     }
 
     /**
@@ -76,7 +78,7 @@ public class At {
      * @return A copy of the current At instance
      */
     public At copy(){
-        return new At(epoch, iteration, trainingThreadNum, javaThreadNum, operation);
+        return new At(epoch, iteration, trainingThreadNum, javaThreadNum, frameIter, operation);
     }
 
     /**
@@ -84,6 +86,6 @@ public class At {
      * @return A copy of the current instance, but with the specified operation
      */
     public At copy(Operation operation){
-        return new At(epoch, iteration, trainingThreadNum, javaThreadNum, operation);
+        return new At(epoch, iteration, trainingThreadNum, javaThreadNum, frameIter, operation);
     }
 }

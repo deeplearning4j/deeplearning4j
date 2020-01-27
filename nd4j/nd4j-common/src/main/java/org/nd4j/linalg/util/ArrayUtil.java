@@ -2071,9 +2071,10 @@ public class ArrayUtil {
             return new boolean[0];
         boolean[] ret = new boolean[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[i].length; j++)
-                ret[count++] = arr[i][j];
+        for (int i = 0; i < arr.length; i++) {
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
+        }
         return ret;
     }
 
@@ -2083,11 +2084,12 @@ public class ArrayUtil {
         boolean[] ret = new boolean[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++) {
-                    ret[count++] = arr[i][j][k];
-                }
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
+        }
         return ret;
     }
 
@@ -2096,24 +2098,27 @@ public class ArrayUtil {
             return new float[0];
         float[] ret = new float[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[i].length; j++)
-                ret[count++] = arr[i][j];
+        for (int i = 0; i < arr.length; i++) {
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
+        }
         return ret;
     }
 
 
     public static float[] flatten(float[][][] arr) {
-        if(arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
+        if (arr.length == 0 || arr[0].length == 0 || arr[0][0].length == 0)
             return new float[0];
         float[] ret = new float[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++) {
-                    ret[count++] = arr[i][j][k];
-                }
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
+        }
+
         return ret;
     }
 
@@ -2123,11 +2128,12 @@ public class ArrayUtil {
         double[] ret = new double[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++) {
-                    ret[count++] = arr[i][j][k];
-                }
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
+        }
         return ret;
     }
 
@@ -2137,11 +2143,12 @@ public class ArrayUtil {
         int[] ret = new int[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++) {
-                    ret[count++] = arr[i][j][k];
-                }
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
+        }
         return ret;
     }
 
@@ -2151,11 +2158,12 @@ public class ArrayUtil {
         val ret = new short[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++) {
-                    ret[count++] = arr[i][j][k];
-                }
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
+        }
         return ret;
     }
 
@@ -2165,11 +2173,12 @@ public class ArrayUtil {
         val ret = new byte[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++) {
-                    ret[count++] = arr[i][j][k];
-                }
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
+        }
         return ret;
     }
 
@@ -2177,11 +2186,14 @@ public class ArrayUtil {
         val ret = new long[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++)
-                    for (int m = 0; m < arr[0][0][0].length; m++)
-                        ret[count++] = arr[i][j][k][m];
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    System.arraycopy(arr[i][j][k], 0, ret, count, arr[0][0][0].length);
+                    count += arr[0][0][0].length;
+                }
+            }
+        }
 
         return ret;
     }
@@ -2190,11 +2202,14 @@ public class ArrayUtil {
         val ret = new short[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++)
-                    for (int m = 0; m < arr[0][0][0].length; m++)
-                        ret[count++] = arr[i][j][k][m];
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    System.arraycopy(arr[i][j][k], 0, ret, count, arr[0][0][0].length);
+                    count += arr[0][0][0].length;
+                }
+            }
+        }
 
         return ret;
     }
@@ -2203,11 +2218,14 @@ public class ArrayUtil {
         val ret = new byte[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++)
-                    for (int m = 0; m < arr[0][0][0].length; m++)
-                        ret[count++] = arr[i][j][k][m];
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    System.arraycopy(arr[i][j][k], 0, ret, count, arr[0][0][0].length);
+                    count += arr[0][0][0].length;
+                }
+            }
+        }
 
         return ret;
     }
@@ -2216,11 +2234,14 @@ public class ArrayUtil {
         val ret = new boolean[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++)
-                    for (int m = 0; m < arr[0][0][0].length; m++)
-                        ret[count++] = arr[i][j][k][m];
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    System.arraycopy(arr[i][j][k], 0, ret, count, arr[0][0][0].length);
+                    count += arr[0][0][0].length;
+                }
+            }
+        }
 
         return ret;
     }
@@ -2229,11 +2250,14 @@ public class ArrayUtil {
         float[] ret = new float[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++)
-                    for (int m = 0; m < arr[0][0][0].length; m++)
-                        ret[count++] = arr[i][j][k][m];
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    System.arraycopy(arr[i][j][k], 0, ret, count, arr[0][0][0].length);
+                    count += arr[0][0][0].length;
+                }
+            }
+        }
 
         return ret;
     }
@@ -2242,11 +2266,14 @@ public class ArrayUtil {
         double[] ret = new double[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++)
-                    for (int m = 0; m < arr[0][0][0].length; m++)
-                        ret[count++] = arr[i][j][k][m];
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    System.arraycopy(arr[i][j][k], 0, ret, count, arr[0][0][0].length);
+                    count += arr[0][0][0].length;
+                }
+            }
+        }
 
         return ret;
     }
@@ -2255,11 +2282,14 @@ public class ArrayUtil {
         int[] ret = new int[arr.length * arr[0].length * arr[0][0].length * arr[0][0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++)
-                    for (int m = 0; m < arr[0][0][0].length; m++)
-                        ret[count++] = arr[i][j][k][m];
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                for (int k = 0; k < arr[0][0].length; k++) {
+                    System.arraycopy(arr[i][j][k], 0, ret, count, arr[0][0][0].length);
+                    count += arr[0][0][0].length;
+                }
+            }
+        }
 
         return ret;
     }
@@ -2271,11 +2301,8 @@ public class ArrayUtil {
         int[] ret = new int[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
-            if (arr[i].length != arr[0].length)
-                throw new IllegalStateException("Length of all rows must be equal");
-
-            for (int j = 0; j < arr[i].length; j++)
-                ret[count++] = arr[i][j];
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
         }
         return ret;
     }
@@ -2285,9 +2312,10 @@ public class ArrayUtil {
             return new short[0];
         val ret = new short[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[i].length; j++)
-                ret[count++] = arr[i][j];
+        for (int i = 0; i < arr.length; i++) {
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
+        }
         return ret;
     }
 
@@ -2297,34 +2325,21 @@ public class ArrayUtil {
         val ret = new byte[arr.length * arr[0].length];
         int count = 0;
         for (int i = 0; i < arr.length; i++) {
-            if (arr[i].length != arr[0].length)
-                throw new IllegalStateException("Length of all rows must be equal");
-
-            for (int j = 0; j < arr[i].length; j++)
-                ret[count++] = arr[i][j];
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
         }
         return ret;
     }
-
-    /*
-    public static boolean[] flatten(boolean[][] arr) {
-        boolean[] ret = new boolean[arr.length * arr[0].length];
-        int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[i].length; j++)
-                ret[count++] = arr[i][j];
-        return ret;
-    }
-    */
 
     public static long[] flatten(long[][] arr) {
         if(arr.length == 0 || arr[0].length == 0 )
             return new long[0];
         long[] ret = new long[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[i].length; j++)
-                ret[count++] = arr[i][j];
+        for (int i = 0; i < arr.length; i++) {
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
+        }
         return ret;
     }
 
@@ -2334,11 +2349,12 @@ public class ArrayUtil {
         long[] ret = new long[arr.length * arr[0].length * arr[0][0].length];
 
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[0].length; j++)
-                for (int k = 0; k < arr[0][0].length; k++) {
-                    ret[count++] = arr[i][j][k];
-                }
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = 0; j < arr[0].length; j++) {
+                System.arraycopy(arr[i][j], 0, ret, count, arr[0][0].length);
+                count += arr[0][0].length;
+            }
+        }
         return ret;
     }
 
@@ -2354,9 +2370,10 @@ public class ArrayUtil {
             return new double[0];
         double[] ret = new double[arr.length * arr[0].length];
         int count = 0;
-        for (int i = 0; i < arr.length; i++)
-            for (int j = 0; j < arr[i].length; j++)
-                ret[count++] = arr[i][j];
+        for (int i = 0; i < arr.length; i++) {
+            System.arraycopy(arr[i], 0, ret, count, arr[i].length);
+            count += arr[i].length;
+        }
         return ret;
     }
 

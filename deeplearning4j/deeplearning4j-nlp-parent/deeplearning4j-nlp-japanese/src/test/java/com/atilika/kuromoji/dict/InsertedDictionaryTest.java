@@ -32,12 +32,13 @@
  */
 package com.atilika.kuromoji.dict;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class InsertedDictionaryTest {
+public class InsertedDictionaryTest extends BaseDL4JTest {
 
     @Test
     public void testFeatureSize() {

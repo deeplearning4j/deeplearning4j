@@ -33,6 +33,7 @@
 package com.atilika.kuromoji.ipadic;
 
 import com.atilika.kuromoji.TokenizerBase.Mode;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -47,7 +48,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class SearchTokenizerTest {
+public class SearchTokenizerTest extends BaseDL4JTest {
 
     private static Tokenizer tokenizer;
 

@@ -148,24 +148,24 @@ static void svdQR(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, ND
     std::vector<NDArray*> toDelete;
 
     if(pA->ews() != 1 || pA->ordering() == 'c') {
-        pA = A->dup('f');
+        pA = new NDArray(A->dup('f'));
         toDelete.push_back(pA);
     }
 
     if(S->ews() != 1) {
-        pS = S->dup('f');
+        pS = new NDArray(S->dup('f'));
         toDelete.push_back(pS);
     }
 
     if(calcUV) {
 
         if(pU->ews() != 1 || pU->ordering() == 'c') {
-            pU = U->dup('f');
+            pU = new NDArray(U->dup('f'));
             toDelete.push_back(pU);
         }
 
         if(pVT->ews() != 1 || pVT->ordering() == 'c') {
-            pVT = VT->dup('f');
+            pVT = new NDArray(VT->dup('f'));
             toDelete.push_back(pVT);
         }
     }
@@ -276,8 +276,8 @@ static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, N
     if(A->rankOf() != 2)
         throw std::runtime_error("svdJcb: rank of A array is not equal 2 !");
 
-    auto m = A->sizeAt(0);
-    auto n = A->sizeAt(1);
+    int m = A->sizeAt(0);
+    int n = A->sizeAt(1);
     const int minDim = m < n ? m : n;
 
     if(ShapeUtils::shapeAsString({minDim}) != ShapeUtils::shapeAsString(S))
@@ -297,33 +297,53 @@ static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, N
     }
 
     NDArray* pA = const_cast<NDArray*>(A);
-    NDArray* pS = S;
-    NDArray* pU = U;
-    NDArray* pV = V;
+
+    const bool aForder = m == 1 || A->strideAt(0) == 1;
+    const bool aCorder = n == 1 || A->strideAt(1) == 1;
+
+    const bool transA = !aForder && aCorder;
+    const bool dupA   = !aForder && !aCorder;
 
     std::vector<NDArray*> toDelete;
 
-    if(pA->ews() != 1 || pA->ordering() == 'c') {
-        pA = A->dup('f');
+    if(dupA) {
+        pA = new NDArray(A->dup('f'));
         toDelete.push_back(pA);
     }
 
+    NDArray* pS = S;
+
     if(S->ews() != 1) {
-        pS = S->dup('f');
+        pS = new NDArray(S->dup('f'));
         toDelete.push_back(pS);
     }
 
+    NDArray *pU(nullptr), *pV(nullptr);
+
+    int lda = transA ? pA->strideAt(0) : pA->strideAt(1);
+    int ldu(transA ? n : m), ldv(transA ? m : n);
+    bool uForder(true), vForder(true);
+
     if(calcUV) {
 
-        if(pU->ews() != 1 || pU->ordering() == 'c') {
-            pU = U->dup('f');
+        pU = transA ? V : U;
+        pV = transA ? U : V;
+
+        uForder = pU->sizeAt(0) == 1 || pU->strideAt(0) == 1;
+        vForder = pV->sizeAt(0) == 1 || pV->strideAt(0) == 1;
+
+        if(!uForder) {
+            pU = new NDArray(pU->dup('f'));
             toDelete.push_back(pU);
         }
 
-        if(pV->ews() != 1 || pV->ordering() == 'c') {
-            pV = V->dup('f');
+        if(!vForder) {
+            pV = new NDArray(pV->dup('f'));
             toDelete.push_back(pV);
         }
+
+        ldu = pU->strideAt(1);
+        ldv = pV->strideAt(1);
     }
 
     // create cusolverDn handle
@@ -353,19 +373,27 @@ static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, N
     const cusolverEigMode_t jobz = calcUV ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR;
     const int econ = !fullUV;
 
-    int lda(m), ldu(m), ldv(m);
+    if(transA)
+        math::nd4j_swap<int>(m, n);
 
-    if(calcUV) {
-        ldu = pU->sizeAt(0);
-        ldv = pV->sizeAt(0);
+    // *** avoid bug in cuda API ***
+    void* nullPtr = nullptr;
+    NDArray* arrToAvoidBugInAPI = nullptr;
+    if(!calcUV && m != n) {
+        int maxDim = m > n ? m : n;
+        arrToAvoidBugInAPI = new NDArray('c', {maxDim, maxDim}, pA->dataType(), context);
+        nullPtr = arrToAvoidBugInAPI->getSpecialBuffer();
     }
+    // ******************
+
+    NDArray::prepareSpecialUse({pS, pU, pV}, {pA});
 
     // query working space of SVD
     int lwork = 0;
     if(A->dataType() == DataType::DOUBLE)
-        status = cusolverDnDgesvdj_bufferSize(handle, jobz, econ, m, n, reinterpret_cast<double*>(pA->getSpecialBuffer()), lda, reinterpret_cast<double*>(pS->getSpecialBuffer()), calcUV ? reinterpret_cast<double*>(pU->getSpecialBuffer()) : nullptr, ldu, calcUV ? reinterpret_cast<double*>(pV->getSpecialBuffer()) : nullptr, ldv, &lwork, gesvdjParams);
+        status = cusolverDnDgesvdj_bufferSize(handle, jobz, econ, m, n, reinterpret_cast<double*>(pA->getSpecialBuffer()), lda, reinterpret_cast<double*>(pS->getSpecialBuffer()), calcUV ? reinterpret_cast<double*>(pU->getSpecialBuffer()) : reinterpret_cast<double*>(nullPtr), ldu, calcUV ? reinterpret_cast<double*>(pV->getSpecialBuffer()) : reinterpret_cast<double*>(nullPtr), ldv, &lwork, gesvdjParams);
     else if(A->dataType() == DataType::FLOAT32)
-        status = cusolverDnSgesvdj_bufferSize(handle, jobz, econ, m, n, reinterpret_cast<float*>(pA->getSpecialBuffer()), lda, reinterpret_cast<float*>(pS->getSpecialBuffer()), calcUV ? reinterpret_cast<float*>(pU->getSpecialBuffer()) : nullptr, ldu, calcUV ? reinterpret_cast<float*>(pV->getSpecialBuffer()) : nullptr, ldv, &lwork, gesvdjParams);
+        status = cusolverDnSgesvdj_bufferSize(handle, jobz, econ, m, n, reinterpret_cast<float*>(pA->getSpecialBuffer()), lda, reinterpret_cast<float*>(pS->getSpecialBuffer()), calcUV ? reinterpret_cast<float*>(pU->getSpecialBuffer()) : reinterpret_cast<float*>(nullPtr), ldu, calcUV ? reinterpret_cast<float*>(pV->getSpecialBuffer()) : reinterpret_cast<float*>(nullPtr), ldv, &lwork, gesvdjParams);
     else
         throw std::invalid_argument("svdJcb: given data type is unsupported !");
 
@@ -380,14 +408,12 @@ static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, N
 
     PointersManager manager(context, "svdJcb");
 
-    NDArray::prepareSpecialUse({pS, pU, pV}, {pA});
-
     // choose appropriate cuda gemm api depending on data types
     if(A->dataType() == DataType::DOUBLE) {
-        status = cusolverDnDgesvdj(handle, jobz, econ, m, n, reinterpret_cast<double*>(pA->getSpecialBuffer()), lda, reinterpret_cast<double*>(pS->getSpecialBuffer()), calcUV ? reinterpret_cast<double*>(pU->getSpecialBuffer()) : nullptr, ldu, calcUV ? reinterpret_cast<double*>(pV->getSpecialBuffer()) : nullptr, ldv, reinterpret_cast<double*>(dWork), lwork, devInfo, gesvdjParams);
+        status = cusolverDnDgesvdj(handle, jobz, econ, m, n, reinterpret_cast<double*>(pA->getSpecialBuffer()), lda, reinterpret_cast<double*>(pS->getSpecialBuffer()), calcUV ? reinterpret_cast<double*>(pU->getSpecialBuffer()) : reinterpret_cast<double*>(nullPtr), ldu, calcUV ? reinterpret_cast<double*>(pV->getSpecialBuffer()) : reinterpret_cast<double*>(nullPtr), ldv, reinterpret_cast<double*>(dWork), lwork, devInfo, gesvdjParams);
     }
     else if(A->dataType() == DataType::FLOAT32) {
-        status = cusolverDnSgesvdj(handle, jobz, econ, m, n, reinterpret_cast<float*>(pA->getSpecialBuffer()), lda, reinterpret_cast<float*>(pS->getSpecialBuffer()), calcUV ? reinterpret_cast<float*>(pU->getSpecialBuffer()) : nullptr, ldu, calcUV ? reinterpret_cast<float*>(pV->getSpecialBuffer()) : nullptr, ldv, reinterpret_cast<float*>(dWork), lwork, devInfo, gesvdjParams);
+        status = cusolverDnSgesvdj(handle, jobz, econ, m, n, reinterpret_cast<float*>(pA->getSpecialBuffer()), lda, reinterpret_cast<float*>(pS->getSpecialBuffer()), calcUV ? reinterpret_cast<float*>(pU->getSpecialBuffer()) : reinterpret_cast<float*>(nullPtr), ldu, calcUV ? reinterpret_cast<float*>(pV->getSpecialBuffer()) : reinterpret_cast<float*>(nullPtr), ldv, reinterpret_cast<float*>(dWork), lwork, devInfo, gesvdjParams);
     }
     else
         throw std::invalid_argument("svdJcb: given data type is unsupported !");
@@ -399,12 +425,19 @@ static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, N
 
     NDArray::registerSpecialUse({pS, pU, pV}, {pA});
 
-    S->assign(pS);
+    if(S->ews() != 1)
+        S->assign(pS);
 
     if(calcUV) {
-        U->assign(pU);
-        V->assign(pV);
+
+        if(!uForder)
+            U->assign(transA ? pV : pU);
+        if(!vForder)
+            V->assign(transA ? pU : pV);
     }
+
+    if(!calcUV && m != n)
+        delete arrToAvoidBugInAPI;
 
     for (int i = toDelete.size() - 1; i >= 0; --i)
         delete toDelete[i];
@@ -465,24 +498,24 @@ static void svdBatched(nd4j::LaunchContext* context, const NDArray* A, NDArray* 
     std::vector<NDArray*> toDelete;
 
     if(pA->ews() != 1 || pA->ordering() == 'c') {
-        pA = A->dup('f');
+        pA = new NDArray(A->dup('f'));
         toDelete.push_back(pA);
     }
 
     if(S->ews() != 1) {
-        pS = S->dup('f');
+        pS = new NDArray(S->dup('f'));
         toDelete.push_back(pS);
     }
 
     if(calcUV) {
 
         if(pU->ews() != 1 || pU->ordering() == 'c') {
-            pU = U->dup('f');
+            pU = new NDArray(U->dup('f'));
             toDelete.push_back(pU);
         }
 
         if(pV->ews() != 1 || pV->ordering() == 'c') {
-            pV = V->dup('f');
+            pV = new NDArray(V->dup('f'));
             toDelete.push_back(pV);
         }
     }
@@ -618,15 +651,12 @@ void svd(nd4j::LaunchContext* context, const NDArray* x, const std::vector<NDArr
         auto tadsS = S->allTensorsAlongDimension({S->rankOf() - 1});
 
         if(calcUV) {
-            tadsU = U->allTensorsAlongDimension({U->rankOf() - 2, U->rankOf() - 1});
-            tadsV = V->allTensorsAlongDimension({V->rankOf() - 2, V->rankOf() - 1});
+            tadsU = new ResultSet(U->allTensorsAlongDimension({U->rankOf() - 2, U->rankOf() - 1}));
+            tadsV = new ResultSet(V->allTensorsAlongDimension({V->rankOf() - 2, V->rankOf() - 1}));
         }
 
-        for (int i = 0; i < tadsX->size(); ++i)
-            svdJcb(context, tadsX->at(i), tadsS->at(i), calcUV ? tadsU->at(i) : nullptr, calcUV ? tadsV->at(i) : nullptr, fullUV, calcUV);
-
-        delete tadsX;
-        delete tadsS;
+        for (int i = 0; i < tadsX.size(); ++i)
+            svdJcb(context, tadsX.at(i), tadsS.at(i), calcUV ? tadsU->at(i) : nullptr, calcUV ? tadsV->at(i) : nullptr, fullUV, calcUV);
 
         if(calcUV) {
             delete tadsU;

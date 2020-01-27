@@ -16,12 +16,14 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
+import lombok.Data;
 import lombok.NonNull;
 import lombok.val;
 import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.LongIndexer;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -30,6 +32,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -55,8 +58,18 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         super(pointer, specialPointer, indexer, length);
     }
 
+    public CudaLongDataBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
+        super(buffer, dataType, length, offset);
+    }
 
+    /**
+     * This constructor is special one - it's used for ShapeInfo
+     * @param hostPointer
+     * @param devicePointer
+     * @param numberOfElements
+     */
     public CudaLongDataBuffer(@NonNull Pointer hostPointer, @NonNull Pointer devicePointer, long numberOfElements) {
+        super();
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         this.offset = 0;
         this.originalOffset = 0;
@@ -64,14 +77,15 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         this.length = numberOfElements;
         initTypeAndSize();
 
+        // creating empty native DataBuffer and filling it with pointers
+        ptrDataBuffer = NativeOpsHolder.getInstance().getDeviceNativeOps().allocateDataBuffer(0, DataType.INT64.toInt(), false);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetPrimaryBuffer(ptrDataBuffer, hostPointer, numberOfElements);
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetSpecialBuffer(ptrDataBuffer, devicePointer, numberOfElements);
+
+        // setting up java side of things
         this.pointer = new CudaPointer(hostPointer, numberOfElements).asLongPointer();
         indexer = LongIndexer.create((LongPointer) this.pointer);
-
-        this.allocationPoint = AtomicAllocator.getInstance().pickExternalBuffer(this);
-
-        val pp = new PointersPair(devicePointer, this.pointer);
-        allocationPoint.setPointers(pp);
-        trackingPoint = allocationPoint.getObjectId();
+        this.allocationPoint = new AllocationPoint(ptrDataBuffer, numberOfElements * DataType.INT64.width());
     }
 
     /**
@@ -179,19 +193,6 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         super(data, copy, offset);
     }
 
-    public CudaLongDataBuffer(byte[] data, long length) {
-        super(data, length, DataType.LONG);
-    }
-
-    public CudaLongDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length, DataType.LONG);
-    }
-
-    public CudaLongDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset, DataType.LONG);
-    }
-
-
     @Override
     protected DataBuffer create(long length) {
         return new CudaLongDataBuffer(length);
@@ -241,14 +242,7 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         this.length = n;
         this.elementSize = 8;
 
-        //wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
-        //wrappedBuffer.order(ByteOrder.nativeOrder());
-
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                        new AllocationShape(length, elementSize, DataType.LONG), false);
-        this.trackingPoint = allocationPoint.getObjectId();
-        //this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
-        //this.wrappedBuffer.order(ByteOrder.nativeOrder());
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, DataType.LONG), false);
 
         setData(arr);
     }

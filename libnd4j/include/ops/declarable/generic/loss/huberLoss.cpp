@@ -46,17 +46,17 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
     REQUIRE_TRUE(weights->isScalar() || ShapeUtils::areShapesBroadcastable(*weights, *labels), 0, "HUBER_LOSS OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(labels).c_str());
     // only 4 possible reduction modes exist
     REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "HUBER_LOSS OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
-    
+
 	// perform weights broadcasting/tile to predictions if needed
 	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(predictions))
 		weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
 
 	auto error = *predictions - *labels;
-	error.applyTransform(transform::Abs);
+	error.applyTransform(transform::Abs, error);
 	NDArray quadratic(error.getShapeInfo(), block.getWorkspace());
-	error.applyScalar(scalar::MinPairwise, delta, &quadratic);
- 
+	error.applyScalar(scalar::MinPairwise, delta, quadratic);
+
     NDArray E = quadratic * quadratic * 0.5f + (error - quadratic)*delta;
 
     // multiply E on weights
@@ -75,12 +75,12 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 			NDArray sum;
 			if (weights->isScalar())
 				sum = *weights * E.lengthOf();
-			else 
+			else
 				sum = weightsBroad->reduceNumber(reduce::Sum);
-			
+
 			if (sum.e<double>(0) == 0.)
 				*output = 0.;
-			else 
+			else
 				output->assign(E.reduceNumber(reduce::Sum) / sum);
 			break;
 		}
@@ -104,7 +104,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 
     if(weightsBroad != weights)
     	delete weightsBroad;
-	
+
     return Status::OK();
 }
 
@@ -173,24 +173,24 @@ DECLARE_SHAPE_FN(huber_loss) {
 
 			NDArray diff = *predictions - *labels;
 			NDArray absDiff(diff);
-			absDiff.applyTransform(transform::Abs);
+			absDiff.applyTransform(transform::Abs, absDiff);
 			NDArray quadratic(absDiff);
-			absDiff.applyScalar(scalar::MinPairwise, delta, &quadratic);
+			absDiff.applyScalar(scalar::MinPairwise, delta, quadratic);
 
 			NDArray E = quadratic * quadratic * 0.5f + (absDiff - quadratic)*delta;
 
 			NDArray lteMask(diff.getShapeInfo(), BOOL, true, block.launchContext());
-			absDiff.applyScalar(scalar::LessThanOrEqual, delta, &lteMask);
+			absDiff.applyScalar(scalar::LessThanOrEqual, delta, lteMask);
 
             NDArray gtMask(diff.getShapeInfo(), BOOL, true, block.launchContext());
-			absDiff.applyScalar(scalar::GreaterThan, delta, &gtMask);
+			absDiff.applyScalar(scalar::GreaterThan, delta, gtMask);
 
 			NDArray signDiff(diff);
-			diff.applyTransform(transform::Sign, &signDiff);
+			diff.applyTransform(transform::Sign, signDiff);
 
 
-			auto gtMaskFloat = *gtMask.cast(diff.dataType());
-			auto lteMaskFloat = *lteMask.cast(diff.dataType());
+			auto gtMaskFloat = gtMask.cast(diff.dataType());
+			auto lteMaskFloat = lteMask.cast(diff.dataType());
 
 
 			dLdp->assign( lteMaskFloat * diff + gtMaskFloat * delta * signDiff);
@@ -207,7 +207,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 						dLdw->assign(E.reduceNumber(reduce::Sum));
 					else if(weights != weightsBroad) {
 						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-						E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+						E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 					}
 					else
 						dLdw->assign(E);
@@ -235,7 +235,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 							*dLdw = 0.;
 						else if(weights != weightsBroad) {
 							std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-							((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+							((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 						}
 						else
 							dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
@@ -264,7 +264,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 							dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 						else if(weights != weightsBroad) {
 							std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-							E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+							E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 							*dLdw /= numOfNonZeroWeightsScalar;
 						}
 						else

@@ -35,6 +35,7 @@ package com.atilika.kuromoji.compile;
 import com.atilika.kuromoji.dict.CharacterDefinitions;
 import com.atilika.kuromoji.io.IntegerArrayIO;
 import com.atilika.kuromoji.io.StringArrayIO;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -46,7 +47,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class CharacterDefinitionsCompilerTest {
+public class CharacterDefinitionsCompilerTest extends BaseDL4JTest {
 
     private File charDef;
 

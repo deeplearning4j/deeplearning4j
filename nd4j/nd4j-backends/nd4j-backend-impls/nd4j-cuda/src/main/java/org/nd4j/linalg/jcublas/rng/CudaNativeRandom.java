@@ -54,6 +54,10 @@ public class CudaNativeRandom extends NativeRandom {
     public void init() {
         nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         statePointer = nativeOps.createRandomGenerator(this.seed, this.seed ^ 0xdeadbeef);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         setSeed(seed);
     }
 

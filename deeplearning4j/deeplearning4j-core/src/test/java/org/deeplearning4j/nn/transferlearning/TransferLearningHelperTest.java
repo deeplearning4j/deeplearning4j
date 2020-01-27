@@ -195,9 +195,10 @@ public class TransferLearningHelperTest extends BaseDL4JTest {
         assertEquals(modelIdentical.getLayer("denseLeft0").params(), modelToTune.getLayer("denseLeft0").params());
         assertEquals(modelIdentical.getLayer("outLeft").params(), modelToTune.getLayer("outLeft").params());
 
-        log.info(modelIdentical.summary());
-        log.info(helper.unfrozenGraph().summary());
-
+//        log.info(modelIdentical.summary());
+//        log.info(helper.unfrozenGraph().summary());
+        modelIdentical.summary();
+        helper.unfrozenGraph().summary();
     }
 
     @Test

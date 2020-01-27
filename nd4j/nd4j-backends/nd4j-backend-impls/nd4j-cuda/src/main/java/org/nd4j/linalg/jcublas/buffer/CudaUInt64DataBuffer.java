@@ -42,6 +42,10 @@ public class CudaUInt64DataBuffer extends BaseCudaDataBuffer {
         super(pointer, indexer, length);
     }
 
+    public CudaUInt64DataBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
+        super(buffer, dataType, length, offset);
+    }
+
     /**
      * Base constructor
      *
@@ -126,18 +130,6 @@ public class CudaUInt64DataBuffer extends BaseCudaDataBuffer {
 
     public CudaUInt64DataBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
-    }
-
-    public CudaUInt64DataBuffer(byte[] data, long length) {
-        super(data, length, DataType.UINT64);
-    }
-
-    public CudaUInt64DataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length, DataType.UINT64);
-    }
-
-    public CudaUInt64DataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset, DataType.UINT64);
     }
 
     @Override

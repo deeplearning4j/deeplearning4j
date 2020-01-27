@@ -225,8 +225,10 @@ public class EvalTest extends BaseNd4jTest {
         Evaluation evaluation2 = new Evaluation();
         evaluation2.evalTimeSeries(labels2, predicted2, labelsMask);
 
-        System.out.println(evaluation.stats());
-        System.out.println(evaluation2.stats());
+//        System.out.println(evaluation.stats());
+//        System.out.println(evaluation2.stats());
+        evaluation.stats();
+        evaluation2.stats();
 
         assertEquals(evaluation.accuracy(), evaluation2.accuracy(), 1e-12);
         assertEquals(evaluation.f1(), evaluation2.f1(), 1e-12);
@@ -369,7 +371,8 @@ public class EvalTest extends BaseNd4jTest {
             eval.eval(one, one);
             eval.eval(zero, zero);
 
-            System.out.println(eval.stats());
+//            System.out.println(eval.stats());
+            eval.stats();
 
             assertEquals(0.75, eval.accuracy(), 1e-6);
             assertEquals(4, eval.getNumRowCounter());
@@ -389,10 +392,8 @@ public class EvalTest extends BaseNd4jTest {
         e.eval(1, 0);
         e.eval(1, 1);
 
-        System.out.println(e.stats());
-
-        char c = "\uFFFD".toCharArray()[0];
-        System.out.println(c);
+//        System.out.println(e.stats());
+        e.stats();
 
         assertFalse(e.stats().contains("\uFFFD"));
     }
@@ -431,8 +432,10 @@ public class EvalTest extends BaseNd4jTest {
         assertEquals(1, cm.getCount(3, 3));
         assertEquals(2, cm.getCount(3, 0));
 
-        System.out.println(e1.stats());
-        System.out.println(e2.stats());
+//        System.out.println(e1.stats());
+//        System.out.println(e2.stats());
+        e1.stats();
+        e2.stats();
 
         assertEquals(e1.stats(), e2.stats());
     }
@@ -494,7 +497,8 @@ public class EvalTest extends BaseNd4jTest {
         assertEquals(6, e.getTopNCorrectCount());
         assertEquals(8, e.getTopNTotalCount());
 
-        System.out.println(e.stats());
+//        System.out.println(e.stats());
+        e.stats();
     }
 
 
@@ -888,10 +892,11 @@ public class EvalTest extends BaseNd4jTest {
 
         assertEquals(exp, s);
 
-        System.out.println("============================");
-        System.out.println(e.stats());
+//        System.out.println("============================");
+//        System.out.println(e.stats());
+        e.stats();
 
-        System.out.println("\n\n\n\n");
+//        System.out.println("\n\n\n\n");
 
         //Test with 21 classes (> threshold)
         e = new Evaluation();
@@ -899,10 +904,12 @@ public class EvalTest extends BaseNd4jTest {
         class0.putScalar(0, 1);
 
         e.eval(class0, class0);
-        System.out.println(e.stats());
+//        System.out.println(e.stats());
+        e.stats();
 
-        System.out.println("\n\n\n\n");
-        System.out.println(e.stats(false, true));
+//        System.out.println("\n\n\n\n");
+//        System.out.println(e.stats(false, true));
+        e.stats(false, true);
     }
 
     @Test
@@ -1033,7 +1040,7 @@ public class EvalTest extends BaseNd4jTest {
         e1.eval(one, one);
 
         String s1 = e1.stats();
-        System.out.println(s1);
+//        System.out.println(s1);
 
         e1.reset();
         e1.eval(zero, zero);

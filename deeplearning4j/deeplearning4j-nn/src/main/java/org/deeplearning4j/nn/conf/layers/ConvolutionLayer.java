@@ -34,6 +34,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -118,19 +119,19 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.convolutionMode = builder.convolutionMode;
         this.dilation = builder.dilation;
         if (builder.kernelSize.length != dim) {
-            throw new IllegalArgumentException("Kernel argument should be a " + dim + "d array");
+            throw new IllegalArgumentException("Kernel argument should be a " + dim + "d array, got " + Arrays.toString(builder.kernelSize));
         }
         this.kernelSize = builder.kernelSize;
         if (builder.stride.length != dim) {
-            throw new IllegalArgumentException("Strides argument should be a " + dim + "d array");
+            throw new IllegalArgumentException("Strides argument should be a " + dim + "d array, got " + Arrays.toString(builder.stride));
         }
         this.stride = builder.stride;
         if (builder.padding.length != dim) {
-            throw new IllegalArgumentException("Padding argument should be a " + dim + "d array");
+            throw new IllegalArgumentException("Padding argument should be a " + dim + "d array, got " + Arrays.toString(builder.padding));
         }
         this.padding = builder.padding;
         if (builder.dilation.length != dim) {
-            throw new IllegalArgumentException("Dilation argument should be a " + dim + "d array");
+            throw new IllegalArgumentException("Dilation argument should be a " + dim + "d array, got " + Arrays.toString(builder.dilation));
         }
         this.dilation = builder.dilation;
         this.cudnnAlgoMode = builder.cudnnAlgoMode;

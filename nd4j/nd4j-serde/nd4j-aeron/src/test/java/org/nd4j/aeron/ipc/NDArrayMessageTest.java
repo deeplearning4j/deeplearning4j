@@ -18,6 +18,7 @@ package org.nd4j.aeron.ipc;
 
 import org.agrona.DirectBuffer;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -26,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 11/6/16.
  */
-public class NDArrayMessageTest {
+public class NDArrayMessageTest extends BaseND4JTest {
 
     @Test
     public void testNDArrayMessageToAndFrom() {

@@ -33,6 +33,7 @@
 package com.atilika.kuromoji.compile;
 
 import com.atilika.kuromoji.buffer.WordIdMap;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.io.*;
@@ -40,7 +41,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
-public class WordIdMapCompilerTest {
+public class WordIdMapCompilerTest extends BaseDL4JTest {
 
     @Test
     public void testGrowableArray() {

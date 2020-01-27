@@ -40,15 +40,11 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 	const auto y = reinterpret_cast<const Y*>(vy);
 		  auto z = reinterpret_cast<X*>(vz);
 
-	__shared__ Nd4jLong xzLen, totalThreads, *sharedMem;
+	__shared__ Nd4jLong xzLen;
 	__shared__ int xzRank, yRank;
 
 	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
-
 		xzLen = shape::length(xShapeInfo);
-		totalThreads = gridDim.x * blockDim.x;
 
 		xzRank = shape::rank(xShapeInfo);
 		yRank  = shape::rank(yShapeInfo);
@@ -56,18 +52,15 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-	Nd4jLong* coords = sharedMem + threadIdx.x * xzRank;
+	Nd4jLong coords[MAX_RANK];
 
-	for (int i = tid; i < xzLen; i += totalThreads) {
-
+	for (int i = tid; i < xzLen; i += blockDim.x * gridDim.x) {
     	shape::index2coords(i, xShapeInfo, coords);
 
 		const auto xzOffset = shape::getOffset(xShapeInfo, coords);
-
 		const auto xVal = x[xzOffset];
 
 		if(xVal < 0) {
-
 			for (uint j = 0; j < yRank; ++j)
 				if(yShapeInfo[j + 1] == 1)
 					coords[j + 1] = 0;
@@ -82,7 +75,6 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 ///////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
 linkage void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz) {
-
 	preluCuda<X, Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz);
 }
 
@@ -91,9 +83,9 @@ void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& a
 
 	PointersManager manager(context, "prelu");
 
-    const int threadsPerBlock = MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
+    const int threadsPerBlock = 256;
+    const int blocksPerGrid = 512;
+    const int sharedMem = 512;
 
 	const auto xType = input.dataType();
 	const auto yType = alpha.dataType();
@@ -119,13 +111,10 @@ __global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeI
 		  auto dLdI  = reinterpret_cast<Y*>(vdLdI);
 		  auto dLdA  = reinterpret_cast<Y*>(vdLdA);
 
-	__shared__ Nd4jLong inLen, totalThreads, *sharedMem;
+	__shared__ Nd4jLong inLen, totalThreads;
 	__shared__ int inRank, alphaRank;
 
 	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
-
 		inLen = shape::length(inShapeInfo);
 		totalThreads = gridDim.x * blockDim.x;
 
@@ -135,10 +124,9 @@ __global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeI
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-	Nd4jLong* coords = sharedMem + threadIdx.x * inRank;
+	Nd4jLong coords[MAX_RANK];
 
 	for (int i = tid; i < inLen; i += totalThreads) {
-
     	shape::index2coords(i, inShapeInfo, coords);
 
 		const auto inOffset   = shape::getOffset(inShapeInfo, coords);
@@ -175,14 +163,13 @@ __host__ linkage void preluBPCudaLauncher(const int blocksPerGrid, const int thr
 
 //////////////////////////////////////////////////////////////////////////
 void preluBP(nd4j::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
-
-	dLdA.nullify();
+    dLdA.nullify();
 
 	PointersManager manager(context, "preluBP");
 
-    const int threadsPerBlock = MAX_NUM_THREADS / 2;
-    const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
+    const int threadsPerBlock = 256;
+    const int blocksPerGrid = 512;
+    const int sharedMem = 512;
 
 	const auto xType = input.dataType();
 	const auto zType = alpha.dataType();
@@ -345,9 +332,9 @@ void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& outpu
     	BUILD_SINGLE_SELECTOR(input.dataType(), softMaxCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), packX.specialShapeInfo(), packX.specialOffsets(), output.specialBuffer(), packZ.specialShapeInfo(), packZ.specialOffsets()), FLOAT_TYPES);
     	NDArray::registerSpecialUse({&output}, {&input});
 
-		// auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
+		// auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
 		// (input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-		// auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+		// auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
 		// output /= sumAlongDim;
 		// input.tickReadDevice();
 	}
@@ -463,11 +450,11 @@ void logSoftmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& ou
 	}
 	else {
 
-		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-		(input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-		auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
+		(input - maxAlongDim).applyTransform(transform::Exp, output); // output contains exponents temporarily
+		auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
 		output /= sumAlongDim;
-		output.applyTransform(transform::Log);
+		output.applyTransform(transform::Log, output);
 		input.tickReadDevice();
 	}
 
@@ -580,9 +567,9 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 	}
 	else {
 
-		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDims(reduce::Max, {dimension}, true);
-		(input - maxAlongDim).applyTransform(transform::Exp, &output); // output contains exponents temporarily
-		auto sumAlongDim = output.reduceAlongDims(reduce::Sum, {dimension}, true);
+		auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
+		(input - maxAlongDim).applyTransform(transform::Exp, output); // output contains exponents temporarily
+		auto sumAlongDim = output.reduceAlongDimension(reduce::Sum, {dimension}, true);
 		output /= sumAlongDim;
 		output *= (1.f - output);	// derivative
 		input.tickReadDevice();
@@ -600,7 +587,7 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 		auto routine = LAMBDA_T(_x, threshold) {
 			return _x > (T)threshold ? _x: (T)0.f;
 		};
-		const_cast<NDArray&>(input).applyLambda(routine, &output);
+		const_cast<NDArray&>(input).applyLambda(routine, output);
 	}
 
 	void thresholdRelu(nd4j::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
@@ -611,7 +598,7 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 	linkage void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
         auto derivative = LAMBDA_TT(_x, grO, theta) {if (_x > theta) return grO; else return static_cast<T>(0); };
 
-        input->applyPairwiseLambda(dLdO, derivative, output);
+        input->applyPairwiseLambda(*dLdO, derivative, *output);
 	}
 
 	void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {

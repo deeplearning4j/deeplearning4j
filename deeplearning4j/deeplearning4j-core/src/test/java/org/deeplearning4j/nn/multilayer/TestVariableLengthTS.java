@@ -219,10 +219,10 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                 INDArray g1s = g1map.get(s);
                 INDArray g2s = g2map.get(s);
 
-                System.out.println("-------");
-                System.out.println("Variable: " + s);
-                System.out.println(Arrays.toString(g1s.dup().data().asFloat()));
-                System.out.println(Arrays.toString(g2s.dup().data().asFloat()));
+//                System.out.println("-------");
+//                System.out.println("Variable: " + s);
+//                System.out.println(Arrays.toString(g1s.dup().data().asFloat()));
+//                System.out.println(Arrays.toString(g2s.dup().data().asFloat()));
                 assertNotEquals(s, g1s, g2s);
             }
 
@@ -507,7 +507,7 @@ public class TestVariableLengthTS extends BaseDL4JTest {
         for (boolean bidirectional : isBidirectional) {
             for (PoolingType pt : poolingTypes) {
 
-                System.out.println("Starting test: bidirectional = " + bidirectional + ", poolingType = " + pt);
+//                System.out.println("Starting test: bidirectional = " + bidirectional + ", poolingType = " + pt);
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                                 .activation(Activation.TANH).list().layer(0, bidirectional

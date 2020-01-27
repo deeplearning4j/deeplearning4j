@@ -114,7 +114,7 @@ public class IndexingTests extends BaseNd4jTest {
     public void testNewAxis() {
         INDArray arr = Nd4j.rand(new int[] {4, 2, 3});
         INDArray view = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
-        System.out.println(view);
+//        System.out.println(view);
     }
 
     @Test
@@ -134,7 +134,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 24, 24, DataType.DOUBLE).reshape(4, 6);
         INDArray firstAndSecondColumnsAssertion = Nd4j.create(new double[][] {{1, 5}, {2, 6}, {3, 7}, {4, 8}});
 
-        System.out.println(arr);
+//        System.out.println(arr);
         INDArray firstAndSecondColumns = arr.getColumns(0, 1);
         assertEquals(firstAndSecondColumnsAssertion, firstAndSecondColumns);
 

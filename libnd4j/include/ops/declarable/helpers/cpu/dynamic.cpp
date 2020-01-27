@@ -34,7 +34,7 @@ namespace nd4j {
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
-                    std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(sourceDims));
+                    ResultSet listOfTensors = input->allTensorsAlongDimension(sourceDims);
 
                     unsigned int outSize = outputList.size();
 
@@ -48,15 +48,14 @@ namespace nd4j {
                         for (int k = 1; k < r; k++)
                             outDims[k - 1] = k;
 
-                        std::unique_ptr<ResultSet> listOutForCurrent(
-                                outputs[i].first->allTensorsAlongDimension(outDims));
+                        ResultSet listOutForCurrent = outputs[i].first->allTensorsAlongDimension(outDims);
 
                         outputs[i].second = 0;
 
                         //PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold())
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if ((*indices).e<Nd4jLong>(e) == i)
-                                listOutForCurrent->at(outputs[i].second++)->assign(listOfTensors->at(e));
+                                listOutForCurrent.at(outputs[i].second++)->assign(listOfTensors.at(e));
                     }
 
                 } else {
@@ -104,7 +103,7 @@ namespace nd4j {
                     for (int i = restDims.size(); i > 0;  i--)
                         restDims[restDims.size() - i] = output->rankOf() - i;
 
-                    std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
+                    ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
                     for (int e = 0; e < numOfData; e++) {
                         auto data = inputs[e];
@@ -113,7 +112,7 @@ namespace nd4j {
                         for (int i = sourceDims.size(); i > 0;  i--)
                             sourceDims[sourceDims.size() - i] = data->rankOf() - i;
 
-                        std::unique_ptr<ResultSet> listOfTensors(data->allTensorsAlongDimension(sourceDims));
+                        ResultSet listOfTensors = data->allTensorsAlongDimension(sourceDims)    ;
 
                         for (int i = 0; i < index->lengthOf(); i++) {
                             auto pos = index->e<Nd4jLong>(i);
@@ -127,7 +126,7 @@ namespace nd4j {
                                 return ND4J_STATUS_VALIDATION;
                             }
 
-                            listOfOutTensors->at(pos)->assign(listOfTensors->at(i));
+                            listOfOutTensors.at(pos)->assign(listOfTensors.at(i));
                         }
                     }
                 }
@@ -145,7 +144,7 @@ namespace nd4j {
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
 
-                    std::unique_ptr<ResultSet> listOfTensors(outputList[0]->allTensorsAlongDimension(sourceDims));
+                    ResultSet listOfTensors = outputList[0]->allTensorsAlongDimension(sourceDims);
 
                     for (unsigned int i = 0; i < inputGradientList.size(); i++) {
                         outputs[i].first = inputGradientList[i];
@@ -155,14 +154,13 @@ namespace nd4j {
                         for (int k = 1; k < outputs[i].first->rankOf(); k++)
                             outDims[k - 1] = k;
 
-                        std::unique_ptr<ResultSet> listOutForCurrent(
-                                outputs[i].first->allTensorsAlongDimension(outDims));
+                        ResultSet listOutForCurrent = outputs[i].first->allTensorsAlongDimension(outDims);
 
                         outputs[i].second = 0;
 
                         for (int e = 0; e < indices->lengthOf(); ++e)
                             if (indices->e<Nd4jLong>(e) == i)
-                                listOfTensors->at(e)->assign(listOutForCurrent->at(outputs[i].second++));
+                                listOfTensors.at(e)->assign(listOutForCurrent.at(outputs[i].second++));
                     }
                 }
                 else { // one-dimensional case

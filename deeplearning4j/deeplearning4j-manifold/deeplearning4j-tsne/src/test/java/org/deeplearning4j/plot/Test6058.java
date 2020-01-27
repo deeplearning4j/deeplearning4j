@@ -17,6 +17,7 @@
 package org.deeplearning4j.plot;
 
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -25,7 +26,7 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.assertTrue;
 
-public class Test6058 {
+public class Test6058 extends BaseDL4JTest {
 
     @Test
     public void test() throws Exception {

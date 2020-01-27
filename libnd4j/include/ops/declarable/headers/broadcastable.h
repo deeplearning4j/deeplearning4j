@@ -356,6 +356,7 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_Pow)
         DECLARE_BROADCASTABLE_OP(Pow, 0, 0);
+        DECLARE_CUSTOM_OP(Pow_bp, 3, 2, false, 0, 0);
         #endif
 
         /**

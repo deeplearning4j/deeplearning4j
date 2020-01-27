@@ -24,10 +24,11 @@
 namespace nd4j {
     namespace ops {
         namespace platforms {
-            PlatformHelper::PlatformHelper(const char *name) {
+            PlatformHelper::PlatformHelper(const char *name, samediff::Engine engine) {
                 // we just store name/hash of target operation
                 _name = std::string(name);
                 _hash = HashHelper::getInstance()->getLongHash(_name);
+                _engine = engine;
             }
 
             nd4j::NDArray *PlatformHelper::getZ(graph::Context &ctx, int inputId) {
@@ -72,6 +73,10 @@ namespace nd4j {
                 }
 
                 return z;
+            }
+
+            samediff::Engine PlatformHelper::engine() {
+                return _engine;
             }
 
             std::string PlatformHelper::name() {

@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.computationgraph;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
@@ -85,7 +86,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class TestGraphLocalExecution {
+public class TestGraphLocalExecution extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
@@ -126,7 +127,7 @@ public class TestGraphLocalExecution {
             if(dataApproach == 0){
                 ds = TestDL4JLocalExecution.MnistDataSource.class;
                 dsP = new Properties();
-                dsP.setProperty("minibatch", "8");
+                dsP.setProperty("minibatch", "2");
                 candidateGenerator = new RandomSearchGenerator(mls);
             } else if(dataApproach == 1) {
                 //DataProvider approach
@@ -150,8 +151,8 @@ public class TestGraphLocalExecution {
                     .dataSource(ds, dsP)
                     .modelSaver(new FileModelSaver(modelSave))
                     .scoreFunction(new TestSetLossScoreFunction())
-                    .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
-                            new MaxCandidatesCondition(5))
+                    .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                            new MaxCandidatesCondition(3))
                     .build();
 
             IOptimizationRunner runner = new LocalOptimizationRunner(configuration,new ComputationGraphTaskCreator(new ClassificationEvaluator()));
@@ -159,7 +160,7 @@ public class TestGraphLocalExecution {
             runner.execute();
 
             List<ResultReference> results = runner.getResults();
-            assertEquals(5, results.size());
+            assertTrue(results.size() > 0);
 
             System.out.println("----- COMPLETE - " + results.size() + " results -----");
         }
@@ -203,8 +204,8 @@ public class TestGraphLocalExecution {
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
                 .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
                 .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
-                .terminationConditions(new MaxTimeCondition(20, TimeUnit.SECONDS),
-                        new MaxCandidatesCondition(10))
+                .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                        new MaxCandidatesCondition(3))
                 .build();
 
         IOptimizationRunner runner = new LocalOptimizationRunner(configuration,
@@ -223,7 +224,7 @@ public class TestGraphLocalExecution {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.1)))
                 .l2(new ContinuousParameterSpace(0.0001, 0.01)).addInputs("in")
-                .setInputTypes(InputType.feedForward(4))
+                .setInputTypes(InputType.feedForward(784))
                 .addLayer("layer0",
                         new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2, 10))
                                 .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
@@ -250,8 +251,8 @@ public class TestGraphLocalExecution {
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(new TestMdsDataProvider(1, 32))
                 .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
-                .terminationConditions(new MaxTimeCondition(20, TimeUnit.SECONDS),
-                        new MaxCandidatesCondition(10))
+                .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                        new MaxCandidatesCondition(3))
                 .scoreFunction(ScoreFunctions.testSetAccuracy())
                 .build();
 
@@ -279,7 +280,7 @@ public class TestGraphLocalExecution {
         @Override
         public Object trainData(Map<String, Object> dataParameters) {
             try {
-                DataSetIterator underlying = new MnistDataSetIterator(batchSize, Math.min(60000, 10 * batchSize), false, true, true, 12345);
+                DataSetIterator underlying = new MnistDataSetIterator(batchSize, Math.min(60000, 3 * batchSize), false, true, true, 12345);
                 return new MultiDataSetIteratorAdapter(new MultipleEpochsIterator(numEpochs, underlying));
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -289,7 +290,7 @@ public class TestGraphLocalExecution {
         @Override
         public Object testData(Map<String, Object> dataParameters) {
             try {
-                DataSetIterator underlying = new MnistDataSetIterator(batchSize, Math.min(10000, 5 * batchSize), false, false, false, 12345);
+                DataSetIterator underlying = new MnistDataSetIterator(batchSize, Math.min(10000, 2 * batchSize), false, false, false, 12345);
                 return new MultiDataSetIteratorAdapter(underlying);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -305,7 +306,7 @@ public class TestGraphLocalExecution {
     @Test
     public void testLocalExecutionEarlyStopping() throws Exception {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(4))
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(2))
                 .scoreCalculator(new ScoreProvider())
                 .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
@@ -348,8 +349,8 @@ public class TestGraphLocalExecution {
                 .dataProvider(dataProvider)
                 .scoreFunction(ScoreFunctions.testSetF1())
                 .modelSaver(new FileModelSaver(modelSavePath))
-                .terminationConditions(new MaxTimeCondition(45, TimeUnit.SECONDS),
-                        new MaxCandidatesCondition(10))
+                .terminationConditions(new MaxTimeCondition(15, TimeUnit.SECONDS),
+                        new MaxCandidatesCondition(3))
                 .build();
 
 
@@ -364,7 +365,7 @@ public class TestGraphLocalExecution {
         @Override
         public ScoreCalculator get() {
             try {
-                return new DataSetLossCalculatorCG(new MnistDataSetIterator(128, 1280), true);
+                return new DataSetLossCalculatorCG(new MnistDataSetIterator(4, 8), true);
             } catch (Exception e){
                 throw new RuntimeException(e);
             }

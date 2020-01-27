@@ -30,6 +30,9 @@
 
 namespace nd4j {
     namespace memory {
+        /**
+         * This class is used for tracking memory allocation wrt their allocation points in code
+         */
         class ND4J_EXPORT MemoryTracker {
         private:
             static MemoryTracker* _INSTANCE;

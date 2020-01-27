@@ -113,7 +113,7 @@ static void conv2d_mkldnn(nd4j::graph::Context &block, const NDArray *input, con
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(conv2d) {
+PLATFORM_IMPL(conv2d, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, oC] always
     auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
@@ -137,7 +137,7 @@ PLATFORM_IMPL(conv2d) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(conv2d) {
+PLATFORM_CHECK(conv2d, ENGINE_CPU) {
     // we don't want to use mkldnn if cpu doesn't support avx/avx2
     if (::optimalLevel() < 2)
         return false;
@@ -151,7 +151,7 @@ PLATFORM_CHECK(conv2d) {
 }
 
 //////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(conv2d_bp) {
+PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
@@ -328,7 +328,7 @@ PLATFORM_IMPL(conv2d_bp) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(conv2d_bp) {
+PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]

@@ -199,16 +199,16 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     int dH = INT_ARG(10);                                                       // dilations height
     int dW = INT_ARG(11);                                                       // dilations width
     int paddingMode = INT_ARG(12);                                              // 1-SAME,  0-VALID
-    int isNDHWC  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // INT_ARG(13): 1-NDHWC, 0-NCDHW
+    int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // INT_ARG(13): 1-NDHWC, 0-NCDHW
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(isNDHWC, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
+    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
     int trueoD, trueoH, trueoW;          // true output depth/height/width
     ConvolutionUtils::calcOutSizePool3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, paddingMode);
 
-    REQUIRE_TRUE(paddingMode < 2, 0, "CUSTOM CONV3D OP: causal padding mode (paddingMode = 2) is not allowed for this operation !");
+    REQUIRE_TRUE(paddingMode < 2, 0, "CUSTOM CONV3D_BP OP: causal padding mode (paddingMode = 2) is not allowed for this operation !");
     std::string expectedGradOShape   = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoD,trueoH,trueoW,  0,indIOioC,indIOioD,indIOioD+1,indIOioD+2}));
     std::string expectedWeightsShape = ShapeUtils::shapeAsString({kD, kH, kW, iC, oC});
     REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,  "CUSTOM CONV3D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
@@ -222,7 +222,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 
     std::vector<int> gradOaxesForDot;
 
-    if(!isNDHWC) {
+    if(!isNCDHW) {
         gradOaxesForDot  = {0,1,2,3};                                           // bS, oD, oH, oW
         input = new NDArray(input->permute({0,4,1,2,3}));                       // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
         gradI = new NDArray(gradI->permute({0,4,1,2,3}));                       // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
@@ -240,7 +240,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     if(gradB) {
         if(gradB->rankOf() == 2)
             gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
-        gradO->reduceAlongDimension(reduce::Sum, gradB, gradOaxesForDot);                          // sum over bS oD oH oW
+        gradO->reduceAlongDimension(reduce::Sum, *gradB, gradOaxesForDot);                          // sum over bS oD oH oW
         if(gradB != OUTPUT_VARIABLE(2))
             delete gradB;
     }
@@ -249,7 +249,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, {2,3,4,1,0,5,6,7});   // [kD, kH, kW, iC, oC] x [bS, oD, oH, oW, oC]/[bS, oC, oD, oH, oW] = [kD, kH, kW, iC, bS, oD, oH, oW]
     ConvolutionUtils::col2vol(block, columns, *gradI, sD, sH, sW, pD, pH, pW, dD, dH, dW);                   // columns [bS, iC, kD, kH, kW, oD, oH, oW] is de-convoluted to  [bS, iC, iD, iH, iW]
 
-    if(!isNDHWC) {
+    if(!isNCDHW) {
         delete input;
         delete gradI;
     }
@@ -287,7 +287,7 @@ DECLARE_SHAPE_FN(conv3dnew_bp) {
     int dH = INT_ARG(10);                                                       // dilations height
     int dW = INT_ARG(11);                                                       // dilations width
     int paddingMode = INT_ARG(12);                                               // 1-SAME,  0-VALID
-    int isNDHWC  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // INT_ARG(13): 1-NDHWC, 0-NCDHW
+    int isNCDHW  = block.getIArguments()->size() > 13 ? !INT_ARG(13) : 1;       // INT_ARG(13): 1-NDHWC, 0-NCDHW
 
     const int rank = 5;
     REQUIRE_TRUE(paddingMode < 2, 0, "CUSTOM CONV3D OP: causal padding mode (paddingMode = 2) is not allowed for this operation !");
@@ -296,7 +296,7 @@ DECLARE_SHAPE_FN(conv3dnew_bp) {
     REQUIRE_TRUE(gradOShapeInfo[0]   == rank, 0, "CUSTOM CONV3D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !", rank, gradOShapeInfo);
 
     int indIOioC, indIiD, indWoC(4);
-    if(!isNDHWC) {
+    if(!isNCDHW) {
         indIOioC = 4; indIiD = 1;
     }
     else {

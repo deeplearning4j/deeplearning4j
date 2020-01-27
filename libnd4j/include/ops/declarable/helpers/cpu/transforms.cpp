@@ -39,7 +39,7 @@ template <typename T>
 static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     auto dOdI = NDArray(&gradO);                // dO/dI
-    const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), 'b', &dOdI);
+    const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), dOdI, 'b');
     int dLen = dOdI.lengthOf();
 
     auto func = PRAGMA_THREADS_FOR {
@@ -66,11 +66,9 @@ static void trace_(const NDArray& input, NDArray& output) {
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i += increment)
-            output.p(i, setOfSubArrs->at(i)->getTrace());
+            output.p(i, setOfSubArrs.at(i)->getTrace());
     };
-    samediff::Threads::parallel_for(func, 0, setOfSubArrs->size());
-
-    delete setOfSubArrs;
+    samediff::Threads::parallel_for(func, 0, setOfSubArrs.size());
 }
 
     void trace(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
@@ -137,7 +135,7 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::graph::RandomGenerato
 
                 if(i == r)
                     continue;
-                subArrsListIn->at(i)->swapUnsafe(*subArrsListIn->at(r));
+                subArrsListIn.at(i)->swapUnsafe(*subArrsListIn.at(r));
             }
         }
         else {
@@ -149,20 +147,18 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::graph::RandomGenerato
             //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim - 1; i > 0; --i) {
                 int r = rng.relativeInt(i) % i;
-                subArrsListOut->at(i)->assign(subArrsListIn->at(indices[r]));
+                subArrsListOut.at(i)->assign(subArrsListIn.at(indices[r]));
                 if(r == 0)
                     isZeroShuffled = true;
                 if(i == r)
                     continue;
-                subArrsListOut->at(r)->assign(subArrsListIn->at(indices[i]));
+                subArrsListOut.at(r)->assign(subArrsListIn.at(indices[i]));
                 math::nd4j_swap<int>(indices[i], indices[r]);
             }
             if(!isZeroShuffled)
-                subArrsListOut->at(0)->assign(subArrsListIn->at(0));
-            delete subArrsListOut;
+                subArrsListOut.at(0)->assign(subArrsListIn.at(0));
         }
         rng.rewindH(firstDim-1);
-        delete subArrsListIn;
     }
 
 }
@@ -715,12 +711,10 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i += increment)
-            arrs->at(i)->setIdentity();
+            arrs.at(i)->setIdentity();
     };
 
-    samediff::Threads::parallel_tad(func, 0, arrs->size());
-
-    delete arrs;
+    samediff::Threads::parallel_tad(func, 0, arrs.size());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -752,25 +746,25 @@ void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updat
 
             switch (opCode) {
                 case 0:
-                    inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
+                    inSubArr.applyPairwiseTransform(pairwise::Add, updSubArr, inSubArr);
                     break;
                 case 1:
-                    inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
+                    inSubArr.applyPairwiseTransform(pairwise::Subtract, updSubArr, inSubArr);
                     break;
                 case 2:
-                    inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
+                    inSubArr.applyPairwiseTransform(pairwise::Multiply, updSubArr, inSubArr);
                     break;
                 case 3:
-                    inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
+                    inSubArr.applyPairwiseTransform(pairwise::Divide, updSubArr, inSubArr);
                     break;
                 case 4:
-                    inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
+                    inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, updSubArr, inSubArr);
                     break;
                 case 5:
-                    inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
+                    inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, updSubArr, inSubArr);
                     break;
                 case 6:
-                    inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
+                    inSubArr.applyPairwiseTransform(pairwise::CopyPws, updSubArr, inSubArr);
                     break;
                 default:
                     continue;
@@ -917,7 +911,7 @@ template<typename T>
 static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
 
     const int rank = input.rankOf();
-    const auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
+    const auto norm2 = input.reduceAlongDimension(reduce::Norm2, dimensions);
 
     const T normActual = norm2.e<T>(0);
     const T normClip   = clipNorm.e<T>(0);
@@ -937,12 +931,10 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
                 for (auto i = start; i < stop; i += increment) {
                     const T iNormActual = norm2.e<T>(i);
                     if (iNormActual > normClip)
-                        *listOfInSubArrs->at(i) *= normClip / iNormActual;
+                        *listOfInSubArrs.at(i) *= normClip / iNormActual;
                 }
             };
-            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs->size());
-
-            delete listOfInSubArrs;
+            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs.size());
         }
     }
     else {
@@ -961,8 +953,8 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i += increment) {
-                    auto inputSubArr = listOfInSubArrs->at(i);
-                    auto outputSubArr = listOfOutSubArrs->at(i);
+                    auto inputSubArr = listOfInSubArrs.at(i);
+                    auto outputSubArr = listOfOutSubArrs.at(i);
                     outputSubArr->assign(inputSubArr);
 
                     const T iNormActual = norm2.e<T>(i);
@@ -971,10 +963,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
                         *outputSubArr *= clipNorm / iNormActual;
                 }
             };
-            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs->size());
-
-            delete listOfInSubArrs;
-            delete listOfOutSubArrs;
+            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs.size());
         }
     }
 }
@@ -1021,7 +1010,7 @@ void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, 
             else {
 
                 auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-                input->applyLambda<T>(lambda, output);
+                input->applyLambda<T>(lambda, *output);
             }
         }
     }
@@ -1037,7 +1026,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
 
     const int rank = input.rankOf();
 
-    auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
+    auto norm2 = input.reduceAlongDimension(reduce::Norm2, dimensions);
 
     if(norm2.lengthOf() == 1) {
 
@@ -1055,16 +1044,16 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
                 return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
             };
 
-            (const_cast<NDArray&>(input)).applyPairwiseLambda<T>(const_cast<NDArray*>(&gradO), lambda, &gradI);
+            (const_cast<NDArray&>(input)).applyPairwiseLambda<T>(const_cast<NDArray&>(gradO), lambda, gradI);
         }
         else
             gradI.assign(gradO);
     }
     else {
 
-        const auto gradISubArrs = gradI.allTensorsAlongDimension({dimensions});
-        const auto gradOSubArrs = gradO.allTensorsAlongDimension({dimensions});
-        const auto inputSubArrs = input.allTensorsAlongDimension({dimensions});
+        auto gradISubArrs = gradI.allTensorsAlongDimension({dimensions});
+        auto gradOSubArrs = gradO.allTensorsAlongDimension({dimensions});
+        auto inputSubArrs = input.allTensorsAlongDimension({dimensions});
 
         auto cn = clipNorm.e<T>(0);
 
@@ -1072,11 +1061,11 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
             for (auto i = start; i < stop; i += increment) {
                 T N = norm2.e<T>(i);
 
-                auto gradOSubArr = gradOSubArrs->at(i);
-                auto gradISubArr = gradISubArrs->at(i);
+                auto gradOSubArr = gradOSubArrs.at(i);
+                auto gradISubArr = gradISubArrs.at(i);
 
                 if (N > cn) {
-                    auto inputSubArr = inputSubArrs->at(i);
+                    auto inputSubArr = inputSubArrs.at(i);
                     const T sumOfProd = (*inputSubArr * *gradOSubArr).reduceNumber(reduce::Sum).e<T>(0);    // reduce to scalar
                     const T factor1 = static_cast<T>(1.f) / N;
                     const T factor3 = factor1 / (N * N);                                            // 1 / (N*N*N)
@@ -1085,16 +1074,12 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
                         return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
                     };
 
-                    inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
+                    inputSubArr->applyPairwiseLambda<T>(*gradOSubArr, lambda, *gradISubArr);
                 } else
                     gradISubArr->assign(gradOSubArr);
             }
         };
-        samediff::Threads::parallel_tad(func, 0, gradISubArrs->size());
-
-        delete gradISubArrs;
-        delete gradOSubArrs;
-        delete inputSubArrs;
+        samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
     }
 }
 
@@ -1120,25 +1105,24 @@ static void clipByAveraged_(NDArray& input, NDArray& output, const std::vector<i
         else {
             const T factor = cn / n2;
             auto lambda = LAMBDA_T(_x, factor) { return _x * factor; };
-            input.applyLambda<T>(lambda, &output);
+            input.applyLambda<T>(lambda, output);
         }
     }
     else {
         // along dimension
-        auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions, false);
+        auto norm2 = input.reduceAlongDimension(reduce::Norm2, dimensions, false);
         if (!isInplace)
                 output.assign(input);
         auto tads = output.allTensorsAlongDimension(dimensions);
         // TODO: make this CUDA-compliant somehow
-        for (int e = 0; e < tads->size(); e++) {
-            T n2 = norm2.e<T>(e) / tads->at(e)->lengthOf();
+        for (int e = 0; e < tads.size(); e++) {
+            T n2 = norm2.e<T>(e) / tads.at(e)->lengthOf();
             const T factor = cn / n2;
             if (n2 > cn) {
                 auto lambda = LAMBDA_T(_x, factor) {return _x * factor;};
-                tads->at(e)->applyLambda<T>(lambda, &output);
+                tads.at(e)->applyLambda<T>(lambda, output);
             }
         }
-        delete tads;
     }
 }
 
@@ -1164,7 +1148,7 @@ static void clipByAveraged_(NDArray& input, NDArray& output, const std::vector<i
             return _x;
         };
 
-        input.applyLambda<T>(routine, &output);
+        input.applyLambda<T>(routine, output);
     }
 
     void clipByValue(nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {

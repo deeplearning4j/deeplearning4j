@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.io.Resource;
@@ -59,6 +60,11 @@ public class CpuBackend extends Nd4jBackend {
     @Override
     public Class getNDArrayClass() {
         return NDArray.class;
+    }
+
+    @Override
+    public Environment getEnvironment() {
+        return CpuEnvironment.getInstance();
     }
 
     @Override

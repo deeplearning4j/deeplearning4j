@@ -13,10 +13,12 @@ import org.nd4j.graph.UIEvent;
 import org.nd4j.graph.UIGraphStructure;
 import org.nd4j.graph.UIStaticInfoRecord;
 import org.nd4j.graph.ui.LogFileWriter;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -27,7 +29,16 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class UIListenerTest {
+public class UIListenerTest extends BaseNd4jTest {
+
+    public UIListenerTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

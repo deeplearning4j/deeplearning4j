@@ -54,11 +54,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 	// If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 - label_smoothing) + label_smoothing / num_classes
 	// num_classes = labels->sizeAt(1)
-	auto cLabels = labels->cast(weights->dataType());
-	auto newLabels = cLabels;
+	NDArray* cLabels = new NDArray(labels->cast(weights->dataType()));
+	NDArray* newLabels = cLabels;
 	if(labelsSmoothing != 0.) {
 		newLabels = new NDArray(cLabels);
-    	*newLabels = (1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1);
+    	newLabels->assign((1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1));
 	}
 
 	// main formula: result = - sum_i(lables_i * log(softmax_i)) - sum over last dimension
@@ -70,9 +70,9 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 
 
 	std::vector<int> dimensions = {-1};
-	NDArray shiftedLogits = *logits - logits->reduceAlongDims(reduce::Max, dimensions, true);
-	NDArray logSumExp = shiftedLogits.transform(transform::Exp).reduceAlongDims(reduce::Sum, dimensions, true).transform(transform::Log);
-	NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDims(reduce::Sum, dimensions);
+	NDArray shiftedLogits = *logits - logits->reduceAlongDimension(reduce::Max, dimensions, true);
+	NDArray logSumExp = shiftedLogits.transform(transform::Exp).reduceAlongDimension(reduce::Sum, dimensions, true).transform(transform::Log);
+	NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(reduce::Sum, dimensions);
 
 	// perform weights broadcasting/tile to E if it is necessary
 	auto weightsBroad = weights;
@@ -217,25 +217,25 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 
 	// If label_smoothing is nonzero, smooth the labels towards 1/num_classes: new_onehot_labels = onehot_labels * (1 - label_smoothing) + label_smoothing / num_classes
 	// num_classes = labels->sizeAt(1)
-	auto cLabels = labels->cast(weights->dataType());
-	auto newLabels = cLabels;
+	NDArray* cLabels = new NDArray(labels->cast(weights->dataType()));
+	NDArray* newLabels = cLabels;
 	if(labelsSmoothing != 0.) {
 		newLabels = new NDArray(labels->getShapeInfo(), dLdl->dataType(), false, block.launchContext());
     	newLabels->assign((1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1));
 	}
 
-	NDArray softmax = (*logits - logits->reduceAlongDims(reduce::Max, dimensions, true)).transform(transform::Exp);
-	softmax /= softmax.reduceAlongDims(reduce::Sum, dimensions, true);
+	NDArray softmax = (*logits - logits->reduceAlongDimension(reduce::Max, dimensions, true)).transform(transform::Exp);
+	softmax /= softmax.reduceAlongDimension(reduce::Sum, dimensions, true);
 
 	// dEdp = softmax * sum_i(lables_i) - labels
-	dLdp->assign(softmax * newLabels->reduceAlongDims(reduce::Sum, dimensions, true) - *newLabels);
+	dLdp->assign(softmax * newLabels->reduceAlongDimension(reduce::Sum, dimensions, true) - *newLabels);
 
 	// dEdl = -log(softmax)
 	dLdl->assign(-softmax.transform(transform::Log)* (1.f - labelsSmoothing));
 
-	NDArray shiftedLogits = *logits - logits->reduceAlongDims(reduce::Max, dimensions, true);
-    NDArray logSumExp = shiftedLogits.transform(transform::Exp).reduceAlongDims(reduce::Sum, dimensions, true).transform(transform::Log);
-    NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDims(reduce::Sum, dimensions);
+	NDArray shiftedLogits = *logits - logits->reduceAlongDimension(reduce::Max, dimensions, true);
+    NDArray logSumExp = shiftedLogits.transform(transform::Exp).reduceAlongDimension(reduce::Sum, dimensions, true).transform(transform::Log);
+    NDArray E = (*newLabels * (logSumExp - shiftedLogits)).reduceAlongDimension(reduce::Sum, dimensions);
 
 	// perform weights broadcasting/tile to E if it is necessary
 	auto weightsBroad = weights;
@@ -253,12 +253,12 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 				*dLdl *= *weights;
 			}
 			else {
-				dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, weightsBroad);
-				dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, weightsBroad);
+				dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, *weightsBroad, *dLdp);
+				dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, *weightsBroad, *dLdl);
 
 				if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-					E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+					E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 				}
 				else
 					dLdw->assign(E);
@@ -289,12 +289,12 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 				else {
 
 					NDArray temp = *weightsBroad / sum;
-					dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, &temp);
-					dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, &temp);
+					dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, temp, *dLdp);
+					dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, temp, *dLdl);
 
 					if(weights != weightsBroad) {
 						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-						((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+						((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 					}
 					else
 						dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
@@ -326,12 +326,12 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 				}
 				else {
 					NDArray temp = *weightsBroad / numOfNonZeroWeights;
-					dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, &temp);
-					dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, &temp);
+					dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, temp, *dLdp);
+					dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, temp, *dLdl);
 
 					if(weights != weightsBroad) {
 						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-						E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+						E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 						*dLdw /= numOfNonZeroWeights;
 					}
 					else

@@ -69,6 +69,8 @@ public class BiasAdd extends DynamicCustomOp {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
         if(attributesForNode.containsKey("data_format")){
             nchw = "NCHW".equalsIgnoreCase(attributesForNode.get("data_format").getS().toStringUtf8());
+        } else {
+            nchw = false;   //TF default is NHWC
         }
         bArguments.clear();
         bArguments.add(nchw);

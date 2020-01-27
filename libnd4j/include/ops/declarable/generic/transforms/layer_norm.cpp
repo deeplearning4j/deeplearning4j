@@ -56,7 +56,7 @@ namespace ops  {
         standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
 
         // output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, output);
-        output->applyBroadcast(nd4j::broadcast::Multiply, {dimC}, gain);
+        output->applyBroadcast(nd4j::broadcast::Multiply, {dimC}, *gain, *output);
         if(bias != nullptr) {
             // output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), bias, output);
             // output->applyBroadcast(nd4j::broadcast::Add, {dimC}, bias);
@@ -93,8 +93,8 @@ namespace ops  {
 
         if(bias != nullptr) {
             REQUIRE_TRUE(bias->rankOf() == 1 && bias->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM_BP OP: wrong shape of bias array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(bias).c_str());
-            // eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
-            eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
+            // eps->reduceAlongDimension(nd4j::reduce::Sum, *dLdb, {0}, true);
+            eps->reduceAlongDimension(nd4j::reduce::Sum, *dLdb, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
         }
 
         NDArray standardized(input->shapeInfo(), false, block.launchContext());
@@ -106,18 +106,17 @@ namespace ops  {
         std::vector<bool> bargs = {};
 
         standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
-        standardized.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &standardized, nullptr);
-        standardized.reduceAlongDimension(nd4j::reduce::Sum, dLdg, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
+        standardized.applyPairwiseTransform(nd4j::pairwise::Multiply, *eps, standardized);
+        standardized.reduceAlongDimension(nd4j::reduce::Sum, *dLdg, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
 
         nd4j::ops::standardize_bp standardizeBp;
         // eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
-        eps->applyBroadcast(nd4j::broadcast::Multiply, {dimC}, gain, dLdx);
+        eps->applyBroadcast(nd4j::broadcast::Multiply, {dimC}, *gain, *dLdx);
 
         auto dLdx_tmp = dLdx->dup();
-        std::vector<NDArray *> standardizeBpArgs = {input, dLdx_tmp};
+        std::vector<NDArray *> standardizeBpArgs = {input, &dLdx_tmp};
         std::vector<NDArray *> standardizeBpOut = {dLdx};
         standardizeBp.execute(standardizeBpArgs, standardizeBpOut, targs, longAxis, bargs);
-        delete dLdx_tmp;
 
         return Status::OK();
     }

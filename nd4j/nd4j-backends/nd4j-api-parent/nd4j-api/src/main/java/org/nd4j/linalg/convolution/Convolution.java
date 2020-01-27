@@ -98,7 +98,7 @@ public class Convolution {
                 .build();
 
         Nd4j.getExecutioner().execAndReturn(col2Im);
-        return col2Im.outputArguments()[0];
+        return col2Im.outputArguments().get(0);
     }
 
     public static INDArray col2im(INDArray col, INDArray z, int sH, int sW, int pH, int pW, int kH, int kW,
@@ -187,7 +187,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().execAndReturn(im2col);
-        return im2col.outputArguments()[0];
+        return im2col.outputArguments().get(0);
     }
 
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
@@ -208,7 +208,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().execAndReturn(im2col);
-        return im2col.outputArguments()[0];
+        return im2col.outputArguments().get(0);
     }
 
     /**
@@ -298,7 +298,7 @@ public class Convolution {
                         .build()).build();
 
         Nd4j.getExecutioner().execAndReturn(im2col);
-        return im2col.outputArguments()[0];
+        return im2col.outputArguments().get(0);
     }
 
     /**

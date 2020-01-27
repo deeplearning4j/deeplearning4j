@@ -130,7 +130,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                         .setOutputs("out").build();
 
         String json = conf.toJson();
-        System.out.println(json);
+//        System.out.println(json);
 
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
 
@@ -258,7 +258,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
                 .addVertex("test2", new StaticInnerGraphVertex(4, 5), "in").setOutputs("test", "test2").build();
 
         String json = conf.toJson();
-        System.out.println(json);
+//        System.out.println(json);
 
         ComputationGraphConfiguration conf2 = ComputationGraphConfiguration.fromJson(json);
 

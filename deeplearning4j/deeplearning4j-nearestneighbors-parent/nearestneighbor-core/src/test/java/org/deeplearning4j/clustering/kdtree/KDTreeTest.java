@@ -16,11 +16,8 @@
 
 package org.deeplearning4j.clustering.kdtree;
 
-import org.joda.time.Instant;
-import org.nd4j.shade.guava.base.Stopwatch;
-import org.nd4j.shade.guava.primitives.Doubles;
 import lombok.val;
-import org.deeplearning4j.clustering.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.joda.time.Duration;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,8 +27,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.shade.guava.base.Stopwatch;
+import org.nd4j.shade.guava.primitives.Doubles;
 import org.nd4j.shade.guava.primitives.Floats;
-import org.opencv.ml.KNearest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +45,11 @@ import static org.junit.Assert.assertTrue;
  * Created by agibsonccc on 1/1/15.
  */
 public class KDTreeTest extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
 
     private KDTree kdTree;
 
@@ -174,7 +177,7 @@ public class KDTreeTest extends BaseDL4JTest {
     @Test
     public void testKNN() {
         int dimensions = 512;
-        int vectorsNo = 50000;
+        int vectorsNo = isIntegrationTests() ? 50000 : 1000;
         // make a KD-tree of dimension {#dimensions}
         Stopwatch stopwatch = Stopwatch.createStarted();
         KDTree kdTree = new KDTree(dimensions);

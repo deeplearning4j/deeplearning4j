@@ -81,7 +81,7 @@ TEST_F(StringTests, Basic_dup_1) {
     ASSERT_EQ(1, array.lengthOf());
     ASSERT_EQ(0, array.rankOf());
 
-    auto dup = array.dup();
+    auto dup = new NDArray(array.dup());
 
     auto z0 = array.e<std::string>(0);
     auto z1 = dup->e<std::string>(0);
@@ -90,4 +90,26 @@ TEST_F(StringTests, Basic_dup_1) {
     ASSERT_EQ(f, z1);
 
     delete dup;
+}
+
+TEST_F(StringTests, byte_length_test_1) {
+    std::string f("alpha");
+    auto array = NDArrayFactory::string(f);
+
+    ASSERT_EQ(f.length(), StringUtils::byteLength(array));
+}
+
+TEST_F(StringTests, byte_length_test_2) {
+    auto array = NDArrayFactory::string('c', {2}, {"alpha", "beta"});
+
+    ASSERT_EQ(9, StringUtils::byteLength(array));
+}
+
+TEST_F(StringTests, test_split_1) {
+    auto split = StringUtils::split("alpha beta gamma", " ");
+
+    ASSERT_EQ(3, split.size());
+    ASSERT_EQ(std::string("alpha"), split[0]);
+    ASSERT_EQ(std::string("beta"), split[1]);
+    ASSERT_EQ(std::string("gamma"), split[2]);
 }

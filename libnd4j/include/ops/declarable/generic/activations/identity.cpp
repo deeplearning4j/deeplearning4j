@@ -30,7 +30,7 @@ namespace nd4j {
             auto z = this->getZ(block);
 
             // just for lulz
-            first->applyTransform(nd4j::transform::Identity, z, nullptr);
+            first->applyTransform(nd4j::transform::Identity, *z);
 
             STORE_RESULT(*z);
 

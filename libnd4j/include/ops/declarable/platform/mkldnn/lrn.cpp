@@ -32,7 +32,7 @@ using namespace dnnl;
 namespace nd4j {
     namespace ops {
         namespace platforms {
-            PLATFORM_IMPL(lrn) {
+            PLATFORM_IMPL(lrn, ENGINE_CPU) {
                 auto input = INPUT_VARIABLE(0);
                 auto output = OUTPUT_VARIABLE(0);
 
@@ -82,7 +82,7 @@ namespace nd4j {
                 return Status::OK();
             };
 
-            PLATFORM_CHECK(lrn) {
+            PLATFORM_CHECK(lrn, ENGINE_CPU) {
                 auto input = INPUT_VARIABLE(0);
                 auto output = OUTPUT_VARIABLE(0);
 

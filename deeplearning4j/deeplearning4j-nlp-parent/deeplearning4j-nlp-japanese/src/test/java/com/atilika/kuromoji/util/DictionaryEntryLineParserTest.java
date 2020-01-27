@@ -32,6 +32,7 @@
  */
 package com.atilika.kuromoji.util;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -39,7 +40,7 @@ import java.util.Arrays;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class DictionaryEntryLineParserTest {
+public class DictionaryEntryLineParserTest extends BaseDL4JTest {
 
     private DictionaryEntryLineParser parser = new DictionaryEntryLineParser();
 

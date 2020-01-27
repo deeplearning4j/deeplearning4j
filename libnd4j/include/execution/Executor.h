@@ -18,8 +18,8 @@
 // @author raver119@gmail.com
 //
 
-#ifndef DEV_TESTS_EXECUTOR_H
-#define DEV_TESTS_EXECUTOR_H
+#ifndef SD_EXECUTOR_H
+#define SD_EXECUTOR_H
 
 namespace nd4j {
     class Executor {
@@ -30,4 +30,4 @@ namespace nd4j {
     };
 }
 
-#endif //DEV_TESTS_EXECUTOR_H
+#endif //SD_EXECUTOR_H

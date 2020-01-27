@@ -63,8 +63,8 @@ import static org.junit.Assume.assumeFalse;
         TransformOpValidation.class,
 
         //TF import tests
-        TFGraphTestAllSameDiff.class,
-        TFGraphTestAllLibnd4j.class
+        TFGraphTestAllSameDiff.class
+        //TFGraphTestAllLibnd4j.class
 })
 //IMPORTANT: This ignore is added to avoid maven surefire running both the suite AND the individual tests in "mvn test"
 // With it ignored here, the individual tests will run outside (i.e., separately/independently) of the suite in both "mvn test" and IntelliJ

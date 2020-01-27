@@ -57,7 +57,7 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
     public void compareAfterWrite() throws Exception {
         int [] ranksToCheck = new int[] {0,1,2,3,4};
         for (int i=0; i<ranksToCheck.length;i++) {
-            log.info("Checking read write arrays with rank " + ranksToCheck[i]);
+//            log.info("Checking read write arrays with rank " + ranksToCheck[i]);
             compareArrays(ranksToCheck[i],ordering(), testDir);
         }
     }
@@ -73,9 +73,9 @@ public class TestNdArrReadWriteTxt extends BaseNd4jTest {
             //adding elements outside the bounds where print switches to scientific notation
             origArray.tensorAlongDimension(0,0).muli(0).addi(100000);
             origArray.putScalar(0,10001.1234);
-            log.info("\nChecking shape ..." + currentPair.getSecond());
+//            log.info("\nChecking shape ..." + currentPair.getSecond());
             //log.info("C:\n"+ origArray.dup('c').toString());
-            log.info("F:\n"+ origArray.toString());
+//            log.info("F:\n"+ origArray.toString());
             Nd4j.writeTxt(origArray, new File(dir, "someArr.txt").getAbsolutePath());
             INDArray readBack = Nd4j.readTxt(new File(dir, "someArr.txt").getAbsolutePath());
             assertEquals("\nNot equal on shape " + ArrayUtils.toString(origArray.shape()), origArray, readBack);

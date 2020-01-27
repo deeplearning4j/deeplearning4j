@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -29,7 +30,7 @@ limitations under the License.
 ==============================================================================*/
 
 //
-//  @author sgazeos@gmail.com
+//  @author George A. Shulinok <sgazeos@gmail.com>
 //
 
 #include <ops/declarable/helpers/image_resize.h>
@@ -639,7 +640,7 @@ namespace helpers {
         if (err != 0) {
             cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot allocated device memory for interpolate calculator", err);
         }
-        err = cudaMemcpy(pCalcD, &calc, sizeof(CachedInterpolationCalculator), cudaMemcpyHostToDevice);
+        err = cudaMemcpyAsync(pCalcD, &calc, sizeof(CachedInterpolationCalculator), cudaMemcpyHostToDevice, *stream);
         if (err != 0) {
             cuda_exception::build("helpers::computeXWeightsAndIndices: Cannot set up device memory for interpolate calculator", err);
         }
@@ -689,11 +690,17 @@ namespace helpers {
     }
 
     template <typename T>
-    static __global__ void bicubicInterpolateWithCachingKernel(float const* cachedTable, float* cachedValue, T const* inputPtr, ImageResizerState* pResizerState, WeightsAndIndices* xWais, bool halfPixelCenters, Nd4jLong inBatchWidth, Nd4jLong inRowWidth, float* outputPtr) {
+    static __global__ void bicubicInterpolateWithCachingKernel(float const* cachedTable, T const* inputPtr, ImageResizerState* pResizerState, WeightsAndIndices* xWais, bool halfPixelCenters, Nd4jLong inBatchWidth, Nd4jLong inRowWidth, float* outputPtr) {
 //        auto numChannels = pResizerState->channels;
+
         for (Nd4jLong b = blockIdx.x; b < pResizerState->batchSize; b += gridDim.x) {
             auto pInput = inputPtr + b * inBatchWidth;
+            float* cachedValue;
             for (Nd4jLong y = threadIdx.x; y < pResizerState->outHeight; y += blockDim.x) {
+                if (threadIdx.x == 0) {
+                    extern __shared__ char sharedChar[];
+                    cachedValue = reinterpret_cast<float*>(sharedChar);
+                }
                 auto pos = (b * pResizerState->outHeight + y) * pResizerState->outWidth * pResizerState->channels;
                 auto pOutput = &outputPtr[pos];
                 struct WeightsAndIndices yWai;
@@ -841,25 +848,25 @@ namespace helpers {
         if (err != 0) {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot allocate memory for resizerState", err);
         }
-        err = cudaMemcpy(resizerStateD, &resizerState, sizeof(ImageResizerState), cudaMemcpyHostToDevice);
+        err = cudaMemcpyAsync(resizerStateD, &resizerState, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
         if (err != 0) {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot set up memory for resizerState", err);
         }
 
-        float* cachedValue = nullptr;
-        size_t cachedSize = sizeof(float) * (numChannels == 3 ? 0 : 4 * numChannels);
-        if (cachedSize) {
-            err = cudaMalloc(reinterpret_cast<void**>(&cachedValue), cachedSize);
-            if (err != 0) {
-                throw cuda_exception::build(
-                        "helpers::bicubicInterpolateWithCaching: Cannot allocate memory for cached values", err);
-            }
-            err = cudaMemset(cachedValue, 0, cachedSize);
-            if (err != 0) {
-                throw cuda_exception::build(
-                        "helpers::bicubicInterpolateWithCaching: Cannot set up memory for cached values", err);
-            }
-        }
+//        float* cachedValue = nullptr;
+//        size_t cachedSize = sizeof(float) * (numChannels == 3 ? 0 : 4 * numChannels);
+//        if (cachedSize) {
+//            err = cudaMalloc(reinterpret_cast<void**>(&cachedValue), cachedSize);
+//            if (err != 0) {
+//                throw cuda_exception::build(
+//                        "helpers::bicubicInterpolateWithCaching: Cannot allocate memory for cached values", err);
+//            }
+//            err = cudaMemset(cachedValue, 0, cachedSize);
+//            if (err != 0) {
+//                throw cuda_exception::build(
+//                        "helpers::bicubicInterpolateWithCaching: Cannot set up memory for cached values", err);
+//            }
+//        }
 
         WeightsAndIndices* xWais; //(resizerState.outWidth);
         err = cudaMalloc(&xWais, sizeof(WeightsAndIndices) * resizerState.outWidth);
@@ -878,7 +885,7 @@ namespace helpers {
         }
         const T* pInput = image->getDataBuffer()->specialAsT<T>();
         float* pOutput = output->dataBuffer()->specialAsT<float>(); //_data.data();
-        bicubicInterpolateWithCachingKernel<T><<<128, 1, 512, *stream>>>(coeffsTable, cachedValue, pInput,
+        bicubicInterpolateWithCachingKernel<T><<<128, 1, 512, *stream>>>(coeffsTable, pInput,
                 resizerStateD, xWais, halfPixelCenters, inBatchWidth, inRowWidth, pOutput);
         err = cudaStreamSynchronize(*stream);
         if (err != 0) {
@@ -889,11 +896,11 @@ namespace helpers {
         if (err != 0) {
             throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for resizerState", err);
         }
-        if (cachedSize)
-        err = cudaFree(cachedValue);
-        if (err != 0) {
-            throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for cached values", err);
-        }
+//        if (cachedSize)
+//        err = cudaFree(cachedValue);
+//        if (err != 0) {
+//            throw cuda_exception::build("helpers::bicubicInterpolateWithCaching: Cannot deallocate memory for cached values", err);
+//        }
 
         err = cudaFree(xWais);
         if (err != 0) {
@@ -921,6 +928,227 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template int resizeBicubicFunctor_, (nd4j::LaunchContext * context, NDArray const* image, int width, int height,
             bool preserveAspectRatio, bool antialias, NDArray* output), NUMERIC_TYPES);
 // ------------------------------------------------------------------------------------------------------------------ //
+    struct CachedInterpolation {
+        Nd4jLong start;
+        Nd4jLong end;
+        float startScale;
+        float endMinusOneScale;
+        bool needsBounding;
+    };
+
+    static __global__ void fillInterpolationCache(CachedInterpolation* xCached, Nd4jLong cacheLen, Nd4jLong inWidth, float widthScale) {
+        auto start = blockIdx.x * blockDim.x + threadIdx.x;
+        auto increment = blockDim.x * gridDim.x;
+
+        for (auto x = start; x < cacheLen; x += increment) {
+            auto& xCache = xCached[x];
+            const float inX = x * widthScale;
+            const float inX1 = (x + 1) * widthScale;
+
+            Nd4jLong v = math::nd4j_floor<float, Nd4jLong>(inX);
+            xCache.start = v;
+            xCache.startScale = v < inX ? (v + 1 > inX1 ? widthScale : v + 1 - inX) : (v + 1 > inX1 ? inX1 - v : 1.f);
+            v = math::nd4j_ceil<float, Nd4jLong>(inX1);
+            xCache.end = v--;
+            xCache.endMinusOneScale = v < inX ? (v + 1 > inX1 ? widthScale : v + 1 - inX) : (v + 1 > inX1 ? inX1 - v : 1.f);
+            xCache.needsBounding = bound(xCache.start, inWidth) != xCache.start || bound(xCache.end - 1, inWidth) != (xCache.end - 1);
+        }
+    }
+
+// ------------------------------------------------------------------------------------------------------------------ //
+    template <typename T>
+    struct ScaleCache {
+        float yScale;
+        T const* yPtr;
+    };
+
+    // Computes the sum of all x values defined by <x_interp> taken across
+    // the y offsets and scales defined by y_ptrs and y_scales, for channel c.
+    //
+    // Note that <NeedsXBounding> is a template parameter to avoid a performance
+    // penalty from dynamically checking it.
+    template <typename T>
+    static __device__ void computePatchSumOf3Channels(float scale,
+                                           const ImageResizerState& st,
+                                           ScaleCache<T> const* yScaleCache,
+                                           Nd4jLong ptrsLen,
+                                           const CachedInterpolation& xCache,
+                                           float* outputPtr) {
+
+        bool const needsXBounding = xCache.needsBounding;
+
+        auto boundIfNeeded = [needsXBounding](Nd4jLong x, Nd4jLong y) -> Nd4jLong {
+            return (needsXBounding ? bound(x, y) : (x));
+        };
+
+        float sum_0 = 0;
+        float sum_1 = 0;
+        float sum_2 = 0;
+        for (int i = 0; i < ptrsLen; ++i) {
+            const T* ptr = yScaleCache[i].yPtr;
+            float scaleX = xCache.startScale;
+            Nd4jLong offset = 3 * boundIfNeeded(xCache.start, st.inWidth);
+            float sum_y_0 = static_cast<float>(ptr[offset + 0]) * scaleX;
+            float sum_y_1 = static_cast<float>(ptr[offset + 1]) * scaleX;
+            float sum_y_2 = static_cast<float>(ptr[offset + 2]) * scaleX;
+
+            if (xCache.start + 1 != xCache.end) {
+                for (Nd4jLong x = xCache.start + 1; x < xCache.end - 1; ++x) {
+                    Nd4jLong offset = 3 * boundIfNeeded(x, st.inWidth);
+                    sum_y_0 += static_cast<float>(ptr[offset + 0]);
+                    sum_y_1 += static_cast<float>(ptr[offset + 1]);
+                    sum_y_2 += static_cast<float>(ptr[offset + 2]);
+                }
+                scaleX = xCache.endMinusOneScale;
+                offset = st.channels * boundIfNeeded(xCache.end - 1, st.inWidth);
+                sum_y_0 += static_cast<float>(ptr[offset + 0]) * scaleX;
+                sum_y_1 += static_cast<float>(ptr[offset + 1]) * scaleX;
+                sum_y_2 += static_cast<float>(ptr[offset + 2]) * scaleX;
+            }
+            sum_0 += sum_y_0 * yScaleCache[i].yScale;
+            sum_1 += sum_y_1 * yScaleCache[i].yScale;
+            sum_2 += sum_y_2 * yScaleCache[i].yScale;
+        }
+
+        outputPtr[0] = sum_0 * scale;
+        outputPtr[1] = sum_1 * scale;
+        outputPtr[2] = sum_2 * scale;
+    }
+
+    // Computes the sum of all x values defined by <x_interp> taken across
+    // the y offsets and scales defined by y_ptrs and y_scales, for channel c.
+    //
+    // Note that <NeedsXBounding> is a template parameter to avoid a performance
+    // penalty from dynamically checking it.
+    template <typename T>
+    static __device__ void computePatchSum(float scale, const ImageResizerState& st,
+                                ScaleCache<T> const* yScaleCache, Nd4jLong ptrsLen,
+                                const CachedInterpolation& xCache,
+                                float* outputPtr) {
+
+        bool const needsXBounding = xCache.needsBounding;
+
+        auto boundIfNeeded = [needsXBounding](Nd4jLong x, Nd4jLong y) -> Nd4jLong {
+            return (needsXBounding ? bound(x, y) : (x));
+        };
+
+        const auto numChannels = st.channels;
+        for (Nd4jLong c = 0; c < numChannels; ++c) {
+            float sum = 0;
+            for (int i = 0; i < ptrsLen; ++i) {
+                T const* ptr = yScaleCache[i].yPtr;
+                float scaleX = xCache.startScale;
+                float sumY = static_cast<float>(ptr[numChannels * boundIfNeeded(xCache.start, st.inWidth) + c]) * scaleX;
+                if (xCache.start + 1 != xCache.end) {
+                    for (Nd4jLong x = xCache.start + 1; x < xCache.end - 1; ++x) {
+                        sumY += static_cast<float>(
+                                ptr[numChannels * boundIfNeeded(x, st.inWidth) + c]);
+                    }
+                    scaleX = xCache.endMinusOneScale;
+                    sumY += static_cast<float>(ptr[numChannels * boundIfNeeded(xCache.end - 1, st.inWidth) + c]) * scaleX;
+                }
+                sum += sumY * yScaleCache[i].yScale;
+            }
+            outputPtr[c] = sum * scale;
+        }
+    }
+
+    template <typename T>
+    static __global__ void resizeAreaKernel(ImageResizerState const* pSt, CachedInterpolation const* caches, float scale,
+            T const* inputPtr, Nd4jLong* inputShape, float* outputPtr, Nd4jLong* outputShape, ScaleCache<T>* cachePool) { //batch * outWidth * outHeight
+
+        for (auto batch = blockIdx.x; batch < pSt->batchSize; batch += gridDim.x) {
+            for (auto y = threadIdx.x; y < pSt->outHeight; y += blockDim.x) {
+                const float inY = y * pSt->heightScale;
+                const float inY1 = (y + 1) * pSt->heightScale;
+                // The start and end height indices of all the cells that could
+                // contribute to the target cell.
+                const Nd4jLong yStart = math::nd4j_floor<float, Nd4jLong>(inY);
+                const Nd4jLong yEnd = math::nd4j_ceil<float, Nd4jLong>(inY1);
+                auto scalesDim = yEnd - yStart;
+                auto yScaleCache = cachePool + (batch * pSt->outWidth + y) * scalesDim * sizeof(ScaleCache<T>);
+
+                //auto startPtr = sharedPtr + y * scalesDim * sizeof(float);
+                //float* yScales = yScalesShare + y * sizeof(float) * scalesDim;//reinterpret_cast<float*>(startPtr); //shared + y * scalesDim * y + scalesDim * sizeof(T const *) [scalesDim];
+                //T const** yPtrs = yPtrsShare + y * sizeof(T const*) * scalesDim; //[scalesDim];
+                //yPtrs = reinterpret_cast<T const**>(sharedBuf);
+                float* output = outputPtr + (batch * pSt->outHeight  +  y)  * pSt->channels * pSt->outWidth;
+                //int k = 0;
+                for (Nd4jLong i = yStart, k = 0; i < yEnd; ++i, ++k) {
+                    float scaleY;
+                    if (i < inY) {
+                        scaleY = (i + 1 > inY1 ? pSt->heightScale : i + 1 - inY);
+                    } else {
+                        scaleY = (i + 1 > inY1 ? inY1 - i : 1.0);
+                    }
+                    yScaleCache[k].yScale = scaleY;
+                    yScaleCache[k].yPtr = inputPtr + (batch * pSt->inHeight * pSt->inWidth * pSt->channels + bound(i, pSt->inHeight) * pSt->inWidth * pSt->channels);
+                }
+
+                if (pSt->channels == 3) {
+                    for (Nd4jLong x = 0; x < pSt->outWidth; ++x) {
+                        const CachedInterpolation& xCache = caches[x];
+                        computePatchSumOf3Channels<T>(scale, *pSt, yScaleCache, scalesDim, xCache, output);
+                        output += pSt->channels;
+                    }
+                } else {
+                    for (Nd4jLong x = 0; x < pSt->outWidth; ++x) {
+                        const CachedInterpolation &xCache = caches[x];
+                        computePatchSum<T>(scale, *pSt, yScaleCache, scalesDim, xCache, output);
+                        output += pSt->channels;
+                    }
+                }
+            }
+        }
+    }
+
+    template <typename T>
+    static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, CachedInterpolation* cache,
+            NDArray const* input, NDArray* output) {
+
+        T const* inputPtr = reinterpret_cast<T const*>(input->getSpecialBuffer());
+//        float* yScales;
+//        T const** yPtrs;
+        float scale = 1.f / (st.heightScale * st.widthScale);
+        auto outputPtr = reinterpret_cast<float*>(output->specialBuffer()); // output is always float. TO DO: provide another float types also with  template <typename X, typename Z> declaration
+        ImageResizerState* pSt;
+        auto err = cudaMalloc(&pSt, sizeof(ImageResizerState));
+        err = cudaMemcpyAsync(pSt, &st, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
+        ScaleCache<T>* cachePool;
+        err = cudaMalloc(&cachePool, sizeof(ScaleCache<T>) * st.batchSize * st.outWidth * st.outHeight);
+        resizeAreaKernel<T><<<128, 4, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->getSpecialShapeInfo(), outputPtr,
+                output->specialShapeInfo(), cachePool);
+        err = cudaStreamSynchronize(*stream);
+        err = cudaFree(cachePool);
+        err = cudaFree(pSt);
+    }
+// ------------------------------------------------------------------------------------------------------------------ //
+    template <typename T>
+    int resizeAreaFunctor_(nd4j::LaunchContext* context, NDArray const* image, int const width, int const height,
+                              bool const alignCorners, NDArray* output) {
+
+        ImageResizerState st(alignCorners, false); // Create resize info
+        auto res = st.validateAndCalculateOutputSize(image, width, height);
+        auto stream = context->getCudaStream();
+        if (Status::OK() == res) {
+            CachedInterpolation* xCached;
+            //(st.outWidth);
+            auto err = cudaMalloc(&xCached, sizeof(CachedInterpolation) * st.outWidth);
+            NDArray::prepareSpecialUse({output}, {image});
+            fillInterpolationCache<<<128, 128, 256, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
+            resizeArea<T>(stream, st, xCached, image, output);
+            err = cudaStreamSynchronize(*stream);
+            err = cudaFree(xCached);
+            NDArray::registerSpecialUse({output}, {image});
+        }
+
+        return res;
+    }
+    int resizeAreaFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
+                              bool const alignCorners, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(image->dataType(), return resizeAreaFunctor_, (context, image, width, height, alignCorners, output), NUMERIC_TYPES);
+    }
+
 // ------------------------------------------------------------------------------------------------------------------ //
 // simplified bicubic resize without antialiasing
 //
@@ -1115,8 +1343,12 @@ namespace helpers {
         I const* cropSizes = reinterpret_cast<I const*>(cropSize->getSpecialBuffer());
         T* outBuf = reinterpret_cast<T*>(crops->specialBuffer());
 
+        int threadsPerBlock = math::nd4j_max(imageHeight * imageWidth, cropHeight * cropWidth);
+        if(threadsPerBlock > MAX_NUM_THREADS/4)
+            threadsPerBlock = MAX_NUM_THREADS/4;
+
         NDArray::prepareSpecialUse({crops}, {images, boxes, indices, cropSize});
-        cropAndResizeKernel<T,Z,I><<<batchSize, math::nd4j_max(imageHeight * imageWidth, cropHeight * cropWidth), 512, *stream>>>(imagesBuf, images->getSpecialShapeInfo(), boxesBuf, boxes->getSpecialShapeInfo(), indexBuf, indices->getSpecialShapeInfo(),
+        cropAndResizeKernel<T,Z,I><<<batchSize, threadsPerBlock, 256, *stream>>>(imagesBuf, images->getSpecialShapeInfo(), boxesBuf, boxes->getSpecialShapeInfo(), indexBuf, indices->getSpecialShapeInfo(),
                 cropSizes, cropSize->getSpecialShapeInfo(), method, extrapolationVal, outBuf, crops->specialShapeInfo(), numBoxes, cropHeight, cropWidth, batchSize, imageHeight, imageWidth, depth);
         NDArray::registerSpecialUse({crops}, {images, boxes, indices, cropSize});
     }

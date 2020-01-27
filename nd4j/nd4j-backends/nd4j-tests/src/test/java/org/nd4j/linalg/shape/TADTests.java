@@ -94,13 +94,13 @@ public class TADTests extends BaseNd4jTest {
             }
         }
 
-        log.info("3D TADs:");
+//        log.info("3D TADs:");
         for (char o : order) {
             INDArray array = Nd4j.create(new int[] {9, 7, 5, 3}, o);
             for (int[] shape : dim_3) {
                 Arrays.sort(shape);
-                log.info("About to do shape: " + Arrays.toString(shape) + " for array of shape "
-                                + array.shapeInfoToString());
+//                log.info("About to do shape: " + Arrays.toString(shape) + " for array of shape "
+//                                + array.shapeInfoToString());
                 INDArray assertion = array.tensorAlongDimension(0, shape);
                 INDArray test = array.tensorAlongDimension(0, shape);
                 assertEquals(assertion, test);
@@ -128,10 +128,10 @@ public class TADTests extends BaseNd4jTest {
         Pair<DataBuffer, DataBuffer> tadBuffersC =
                         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayC, 2, 3);
 
-        log.info("Got TADShapeF: {}", Arrays.toString(tadBuffersF.getFirst().asInt()) + " with java "
-                        + javaFTad.shapeInfoDataBuffer());
-        log.info("Got TADShapeC: {}", Arrays.toString(tadBuffersC.getFirst().asInt()) + " with java "
-                        + javaCTad.shapeInfoDataBuffer());
+//        log.info("Got TADShapeF: {}", Arrays.toString(tadBuffersF.getFirst().asInt()) + " with java "
+//                        + javaFTad.shapeInfoDataBuffer());
+//        log.info("Got TADShapeC: {}", Arrays.toString(tadBuffersC.getFirst().asInt()) + " with java "
+//                        + javaCTad.shapeInfoDataBuffer());
     }
 
     @Test

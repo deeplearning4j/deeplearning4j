@@ -20,7 +20,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -63,7 +63,7 @@ public class NegativeHolder implements Serializable {
 
     protected void makeTable(int tableSize, double power) {
         int vocabSize = vocab.numWords();
-        table = Nd4j.create(new FloatBuffer(tableSize));
+        table = Nd4j.create(DataType.FLOAT, tableSize);
         double trainWordsPow = 0.0;
         for (String word : vocab.words()) {
             trainWordsPow += Math.pow(vocab.wordFrequency(word), power);

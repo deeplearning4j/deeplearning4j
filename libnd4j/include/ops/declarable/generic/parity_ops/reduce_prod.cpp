@@ -51,7 +51,7 @@ CUSTOM_OP_IMPL(reduce_prod, 1, 1, false, 0, 0) {
     else if (block.getTArguments()->size())
         keepDims = (bool)T_ARG(0);
 
-    input->reduceAlongDimension(reduce::Prod, output, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::Prod, *output, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -123,8 +123,8 @@ CUSTOM_OP_IMPL(reduce_prod_bp, 2, 1, false, 0, 0) {
 
         // *** calculations *** //
 
-        auto products = input->reduceAlongDims(reduce::Prod, dimensions, true);
-        gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &products, gradI);
+        auto products = input->reduceAlongDimension(reduce::Prod, dimensions, true);
+        gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), products, *gradI);
         *gradI /= *input;
 
         if(!keepDims) {

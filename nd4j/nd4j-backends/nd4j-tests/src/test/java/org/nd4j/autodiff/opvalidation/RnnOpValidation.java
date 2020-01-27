@@ -194,9 +194,9 @@ public class RnnOpValidation extends BaseOpValidation {
         INDArray out5 = Nd4j.create(new float[]{-0.17905743f, 0.19177397f}, new int[]{1,2});    //Cell state
         INDArray out6 = Nd4j.create(new float[]{-0.04025514f, 0.10104967f}, new int[]{1,2});    //Output
 
-        for(int i=0; i<toExec.size(); i++ ){
-            System.out.println(i + "\t" + m.get(toExec.get(i)));
-        }
+//        for(int i=0; i<toExec.size(); i++ ){
+//            System.out.println(i + "\t" + m.get(toExec.get(i)));
+//        }
 
         assertEquals(out0, m.get(toExec.get(0)));       //Input modulation gate
         assertEquals(out1, m.get(toExec.get(1)));       //Cell state (pre tanh)

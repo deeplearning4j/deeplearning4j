@@ -47,6 +47,11 @@ import static org.junit.Assert.*;
 
 public class CrashReportingUtilTest extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000;
+    }
+
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 

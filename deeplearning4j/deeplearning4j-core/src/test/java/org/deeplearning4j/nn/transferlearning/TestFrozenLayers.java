@@ -51,7 +51,6 @@ public class TestFrozenLayers extends BaseDL4JTest {
 
         for(double l1 : new double[]{0.0, 0.3}){
             for( double l2 : new double[]{0.0, 0.4}){
-                System.out.println("--------------------");
                 String msg = "l1=" + l1 + ", l2=" + l2;
 
                 FineTuneConfiguration ftc = new FineTuneConfiguration.Builder()

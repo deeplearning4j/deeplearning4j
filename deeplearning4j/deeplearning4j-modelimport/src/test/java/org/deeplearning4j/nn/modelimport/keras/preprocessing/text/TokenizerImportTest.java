@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 
-import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.junit.Test;
 import org.nd4j.resources.Resources;
@@ -35,7 +35,7 @@ public class TokenizerImportTest extends BaseDL4JTest {
     ClassLoader classLoader = getClass().getClassLoader();
 
 
-    @Test
+    @Test(timeout=300000)
     public void importTest() throws IOException, InvalidKerasConfigurationException {
 
         String path = "modelimport/keras/preprocessing/tokenizer.json";
@@ -51,7 +51,7 @@ public class TokenizerImportTest extends BaseDL4JTest {
 
     }
 
-    @Test
+    @Test(timeout=300000)
     public void importNumWordsNullTest() throws IOException, InvalidKerasConfigurationException {
 
         String path = "modelimport/keras/preprocessing/tokenizer_num_words_null.json";

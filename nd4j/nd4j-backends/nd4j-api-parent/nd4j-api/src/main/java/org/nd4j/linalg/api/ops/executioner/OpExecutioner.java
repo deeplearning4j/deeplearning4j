@@ -20,7 +20,6 @@ import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
@@ -32,8 +31,6 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import java.util.List;
@@ -411,7 +408,7 @@ public interface OpExecutioner {
      * @param index
      * @return
      */
-    String getString(Utf8Buffer buffer, long index);
+    String getString(DataBuffer buffer, long index);
 
     /**
      * Temporary hook

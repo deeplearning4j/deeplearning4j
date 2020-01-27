@@ -24,6 +24,7 @@
 #include <Status.h>
 #include <ConstantTadHelper.h>
 #include <ShapeUtils.h>
+//#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 #include <cusolverDn.h>
 #include <cuda_exception.h>
@@ -336,7 +337,7 @@ namespace helpers {
     //
     // input - A matrix nxn
     // compound - C matrix L + U - I, or main diagonal and lower - L matrix, from the 2nd diagonal - U matrix
-    template<typename T>
+    template<typename T, typename I>
     static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDArray *permutation) {
         auto stream = context->getCudaStream();
         auto n = input->rows();
@@ -383,7 +384,7 @@ namespace helpers {
                                                 err);
                 }
 
-                if (permutation == nullptr)
+                if (permutation == nullptr) {
                     status = cusolverDnDgetrf(
                             cusolverH,
                             n,
@@ -393,9 +394,15 @@ namespace helpers {
                             d_work,
                             nullptr,
                             d_info);
+
+                    if (status != CUSOLVER_STATUS_SUCCESS) {
+                        throw cuda_exception::build("helpers::lup_: LU factorization is failed due ",
+                                                    status);
+                    }
+                }
                 else {
                     NDArray permutVector('c', {n}, nd4j::DataType::INT32, context);
-                    int *permutationBuf = reinterpret_cast<int *>(permutVector.specialBuffer());
+                    int* permutationBuf = permutVector.dataBuffer()->specialAsT<int>();
                     status = cusolverDnDgetrf(
                             cusolverH,
                             n,
@@ -405,9 +412,21 @@ namespace helpers {
                             d_work,
                             permutationBuf,
                             d_info);
-                    fillUpPermutation<double> << < n, n, 1024, *stream >> >
-                                                              (permutation->specialBuffer(), permutation->specialShapeInfo(), permutationBuf, n);
-                    permutation->tickWriteDevice();
+                    if (status != CUSOLVER_STATUS_SUCCESS) {
+                        throw cuda_exception::build("helpers::lup_: LU factorization is failed due ",
+                                                    status);
+                    }
+
+                    if (permutation->rankOf() == 2) {
+                        fillUpPermutation<double> <<< n, n, 1024, *stream >>>
+                                                                  (permutation->specialBuffer(), permutation->specialShapeInfo(), permutationBuf, n);
+                    }
+                    else {
+                        permutVector.tickWriteDevice();
+                        input->tickWriteDevice();
+                        compound->assign(input);
+                        permutation->assign(permutVector);
+                    }
                 }
                 err = cudaFree(d_work);
                 if (err) {
@@ -448,7 +467,7 @@ namespace helpers {
                             nullptr,
                             d_info);
                 else {
-                    NDArray permutVector('c', {n}, nd4j::DataType::INT32, context);
+                    NDArray permutVector('c', {n}, DataType::INT32, context);
                     int *permutationBuf = reinterpret_cast<int *>(permutVector.specialBuffer());
                     status = cusolverDnSgetrf(
                             cusolverH,
@@ -459,9 +478,16 @@ namespace helpers {
                             d_work,
                             permutationBuf,
                             d_info);
-                    fillUpPermutation<T> <<< n, n, 128, *stream >> >
-                                                         (permutation->specialBuffer(), permutation->specialShapeInfo(), permutationBuf, n);
-                    permutation->tickWriteDevice();
+                    if (permutation->rankOf() == 2) {
+                        fillUpPermutation<I> <<< n, n, 128, *stream >>>
+                                                             (permutation->specialBuffer(), permutation->specialShapeInfo(), permutationBuf, n);
+                        permutation->tickWriteDevice();
+                    }
+                    else {
+                        input->tickWriteDevice();
+                        compound->assign(input);
+                        permutation->assign(permutVector);
+                    }
                 }
                 err = cudaFree(d_work);
                 if (err) {
@@ -484,8 +510,115 @@ namespace helpers {
     }
 // ------------------------------------------------------------------------------------------------------------------ //
 
-    BUILD_SINGLE_TEMPLATE(template void lup_,(LaunchContext * context, NDArray * input, NDArray * output, NDArray * permutation), FLOAT_NATIVE);
+    BUILD_DOUBLE_TEMPLATE(template void lup_,(LaunchContext * context, NDArray * input, NDArray * output, NDArray * permutation), FLOAT_NATIVE, INDEXING_TYPES);
 
+    template <typename T>
+    static __device__ void  swapRows(T* matrix, Nd4jLong* shape, Nd4jLong theFirst, Nd4jLong theSecond, Nd4jLong n) {
+        if (theFirst != theSecond) {
+            for (auto i = 0; i < n; i++) {
+                Nd4jLong theFirstPos[] = {theFirst, i};
+                Nd4jLong theSecondPos[] = {theSecond, i};
+                auto theFirstIndex = shape::getOffset(shape, theFirstPos, 0);
+                auto theSecondIndex = shape::getOffset(shape, theSecondPos, 0);
+                math::nd4j_swap(matrix[theFirstIndex], matrix[theSecondIndex]);
+            }
+        }
+    }
+
+    template <typename T>
+    static __device__ void processColumns(Nd4jLong currentRow, Nd4jLong rowNum, T* compoundBuf, Nd4jLong* compoundShape) {
+        Nd4jLong xDiag[] = {currentRow, currentRow};
+        auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
+        for (auto j = currentRow + 1; j < rowNum; j++) {
+            Nd4jLong xRow[] = {j, currentRow};
+            auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
+            compoundBuf[rowIndex] /= compoundBuf[diagIndex]; //output->t<T>(i, i);
+            for (auto k = currentRow + 1; k < rowNum; k++) {
+                Nd4jLong yRow[] = {j, k};
+                Nd4jLong yCol[] = {currentRow, k};
+                auto rowIndexY = shape::getOffset(compoundShape, yRow, 0);
+                auto colIndex = shape::getOffset(compoundShape, yCol, 0);
+                compoundBuf[rowIndexY] -= compoundBuf[rowIndex] * compoundBuf[colIndex];
+            }
+        }
+    }
+
+    template <typename T>
+    __device__ Nd4jLong argmaxCol(Nd4jLong column, T* compoundBuffer, Nd4jLong* compoundShape) {
+        auto rowNum = shape::sizeAt(compoundShape, 0);
+        Nd4jLong xInitial[] = {column, column};
+        auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
+        auto maxValue = T(0); //nd4j::math::nd4j_abs(compoundBuffer[xInitialIndex]);
+        auto result = -1LL;
+
+        for (auto rowCounter = column; rowCounter < rowNum; rowCounter++) {
+            Nd4jLong xPos[] = {rowCounter, column};
+            auto xIndex = shape::getOffset(compoundShape, xPos, 0);
+            if (nd4j::math::nd4j_abs(compoundBuffer[xIndex]) > maxValue) {
+                maxValue = nd4j::math::nd4j_max(maxValue, nd4j::math::nd4j_abs(compoundBuffer[xIndex]));
+                result = rowCounter;
+            }
+        }
+        return result;
+    }
+
+        template <typename T, typename I>
+    static __device__ int  luNN(T* matrix, Nd4jLong* shape, I* permutation, Nd4jLong* permuShape, Nd4jLong n) {
+
+        for (auto i = 0; i < n - 1; i++) {
+            auto pivotIndex = argmaxCol(i, matrix, shape);
+            if (pivotIndex < 0) {
+                return -1;//throw std::runtime_error("helpers::luNN_: input matrix is singular.");
+            }
+            math::nd4j_swap(permutation[shape::getIndexOffset(i, permuShape)], permutation[shape::getIndexOffset(pivotIndex, permuShape)]);
+            swapRows(matrix, shape, (Nd4jLong)i, pivotIndex, n);
+
+            processColumns(i, n, matrix, shape);
+        }
+        return 0;
+    }
+
+    template <typename T, typename I>
+    static __global__ void luBatchedKernel(T* outputBuf, Nd4jLong* outputShape, I* permutations, Nd4jLong* permuShape,
+         Nd4jLong* outputTadShape, Nd4jLong* outputTadOffsets, Nd4jLong* permuTadShape, Nd4jLong* permuTadOffsets,
+         Nd4jLong batchNum) {
+
+        auto start = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for (auto b = start; b < batchNum; b += step) {
+            T* matrix = outputBuf + outputTadOffsets[b];
+            I* permutation = permutations + permuTadOffsets[b];
+
+            if (0 != luNN(matrix, outputTadShape, permutation, permuTadShape, shape::length(permuTadShape))) break;
+        }
+    }
+
+    template <typename T, typename I>
+    static void lu_(LaunchContext * context, NDArray* input, NDArray* output, NDArray* permutationVectors) {
+        auto n = input->sizeAt(-1);
+        auto stream = context->getCudaStream();
+        NDArray iota('c', {n}, permutationVectors->dataType());// = NDArrayFactory::create(); // <int>('c', {n});
+        iota.linspace(0); iota.syncToDevice();
+
+        output->assign(input); // fill up output tensor with zeros
+//        output->tickWriteDevice();
+        permutationVectors->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), iota, *permutationVectors, true, nullptr);
+//        permutationVectors->tickWriteDevice();
+        auto tads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-2, -1});
+        auto permutaionTads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-1});
+        auto batchNum = tads.numberOfTads();
+        luBatchedKernel<T,I><<<batchNum, 256, 1024, *stream>>>(reinterpret_cast<T*>(output->platformBuffer()),
+                output->specialShapeInfo(), reinterpret_cast<I*>(permutationVectors->platformBuffer()),
+                permutationVectors->specialShapeInfo(), tads.specialShapeInfo(), tads.specialOffsets(),
+                permutaionTads.specialShapeInfo(), permutaionTads.specialOffsets(), batchNum);
+    }
+
+    void lu(LaunchContext* context, NDArray* input, NDArray* output, NDArray* permutations) {
+        NDArray::prepareSpecialUse({output, permutations}, {input});
+        BUILD_DOUBLE_SELECTOR(input->dataType(), permutations->dataType(), lu_, (context, input, output, permutations), FLOAT_NATIVE, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output, permutations}, {input});
+    }
 // ------------------------------------------------------------------------------------------------------------------ //
     template<typename T>
     static int determinant_(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
@@ -509,7 +642,7 @@ namespace helpers {
             fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
 //            else
 //                fillMatrix<T, float><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
-            lup_<T>(context, &matrix, nullptr, nullptr);
+            lup_<T, int>(context, &matrix, nullptr, nullptr);
 //            else
 //                lup_<float>(context, &matrix, nullptr, nullptr);
             auto offset = shape::getIndexOffset(e, output->shapeInfo());
@@ -557,7 +690,7 @@ namespace helpers {
 //                fillMatrix<T, float><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
 
 //            if (matrix.dataType() == input->dataType())
-                lup_<T>(context, &matrix, nullptr, nullptr);
+                lup_<T, int>(context, &matrix, nullptr, nullptr);
 //            else
 //                lup_<float>(context, &matrix, nullptr, nullptr);
                 auto offset = shape::getIndexOffset(e, output->shapeInfo());
@@ -638,7 +771,7 @@ namespace helpers {
                 matrix.tickWriteDevice();
                 //compound.assign(matrix);
 //            if (matrix.dataType() == input->dataType())
-                lup_<T>(context, &matrix, nullptr, nullptr);
+                lup_<T, int>(context, &matrix, nullptr, nullptr);
                 fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower.specialBuffer(), lower.specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), matrix.specialBuffer(), matrix.specialShapeInfo(), n);
                 lower.tickWriteDevice();
                 upper.tickWriteDevice();
@@ -705,7 +838,7 @@ namespace helpers {
         int cholesky__(LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
             if (!inplace)
                 output->assign(input);
-            std::unique_ptr<NDArray> tempOutput(output->dup());
+            auto tempOutput =output->dup();
             cusolverDnHandle_t handle = nullptr;
             auto n = input->sizeAt(-1);
             auto n2 = n * n;
@@ -715,9 +848,9 @@ namespace helpers {
                 throw cuda_exception::build("helpers::cholesky_: Cannot create solver handle", status);
             }
             F **dArrayBatch = nullptr;
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput->getShapeInfo(),
-                                                                                  {tempOutput->rankOf() - 2,
-                                                                                   tempOutput->rankOf() - 1});
+            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
+                                                                                  {tempOutput.rankOf() - 2,
+                                                                                   tempOutput.rankOf() - 1});
             const Nd4jLong batchSize = packX.numberOfTads();
             int *dInfoArray = nullptr;
             auto err = cudaMalloc((void **) &dArrayBatch, sizeof(F *) * batchSize);
@@ -731,7 +864,7 @@ namespace helpers {
             }
             auto stream = context->getCudaStream();
             fillBatchKernel<F> << < 1, batchSize, 128, *stream >> >
-                                                       (dArrayBatch, reinterpret_cast<F *>(tempOutput->specialBuffer()), packX.specialOffsets(), batchSize);
+                                                       (dArrayBatch, reinterpret_cast<F *>(tempOutput.specialBuffer()), packX.specialOffsets(), batchSize);
 
             status = cusolverDnSetStream(handle, *stream);
             if (CUSOLVER_STATUS_SUCCESS != status) {
@@ -761,7 +894,7 @@ namespace helpers {
                 throw cuda_exception::build("helpers::cholesky_: Cholesky factorization failed for batch", status);
             }
             adjustResultsKernel<F> << < batchSize, n2, 128, *stream >> >
-                                                            (reinterpret_cast<F *>(tempOutput->specialBuffer()), packX.specialShapeInfo(), packX.specialOffsets(), batchSize, n);
+                                                            (reinterpret_cast<F *>(tempOutput.specialBuffer()), packX.specialShapeInfo(), packX.specialOffsets(), batchSize, n);
 
             err = cudaFree(dArrayBatch);
             if (err) {
@@ -774,9 +907,9 @@ namespace helpers {
             }
 
             if (!inplace)
-                output->assign(tempOutput.get());
+                output->assign(tempOutput);
             else
-                input->assign(tempOutput.get());
+                input->assign(tempOutput);
 
             NDArray::registerSpecialUse({output}, {input});
             return Status::OK();
@@ -844,12 +977,12 @@ namespace helpers {
             cholesky(context, input, &tempOutput, false);
 
             auto outputBuf = output->dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(output->specialBuffer()); // + e * n2; // + e * n2;
-            auto inputBuf = tempOutput.dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(tempOutput->specialBuffer());
+            auto inputBuf = tempOutput.dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(tempOutput.specialBuffer());
             output->nullify();
             auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
                                                                                   {tempOutput.rankOf() - 2,
                                                                                    tempOutput.rankOf() - 1});
-            logDetKernel<T> <<< 128, 512, 256, *stream >>>(inputBuf, tempOutput.specialShapeInfo(),
+            logDetKernel<T> <<<128, 512, 256, *stream>>>(inputBuf, tempOutput.specialShapeInfo(),
                     packX.numberOfTads(), packX.specialShapeInfo(),
                     packX.specialOffsets(), outputBuf, output->specialShapeInfo());
             output->tickWriteDevice();
@@ -859,6 +992,14 @@ namespace helpers {
 
         int logdetFunctor(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
             BUILD_SINGLE_SELECTOR(output->dataType(), return logdetFunctor_, (context, input, output), FLOAT_NATIVE);
+        }
+
+        /*
+         * lup - batched input, batched outputs
+         * */
+        int lup(LaunchContext *context, NDArray *input, NDArray *compound, NDArray *permutation) {
+            BUILD_DOUBLE_SELECTOR(input->dataType(), permutation->dataType(), lup_,(context, input, compound, permutation), FLOAT_NATIVE, INDEXING_TYPES);
+            return Status::OK();
         }
 
 //        BUILD_SINGLE_TEMPLATE(template int logdetFunctor_,

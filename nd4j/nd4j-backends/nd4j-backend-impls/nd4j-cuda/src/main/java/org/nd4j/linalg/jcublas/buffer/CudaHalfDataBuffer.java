@@ -49,6 +49,10 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         super(pointer, specialPointer, indexer, length);
     }
 
+    public CudaHalfDataBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
+        super(buffer, dataType, length, offset);
+    }
+
     /**
      * Base constructor
      *
@@ -129,18 +133,6 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
 
     public CudaHalfDataBuffer(int[] data, boolean copy, long offset) {
         super(data, copy, offset);
-    }
-
-    public CudaHalfDataBuffer(byte[] data, long length) {
-        super(data, length, DataType.HALF);
-    }
-
-    public CudaHalfDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length, DataType.HALF);
-    }
-
-    public CudaHalfDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset, DataType.HALF);
     }
 
     @Override

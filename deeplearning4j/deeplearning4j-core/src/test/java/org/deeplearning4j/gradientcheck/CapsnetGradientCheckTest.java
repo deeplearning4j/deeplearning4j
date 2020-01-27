@@ -110,10 +110,8 @@ public class CapsnetGradientCheckTest extends BaseDL4JTest {
                                         " capsules with " + capsuleDim + " dimensions and " + routing + " routings";
                                 System.out.println(msg);
 
-                                boolean gradOK = GradientCheckUtil
-                                        .checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input,
-                                                labels, null, null, true, 100);
+                                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input)
+                                        .labels(labels).subset(true).maxPerParam(100));
 
                                 assertTrue(msg, gradOK);
 

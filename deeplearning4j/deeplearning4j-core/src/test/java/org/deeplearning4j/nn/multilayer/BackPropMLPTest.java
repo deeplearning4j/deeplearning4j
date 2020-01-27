@@ -66,7 +66,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
     public void testMLP() {
         //Simple mini-batch test with multiple hidden layers
         MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[] {5, 4, 3}, Activation.SIGMOID);
-        System.out.println(conf);
+//        System.out.println(conf);
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
         DataSetIterator iter = new IrisDataSetIterator(10, 100);
@@ -80,7 +80,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
     public void testMLP2() {
         //Simple mini-batch test with multiple hidden layers
         MultiLayerConfiguration conf = getIrisMLPSimpleConfig(new int[] {5, 15, 3}, Activation.TANH);
-        System.out.println(conf);
+//        System.out.println(conf);
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
 
@@ -104,7 +104,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
 
         Layer[] layers = network.getLayers();
 
-        final boolean printCalculations = true;
+        final boolean printCalculations = false;
 
         while (iris.hasNext()) {
             DataSet data = iris.next();
@@ -212,7 +212,7 @@ public class BackPropMLPTest extends BaseDL4JTest {
             assertEquals(l1BiasFloatAfter,expectedL1BiasAfter,eps);
             assertArrayEquals(l2BiasFloatAfter,expectedL2BiasAfter,eps);
             */
-            System.out.println("\n\n--------------");
+//            System.out.println("\n\n--------------");
         }
     }
 

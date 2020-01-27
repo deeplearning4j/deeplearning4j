@@ -89,12 +89,12 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "rnn/bstack/d_.*",
 
             //2019/05/21 - Failing on AVX2/512 intermittently (Linux, OSX), passing elsewhere
-            "unsorted_segment/.*",
+            //"unsorted_segment/.*",
 
             //2019/05/21 - Failing on windows-x86_64-cuda-9.2 only -
             "conv_4",
             "g_09",
-            "unsorted_segment/unsorted_segment_mean_rank2",
+            //"unsorted_segment/unsorted_segment_mean_rank2",
 
             //2019/05/28 - JVM crash on ppc64le only - See issue 7657
             "g_11",
@@ -111,17 +111,22 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // 2019/11/15 - missing dtype argument in nd4j, tests are useless https://github.com/eclipse/deeplearning4j/issues/8398
             "zeros_like/rank2_float32_dtype_int.*",
 
-            // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8450
-            "betainc.*",
-
             // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8453
             "roll/.*",
 
             // 11.26.2019 failing https://github.com/eclipse/deeplearning4j/issues/8455
             "matrix_band_part/.*",
 
-            // 05.12.2019 failing https://github.com/eclipse/deeplearning4j/issues/8507
-            "resize_bicubic/int32.*"
+            // 12.20.2019 - https://github.com/eclipse/deeplearning4j/issues/8559
+            "fused_batch_norm/.*",
+
+            // AB 2020/01/04 - https://github.com/eclipse/deeplearning4j/issues/8592
+            "emptyArrayTests/reshape/rank2_shape2-0_2-0--1",
+
+            //AB 2020/01/07 - Known issues
+            "bitcast/from_float64_to_int64",
+            "bitcast/from_rank2_float64_to_int64",
+            "bitcast/from_float64_to_uint64"
     };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have

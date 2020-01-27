@@ -40,6 +40,7 @@ namespace nd4j {
         ~allocation_exception() = default;
 
         static allocation_exception build(std::string message, Nd4jLong bytes);
+        static allocation_exception build(std::string message, Nd4jLong limit, Nd4jLong bytes);
     };
 }
 

@@ -74,7 +74,7 @@ TEST_F(SessionLocalTests, BasicTests_2) {
         auto varSpace = storage.localVariableSpace();
 
         auto arr = varSpace->getVariable(-1)->getNDArray();
-        arr->applyScalar(nd4j::scalar::Add, (float) e+1);
+        arr->applyScalar(nd4j::scalar::Add, (float) e+1, *arr);
     }
 
     float lastValue = 0.0f;

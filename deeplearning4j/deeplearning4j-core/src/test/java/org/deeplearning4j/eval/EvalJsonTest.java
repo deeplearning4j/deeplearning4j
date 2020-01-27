@@ -54,7 +54,7 @@ public class EvalJsonTest extends BaseDL4JTest {
 
     @Test
     public void testSerde() {
-        boolean print = true;
+        boolean print = false;
         Nd4j.getRandom().setSeed(12345);
 
         Evaluation evaluation = new Evaluation();
@@ -105,7 +105,7 @@ public class EvalJsonTest extends BaseDL4JTest {
     @Test
     public void testSerdeExactRoc() {
         Nd4j.getRandom().setSeed(12345);
-        boolean print = true;
+        boolean print = false;
 
         ROC roc = new ROC(0);
         ROCBinary roc2 = new ROCBinary(0);

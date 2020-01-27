@@ -131,11 +131,15 @@ public class EvalTest extends BaseDL4JTest {
         org.nd4j.evaluation.classification.Evaluation evalViaMethod = model.evaluate(new ListDataSetIterator<>(Collections.singletonList(test)));
         checkEvaluationEquality(eval, evalViaMethod);
 
-        System.out.println(eval.getConfusionMatrix().toString());
-        System.out.println(eval.getConfusionMatrix().toCSV());
-        System.out.println(eval.getConfusionMatrix().toHTML());
+//        System.out.println(eval.getConfusionMatrix().toString());
+//        System.out.println(eval.getConfusionMatrix().toCSV());
+//        System.out.println(eval.getConfusionMatrix().toHTML());
+//        System.out.println(eval.confusionToString());
 
-        System.out.println(eval.confusionToString());
+        eval.getConfusionMatrix().toString();
+        eval.getConfusionMatrix().toCSV();
+        eval.getConfusionMatrix().toHTML();
+        eval.confusionToString();
     }
 
     private static void assertMapEquals(Map<Integer, Integer> first, Map<Integer, Integer> second) {
@@ -161,7 +165,7 @@ public class EvalTest extends BaseDL4JTest {
         assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testEvaluationWithMetaData() throws Exception {
 
         RecordReader csv = new CSVRecordReader();
@@ -205,9 +209,10 @@ public class EvalTest extends BaseDL4JTest {
             e.eval(ds.getLabels(), out, meta); //*** New - evaluate and also store metadata ***
         }
 
-        System.out.println(e.stats());
+//        System.out.println(e.stats());
+        e.stats();
 
-        System.out.println("\n\n*** Prediction Errors: ***");
+//        System.out.println("\n\n*** Prediction Errors: ***");
 
         List<org.nd4j.evaluation.meta.Prediction> errors = e.getPredictionErrors(); //*** New - get list of prediction errors from evaluation ***
         List<RecordMetaData> metaForErrors = new ArrayList<>();
@@ -219,10 +224,11 @@ public class EvalTest extends BaseDL4JTest {
 
         int count = 0;
         for (org.nd4j.evaluation.meta.Prediction t : errors) {
-            System.out.println(t + "\t\tRaw Data: "
-                            + csv.loadFromMetaData((RecordMetaData) t.getRecordMetaData()).getRecord() //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
-                            + "\tNormalized: " + ds.getFeatures().getRow(count) + "\tLabels: "
-                            + ds.getLabels().getRow(count) + "\tNetwork predictions: " + output.getRow(count));
+            String s = t + "\t\tRaw Data: "
+                    + csv.loadFromMetaData((RecordMetaData) t.getRecordMetaData()).getRecord() //*** New - load subset of data from MetaData object (usually batched for efficiency) ***
+                    + "\tNormalized: " + ds.getFeatures().getRow(count) + "\tLabels: "
+                    + ds.getLabels().getRow(count) + "\tNetwork predictions: " + output.getRow(count);
+//            System.out.println(s);
             count++;
         }
 
@@ -322,9 +328,9 @@ public class EvalTest extends BaseDL4JTest {
                 List<DataSet> l = Arrays.asList(new DataSet(in1, out1, null, lMask1), new DataSet(in2, out2, null, lMask2));
                 DataSetIterator iter = new ExistingDataSetIterator(l);
 
-                System.out.println("Net 1 eval");
+//                System.out.println("Net 1 eval");
                 org.nd4j.evaluation.IEvaluation[] e1 = net1.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
-                System.out.println("Net 2 eval");
+//                System.out.println("Net 2 eval");
                 org.nd4j.evaluation.IEvaluation[] e2 = net2.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
 
                 assertEquals(e1[0], e2[0]);
@@ -403,9 +409,9 @@ public class EvalTest extends BaseDL4JTest {
                 List<DataSet> l = Arrays.asList(new DataSet(in1, out1), new DataSet(in2, out2));
                 DataSetIterator iter = new ExistingDataSetIterator(l);
 
-                System.out.println("Eval net 1");
+//                System.out.println("Eval net 1");
                 org.nd4j.evaluation.IEvaluation[] e1 = net1.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
-                System.out.println("Eval net 2");
+//                System.out.println("Eval net 2");
                 org.nd4j.evaluation.IEvaluation[] e2 = net2.doEvaluation(iter, new org.nd4j.evaluation.classification.Evaluation(), new org.nd4j.evaluation.classification.ROCMultiClass(), new org.nd4j.evaluation.regression.RegressionEvaluation());
 
                 assertEquals(e1[0], e2[0]);
@@ -470,7 +476,7 @@ public class EvalTest extends BaseDL4JTest {
 
         net.setListeners(new EvaluativeListener(iterTest, 3));
 
-        for( int i=0; i<10; i++ ){
+        for( int i=0; i<3; i++ ){
             net.fit(iter);
         }
     }

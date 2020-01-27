@@ -311,7 +311,11 @@ public class CSVRecordReaderTest {
             rr.reset();
             fail("Expected exception");
         } catch (Exception e){
-            e.printStackTrace();
+            String msg = e.getMessage();
+            String msg2 = e.getCause().getMessage();
+            assertTrue(msg, msg.contains("Error during LineRecordReader reset"));
+            assertTrue(msg2, msg2.contains("Reset not supported from streams"));
+//            e.printStackTrace();
         }
     }
 

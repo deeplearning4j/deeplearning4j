@@ -570,6 +570,7 @@ public class TestNativeImageLoader {
 
         try(InputStream is = new FileInputStream(f)){
             nil.asMatrix(is);
+            fail("Expected exception");
         } catch (IOException e){
             String msg = e.getMessage();
             assertTrue(msg, msg.contains("decode image"));
@@ -577,6 +578,7 @@ public class TestNativeImageLoader {
 
         try(InputStream is = new FileInputStream(f)){
             nil.asImageMatrix(is);
+            fail("Expected exception");
         } catch (IOException e){
             String msg = e.getMessage();
             assertTrue(msg, msg.contains("decode image"));
@@ -584,6 +586,7 @@ public class TestNativeImageLoader {
 
         try(InputStream is = new FileInputStream(f)){
             nil.asRowVector(is);
+            fail("Expected exception");
         } catch (IOException e){
             String msg = e.getMessage();
             assertTrue(msg, msg.contains("decode image"));
@@ -592,6 +595,7 @@ public class TestNativeImageLoader {
         try(InputStream is = new FileInputStream(f)){
             INDArray arr = Nd4j.create(DataType.FLOAT, 1, 3, 32, 32);
             nil.asMatrixView(is, arr);
+            fail("Expected exception");
         } catch (IOException e){
             String msg = e.getMessage();
             assertTrue(msg, msg.contains("decode image"));

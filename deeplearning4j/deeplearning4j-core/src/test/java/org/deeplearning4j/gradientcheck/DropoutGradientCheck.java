@@ -36,6 +36,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.Consumer;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
@@ -171,10 +172,15 @@ public class DropoutGradientCheck extends BaseDL4JTest {
         INDArray[] in = new INDArray[]{Nd4j.rand(mb, 5)};
         INDArray[] l = new INDArray[]{TestUtils.randomOneHot(mb, 5)};
 
-        boolean ok = GradientCheckUtil.checkGradients(cg, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, l, null, null, null, 12345);
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(in)
+                .labels(l).callEachIter(new Consumer<ComputationGraph>() {
+                    @Override
+                    public void accept(ComputationGraph net) {
+                        Nd4j.getRandom().setSeed(12345);
+                    }
+                }));
 
-        assertTrue(ok);
+        assertTrue(gradOK);
     }
 
 }

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.selection;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
@@ -25,7 +26,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-public class SelectionOperatorTests {
+public class SelectionOperatorTests extends BaseDL4JTest {
     private class TestSelectionOperator extends SelectionOperator {
 
         public PopulationModel getPopulationModel() {

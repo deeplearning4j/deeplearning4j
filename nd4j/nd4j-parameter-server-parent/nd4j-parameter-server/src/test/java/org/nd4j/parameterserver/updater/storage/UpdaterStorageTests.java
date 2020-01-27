@@ -17,6 +17,7 @@
 package org.nd4j.parameterserver.updater.storage;
 
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -25,7 +26,7 @@ import static junit.framework.TestCase.assertEquals;
 /**
  * Created by agibsonccc on 12/2/16.
  */
-public class UpdaterStorageTests {
+public class UpdaterStorageTests extends BaseND4JTest {
 
 
     @Test(expected = UnsupportedOperationException.class)

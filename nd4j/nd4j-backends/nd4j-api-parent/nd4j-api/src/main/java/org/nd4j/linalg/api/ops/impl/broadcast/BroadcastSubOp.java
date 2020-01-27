@@ -76,11 +76,6 @@ public class BroadcastSubOp extends BaseBroadcastOp {
     }
 
     @Override
-    public String tensorflowName(){
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }

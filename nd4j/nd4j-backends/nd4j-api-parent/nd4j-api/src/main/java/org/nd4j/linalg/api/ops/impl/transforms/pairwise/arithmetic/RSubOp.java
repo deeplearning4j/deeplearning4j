@@ -61,15 +61,9 @@ public class RSubOp extends BaseDynamicTransformOp {
         throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
-    @Override
-    public String tensorflowName() {
-        return "sub";
-    }
-
     public RSubOp( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

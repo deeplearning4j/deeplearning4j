@@ -19,6 +19,7 @@ package org.deeplearning4j.parallelism;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -27,7 +28,8 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.junit.Ignore;
+import org.junit.*;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -38,9 +40,6 @@ import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.deeplearning4j.parallelism.inference.observers.BasicInferenceObserver;
 import org.deeplearning4j.parallelism.inference.observers.BatchedInferenceObservable;
 import org.deeplearning4j.util.ModelSerializer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -65,6 +64,9 @@ import static org.junit.Assert.*;
 public class ParallelInferenceTest extends BaseDL4JTest {
     private static MultiLayerNetwork model;
     private static DataSetIterator iterator;
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @Before
     public void setUp() throws Exception {
@@ -483,7 +485,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                     List<INDArray> exp = new ArrayList<>();
 
                     Random r = new Random();
-                    for (int i = 0; i < 500; i++) {
+                    int runs = isIntegrationTests() ? 500 : 30;
+                    for (int i = 0; i < runs; i++) {
                         int[] shape = defaultSize;
                         if (r.nextDouble() < 0.4) {
                             shape = new int[]{r.nextInt(5) + 1, 10, r.nextInt(10) + 1};
@@ -595,7 +598,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                 List<INDArray> arrs = new ArrayList<>();
                 List<INDArray> exp = new ArrayList<>();
                 Random r = new Random();
-                for( int i=0; i<500; i++ ){
+                int runs = isIntegrationTests() ? 500 : 20;
+                for( int i=0; i<runs; i++ ){
                     int[] shape = defaultShape;
                     if(r.nextDouble() < 0.4){
                         shape = new int[]{r.nextInt(5)+1, nIn, 10, r.nextInt(10)+1};
@@ -677,8 +681,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 120000)
-    public void testInputMasking() throws Exception {
+    private void testInputMasking() throws Exception {
         Nd4j.getRandom().setSeed(12345);
 
         int nIn = 10;
@@ -696,12 +699,15 @@ public class ParallelInferenceTest extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
+//        InferenceMode[] inferenceModes = new InferenceMode[]{InferenceMode.SEQUENTIAL, InferenceMode.BATCHED, InferenceMode.INPLACE, InferenceMode.SEQUENTIAL};
+//        int[] workers = new int[]{2, 2, 2, 1};
+//        boolean[] randomTS = new boolean[]{true, false, true, false};
+
         Random r = new Random();
         for( InferenceMode m : InferenceMode.values()) {
             log.info("Testing inference mode: [{}]", m);
             for( int w : new int[]{1,2}) {
                 for (boolean randomTSLength : new boolean[]{false, true}) {
-
                     final ParallelInference inf =
                             new ParallelInference.Builder(net)
                                     .inferenceMode(m)
@@ -712,7 +718,8 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                     List<INDArray> in = new ArrayList<>();
                     List<INDArray> inMasks = new ArrayList<>();
                     List<INDArray> exp = new ArrayList<>();
-                    for (int i = 0; i < 100; i++) {
+                    int nRuns = isIntegrationTests() ? 100 : 10;
+                    for (int i = 0; i < nRuns; i++) {
                         int currTSLength = (randomTSLength ? 1 + r.nextInt(tsLength) : tsLength);
                         int currNumEx = 1 + r.nextInt(3);
                         INDArray inArr = Nd4j.rand(new int[]{currNumEx, nIn, currTSLength});
@@ -845,6 +852,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
 
                 List<INDArray[]> in = new ArrayList<>();
                 List<INDArray[]> exp = new ArrayList<>();
+                int runs = isIntegrationTests() ? 100 : 20;
                 for (int i = 0; i < 100; i++) {
                     int currNumEx = 1 + r.nextInt(3);
                     INDArray inArr = Nd4j.rand(new int[]{currNumEx, nIn});

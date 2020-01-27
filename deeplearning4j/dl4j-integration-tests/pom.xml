@@ -68,6 +68,13 @@
             </artifactId> <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -70,17 +70,13 @@ namespace nd4j {
                     auto tadsY = y->allTensorsAlongDimension(dims);
                     auto tadsZ = z->allTensorsAlongDimension(dims);
 
-                    for (int e = 0; e < tadsX->size(); e++) {
+                    for (int e = 0; e < tadsX.size(); e++) {
                         if (!cond->e<bool>(e)) {
-                            tadsZ->at(e)->assign(tadsY->at(e));
+                            tadsZ.at(e)->assign(tadsY.at(e));
                         } else {
-                            tadsZ->at(e)->assign(tadsX->at(e));
+                            tadsZ.at(e)->assign(tadsX.at(e));
                         }
                     }
-
-                    delete tadsX;
-                    delete tadsY;
-                    delete tadsZ;
                 }
             }
 

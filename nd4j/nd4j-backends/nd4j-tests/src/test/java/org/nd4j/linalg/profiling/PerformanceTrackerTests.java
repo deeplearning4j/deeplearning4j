@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -105,6 +106,7 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testTrackerCpu_1() {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("native"))
             return;

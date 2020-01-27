@@ -184,55 +184,7 @@ public abstract class SDBaseOps {
     public SDVariable argmin(SDVariable in, boolean keepDims, int... dimensions) {
         return argmin(null, in, keepDims, dimensions);
     }
-
-    /**
-     * Assign/copy op: out = x.assign(y). Supports broadcasting
-     *
-     * @param x Input variable x
-     * @param y Input variable y
-     * @return Output variable
-     */
-    public SDVariable assign(SDVariable x, SDVariable y) {
-        return assign(null, x, y);
-    }
-
-    /**
-     * Assign/copy op: out = x.assign(y). Supports broadcasting
-     *
-     * @param name Name of the output variable
-     * @param x    Input variable x
-     * @param y    Input variable y
-     * @return Output variable
-     */
-    public SDVariable assign(String name, SDVariable x, SDVariable y) {
-        SDVariable ret = f().assign(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Return an array with equal shape to the input, but all elements set to 'value'
-     *
-     * @param in    Input variable
-     * @param value Value to set
-     * @return Output variable
-     */
-    public SDVariable assign(SDVariable in, Number value) {
-        return assign(null, in, value);
-    }
-
-    /**
-     * Return an array with equal shape to the input, but all elements set to 'value'
-     *
-     * @param name  Name of the output variable
-     * @param in    Input variable
-     * @param value Value to set
-     * @return Output variable
-     */
-    public SDVariable assign(String name, SDVariable in, Number value) {
-        SDVariable ret = f().assign(in, value);
-        return updateVariableNameAndReference(ret, name);
-    }
-
+    
     /**
      * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same
      * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),

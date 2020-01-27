@@ -34,7 +34,7 @@ namespace nd4j {
                     return y * ((T)1.0f - (th * th));
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void tanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -49,7 +49,7 @@ namespace nd4j {
                     return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void hardTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -62,7 +62,7 @@ namespace nd4j {
                     return y * simdOps::RationalTanhDerivative<T>::op(x, nullptr);
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void rationalTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -75,7 +75,7 @@ namespace nd4j {
                     return x > (T) 0.0f ? y * (nd4j::math::nd4j_tanhderivative<T,T>(x)) : (T) 0.0f;
                 };
 
-                input->applyPairwiseLambda(epsilon, functor, output);
+                input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
             void rectifiedTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {

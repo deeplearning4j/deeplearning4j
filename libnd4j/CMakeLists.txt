@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.15)
 project(libnd4j)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 option(NATIVE "Optimize for build machine (might not work on others)" OFF)
@@ -7,6 +7,21 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
 option(BUILD_TESTS "Build tests" OFF)
+option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
+set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
+
+set(CMAKE_CXX_STANDARD 11)
+if (CUDA_BLAS)
+    enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD 11)
+
+    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
+else()
+    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
+endif()
+
+# MSVC runtime lib can be either "MultiThreaded" or "MultiThreadedDLL", /MT and /MD respectively
+set(MSVC_RT_LIB "MultiThreadedDLL")
 
 set(X86_BUILD false)
 
@@ -17,23 +32,23 @@ endif()
 # -fsanitize=address
 # -fsanitize=leak
 if (ANDROID_BUILD)
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -std=c++11 -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -std=c++11 -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
-    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -std=c++11 -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
 elseif(WIN32)
     set(X86_BUILD true)
     if (CUDA_BLAS)
         set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
     else()
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fmax-errors=2 -D_RELEASE=true")
-        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC -std=c++11 -fmax-errors=2")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -fmax-errors=2 -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC -fmax-errors=2")
     endif()
 else()
-    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fmax-errors=2 -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -std=c++11 -fmax-errors=2")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -fmax-errors=2 -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -fmax-errors=2")
 
     if (CPU_BLAS)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
@@ -48,6 +63,7 @@ if(NATIVE)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
     ENDIF()
 endif()
+
 
 if(NOT CUDA_BLAS)
     # we need this definition to avoid global memory use within mkldnn
@@ -117,36 +133,70 @@ if(NOT CUDA_BLAS)
         include_directories(${CPUF_SOURCE_DIR}/include)
         set(CPU_FEATURES cpu_features)
     endif()
+endif()
 
-    # new mkl-dnn entry
-    if (${HELPERS_mkldnn})
-        message("Going to pull & build mkldnn")
-        set(HAVE_MKLDNN 1)
-        set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
-        configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
-        execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-                    RESULT_VARIABLE result
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
-        if(result)
-            message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
-        endif()
-        execute_process(COMMAND ${CMAKE_COMMAND} --build .
-                    RESULT_VARIABLE result
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
-        if(result)
-            message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
-        endif()
+# new mkl-dnn entry
+if (${HELPERS_mkldnn})
+    message("Going to pull & build mkldnn")
+    set(HAVE_MKLDNN 1)
+    set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
-        add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
-                    ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build
-                    EXCLUDE_FROM_ALL)
+    configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
+    execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+    if(result)
+        message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
+    endif()
+    execute_process(COMMAND ${CMAKE_COMMAND} --build .
+            RESULT_VARIABLE result
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+    if(result)
+        message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
+    endif()
 
-        set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build)
-        set(mkldnn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
-        set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
-        include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
-        set(MKLDNN dnnl)
+    add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
+            ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build
+            EXCLUDE_FROM_ALL)
+
+    set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build)
+    set(mkldnn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
+    set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
+    include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
+    set(MKLDNN dnnl)
+endif()
+
+
+if (${HELPERS_cudnn})
+    if (NOT CUDA_BLAS)
+        message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
+    endif()
+
+    set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
+
+    # FIXME: we don't want static library in master
+    SET(CUDNN_LIBNAME "cudnn")
+    SET(CULIBOS_LIBNAME "culibos")
+
+    find_path(CUDNN_INCLUDE_DIR cudnn.h
+            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
+            PATH_SUFFIXES cuda/include include)
+
+    find_library(CUDNN_LIBRARY ${CUDNN_LIBNAME}
+            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
+            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
+
+    find_library(CULIBOS_LIBRARY ${CULIBOS_LIBNAME}
+            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
+            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
+
+
+    if (CUDNN_LIBRARY)
+        set(HAVE_CUDNN true)
+        set(CUDNN ${CUDNN_LIBRARY} ${CULIBOS_LIBRARY})
+    else()
+        message(FATAL_ERROR "Unable to find cuDNN")
     endif()
 endif()
 
@@ -173,6 +223,8 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src
 set(HAVE_FLATBUFFERS 1)
 set(FLATBUFFERS_PATH ${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src)
 include_directories(${FLATBUFFERS_PATH}/include)
+
+
 
 configure_file(include/config.h.in include/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)

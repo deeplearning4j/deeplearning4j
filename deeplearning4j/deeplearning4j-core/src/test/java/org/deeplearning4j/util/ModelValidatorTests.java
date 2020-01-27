@@ -51,7 +51,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("MultiLayerNetwork", vr0.getFormatType());
         assertEquals(MultiLayerNetwork.class, vr0.getFormatClass());
         assertNull(vr0.getException());
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty file
         File f1 = new File(f, "empty.bin");
@@ -63,7 +63,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("MultiLayerNetwork", vr1.getFormatType());
         assertEquals(MultiLayerNetwork.class, vr1.getFormatClass());
         assertNull(vr1.getException());
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test invalid zip file
         File f2 = new File(f, "notReallyZip.zip");
@@ -75,7 +75,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("MultiLayerNetwork", vr2.getFormatType());
         assertEquals(MultiLayerNetwork.class, vr2.getFormatClass());
         assertNotNull(vr2.getException());
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test valid zip, but missing configuration
         File f3 = new File(f, "modelNoConfig.zip");
@@ -92,7 +92,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("MultiLayerNetwork", vr3.getFormatType());
         assertEquals(MultiLayerNetwork.class, vr3.getFormatClass());
         assertNull(vr3.getException());
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
 
 
         //Test valid sip, but missing params
@@ -110,7 +110,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("MultiLayerNetwork", vr4.getFormatType());
         assertEquals(MultiLayerNetwork.class, vr4.getFormatClass());
         assertNull(vr4.getException());
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
 
 
         //Test valid model
@@ -122,7 +122,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("MultiLayerNetwork", vr5.getFormatType());
         assertEquals(MultiLayerNetwork.class, vr5.getFormatClass());
         assertNull(vr5.getException());
-        System.out.println(vr5.toString());
+//        System.out.println(vr5.toString());
 
 
         //Test valid model with corrupted JSON
@@ -141,7 +141,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
                         bytes = IOUtils.toByteArray(zis);
                     }
                     zo.write(bytes);
-                    System.out.println("WROTE: " + ze.getName());
+//                    System.out.println("WROTE: " + ze.getName());
                 }
             }
         }
@@ -153,7 +153,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("MultiLayerNetwork", vr6.getFormatType());
         assertEquals(MultiLayerNetwork.class, vr6.getFormatClass());
         assertNotNull(vr6.getException());
-        System.out.println(vr6.toString());
+//        System.out.println(vr6.toString());
     }
 
 
@@ -169,7 +169,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("ComputationGraph", vr0.getFormatType());
         assertEquals(ComputationGraph.class, vr0.getFormatClass());
         assertNull(vr0.getException());
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty file
         File f1 = new File(f, "empty.bin");
@@ -181,7 +181,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("ComputationGraph", vr1.getFormatType());
         assertEquals(ComputationGraph.class, vr1.getFormatClass());
         assertNull(vr1.getException());
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test invalid zip file
         File f2 = new File(f, "notReallyZip.zip");
@@ -193,7 +193,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("ComputationGraph", vr2.getFormatType());
         assertEquals(ComputationGraph.class, vr2.getFormatClass());
         assertNotNull(vr2.getException());
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test valid zip, but missing configuration
         File f3 = new File(f, "modelNoConfig.zip");
@@ -210,7 +210,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("ComputationGraph", vr3.getFormatType());
         assertEquals(ComputationGraph.class, vr3.getFormatClass());
         assertNull(vr3.getException());
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
 
 
         //Test valid sip, but missing params
@@ -228,7 +228,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("ComputationGraph", vr4.getFormatType());
         assertEquals(ComputationGraph.class, vr4.getFormatClass());
         assertNull(vr4.getException());
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
 
 
         //Test valid model
@@ -240,7 +240,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("ComputationGraph", vr5.getFormatType());
         assertEquals(ComputationGraph.class, vr5.getFormatClass());
         assertNull(vr5.getException());
-        System.out.println(vr5.toString());
+//        System.out.println(vr5.toString());
 
 
         //Test valid model with corrupted JSON
@@ -259,7 +259,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
                         bytes = IOUtils.toByteArray(zis);
                     }
                     zo.write(bytes);
-                    System.out.println("WROTE: " + ze.getName());
+//                    System.out.println("WROTE: " + ze.getName());
                 }
             }
         }
@@ -271,7 +271,7 @@ public class ModelValidatorTests extends BaseDL4JTest {
         assertEquals("ComputationGraph", vr6.getFormatType());
         assertEquals(ComputationGraph.class, vr6.getFormatClass());
         assertNotNull(vr6.getException());
-        System.out.println(vr6.toString());
+//        System.out.println(vr6.toString());
     }
 
 

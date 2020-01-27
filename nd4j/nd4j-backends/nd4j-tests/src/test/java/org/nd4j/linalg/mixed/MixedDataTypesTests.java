@@ -453,8 +453,8 @@ public class MixedDataTypesTests extends BaseNd4jTest {
         INDArray not = Transforms.not(asBool);  //
         INDArray asFloat = not.castTo(DataType.FLOAT);
 
-        System.out.println(not);
-        System.out.println(asFloat);
+//        System.out.println(not);
+//        System.out.println(asFloat);
         INDArray exp = Nd4j.ones(DataType.FLOAT, 3, 5000);
         assertEquals(DataType.FLOAT, exp.dataType());
         assertEquals(exp.dataType(), asFloat.dataType());
@@ -480,7 +480,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF}) {
             INDArray arr = Nd4j.scalar(dt, 10.0);
             arr.assign(2.0);
-            System.out.println(dt + " - value: " + arr + " - " + arr.getDouble(0));
+//            System.out.println(dt + " - value: " + arr + " - " + arr.getDouble(0));
         }
     }
 
@@ -488,17 +488,23 @@ public class MixedDataTypesTests extends BaseNd4jTest {
     public void testSimple(){
         Nd4j.create(1);
         for(DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.INT, DataType.LONG}) {
-            System.out.println("----- " + dt + " -----");
+//            System.out.println("----- " + dt + " -----");
             INDArray arr = Nd4j.ones(dt,1, 5);
-            System.out.println("Ones: " + arr);
+//            System.out.println("Ones: " + arr);
             arr.assign(1.0);
-            System.out.println("assign(1.0): " + arr);
-            System.out.println("DIV: " + arr.div(8));
-            System.out.println("MUL: " + arr.mul(8));
-            System.out.println("SUB: " + arr.sub(8));
-            System.out.println("ADD: " + arr.add(8));
-            System.out.println("RDIV: " + arr.rdiv(8));
-            System.out.println("RSUB: " + arr.rsub(8));
+//            System.out.println("assign(1.0): " + arr);
+//            System.out.println("DIV: " + arr.div(8));
+//            System.out.println("MUL: " + arr.mul(8));
+//            System.out.println("SUB: " + arr.sub(8));
+//            System.out.println("ADD: " + arr.add(8));
+//            System.out.println("RDIV: " + arr.rdiv(8));
+//            System.out.println("RSUB: " + arr.rsub(8));
+            arr.div(8);
+            arr.mul(8);
+            arr.sub(8);
+            arr.add(8);
+            arr.rdiv(8);
+            arr.rsub(8);
         }
     }
 
@@ -519,7 +525,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
                 val boolAttached = bool.isAttached();
                 val doubleAttached = dbl.isAttached();
 
-                System.out.println(i + "\tboolAttached=" + boolAttached + ", doubleAttached=" + doubleAttached );
+//                System.out.println(i + "\tboolAttached=" + boolAttached + ", doubleAttached=" + doubleAttached );
                 //System.out.println("bool: " + bool);        //java.lang.IllegalStateException: Indexer must never be null
                 //System.out.println("double: " + dbl);
             }

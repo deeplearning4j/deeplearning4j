@@ -23,6 +23,7 @@ import org.agrona.CloseHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -34,29 +35,40 @@ import static org.junit.Assert.assertFalse;
  * Created by agibsonccc on 9/22/16.
  */
 @Slf4j
-public class LargeNdArrayIpcTest {
+public class LargeNdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
     private Aeron.Context ctx;
     private String channel = "aeron:udp?endpoint=localhost:" + (40123 + new java.util.Random().nextInt(130));
     private int streamId = 10;
     private int length = (int) 1e7;
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;
+    }
+
     @Before
     public void before() {
-        //MediaDriver.loadPropertiesFile("aeron.properties");
-        MediaDriver.Context ctx = AeronUtil.getMediaDriverContext(length);
-        mediaDriver = MediaDriver.launchEmbedded(ctx);
-        System.out.println("Using media driver directory " + mediaDriver.aeronDirectoryName());
-        System.out.println("Launched media driver");
+        if(isIntegrationTests()) {
+            //MediaDriver.loadPropertiesFile("aeron.properties");
+            MediaDriver.Context ctx = AeronUtil.getMediaDriverContext(length);
+            mediaDriver = MediaDriver.launchEmbedded(ctx);
+            System.out.println("Using media driver directory " + mediaDriver.aeronDirectoryName());
+            System.out.println("Launched media driver");
+        }
     }
 
     @After
     public void after() {
-        CloseHelper.quietClose(mediaDriver);
+        if(isIntegrationTests()) {
+            CloseHelper.quietClose(mediaDriver);
+        }
     }
 
     @Test
     public void testMultiThreadedIpcBig() throws Exception {
+        skipUnlessIntegrationTests();   //Long-running test - don't run as part of unit tests by default
+
         int length = (int) 1e7;
         INDArray arr = Nd4j.ones(length);
         AeronNDArrayPublisher publisher;

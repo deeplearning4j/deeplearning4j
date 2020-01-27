@@ -26,9 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    T lup(nd4j::LaunchContext * context, NDArray* input, NDArray* compound, NDArray* permutation);
-
+    int lup(nd4j::LaunchContext* context, NDArray* input, NDArray* lu, NDArray* permutation);
+    void lu(nd4j::LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation);
     int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
     int logAbsDeterminant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
 

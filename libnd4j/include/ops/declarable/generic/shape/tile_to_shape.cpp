@@ -26,16 +26,16 @@
 namespace nd4j {
 namespace ops {
     CUSTOM_OP_IMPL(tile_to_shape, 1, 1, true, 0, -1) {
-        
+
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
-        
+
         std::vector<Nd4jLong> outShape(block.getIArguments()->begin(), block.getIArguments()->end());
 
         if (block.isInplace()) {
-            input->tileToShape(outShape);
+            input->tileToShape(outShape, *input);
         } else {
-            input->tileToShape(outShape, output);
+            input->tileToShape(outShape, *output);
         }
 
         return Status::OK();
@@ -44,7 +44,7 @@ namespace ops {
     DECLARE_SHAPE_FN(tile_to_shape) {
         auto in = inputShape->at(0);
 
-        // output shape always equals to arguments        
+        // output shape always equals to arguments
 
         auto conv = ArrayUtils::toLongVector(*block.getIArguments());
 
@@ -73,9 +73,9 @@ namespace ops {
         auto gradX = OUTPUT_VARIABLE(0);
 
         auto axisX = ShapeUtils::evalBroadcastBackwardAxis(input->shapeInfo(), epsNext->shapeInfo());
-        // FIX ME: reduceAlongDims should have a signature with result pass to avoid assigning twice
+        // FIX ME: reduceAlongDimension should have a signature with result pass to avoid assigning twice
         if (!axisX.empty()) {
-            auto tempRes = epsNext->reduceAlongDims(reduce::Sum, axisX);
+            auto tempRes = epsNext->reduceAlongDimension(reduce::Sum, axisX);
             gradX->assign(tempRes);
         } else
             gradX->assign(epsNext);

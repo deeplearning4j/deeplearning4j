@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.datasets.datavec;
 
+import org.junit.rules.Timeout;
 import org.nd4j.shade.guava.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -69,6 +70,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  */
 @Slf4j
 public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @Override
     public DataType getDataType(){
@@ -1002,7 +1006,9 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
             for (RecordMetaData m : meta) {
                 Record r = csv.loadFromMetaData(m);
                 INDArray row = ds.getFeatures().getRow(i);
-                System.out.println(m.getLocation() + "\t" + r.getRecord() + "\t" + row);
+                if(i <= 3) {
+                    System.out.println(m.getLocation() + "\t" + r.getRecord() + "\t" + row);
+                }
 
                 for (int j = 0; j < 4; j++) {
                     double exp = r.getRecord().get(j).toDouble();

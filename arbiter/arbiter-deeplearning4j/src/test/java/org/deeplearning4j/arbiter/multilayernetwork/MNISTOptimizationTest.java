@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.ConvolutionLayerSpace;
@@ -59,7 +60,7 @@ import java.util.concurrent.TimeUnit;
 // import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 
 /** Not strictly a unit test. Rather: part example, part debugging on MNIST */
-public class MNISTOptimizationTest {
+public class MNISTOptimizationTest extends BaseDL4JTest {
 
     public static void main(String[] args) throws Exception {
         EarlyStoppingConfiguration<MultiLayerNetwork> esConf =

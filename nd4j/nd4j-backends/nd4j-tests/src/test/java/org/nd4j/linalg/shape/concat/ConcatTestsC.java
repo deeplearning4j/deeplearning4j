@@ -108,7 +108,7 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertEquals(3, result.rows());
         assertEquals(10, result.columns());
 
-        System.out.println(result);
+//        System.out.println(result);
 
         for (int x = 0; x < 30; x++) {
             assertEquals(1f, result.getFloat(x), 0.001f);
@@ -124,8 +124,8 @@ public class ConcatTestsC extends BaseNd4jTest {
         INDArray concat1 = Nd4j.concat(1, a, b);
         INDArray oneAssertion = Nd4j.create(new double[][] {{1, 2, 1, 2}, {3, 4, 3, 4}});
 
-        System.out.println("Assertion: " + Arrays.toString(oneAssertion.data().asFloat()));
-        System.out.println("Result: " + Arrays.toString(concat1.data().asFloat()));
+//        System.out.println("Assertion: " + Arrays.toString(oneAssertion.data().asFloat()));
+//        System.out.println("Result: " + Arrays.toString(concat1.data().asFloat()));
 
         assertEquals(oneAssertion, concat1);
 
@@ -186,7 +186,7 @@ public class ConcatTestsC extends BaseNd4jTest {
         second = Nd4j.linspace(24, 32, 8, Nd4j.dataType()).reshape('c', 2, 1, 4);
         for (int i = 0; i < second.tensorsAlongDimension(1); i++) {
             INDArray secondTad = second.tensorAlongDimension(i, 1);
-            System.out.println(second.tensorAlongDimension(i, 1));
+//            System.out.println(second.tensorAlongDimension(i, 1));
         }
 
         third = Nd4j.linspace(32, 48, 16).reshape('c', 2, 2, 4);
@@ -215,7 +215,7 @@ public class ConcatTestsC extends BaseNd4jTest {
 
     @Test(expected = ND4JIllegalStateException.class)
     public void testConcatVector() {
-        System.out.println(Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1)));
+        Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1));
     }
 
     @Test

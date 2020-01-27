@@ -38,18 +38,17 @@ namespace nd4j {
                 REQUIRE_TRUE(v >= 0 && v < input->rankOf(), 0, "Tear dimensions should be non-negative values, and lower then input rank. Got %i instead", v);
 
             auto tads = input->allTensorsAlongDimension(dims);
-            for (Nd4jLong e = 0; e < tads->size(); e++) {
+            for (Nd4jLong e = 0; e < tads.size(); e++) {
                 auto outE = OUTPUT_VARIABLE(e);
-                outE->assign(tads->at(e));
+                outE->assign(tads.at(e));
 
                 // just for debugging purposes
                 this->storeResult(block, e, *outE);
             }
 
-            delete tads;
-
             return Status::OK();
         }
+
         DECLARE_SHAPE_FN(tear) {
             auto inShape = inputShape->at(0);
 

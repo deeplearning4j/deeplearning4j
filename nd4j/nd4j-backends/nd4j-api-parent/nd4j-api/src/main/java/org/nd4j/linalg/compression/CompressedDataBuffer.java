@@ -89,6 +89,11 @@ public class CompressedDataBuffer extends BaseDataBuffer {
         // no-op
     }
 
+    @Override
+    public Pointer addressPointer() {
+        return pointer;
+    }
+
     /**
      * Drop-in replacement wrapper for BaseDataBuffer.read() method, aware of CompressedDataBuffer
      * @param s
@@ -194,6 +199,15 @@ public class CompressedDataBuffer extends BaseDataBuffer {
      */
     @Override
     public DataBuffer create(int[] data) {
-        throw new UnsupportedOperationException("This operation isn't supported for CompressedDataBuffer");
+        throw new UnsupportedOperationException("This method isn't supported by CompressedDataBuffer");
+    }
+
+    public void pointerIndexerByCurrentType(DataType currentType) {
+        throw new UnsupportedOperationException("This method isn't supported by CompressedDataBuffer");
+    }
+
+    @Override
+    public DataBuffer reallocate(long length) {
+        throw new UnsupportedOperationException("This method isn't supported by CompressedDataBuffer");
     }
 }

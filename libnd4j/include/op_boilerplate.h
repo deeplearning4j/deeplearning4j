@@ -1242,7 +1242,9 @@
 #if defined(_MSC_VER) || defined(_WIN64) || defined(_WIN32) || defined(__CLION_IDE__) || defined(__VSCODE__)
 #define NOT_EXCLUDED(NAME) 1>0
 #else
-#define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
+// for now we don't want minifier mechanics working
+//#define NOT_EXCLUDED(NAME) defined(LIBND4J_ALL_OPS) || defined(NAME)
+#define NOT_EXCLUDED(NAME) 1>0
 #endif
 
 #ifdef __JAVACPP_HACK__
@@ -1621,5 +1623,10 @@
 #define PARAMETRIC_XZ() [&] (Parameters &p, ResultSet &x, ResultSet &z)
 
 #define PARAMETRIC_D() [&] (Parameters &p) -> Context*
+
+
+#ifdef __CUDABLAS__
+#define checkCudaErrors(ERR) if (ERR != 0) {throw std::runtime_error("CUDA stream synchronization failed");}
+#endif
 
 #endif

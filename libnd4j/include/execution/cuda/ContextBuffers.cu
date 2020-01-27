@@ -138,7 +138,7 @@ namespace nd4j {
         if (res != 0)
             throw cuda_exception::build("_reductionPointer allocation failed", res);
 
-        res = cudaMalloc(reinterpret_cast<void**>(&_scalarPointer), 16);
+        res = cudaHostAlloc(reinterpret_cast<void**>(&_scalarPointer), 16, cudaHostAllocDefault);
         if (res != 0)
             throw cuda_exception::build("_scalarPointer allocation failed", res);
 

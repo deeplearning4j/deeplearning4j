@@ -49,6 +49,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(pointer, specialPointer, indexer, length);
     }
 
+    public CudaDoubleDataBuffer(ByteBuffer buffer, DataType dataType, long length, long offset) {
+        super(buffer, dataType, length, offset);
+    }
+
     /**
      * Base constructor
      *
@@ -138,18 +142,6 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(data, copy, offset);
     }
 
-    public CudaDoubleDataBuffer(byte[] data, long length) {
-        super(data, length, DataType.DOUBLE);
-    }
-
-    public CudaDoubleDataBuffer(ByteBuffer buffer, long length) {
-        super(buffer, (int) length, DataType.DOUBLE);
-    }
-
-    public CudaDoubleDataBuffer(ByteBuffer buffer, long length, long offset) {
-        super(buffer, length, offset, DataType.DOUBLE);
-    }
-
     @Override
     protected DataBuffer create(long length) {
         return new CudaDoubleDataBuffer(length);
@@ -210,14 +202,7 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         this.length = n;
         this.elementSize = 8;
 
-        //wrappedBuffer = ByteBuffer.allocateDirect(length() * getElementSize());
-        //wrappedBuffer.order(ByteOrder.nativeOrder());
-
-        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                        new AllocationShape(length, elementSize, DataType.DOUBLE), false);
-        this.trackingPoint = allocationPoint.getObjectId();
-        //this.wrappedBuffer = allocationPoint.getPointers().getHostPointer().asByteBuffer();
-        //this.wrappedBuffer.order(ByteOrder.nativeOrder());
+        this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, DataType.DOUBLE), false);
 
         setData(arr);
     }

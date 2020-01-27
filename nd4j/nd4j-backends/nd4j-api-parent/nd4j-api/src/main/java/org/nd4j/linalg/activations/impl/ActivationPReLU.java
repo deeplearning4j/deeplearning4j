@@ -1,5 +1,6 @@
 /* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -61,16 +62,19 @@ public class ActivationPReLU extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdalpha = Nd4j.create(alpha.shape());
+        INDArray dLdalpha = alpha.ulike();
+        INDArray outTemp = in.ulike();
         DynamicCustomOp.DynamicCustomOpsBuilder preluBp = DynamicCustomOp.builder("prelu_bp")
-                .addInputs(in, alpha, epsilon).addOutputs(in, alpha);
+                .addInputs(in, alpha, epsilon)
+                .addOutputs(outTemp, dLdalpha);
 
         if (sharedAxes != null) {
             for (long axis: sharedAxes) {
                 preluBp.addIntegerArguments(axis);
             }
         }
-        Nd4j.getExecutioner().execAndReturn(preluBp.build());
+        Nd4j.exec(preluBp.build());
+        in.assign(outTemp);
         return new Pair<>(in, dLdalpha);
     }
 

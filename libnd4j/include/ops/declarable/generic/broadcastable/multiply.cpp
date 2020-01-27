@@ -79,42 +79,42 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     const Nd4jLong yLen = y->lengthOf();
 
     if(x->isScalar() && y->isScalar()) {    // both are scalars
-        y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx, nullptr);
-        x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy, nullptr);
+        y->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
+        x->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
         //dLdx->assign((*y) * (*dLdz));
         //dLdy->assign((*x) * (*dLdz));
 
     }
     else if(x->isScalar()) {            // x is scalar and y is not
         dLdx->assign((*y * *dLdz).reduceNumber(reduce::Sum));
-        dLdz->applyScalarArr(scalar::Multiply, x, dLdy, nullptr);
+        dLdz->applyScalarArr(scalar::Multiply, *x, *dLdy);
         //dLdz->applyTrueBroadcast(broadcast::Multiply, x, dLdy, true);
     }
     else if(y->isScalar()) {            // y is scalar and x is not
         dLdy->assign((*x * *dLdz).reduceNumber(reduce::Sum));
-        dLdz->applyScalarArr(scalar::Multiply, y, dLdx);
-    }    
+        dLdz->applyScalarArr(scalar::Multiply, *y, *dLdx);
+    }
     else if(x->isSameShape(y)) {
-        x->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy, nullptr);
-        y->applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx, nullptr);
+        x->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
+        y->applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
     }
     else if (x->isSameShape(dLdz)) {
-        
+
         auto yTiled = NDArray(dLdz, false, block.launchContext());
         y->tile(yTiled);
         std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
-        
-        dLdy->assign( (*x * *dLdz).reduceAlongDims(reduce::Sum, axesForY) );
-        yTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdx, nullptr);
-    } 
+
+        dLdy->assign( (*x * *dLdz).reduceAlongDimension(reduce::Sum, axesForY) );
+        yTiled.applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
+    }
     else if (y->isSameShape(dLdz)) {
 
         auto xTiled = NDArray(dLdz, false, block.launchContext());
         x->tile(xTiled);
         std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
-        
-        dLdx->assign( (*y * *dLdz).reduceAlongDims(reduce::Sum, axesForX) );
-        xTiled.applyPairwiseTransform(pairwise::Multiply, dLdz, dLdy, nullptr);
+
+        dLdx->assign( (*y * *dLdz).reduceAlongDimension(reduce::Sum, axesForX) );
+        xTiled.applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
     }
     else {
 
@@ -124,16 +124,16 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
         y->tile(yTiled);
         std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
         std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
-        
-        dLdx->assign( (*y * *dLdz).reduceAlongDims(reduce::Sum, axesForX) );
-        dLdy->assign( (*x * *dLdz).reduceAlongDims(reduce::Sum, axesForY) );
+
+        dLdx->assign( (*y * *dLdz).reduceAlongDimension(reduce::Sum, axesForX) );
+        dLdy->assign( (*x * *dLdz).reduceAlongDimension(reduce::Sum, axesForY) );
     }
 
     return Status::OK();
 }
 
 DECLARE_SHAPE_FN(multiply_bp) {
-    
+
     auto xShapeInfo    = inputShape->at(0);
     auto yShapeInfo    = inputShape->at(1);
 
@@ -181,8 +181,8 @@ DECLARE_SHAPE_FN(multiply_bp) {
 
                 T tmpX = x->template reduceNumber<simdOps::Sum<T>>();
                 gradY->assign(tmpX);
-                
-                epsNext->applyLambda(lambdaS, gradX);
+
+                epsNext->applyLambda(lambdaS, *gradX);
             } else {
                 // broadcast case
 
@@ -201,7 +201,7 @@ DECLARE_SHAPE_FN(multiply_bp) {
                     auto sum = preX->template reduceAlongDimension<simdOps::Sum<T>>(axisX);
                     gradX->assign(sum);
                     delete sum;
-                } else 
+                } else
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {

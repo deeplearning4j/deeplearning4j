@@ -99,6 +99,11 @@ public class DTypeTests extends BaseDL4JTest {
             Convolution1D.class     //Alias for  Convolution1DLayer
     ));
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @AfterClass
     public static void after() {
         ImmutableSet<ClassPath.ClassInfo> info;
@@ -545,6 +550,7 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new Convolution3D.Builder().kernelSize(2, 2, 2).stride(1, 1, 1).nOut(3).activation(Activation.TANH).build())
                             .layer(new Convolution3D.Builder().kernelSize(2, 2, 2).stride(1, 1, 1).nOut(3).activation(Activation.TANH).build())
                             .layer(new Subsampling3DLayer.Builder().poolingType(PoolingType.AVG).kernelSize(2, 2, 2).stride(2, 2, 2).build())
+                            .layer(new Deconvolution3D.Builder().kernelSize(2,2,2).stride(1,1,1).nIn(3).nOut(3).activation(Activation.TANH).build())
                             .layer(new Cropping3D.Builder(1, 1, 1, 1, 1, 1).build())
                             .layer(new ZeroPadding3DLayer.Builder(1, 1, 1, 1, 1, 1).build())
                             .layer(new ActivationLayer(Activation.LEAKYRELU))

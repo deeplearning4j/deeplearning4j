@@ -83,15 +83,28 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output,
             const Nd4jLong xStrideH = isNCHW ? input.stridesOf()[2] : input.stridesOf()[1];
             const Nd4jLong xStrideW = isNCHW ? input.stridesOf()[3] : input.stridesOf()[2];
 
-            auto func = PRAGMA_THREADS_FOR_3D {
-                for (uint b = start_x; b < stop_x; b += inc_x)
-                    for (uint c = start_y; c < stop_y; c += inc_y)
-                        for (uint h = start_z; h < stop_z; h += inc_z)
-                            for (uint w = 0; w < oW; ++w)
-                                z[b * zStrideB + c * zStrideC + h * zStrideH + w * zStrideW] = x[b * xStrideB + c * xStrideC + h * xStrideH + w * xStrideW] + static_cast<X>(y[c * yStrideC]);
-            };
+            if (isNCHW) {
 
-            samediff::Threads::parallel_for(func, 0, bS, 1, 0, C, 1, 0, oH, 1);
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    for (uint b = start_x; b < stop_x; b += inc_x)
+                        for (uint c = start_y; c < stop_y; c += inc_y)
+                            for (uint h = start_z; h < stop_z; h += inc_z)
+                                for (uint w = 0; w < oW; ++w)
+                                    z[b * zStrideB + c * zStrideC + h * zStrideH + w * zStrideW] = x[b * xStrideB + c * xStrideC + h * xStrideH + w * xStrideW] + static_cast<X>(y[c * yStrideC]);
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, C, 1, 0, oH, 1);
+            } else {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    for (uint b = start_x; b < stop_x; b++)
+                        for (uint h = start_y; h < stop_y; h++)
+                            for (uint w = start_z; w < stop_z; w++)
+                                for (uint c = 0; c < C; c++)
+                                    z[b * zStrideB + c * zStrideC + h * zStrideH + w * zStrideW] = x[b * xStrideB + c * xStrideC + h * xStrideH + w * xStrideW] + y[c * yStrideC];
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1, 0, oW, 1);
+            }
         }
     }
     else if(output.rankOf() == 5) {
@@ -141,7 +154,7 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output,
     }
     else {
          const int channelDim = isNCHW ? 1 : input.rankOf() - 1;      // second or last
-         const_cast<NDArray&>(input).applyBroadcast(nd4j::broadcast::Add, {channelDim}, &bias, &output);
+         const_cast<NDArray&>(input).applyBroadcast(nd4j::broadcast::Add, {channelDim}, bias, output);
     }
 }
 

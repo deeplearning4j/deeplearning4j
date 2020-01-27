@@ -195,7 +195,7 @@ namespace helpers {
             return res;
         };
 
-        input->applyTriplewiseLambda<T>(gradX, epsilon, gainsInternal, output);
+        input->applyTriplewiseLambda<T>(*gradX, *epsilon, gainsInternal, *output);
     }
 
     void barnes_gains(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {

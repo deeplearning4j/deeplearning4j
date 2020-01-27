@@ -23,7 +23,6 @@ import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -172,7 +171,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op) {
-        return execAndReturn(op).outputArguments();
+        return execAndReturn(op).outputArguments().toArray(new INDArray[0]);
     }
 
     @Override
@@ -822,7 +821,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public String getString(Utf8Buffer buffer, long index) {
+    public String getString(DataBuffer buffer, long index) {
         throw new UnsupportedOperationException();
     }
 

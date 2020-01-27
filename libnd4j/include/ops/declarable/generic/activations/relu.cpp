@@ -32,7 +32,7 @@ namespace nd4j {
 
             auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-            first->applyScalar(nd4j::scalar::RELU, scalar, z);
+            first->applyScalar(nd4j::scalar::RELU, scalar, *z);
 
             STORE_RESULT(*z);
 

@@ -18,21 +18,10 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.records.reader.SequenceRecordReader;
-import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
-import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
-import org.datavec.api.split.NumberedFileInputSplit;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.tools.VariableMultiTimeseriesGenerator;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.MultiDataNormalization;
-import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 
@@ -49,7 +38,13 @@ public class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
      */
     @Test
     public void testVariableTimeSeries1() throws Exception {
-        val iterator = new VariableMultiTimeseriesGenerator(1192, 1000, 32, 128, 10, 500, 10);
+        int numBatches = isIntegrationTests() ? 1000 : 100;
+        int batchSize = isIntegrationTests() ? 32 : 8;
+        int timeStepsMin = 10;
+        int timeStepsMax = isIntegrationTests() ? 500 : 100;
+        int valuesPerTimestep = isIntegrationTests() ? 128 : 16;
+
+        val iterator = new VariableMultiTimeseriesGenerator(1192, numBatches, batchSize, valuesPerTimestep, timeStepsMin, timeStepsMax, 10);
         iterator.reset();
         iterator.hasNext();
         val amdsi = new AsyncMultiDataSetIterator(iterator, 2, true);
@@ -81,7 +76,13 @@ public class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
 
     @Test
     public void testVariableTimeSeries2() throws Exception {
-        val iterator = new VariableMultiTimeseriesGenerator(1192, 1000, 32, 128, 10, 500, 10);
+        int numBatches = isIntegrationTests() ? 1000 : 100;
+        int batchSize = isIntegrationTests() ? 32 : 8;
+        int timeStepsMin = 10;
+        int timeStepsMax = isIntegrationTests() ? 500 : 100;
+        int valuesPerTimestep = isIntegrationTests() ? 128 : 16;
+
+        val iterator = new VariableMultiTimeseriesGenerator(1192, numBatches, batchSize, valuesPerTimestep, timeStepsMin, timeStepsMax, 10);
 
         for (int e = 0; e < 10; e++) {
             iterator.reset();

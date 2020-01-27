@@ -17,6 +17,7 @@
 package org.deeplearning4j.ui;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.api.Style;
@@ -46,7 +47,7 @@ import java.util.Random;
  * The generated HTML file should appear in the deeplearning4j-ui-components directory (TestRendering.html)
  * *** NOTE: Open this in IntelliJ: Right click on file -> Open In Browser ***
  */
-public class TestRendering {
+public class TestRendering extends BaseDL4JTest {
 
     @Ignore
     @Test

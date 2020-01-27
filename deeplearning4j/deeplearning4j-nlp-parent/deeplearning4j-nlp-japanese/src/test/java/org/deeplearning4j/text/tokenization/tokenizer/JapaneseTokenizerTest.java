@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.JapaneseTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
@@ -25,7 +26,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class JapaneseTokenizerTest {
+public class JapaneseTokenizerTest extends BaseDL4JTest {
 
     private String toTokenize = "黒い瞳の綺麗な女の子";
     private String[] expect = {"黒い", "瞳", "の", "綺麗", "な", "女の子"};

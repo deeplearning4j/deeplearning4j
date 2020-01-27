@@ -38,8 +38,8 @@ namespace nd4j {
             // axis might be dynamic (i.e. tf mode)
             helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
-            input->reduceAlongDimension(reduce::SquaredNorm, squares, axis);
-            input->reduceAlongDimension(reduce::Sum, sum, axis);
+            input->reduceAlongDimension(reduce::SquaredNorm, *squares, axis);
+            input->reduceAlongDimension(reduce::Sum, *sum, axis);
             auto count = NDArrayFactory::create(input->dataType(), input->lengthOf() / sum->lengthOf());
             dataCount->assign(count);
             if (block.numT() > 0) {
@@ -79,7 +79,7 @@ namespace nd4j {
             auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape);
             if (block.numT() > 0)
                 shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
-            
+
             return shapeList;
         }
     }

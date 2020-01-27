@@ -56,7 +56,7 @@ namespace nd4j {
                     sumt = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
                 }
 
-                nd4j_printf("Sum: %lld\n", sumt)
+                //nd4j_printf("Sum: %lld\n", sumt)
 
                 output = (sumt > -1);
 

@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.weights.embeddings.ArrayEmbeddingInitializer;
 import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
 import org.deeplearning4j.nn.weights.embeddings.WeightInitEmbedding;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -104,7 +105,6 @@ public class EmbeddingLayer extends FeedForwardLayer {
         return hasBias;
     }
 
-    @NoArgsConstructor
     @Getter
     @Setter
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
@@ -114,6 +114,13 @@ public class EmbeddingLayer extends FeedForwardLayer {
          *
          */
         private boolean hasBias = false;
+
+        public Builder(){
+            //Default to Identity activation - i.e., don't inherit.
+            //For example, if user sets ReLU as global default, they very likely don't intend to use it for Embedding layer also
+            this.activationFn = new ActivationIdentity();
+        }
+
 
         /**
          * If true: include bias parameters in the layer. False (default): no bias.

@@ -34,10 +34,12 @@
 #define ARRAY_SPARSE 2
 #define ARRAY_COMPRESSED 4
 #define ARRAY_EMPTY 8
+#define ARRAY_RAGGED 16
 
-#define ARRAY_CSR 16
-#define ARRAY_CSC 32
-#define ARRAY_COO 64
+
+#define ARRAY_CSR 32
+#define ARRAY_CSC 64
+#define ARRAY_COO 128
 
 // complex values
 #define ARRAY_COMPLEX 512
@@ -72,8 +74,10 @@
 // boolean values
 #define ARRAY_BOOL 524288
 
-// utf-8 values
-#define ARRAY_STRING 1048576
+// UTF values
+#define ARRAY_UTF8 1048576
+#define ARRAY_UTF16 4194304
+#define ARRAY_UTF32 16777216
 
 // flag for extras 
 #define ARRAY_EXTRAS 2097152
@@ -173,8 +177,12 @@ namespace nd4j {
                 return nd4j::DataType ::UINT32;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
                 return nd4j::DataType ::UINT64;
-            else if (hasPropertyBitSet(shapeInfo, ARRAY_STRING))
+            else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF8))
                 return nd4j::DataType ::UTF8;
+            else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF16))
+                return nd4j::DataType ::UTF16;
+            else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF32))
+                return nd4j::DataType ::UTF32;
             else {
                 //shape::printShapeInfoLinear("Bad unsigned datatype (not)stored in shape", const_cast<Nd4jLong*>(shapeInfo));
 #ifndef __CUDA_ARCH__
@@ -190,8 +198,12 @@ namespace nd4j {
             return nd4j::DataType::INT32;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
             return nd4j::DataType::INT64;
-        else if (hasPropertyBitSet(shapeInfo, ARRAY_STRING))
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF8))
             return nd4j::DataType::UTF8;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF16))
+            return nd4j::DataType::UTF16;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF32))
+            return nd4j::DataType::UTF32;
         else {
             //shape::printShapeInfoLinear("Bad signed datatype (not)stored in shape", const_cast<Nd4jLong*>(shapeInfo));
 #ifndef __CUDA_ARCH__
@@ -224,6 +236,8 @@ namespace nd4j {
             return ArrayType::COMPRESSED;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_EMPTY))
             return ArrayType::EMPTY;
+        else if (hasPropertyBitSet(shapeInfo, ARRAY_RAGGED))
+            return ArrayType::RAGGED;
         else // by default we return DENSE type here
             return ArrayType::DENSE;
     }
@@ -333,7 +347,13 @@ namespace nd4j {
                 setPropertyBit(shapeInfo, ARRAY_LONG);
                 break;
             case nd4j::DataType::UTF8:
-                setPropertyBit(shapeInfo, ARRAY_STRING);
+                setPropertyBit(shapeInfo, ARRAY_UTF8);
+                break;
+            case nd4j::DataType::UTF16:
+                setPropertyBit(shapeInfo, ARRAY_UTF16);
+                break;
+            case nd4j::DataType::UTF32:
+                setPropertyBit(shapeInfo, ARRAY_UTF32);
                 break;
             default:
 #ifndef __CUDA_ARCH__

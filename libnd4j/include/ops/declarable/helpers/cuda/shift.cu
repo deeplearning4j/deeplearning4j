@@ -29,7 +29,7 @@ namespace nd4j {
                     return x >> shift;
                 };
 
-                input.applyLambda(lambda, &output);
+                input.applyLambda(lambda, output);
             }
 
             void rshift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
@@ -42,7 +42,7 @@ namespace nd4j {
                     return x << shift;
                 };
 
-                input.applyLambda(lambda, &output);
+                input.applyLambda(lambda, output);
             }
 
             void shift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
@@ -56,7 +56,7 @@ namespace nd4j {
                     return x >> shift | x << step;
                 };
 
-                input.applyLambda(lambda, &output);
+                input.applyLambda(lambda, output);
             }
 
             void cyclic_rshift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {
@@ -70,7 +70,7 @@ namespace nd4j {
                     return x << shift | x >> step;
                 };
 
-                input.applyLambda(lambda, &output);
+                input.applyLambda(lambda, output);
             }
 
             void cyclic_shift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift) {

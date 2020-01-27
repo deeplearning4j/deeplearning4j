@@ -56,7 +56,7 @@ CUSTOM_OP_IMPL(mirror_pad, 2, 1, false, 0, 1) {
 
     DECLARE_TYPES(mirror_pad) {
         getOpDescriptor()->setAllowedInputTypes(0, {ALL_FLOATS});
-        getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32}); // to conform with TF
+        getOpDescriptor()->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}); // to conform with TF
         getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS});
     }
 

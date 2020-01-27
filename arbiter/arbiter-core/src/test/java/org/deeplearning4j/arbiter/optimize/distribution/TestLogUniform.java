@@ -17,12 +17,13 @@
 package org.deeplearning4j.arbiter.optimize.distribution;
 
 import org.apache.commons.math3.distribution.RealDistribution;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestLogUniform {
+public class TestLogUniform extends BaseDL4JTest {
 
     @Test
     public void testSimple(){

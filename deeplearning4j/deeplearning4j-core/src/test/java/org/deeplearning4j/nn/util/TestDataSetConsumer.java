@@ -84,8 +84,8 @@ public class TestDataSetConsumer {
 
         count.incrementAndGet();
 
-        if (count.get() % 100 == 0)
-            logger.info("Passed {} datasets...", count.get());
+//        if (count.get() % 100 == 0)
+//            logger.info("Passed {} datasets...", count.get());
 
         return count.get();
     }

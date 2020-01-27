@@ -26,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
+
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -228,9 +229,9 @@ public class TFGraphTestAllHelper {
                             String s1 = s.format(tfPred, false);
                             String s2 = s.format(nd4jPred, false);
                             System.out.print("TF: ");
-                            System.out.println(s1);
+                            System.out.println(tfPred.toStringFull());
                             System.out.print("SD: ");
-                            System.out.println(s2);
+                            System.out.println(nd4jPred.toStringFull());
                         }
                     }
                     assertTrue("Predictions do not match on " + modelName + ", node " + outputNode, eq);
@@ -285,8 +286,7 @@ public class TFGraphTestAllHelper {
                             + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE, 0, countExceeds);
                 }
             }
-            log.info("\n\tTEST {} PASSED with {} arrays compared...", modelName, predictions.keySet().size());
-            log.info("\n========================================================\n");
+            log.info("TEST {} PASSED with {} arrays compared...", modelName, predictions.keySet().size());
         }
 
         //Serialize and deserialize, check equality:
@@ -392,7 +392,7 @@ public class TFGraphTestAllHelper {
     public static Pair<SameDiff, Map<String,INDArray>> getGraphAfterExec(String baseDir, String modelFilename, String modelName, Map<String, INDArray> inputs,
                                              ExecuteWith executeWith, BiFunction<File,String,SameDiff> graphLoaderFunction, List<Listener> listeners,
                                                                          Set<String> requiredOutputs, boolean printArraysDebugging) throws IOException {
-        log.info("\n\tRUNNING TEST " + modelName + "...");
+        log.info("RUNNING TEST {}...", modelName);
         SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
         if(listeners != null){
             graph.setListeners(listeners);

@@ -65,6 +65,13 @@
             <artifactId>jackson-module-scala_2.11</artifactId>
             <version>2.6.7.1</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>

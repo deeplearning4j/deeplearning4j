@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
@@ -32,7 +33,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 30/04/2016.
@@ -109,6 +110,44 @@ public class TestNDArrayCreation extends BaseNd4jTest {
         assertEquals(arrCreate.data().address(), pointer.address());
     }
 
+    @Test
+    @Ignore // this is endless test
+    public void testEndlessAllocation() {
+        Nd4j.getEnvironment().setMaxSpecialMemory(1);
+        while (true) {
+            val arr = Nd4j.createUninitialized(DataType.FLOAT, 100000000);
+            arr.assign(1.0f);
+        }
+    }
+
+    @Test
+    @Ignore("This test is designed to run in isolation. With parallel gc it makes no real sense since allocated amount changes at any time")
+    public void testAllocationLimits() throws Exception {
+        Nd4j.create(1);
+
+        val origDeviceLimit = Nd4j.getEnvironment().getDeviceLimit(0);
+        val origDeviceCount = Nd4j.getEnvironment().getDeviceCouner(0);
+
+        val limit = origDeviceCount + 10000;
+
+        Nd4j.getEnvironment().setDeviceLimit(0, limit);
+
+        val array = Nd4j.createUninitialized(DataType.DOUBLE, 1024);
+        assertNotNull(array);
+
+        try {
+            Nd4j.createUninitialized(DataType.DOUBLE, 1024);
+            assertTrue(false);
+        } catch (Exception e) {
+            //
+        }
+
+        // we want to be sure there's nothing left after exception
+        assertEquals(0, NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode());
+
+        Nd4j.getEnvironment().setDeviceLimit(0, origDeviceLimit);
+
+    }
 
     @Override
     public char ordering() {

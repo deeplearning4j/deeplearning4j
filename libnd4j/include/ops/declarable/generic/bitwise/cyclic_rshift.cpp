@@ -34,7 +34,7 @@ namespace nd4j {
 
             BROADCAST_CHECK_EMPTY(x,y,z);
 
-            x->applyTrueBroadcast(BroadcastIntOpsTuple::custom(scalar::CyclicShiftRight, pairwise::CyclicShiftRight, broadcast::CyclicShiftRight), y, z, false);
+            x->applyTrueBroadcast(BroadcastIntOpsTuple::custom(scalar::CyclicShiftRight, pairwise::CyclicShiftRight, broadcast::CyclicShiftRight), *y, *z, false);
 
             return Status::OK();
         }

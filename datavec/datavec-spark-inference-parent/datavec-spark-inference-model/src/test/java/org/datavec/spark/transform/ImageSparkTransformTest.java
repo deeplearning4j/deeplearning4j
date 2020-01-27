@@ -54,7 +54,7 @@ public class ImageSparkTransformTest {
         Base64NDArrayBody body = imgSparkTransform.toArray(imgRecord);
 
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
-        System.out.println("Base 64ed array " + fromBase64);
+//        System.out.println("Base 64ed array " + fromBase64);
         assertEquals(1, fromBase64.size(0));
     }
 
@@ -78,7 +78,7 @@ public class ImageSparkTransformTest {
         Base64NDArrayBody body = imgSparkTransform.toArray(batch);
 
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
-        System.out.println("Base 64ed array " + fromBase64);
+//        System.out.println("Base 64ed array " + fromBase64);
         assertEquals(3, fromBase64.size(0));
     }
 }

@@ -41,6 +41,9 @@
 #include <helpers/DebugHelper.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <DebugHelper.h>
+
 #endif // CUDACC
 
 #endif // LIBND4J_HELPERS_H

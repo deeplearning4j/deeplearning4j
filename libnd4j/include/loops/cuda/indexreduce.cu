@@ -35,12 +35,12 @@ static __global__ void simpleIndexReduceGeneric(const int op,
                                            Nd4jLong *xShapeInfo, int xRank,
                                            void *extraParams,
                                            void *result,
-                                           Nd4jLong *resultShapeInfo, int zRank,
+                                           Nd4jLong *zShapeInfo, int zRank,
                                            int *dimension,
                                            int dimensionLength,
                                            int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-     functions::indexreduce::IndexReduce<X, Z>::transform(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
+     functions::indexreduce::IndexReduce<X, Z>::transform(op,dx,xShapeInfo,extraParams,result,zShapeInfo,dimension,dimensionLength,postProcessOrNot,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
 }
 
 namespace functions {
@@ -52,7 +52,7 @@ namespace functions {
                                                                 void *dx, Nd4jLong *xShapeInfo,
                                                                 int xRank,
                                                                 void *extraParams,
-                                                                void *result, Nd4jLong *resultShapeInfo,
+                                                                void *result, Nd4jLong *zShapeInfo,
                                                                 int zRank,
                                                                 int *dimension, int dimensionLength,
                                                                 int postProcessOrNot,
@@ -62,7 +62,7 @@ namespace functions {
             simpleIndexReduceGeneric<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(opNum,
                                                                                             dx, xShapeInfo, xRank,
                                                                                             extraParams,
-                                                                                            result, resultShapeInfo, 0,
+                                                                                            result, zShapeInfo, 0,
                                                                                             nullptr, 0,
                                                                                             1,
                                                                                             allocationBuffer, reductionBuffer,
@@ -70,14 +70,14 @@ namespace functions {
         }
 
         template <typename X, typename Z>
-        _CUDA_H void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_H void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *zShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
             simpleIndexReduceGeneric<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			 opNum,
 			 dx,
 			 xShapeInfo, xRank,
 			 extraParams,
 			 result,
-			 resultShapeInfo, zRank,
+			 zShapeInfo, zRank,
 			 dimension,
 			 dimensionLength,
 			 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
@@ -158,7 +158,7 @@ namespace functions {
                 Nd4jLong *xShapeInfo,
                 void *extraParams,
                 void *result,
-                Nd4jLong *resultShapeInfo,
+                Nd4jLong *zShapeInfo,
                 int *dimension,
                 int dimensionLength,
                 int postProcessOrNot,
@@ -166,7 +166,7 @@ namespace functions {
                 void *reductionBuffer,
                 Nd4jLong *tadShapeInfo,
                 Nd4jLong *tadOffset) {
-             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, extraParams, result, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
         }
 
 
@@ -174,7 +174,7 @@ namespace functions {
         template <typename OpType>
         __device__ void IndexReduce<X, Z>::transform(void *vdx, Nd4jLong *xShapeInfo,
                                                 void *vextraParams,
-                                                void *vresult, Nd4jLong *resultShapeInfo,
+                                                void *vz, Nd4jLong *zShapeInfo,
                                                 int *dimension, int dimensionLength,
                                                 int postProcessOrNot,
                                                 int *allocationBuffer, void *vreductionBuffer,
@@ -183,7 +183,7 @@ namespace functions {
              * Gpu information for the problem
              */
             auto dx = reinterpret_cast<X*>(vdx);
-            auto result = reinterpret_cast<Z*>(vresult);
+            auto z = reinterpret_cast<Z*>(vz);
             auto extraParams = static_cast<X*>(vextraParams);
             auto reductionBuffer = static_cast<X*>(vreductionBuffer);
             auto order = shape::order(xShapeInfo);
@@ -203,19 +203,19 @@ namespace functions {
             //length for the tad
             __shared__ volatile Nd4jLong xLength;
 
-            __shared__ volatile Nd4jLong resultLength;
+            __shared__ volatile Nd4jLong zLen;
 
 
             //only compute the tad indexes once
             IndexValue<X> reduction = OpType::startingIndexValue(dx);
 
             if (threadIdx.x == 0) {
-                if (resultShapeInfo != nullptr)
-                    resultLength = shape::length(resultShapeInfo);
-                else resultLength = 1;
+                if (zShapeInfo != nullptr)
+                    zLen = shape::length(zShapeInfo);
+                else zLen = 1;
 
                 if (dimensionLength == 1) {
-                    if (resultLength == 1 && (dimension == nullptr || dimension[0] == MAX_DIMENSION))
+                    if (zLen == 1 && (dimension == nullptr || dimension[0] == MAX_DIMENSION))
                         resultScalar = 1;
                     else
                         resultScalar = 0;
@@ -223,12 +223,23 @@ namespace functions {
                 else
                     resultScalar = 0;
 
-                if (resultLength == 1)
+                if (zLen == 1)
                     resultScalar = 1;
 
                 xLength = shape::length(xShapeInfo);
             }
             __syncthreads();
+
+            if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
+
+                if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+                    return;
+
+                for (uint i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x)
+                    z[i] = (Z) reduction.index;
+
+                return;
+            }
 
             if (!resultScalar) {
 
@@ -261,7 +272,7 @@ namespace functions {
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
-                            result[r] = (Z) sPartials[threadIdx.x].index;
+                            z[r] = (Z) sPartials[threadIdx.x].index;
                         }
                         __syncthreads();
                     }
@@ -282,7 +293,7 @@ namespace functions {
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
-                            result[i] = (Z) sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
+                            z[i] = (Z) sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
                         }
                         __syncthreads();
                     }
@@ -345,14 +356,14 @@ namespace functions {
 
                         __syncthreads();
                         if (tid == 0) {
-                            result[0] = (Z) sPartials[0].index;
+                            z[0] = (Z) sPartials[0].index;
                         }
                     }
                 } else {
                     if (tid == 0) {
                         auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
                         tc[16384] = 0;
-                        result[0] = (Z) sPartials[0].index;
+                        z[0] = (Z) sPartials[0].index;
                     }
                 }
 

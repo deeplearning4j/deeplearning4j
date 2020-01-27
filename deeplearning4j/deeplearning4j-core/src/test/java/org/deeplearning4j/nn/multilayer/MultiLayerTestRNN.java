@@ -570,8 +570,8 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
             for (int j = 0; j < expOut.size(); j++) {
                 INDArray exp = expOut.get(j);
                 INDArray act = outSlice.get(j);
-                System.out.println(j);
-                System.out.println(exp.sub(act));
+//                System.out.println(j);
+//                System.out.println(exp.sub(act));
                 assertEquals(exp, act);
             }
 

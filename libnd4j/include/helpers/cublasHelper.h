@@ -34,12 +34,14 @@ namespace nd4j {
 
         std::vector<void*> _cache;
         std::vector<void*> _solvers;
+        std::vector<void*> _cudnn;
 
         CublasHelper();
         ~CublasHelper();
     public:
         static CublasHelper* getInstance();
 
+        void* cudnn();
         void* solver();
 
         void* handle();

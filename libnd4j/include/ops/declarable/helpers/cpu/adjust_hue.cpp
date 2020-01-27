@@ -45,11 +45,11 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
 
                 rgbToHsv<T>(x[i], x[i + 1], x[i + 2], h, s, v);
 
-                h += delta * 360;
-                if (h > 360)
-                    h -= 360;
+                h += delta ;
+                if (h > (T)1)
+                    h -= (T)1;
                 else if (h < 0)
-                    h += 360;
+                    h += (T)1;
 
                 hsvToRgb<T>(h, s, v, z[i], z[i + 1], z[i + 2]);
             }
@@ -76,11 +76,11 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
 
                 rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
 
-                h += delta * 360;
-                if (h > 360)
-                    h -= 360;
+                h += delta ;
+                if (h > (T)1)
+                    h -= (T)1;
                 else if (h < 0)
-                    h += 360;
+                    h += (T)1;
 
                 hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
 

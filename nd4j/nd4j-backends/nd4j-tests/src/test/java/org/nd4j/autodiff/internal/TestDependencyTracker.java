@@ -4,8 +4,10 @@ import org.junit.Test;
 import org.nd4j.autodiff.samediff.internal.DependencyList;
 import org.nd4j.autodiff.samediff.internal.DependencyTracker;
 import org.nd4j.autodiff.samediff.internal.IdentityDependencyTracker;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collections;
@@ -13,7 +15,16 @@ import java.util.Collections;
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.*;
 
-public class TestDependencyTracker {
+public class TestDependencyTracker extends BaseNd4jTest {
+
+    public TestDependencyTracker(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void testSimple(){

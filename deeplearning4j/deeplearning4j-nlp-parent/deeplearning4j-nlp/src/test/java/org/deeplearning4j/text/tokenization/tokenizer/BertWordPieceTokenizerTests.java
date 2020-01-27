@@ -205,7 +205,7 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
     }
 
 
-    @Test
+    @Test(timeout = 300000)
     public void testBertWordPieceTokenizer10() throws Exception {
         File f = Resources.asFile("deeplearning4j-nlp/bert/uncased_L-12_H-768_A-12/vocab.txt");
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(f, true, true, StandardCharsets.UTF_8);

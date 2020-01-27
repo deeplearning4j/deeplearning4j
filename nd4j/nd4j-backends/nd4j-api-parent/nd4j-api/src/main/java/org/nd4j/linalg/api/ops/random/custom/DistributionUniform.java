@@ -63,10 +63,15 @@ public class DistributionUniform extends DynamicCustomOp {
         addArgs();
     }
 
-    public DistributionUniform(INDArray shape, INDArray out, double min, double max){
+    public DistributionUniform(INDArray shape, INDArray out, double min, double max) {
+        this(shape, out, min, max, null);
+    }
+
+    public DistributionUniform(INDArray shape, INDArray out, double min, double max, DataType dataType){
         super(null, new INDArray[]{shape}, new INDArray[]{out}, Arrays.asList(min, max), (List<Integer>)null);
         this.min = min;
         this.max = max;
+        this.dataType = dataType;
     }
 
 

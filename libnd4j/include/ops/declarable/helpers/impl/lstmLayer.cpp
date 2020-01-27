@@ -130,7 +130,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
     // if clipping value is non-zero then cell state is clipped by this value prior to the cell output activation
     if(params[2] != 0)
-        c->applyScalar(scalar::LstmClip, params[2]);
+        c->applyScalar(scalar::LstmClip, params[2], *c);
 
     // peephole connections for output gate
     if(Wp != nullptr)
@@ -206,22 +206,22 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
         dims = ShapeUtils::evalDimsToExclude(x->rankOf(), {dataFormat < 3 ? dataFormat : 0});    // points on bS and nIn/nOut axes
 
-        xSet = x->allTensorsAlongDimension(dims);       // sub-arrays with shape [bS, nIn]
+        xSet = new ResultSet(x->allTensorsAlongDimension(dims));       // sub-arrays with shape [bS, nIn]
         if(h)
-            hSet = h->allTensorsAlongDimension(dims);   // sub-arrays with shape [bS, nOut]
+            hSet = new ResultSet(h->allTensorsAlongDimension(dims));   // sub-arrays with shape [bS, nOut]
     }
     else {
 
         dims = dataFormat == 2 ? std::vector<int>({1}) : std::vector<int>({2});    // points on nIn/nOut axis
 
-        xSet  = x->allTensorsAlongDimension(dims);               //  sub-arrays with shape [nIn]
-        h0Set = h0->allTensorsAlongDimension({1});              //  sub-arrays with shape [nOut]
-        c0Set = c0->allTensorsAlongDimension({1});              //  sub-arrays with shape [nOut]
-        ctSet = ct->allTensorsAlongDimension({1});              //  sub-arrays with shape [nOut]
+        xSet  = new ResultSet(x->allTensorsAlongDimension(dims));               //  sub-arrays with shape [nIn]
+        h0Set = new ResultSet(h0->allTensorsAlongDimension({1}));              //  sub-arrays with shape [nOut]
+        c0Set = new ResultSet(c0->allTensorsAlongDimension({1}));              //  sub-arrays with shape [nOut]
+        ctSet = new ResultSet(ct->allTensorsAlongDimension({1}));              //  sub-arrays with shape [nOut]
         if(h)
-            hSet = h->allTensorsAlongDimension(dims);            //  sub-arrays with shape [nOut]
+            hSet = new ResultSet(h->allTensorsAlongDimension(dims));            //  sub-arrays with shape [nOut]
         if(ht)
-            htSet = ht->allTensorsAlongDimension({1});          //  sub-arrays with shape [nOut]
+            htSet = new ResultSet(ht->allTensorsAlongDimension({1}));          //  sub-arrays with shape [nOut]
     }
 
     // loops

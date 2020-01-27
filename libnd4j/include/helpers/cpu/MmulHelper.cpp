@@ -202,6 +202,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     if(C == nullptr)
         C = new NDArray(outOrder, {M,N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
 
+    if (C->isEmpty())
+        return C;
+
     const auto aType = A->dataType();
     const auto bType = B->dataType();
     const auto cType = C->dataType();
@@ -230,17 +233,17 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
         bool cNcont = N == 1 || C->strideAt(1) == 1;
 
         if(!aMcont && !aKcont) {
-            pA = A->dup('f');
+            pA = new NDArray(A->dup('f'));
             toDelete.push_back(pA);
             aMcont = true;
         }
         if(!bKcont && !bNcont) {
-            pB = B->dup('f');
+            pB = new NDArray(B->dup('f'));
             toDelete.push_back(pB);
             bKcont = true;
         }
         if(!cMcont && !cNcont) {
-            pC = C->dup('f');
+            pC = new NDArray(C->dup('f'));
             toDelete.push_back(pC);
             cMcont = true;
         }
@@ -307,6 +310,9 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     if(Y == nullptr)
         Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()), A->getContext());
 
+    if (Y->isEmpty())
+        return Y;
+
     const int incx = X->stridesOf()[xLenDim];
     const int incy = Y->stridesOf()[yLenDim];
 
@@ -332,7 +338,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
         bool aNcont = N == 1 || A->strideAt(1) == 1;
 
         if(!aMcont && !aNcont) {
-            pA = A->dup('f');
+            pA = new NDArray(A->dup('f'));
             aMcont = true;
         }
         const CBLAS_ORDER blasOrder = aMcont ? CblasColMajor : CblasRowMajor;
@@ -510,6 +516,9 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
     else {
         C = new NDArray(outOrder, cExpectedShape, B->dataType());
     }
+
+    if (C->isEmpty())
+        return C;
 
     const int cRank = C->rankOf();
 

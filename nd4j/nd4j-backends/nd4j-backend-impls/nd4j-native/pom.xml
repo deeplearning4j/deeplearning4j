@@ -61,6 +61,7 @@
             <version>${mkl.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform2}</classifier>
         </dependency>
+        <!--
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>libnd4j</artifactId>
@@ -69,7 +70,7 @@
             <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
             <scope>provided</scope>
         </dependency>
-
+        -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-api</artifactId>

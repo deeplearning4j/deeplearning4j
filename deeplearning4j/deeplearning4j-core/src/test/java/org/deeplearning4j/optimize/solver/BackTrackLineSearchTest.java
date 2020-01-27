@@ -186,7 +186,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
 
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.SIGMOID, optimizer));
         network.init();
-        TrainingListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(10);
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
         for( int i=0; i<100; i++ ) {
@@ -204,7 +204,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         data.normalizeZeroMeanZeroUnitVariance();
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
-        TrainingListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(10);
         network.setListeners(Collections.singletonList(listener));
         double firstScore = network.score(data);
 
@@ -223,7 +223,7 @@ public class BackTrackLineSearchTest extends BaseDL4JTest {
         data.normalizeZeroMeanZeroUnitVariance();
         MultiLayerNetwork network = new MultiLayerNetwork(getIrisMultiLayerConfig(Activation.RELU, optimizer));
         network.init();
-        TrainingListener listener = new ScoreIterationListener(1);
+        TrainingListener listener = new ScoreIterationListener(10);
         network.setListeners(Collections.singletonList(listener));
         double oldScore = network.score(data);
 

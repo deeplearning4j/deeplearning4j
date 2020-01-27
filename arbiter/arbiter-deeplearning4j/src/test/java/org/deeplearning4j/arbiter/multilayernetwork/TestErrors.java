@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
@@ -39,7 +40,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 
-public class TestErrors {
+public class TestErrors extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder temp = new TemporaryFolder();
@@ -60,7 +61,7 @@ public class TestErrors {
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls);
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
+                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 3))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
                         new MaxCandidatesCondition(5))
@@ -87,7 +88,7 @@ public class TestErrors {
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls);
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
+                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 3))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
                         new MaxCandidatesCondition(5))
@@ -116,7 +117,7 @@ public class TestErrors {
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls);
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
+                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 3))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(new MaxCandidatesCondition(5))
                 .build();
@@ -143,7 +144,7 @@ public class TestErrors {
         CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls);
 
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
-                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 10))
+                .candidateGenerator(candidateGenerator).dataProvider(new TestDataProviderMnist(32, 3))
                 .modelSaver(new FileModelSaver(f)).scoreFunction(new TestSetLossScoreFunction(true))
                 .terminationConditions(
                         new MaxCandidatesCondition(5))

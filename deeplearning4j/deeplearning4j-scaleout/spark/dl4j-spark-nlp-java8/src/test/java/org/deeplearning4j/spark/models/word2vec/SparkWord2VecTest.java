@@ -20,6 +20,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
@@ -46,7 +47,7 @@ import static org.junit.Assert.*;
  *
  * @author raver119@gmail.com
  */
-public class SparkWord2VecTest {
+public class SparkWord2VecTest extends BaseDL4JTest {
     private static List<String> sentences;
     private JavaSparkContext sc;
 

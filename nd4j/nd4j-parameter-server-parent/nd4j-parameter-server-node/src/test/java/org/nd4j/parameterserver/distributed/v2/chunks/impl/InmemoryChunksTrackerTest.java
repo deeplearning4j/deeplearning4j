@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.v2.chunks.impl;
 
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
@@ -27,7 +28,7 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.*;
 
-public class InmemoryChunksTrackerTest {
+public class InmemoryChunksTrackerTest extends BaseND4JTest {
     @Test
     public void testTracker_1() throws Exception {
         val array = Nd4j.linspace(1, 100000, 10000).reshape(-1, 1000);

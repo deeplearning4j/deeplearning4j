@@ -42,6 +42,8 @@ namespace nd4j {
         QINT16 = 16,
         BFLOAT16 = 17,
         UTF8 = 50,
+        UTF16 = 51,
+        UTF32 = 52,
         ANY = 100,
         AUTO = 200,
     };

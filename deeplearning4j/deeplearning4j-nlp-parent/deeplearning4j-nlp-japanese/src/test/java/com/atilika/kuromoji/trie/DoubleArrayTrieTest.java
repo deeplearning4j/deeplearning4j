@@ -32,6 +32,7 @@
  */
 package com.atilika.kuromoji.trie;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.io.*;
@@ -39,7 +40,7 @@ import java.io.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class DoubleArrayTrieTest {
+public class DoubleArrayTrieTest extends BaseDL4JTest {
 
     @Test
     public void testSparseTrie() throws IOException {

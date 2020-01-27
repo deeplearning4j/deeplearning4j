@@ -253,6 +253,7 @@
             <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
+        <!--
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>libnd4j</artifactId>
@@ -261,6 +262,7 @@
             <classifier>${javacpp.platform}-cuda-${cuda.version}</classifier>
             <scope>provided</scope>
         </dependency>
+        -->
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -307,6 +309,13 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

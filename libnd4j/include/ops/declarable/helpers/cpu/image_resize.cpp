@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -35,6 +35,8 @@ limitations under the License.
 
 #include <ops/declarable/helpers/image_resize.h>
 #include <execution/Threads.h>
+#include <ops/declarable/headers/parity_ops.h>
+#include "../cross.h"
 
 namespace nd4j {
 namespace ops {
@@ -55,8 +57,9 @@ namespace helpers {
                : inSize / static_cast<float>(outSize);
     }
 
-    struct ImageResizerState {
-        explicit ImageResizerState(bool alignCorners, bool halfPixelCenters)
+    template <typename I, typename F>
+    struct ImageResizerStateCommon {
+        explicit ImageResizerStateCommon(bool alignCorners, bool halfPixelCenters)
                 : _alignCorners(alignCorners),
                   _halfPixelCenters(halfPixelCenters) {}
 
@@ -94,20 +97,22 @@ namespace helpers {
             return validateAndCalculateOutputSize(input, width, height);
         }
 
-        Nd4jLong batchSize;
-        Nd4jLong outHeight;
-        Nd4jLong outWidth;
-        Nd4jLong inHeight;
-        Nd4jLong inWidth;
-        Nd4jLong channels;
-        float heightScale;
-        float widthScale;
+        I batchSize;
+        I outHeight;
+        I outWidth;
+        I inHeight;
+        I inWidth;
+        I channels;
+        F heightScale;
+        F widthScale;
         NDArray* output = nullptr;
 
     private:
         bool _alignCorners;
         bool _halfPixelCenters;
     };
+
+    typedef ImageResizerStateCommon<Nd4jLong, float> ImageResizerState;
 
     // Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
 // floating point coordinates of the top,left pixel is 0.5,0.5.
@@ -255,7 +260,7 @@ namespace helpers {
         // Handle no-op resizes efficiently.
         if (outHeight == inHeight && outWidth == inWidth) {
             output->assign(images);
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         std::vector<BilinearInterpolationData> ys(outHeight + 1);
@@ -283,7 +288,7 @@ namespace helpers {
         samediff::Threads::parallel_for(func, 0, xsSize);
 
         resizeImage_<X,Z>(images->getDataBuffer()->primaryAsT<X>(), batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs, ys, output->dataBuffer()->primaryAsT<Z>());
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
     template <class Scaler, typename T>
@@ -353,6 +358,7 @@ namespace helpers {
     int resizeBilinearFunctor(nd4j::LaunchContext * context, NDArray const *images, int const width, int const height,
             bool const alignCorners, bool const halfPixelCenter, NDArray *output) {
         BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_, (images, width, height, alignCorners, halfPixelCenter, output), NUMERIC_TYPES, FLOAT_TYPES);
+        return Status::OK();
     }
 
     int resizeNeighborFunctor(nd4j::LaunchContext * context, NDArray const *images, int const width, int const height,
@@ -682,27 +688,29 @@ namespace helpers {
                                     pY2[pt_index], pY3[pt_index]);
         }
 
-        template <typename T>
+        template <typename T, typename F>
         static void
     bicubicInterpolateWithCaching(NDArray const* image, ImageResizerState const& resizerState, bool const halfPixelCenters, NDArray* output) {
         std::vector<WeightsAndIndices> xWais(resizerState.outWidth);
-
         computeXWeightsAndIndices(resizerState, halfPixelCenters, &xWais);
 
         const auto numChannels = resizerState.channels;
         const Nd4jLong inRowWidth = resizerState.inWidth * numChannels;
         const Nd4jLong inBatchWidth = resizerState.inHeight * inRowWidth;
+        const auto batchNum = resizerState.batchSize;
+        const auto outHeight = resizerState.outHeight;
+        const auto outWidth = resizerState.outWidth;
 
-        const T* inputPtr = image->getDataBuffer()->primaryAsT<T>();
-        float* pOutputY = output->dataBuffer()->primaryAsT<float>(); // output is float anyway
-        std::vector<float> cachedValue(numChannels == 3 ? 0 : 4 * numChannels, 0);
+       auto func = PRAGMA_THREADS_FOR {
+            const T* inputPtr = image->getDataBuffer()->primaryAsT<T>();
+            F* pOutputY = output->dataBuffer()->primaryAsT<F>(); // output is float anyway
+            std::vector<float> cachedValue(numChannels == 3 ? 0 : 4 * numChannels, 0);
 
-        auto func = PRAGMA_THREADS_FOR {
             for (auto b = start; b < stop; ++b) {
                 auto pInput = inputPtr + b * inBatchWidth;
 
-                for (auto y = 0; y < resizerState.outHeight; ++y) {
-                    auto pOutput = &pOutputY[(b * resizerState.outHeight + y) * resizerState.outWidth * numChannels];
+                for (auto y = 0; y < outHeight; ++y) {
+                    auto pOutput = &pOutputY[(b * outHeight + y) * outWidth * numChannels];
 
                     WeightsAndIndices yWai;
                     if (halfPixelCenters) {
@@ -713,16 +721,16 @@ namespace helpers {
                                 resizerState.heightScale, y, resizerState.inHeight, &yWai);
                     }
                     // Make pointers represent offsets of data in inputBPtr.
-                    const T *y_ptr_0 = pInput + yWai._index0 * inRowWidth;
-                    const T *y_ptr_1 = pInput + yWai._index1 * inRowWidth;
-                    const T *y_ptr_2 = pInput + yWai._index2 * inRowWidth;
-                    const T *y_ptr_3 = pInput + yWai._index3 * inRowWidth;
+                    const T* y_ptr_0 = pInput + yWai._index0 * inRowWidth;
+                    const T* y_ptr_1 = pInput + yWai._index1 * inRowWidth;
+                    const T* y_ptr_2 = pInput + yWai._index2 * inRowWidth;
+                    const T* y_ptr_3 = pInput + yWai._index3 * inRowWidth;
 
                     if (numChannels == 3) {
                         // Manually unroll case of 3 channels.
-                        float cached_value_0[4] = {0};
-                        float cached_value_1[4] = {0};
-                        float cached_value_2[4] = {0};
+                        F cached_value_0[4] = {0};
+                        F cached_value_1[4] = {0};
+                        F cached_value_2[4] = {0};
                         for (auto x = 0; x < resizerState.outWidth; ++x) {
                             const WeightsAndIndices &xWai = xWais[x];
                             // Shift values in cached_value_* to fill first '_advance' values.
@@ -854,7 +862,7 @@ namespace helpers {
                             }
                             for (auto c = 0; c < numChannels; ++c) {
                                 pOutput[x * numChannels + c] =
-                                        compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1,
+                                        (F)compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1,
                                                 xWai._weight2, xWai._weight3);
                             }
                         }
@@ -862,7 +870,7 @@ namespace helpers {
                 }
             }
         };
-        samediff::Threads::parallel_tad(func, 0, resizerState.batchSize);
+        samediff::Threads::parallel_tad(func, 0, batchNum);
     }
 
 // simplified bicubic resize without antialiasing
@@ -873,7 +881,7 @@ namespace helpers {
         ImageResizerState st(alignCorners, halfPixelAlign); // align_corners, half_pixel_align
         int res = st.validateAndCreateOutput(image, width, height);
         if (res == Status::OK())
-            bicubicInterpolateWithCaching<T>(image, st, halfPixelAlign, output);
+            bicubicInterpolateWithCaching<T, float>(image, st, halfPixelAlign, output);
 
         return res;
     }
@@ -882,15 +890,215 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context, image, width, height, alignCorners, halfPixelAlign, output), NUMERIC_TYPES);
     }
 // ------------------------------------------------------------------------------------------------------------------ //
+    struct CachedInterpolation {
+        Nd4jLong start;
+        Nd4jLong end;
+        float startScale;
+        float endMinusOneScale;
+        bool needsBounding;
+    };
+
+    template <typename T>
+    struct ScaleCache {
+        float yScale;
+        T const* yPtr;
+    };
+    // Computes the sum of all x values defined by <x_interp> taken across
+    // the y offsets and scales defined by y_ptrs and y_scales, for channel c.
+    //
+    // Note that <NeedsXBounding> is a template parameter to avoid a performance
+    // penalty from dynamically checking it.
+    template <typename T>
+    static void computePatchSumOf3Channels(float scale,
+                                           ImageResizerState const& st,
+                                           std::vector<ScaleCache<T>> const& yPtrs,
+                                           CachedInterpolation const& xCache,
+                                           float* outputPtr) {
+
+        bool const needsXBounding = xCache.needsBounding;
+
+        auto boundIfNeeded = [needsXBounding](Nd4jLong x, Nd4jLong y) -> Nd4jLong {
+            return (needsXBounding ? bound(x, y) : (x));
+        };
+
+        float sum_0 = 0;
+        float sum_1 = 0;
+        float sum_2 = 0;
+        for (int i = 0; i < yPtrs.size(); ++i) {
+            const T* ptr = yPtrs[i].yPtr;
+            float scaleX = xCache.startScale;
+            Nd4jLong offset = 3 * boundIfNeeded(xCache.start, st.inWidth);
+            float sum_y_0 = static_cast<float>(ptr[offset + 0]) * scaleX;
+            float sum_y_1 = static_cast<float>(ptr[offset + 1]) * scaleX;
+            float sum_y_2 = static_cast<float>(ptr[offset + 2]) * scaleX;
+
+            if (xCache.start + 1 != xCache.end) {
+                for (Nd4jLong x = xCache.start + 1; x < xCache.end - 1; ++x) {
+                    Nd4jLong offset = 3 * boundIfNeeded(x, st.inWidth);
+                    sum_y_0 += static_cast<float>(ptr[offset + 0]);
+                    sum_y_1 += static_cast<float>(ptr[offset + 1]);
+                    sum_y_2 += static_cast<float>(ptr[offset + 2]);
+                }
+                scaleX = xCache.endMinusOneScale;
+                offset = st.channels * boundIfNeeded(xCache.end - 1, st.inWidth);
+                sum_y_0 += static_cast<float>(ptr[offset + 0]) * scaleX;
+                sum_y_1 += static_cast<float>(ptr[offset + 1]) * scaleX;
+                sum_y_2 += static_cast<float>(ptr[offset + 2]) * scaleX;
+            }
+            sum_0 += sum_y_0 * yPtrs[i].yScale;
+            sum_1 += sum_y_1 * yPtrs[i].yScale;
+            sum_2 += sum_y_2 * yPtrs[i].yScale;
+        }
+
+        outputPtr[0] = sum_0 * scale;
+        outputPtr[1] = sum_1 * scale;
+        outputPtr[2] = sum_2 * scale;
+    }
+
+        // Computes the sum of all x values defined by <x_interp> taken across
+        // the y offsets and scales defined by y_ptrs and y_scales, for channel c.
+        //
+        // Note that <NeedsXBounding> is a template parameter to avoid a performance
+        // penalty from dynamically checking it.
+        template <typename T>
+        static void computePatchSum(float scale, const ImageResizerState& st,
+                                    const std::vector<ScaleCache<T>>& yPtrs,
+                                    const CachedInterpolation& xCache,
+                                    float* outputPtr) {
+
+            bool const needsXBounding = xCache.needsBounding;
+
+            auto boundIfNeeded = [needsXBounding](Nd4jLong x, Nd4jLong y) -> Nd4jLong {
+                return (needsXBounding ? bound(x, y) : (x));
+            };
+
+            const auto numChannels = st.channels;
+            for (Nd4jLong c = 0; c < numChannels; ++c) {
+                float sum = 0;
+                for (int i = 0; i < yPtrs.size(); ++i) {
+                    T const* ptr = yPtrs[i].yPtr;
+                    float scaleX = xCache.startScale;
+                    float sumY = static_cast<float>(ptr[numChannels * boundIfNeeded(xCache.start, st.inWidth) + c]) * scaleX;
+                    if (xCache.start + 1 != xCache.end) {
+                        for (Nd4jLong x = xCache.start + 1; x < xCache.end - 1; ++x) {
+                            sumY += static_cast<float>(
+                                    ptr[numChannels * boundIfNeeded(x, st.inWidth) + c]);
+                        }
+                        scaleX = xCache.endMinusOneScale;
+                        sumY += static_cast<float>(ptr[numChannels * boundIfNeeded(xCache.end - 1, st.inWidth) + c]) * scaleX;
+                    }
+                    sum += sumY * yPtrs[i].yScale;
+                }
+                outputPtr[c] = sum * scale;
+            }
+        }
+
+
+
+    template <typename T>
+    static void resizeArea(ImageResizerState const& st, std::vector<CachedInterpolation> const& caches, NDArray const* input, NDArray* output) {
+        T const* inputPtr = input->bufferAsT<T>();
+        float scale = 1.f / (st.heightScale * st.widthScale);
+        auto outputPtr = output->bufferAsT<float>(); // output is always float. TO DO: provide another float types also with  template <typename X, typename Z> declaration
+
+        auto batchProcess = PRAGMA_THREADS_FOR {
+            for (auto batch = start; batch < stop; batch += increment) {
+                for (auto y = 0; y < st.outHeight; ++y) {
+                    const float inY = y * st.heightScale;
+                    const float inY1 = (y + 1) * st.heightScale;
+                    // The start and end height indices of all the cells that could
+                    // contribute to the target cell.
+                    const Nd4jLong yStart = math::nd4j_floor<float, Nd4jLong>(inY);
+                    const Nd4jLong yEnd = math::nd4j_ceil<float, Nd4jLong>(inY1);
+
+                    std::vector<ScaleCache<T>> yCaches;
+                    auto cacheLen = yEnd - yStart;
+                    if (cacheLen) {
+                        yCaches.resize(cacheLen);
+                    };
+
+                    for (auto i = yStart, k = 0LL; i < yEnd; ++i, ++k) {
+                        ScaleCache<T> scaleCache;
+                        if (i < inY) {
+                            scaleCache.yScale = (i + 1 > inY1 ? st.heightScale : i + 1 - inY);
+                        } else {
+                            scaleCache.yScale = (i + 1 > inY1 ? inY1 - i : 1.0);
+                        }
+                        scaleCache.yPtr = inputPtr + (batch * st.inHeight * st.inWidth * st.channels +
+                                bound(i, st.inHeight) * st.inWidth * st.channels);
+                        yCaches[k] = scaleCache;
+                    }
+                    float* output = outputPtr + (batch * st.outHeight  +  y)  * st.channels * st.outWidth;
+
+                    if (st.channels == 3) {
+                        for (Nd4jLong x = 0; x < st.outWidth; ++x) {
+                            const CachedInterpolation &xCache = caches[x];
+                            computePatchSumOf3Channels<T>(scale, st, yCaches, xCache, output);
+                            output += st.channels;
+                        }
+                    } else {
+                        for (Nd4jLong x = 0; x < st.outWidth; ++x) {
+                            const CachedInterpolation &xCache = caches[x];
+                            computePatchSum<T>(scale, st, yCaches, xCache, output);
+                            output += st.channels;
+                        }
+                    }
+                }
+            }
+        };
+        samediff::Threads::parallel_tad(batchProcess, 0, st.batchSize, 1);
+    }
+
+    template <typename X>
+    int resizeAreaFunctor_(nd4j::LaunchContext* context, NDArray const* image, int const width, int const height,
+                              bool const alignCorners, NDArray* output) {
+            ImageResizerState st(alignCorners, false); // Create resize info
+            auto res = st.validateAndCalculateOutputSize(image, width, height);
+            if (Status::OK() == res) {
+                std::vector<CachedInterpolation> xCached(st.outWidth);
+                auto cachingProcedure = PRAGMA_THREADS_FOR {
+                    for (auto x = start; x < stop; x += increment) {
+                        auto &xCache = xCached[x];
+                        const float inX = x * st.widthScale;
+                        const float inX1 = (x + 1) * st.widthScale;
+
+                        Nd4jLong v = math::nd4j_floor<float, Nd4jLong>(inX);
+                        xCache.start = v;
+                        xCache.startScale =
+                                v < inX ? (v + 1 > inX1 ? st.widthScale : v + 1 - inX) : (v + 1 > inX1 ? inX1 - v
+                                                                                                       : 1.f);
+                        v = math::nd4j_ceil<float, Nd4jLong>(inX1);
+                        xCache.end = v--;
+                        xCache.endMinusOneScale =
+                                v < inX ? (v + 1 > inX1 ? st.widthScale : v + 1 - inX) : (v + 1 > inX1 ? inX1 - v
+                                                                                                       : 1.f);
+                        xCache.needsBounding = bound(xCache.start, st.inWidth) != xCache.start ||
+                                               bound(xCache.end - 1, st.inWidth) != (xCache.end - 1);
+
+                    }
+                };
+                samediff::Threads::parallel_for(cachingProcedure, 0, xCached.size(), 1);
+
+                resizeArea<X>(st, xCached, image, output);
+            }
+            return res;
+    }
+
+    int resizeAreaFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
+                              bool const alignCorners, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(image->dataType(), return resizeAreaFunctor_, (context, image, width, height, alignCorners, output), NUMERIC_TYPES);
+    }
+
+// ------------------------------------------------------------------------------------------------------------------ //
     int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
                       ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output) {
         switch (method) {
             case kResizeBilinear: return resizeBilinearFunctor(context, image, width, height, false, false, output); break;
             case kResizeNearest: return resizeNeighborFunctor(context, image, width, height, false, false, output); break;
             case kResizeBicubic: return resizeBicubicFunctor(context, image, width, height, preserveAspectRatio, antialias, output); break;
+            case kResizeArea: return resizeAreaFunctor(context, image, width, height, preserveAspectRatio, output);
             case kResizeLanczos5:
             case kResizeGaussian:
-            case kResizeArea:
             case kResizeMitchelcubic:
                 throw std::runtime_error("helper::resizeFunctor: Non implemented yet.");
         }

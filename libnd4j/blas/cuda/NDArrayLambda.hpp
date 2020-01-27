@@ -247,73 +247,73 @@ static _CUDA_G void lambdaTriplewiseKernel(void* vw, Nd4jLong *wShapeInfo, void*
 
 //////////////////////////////////////////////////////////////////////////
 template<typename Lambda>
-void NDArray::applyLambda(Lambda func, NDArray* target) {
-    auto result = target == nullptr ? this : target;
+void NDArray::applyLambda(Lambda func, NDArray& target) {
+
     auto dtype = this->dataType();
 
-    if (dtype != result->dataType())
+    if (dtype != target.dataType())
         throw std::runtime_error("NDArray::applyLambda X/Z data types must be the same");
-        //throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, result->dataType());
-    prepareSpecialUse({result}, {this});
-    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
-    registerSpecialUse({result}, {this});
+        //throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, target.dataType());
+    prepareSpecialUse({&target}, {this});
+    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), func), LIBND4J_TYPES);
+    registerSpecialUse({&target}, {this});
 
 }
 
 //////////////////////////////////////////////////////////////////////////
 template<typename Lambda>
-void NDArray::applyPairwiseLambda(const NDArray* other, Lambda func, NDArray* target) {
-    auto result = target == nullptr ? this : target;
+void NDArray::applyPairwiseLambda(const NDArray& other, Lambda func, NDArray& target) {
+
     auto dtype = this->dataType();
 
-    if (dtype != result->dataType() || dtype != other->dataType())
+    if (dtype != target.dataType() || dtype != other.dataType())
         throw std::runtime_error("NDArray::applyPairwiseLambda X/Y/Z data types must be the same");
-    //throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, result->dataType());
+    //throw datatype_exception::build("NDArray::applyLambda X/Z data types must be the same", dtype, target.dataType());
 
-    prepareSpecialUse({result}, {this, other});
-    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
-    registerSpecialUse({result}, {this, other});
+    prepareSpecialUse({&target}, {this, &other});
+    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), func), LIBND4J_TYPES);
+    registerSpecialUse({&target}, {this, &other});
 
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyIndexedLambda(Lambda func, NDArray* target) {
-    auto result = target == nullptr ? this : target;
+void NDArray::applyIndexedLambda(Lambda func, NDArray& target) {
+
     auto dtype = this->dataType();
-    if (dtype != result->dataType())
+    if (dtype != target.dataType())
         throw std::runtime_error("NDArray::applyIndexedLambda X/Z data types must be the same");
 
-    prepareSpecialUse({result}, {this});
-    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaIndexedLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
-    registerSpecialUse({result}, {this});
+    prepareSpecialUse({&target}, {this});
+    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaIndexedLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), func), LIBND4J_TYPES);
+    registerSpecialUse({&target}, {this});
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyIndexedPairwiseLambda(NDArray* other, Lambda func, NDArray* target) {
-    auto result = target == nullptr ? this : target;
+void NDArray::applyIndexedPairwiseLambda(NDArray& other, Lambda func, NDArray& target) {
+
     auto dtype = this->dataType();
-    if (dtype != result->dataType() || dtype != other->dataType())
+    if (dtype != target.dataType() || dtype != other.dataType())
         throw std::runtime_error("NDArray::applyIndexedPairwiseLambda X/Y/Z data types must be the same");
 
-    prepareSpecialUse({result}, {this, other});
-    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaIndexedPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
-    registerSpecialUse({result}, {this, other});
+    prepareSpecialUse({&target}, {this, &other});
+    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaIndexedPairwiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), func), LIBND4J_TYPES);
+    registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename Lambda>
-void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, Lambda func, NDArray* target) {
-    auto result = target == nullptr ? this : target;
+void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third, Lambda func, NDArray& target) {
+
     auto dtype = this->dataType();
 
-    if (dtype != result->dataType() || dtype != second->dataType() || dtype != third->dataType())
+    if (dtype != target.dataType() || dtype != second.dataType() || dtype != third.dataType())
         throw std::runtime_error("NDArray::applyTriplewiseLambda X/Y/Z data types must be the same");
 
-    prepareSpecialUse({result}, {this, second, third});
-    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaTriplewiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), second->specialBuffer(), second->specialShapeInfo(), third->specialBuffer(), third->specialShapeInfo(), result->specialBuffer(), result->specialShapeInfo(), func), LIBND4J_TYPES);
-    registerSpecialUse({result}, {this, second, third});
+    prepareSpecialUse({&target}, {this, &second, &third});
+    BUILD_SINGLE_SELECTOR(dtype, LambdaHelper ,::lambdaTriplewiseLauncher(this->_context->getCudaStream(), this->specialBuffer(), this->specialShapeInfo(), second.specialBuffer(), second.specialShapeInfo(), third.specialBuffer(), third.specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), func), LIBND4J_TYPES);
+    registerSpecialUse({&target}, {this, &second, &third});
 }
 
 

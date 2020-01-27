@@ -45,7 +45,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
             v = i++;
         }
 
-        std::unique_ptr<ResultSet> outputView(output->allTensorsAlongDimension(dims));
+        ResultSet outputView = output->allTensorsAlongDimension(dims);
         REQUIRE_TRUE(block.width() > output->sizeAt(0), 0, "embedding_lookup: input list should be greater then %i, but %i given.",
                     output->sizeAt(0), block.width()
                 );
@@ -53,7 +53,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
             Nd4jLong thisIndex = (*indeces).e<Nd4jLong>(e);
             input   = INPUT_VARIABLE(thisIndex); // lookup param
 
-            outputView->at(e)->assign(input);
+            outputView.at(e)->assign(input);
         }
     }
     else {
@@ -87,7 +87,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
     int inRank = shape::rank(inShapeInfo);
     if (inputShape->size() == 2u) {
         int outRank = inRank;
-        
+
         std::vector<Nd4jLong> shapeInfo(outRank);
 
         shapeInfo[0] = indecesShapeInfo[1]; // vector - how many elements
@@ -98,14 +98,14 @@ DECLARE_SHAPE_FN(embedding_lookup) {
         return SHAPELIST(outShapeInfo);
     }
 
-    
-    int outRank = inRank + 1;    
+
+    int outRank = inRank + 1;
     std::vector<Nd4jLong> shapeInfo(outRank);
     auto indeces = INPUT_VARIABLE(block.width() - 1);
     shapeInfo[0] = indeces->lengthOf(); // vector - how many elements
     for (int e = 1; e < outRank; e++)
         shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
-    
+
     auto outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), shapeInfo);
     return SHAPELIST(outShapeInfo);
 }

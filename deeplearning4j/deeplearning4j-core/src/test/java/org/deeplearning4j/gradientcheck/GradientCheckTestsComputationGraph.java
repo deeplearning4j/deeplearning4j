@@ -103,13 +103,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testBasicIris()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                        new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testBasicIris()";
         assertTrue(msg, gradOK);
@@ -155,13 +154,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testBasicIrisWithMerging()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                        new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testBasicIrisWithMerging()";
         assertTrue(msg, gradOK);
@@ -213,13 +211,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                            new INDArray[] {labels});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                    .labels(new INDArray[]{labels}));
 
             String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
             assertTrue(msg, gradOK);
@@ -274,13 +271,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                            new INDArray[] {labels});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                    .labels(new INDArray[]{labels}));
 
             String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
             assertTrue(msg, gradOK);
@@ -328,9 +324,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
                     graph.fit(new DataSet(in, labels));
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in},
-                            new INDArray[]{labels});
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in})
+                            .labels(new INDArray[]{labels}));
                     assertTrue(msg, gradOK);
                     TestUtils.testModelSerialization(graph);
                 }
@@ -372,13 +367,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testCnnDepthMerge()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                        new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testCnnDepthMerge()";
         assertTrue(msg, gradOK);
@@ -430,13 +424,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithMerging()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                        new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testLSTMWithMerging()";
         assertTrue(msg, gradOK);
@@ -466,13 +459,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithSubset()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                        new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testLSTMWithSubset()";
         assertTrue(msg, gradOK);
@@ -504,26 +496,24 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithLastTimeStepVertex()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
         //First: test with no input mask array
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                        new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testLSTMWithLastTimeStepVertex()";
         assertTrue(msg, gradOK);
 
         //Second: test with input mask arrays.
-        INDArray inMask = Nd4j.zeros(3, 5);
-        inMask.putRow(0, Nd4j.create(new double[] {1, 1, 1, 0, 0}));
-        inMask.putRow(1, Nd4j.create(new double[] {1, 1, 1, 1, 0}));
-        inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1, 1}));
-        graph.setLayerMaskArrays(new INDArray[] {inMask}, null);
-        gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
+        INDArray inMask = Nd4j.zeros(3, 4);
+        inMask.putRow(0, Nd4j.create(new double[] {1, 1, 0, 0}));
+        inMask.putRow(1, Nd4j.create(new double[] {1, 1, 1, 0}));
+        inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1}));
+        gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}).inputMask(new INDArray[]{inMask}));
 
         assertTrue(msg, gradOK);
         TestUtils.testModelSerialization(graph);
@@ -566,13 +556,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithDuplicateToTimeSeries()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input1, input2},
-                        new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input1, input2})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testLSTMWithDuplicateToTimeSeries()";
         assertTrue(msg, gradOK);
@@ -615,13 +604,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testLSTMWithReverseTimeSeriesVertex()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testLSTMWithDuplicateToTimeSeries()";
         assertTrue(msg, gradOK);
@@ -632,8 +620,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         inMask.putRow(1, Nd4j.create(new double[] {1, 1, 0, 1, 0}));
         inMask.putRow(2, Nd4j.create(new double[] {1, 1, 1, 1, 1}));
         graph.setLayerMaskArrays(new INDArray[] {inMask}, null);
-        gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
+        gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         assertTrue(msg, gradOK);
         TestUtils.testModelSerialization(graph);
@@ -671,13 +659,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testMultipleInputsLayer() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, inputs,
-                            new INDArray[] {out});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(inputs)
+                    .labels(new INDArray[]{out}));
 
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -712,13 +699,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testMultipleOutputsLayer() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                            new INDArray[] {out});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                    .labels(new INDArray[]{out}));
 
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -759,12 +745,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, new INDArray[] {out});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(input)
+                    .labels(new INDArray[]{out}));
 
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -810,13 +796,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testMultipleOutputsMergeVertex() - minibatchSize = " + mb;
             if (PRINT_RESULTS) {
                 System.out.println(msg);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
-                            new INDArray[] {out});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                    .labels(new INDArray[]{out}));
 
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -873,19 +858,18 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         Map<String, INDArray> out = graph.feedForward(new INDArray[] {pos, anc, neg}, true);
 
-        for (String s : out.keySet()) {
-            System.out.println(s + "\t" + Arrays.toString(out.get(s).shape()));
-        }
+//        for (String s : out.keySet()) {
+//            System.out.println(s + "\t" + Arrays.toString(out.get(s).shape()));
+//        }
 
         if (PRINT_RESULTS) {
             System.out.println("testBasicIrisTripletStackingL2Loss()");
-            for (int j = 0; j < graph.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//            for (int j = 0; j < graph.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {pos, anc, neg},
-                        new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{pos, anc, neg})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testBasicIrisTripletStackingL2Loss()";
         assertTrue(msg, gradOK);
@@ -941,13 +925,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 String msg = "testBasicCenterLoss() - lambda = " + lambda + ", trainFirst = " + train;
                 if (PRINT_RESULTS) {
                     System.out.println(msg);
-                    for (int j = 0; j < graph.getNumLayers(); j++)
-                        System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                    for (int j = 0; j < graph.getNumLayers(); j++)
+//                        System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
                 }
 
-                boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {example},
-                                new INDArray[] {labels});
+                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{example})
+                        .labels(new INDArray[]{labels}));
 
                 assertTrue(msg, gradOK);
                 TestUtils.testModelSerialization(graph);
@@ -1007,8 +990,8 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
                 String msg = "testBasicCenterLoss() - trainFirst = " + train;
                 if (PRINT_RESULTS) {
                     System.out.println(msg);
-                    for (int j = 0; j < net.getnLayers(); j++)
-                        System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
+//                    for (int j = 0; j < net.getnLayers(); j++)
+//                        System.out.println("Layer " + j + " # params: " + net.getLayer(j).numParams());
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -1056,13 +1039,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
+                    .labels(new INDArray[]{labels}));
 
             assertTrue(testName, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -1115,13 +1097,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels1, labels2});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
+                    .labels(new INDArray[]{labels1, labels2}));
 
             assertTrue(testName, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -1174,13 +1155,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels1, labels2});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
+                    .labels(new INDArray[]{labels1, labels2}));
 
             assertTrue(testName, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -1238,15 +1218,14 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
             graph.setLayerMaskArrays(new INDArray[] {inMask1, inMask2}, null);
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels1, labels2}, new INDArray[] {inMask1, inMask2}, null);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
+                    .labels(new INDArray[]{labels1, labels2}).inputMask(new INDArray[]{inMask1, inMask2}));
 
             assertTrue(testName, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -1298,13 +1277,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
-                            new INDArray[] {labels1, labels2});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1, in2})
+                    .labels(new INDArray[]{labels1, labels2}));
             assertTrue(testName, gradOK);
             TestUtils.testModelSerialization(graph);
         }
@@ -1341,13 +1319,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1},
-                            new INDArray[] {labels1});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1})
+                    .labels(new INDArray[]{labels1}));
 
             assertTrue(testName, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -1391,13 +1368,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-                for (int j = 0; j < graph.getNumLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+//                for (int j = 0; j < graph.getNumLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1},
-                            new INDArray[] {labels1});
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1})
+                    .labels(new INDArray[]{labels1}));
 
             assertTrue(testName, gradOK);
             TestUtils.testModelSerialization(graph);
@@ -1430,12 +1406,12 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
         if (PRINT_RESULTS) {
             System.out.println("testGraphEmbeddingLayerSimple");
-            for (int j = 0; j < cg.getNumLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + cg.getLayer(j).numParams());
+//            for (int j = 0; j < cg.getNumLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + cg.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(cg, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(cg).inputs(new INDArray[]{input})
+                .labels(new INDArray[]{labels}));
 
         String msg = "testGraphEmbeddingLayerSimple";
         assertTrue(msg, gradOK);

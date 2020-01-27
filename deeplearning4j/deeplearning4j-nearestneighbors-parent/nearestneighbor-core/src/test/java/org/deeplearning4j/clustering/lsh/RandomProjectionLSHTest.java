@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.clustering.lsh;
 
-import org.deeplearning4j.clustering.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;

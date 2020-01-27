@@ -21,6 +21,7 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.execution.input.Operands;
@@ -32,7 +33,7 @@ import static org.junit.Assert.*;
 
 @Slf4j
 @Ignore
-public class GraphInferenceGrpcClientTest {
+public class GraphInferenceGrpcClientTest extends BaseND4JTest {
     @Test
     public void testSimpleGraph_1() throws Exception {
         val exp = Nd4j.create(new double[] {-0.95938617, -1.20301781, 1.22260064, 0.50172403, 0.59972949, 0.78568028, 0.31609724, 1.51674747, 0.68013491, -0.05227458, 0.25903158,1.13243439}, new long[]{3, 1, 4});

@@ -2,6 +2,7 @@ package org.deeplearning4j.remote;
 
 import lombok.val;
 import org.datavec.image.loader.Java2DNativeImageLoader;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.remote.helpers.ImageConversionUtils;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
 import static org.deeplearning4j.parallelism.inference.InferenceMode.SEQUENTIAL;
 import static org.junit.Assert.*;
 
-public class BinaryModelServerTest {
+public class BinaryModelServerTest extends BaseDL4JTest {
     private final int PORT = 18080;
 
     @After

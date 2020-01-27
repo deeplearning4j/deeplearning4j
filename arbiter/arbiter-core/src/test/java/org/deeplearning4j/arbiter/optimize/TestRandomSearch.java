@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
@@ -34,7 +35,7 @@ import java.util.Map;
  * Test random search on the Branin Function:
  * http://www.sfu.ca/~ssurjano/branin.html
  */
-public class TestRandomSearch {
+public class TestRandomSearch extends BaseDL4JTest {
 
     @Test
     public void test() throws Exception {

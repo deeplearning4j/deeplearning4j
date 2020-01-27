@@ -261,19 +261,13 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public INDArray[] outputArguments() {
-        if (!outputArguments.isEmpty()) {
-            return outputArguments.toArray(new INDArray[0]);
-        }
-        return new INDArray[0];
+    public List<INDArray> outputArguments() {
+        return outputArguments;
     }
 
     @Override
-    public INDArray[] inputArguments() {
-        if (!inputArguments.isEmpty())
-            return inputArguments.toArray(new INDArray[0]);
-        return new INDArray[0];
-
+    public List<INDArray> inputArguments() {
+        return inputArguments;
     }
 
     @Override
@@ -367,10 +361,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             for (int i = 0; i < args.length; i++) {
 
                 // it's possible to get into situation where number of args > number of arrays AT THIS MOMENT
-                if (i >= arrsSoFar.length)
+                if (i >= arrsSoFar.size())
                     continue;
 
-                if (!Arrays.equals(args[i].getShape(), arrsSoFar[i].shape()))
+                if (!Arrays.equals(args[i].getShape(), arrsSoFar.get(i).shape()))
                     throw new ND4JIllegalStateException("Illegal array passed in as argument [" + i + "]. Expected shape " + Arrays.toString(args[i].getShape()) + " and received array with shape " + Arrays.toString(arg[i].shape()));
             }
         }

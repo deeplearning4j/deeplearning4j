@@ -57,6 +57,11 @@ import static org.junit.Assert.*;
 
 public class DataSetIteratorTest extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000;
+    }
+
     @Test
     public void testBatchSizeOfOneIris() throws Exception {
         //Test for (a) iterators returning correct number of examples, and
@@ -190,7 +195,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
         INDArray output = model.output(dataTest.getFeatures());
         Evaluation eval = new Evaluation(outputNum);
         eval.eval(dataTest.getLabels(), output);
-        System.out.println(eval.stats());
+//        System.out.println(eval.stats());
     }
 
     @Test
@@ -257,7 +262,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
             INDArray output = model.output(testDS.getFeatures());
             eval.eval(testDS.getLabels(), output);
         }
-        System.out.println(eval.stats(true));
+//        System.out.println(eval.stats(true));
         listener.exportScores(System.out);
     }
 

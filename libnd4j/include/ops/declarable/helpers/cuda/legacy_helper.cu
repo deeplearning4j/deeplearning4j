@@ -34,7 +34,7 @@ namespace helpers {
             return y * (3 * x * x);
         };
 
-        input->applyPairwiseLambda(epsilon, functor, output);
+        input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ namespace helpers {
             return x > T(0.f)? y : -y;
         };
 
-        input->applyPairwiseLambda(epsilon, functor, output);
+        input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -66,7 +66,7 @@ namespace helpers {
             return nd4j::math::nd4j_max<T>(x, (T)0.f) - x * y + nd4j::math::nd4j_log<T,T>((T)1.f + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(x)));
         };
 
-        logits->applyPairwiseLambda(labels, functor, output);
+        logits->applyPairwiseLambda(*labels, functor, *output);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -86,7 +86,7 @@ namespace helpers {
             return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);
         };
 
-        logits->applyPairwiseLambda(labels, functor, output);
+        logits->applyPairwiseLambda(*labels, functor, *output);
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void sigmCrossEntropyGrad(nd4j::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
@@ -104,7 +104,7 @@ namespace helpers {
             return y * ((T) 1.0f  / (ss * ss));
         };
 
-        input->applyPairwiseLambda(epsilon, functor, output);
+        input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,7 +120,7 @@ namespace helpers {
             return y * (p / (p + 1.));
         };
 
-        input->applyPairwiseLambda(epsilon, functor, output);
+        input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
     void softPlusDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -138,7 +138,7 @@ namespace helpers {
             return y * (s * ((T) 1.0f - s));
         };
 
-        input->applyPairwiseLambda(epsilon, functor, output);
+        input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
     void sigmoidDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -151,7 +151,7 @@ namespace helpers {
             return y * simdOps::HardSigmoidDerivative<T>::op(x, nullptr);
         };
 
-        input->applyPairwiseLambda(epsilon, functor, output);
+        input->applyPairwiseLambda(*epsilon, functor, *output);
     }
 
     void hardSigmoidDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -162,24 +162,24 @@ namespace helpers {
     template <typename T>
     linkage void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
         // reduce along axis with
-        std::unique_ptr<NDArray> tempInput(input->dup());
-        input->applyTransform(transform::Exp, tempInput.get());
+        NDArray tempInput = input->dup();
+        input->applyTransform(transform::Exp, tempInput);
         std::vector<int> axisVector;
         if (axis != nullptr) {
             axisVector.resize(axis->lengthOf());
             for (size_t i = 0; i < axisVector.size(); ++i)
                 axisVector[i] = axis->e<int>(i);
         }
-        tempInput->reduceAlongDimension(reduce::Sum, output, axisVector);
-        output->applyTransform(transform::Log, nullptr, nullptr);
+        tempInput.reduceAlongDimension(reduce::Sum, *output, axisVector);
+        output->applyTransform(transform::Log, *output);
     }
 
     template <typename T>
     linkage void logSumExp_(NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
         // reduce along axis with
-        std::unique_ptr<NDArray> tempInput(input->dup());
-        input->applyPairwiseTransform(pairwise::Subtract, subtrah, tempInput.get());
-        tempInput->applyTransform(transform::Exp, nullptr, nullptr);
+        NDArray tempInput = input->dup();
+        input->applyPairwiseTransform(pairwise::Subtract, *subtrah, tempInput);
+        tempInput.applyTransform(transform::Exp, tempInput);
 
         std::vector<int> axisVector;
         if (axis != nullptr) {
@@ -187,8 +187,8 @@ namespace helpers {
             for (size_t i = 0; i < axisVector.size(); ++i)
                 axisVector[i] = axis->e<int>(i);
         }
-        tempInput->reduceAlongDimension(reduce::Sum, output, axisVector);
-        output->applyTransform(transform::Log, nullptr, nullptr);
+        tempInput.reduceAlongDimension(reduce::Sum, *output, axisVector);
+        output->applyTransform(transform::Log, *output);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -223,16 +223,16 @@ namespace helpers {
 
 
         if (weights->isScalar()) {
-            const_cast<NDArray*>(input)->applyPairwiseLambda(const_cast<NDArray*>(targets), mainRoutineT1, output);
+            const_cast<NDArray*>(input)->applyPairwiseLambda(const_cast<NDArray&>(*targets), mainRoutineT1, *output);
         }
         else
         {
             std::unique_ptr<NDArray> targetVector(new NDArray(*weights));
-            targetVector->applyScalar(scalar::Add, -1.f);
+            targetVector->applyScalar(scalar::Add, -1.f, *targetVector);
 
             std::unique_ptr<NDArray> targetTensor(new NDArray(*targets));
             *targetTensor = (*targetVector * *targetTensor) + T(1.f);
-            const_cast<NDArray*>(input)->applyTriplewiseLambda(const_cast<NDArray*>(targets), targetTensor.get(), mainRoutineT2, output);
+            const_cast<NDArray*>(input)->applyTriplewiseLambda(const_cast<NDArray&>(*targets), *targetTensor.get(), mainRoutineT2, *output);
         }
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

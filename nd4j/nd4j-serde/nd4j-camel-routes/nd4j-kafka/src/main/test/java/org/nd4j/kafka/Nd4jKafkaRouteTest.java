@@ -21,6 +21,7 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.camel.kafka.KafkaConnectionInformation;
 import org.nd4j.camel.kafka.Nd4jKafkaConsumer;
 import org.nd4j.camel.kafka.Nd4jKafkaProducer;
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 7/19/16.
  */
-public class Nd4jKafkaRouteTest {
+public class Nd4jKafkaRouteTest extends BaseND4JTest {
     private EmbeddedKafkaCluster kafka;
     private EmbeddedZookeeper zk;
     private CamelContext camelContext;

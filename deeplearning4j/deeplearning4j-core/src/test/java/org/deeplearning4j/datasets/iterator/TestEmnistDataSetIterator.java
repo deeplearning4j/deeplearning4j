@@ -19,7 +19,9 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -33,6 +35,9 @@ import static org.junit.Assert.*;
 @Slf4j
 public class TestEmnistDataSetIterator extends BaseDL4JTest {
 
+    @Rule
+    public Timeout timeout = Timeout.seconds(600);
+
     @Override
     public DataType getDataType(){
         return DataType.FLOAT;
@@ -41,17 +46,17 @@ public class TestEmnistDataSetIterator extends BaseDL4JTest {
     @Test
     public void testEmnistDataSetIterator() throws Exception {
 
-        //        EmnistFetcher fetcher = new EmnistFetcher(EmnistDataSetIterator.Set.COMPLETE);
-        //        File baseEmnistDir = fetcher.getFILE_DIR();
-        //        if(baseEmnistDir.exists()){
-        //            FileUtils.deleteDirectory(baseEmnistDir);
-        //        }
-        //        assertFalse(baseEmnistDir.exists());
-
 
         int batchSize = 128;
 
-        for (EmnistDataSetIterator.Set s : EmnistDataSetIterator.Set.values()) {
+        EmnistDataSetIterator.Set[] sets;
+        if(isIntegrationTests()){
+            sets = EmnistDataSetIterator.Set.values();
+        } else {
+            sets = new EmnistDataSetIterator.Set[]{EmnistDataSetIterator.Set.MNIST, EmnistDataSetIterator.Set.LETTERS};
+        }
+
+        for (EmnistDataSetIterator.Set s : sets) {
             boolean isBalanced = EmnistDataSetIterator.isBalanced(s);
             int numLabels = EmnistDataSetIterator.numLabels(s);
             INDArray labelCounts = null;

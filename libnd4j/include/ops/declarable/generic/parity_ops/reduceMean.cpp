@@ -47,7 +47,7 @@ CUSTOM_OP_IMPL(reduce_mean, 1, 1, false, 0, 0) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_MEAN OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
-    input->reduceAlongDimension(reduce::Mean, output, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::Mean, *output, dimensions, keepDims);
 
     return Status::OK();
 }

@@ -25,9 +25,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
-import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasLeakyReLU;
-import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasPReLU;
-import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.KerasThresholdedReLU;
+import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
@@ -313,6 +311,12 @@ public class KerasLayerUtils {
             if (lambdaLayer != null){
                 layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
             }
+        } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_RELU())){
+            layer = new KerasReLU(layerConfig, enforceTrainingConfig);
+        } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_ELU())){
+            layer = new KerasELU(layerConfig, enforceTrainingConfig);
+        } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_SOFTMAX())){
+            layer = new KerasSoftmax(layerConfig, enforceTrainingConfig);
         }
         if (layer == null){
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);

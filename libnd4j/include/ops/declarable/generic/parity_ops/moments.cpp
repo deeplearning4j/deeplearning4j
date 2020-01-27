@@ -49,8 +49,8 @@ namespace nd4j {
             }
 
             std::vector<int>& dims = axis;
-            input->varianceAlongDimension(variance::SummaryStatsVariance, variances, false, axis);
-            input->reduceAlongDimension(reduce::Mean, means, axis, keepDims);
+            input->varianceAlongDimension(variance::SummaryStatsVariance, *variances, false, axis);
+            input->reduceAlongDimension(reduce::Mean, *means, axis, keepDims);
 
             return Status::OK();
         }
@@ -74,10 +74,10 @@ namespace nd4j {
             }
             //std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
-    
+
             auto meanShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
             auto varianceShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, keepDims, false, block.workspace());
-            return SHAPELIST(meanShape, varianceShape); 
+            return SHAPELIST(meanShape, varianceShape);
         }
 
         DECLARE_TYPES(moments) {

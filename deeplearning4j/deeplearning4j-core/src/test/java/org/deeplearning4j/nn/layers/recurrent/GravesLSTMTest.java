@@ -220,20 +220,20 @@ public class GravesLSTMTest extends BaseDL4JTest {
         INDArray out1 = net.output(in1);
         INDArray out2 = net.output(in2);
 
-        System.out.println(Arrays.toString(net.output(in1).data().asFloat()));
-        System.out.println(Arrays.toString(net.output(in2).data().asFloat()));
+//        System.out.println(Arrays.toString(net.output(in1).data().asFloat()));
+//        System.out.println(Arrays.toString(net.output(in2).data().asFloat()));
 
         List<INDArray> activations1 = net.feedForward(in1);
         List<INDArray> activations2 = net.feedForward(in2);
 
-        for (int i = 0; i < 3; i++) {
-            System.out.println("-----\n" + i);
-            System.out.println(Arrays.toString(activations1.get(i).dup().data().asDouble()));
-            System.out.println(Arrays.toString(activations2.get(i).dup().data().asDouble()));
-
-            System.out.println(activations1.get(i));
-            System.out.println(activations2.get(i));
-        }
+//        for (int i = 0; i < 3; i++) {
+//            System.out.println("-----\n" + i);
+//            System.out.println(Arrays.toString(activations1.get(i).dup().data().asDouble()));
+//            System.out.println(Arrays.toString(activations2.get(i).dup().data().asDouble()));
+//
+//            System.out.println(activations1.get(i));
+//            System.out.println(activations2.get(i));
+//        }
 
 
 

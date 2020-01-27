@@ -64,7 +64,7 @@ public class TestCustomLayers extends BaseDL4JTest {
         String json = conf.toJson();
         String yaml = conf.toYaml();
 
-        System.out.println(json);
+//        System.out.println(json);
 
         MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
         assertEquals(conf, confFromJson);
@@ -88,7 +88,7 @@ public class TestCustomLayers extends BaseDL4JTest {
         String json = conf.toJson();
         String yaml = conf.toYaml();
 
-        System.out.println(json);
+//        System.out.println(json);
 
         ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
         assertEquals(conf, confFromJson);
@@ -135,7 +135,7 @@ public class TestCustomLayers extends BaseDL4JTest {
         String json = conf.toJson();
         String yaml = conf.toYaml();
 
-        System.out.println(json);
+//        System.out.println(json);
 
         MultiLayerConfiguration confFromJson = MultiLayerConfiguration.fromJson(json);
         assertEquals(conf, confFromJson);
@@ -188,7 +188,7 @@ public class TestCustomLayers extends BaseDL4JTest {
         String json = conf.toJson();
         String yaml = conf.toYaml();
 
-        System.out.println(json);
+//        System.out.println(json);
 
         ComputationGraphConfiguration confFromJson = ComputationGraphConfiguration.fromJson(json);
         assertEquals(conf, confFromJson);

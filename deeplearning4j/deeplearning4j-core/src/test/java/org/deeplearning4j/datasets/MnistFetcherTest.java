@@ -20,11 +20,9 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.base.MnistFetcher;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
@@ -47,6 +45,8 @@ public class MnistFetcherTest extends BaseDL4JTest {
 
     @ClassRule
     public static TemporaryFolder testDir = new TemporaryFolder();
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @BeforeClass
     public static void setup() throws Exception {

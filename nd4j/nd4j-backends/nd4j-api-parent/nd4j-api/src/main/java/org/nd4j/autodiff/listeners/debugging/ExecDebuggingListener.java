@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.listeners.debugging;
 
+import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
@@ -113,16 +114,16 @@ public class ExecDebuggingListener extends BaseListener {
                 if(co.tArgs() != null && co.tArgs().length > 0) {
                     sb.append("\n\ttArgs=").append(Arrays.toString(co.tArgs()));
                 }
-                INDArray[] inputs = co.inputArguments();
-                INDArray[] outputs = co.outputArguments();
+                val inputs = co.inputArguments();
+                val outputs = co.outputArguments();
                 if(inputs != null ) {
-                    for (int i = 0; i < inputs.length; i++) {
-                        sb.append("\n\tInput[").append(i).append("]=").append(inputs[i].shapeInfoToString());
+                    for (int i = 0; i < inputs.size(); i++) {
+                        sb.append("\n\tInput[").append(i).append("]=").append(inputs.get(i).shapeInfoToString());
                     }
                 }
                 if(outputs != null ) {
-                    for (int i = 0; i < outputs.length; i++) {
-                        sb.append("\n\tOutputs[").append(i).append("]=").append(outputs[i].shapeInfoToString());
+                    for (int i = 0; i < outputs.size(); i++) {
+                        sb.append("\n\tOutputs[").append(i).append("]=").append(outputs.get(i).shapeInfoToString());
                     }
                 }
             } else {
@@ -156,22 +157,22 @@ public class ExecDebuggingListener extends BaseListener {
                 if(co.tArgs() != null && co.tArgs().length > 0 ){
                     sb.append("op.addTArgument(").append(Arrays.toString(co.tArgs()).replaceAll("[\\[\\]]", "")).append(");\n");
                 }
-                INDArray[] inputs = co.inputArguments();
-                INDArray[] outputs = co.outputArguments();
+                val inputs = co.inputArguments();
+                val outputs = co.outputArguments();
                 if(inputs != null ) {
-                    sb.append("INDArray[] inputs = new INDArray[").append(inputs.length).append("];\n");
-                    for (int i = 0; i < inputs.length; i++) {
+                    sb.append("INDArray[] inputs = new INDArray[").append(inputs.size()).append("];\n");
+                    for (int i = 0; i < inputs.size(); i++) {
                         sb.append("inputs[").append(i).append("] = ");
-                        sb.append(createString(inputs[i]))
+                        sb.append(createString(inputs.get(i)))
                                 .append(";\n");
                     }
                     sb.append("op.addInputArgument(inputs);\n");
                 }
                 if(outputs != null ) {
-                    sb.append("INDArray[] outputs = new INDArray[").append(outputs.length).append("];\n");
-                    for (int i = 0; i < outputs.length; i++) {
+                    sb.append("INDArray[] outputs = new INDArray[").append(outputs.size()).append("];\n");
+                    for (int i = 0; i < outputs.size(); i++) {
                         sb.append("outputs[").append(i).append("] = ");
-                        sb.append(createString(outputs[i]))
+                        sb.append(createString(outputs.get(i)))
                                 .append(";\n");
                     }
                     sb.append("op.addOutputArgument(outputs);\n");

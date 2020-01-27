@@ -21,8 +21,9 @@
 #ifndef LIBND4J_PLAY_H
 #define LIBND4J_PLAY_H
 
-#include <type_boilerplate.h>
-
+//#include <type_boilerplate.h>
+#include <platform_boilerplate.h>
+/*
 #define DATA_TYPES \
         (DATA_FLOAT, float) ,\
         (DATA_DOUBLE, double)
@@ -41,6 +42,9 @@
 
 
 BUILD_SINGLE_TEMPLATE_TWICE(template class functionName, , DATA_TYPES)
+ */
+
+DECLARE_PLATFORM(conv2d, ENGINE_CPU)
 
 //BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
 

@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.utils.DL4JKerasModelValidator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Rule;

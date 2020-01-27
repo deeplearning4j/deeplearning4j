@@ -922,9 +922,9 @@ public class MultiLayerTest extends BaseDL4JTest {
         MultiLayerNetwork modelExpectedArch = new MultiLayerNetwork(confForArchitecture);
         modelExpectedArch.init();
         MultiLayerNetwork modelMow = new TransferLearning.Builder(modelExpectedArch).setFeatureExtractor(2).build();
-        System.out.println(modelExpectedArch.summary());
-        System.out.println(modelMow.summary());
-        System.out.println(modelMow.summary(InputType.recurrent(V_HEIGHT*V_WIDTH*3)));
+//        System.out.println(modelExpectedArch.summary());
+//        System.out.println(modelMow.summary());
+//        System.out.println(modelMow.summary(InputType.recurrent(V_HEIGHT*V_WIDTH*3)));
     }
 
     @Test(expected = DL4JException.class)
@@ -1149,7 +1149,7 @@ public class MultiLayerTest extends BaseDL4JTest {
         int nOut = 3;
 
         for(WorkspaceMode ws : WorkspaceMode.values()) {
-            System.out.println("***** WORKSPACE: " + ws);
+//            System.out.println("***** WORKSPACE: " + ws);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                     .updater(new Adam(0.01))

@@ -81,7 +81,7 @@ namespace nd4j {
                 // Y gradient
                 //epsNext->applyTriplewiseLambda(x, y, lambdaY, gradY);
                 gradY->assign((*epsNext) * (*x) / ((*y) * (*y)));
-                gradY->applyTransform(transform::Neg, nullptr, nullptr);
+                gradY->applyTransform(transform::Neg, *gradY);
 
             } else if (y->isScalar()) {
                 // scalar case
@@ -91,17 +91,17 @@ namespace nd4j {
                 //tmpX.printBuffer("SumX");
                 //tmp.printBuffer("Sum Eps");
                 gradY->assign(tmp * tmpX / ((*y) * (*y)));
-                gradY->applyTransform(transform::Neg, nullptr, nullptr);
+                gradY->applyTransform(transform::Neg, *gradY);
 
-                //epsNext->applyLambda(lambdaS, gradX);
-                epsNext->applyScalarArr(scalar::Divide, y, gradX, nullptr);
+                //epsNext->applyLambda(lambdaS, *gradX);
+                epsNext->applyScalarArr(scalar::Divide, *y, *gradX);
             } else {
                 // broadcast case
 
                 auto preX = *epsNext / *y;
 
                 NDArray negX(*x);
-                x->applyTransform(transform::Neg, &negX);
+                x->applyTransform(transform::Neg, negX);
                 auto preY = *epsNext * negX / ((*y) * (*y));
 
                 auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
@@ -110,14 +110,12 @@ namespace nd4j {
                 if (axisX.size() > 0) {
                     auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
-                    delete sum;
-                } else 
+                } else
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
                     auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
-                    delete sum;
                 } else
                     gradY->assign(preY);
             }

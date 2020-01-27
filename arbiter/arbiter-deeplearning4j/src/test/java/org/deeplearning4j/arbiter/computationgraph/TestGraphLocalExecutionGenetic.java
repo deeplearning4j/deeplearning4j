@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.computationgraph;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
@@ -79,10 +80,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class TestGraphLocalExecutionGenetic {
+public class TestGraphLocalExecutionGenetic extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 45000L;
+    }
 
     @Test
     public void testLocalExecutionDataSources() throws Exception {
@@ -115,7 +121,7 @@ public class TestGraphLocalExecutionGenetic {
             if (dataApproach == 0) {
                 ds = TestDL4JLocalExecution.MnistDataSource.class;
                 dsP = new Properties();
-                dsP.setProperty("minibatch", "8");
+                dsP.setProperty("minibatch", "2");
 
                 candidateGenerator = new GeneticSearchCandidateGenerator.Builder(mls, scoreFunction)
                         .populationModel(new PopulationModel.Builder().populationSize(5).build())
@@ -148,7 +154,7 @@ public class TestGraphLocalExecutionGenetic {
                     .dataSource(ds, dsP)
                     .modelSaver(new FileModelSaver(modelSave))
                     .scoreFunction(new TestSetLossScoreFunction())
-                    .terminationConditions(new MaxTimeCondition(2, TimeUnit.MINUTES),
+                    .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
                             new MaxCandidatesCondition(10))
                     .build();
 
@@ -157,7 +163,7 @@ public class TestGraphLocalExecutionGenetic {
             runner.execute();
 
             List<ResultReference> results = runner.getResults();
-            assertEquals(10, results.size());
+            assertTrue(results.size() > 0);
 
             System.out.println("----- COMPLETE - " + results.size() + " results -----");
         }

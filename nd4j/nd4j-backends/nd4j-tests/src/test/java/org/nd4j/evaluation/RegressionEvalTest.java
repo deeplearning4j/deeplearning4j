@@ -72,7 +72,8 @@ public class RegressionEvalTest  extends BaseNd4jTest {
             eval.eval(rand, rand);
         }
 
-        System.out.println(eval.stats());
+//        System.out.println(eval.stats());
+        eval.stats();
 
         for (int i = 0; i < nCols; i++) {
             assertEquals(0.0, eval.meanSquaredError(i), 1e-6);

@@ -27,6 +27,7 @@ import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -103,7 +104,7 @@ public class PaddingTestsC extends BaseNd4jTest {
         long outWidth = Convolution.outSize(h, kh, sy, ph, 1, true);
         long outHeight = Convolution.outSize(w, kw, sx, pw, 1, true);
         INDArray padded = Nd4j.pad(linspaced, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}});
-        System.out.println(padded);
+//        System.out.println(padded);
     }
 
 

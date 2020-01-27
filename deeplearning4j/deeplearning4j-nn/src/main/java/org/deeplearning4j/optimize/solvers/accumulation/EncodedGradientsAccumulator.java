@@ -63,6 +63,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     protected int parties;
     @Getter
     protected MessageHandler handler;
+    @Getter
     protected List<BlockingQueue<INDArray>> messages = new ArrayList<>();
     protected List<MemoryWorkspace> workspaces = new ArrayList<>();
     protected List<ReentrantLock> locks = new ArrayList<>();
@@ -106,7 +107,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         this(parties, new EncodingHandler(thresholdAlgorithm, residualPostProcessor, 1.0, encodingDebugMode), DEFAULT_INITIAL_MEMORY, 10, 1.0, encodingDebugMode);
     }
 
-    protected EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
+    public EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
                     int queueSize, Double boundary, boolean encodingDebugMode) {
         this.parties = parties;
         this.handler = handler;

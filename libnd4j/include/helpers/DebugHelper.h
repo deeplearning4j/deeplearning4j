@@ -34,8 +34,6 @@
 #include <driver_types.h>
 #include <cuda_runtime_api.h>
 
-#define checkCudaErrors(ERR) if (ERR != 0) {throw std::runtime_error("CUDA stream synchronization failed");}
-
 #endif
 #include <DebugInfo.h>
 namespace nd4j {

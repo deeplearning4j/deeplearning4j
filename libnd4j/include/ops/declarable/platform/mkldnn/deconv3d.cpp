@@ -34,8 +34,7 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////////
 static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output,
                             const int kD, const int kH, const int kW, const int sD, const int sH, const int sW,
-                            const int pD, const int pH, const int pW, const int dD, const int dH, const int dW,
-                            const int isSameMode) {
+                            const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     // input [bS, iD, iH, iW, iC] ncdhw, mkl doesn't support format ndhwc
     // weights [oC, iC, kD, kH, kW] always, mkl doesn't support weights format [kD, kH, kW, oC, iC]
@@ -182,8 +181,10 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
 
 //////////////////////////////////////////////////////////////////////////
 static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB,
-                                    const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW,
-                                    const int isSameMode) {
+                                    const int kD, const int kH, const int kW,
+                                    const int sD, const int sH, const int sW,
+                                    const int pD, const int pH, const int pW,
+                                    const int dD, const int dH, const int dW) {
 
     // input and gradI [bS, iD, iH, iW, iC], mkl doesn't support ndhwc format
     // weights and gradW [oC, iC, kD, kH, kW] always, mkl doesn't support weights format [kD, kH, kW, oC, iC]
@@ -359,7 +360,7 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv3d) {
+PLATFORM_IMPL(deconv3d, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, oC, iC] always
@@ -408,7 +409,7 @@ PLATFORM_IMPL(deconv3d) {
         output = new NDArray(output->permute({0,4,1,2,3}));     // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
     }
 
-    deconv3dMKLDNN(input, weights, bias, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isSameMode);
+    deconv3dMKLDNN(input, weights, bias, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW);
 
     delete weights;
 
@@ -420,7 +421,7 @@ PLATFORM_IMPL(deconv3d) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(deconv3d) {
+PLATFORM_CHECK(deconv3d, ENGINE_CPU) {
     // we don't want to use mkldnn if cpu doesn't support avx/avx2
     // if (::optimalLevel() < 2)
     //     return false;
@@ -450,7 +451,7 @@ PLATFORM_CHECK(deconv3d) {
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv3d_bp) {
+PLATFORM_IMPL(deconv3d_bp, ENGINE_CPU) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kD, kH, kW, oC, iC] always
@@ -509,7 +510,7 @@ PLATFORM_IMPL(deconv3d_bp) {
         gradO = new NDArray(gradO->permute({0,4,1,2,3}));    // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
     }
 
-    deconv3dBackPropMKLDNN(input, weights, gradO, gradI, gradW, gradB, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isSameMode);
+    deconv3dBackPropMKLDNN(input, weights, gradO, gradI, gradW, gradB, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW);
 
     delete weights;
     delete gradW;
@@ -524,7 +525,7 @@ PLATFORM_IMPL(deconv3d_bp) {
 }
 
 
-PLATFORM_CHECK(deconv3d_bp) {
+PLATFORM_CHECK(deconv3d_bp, ENGINE_CPU) {
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iD, iH, iW, iC] (NHWC) or [bS, iD, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kD, kH, kW, oC, iC] always
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]

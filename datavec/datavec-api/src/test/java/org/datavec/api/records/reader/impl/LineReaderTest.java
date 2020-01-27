@@ -55,8 +55,7 @@ public class LineReaderTest {
 
     @Test
     public void testLineReader() throws Exception {
-        String tempDir = System.getProperty("java.io.tmpdir");
-        File tmpdir = new File(tempDir, "tmpdir-testLineReader");
+        File tmpdir = testDir.newFolder();
         if (tmpdir.exists())
             tmpdir.delete();
         tmpdir.mkdir();
@@ -84,12 +83,6 @@ public class LineReaderTest {
         }
 
         assertEquals(9, count);
-
-        try {
-            FileUtils.deleteDirectory(tmpdir);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Test
@@ -145,13 +138,6 @@ public class LineReaderTest {
         assertEquals(2, subset.size());
         assertEquals(out3.get(4), subset.get(0));
         assertEquals(out3.get(7), subset.get(1));
-
-
-        try {
-            FileUtils.deleteDirectory(tmpdir);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Test
@@ -177,11 +163,5 @@ public class LineReaderTest {
         }
 
         assertEquals(9, count);
-
-        try {
-            FileUtils.deleteDirectory(tmpdir);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }

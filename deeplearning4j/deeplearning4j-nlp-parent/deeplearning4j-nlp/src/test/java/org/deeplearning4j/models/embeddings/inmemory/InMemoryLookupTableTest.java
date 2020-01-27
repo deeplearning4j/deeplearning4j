@@ -52,7 +52,7 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
 
     }
 
-    @Test
+    @Test(timeout = 300000)
     public void testConsumeOnEqualVocabs() throws Exception {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -99,7 +99,7 @@ public class InMemoryLookupTableTest extends BaseDL4JTest {
     }
 
 
-    @Test
+    @Test(timeout = 300000)
     public void testConsumeOnNonEqualVocabs() throws Exception {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());

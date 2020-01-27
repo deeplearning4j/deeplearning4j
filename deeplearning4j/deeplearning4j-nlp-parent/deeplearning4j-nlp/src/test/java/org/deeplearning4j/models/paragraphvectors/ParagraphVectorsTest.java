@@ -20,6 +20,8 @@ package org.deeplearning4j.models.paragraphvectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
@@ -27,6 +29,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.BasicTransformerIterator;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.ParallelTransformerIterator;
+import org.deeplearning4j.text.sentenceiterator.*;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -46,10 +49,6 @@ import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
-import org.deeplearning4j.text.sentenceiterator.AggregatingSentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
-import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
@@ -66,8 +65,8 @@ import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -78,6 +77,11 @@ import static org.junit.Assert.*;
  */
 @Slf4j
 public class ParagraphVectorsTest extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 240000;
+    }
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
@@ -367,7 +371,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         LabelsSource source = new LabelsSource("DOC_");
 
-        ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(2).seed(119).epochs(3)
+        ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(2).seed(119).epochs(1)
                         .layerSize(100).learningRate(0.025).labelsSource(source).windowSize(5).iterate(iter)
                         .trainWordVectors(true).vocabCache(cache).tokenizerFactory(t).negativeSample(0)
                         .useHierarchicSoftmax(true).sampling(0).workers(1).usePreciseWeightInit(true)
@@ -420,6 +424,8 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Test(timeout = 300000)
     public void testParagraphVectorsDBOW() throws Exception {
+        skipUnlessIntegrationTests();
+
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
@@ -652,7 +658,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         }
     }
 
-    @Test(timeout = 300000)
+    @Test
     public void testIterator() throws IOException {
         val folder_labeled = testDir.newFolder();
         val folder_unlabeled = testDir.newFolder();
@@ -667,7 +673,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         SentenceIterator iter = new BasicLineIterator(resource_sentences);
 
         int i = 0;
-        for (; i < 10000; ++i) {
+        for (; i < 10; ++i) {
             int j = 0;
             int labels = 0;
             int words = 0;
@@ -716,7 +722,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec wordVectors = new Word2Vec.Builder().seed(119).minWordFrequency(1).batchSize(250).iterations(1).epochs(3)
+        Word2Vec wordVectors = new Word2Vec.Builder().seed(119).minWordFrequency(1).batchSize(250).iterations(1).epochs(1)
                         .learningRate(0.025).layerSize(150).minLearningRate(0.001)
                         .elementsLearningAlgorithm(new SkipGram<VocabWord>()).useHierarchicSoftmax(true).windowSize(5)
                         .allowParallelTokenization(true)
@@ -1004,7 +1010,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
-        Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(3)
+        Word2Vec wordVectors = new Word2Vec.Builder().minWordFrequency(1).batchSize(250).iterations(1).epochs(1)
                         .learningRate(0.025).layerSize(150).minLearningRate(0.001)
                         .elementsLearningAlgorithm(new SkipGram<VocabWord>()).useHierarchicSoftmax(true).windowSize(5)
                         .iterate(iter).tokenizerFactory(t).build();
@@ -1146,8 +1152,27 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Test(timeout = 300000)
     public void testDoubleFit() throws Exception {
+        boolean isIntegration = isIntegrationTests();
         File resource = Resources.asFile("/big/raw_sentences.txt");
-        SentenceIterator iter = new BasicLineIterator(resource);
+        SentenceIterator iter;
+        if(isIntegration){
+            iter = new BasicLineIterator(resource);
+        } else {
+            List<String> lines = new ArrayList<>();
+            try(InputStream is = new BufferedInputStream(new FileInputStream(resource))){
+                LineIterator lineIter = IOUtils.lineIterator(is, StandardCharsets.UTF_8);
+                try{
+                    for( int i=0; i<500 && lineIter.hasNext(); i++ ){
+                        lines.add(lineIter.next());
+                    }
+                } finally {
+                    lineIter.close();
+                }
+            }
+
+            iter = new CollectionSentenceIterator(lines);
+        }
+
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());

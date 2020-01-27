@@ -48,13 +48,12 @@ static void ismax_(nd4j::LaunchContext * context, const NDArray* input, NDArray*
         * In case of vector-input for IsMax, it just turns into IndexReduce call + subsequent filler call
         */
         auto indexMax = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
-        auto targetIdx = indexMax->e<Nd4jLong>(0);
+        auto targetIdx = indexMax.e<Nd4jLong>(0);
 
         dim3 launchDims(128, 512, 1024);
         BUILD_SINGLE_SELECTOR(zType, fillIsMaxGeneric, (launchDims, stream, output->specialBuffer(), output->specialShapeInfo(), output->lengthOf(), targetIdx), LIBND4J_TYPES);
         manager.synchronize();
 
-        delete indexMax;
     } else {
         Nd4jLong* hostYShapeInfo  = nullptr;
         Nd4jLong* hostTShapeInfo  = nullptr;
@@ -71,10 +70,8 @@ static void ismax_(nd4j::LaunchContext * context, const NDArray* input, NDArray*
         dimension = (int *) manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int));
 
         // at this point, all IMax indexes are gathered, and we execute filler
-        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, indexMaxArr->specialBuffer(), output->specialBuffer(), output->specialShapeInfo(), packZ.specialShapeInfo(), dimension, dimensionLength, packZ.specialOffsets()), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, indexMaxArr.specialBuffer(), output->specialBuffer(), output->specialShapeInfo(), packZ.specialShapeInfo(), dimension, dimensionLength, packZ.specialOffsets()), LIBND4J_TYPES);
         manager.synchronize();
-
-        delete indexMaxArr;
     }
 }
 

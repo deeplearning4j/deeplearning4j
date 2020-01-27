@@ -47,7 +47,7 @@ TEST_F(DeclarableOpsTests2, gather_1) {
 
     auto* output = result->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -68,7 +68,7 @@ TEST_F(DeclarableOpsTests2, gather_2) {
 
     auto* output = result->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -90,7 +90,7 @@ TEST_F(DeclarableOpsTests2, gather_3) {
 
     auto* output = result->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -110,7 +110,7 @@ TEST_F(DeclarableOpsTests2, gather_4) {
 
     auto* output = result->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -131,7 +131,7 @@ TEST_F(DeclarableOpsTests2, gather_5) {
 
     auto* output = result->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -153,7 +153,7 @@ TEST_F(DeclarableOpsTests2, gather_6) {
 
     auto* output = result->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -175,7 +175,7 @@ TEST_F(DeclarableOpsTests2, gather_7) {
 
     auto* output = result->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -197,7 +197,7 @@ TEST_F(DeclarableOpsTests2, gather_8) {
     // output->printShapeInfo();
     // output->printIndexedBuffer();
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -300,7 +300,7 @@ TEST_F(DeclarableOpsTests2, gather_13) {
 
     auto* output = result->at(0);
 
-    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete result;
@@ -440,7 +440,7 @@ TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
 TEST_F(DeclarableOpsTests2, Test_Squeeze_2) {
     auto x = NDArrayFactory::create<float>('c', {2, 3, 4});
     x.linspace(1);
-    auto exp = x.dup();
+    auto exp = new NDArray(x.dup());
 
     nd4j::ops::squeeze op;
     auto result = op.execute({&x}, {}, {});

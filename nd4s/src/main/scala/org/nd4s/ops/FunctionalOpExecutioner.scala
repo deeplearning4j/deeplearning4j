@@ -18,7 +18,7 @@ package org.nd4s.ops
 import java.util.{ List, Map, Properties }
 
 import org.bytedeco.javacpp.Pointer
-import org.nd4j.linalg.api.buffer.{ DataBuffer, DataType, Utf8Buffer }
+import org.nd4j.linalg.api.buffer.{ DataBuffer, DataType }
 import org.nd4j.linalg.api.environment.Nd4jEnvironment
 import org.nd4j.linalg.api.ndarray.{ INDArray, INDArrayStatistics }
 import org.nd4j.linalg.api.ops.aggregates.{ Aggregate, Batch }
@@ -452,7 +452,7 @@ class FunctionalOpExecutioner extends OpExecutioner {
     * @param index
     * @return
     */
-  def getString(buffer: Utf8Buffer, index: Long): String = ???
+  def getString(buffer: DataBuffer, index: Long): String = ???
 
   /**
     * This method returns OpContext which can be used (and reused) to execute custom ops

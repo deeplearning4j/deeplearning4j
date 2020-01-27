@@ -317,7 +317,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
                 INDArray gradient = rd.gradient(x, distributionParams);
 
                 String testName = "minibatch = " + minibatch + ", size = " + inputSize + ", Distribution = " + rd;
-                System.out.println("\n\n***** Starting test: " + testName + "*****");
+                System.out.println("***** Starting test: " + testName + "*****");
 
                 int totalFailureCount = 0;
                 for (int i = 0; i < distributionParams.size(1); i++) {
@@ -349,7 +349,7 @@ public class TestReconstructionDistributions extends BaseDL4JTest {
                                 totalFailureCount++;
                             }
                         } else {
-                            log.info("Input (" + j + "," + i + ") passed: grad= " + backpropGrad + ", numericalGrad= "
+                            log.trace("Input (" + j + "," + i + ") passed: grad= " + backpropGrad + ", numericalGrad= "
                                             + numericalGrad + ", relError= " + relError);
                         }
                     }

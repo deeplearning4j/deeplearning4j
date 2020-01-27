@@ -42,7 +42,7 @@ void rnnCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* Wx
 
     // ht is current cell output [bS x nU], that is at current time step t
     ht->assign(mmul(*xt, *Wx) + (*b)({{0, nU}})  +  mmul(*hPrev, *Wh) + (*b)({{nU, 2*nU}}));     // [bS x nU] + [nU]  +  [bS x nU] + [nU] = [bS x nU]
-    ht->applyTransform(transform::Tanh);
+    ht->applyTransform(transform::Tanh, *ht);
 }
 
 //////////////////////////////////////////////////////////////////////////

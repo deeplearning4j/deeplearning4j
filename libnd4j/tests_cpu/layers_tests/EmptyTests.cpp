@@ -197,7 +197,7 @@ TEST_F(EmptyTests, Test_Reshape_3) {
 
 TEST_F(EmptyTests, Test_dup_1) {
     auto empty = NDArrayFactory::empty<int>();
-    auto dup = empty.dup();
+    auto dup = new NDArray(empty.dup());
 
     ASSERT_TRUE(dup->isEmpty());
     ASSERT_EQ(empty, *dup);
@@ -286,4 +286,72 @@ TEST_F(EmptyTests, test_shaped_empty_4) {
     ASSERT_TRUE(array.isEmpty());
     ASSERT_EQ(1, array.rankOf());
     ASSERT_EQ(shapeOf, array.getShapeAsVector());
+}
+
+TEST_F(EmptyTests, test_empty_reshape_1) {
+    /*
+    INDArray arr0 = Nd4j.create(DataType.FLOAT, 2, 0);
+    INDArray arr1 = Nd4j.create(DataType.FLOAT, 0, 1, 2);
+
+    INDArray out0 = Nd4j.exec(new Reshape(arr0, Nd4j.createFromArray(2, 0, -1), Nd4j.create(DataType.FLOAT, 2, 0, 0)))[0];
+    INDArray out1 = Nd4j.exec(new Reshape(arr1, Nd4j.createFromArray(-1, 1), Nd4j.create(DataType.FLOAT, 0, 1)))[0];
+    INDArray out2 = Nd4j.exec(new Reshape(arr1, Nd4j.createFromArray(10, -1), Nd4j.create(DataType.FLOAT, 10, 0)))[0];
+
+    assertArrayEquals(new long[]{2, 0, 0}, out0.shape());
+    assertArrayEquals(new long[]{0, 1}, out1.shape());
+    assertArrayEquals(new long[]{10, 0}, out2.shape());
+     */
+    auto x0 = NDArrayFactory::create<float>('c', {2, 0});
+    auto x1 = NDArrayFactory::create<float>('c', {0, 1, 2});
+
+    auto shape0 = NDArrayFactory::create<Nd4jLong>('c', {3}, {2, 0, -1});
+    auto shape1 = NDArrayFactory::create<Nd4jLong>('c', {2}, {-1, 1});
+
+    auto e0 = NDArrayFactory::create<float>('c', {2, 0, 0});
+    auto e1 = NDArrayFactory::create<float>('c', {0, 1});
+
+    nd4j::ops::reshape op;
+    auto result0 = op.execute({&x0, &shape0}, {}, {});
+    ASSERT_EQ(Status::OK(), result0->status());
+    auto z0 = result0->at(0);
+    ASSERT_EQ(e0, *z0);
+
+    auto result1 = op.execute({&x1, &shape1}, {}, {});
+    ASSERT_EQ(Status::OK(), result1->status());
+    auto z1 = result1->at(0);
+    ASSERT_EQ(e1, *z1);
+
+    delete result0;
+    delete result1;
+}
+
+
+TEST_F(EmptyTests, test_empty_matmul_1) {
+    auto x = NDArrayFactory::create<float>('c', {0, 1});
+    auto y = NDArrayFactory::create<float>('c', {1, 0});
+    auto e = NDArrayFactory::create<float>('c', {0, 0});
+
+    nd4j::ops::matmul op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(EmptyTests, test_empty_matmul_2) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 4});
+    auto y = NDArrayFactory::create<float>('c', {1, 4, 0});
+    auto e = NDArrayFactory::create<float>('c', {1, 0, 0});
+
+    nd4j::ops::matmul op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+
+    delete result;
 }

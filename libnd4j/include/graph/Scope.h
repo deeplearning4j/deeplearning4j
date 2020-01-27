@@ -22,7 +22,7 @@
 #define LIBND4J_SCOPE_H
 
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <graph/Node.h>
 
 namespace nd4j {

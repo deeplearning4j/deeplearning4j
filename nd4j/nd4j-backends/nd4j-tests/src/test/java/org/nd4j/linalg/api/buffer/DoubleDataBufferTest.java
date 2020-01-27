@@ -36,9 +36,9 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.SerializationUtils;
 
 import java.io.*;
+import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Double data buffer tests
@@ -224,7 +224,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
         double[] old = buffer.asDouble();
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
-        assertArrayEquals(old, buffer.asDouble(), 1e-1);
+        assertArrayEquals(old, Arrays.copyOf(buffer.asDouble(), 4), 1e-1);
     }
 
     @Test
@@ -239,7 +239,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
-        assertArrayEquals(old, buffer.asDouble(), 1e-1);
+        assertArrayEquals(old, Arrays.copyOf(buffer.asDouble(), 4), 1e-1);
         workspace.close();
 
     }

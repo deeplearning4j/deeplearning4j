@@ -24,6 +24,7 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.aeron.ipc.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,24 +38,33 @@ import static org.junit.Assert.assertEquals;
  * Created by agibsonccc on 10/3/16.
  */
 @Slf4j
-public class AeronNDArrayResponseTest {
+public class AeronNDArrayResponseTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;
+    }
 
     @Before
     public void before() {
-        final MediaDriver.Context ctx =
-                        new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirsDeleteOnStart(true)
-                                        .termBufferSparseFile(false).conductorIdleStrategy(new BusySpinIdleStrategy())
-                                        .receiverIdleStrategy(new BusySpinIdleStrategy())
-                                        .senderIdleStrategy(new BusySpinIdleStrategy());
-        mediaDriver = MediaDriver.launchEmbedded(ctx);
-        System.out.println("Using media driver directory " + mediaDriver.aeronDirectoryName());
-        System.out.println("Launched media driver");
+        if(isIntegrationTests()) {
+            final MediaDriver.Context ctx =
+                    new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirsDeleteOnStart(true)
+                            .termBufferSparseFile(false).conductorIdleStrategy(new BusySpinIdleStrategy())
+                            .receiverIdleStrategy(new BusySpinIdleStrategy())
+                            .senderIdleStrategy(new BusySpinIdleStrategy());
+            mediaDriver = MediaDriver.launchEmbedded(ctx);
+            System.out.println("Using media driver directory " + mediaDriver.aeronDirectoryName());
+            System.out.println("Launched media driver");
+        }
     }
 
 
     @Test
     public void testResponse() throws Exception {
+        skipUnlessIntegrationTests();   //Long-running test - don't run as part of unit tests by default
+
         int streamId = 10;
         int responderStreamId = 11;
         String host = "127.0.0.1";

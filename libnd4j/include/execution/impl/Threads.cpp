@@ -492,7 +492,7 @@ namespace samediff {
         auto itersY = delta_y / incY;
         auto itersZ = delta_z / incZ;
 
-        numThreads = 1; //ThreadsHelper::numberOfThreads3d(numThreads, itersX, itersY, itersZ);
+        numThreads = ThreadsHelper::numberOfThreads3d(numThreads, itersX, itersY, itersZ);
         if (numThreads == 1) {
             // loop is too small - executing function as is
             function(0, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);

@@ -36,6 +36,8 @@ import java.util.Arrays;
 @Slf4j
 public class InputTypeUtil {
 
+    private InputTypeUtil(){ }
+
     public static InputType getOutputTypeDeconvLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
                     int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
                     Class<?> layerClass) {
@@ -77,9 +79,60 @@ public class InputTypeUtil {
         return InputType.convolutional(hOut, wOut, outputDepth);
     }
 
-    public static InputType getOutputTypeCnn3DLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
-                    int[] dilation, ConvolutionMode convolutionMode, long outputChannels, long layerIdx,
-                    String layerName, Class<?> layerClass) {
+    public static InputType getOutputTypeDeconv3dLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
+                                                       int[] dilation, ConvolutionMode convolutionMode, Convolution3D.DataFormat dataFormat,
+                                                       long outputDepth, long layerIdx, String layerName, Class<?> layerClass) {
+        InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
+
+        long hIn = i.getHeight();
+        long wIn = i.getWidth();
+        long dIn = i.getDepth();
+
+
+        int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
+        int padW = (padding == null ? 0 : padding[1]);
+        int padD = (padding == null ? 0 : padding[2]);
+        int kH = kernelSize[0];
+        int kW = kernelSize[1];
+        int kD = kernelSize[2];
+        if (dilation[0] != 1) {
+            kH = kH + (kH - 1) * (dilation[0] - 1);
+        }
+        if (dilation[1] != 1) {
+            kW = kW + (kW - 1) * (dilation[1] - 1);
+        }
+        if (dilation[2] != 1) {
+            kD = kD + (kD - 1) * (dilation[2] - 1);
+        }
+
+        int sH = stride[0];
+        int sW = stride[1];
+        int sD = stride[2];
+
+        if (sH <= 0 || sW <= 0 || sD <= 0) {
+            throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
+                    + " Invalid strides: strides must be > 0 (strideH = " + sH + ", strideW = " + sW + ", stride = " + sD + ")"
+                    + "\n" + getConfigErrorCommonLastLine(inputType, kernelSize, stride, padding, outputDepth,
+                    convolutionMode));
+        }
+
+        if (convolutionMode == ConvolutionMode.Same) {
+            long hOut = stride[0] * hIn;
+            long wOut = stride[1] * wIn;
+            long dOut = stride[2] * dIn;
+            return InputType.convolutional3D(dataFormat, dOut, hOut, wOut, outputDepth);
+        }
+
+        long hOut = sH * (hIn - 1) + kH - 2 * padH;
+        long wOut = sW * (wIn - 1) + kW - 2 * padW;
+        long dOut = sD * (dIn - 1) + kD - 2 * padD;
+
+        return InputType.convolutional3D(dataFormat, dOut, hOut, wOut, outputDepth);
+    }
+
+    public static InputType getOutputTypeCnn3DLayers(InputType inputType, Convolution3D.DataFormat dataFormat, int[] kernelSize, int[] stride, int[] padding,
+                                                     int[] dilation, ConvolutionMode convolutionMode, long outputChannels, long layerIdx,
+                                                     String layerName, Class<?> layerClass) {
         if (convolutionMode == null) {
             String name = layerName == null ? "(not named)" : layerName;
             throw new DL4JInvalidConfigException("Invalid configuration: convolution mode is null for layer (idx="
@@ -204,7 +257,7 @@ public class InputTypeUtil {
             int outH = (int) Math.ceil(inHeight / ((double) sH));
             int outW = (int) Math.ceil(inWidth / ((double) sW));
 
-            return InputType.convolutional3D(outD, outH, outW, outputChannels);
+            return InputType.convolutional3D(dataFormat, outD, outH, outW, outputChannels);
         }
 
         long dOut = (inDepth - kD + 2 * padD) / sD + 1;

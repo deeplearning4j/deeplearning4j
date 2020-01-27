@@ -19,6 +19,7 @@ package org.nd4j.linalg.custom;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -33,9 +34,8 @@ import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.controlflow.Where;
 import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
 import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
+import org.nd4j.linalg.api.ops.impl.image.ResizeArea;
 import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
@@ -371,7 +371,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
         Nd4j.getExecutioner().exec(op);
 
-        log.info("Matrix: {}", matrix);
+//        log.info("Matrix: {}", matrix);
         assertEquals(exp0, matrix.getRow(0));
         assertEquals(exp1, matrix.getRow(1));
         assertEquals(exp0, matrix.getRow(2));
@@ -420,7 +420,7 @@ public class CustomOpsTests extends BaseNd4jTest {
 
         Nd4j.getExecutioner().exec(op);
 
-        assertEquals(1, op.outputArguments().length);
+        assertEquals(1, op.outputArguments().size());
         val output = op.getOutputArgument(0);
 
         assertArrayEquals(new long[]{5, 10}, output.shape());
@@ -436,7 +436,7 @@ public class CustomOpsTests extends BaseNd4jTest {
 
         Nd4j.getExecutioner().exec(op);
 
-        assertEquals(1, op.outputArguments().length);
+        assertEquals(1, op.outputArguments().size());
         val output = op.getOutputArgument(0);
 
         assertArrayEquals(new long[]{5, 10}, output.shape());
@@ -580,7 +580,7 @@ public class CustomOpsTests extends BaseNd4jTest {
                 .build();
 
         for( int i=0; i<1000; i++ ) {
-            System.out.println(i);
+//            System.out.println(i);
             Nd4j.getExecutioner().exec(op);
         }
     }
@@ -634,7 +634,7 @@ public class CustomOpsTests extends BaseNd4jTest {
                 .build();
 
         Nd4j.exec(op);
-        System.out.println(out);
+//        System.out.println(out);
     }
 
     @Test
@@ -661,13 +661,13 @@ public class CustomOpsTests extends BaseNd4jTest {
             }
         }
 
-        System.out.println("Eps:");
-        System.out.println(eps.shapeInfoToString());
-        System.out.println(Arrays.toString(eps.data().asFloat()));
+//        System.out.println("Eps:");
+//        System.out.println(eps.shapeInfoToString());
+//        System.out.println(Arrays.toString(eps.data().asFloat()));
 
-        System.out.println("Expected:");
-        System.out.println(exp.shapeInfoToString());
-        System.out.println(Arrays.toString(exp.data().asFloat()));
+//        System.out.println("Expected:");
+//        System.out.println(exp.shapeInfoToString());
+//        System.out.println(Arrays.toString(exp.data().asFloat()));
 
         DynamicCustomOp op = DynamicCustomOp.builder("upsampling2d_bp")
                 .addInputs(input, eps)
@@ -970,6 +970,33 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testResizeArea1() {
+
+        INDArray x = Nd4j.rand(DataType.FLOAT, 1, 2,3,4);
+        INDArray z = Nd4j.createUninitialized(DataType.FLOAT, 1, 10, 10, 4);
+        ResizeArea op = new ResizeArea(x, z, 10, 10, false);
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testResizeArea2() {
+
+        INDArray image = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 9 ).reshape(1,3,3,1);
+        INDArray output = Nd4j.createUninitialized(DataType.FLOAT, 1, 6, 6, 1);
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                1.f, 1.f, 2.f, 2.f, 3.f, 3.f,
+                1.f, 1.f, 2.f, 2.f, 3.f, 3.f,
+                4.f, 4.f, 5.f, 5.f, 6.f, 6.f,
+                4.f, 4.f, 5.f, 5.f, 6.f, 6.f,
+                7.f, 7.f, 8.f, 8.f, 9.f, 9.f,
+                7.f, 7.f, 8.f, 8.f, 9.f, 9.f
+        }).reshape(1,6,6,1);
+        ResizeArea op = new ResizeArea(image, output, 6, 6, false);
+        Nd4j.exec(op);
+        assertEquals(expected, output);
+    }
+
+    @Test
     public void testCompareAndBitpack() {
         INDArray in = Nd4j.createFromArray(new double[]{-12.f, -11.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f,
                 -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f}).reshape( 2,3,4);
@@ -1045,7 +1072,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray distance = Nd4j.scalar(0.f);
 
         Nd4j.exec(new KnnMinDistance(point, lowest, highest, distance));
-        System.out.println(distance);
+//        System.out.println(distance);
     }
 
     @Ignore("2019/11/15 AS - https://github.com/eclipse/deeplearning4j/issues/8399")
@@ -1070,7 +1097,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray output = Nd4j.createUninitialized(4, 5);
         DropOut op = new DropOut(input, output, 0.1);
         Nd4j.exec(op);
-        System.out.println(output);
+//        System.out.println(output);
     }
 
     @Test
@@ -1105,23 +1132,6 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
-    public void testBetaInc() {
-        Nd4j.getRandom().setSeed(10);
-        INDArray a = Nd4j.linspace(DataType.BFLOAT16, 0.1, 0.1, 9).reshape(3,3);
-        INDArray b = Nd4j.linspace(DataType.BFLOAT16, 0.1, 0.1, 9).reshape(3,3);
-        INDArray x = Nd4j.linspace(DataType.BFLOAT16, 0.1, 0.1, 9).reshape(3,3);
-        INDArray expected = Nd4j.createFromArray(new float[]{0.4121f, 0.3926f, 0.4082f,
-                0.4414f, 0.5000f, 0.5703f,
-                0.6562f, 0.7656f, 0.8828f}).reshape(3,3);
-
-        BetaInc op = new BetaInc(a,b,x);
-        INDArray[] out = Nd4j.exec(op);
-        assertArrayEquals(expected.shape(), out[0].shape());
-        for (int i = 0; i < 3; ++i)
-            assertArrayEquals(expected.toDoubleMatrix()[i], out[0].toDoubleMatrix()[i], 1e-4);
-    }
-
-    @Test
     public void testFusedBatchNorm() {
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 2*2*3*4).reshape(2,2,3,4);
         INDArray scale = Nd4j.create(DataType.DOUBLE, 4);
@@ -1153,6 +1163,51 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testFusedBatchNorm1() {
+        INDArray x = Nd4j.createFromArray(new float[]{0.7788f,0.8012f,0.7244f,0.2309f,
+            0.7271f, 0.1804f, 0.5056f, 0.8925f,
+            0.5461f, 0.9234f, 0.0856f, 0.7938f,
+            0.6591f, 0.5555f, 0.1596f, 0.3087f,
+            0.1548f, 0.4695f, 0.9939f, 0.6113f,
+            0.6765f, 0.1800f, 0.6750f, 0.2246f}).reshape(1,2,3,4);
+        INDArray scale = Nd4j.createFromArray(new float[]{ 0.7717f, 0.9281f, 0.9846f, 0.4838f});
+        INDArray offset = Nd4j.createFromArray(new float[]{0.9441f, 0.5957f, 0.8669f, 0.3502f});
+
+        INDArray y = Nd4j.createUninitialized(DataType.DOUBLE, x.shape());
+        INDArray batchMean = Nd4j.create(4);
+        INDArray batchVar = Nd4j.create(4);
+
+        FusedBatchNorm op = new FusedBatchNorm(x,scale,offset,0,1,
+                y, batchMean, batchVar);
+
+        INDArray expectedY = Nd4j.createFromArray(new float[]{1.637202024f, 1.521406889f, 1.48303616f, -0.147269756f,
+              1.44721508f,  -0.51030159f,  0.810390055f,     1.03076458f,
+              0.781284988f, 1.921229601f,  -0.481337309f,    0.854952335f,
+              1.196854949f, 0.717398405f,  -0.253610134f,    -0.00865117f,
+              -0.658405781f,0.43602103f,   2.311818838f,    0.529999137f,
+              1.260738254f, -0.511638165f, 1.331095099f,   -0.158477545f}).reshape(x.shape());
+        Nd4j.exec(op);
+        assertArrayEquals(expectedY.shape(), y.shape());
+    }
+
+    @Test
+    public void testFusedBatchNormHalf() {
+        INDArray x = Nd4j.create(DataType.HALF, 1,2,3,4);
+        //INDArray scale = Nd4j.createFromArray(new float[]{0.7717f, 0.9281f, 0.9846f, 0.4838f});
+        //INDArray offset = Nd4j.createFromArray(new float[]{0.9441f, 0.5957f, 0.8669f, 0.3502f});
+        INDArray scale = Nd4j.create(DataType.HALF, 4);
+        INDArray offset = Nd4j.create(DataType.HALF, 4);
+
+        INDArray y = Nd4j.createUninitialized(DataType.HALF, x.shape());
+        INDArray batchMean = Nd4j.create(4);
+        INDArray batchVar = Nd4j.create(4);
+
+        FusedBatchNorm op = new FusedBatchNorm(x, scale, offset, 0, 1,
+                y, batchMean, batchVar);
+        Nd4j.exec(op);
+    }
+
+    @Test
     public void testMatrixBandPart() {
         INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 2*3*3).reshape(2,3,3);
         val op = new MatrixBandPart(x,1,1);
@@ -1178,6 +1233,18 @@ public class CustomOpsTests extends BaseNd4jTest {
         val op = new Polygamma(x,n,output);
         Nd4j.exec(op);
         assertEquals(expected, output);
+    }
+
+    @Test
+    public void testLgamma() {
+        INDArray x = Nd4j.createFromArray(new double[]{0.1, 0.5, 0.7, 1.5, 1.7, 2.0, 2.5, 2.7, 3.}).reshape(3,3);
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                2.2527127 ,  0.5723649 ,  0.26086727,
+                -0.12078223, -0.09580769,        0.,
+                0.28468287,  0.4348206 ,  0.6931472
+        }).reshape(3,3);
+        INDArray[] ret = Nd4j.exec(new Lgamma(x));
+        assertEquals(expected, ret[0]);
     }
 
     @Test
@@ -1309,7 +1376,7 @@ public class CustomOpsTests extends BaseNd4jTest {
 
         AdjustHue op = new AdjustHue(image, 0.2f);
         INDArray[] res = Nd4j.exec(op);
-        System.out.println(res[0]);
+//        System.out.println(res[0]);
         List<LongShapeDescriptor> lsd = op.calculateOutputShape();
         assertEquals(1, lsd.size());
         assertArrayEquals(new long[]{8, 8, 3}, lsd.get(0).getShape());
@@ -1331,7 +1398,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray y = Nd4j.linspace(DataType.FLOAT, -5, 9, 1).reshape(3, 3);
         val c =  Conditions.equals(0.0);
 
-        System.out.println("Y:\n" + y);
+//        System.out.println("Y:\n" + y);
 
         INDArray z = x.match(y, c);
         INDArray exp = Nd4j.createFromArray(new boolean[][]{
@@ -1352,5 +1419,261 @@ public class CustomOpsTests extends BaseNd4jTest {
         val result = Nd4j.exec(new Create(shape, 'c', true, DataType.INT))[0];
 
         assertEquals(exp, result);
+    }
+
+    // Exact copy of libnd4j test
+    @Test
+    @Ignore
+    public void testRgbToHsv() {
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                0.545678377f, 0.644941628f, 0.461456001f, 0.588904262f, 0.725874603f,
+                0.517642438f, 0.0869259685f, 0.54742825f, 0.413571358f, 0.890151322f,
+                0.928968489f, 0.684074104f, 0.52110225f, 0.753103435f, 0.913557053f,
+                0.46850124f, 0.761800349f, 0.237176552f, 0.90049392f, 0.965541422f,
+                0.486593395f, 0.263826847f, 0.290193319f, 0.148351923f, 0.674094439f,
+                0.0361763388f, 0.3721793f, 0.823592246f, 0.524110138f, 0.2204483f,
+                0.632020354f, 0.637001634f, 0.216262609f, 0.279114306f, 0.25007084f,
+                0.30433768f, 0.0448598303f, 0.586083114f, 0.978048146f, 0.91390729f,
+                0.385092884f, 0.218390301f, 0.762684941f, 0.505838513f, 0.366362303f,
+                0.931746006f, 0.00208298792f, 0.875348926f, 0.428009957f, 0.270003974f,
+                0.313204288f, 0.775881767f, 0.367065936f, 0.164243385f, 0.644775152f,
+                0.575452209f, 0.911922634f, 0.0581932105f, 0.437950462f, 0.946475744f
+        }).reshape(5,4,3);
+        INDArray input = Nd4j.createFromArray(new float[]{
+                0.262831867f, 0.723622441f, 0.740797927f, 0.717254877f, 0.430244058f,
+                0.418478161f, 0.906427443f, 0.199753001f, 0.725874603f, 0.890151322f,
+                0.928968489f, 0.684074104f, 0.312434604f, 0.991390795f, 0.163174023f,
+                0.268038541f, 0.361258626f, 0.685067773f, 0.682347894f, 0.84635365f,
+                0.761800349f, 0.753103435f, 0.913557053f, 0.965541422f, 0.112067183f,
+                0.540247589f, 0.280050347f, 0.106776128f, 0.679180562f, 0.870388806f,
+                0.604331017f, 0.630475283f, 0.674094439f, 0.279114306f, 0.632020354f,
+                0.823592246f, 0.490824632f, 0.75257351f, 0.129888852f, 0.849081645f,
+                0.883509099f, 0.765611768f, 0.997870266f, 0.446510047f, 0.385092884f,
+                0.931746006f, 0.978048146f, 0.91390729f, 0.685308874f, 0.0834472676f,
+                0.396037966f, 0.756701186f, 0.597481251f, 0.784472764f, 0.514242649f,
+                0.392005324f, 0.911922634f, 0.270003974f, 0.644775152f, 0.946475744f
+        }).reshape(5,4,3);
+        RgbToHsv op = new RgbToHsv(input);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(ret[0], expected);
+    }
+
+    // Exact copy of libnd4j test
+    @Test
+    public void testHsvToRgb() {
+        INDArray input = Nd4j.createFromArray(new float[]{0.705504596f, 0.793608069f, 0.65870738f, 0.848827183f, 0.920532584f,
+                0.887555957f, 0.72317636f, 0.563831031f, 0.773604929f, 0.269532293f,
+                0.332347751f, 0.111181192f}).reshape(4,3);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{0.257768334f, 0.135951888f, 0.65870738f, 0.887555957f, 0.0705317783f,
+                0.811602857f, 0.485313689f, 0.337422464f, 0.773604929f, 0.0883753772f,
+                0.111181192f, 0.074230373f}).reshape(4,3);
+
+        HsvToRgb op = new HsvToRgb(input);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(ret[0], expected);
+    }
+
+    @Test
+    public void testHsvToRgb_1() {
+        /* Emulation of simple TF test:
+           image = tf.random_uniform(shape = [1,1,3])
+           tf.image.hsv_to_rgb(image)*/
+        INDArray image = Nd4j.createFromArray(new float[]{0.778785586f,0.801197767f,0.724374652f}).
+                reshape(1,1,3);
+        HsvToRgb op = new HsvToRgb(image);
+        INDArray[] ret = Nd4j.exec(op);
+        System.out.println(ret[0].toStringFull());
+        INDArray expected = Nd4j.createFromArray(new float[]{ 0.53442812f,    0.144007325f,    0.724374652f}).reshape(1,1,3);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testRgbToHsv_1() {
+        /* Emulation of simple TF test:
+           image = tf.random_uniform(shape = [1,2,3])
+           tf.image.rgb_to_hsv(image)*/
+        INDArray image = Nd4j.createFromArray(new float[]{0.778785586f,0.801197767f,0.724374652f,
+                0.230894327f, 0.727141261f, 0.180390716f }).reshape(2,3);
+        RgbToHsv op = new RgbToHsv(image);
+        INDArray[] ret = Nd4j.exec(op);
+        INDArray expected = Nd4j.createFromArray(new float[]{0.215289578f,0.095885336f,0.801197767f,
+                0.317938268f,0.751917899f,0.727141261f}).reshape(2,3);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testLu() {
+        INDArray input = Nd4j.createFromArray(new float[]{1.f, 2.f, 3.f, 0.f, 2.f, 3.f, 0.f, 0.f, 7.f})
+                .reshape(3,3);
+        Lu op = new Lu(input);
+        INDArray[] ret = Nd4j.exec(op);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{1.f, 2.f, 3.f, 0.f, 2.f, 3.f, 0.f, 0.f, 7f}).reshape(3,3);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testRgbToYiq() {
+        INDArray image = Nd4j.createFromArray(new float[]{
+                0.48055f   , 0.80757356f, 0.2564435f , 0.94277316f, 0.17006584f,
+                0.33366168f, 0.41727918f, 0.54528666f, 0.48942474f, 0.3305715f ,
+                0.98633456f, 0.00158441f, 0.97605824f, 0.02462568f, 0.14837205f,
+                0.00112842f, 0.99260217f, 0.9585542f , 0.41196227f, 0.3095014f ,
+                0.6620493f , 0.30888894f, 0.3122602f , 0.7993488f , 0.86656475f,
+                0.5997049f , 0.9776477f , 0.72481847f, 0.7835693f , 0.14649455f,
+                0.3573504f , 0.33301765f, 0.7853056f , 0.25830218f, 0.59289205f,
+                0.41357264f, 0.5934154f , 0.72647524f, 0.6623308f , 0.96197623f,
+                0.0720306f , 0.23853847f, 0.1427159f , 0.19581454f, 0.06766324f,
+                0.10614152f, 0.26093867f, 0.9584985f , 0.01258832f, 0.8160156f ,
+                0.56506383f, 0.08418505f, 0.86440504f, 0.6807802f , 0.20662387f,
+                0.4153733f , 0.76146203f, 0.50057423f, 0.08274968f, 0.9521758f
+        }).reshape(5,4,3);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                0.64696468f, -0.01777124f, -0.24070648f,  0.41975525f,  0.40788622f,
+                0.21433232f,  0.50064416f, -0.05832884f, -0.04447775f,  0.67799989f,
+                -0.07432612f, -0.44518381f,  0.32321111f,  0.52719408f,  0.2397369f ,
+                0.69227005f, -0.57987869f, -0.22032876f,  0.38032767f, -0.05223263f,
+                0.13137188f,  0.3667803f , -0.15853189f,  0.15085728f,  0.72258149f,
+                0.03757231f,  0.17403452f,  0.69337627f,  0.16971045f, -0.21071186f,
+                0.39185397f, -0.13084008f,  0.145886f  ,  0.47240727f, -0.1417591f ,
+                -0.12659159f,  0.67937788f, -0.05867803f, -0.04813048f,  0.35710624f,
+                0.47681283f,  0.24003804f,  0.1653288f ,  0.00953913f, -0.05111816f,
+                0.29417614f, -0.31640032f,  0.18433114f,  0.54718234f, -0.39812097f,
+                -0.24805083f,  0.61018603f, -0.40592682f, -0.22219216f,  0.39241133f,
+                -0.23560742f,  0.06353694f,  0.3067938f , -0.0304029f ,  0.35893188f
+        }).reshape(5,4,3);
+
+        RgbToYiq op = new RgbToYiq(image);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testYiqToRgb() {
+        INDArray image = Nd4j.createFromArray(new float[]{
+                0.775258899f, -0.288912386f, -0.132725924f, 0.0664454922f, -0.212469354f,
+                0.455438733f, 0.418221354f, 0.349350512f, 0.145902053f, 0.947576523f,
+                -0.471601307f, 0.263960421f, 0.700227439f, 0.32434237f, -0.278446227f,
+                0.130805135f, -0.438441873f, 0.187127829f, 0.0276055578f, -0.179727226f,
+                0.305075705f, 0.716282248f, 0.278215706f, -0.44586885f, 0.76971364f,
+                0.131288841f, -0.141177326f, 0.900081575f, -0.0788725987f, 0.14756602f,
+                0.387832165f, 0.229834676f, 0.47921446f, 0.632930398f, 0.0443540029f,
+                -0.268817365f, 0.0977194682f, -0.141669706f, -0.140715122f, 0.946808815f,
+                -0.52525419f, -0.106209636f, 0.659476519f, 0.391066104f, 0.426448852f,
+                0.496989518f, -0.283434421f, -0.177366048f, 0.715208411f, -0.496444523f,
+                0.189553142f, 0.616444945f, 0.345852494f, 0.447739422f, 0.224696323f,
+                0.451372236f, 0.298027098f, 0.446561724f, -0.187599331f, -0.448159873f
+        }).reshape(5,4,3);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                0.416663059f, 0.939747555f, 0.868814286f, 0.146075352f, -0.170521997f,
+                1.07776645f, 0.842775284f, 0.228765106f, 0.280231822f, 0.660605291f,
+                0.905021825f, 1.91936605f, 0.837427991f, 0.792213732f, -0.133271854f,
+                -0.17216571f, 0.128957025f, 0.934955336f, 0.0451873479f, -0.120952621f,
+                0.746436225f, 0.705446224f, 0.929172217f, -0.351493549f, 0.807577594f,
+                0.825371955f, 0.383812296f, 0.916293093f, 0.82603058f, 1.23885956f,
+                0.905059196f, 0.015164554f, 0.950156781f, 0.508443732f, 0.794845279f,
+                0.12571529f, -0.125074273f, 0.227326869f, 0.0147000261f, 0.378735409f,
+                1.15842402f, 1.34712305f, 1.2980804f, 0.277102016f, 0.953435072f,
+                0.115916842f, 0.688879376f, 0.508405162f, 0.35829352f, 0.727568094f,
+                1.58768577f, 1.22504294f, 0.232589777f, 0.996727258f, 0.841224629f,
+                -0.0909671176f, 0.233051388f, -0.0110094378f, 0.787642119f, -0.109582274f
+        }).reshape(5,4,3);
+
+        YiqToRgb op = new YiqToRgb(image);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testRgbToGrayscale() {
+        INDArray image = Nd4j.createFromArray(new float[]{
+                1.7750e+01f, -7.1062e+01f, -1.0019e+02f,-2.3406e+01f,  5.2094e+01f,
+                9.5438e+01f, -6.7461e+00f,  3.8562e+01f,  6.5078e+00f,3.3562e+01f,
+                -5.8844e+01f,  2.2750e+01f, -1.0477e+01f,  7.7344e+00f,  9.5469e+00f,
+                2.1391e+01f, -8.5312e+01f,  7.5830e-01f,2.3125e+01f,  1.8145e+00f,
+                1.4602e+01f,-4.5859e+00f,  3.9344e+01f,  1.1617e+01f,-8.6562e+01f,
+                1.0038e+02f,  6.7938e+01f,5.9961e+00f,  6.7812e+01f,  2.9734e+01f,
+                2.9609e+01f, -6.1438e+01f,  1.7750e+01f,6.8562e+01f, -7.4414e+00f,
+                3.9656e+01f,1.1641e+01f, -2.7516e+01f,  6.7562e+01f,7.8438e+01f,
+                5.4883e+00f,  2.9438e+01f,-3.1344e+01f,  6.5125e+01f,
+                1.2695e+01f,4.0531e+01f, -6.1211e+00f,  6.2219e+01f,4.6812e+01f,
+                5.2250e+01f, -1.1414e+01f,1.5404e-02f,  2.9938e+01f,  5.6719e+00f,
+                -2.0125e+01f,  2.1531e+01f,  6.2500e+01f,7.2188e+01f,  9.3750e+00f,
+                -4.8125e+01f
+        }).reshape(5,4,3);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                -47.82958221f,  34.46305847f,  21.36137581f, -21.91625023f,2.49686432f,
+                -43.59792709f,   9.64180183f,  23.04854202f,40.7946167f,  44.98754883f,
+                -25.19047546f,  20.64586449f,-4.97033119f,   30.0226841f,  30.30688286f,
+                15.61459541f,43.36166f,  18.22480774f,  13.74833488f,  21.59387016f
+        }).reshape(5,4,1);
+
+        RgbToGrayscale op = new RgbToGrayscale(image);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testRgbToYuv() {
+        INDArray image = Nd4j.createFromArray(new float[]{
+                10f,50f,200f
+        });
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                55.14f , 71.2872001f, -39.6005542f
+        });
+
+        RgbToYuv op = new RgbToYuv(image);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testYuvToRgb() {
+        INDArray image = Nd4j.createFromArray(new float[]{
+                55.14f , 71.2872001f, -39.6005542f
+        });
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                10f, 50f, 200f
+        });
+        YuvToRgb op = new YuvToRgb(image);
+        INDArray[] ret = Nd4j.exec(op);
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testRgbToYiqEmpty() {
+        INDArray image = Nd4j.create(0,4,3);
+        RgbToYiq op = new RgbToYiq(image);
+        INDArray[] ret = Nd4j.exec(op);
+        assertArrayEquals(image.shape(), ret[0].shape());
+    }
+
+    @Test
+    public void testTriangularSolve() {
+        INDArray a = Nd4j.createFromArray(new float[]{
+                3.f, 0.f, 0.f, 0.f,
+                2.f, 1.f, 0.f, 0.f,
+                1.f, 0.f, 1.f, 0.f,
+                1.f, 1.f, 1.f, 1.f
+        }).reshape(4, 4);
+
+        INDArray b = Nd4j.createFromArray(new float[]{
+                4.f, 2.f, 4.f, 2.f
+        }).reshape(4, 1);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                1.333333f, -0.6666667f, 2.6666667f, -1.3333333f
+        }).reshape(4, 1);
+
+        val op = new TriangularSolve(a, b, true, false);
+        INDArray[] ret = Nd4j.exec(op);
+
+        assertEquals(expected, ret[0]);
     }
 }

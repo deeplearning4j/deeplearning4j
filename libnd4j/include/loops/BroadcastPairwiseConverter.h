@@ -53,6 +53,7 @@ inline pairwise::Ops fromBroadcastToPairwise(broadcast::Ops op) {
         case broadcast::LogicalXor: return pairwise::LogicalXor;
         case broadcast::LogicalNot: return pairwise::LogicalNot;
         case broadcast::LogicalAnd: return pairwise::LogicalAnd;
+        case broadcast::PowDerivative: return pairwise::PowDerivative;
         default:
             throw std::runtime_error("fromBroadcastToPairwise: Not convertible operation");
     }

@@ -45,6 +45,9 @@ namespace helpers {
                       bool preserveAspectRatio, bool antialias, NDArray* output);
     int resizeBicubicFunctorA(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
                              bool const alignCorners, bool const halfPixelAlign, NDArray* output);
+    int resizeAreaFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
+                             bool const alignCorners, NDArray* output);
+
     int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
             ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output);
 

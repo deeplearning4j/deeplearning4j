@@ -20,6 +20,7 @@ import lombok.val;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +35,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-public class ServletTest {
+public class ServletTest extends BaseDL4JTest {
 
     private JsonModelServer server;
 

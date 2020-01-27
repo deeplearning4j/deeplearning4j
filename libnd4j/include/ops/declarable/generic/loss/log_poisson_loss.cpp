@@ -55,9 +55,9 @@ namespace ops {
 
         NDArray E(labels->getShapeInfo(), block.getWorkspace());
         if (computeFullLoss)
-            labels->applyPairwiseTransform(pairwise::LogPoissonLossFull, log_predictions, &E, nullptr);
+            labels->applyPairwiseTransform(pairwise::LogPoissonLossFull, *log_predictions, E);
         else
-            labels->applyPairwiseTransform(pairwise::LogPoissonLoss, log_predictions, &E, nullptr);
+            labels->applyPairwiseTransform(pairwise::LogPoissonLoss, *log_predictions, E);
 
 
         // multiply E on weights
@@ -176,19 +176,19 @@ namespace ops {
 
         NDArray E(labels->getShapeInfo(), block.getWorkspace());
         if (computeFullLoss) {
-            labels->applyPairwiseTransform(pairwise::LogPoissonLossFull, log_predictions, &E, nullptr);
+            labels->applyPairwiseTransform(pairwise::LogPoissonLossFull, *log_predictions, E);
 
             NDArray rDiv(labels->getShapeInfo(), block.getWorkspace());
-            labels->applyScalar(scalar::ReverseDivide, 0.5f, &rDiv);
+            labels->applyScalar(scalar::ReverseDivide, 0.5f, rDiv);
             dLdl->assign(rDiv  + labels->transform(transform::Log) + -(*log_predictions));
         } else {
-            labels->applyPairwiseTransform(pairwise::LogPoissonLoss, log_predictions, &E, nullptr);
+            labels->applyPairwiseTransform(pairwise::LogPoissonLoss, *log_predictions, E);
 
             dLdl->assign(-(*log_predictions));
         }
 
         dLdp->assign(log_predictions->transform(transform::Exp) - (*labels));
-        
+
         switch (reductionMode) {
 
             case 1: {											// 1 - "none" and "weighted_sum", output is scalar and equal to sum of all elements of E array
@@ -200,7 +200,7 @@ namespace ops {
                     dLdw->assign(E.reduceNumber(reduce::Sum));
                 else if(weights != weightsBroad) {
                     std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                    E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                    E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                 }
                 else
                     dLdw->assign(E);
@@ -228,7 +228,7 @@ namespace ops {
                         *dLdw = 0.;
                     else if(weights != weightsBroad) {
                         std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                        ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                        ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                     }
                     else
                         dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
@@ -257,7 +257,7 @@ namespace ops {
                         dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
                     else if(weights != weightsBroad) {
                         std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-                        E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+                        E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                         *dLdw /= numOfNonZeroWeightsScalar;
                     }
                     else

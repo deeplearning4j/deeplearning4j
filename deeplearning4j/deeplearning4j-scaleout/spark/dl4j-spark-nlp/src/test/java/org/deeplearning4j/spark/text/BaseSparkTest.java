@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.text;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.spark.models.embeddings.word2vec.Word2VecVariables;
 import org.junit.After;
 import org.junit.Before;
@@ -30,7 +31,7 @@ import java.util.Map;
 /**
  * Created by agibsonccc on 1/23/15.
  */
-public abstract class BaseSparkTest implements Serializable {
+public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable {
     protected transient JavaSparkContext sc;
 
     @Before

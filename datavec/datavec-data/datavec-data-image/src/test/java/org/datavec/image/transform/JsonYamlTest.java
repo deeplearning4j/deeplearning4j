@@ -66,9 +66,9 @@ public class JsonYamlTest {
         String asJson = itp.toJson();
         String asYaml = itp.toYaml();
 
-        System.out.println(asJson);
-        System.out.println("\n\n\n");
-        System.out.println(asYaml);
+//        System.out.println(asJson);
+//        System.out.println("\n\n\n");
+//        System.out.println(asYaml);
 
         ImageWritable img = TestImageTransform.makeRandomImage(0, 0, 3);
         ImageWritable imgJson = new ImageWritable(img.getFrame().clone());

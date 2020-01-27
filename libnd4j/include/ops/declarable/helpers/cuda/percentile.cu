@@ -94,7 +94,7 @@ namespace helpers {
             shape::checkDimensions(inputRank, axis);
 
         auto tempArray = input.dup(input.ordering());
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(tempArray->getShapeInfo(), axis);
+        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(tempArray.getShapeInfo(), axis);
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 
@@ -114,11 +114,9 @@ namespace helpers {
         }
         position = tadLength - position - 1;
 
-        percentileKernel<T><<<256, 512, 1024, *context->getCudaStream()>>>(tempArray->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), packX.numberOfTads(), tadLength, output.specialBuffer(), output.specialShapeInfo(), output.lengthOf(), position);
+        percentileKernel<T><<<256, 512, 1024, *context->getCudaStream()>>>(tempArray.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), packX.numberOfTads(), tadLength, output.specialBuffer(), output.specialShapeInfo(), output.lengthOf(), position);
 
         nd4j::DebugHelper::checkErrorCode(context->getCudaStream(), "percentile");
-
-        delete tempArray;
     }
 
     void percentile(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {

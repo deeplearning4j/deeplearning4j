@@ -20,6 +20,7 @@ import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -32,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
-public class HSqlLoaderTest {
+public class HSqlLoaderTest extends BaseND4JTest {
     private static HsqlLoader hsqlLoader;
     private static DataSource dataSource;
 
@@ -125,7 +126,7 @@ public class HSqlLoaderTest {
 
         INDArray load = hsqlLoader.load(hsqlLoader.loadForID("1"));
         assertNotNull(load);
-        assertEquals(Nd4j.linspace(1,4,4, Nd4j.dataType()),load);
+        assertEquals(Nd4j.linspace(1,4,4, load.dataType()),load);
 
 
     }

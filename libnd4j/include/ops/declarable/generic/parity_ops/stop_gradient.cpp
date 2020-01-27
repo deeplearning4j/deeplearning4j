@@ -29,7 +29,7 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto out = OUTPUT_VARIABLE(0);
             // just for lulz
-            x->applyTransform(transform::Identity, out, nullptr);
+            x->applyTransform(transform::Identity, *out);
 
             return Status::OK();
         }

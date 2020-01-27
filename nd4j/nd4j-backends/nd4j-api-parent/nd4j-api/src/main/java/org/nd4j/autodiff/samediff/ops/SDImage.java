@@ -3,10 +3,7 @@ package org.nd4j.autodiff.samediff.ops;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.custom.AdjustContrast;
-import org.nd4j.linalg.api.ops.custom.AdjustHue;
-import org.nd4j.linalg.api.ops.custom.AdjustSaturation;
-import org.nd4j.linalg.api.ops.custom.RandomCrop;
+import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
 import org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches;
 import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
@@ -117,6 +114,72 @@ public class SDImage extends SDOps {
      */
     public SDVariable randomCrop(String name,  @NonNull SDVariable input, @NonNull SDVariable shape) {
         SDVariable out = new RandomCrop(sd, input, shape).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting array from HSV to RGB format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable rgbToHsv(String name,  @NonNull SDVariable input) {
+        SDVariable out = new RgbToHsv(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting image from HSV to RGB format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable hsvToRgb(String name,  @NonNull SDVariable input) {
+        SDVariable out = new HsvToRgb(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting array from RGB to YIQ format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable rgbToYiq(String name,  @NonNull SDVariable input) {
+        SDVariable out = new RgbToYiq(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting image from YIQ to RGB format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable yiqToRgb(String name,  @NonNull SDVariable input) {
+        SDVariable out = new YiqToRgb(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting array from RGB to YUV format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable rgbToYuv(String name,  @NonNull SDVariable input) {
+        SDVariable out = new RgbToYuv(sd, input).outputVariable();
+        return updateVariableNameAndReference(out, name);
+    }
+
+    /**
+     * Converting image from YUV to RGB format
+     * @param name name
+     * @param input 3D image
+     * @return 3D image
+     */
+    public SDVariable yuvToRgb(String name,  @NonNull SDVariable input) {
+        SDVariable out = new YuvToRgb(sd, input).outputVariable();
         return updateVariableNameAndReference(out, name);
     }
 }

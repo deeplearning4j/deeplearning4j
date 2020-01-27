@@ -189,6 +189,11 @@ namespace nd4j {
                     shapeStart = std::chrono::system_clock::now();
                 }
 
+                // if we override shape function, we'll return size of fastPath
+                if (ctx.isFastPath() && ctx.shapeFunctionOverride()) {
+                    return (int) ctx.fastpath_out().size();
+                }
+
                 auto outSha = this->calculateOutputShape(&inSha, ctx);
                 results = outSha->size();
 
@@ -530,8 +535,8 @@ namespace nd4j {
             // platform helpers use might be forbidden for various reasons, so we'll check it out first
             if (block->helpersAllowed() && nd4j::Environment::getInstance()->helpersAllowed()) {
                 // if we have platform-specific helper for this op - invoke it
-                if (OpRegistrator::getInstance()->hasHelper(this->getOpHash())) {
-                    auto helper = OpRegistrator::getInstance()->getPlatformHelper(this->getOpHash());
+                if (OpRegistrator::getInstance()->hasHelper(this->getOpHash(), block->engine())) {
+                    auto helper = OpRegistrator::getInstance()->getPlatformHelper(this->getOpHash(), block->engine());
                     if (helper->isUsable(*block)) {
                         status = helper->invokeHelper(*block);
                         hasHelper = true;

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.computationgraph;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.TestUtils;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
@@ -44,7 +45,7 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestComputationGraphSpace {
+public class TestComputationGraphSpace extends BaseDL4JTest {
 
     @Test
     public void testBasic() {

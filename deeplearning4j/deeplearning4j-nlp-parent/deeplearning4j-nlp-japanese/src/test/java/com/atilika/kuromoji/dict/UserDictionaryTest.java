@@ -32,6 +32,7 @@
  */
 package com.atilika.kuromoji.dict;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -43,7 +44,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class UserDictionaryTest {
+public class UserDictionaryTest extends BaseDL4JTest {
 
     @Test
     public void testLookup() throws IOException {

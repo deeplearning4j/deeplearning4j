@@ -55,4 +55,12 @@ namespace nd4j {
         return custom(nd4j::scalar::IGammac, nd4j::pairwise::IGammac, nd4j::broadcast::IGammac);
     }
 
+
+    BroadcastOpsTuple BroadcastOpsTuple::Pow() {
+        return custom(nd4j::scalar::Pow, nd4j::pairwise::Pow, nd4j::broadcast::Pow);
+    }
+    BroadcastOpsTuple BroadcastOpsTuple::PowDerivative() {
+        return custom(nd4j::scalar::PowDerivative, nd4j::pairwise::PowDerivative, nd4j::broadcast::PowDerivative);
+    }
+
 }

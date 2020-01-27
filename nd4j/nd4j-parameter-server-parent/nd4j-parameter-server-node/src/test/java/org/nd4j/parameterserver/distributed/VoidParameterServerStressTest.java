@@ -22,6 +22,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -60,7 +61,7 @@ import static org.junit.Assert.*;
 @Slf4j
 @Ignore
 @Deprecated
-public class VoidParameterServerStressTest {
+public class VoidParameterServerStressTest extends BaseND4JTest {
     private static final int NUM_WORDS = 100000;
 
     @Before

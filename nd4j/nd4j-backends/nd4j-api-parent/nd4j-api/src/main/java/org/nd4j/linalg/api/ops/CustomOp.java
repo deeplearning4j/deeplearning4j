@@ -47,12 +47,9 @@ public interface CustomOp {
      */
     boolean isInplaceCall();
 
+    List<INDArray> outputArguments();
 
-
-
-    INDArray[] outputArguments();
-
-    INDArray[] inputArguments();
+    List<INDArray> inputArguments();
 
     long[] iArgs();
 

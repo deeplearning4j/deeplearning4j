@@ -22,10 +22,21 @@ import static org.junit.Assert.fail;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
-public class ConvConfigTests {
+public class ConvConfigTests extends BaseNd4jTest {
+
+    public ConvConfigTests(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void testDeConv2D(){

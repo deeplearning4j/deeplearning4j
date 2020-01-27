@@ -472,7 +472,7 @@ public class WorkspaceTests extends BaseDL4JTest {
 
             final ComputationGraph computationGraph = new ComputationGraph(config);
             computationGraph.init();
-            computationGraph.setListeners(new ScoreIterationListener(1));
+            computationGraph.setListeners(new ScoreIterationListener(3));
 
             WSTestDataSetIterator iterator = new WSTestDataSetIterator();
             computationGraph.fit(iterator);

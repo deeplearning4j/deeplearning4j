@@ -82,11 +82,6 @@ public class BroadcastMin extends BaseBroadcastOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "min";
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }

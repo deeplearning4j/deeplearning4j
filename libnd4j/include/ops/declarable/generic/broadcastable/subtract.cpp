@@ -62,7 +62,7 @@ namespace nd4j {
 
             if (x->isSameShape(y)) {
                 // PWT case case
-                epsNext->applyTransform(transform::Neg, gradY, nullptr);
+                epsNext->applyTransform(transform::Neg, *gradY);
                 gradX->assign(epsNext);
             } else if (y->isScalar()) {
                 // scalar case
@@ -77,18 +77,16 @@ namespace nd4j {
                 if (axisX.size() > 0) {
                     auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
-                    delete sum;
-                } else 
+                } else
                     gradX->assign(epsNext);
 
                 if (axisY.size() > 0) {
                     auto sum = epsNext->reduceAlongDimension(reduce::Sum, axisY);
-                    sum->applyTransform(transform::Neg, gradY);
-                    delete sum;
+                    sum.applyTransform(transform::Neg, *gradY);
                 } else {
-                    epsNext->applyTransform(transform::Neg, gradY);
+                    epsNext->applyTransform(transform::Neg, *gradY);
                 }
-            }  
+            }
 
             return Status::OK();
         }

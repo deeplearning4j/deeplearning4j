@@ -1298,7 +1298,7 @@ namespace nd4j {
                 strided = arr;
             } else {
                 IndicesList indices({NDIndex::interval(0,131072), NDIndex::interval(0,1)});
-                strided = arr->subarray(indices);        //All rows, first column
+                strided = new NDArray(arr->subarray(indices));        //All rows, first column
                 delete arr;
             }
 
@@ -1322,7 +1322,7 @@ namespace nd4j {
                 strided = arr;
             } else {
                 IndicesList indices({NDIndex::interval(0,2*1024,2), NDIndex::all(), NDIndex::interval(0,1)});
-                strided = arr->subarray(indices);
+                strided = new NDArray(arr->subarray(indices));
                 delete arr;
             }
 
@@ -1358,7 +1358,7 @@ namespace nd4j {
                 strided = arr;
             } else {
                 IndicesList indices({NDIndex::all(), NDIndex::interval(0,1)});
-                strided = arr->subarray(indices);        //All rows, first column
+                strided = new NDArray(arr->subarray(indices));        //All rows, first column
                 delete arr;
             }
 
@@ -1393,7 +1393,7 @@ namespace nd4j {
                 strided = arr;
             } else {
                 IndicesList indices({NDIndex::all(), NDIndex::point(0)});
-                strided = arr->subarray(indices);        //All rows, first column
+                strided = new NDArray(arr->subarray(indices));        //All rows, first column
                 delete arr;
             }
 
@@ -1418,7 +1418,7 @@ namespace nd4j {
                 strided = arr;
             } else {
                 IndicesList indices({NDIndex::all(), NDIndex::point(0)});
-                strided = arr->subarray(indices);        //All rows, first column
+                strided = new NDArray(arr->subarray(indices));        //All rows, first column
                 delete arr;
             }
 
@@ -1565,7 +1565,7 @@ namespace nd4j {
             int r = p.getIntParam("rowcol");
             auto arr = NDArrayFactory::create_<float>('c', {r, r+1});
             IndicesList indices({NDIndex::all(), NDIndex::interval(0,r-1)});
-            auto view = arr->subarray(indices);
+            auto view = new NDArray(arr->subarray(indices));
             //nd4j_printf("VIEW ARRAY: rows=%lld, columns=%lld", view->sizeAt(0), view->sizeAt(1));
             x.push_back(view);
             if(p.getIntParam("inplace") == 1){

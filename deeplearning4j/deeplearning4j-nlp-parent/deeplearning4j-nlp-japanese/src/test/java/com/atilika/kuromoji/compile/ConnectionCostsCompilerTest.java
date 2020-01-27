@@ -34,6 +34,7 @@ package com.atilika.kuromoji.compile;
 
 import com.atilika.kuromoji.dict.ConnectionCosts;
 import com.atilika.kuromoji.io.ByteBufferIO;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,7 +44,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
 
-public class ConnectionCostsCompilerTest {
+public class ConnectionCostsCompilerTest extends BaseDL4JTest {
 
     private static ConnectionCosts connectionCosts;
 

@@ -25,6 +25,7 @@ import org.datavec.spark.transform.misc.StringToWritablesFunction;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -35,6 +36,15 @@ import static org.junit.Assert.assertEquals;
 
 public class TestIteratorUtils extends BaseSparkTest {
 
+    @Override
+    public DataType getDataType() {
+        return DataType.FLOAT;
+    }
+
+    @Override
+    public DataType getDefaultFPDataType() {
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testIrisRRMDSI() throws Exception {

@@ -26,7 +26,7 @@ namespace nd4j {
     namespace ops {
         /**
          * This operation is, basically IF statement
-         * 
+         *
          * arg_0 is our "signal"
          * arg_1 is condition that will determine transition
          */
@@ -41,10 +41,10 @@ namespace nd4j {
             // but we'll ensure only one node is active, and other is disabled
             if (condition->e<int>(0) == 0) {
                 block.setBranch(0);
-                this->storeResult(block, 0, input->dup());
+                this->storeResult(block, 0, new NDArray(input->dup()));
             } else {
                 block.setBranch(1);
-                this->storeResult(block, 1, *input->dup());
+                this->storeResult(block, 1, new NDArray(input->dup()));
             }
 
             return Status::OK();

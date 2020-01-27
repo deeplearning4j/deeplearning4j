@@ -45,26 +45,26 @@ static void printer(std::initializer_list<nd4j::ops::platforms::PlatformHelper*>
 TEST_F(MklDnnTests, helpers_includer) {
     // we need this block, to make sure all helpers are still available within binary, and not optimized out by linker
 #ifdef HAVE_MKLDNN
-    nd4j::ops::platforms::PLATFORM_conv2d conv2d;
-    nd4j::ops::platforms::PLATFORM_conv2d_bp conv2d_bp;
+    nd4j::ops::platforms::PLATFORM_conv2d_ENGINE_CPU conv2d;
+    nd4j::ops::platforms::PLATFORM_conv2d_bp_ENGINE_CPU conv2d_bp;
 
-    nd4j::ops::platforms::PLATFORM_conv2d conv3d;
-    nd4j::ops::platforms::PLATFORM_conv2d_bp conv3d_bp;
+    nd4j::ops::platforms::PLATFORM_conv2d_ENGINE_CPU conv3d;
+    nd4j::ops::platforms::PLATFORM_conv2d_bp_ENGINE_CPU conv3d_bp;
 
-    nd4j::ops::platforms::PLATFORM_avgpool2d avgpool2d;
-    nd4j::ops::platforms::PLATFORM_avgpool2d_bp avgpool2d_bp;
+    nd4j::ops::platforms::PLATFORM_avgpool2d_ENGINE_CPU avgpool2d;
+    nd4j::ops::platforms::PLATFORM_avgpool2d_bp_ENGINE_CPU avgpool2d_bp;
 
-    nd4j::ops::platforms::PLATFORM_maxpool2d maxpool2d;
-    nd4j::ops::platforms::PLATFORM_maxpool2d_bp maxpool2d_bp;
+    nd4j::ops::platforms::PLATFORM_maxpool2d_ENGINE_CPU maxpool2d;
+    nd4j::ops::platforms::PLATFORM_maxpool2d_bp_ENGINE_CPU maxpool2d_bp;
 
-    nd4j::ops::platforms::PLATFORM_avgpool3dnew avgpool3d;
-    nd4j::ops::platforms::PLATFORM_avgpool3dnew_bp avgpool3d_bp;
+    nd4j::ops::platforms::PLATFORM_avgpool3dnew_ENGINE_CPU avgpool3d;
+    nd4j::ops::platforms::PLATFORM_avgpool3dnew_bp_ENGINE_CPU avgpool3d_bp;
 
-    nd4j::ops::platforms::PLATFORM_maxpool3dnew maxpool3d;
-    nd4j::ops::platforms::PLATFORM_maxpool3dnew_bp maxpool3d_bp;
+    nd4j::ops::platforms::PLATFORM_maxpool3dnew_ENGINE_CPU maxpool3d;
+    nd4j::ops::platforms::PLATFORM_maxpool3dnew_bp_ENGINE_CPU maxpool3d_bp;
 
-    nd4j::ops::platforms::PLATFORM_lrn lrn;
-    nd4j::ops::platforms::PLATFORM_batchnorm batchnorm;
+    nd4j::ops::platforms::PLATFORM_lrn_ENGINE_CPU lrn;
+    nd4j::ops::platforms::PLATFORM_batchnorm_ENGINE_CPU batchnorm;
 
     printer({&conv2d, &conv2d_bp, &conv3d, &conv3d_bp, &avgpool2d, &avgpool2d_bp, &maxpool2d, &maxpool2d_bp, &avgpool3d, &avgpool3d_bp, &maxpool3d, &maxpool3d_bp, &lrn, &batchnorm});
 #endif

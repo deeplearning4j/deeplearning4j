@@ -293,6 +293,12 @@ public class TFGraphMapper {
                         for (int i = 0; i < nIn; i++) {
                             String origInName = nd.getInput(i);
                             String inName = stripControl(origInName);
+
+                            if(inName.endsWith(":0")){
+                                //Strip ":0" suffix. Some ops can depend on placeholders, like "image_tensor:0" but in SameDiff this is a variable called "image_tensor"
+                                inName = inName.substring(0, inName.length()-2);
+                            }
+
                             boolean isControlDep = isControlDep(origInName);
                             if (isControlDep) {
                                 if (controlDeps == null)
@@ -442,6 +448,11 @@ public class TFGraphMapper {
                     for (int i = 0; i < nInNext; i++) {
                         String s = nextOpDef.getInput(i);
                         String inName = stripControl(nextOpDef.getInput(i));
+
+                        if(inName.endsWith(":0")){
+                            //Strip ":0" suffix. Some ops can depend on placeholders, like "image_tensor:0" but in SameDiff this is a variable called "image_tensor"
+                            inName = inName.substring(0, inName.length()-2);
+                        }
 
 //                        log.info("Input: {}, {}", s, inName);
 

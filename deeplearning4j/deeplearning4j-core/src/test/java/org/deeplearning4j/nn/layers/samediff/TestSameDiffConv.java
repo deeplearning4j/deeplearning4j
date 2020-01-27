@@ -306,8 +306,8 @@ public class TestSameDiffConv extends BaseDL4JTest {
                         INDArray l = TestUtils.randomOneHot(minibatch, nOut);
 
                         log.info("Starting: " + msg);
-                        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, null, true, 50); //Most of weights are in output layer
+                        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f)
+                                .labels(l).subset(true).maxPerParam(50));
 
                         assertTrue(msg, gradOK);
 

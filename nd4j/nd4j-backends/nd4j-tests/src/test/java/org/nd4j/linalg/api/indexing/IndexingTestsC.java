@@ -33,8 +33,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
@@ -77,8 +76,8 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         final INDArray aBad = col.broadcast(2, 2);
         final INDArray aGood = col.dup().broadcast(2, 2);
-        System.out.println(aBad);
-        System.out.println(aGood);
+//        System.out.println(aBad);
+//        System.out.println(aGood);
         assertTrue(Transforms.abs(aGood.sub(aBad).div(aGood)).maxNumber().doubleValue() < 0.01);
     }
 
@@ -133,7 +132,7 @@ public class IndexingTestsC extends BaseNd4jTest {
     public void testIndexingWithMmul() {
         INDArray a = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
         INDArray b = Nd4j.linspace(1, 5, 5, DataType.DOUBLE).reshape(1, -1);
-        System.out.println(b);
+//        System.out.println(b);
         INDArray view = a.get(all(), NDArrayIndex.interval(0, 1));
         INDArray c = view.mmul(b);
         INDArray assertion = a.get(all(), NDArrayIndex.interval(0, 1)).dup().mmul(b);
@@ -469,7 +468,7 @@ public class IndexingTestsC extends BaseNd4jTest {
             }
         }
 
-        System.out.println("TOTAL TEST CASES: " + totalTestCaseCount);
+//        System.out.println("TOTAL TEST CASES: " + totalTestCaseCount);
         assertTrue(String.valueOf(totalTestCaseCount), totalTestCaseCount > 5000);
     }
 
@@ -559,10 +558,10 @@ public class IndexingTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(DataType.FLOAT, 1, prod, prod).reshape('c', inShape).dup(order);
         INDArray sub = arr.get(indexes);
 
-        System.out.println(Arrays.toString(indexes));
-        System.out.println(arr);
-        System.out.println();
-        System.out.println(sub);
+//        System.out.println(Arrays.toString(indexes));
+//        System.out.println(arr);
+//        System.out.println();
+//        System.out.println(sub);
     }
 
 

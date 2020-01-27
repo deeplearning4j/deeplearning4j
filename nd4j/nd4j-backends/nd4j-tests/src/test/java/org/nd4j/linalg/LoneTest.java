@@ -19,7 +19,6 @@ package org.nd4j.linalg;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
+import org.nd4j.linalg.api.ops.util.PrintVariable;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.dataset.DataSet;
@@ -57,9 +57,9 @@ public class LoneTest extends BaseNd4jTest {
     @Test
     public void testSoftmaxStability() {
         INDArray input = Nd4j.create(new double[]{-0.75, 0.58, 0.42, 1.03, -0.61, 0.19, -0.37, -0.40, -1.42, -0.04}).reshape(1, -1).transpose();
-        System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
+//        System.out.println("Input transpose " + Shape.shapeToString(input.shapeInfo()));
         INDArray output = Nd4j.create(DataType.DOUBLE, 10, 1);
-        System.out.println("Element wise stride of output " + output.elementWiseStride());
+//        System.out.println("Element wise stride of output " + output.elementWiseStride());
         Nd4j.getExecutioner().exec(new SoftMax(input, output));
     }
 
@@ -85,11 +85,13 @@ public class LoneTest extends BaseNd4jTest {
 
         first = first.get(NDArrayIndex.interval(4, 8), NDArrayIndex.interval(0, 2, 8));
         for (int i = 0; i < first.tensorsAlongDimension(0); i++) {
-            System.out.println(first.tensorAlongDimension(i, 0));
+//            System.out.println(first.tensorAlongDimension(i, 0));
+            first.tensorAlongDimension(i, 0);
         }
 
         for (int i = 0; i < first.tensorsAlongDimension(1); i++) {
-            System.out.println(first.tensorAlongDimension(i, 1));
+//            System.out.println(first.tensorAlongDimension(i, 1));
+            first.tensorAlongDimension(i, 1);
         }
         second = second.get(NDArrayIndex.interval(3, 7), NDArrayIndex.all());
         third = third.permute(0, 2, 1);
@@ -115,7 +117,7 @@ public class LoneTest extends BaseNd4jTest {
             assertEquals(i + 1,rowVector.getColumn(i).getInt(0));
             assertEquals(i + 1,rowVector.get(NDArrayIndex.point(0), NDArrayIndex.interval(i, j)).getInt(0));
             assertEquals(i + 1,colVector.get(NDArrayIndex.interval(i, j), NDArrayIndex.point(0)).getInt(0));
-            System.out.println("Making sure index interval will not crash with begin/end vals...");
+//            System.out.println("Making sure index interval will not crash with begin/end vals...");
             jj = colVector.get(NDArrayIndex.interval(i, i + 1));
             jj = colVector.get(NDArrayIndex.interval(i, i + 1));
         }
@@ -164,20 +166,9 @@ public class LoneTest extends BaseNd4jTest {
         INDArray aD = Nd4j.linspace(-3, 4, 8).reshape(2, 4);
         INDArray b = Nd4j.getExecutioner().exec(new Tanh(aA));
         //Nd4j.getExecutioner().execAndReturn(new TanhDerivative(aD));
-        System.out.println(aA);
-        System.out.println(aD);
-        System.out.println(b);
-    }
-
-    @Test(expected = IllegalStateException.class)
-    @Ignore // test is outdated
-    public void opsNotAllowed() {
-        INDArray A = Nd4j.ones(2, 3, 1);
-        INDArray B = Nd4j.ones(2, 3);
-
-        System.out.println(A.add(B));
-        System.out.println(B.add(A));
-
+//        System.out.println(aA);
+//        System.out.println(aD);
+//        System.out.println(b);
     }
 
     @Test
@@ -191,14 +182,26 @@ public class LoneTest extends BaseNd4jTest {
         max = 64;
         A = Nd4j.linspace(1, max, max).reshape(1, max);
         currentArgMax = Nd4j.argMax(A).getInt(0);
-        System.out.println("Returned argMax is " + currentArgMax);
+//        System.out.println("Returned argMax is " + currentArgMax);
         assertEquals(max - 1, currentArgMax);
     }
 
+    @Test
+    public void testRPF() {
+        val array = Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12).reshape(2, 2, 3);
+
+        log.info("--------");
+
+        val tad = array.tensorAlongDimension(1, 1, 2);
+        Nd4j.exec(new PrintVariable(tad, false));
+        log.info("TAD native shapeInfo: {}", tad.shapeInfoDataBuffer().asLong());
+        log.info("TAD Java shapeInfo: {}", tad.shapeInfoJava());
+        log.info("TAD:\n{}", tad);
+    }
 
     @Test
     public void testConcat3D_Vstack_C() {
-        val shape = new long[]{1, 1000, 150};
+        val shape = new long[]{1, 1000, 20};
 
         List<INDArray> cArrays = new ArrayList<>();
         List<INDArray> fArrays = new ArrayList<>();
@@ -211,15 +214,17 @@ public class LoneTest extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
 
-        long time1 = System.currentTimeMillis();
-        INDArray res = Nd4j.vstack(cArrays);
-        long time2 = System.currentTimeMillis();
+        val time1 = System.currentTimeMillis();
+        val res = Nd4j.vstack(cArrays);
+        val time2 = System.currentTimeMillis();
 
-        log.info("Time spent: {} ms", time2 - time1);
+//        log.info("Time spent: {} ms", time2 - time1);
 
         for (int e = 0; e < 32; e++) {
-            INDArray tad = res.tensorAlongDimension(e, 1, 2);
+            val tad = res.tensorAlongDimension(e, 1, 2);
+
             assertEquals("Failed for TAD [" + e + "]",(double) e, tad.meanNumber().doubleValue(), 1e-5);
+            assertEquals((double) e, tad.getDouble(0), 1e-5);
         }
     }
 
@@ -248,7 +253,7 @@ public class LoneTest extends BaseNd4jTest {
 
         Collections.sort(times);
 
-        log.info("p50: {}; avg: {};", times.get(times.size() / 2), time);
+//        log.info("p50: {}; avg: {};", times.get(times.size() / 2), time);
     }
 
     @Test(expected = Exception.class)
@@ -270,25 +275,30 @@ public class LoneTest extends BaseNd4jTest {
          */
         int[] ranksToCheck = new int[]{2, 3, 4, 5};
         for (int rank = 0; rank < ranksToCheck.length; rank++) {
-            log.info("\nRunning through rank " + ranksToCheck[rank]);
+//            log.info("\nRunning through rank " + ranksToCheck[rank]);
             List<Pair<INDArray, String>> allF = NDArrayCreationUtil.getTestMatricesWithVaryingShapes(ranksToCheck[rank], 'f', DataType.FLOAT);
             Iterator<Pair<INDArray, String>> iter = allF.iterator();
             while (iter.hasNext()) {
                 Pair<INDArray, String> currentPair = iter.next();
                 INDArray origArrayF = currentPair.getFirst();
                 INDArray sameArrayC = origArrayF.dup('c');
-                log.info("\nLooping through slices for shape " + currentPair.getSecond());
-                log.info("\nOriginal array:\n" + origArrayF);
+//                log.info("\nLooping through slices for shape " + currentPair.getSecond());
+//                log.info("\nOriginal array:\n" + origArrayF);
+                origArrayF.toString();
                 INDArray viewF = origArrayF.slice(0);
                 INDArray viewC = sameArrayC.slice(0);
-                log.info("\nSlice 0, C order:\n" + viewC.toString());
-                log.info("\nSlice 0, F order:\n" + viewF.toString());
+//                log.info("\nSlice 0, C order:\n" + viewC.toString());
+//                log.info("\nSlice 0, F order:\n" + viewF.toString());
+                viewC.toString();
+                viewF.toString();
                 for (int i = 0; i < viewF.slices(); i++) {
                     //assertEquals(viewF.slice(i),viewC.slice(i));
                     for (int j = 0; j < viewF.slice(i).length(); j++) {
                         //if (j>0) break;
-                        log.info("\nC order slice " + i + ", element 0 :" + viewC.slice(i).getDouble(j)); //C order is fine
-                        log.info("\nF order slice " + i + ", element 0 :" + viewF.slice(i).getDouble(j)); //throws index out of bound err on F order
+//                        log.info("\nC order slice " + i + ", element 0 :" + viewC.slice(i).getDouble(j)); //C order is fine
+//                        log.info("\nF order slice " + i + ", element 0 :" + viewF.slice(i).getDouble(j)); //throws index out of bound err on F order
+                        viewC.slice(i).getDouble(j);
+                        viewF.slice(i).getDouble(j);
                     }
                 }
             }
@@ -300,17 +310,21 @@ public class LoneTest extends BaseNd4jTest {
         INDArray arr = Nd4j.create(1, 3);
         INDArray reshaped = arr.reshape('f', 3, 1);
         for (int i=0;i<reshaped.length();i++) {
-            log.info("C order element " + i + arr.getDouble(i));
-            log.info("F order element " + i + reshaped.getDouble(i));
+//            log.info("C order element " + i + arr.getDouble(i));
+//            log.info("F order element " + i + reshaped.getDouble(i));
+            arr.getDouble(i);
+            reshaped.getDouble(i);
         }
         for (int j=0;j<arr.slices();j++) {
             for (int k=0;k<arr.slice(j).length();k++) {
-                log.info("\nArr: slice " + j + " element " + k + " " + arr.slice(j).getDouble(k));
+//                log.info("\nArr: slice " + j + " element " + k + " " + arr.slice(j).getDouble(k));
+                arr.slice(j).getDouble(k);
             }
         }
         for (int j=0;j<reshaped.slices();j++) {
             for (int k=0;k<reshaped.slice(j).length();k++) {
-                log.info("\nReshaped: slice " + j + " element " + k + " " + reshaped.slice(j).getDouble(k));
+//                log.info("\nReshaped: slice " + j + " element " + k + " " + reshaped.slice(j).getDouble(k));
+                reshaped.slice(j).getDouble(k);
             }
         }
     }

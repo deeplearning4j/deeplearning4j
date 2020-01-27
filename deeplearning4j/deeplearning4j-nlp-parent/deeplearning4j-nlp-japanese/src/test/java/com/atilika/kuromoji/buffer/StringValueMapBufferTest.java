@@ -32,13 +32,14 @@
  */
 package com.atilika.kuromoji.buffer;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.util.TreeMap;
 
 import static org.junit.Assert.assertEquals;
 
-public class StringValueMapBufferTest {
+public class StringValueMapBufferTest extends BaseDL4JTest {
 
     @Test
     public void testInsertIntoMap() throws Exception {

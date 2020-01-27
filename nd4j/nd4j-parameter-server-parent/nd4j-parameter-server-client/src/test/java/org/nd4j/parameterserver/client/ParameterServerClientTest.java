@@ -21,10 +21,10 @@ import io.aeron.driver.MediaDriver;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.BaseNd4jTest;
 import org.nd4j.parameterserver.ParameterServerListener;
 import org.nd4j.parameterserver.ParameterServerSubscriber;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 10/3/16.
  */
-public class ParameterServerClientTest extends BaseNd4jTest {
+public class ParameterServerClientTest extends BaseND4JTest {
     private static MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(ParameterServerClientTest.class);
     private static Aeron aeron;

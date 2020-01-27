@@ -20,7 +20,6 @@
 //
 
 #include <types/types.h>
-#include <ShapeUtils.h>
 #include <op_boilerplate.h>
 #include <loops/reduce_long.h>
 #include <loops/legacy_ops.h>

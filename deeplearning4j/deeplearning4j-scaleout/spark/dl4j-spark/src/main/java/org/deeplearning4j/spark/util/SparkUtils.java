@@ -406,7 +406,7 @@ public class SparkUtils {
                 JavaPairRDD<Integer, T> pairIndexed = indexedRDD(rdd);
 
                 int remainder = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
-                log.debug("About to rebalance: numPartitions={}, objectsPerPartition={}, remainder={}", numPartitions, objectsPerPartition, remainder);
+                log.trace("About to rebalance: numPartitions={}, objectsPerPartition={}, remainder={}", numPartitions, objectsPerPartition, remainder);
                 pairIndexed = pairIndexed
                                 .partitionBy(new BalancedPartitioner(numPartitions, objectsPerPartition, remainder));
                 return pairIndexed.values();

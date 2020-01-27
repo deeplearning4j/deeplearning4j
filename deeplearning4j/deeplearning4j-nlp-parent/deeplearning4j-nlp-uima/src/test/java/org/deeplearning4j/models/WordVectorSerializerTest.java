@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models;
 
+import org.junit.rules.Timeout;
 import org.nd4j.shade.guava.io.Files;
 import org.nd4j.shade.guava.primitives.Doubles;
 import lombok.val;
@@ -74,6 +75,9 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     private File textFile, binaryFile, textFile2;
     private File fastTextRaw, fastTextZip, fastTextGzip;
@@ -402,11 +406,11 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
         double simD = arraysSimilarity(day1, day2);
         double simN = arraysSimilarity(night1, night2);
 
-        logger.info("Vec1 day: " + day1);
-        logger.info("Vec2 day: " + day2);
+//        logger.info("Vec1 day: " + day1);
+//        logger.info("Vec2 day: " + day2);
 
-        logger.info("Vec1 night: " + night1);
-        logger.info("Vec2 night: " + night2);
+//        logger.info("Vec1 night: " + night1);
+//        logger.info("Vec2 night: " + night2);
 
         logger.info("Day/day cross-model similarity: " + simD);
         logger.info("Night/night cross-model similarity: " + simN);

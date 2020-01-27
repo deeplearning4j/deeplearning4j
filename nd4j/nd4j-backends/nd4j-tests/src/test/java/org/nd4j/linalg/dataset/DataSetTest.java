@@ -482,7 +482,7 @@ public class DataSetTest extends BaseNd4jTest {
         //Tests merging of different CNN masks: [mb,1,h,1], [mb,1,1,w], [mb,1,h,w]
 
         for( int t=0; t<3; t++) {
-            log.info("Starting test: {}", t);
+//            log.info("Starting test: {}", t);
             int nOut = 3;
             int width = 5;
             int height = 4;
@@ -808,7 +808,7 @@ public class DataSetTest extends BaseNd4jTest {
             ds.shuffle();
             INDArray fCol = f.getColumn(0);
             INDArray lCol = l.getColumn(0);
-            System.out.println(fCol + "\t" + ds.getExampleMetaData());
+//            System.out.println(fCol + "\t" + ds.getExampleMetaData());
             for (int j = 0; j < nExamples; j++) {
                 int fVal = (int) fCol.getDouble(j);
                 int lVal = (int) lCol.getDouble(j);
@@ -836,7 +836,8 @@ public class DataSetTest extends BaseNd4jTest {
     public void testToString() {
         org.nd4j.linalg.dataset.api.DataSet ds = new DataSet();
         //this should not throw a null pointer
-        System.out.println(ds);
+//        System.out.println(ds);
+        ds.toString();
 
         //Checking printing of masks
         int numExamples = 10;
@@ -853,7 +854,8 @@ public class DataSetTest extends BaseNd4jTest {
         }
 
         ds = DataSet.merge(list);
-        System.out.println(ds);
+//        System.out.println(ds);
+        ds.toString();
 
     }
 

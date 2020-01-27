@@ -32,13 +32,14 @@
  */
 package com.atilika.kuromoji.trie;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
 
-public class PatriciaTrieTest {
+public class PatriciaTrieTest extends BaseDL4JTest {
 
     @Test
     public void testRomaji() {

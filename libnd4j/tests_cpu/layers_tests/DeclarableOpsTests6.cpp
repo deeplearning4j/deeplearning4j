@@ -139,7 +139,7 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_Once_Again_04) {
 
     auto ones = onesRes->at(0);
     *ones *= 10;
-    auto onesD = ones->dup();
+    auto onesD = new NDArray(ones->dup());
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, onesD);
@@ -1577,31 +1577,31 @@ TEST_F(DeclarableOpsTests6, LogDet_3) {
 TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
 
     auto x = NDArrayFactory::create<float>('c', {2, 5, 5}, {
-                    2.f, 4.f, 60.f, 8.f, 10.f, 
-                    0.f, 1.f, 2.f, 3.f, 4.f, 
-                    0.f, 0.f, 2.f, 4.f, 6.f, 
-                    0.f, 0.f, 0.f, 1.f, 2.f, 
-                    0.f, 0.f, 0.f, 0.f, 4.f, 
+                    2.f, 4.f, 60.f, 8.f, 10.f,
+                    0.f, 1.f, 2.f, 3.f, 4.f,
+                    0.f, 0.f, 2.f, 4.f, 6.f,
+                    0.f, 0.f, 0.f, 1.f, 2.f,
+                    0.f, 0.f, 0.f, 0.f, 4.f,
 
-                     1.f, 0.f, 0.f, 0.f, 0.f, 
-                     2.f, 1.f, 0.f, 0.f, 0.f, 
-                    30.f, 2.f, 1.f, 0.f, 0.f, 
-                     4.f, 3.f, 2.f, 1.f, 0.f, 
+                     1.f, 0.f, 0.f, 0.f, 0.f,
+                     2.f, 1.f, 0.f, 0.f, 0.f,
+                    30.f, 2.f, 1.f, 0.f, 0.f,
+                     4.f, 3.f, 2.f, 1.f, 0.f,
                      5.f, 4.f, 3.f, 2.f, 1.f
     });
 
     auto exp = NDArrayFactory::create<float>('c', {2, 5, 5}, {
-                    0.5f, -2.0f, -13.0f, 54.0f, -6.75f, 
-                    0.0f, 1.0f, -1.0f, 1.0f, 0.0f, 
+                    0.5f, -2.0f, -13.0f, 54.0f, -6.75f,
+                    0.0f, 1.0f, -1.0f, 1.0f, 0.0f,
                       0.f, 0.f, 0.5f, -2.0f, 0.25f,
                       0.f, 0.f, 0.f, 1.0f, -0.5f,
-                      0.f, 0.f, 0.f, 0.f, 0.25f, 
+                      0.f, 0.f, 0.f, 0.f, 0.25f,
 
-                    1.0f, 0.0f, 0.0f, 0.0f, 0.f, 
-                   -2.0f, 1.0f, 0.f, 0.f, 0.f, 
+                    1.0f, 0.0f, 0.0f, 0.0f, 0.f,
+                   -2.0f, 1.0f, 0.f, 0.f, 0.f,
                   -26.0f, -2.0f, 1.f, 0.f, 0.f,
                    54.0f, 1.0f, -2.0f, 1.f, 0.f,
-                  -27.0f, 0.0f, 1.0f, -2.0f, 1.f, 
+                  -27.0f, 0.0f, 1.0f, -2.0f, 1.f,
     });
 
     nd4j::ops::matrix_inverse op;
@@ -1891,10 +1891,8 @@ TEST_F(DeclarableOpsTests6, Test_Reduce3_Edge) {
 
 
     std::vector<int> dims = {0, 1};
-    auto z = x.applyReduce3(reduce3::CosineSimilarity, &y, dims, nullptr);
-    ASSERT_TRUE(z != nullptr);
-
-    delete z;
+    auto z = x.applyReduce3(reduce3::CosineSimilarity, y, dims);
+    ASSERT_TRUE(&z != nullptr);
 }
 
 ///////////////////////////////////////////////////////////////////

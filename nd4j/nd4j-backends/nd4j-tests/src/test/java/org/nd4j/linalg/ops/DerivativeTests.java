@@ -176,9 +176,9 @@ public class DerivativeTests extends BaseNd4jTest {
         INDArray z = Transforms.hardSigmoid(xArr, true);
         INDArray zPrime = Nd4j.getExecutioner().exec(new HardSigmoidDerivative(xArr.dup()));
 
-        System.out.println(xArr);
-        System.out.println(z);
-        System.out.println(zPrime);
+//        System.out.println(xArr);
+//        System.out.println(z);
+//        System.out.println(zPrime);
 
         for (int i = 0; i < expHSOut.length; i++) {
             double relErrorHS =

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.json;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.conf.updater.AdaMaxSpace;
@@ -71,7 +72,7 @@ import static org.junit.Assert.assertNotNull;
 /**
  * Created by Alex on 14/02/2017.
  */
-public class TestJson {
+public class TestJson extends BaseDL4JTest {
 
     @Test
     public void testMultiLayerSpaceJson() {

@@ -82,10 +82,10 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
 
-        if (PRINT_RESULTS) {
-            for (int j = 0; j < mln.getnLayers(); j++)
-                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-        }
+//        if (PRINT_RESULTS) {
+//            for (int j = 0; j < mln.getnLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+//        }
 
         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);

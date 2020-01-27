@@ -108,6 +108,9 @@ public class KerasLayerConfiguration {
     private final String LAYER_CLASS_NAME_LEAKY_RELU = "LeakyReLU";
     private final String LAYER_CLASS_NAME_PRELU = "PReLU";
     private final String LAYER_CLASS_NAME_THRESHOLDED_RELU = "ThresholdedReLU";
+    private final String LAYER_CLASS_NAME_RELU = "ReLU";
+    private final String LAYER_CLASS_NAME_ELU = "ELU";
+    private final String LAYER_CLASS_NAME_SOFTMAX = "Softmax";
     private final String LAYER_CLASS_NAME_UPSAMPLING_1D = "UpSampling1D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_2D = "UpSampling2D";
     private final String LAYER_CLASS_NAME_UPSAMPLING_3D = "UpSampling3D";

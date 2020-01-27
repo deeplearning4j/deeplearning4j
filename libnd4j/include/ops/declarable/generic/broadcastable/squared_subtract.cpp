@@ -87,7 +87,7 @@ namespace nd4j {
                 // scalar case
                 auto tmpX = x->reduceNumber(reduce::Sum);
                 gradY->assign(tmpX);
-                
+
                 //epsNext->applyPairwiseLambda(x, lambdaS, gradX);
                 gradX->assign((*epsNext) * ts * ((*x) - (*y)));
             } else {
@@ -98,37 +98,31 @@ namespace nd4j {
 
                 auto targetShape = epsNext->getShapeAsVector();
 
-                preX->tileToShape(targetShape);
-                preY->tileToShape(targetShape);
+                preX.tileToShape(targetShape, preX);
+                preY.tileToShape(targetShape, preY);
 
 
                 //epsNext->applyTriplewiseLambda(x, y, lambdaX, preX);
                 //epsNext->applyTriplewiseLambda(x, y, lambdaY, preY);
                 auto resX = (*epsNext) * ts * ((*x) - (*y));
-                preX->assign(resX);
+                preX.assign(resX);
                 auto resY = (*epsNext) * ts * ((*y) - (*x));
-                preY->assign(resY);
+                preY.assign(resY);
 
                 auto axisX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), epsNext->shapeInfo());
                 auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = preX->reduceAlongDimension(reduce::Sum, axisX);
+                    auto sum = preX.reduceAlongDimension(reduce::Sum, axisX);
                     gradX->assign(sum);
-                    delete sum;
-                } else 
+                } else
                     gradX->assign(preX);
 
                 if (axisY.size() > 0) {
-                    auto sum = preY->reduceAlongDimension(reduce::Sum, axisY);
+                    auto sum = preY.reduceAlongDimension(reduce::Sum, axisY);
                     gradY->assign(sum);
-                    delete sum;
                 } else
                     gradY->assign(preY);
-
-
-                delete preX;
-                delete preY;
             }
 
             return Status::OK();

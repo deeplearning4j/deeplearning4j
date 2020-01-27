@@ -106,7 +106,7 @@ TEST_F(TadTests, TestShapeTad_1) {
     NDArray tadArr(tadBuff, tadShapeInfo);
 
     ASSERT_TRUE(numTads==1);
-    ASSERT_TRUE(input.isSameShapeStrict(&tadArr));
+    ASSERT_TRUE(input.isSameShapeStrict(tadArr));
     ASSERT_TRUE(input.equalsTo(&tadArr));
 
 	delete[] tadShapeInfo;
@@ -133,24 +133,16 @@ TEST_F(TadTests, TadEdgeCase_1) {
     auto tad = array.tensorAlongDimension(0, {0, 1});
 
     ASSERT_TRUE(exp.isSameShape(tad));
-
-    delete tad;
 }
 
 TEST_F(TadTests, TestEdgeCase_2) {
-    auto array = NDArrayFactory::create<float>('f', {2, 3, 1}, {1, 4, 2, 5, 3, 6});
 
-    auto tad1 = array.tensorAlongDimension(1, {2});
+    auto array = NDArrayFactory::create<float>('f', {2, 3, 1}, {1, 4, 2, 5, 3, 6});
 
     for (int e = 0 ; e < array.lengthOf(); e++) {
         auto tad = array.tensorAlongDimension(e, {2});
-
-        ASSERT_NEAR(tad->e<float>(0), array.e<float>(e), 1e-5);
-
-        delete tad;
+        ASSERT_NEAR(tad.e<float>(0), array.e<float>(e), 1e-5);
     }
-
-    delete tad1;
 }
 
 TEST_F(TadTests, TadEdgeCase_2) {
@@ -158,10 +150,7 @@ TEST_F(TadTests, TadEdgeCase_2) {
 
     auto tad = array.tensorAlongDimension(0, {1});
 
-    // tad->printShapeInfo("TAD shape");
-    ASSERT_EQ(3, tad->lengthOf());
-
-    delete tad;
+    ASSERT_EQ(3, tad.lengthOf());
 }
 
 

@@ -65,7 +65,7 @@ public class LeadingAndTrailingOnes extends BaseNd4jTest {
         INDArray arr = Nd4j.create(1, 10, 1, 1);
         arr.assign(1);
         arr.toString();
-        System.out.println(arr);
+//        System.out.println(arr);
     }
 
 

@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessing.text;
 
-import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

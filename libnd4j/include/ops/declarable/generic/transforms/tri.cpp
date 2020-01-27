@@ -32,8 +32,8 @@ CUSTOM_OP_IMPL(tri, -2, 1, false, 0, 1) {
 
     const int diag = block.numI() > 2 ? INT_ARG(2) : 0;
 
-    BUILD_SINGLE_SELECTOR(output->dataType(), output->fillAsTriangular, (1., diag + 1, 0,    'l'), LIBND4J_TYPES);  // fill with unities lower triangular block of matrix
-    BUILD_SINGLE_SELECTOR(output->dataType(), output->fillAsTriangular, (0., 0,        diag, 'u'), LIBND4J_TYPES);  // fill with zeros upper triangular block of matrix
+    BUILD_SINGLE_SELECTOR(output->dataType(), output->fillAsTriangular, (1., diag + 1, 0,    *output, 'l'), LIBND4J_TYPES);  // fill with unities lower triangular block of matrix
+    BUILD_SINGLE_SELECTOR(output->dataType(), output->fillAsTriangular, (0., 0,        diag, *output, 'u'), LIBND4J_TYPES);  // fill with zeros upper triangular block of matrix
 
     // output->setValueInDiagMatrix(1., diag,   'l');
     // output->setValueInDiagMatrix(0., diag+1, 'u');

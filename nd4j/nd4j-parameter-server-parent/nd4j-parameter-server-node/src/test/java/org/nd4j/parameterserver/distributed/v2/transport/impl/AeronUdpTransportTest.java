@@ -20,13 +20,14 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.ping.PingMessage;
 
 import static org.junit.Assert.*;
 
 @Slf4j
-public class AeronUdpTransportTest {
+public class AeronUdpTransportTest extends BaseND4JTest {
     private static final String IP = "127.0.0.1";
     private static final int ROOT_PORT = 40781;
 

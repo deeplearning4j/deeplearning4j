@@ -27,6 +27,7 @@
 #include <graph/VariableSpace.h>
 #include <graph/ContextPrototype.h>
 #include <memory/Workspace.h>
+#include <execution/Engine.h>
 
 // CUDA-specific includes
 #ifdef __CUDACC__
@@ -64,6 +65,9 @@ namespace nd4j {
             std::vector<NDArray*> _handles;
 
             bool _helpersAllowed = true;
+
+            // in some cases we might be able to skip shape function for validation purposes
+            bool _shapeFunctionOverride = false;
         public:
             Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
@@ -99,11 +103,12 @@ namespace nd4j {
             // this method returns workspace for object allocations
             nd4j::memory::Workspace* oWorkspace();
 
-
             void setVariableSpace(VariableSpace* variableSpace);
 
             nd4j::random::RandomBuffer* getRNG();
             void setRNG(nd4j::random::RandomBuffer* rng);
+
+            void setTargetEngine(samediff::Engine engine);
 
             VariableSpace *getVariableSpace();
 
@@ -182,9 +187,11 @@ namespace nd4j {
 
             void setInputArray(int index, NDArray *array, bool removable = false);
             void setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+            void setInputArray(int index, void *databuffer, void *shapeInfo, void *specialShapeInfo);
 
             void setOutputArray(int index, NDArray *array, bool removable = false);
             void setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+            void setOutputArray(int index, void *databuffer, void *shapeInfo, void *specialShapeInfo);
 
             void setTArguments(double *arguments, int numberOfArguments);
             void setIArguments(Nd4jLong *arguments, int numberOfArguments);
@@ -196,9 +203,11 @@ namespace nd4j {
 
             void setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer);
 
-
             void allowHelpers(bool reallyAllow);
             bool helpersAllowed();
+
+            void setShapeFunctionOverride(bool reallyOverride);
+            bool shapeFunctionOverride();
         };
     }
 }

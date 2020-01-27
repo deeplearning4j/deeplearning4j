@@ -29,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)

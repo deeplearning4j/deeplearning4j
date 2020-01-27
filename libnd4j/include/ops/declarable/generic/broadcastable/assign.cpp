@@ -39,7 +39,7 @@ namespace nd4j {
             else if (tZ != z) {
                 OVERWRITE_RESULT(tZ);
             }
-    
+
 			return ND4J_STATUS_OK;
         }
         DECLARE_SYN(set, assign);
@@ -80,7 +80,6 @@ namespace nd4j {
                 if (axisY.size() > 0) {
                     auto sum = epsNext->reduceAlongDimension(nd4j::reduce::Sum, axisY);
                     gradY->assign(sum);
-                    delete sum;
                 } else
                     gradY->assign(epsNext);
             }
@@ -98,7 +97,7 @@ namespace nd4j {
 
             Nd4jLong *shapeE;
             Nd4jLong *shapeG;
-            
+
             COPY_SHAPE(x, shapeE);
             COPY_SHAPE(y, shapeG);
 

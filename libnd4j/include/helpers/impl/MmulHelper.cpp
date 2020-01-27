@@ -236,6 +236,9 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
             throw std::invalid_argument("");
         }
 
+        if (z->isEmpty())
+            return;
+
         NDArray* xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
 
         if((transX && xRank > 1) || (transY && yRank > 1)) {

@@ -36,10 +36,12 @@ import java.util.Scanner;
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
                                               "memory/MemoryType.h",
                                               "array/DataType.h",
+                                              "array/DataBuffer.h",
                                               "array/ConstantDataBuffer.h",
                                               "array/ConstantDescriptor.h",
                                               "array/TadPack.h",
                                               "execution/ErrorReference.h",
+                                              "execution/Engine.h",
                                               "Environment.h",
                                               "types/utf8string.h",
                                               "NativeOps.h",
@@ -160,6 +162,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         .put(new Info("OpaqueVariablesSet").pointerTypes("OpaqueVariablesSet"))
                         .put(new Info("OpaqueVariable").pointerTypes("OpaqueVariable"))
                         .put(new Info("OpaqueConstantDataBuffer").pointerTypes("OpaqueConstantDataBuffer"))
+                        .put(new Info("OpaqueDataBuffer").pointerTypes("OpaqueDataBuffer"))
                         .put(new Info("OpaqueContext").pointerTypes("OpaqueContext"))
                         .put(new Info("OpaqueRandomGenerator").pointerTypes("OpaqueRandomGenerator"))
                         .put(new Info("OpaqueLaunchContext").pointerTypes("OpaqueLaunchContext"))
@@ -186,6 +189,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
                .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
                .put(new Info("std::vector<std::vector<Nd4jLong> >").pointerTypes("LongVectorVector").define())
+               .put(new Info("std::vector<const nd4j::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                .put(new Info("std::vector<nd4j::NDArray*>").pointerTypes("NDArrayVector").define())
                .put(new Info("nd4j::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))

@@ -213,7 +213,7 @@ namespace nd4j {
          * This operation calculates hash code, optionally along dimension
          */
         #if NOT_EXCLUDED(OP_hashcode)
-        DECLARE_REDUCTION_OP(hashcode, 1, 1, false, 0, 0);
+            DECLARE_CUSTOM_OP(hashcode, 1, 1, false, 0, 0);
         #endif
 
         /**

@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -34,6 +35,7 @@ import org.deeplearning4j.remote.helpers.House;
 import org.deeplearning4j.remote.helpers.HouseToPredictedPriceAdapter;
 import org.deeplearning4j.remote.helpers.PredictedPrice;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.adapters.InferenceAdapter;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -57,15 +59,15 @@ import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.deeplearning4j.parallelism.inference.InferenceMode.INPLACE;
 import static org.deeplearning4j.parallelism.inference.InferenceMode.SEQUENTIAL;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class JsonModelServerTest {
+public class JsonModelServerTest extends BaseDL4JTest {
     private static final MultiLayerNetwork model;
-    private final int PORT = 18080;
 
     static {
         val conf = new NeuralNetConfiguration.Builder()
@@ -83,8 +85,16 @@ public class JsonModelServerTest {
 
     @After
     public void pause() throws Exception {
-        // TODO: the same port was used in previous test and not accessible immediately. Might be better solution.
+        // Need to wait for server shutdown; without sleep, tests will fail if starting immediately after shutdown
         TimeUnit.SECONDS.sleep(2);
+    }
+
+    private AtomicInteger portCount = new AtomicInteger(18080);
+    private int PORT;
+
+    @Before
+    public void setPort(){
+        PORT = portCount.getAndIncrement();
     }
 
 
@@ -342,7 +352,7 @@ public class JsonModelServerTest {
         val server = new JsonModelServer.Builder<House, PredictedPrice>(model)
                 .outputSerializer(new PredictedPrice.PredictedPriceSerializer())
                 .inputDeserializer(null)
-                .port(18080)
+                .port(PORT)
                 .build();
     }
 
@@ -381,7 +391,7 @@ public class JsonModelServerTest {
                             return null;
                         }
                     })
-                    .endpointAddress("http://localhost:18080/v1/serving")
+                    .endpointAddress("http://localhost:" + PORT + "/v1/serving")
                     .build();
 
             int district = 2;

@@ -51,12 +51,12 @@ namespace nd4j {
 
             std::vector<int> axis = ShapeUtils::evalDimsToExclude(array->rankOf(), {0});
             auto tads = array->allTensorsAlongDimension( axis);
-            for (int e = 0; e < tads->size(); e++) {
+            for (int e = 0; e < tads.size(); e++) {
                 auto idx = indices->e<int>(e);
-                if (idx >= tads->size())
+                if (idx >= tads.size())
                     return ND4J_STATUS_BAD_ARGUMENTS;
 
-                auto arr = tads->at(e)->dup(array->ordering());
+                auto arr = new NDArray(tads.at(e)->dup(array->ordering()));
                 auto res = list->write(idx, arr);
                 if (res != ND4J_STATUS_OK)
                     return res;
@@ -65,7 +65,6 @@ namespace nd4j {
             if (!hasList)
                 //OVERWRITE_RESULT(list);
                 setupResultList(list, block);
-            delete tads;
 
             return Status::OK();
         }

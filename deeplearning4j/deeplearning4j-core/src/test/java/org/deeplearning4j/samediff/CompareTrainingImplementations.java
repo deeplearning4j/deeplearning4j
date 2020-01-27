@@ -250,7 +250,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 sd.evaluate(iter, "softmax", rEvalSd);
                 assertEquals(rEvalDl4j, rEvalSd);
 
-                System.out.println("---------------------------------");
+//                System.out.println("---------------------------------");
             }
         }
     }

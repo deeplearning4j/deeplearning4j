@@ -182,9 +182,9 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
 
-
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, label, inMask, null);
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input)
+                            .minAbsoluteError(1e-7)
+                            .labels(label).inputMask(inMask));
                     assertTrue(gradOK);
 
                     TestUtils.testModelSerialization(net);
@@ -223,9 +223,8 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
             Set<String> excludeParams = new HashSet<>();
             excludeParams.addAll(Arrays.asList("1_W", "1_b", "2_W", "2_b"));
 
-            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, null, null,
-                    false, -1, excludeParams);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                    .labels(labels).excludeParams(excludeParams));
             assertTrue(gradOK);
 
             TestUtils.testModelSerialization(net);
@@ -234,9 +233,8 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
             //Test ComputationGraph equivalent:
             ComputationGraph g = net.toComputationGraph();
 
-            boolean gradOKCG = GradientCheckUtil.checkGradients(g, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in}, new INDArray[]{labels},
-                    null, null, excludeParams);
+            boolean gradOKCG = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(g).inputs(new INDArray[]{in})
+                    .labels(new INDArray[]{labels}).excludeParams(excludeParams));
             assertTrue(gradOKCG);
 
             TestUtils.testModelSerialization(g);

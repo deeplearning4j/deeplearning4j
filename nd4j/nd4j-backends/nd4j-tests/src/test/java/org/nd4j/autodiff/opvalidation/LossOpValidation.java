@@ -44,6 +44,11 @@ public class LossOpValidation extends BaseOpValidation {
         super(backend);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     // All tested Loss Ops have backprop at the moment 2019/01/30
     public static final Set<String> NO_BP_YET = new HashSet<>();
 

@@ -196,12 +196,10 @@ TEST_F(NDArrayTest2, Test_AllReduce3_1) {
     auto y = NDArrayFactory::create<double>('c', {2, 3}, {2, 3, 4, 2, 3, 4});
     auto exp = NDArrayFactory::create<double>('c', {2, 2}, {1.73205, 1.73205, 1.73205, 1.73205});
 
-    auto z = x.applyAllReduce3(reduce3::EuclideanDistance, &y, {1}, nullptr);
+    auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, {1});
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete z;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -210,12 +208,10 @@ TEST_F(NDArrayTest2, Test_AllReduce3_2) {
     auto y = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 2, 3, 4});
     auto exp = NDArrayFactory::create<double>('c', {2, 2}, {0., 1.73205, 1.73205, 0.});
 
-    auto z = x.applyAllReduce3(reduce3::EuclideanDistance, &y, {1}, nullptr);
+    auto z = x.applyAllReduce3(reduce3::EuclideanDistance, y, {1});
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete z;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -278,7 +274,7 @@ TEST_F(NDArrayTest2, Test_Streamline_1) {
 
     ASSERT_TRUE(x.isSameShape(&y));
     ASSERT_TRUE(x.equalsTo(&y));
-    ASSERT_FALSE(x.isSameShapeStrict(&y));
+    ASSERT_FALSE(x.isSameShapeStrict(y));
 }
 
 
@@ -306,7 +302,7 @@ TEST_F(NDArrayTest2, Test_Enforce_1) {
 
     x.enforce({4, 4}, 'c');
 
-    ASSERT_TRUE(exp.isSameShapeStrict(&x));
+    ASSERT_TRUE(exp.isSameShapeStrict(x));
     ASSERT_TRUE(exp.equalsTo(&x));
 }
 
@@ -315,7 +311,7 @@ TEST_F(NDArrayTest2, TestVector_1) {
     auto row = NDArrayFactory::create<double>('c', {3}, {1, 2, 3});
     auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 1, 2, 3});
 
-    x.addiRowVector(&row);
+    x.addiRowVector(row);
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -359,7 +355,7 @@ TEST_F(NDArrayTest2, tileToShape_test1) {
     auto x = NDArrayFactory::create<double>('c', {2, 2}, {1,2,3,4});
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 2}, {1,2,3,4,1,2,3,4});
 
-    x.tileToShape({2,2,2});
+    x.tileToShape({2,2,2}, x);
 
     ASSERT_TRUE(x.isSameShape(&exp));
     ASSERT_TRUE(x.equalsTo(&exp));
@@ -371,7 +367,7 @@ TEST_F(NDArrayTest2, tileToShape_test2) {
     auto x = NDArrayFactory::create<double>('c', {2, 1, 2}, {1,2,3,4});
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 2}, {1,2,1,2,1,2,3,4,3,4,3,4});
 
-    x.tileToShape({2,3,2});
+    x.tileToShape({2,3,2}, x);
 
     ASSERT_TRUE(x.isSameShape(&exp));
     ASSERT_TRUE(x.equalsTo(&exp));
@@ -384,7 +380,7 @@ TEST_F(NDArrayTest2, tileToShape_test3) {
     auto result = NDArrayFactory::create<double>('c', {2, 2, 2});
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 2}, {1,2,3,4,1,2,3,4});
 
-    x.tileToShape({2,2,2}, &result);
+    x.tileToShape({2,2,2}, result);
     // result.printIndexedBuffer();
 
     ASSERT_TRUE(result.isSameShape(&exp));
@@ -398,7 +394,7 @@ TEST_F(NDArrayTest2, tileToShape_test4) {
     auto result = NDArrayFactory::create<double>('c', {2, 3, 2});
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 2}, {1,2,1,2,1,2,3,4,3,4,3,4});
 
-    x.tileToShape({2,3,2}, &result);
+    x.tileToShape({2,3,2}, result);
 
     ASSERT_TRUE(result.isSameShape(&exp));
     ASSERT_TRUE(result.equalsTo(&exp));
@@ -418,7 +414,7 @@ TEST_F(NDArrayTest2, Test_TriplewiseLambda_1) {
         return _t + _u + _v + extra;
     };
 
-    t.applyTriplewiseLambda<double>(&u, &v, la);
+    t.applyTriplewiseLambda<double>(u, v, la, t);
 
     ASSERT_TRUE(t.equalsTo(&exp));
 }
@@ -436,7 +432,7 @@ TEST_F(NDArrayTest2, Test_TriplewiseLambda_2) {
         return _t + _u + _v + extra;
     };
 
-    t.applyTriplewiseLambda<double>(&u, &v, la);
+    t.applyTriplewiseLambda<double>(u, v, la, t);
 
     ASSERT_TRUE(t.equalsTo(&exp));
 }
@@ -450,7 +446,7 @@ TEST_F(NDArrayTest2, Test_Indexed_Lambda) {
         return (float) _idx;
     };
 
-    x.applyIndexedLambda<double>(lambda);
+    x.applyIndexedLambda<double>(lambda, x);
 
     ASSERT_TRUE(exp.equalsTo(&x));
 }
@@ -565,7 +561,7 @@ TEST_F(NDArrayTest2, fillAsTriangular_test1) {
     auto x   = NDArrayFactory::create<double>('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
     auto exp = NDArrayFactory::create<double>('c', {4, 4}, {1,0,0,0,5,6,0,0,9,10,11,0 ,13,14,15,16});
 
-    x.fillAsTriangular<double>(0., 0, 0, 'u');
+    x.fillAsTriangular<double>(0., 0, 0, x, 'u');
 
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
@@ -578,7 +574,7 @@ TEST_F(NDArrayTest2, fillAsTriangular_test2) {
     auto x   = NDArrayFactory::create<double>('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
     auto exp = NDArrayFactory::create<double>('c', {4, 4}, {0,0,0,0,5,0,0,0,9,10,0 ,0 ,13,14,15,0});
 
-    x.fillAsTriangular<double>(0., 0, -1, 'u');
+    x.fillAsTriangular<double>(0., 0, -1, x, 'u');
 
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
@@ -591,7 +587,7 @@ TEST_F(NDArrayTest2, fillAsTriangular_test3) {
     auto x   = NDArrayFactory::create<double>('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
     auto exp = NDArrayFactory::create<double>('c', {4, 4}, {1,2,3,4,0,6,7,8,0,0 ,11,12,0 ,0 , 0,16});
 
-    x.fillAsTriangular<double>(0., 0, 0, 'l');
+    x.fillAsTriangular<double>(0., 0, 0, x, 'l');
 
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
@@ -604,7 +600,7 @@ TEST_F(NDArrayTest2, fillAsTriangular_test4) {
     auto x   = NDArrayFactory::create<double>('c', {4, 4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16});
     auto exp = NDArrayFactory::create<double>('c', {4, 4}, {0,2,3,4,0,0,7,8,0,0 , 0,12, 0, 0, 0, 0});
 
-    x.fillAsTriangular<double>(0., 1, 0, 'l');
+    x.fillAsTriangular<double>(0., 1, 0, x, 'l');
 
     ASSERT_TRUE(exp.isSameShape(&x));
     ASSERT_TRUE(exp.equalsTo(&x));
@@ -616,13 +612,10 @@ TEST_F(NDArrayTest2, Test_DType_Conversion_1) {
 
     auto xd = x.template asT<double>();
 
-    auto xf = xd->template asT<double>();
+    auto xf = xd.template asT<double>();
 
     ASSERT_TRUE(x.isSameShape(xf));
     ASSERT_TRUE(x.equalsTo(xf));
-
-    delete xf;
-    delete xd;
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -677,7 +670,7 @@ TEST_F(NDArrayTest2, permute_test4) {
     // arr1P->printShapeInfo();
 
     // ASSERT_TRUE(arr1.isSameShapeStrict(&arr2));
-    ASSERT_TRUE(arr1P.isSameShapeStrict(&arr2));
+    ASSERT_TRUE(arr1P.isSameShapeStrict(arr2));
     delete []arr1Buffer;
     delete []arr2Buffer;
 }
@@ -773,11 +766,9 @@ TEST_F(NDArrayTest2, allTensorsAlongDimension_test1) {
     // set->at(0)->printShapeInfo();
     // set->at(0)->printIndexedBuffer();
 
-    ASSERT_TRUE(set->size() == 1);
-    ASSERT_TRUE(exp.isSameShape(set->at(0)));
-    ASSERT_TRUE(exp.equalsTo(set->at(0)));
-
-    delete set;
+    ASSERT_TRUE(set.size() == 1);
+    ASSERT_TRUE(exp.isSameShape(set.at(0)));
+    ASSERT_TRUE(exp.equalsTo(set.at(0)));
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -838,7 +829,7 @@ TEST_F(NDArrayTest2, scalar_set_test2) {
 TEST_F(NDArrayTest2, big_dup_test) {
     // auto arr = NDArrayFactory::linspace<double>(1.0f, 10000000.0f, 100000000);
     auto arr = NDArrayFactory::linspace<double>(1.0f, 1000.0f, 10000);
-    auto dup = arr->dup('c');
+    auto dup = new NDArray(arr->dup('c'));
 
     ASSERT_EQ(*arr, *dup);
 
@@ -920,8 +911,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_1) {
     NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
 
-    ASSERT_EQ(5, subArr1->ews());
-    delete subArr1;
+    ASSERT_EQ(5, subArr1.ews());
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -930,8 +920,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_2) {
     NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
 
-    ASSERT_EQ(1, subArr1->ews());
-    delete subArr1;
+    ASSERT_EQ(1, subArr1.ews());
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -940,8 +929,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_3) {
     NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
 
-    ASSERT_EQ(1, subArr1->ews());
-    delete subArr1;
+    ASSERT_EQ(1, subArr1.ews());
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -950,8 +938,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_4) {
     NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
 
-    ASSERT_EQ(10, subArr1->ews());
-    delete subArr1;
+    ASSERT_EQ(10, subArr1.ews());
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1065,9 +1052,8 @@ TEST_F(NDArrayTest2, test_subarray_interval_1) {
     NDArray x('f', {10, 10}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0,9)});
 
-    ASSERT_EQ(10, subArr1->sizeAt(0));
-    ASSERT_EQ(9, subArr1->sizeAt(1));
-    delete subArr1;
+    ASSERT_EQ(10, subArr1.sizeAt(0));
+    ASSERT_EQ(9, subArr1.sizeAt(1));
 }
 
 TEST_F(NDArrayTest2, test_subarray_interval_2) {
@@ -1075,9 +1061,8 @@ TEST_F(NDArrayTest2, test_subarray_interval_2) {
     NDArray x('c', {10, 10}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0,9)});
 
-    ASSERT_EQ(10, subArr1->sizeAt(0));
-    ASSERT_EQ(9, subArr1->sizeAt(1));
-    delete subArr1;
+    ASSERT_EQ(10, subArr1.sizeAt(0));
+    ASSERT_EQ(9, subArr1.sizeAt(1));
 }
 
 TEST_F(NDArrayTest2, test_subarray_3d_cf) {
@@ -1117,7 +1102,7 @@ TEST_F(NDArrayTest2, test_broadcast_column_2) {
     auto e = NDArrayFactory::create<float>('c', {5, 10});
     e.assign(1.0f);
 
-    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &x, false);
+    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), y, x, false);
 
     ASSERT_EQ(e, x);
 }
@@ -1128,7 +1113,7 @@ TEST_F(NDArrayTest2, test_broadcast_column_3) {
     auto e = NDArrayFactory::create<float>('c', {5, 10});
     e.assign(1.0f);
 
-    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &x);
+    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), y, x);
 
     ASSERT_EQ(e, x);
 }
@@ -1139,7 +1124,7 @@ TEST_F(NDArrayTest2, test_broadcast_column_4) {
     auto e = NDArrayFactory::create<float>('f', {10, 5});
     e.assign(1.0f);
 
-    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &x);
+    x.applyTrueBroadcast(BroadcastOpsTuple::Add(), y, x);
 
     ASSERT_EQ(e, x);
 }
@@ -1171,7 +1156,7 @@ TEST_F(NDArrayTest2, test_not_tiled_2) {
 TEST_F(NDArrayTest2, test_long_sum_1) {
     auto x = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 2, 3, 4});
 
-    auto z = x.reduceAlongDims(reduce::Sum, {0});
+    auto z = x.reduceAlongDimension(reduce::Sum, {0});
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1216,7 +1201,7 @@ TEST_F(NDArrayTest2, trueBroadcast_1) {
     NDArray z('c', {2, 3}, nd4j::DataType::DOUBLE);
 
     auto exp = x - y;
-    x.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), &y, &z, true);
+    x.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), y, z);
 
     // exp.printIndexedBuffer();
     // z.printIndexedBuffer();
@@ -1232,7 +1217,7 @@ TEST_F(NDArrayTest2, reduce_1) {
 
     arr6.linspace(1);
 
-    NDArray* arr6s = arr6.reduceAlongDimension(nd4j::reduce::Sum, {2,3});
+    NDArray arr6s = arr6.reduceAlongDimension(nd4j::reduce::Sum, {2,3});
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -1254,8 +1239,6 @@ TEST_F(NDArrayTest2, reduce_1) {
     // arr6s->printIndexedBuffer();
 
     ASSERT_TRUE(exp.equalsTo(arr6s));
-
-    delete arr6s;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1265,23 +1248,17 @@ TEST_F(NDArrayTest2, reduce3_1) {
     NDArray y('c', {1,4}, {2,3,4,5});
     NDArray exp('c', {4}, {1,1,1,1});
 
-    NDArray* z = x.applyReduce3(nd4j::reduce3::EuclideanDistance, &y, {0}, nullptr);
-    // z->printShapeInfo();
-    // z->printIndexedBuffer();
+    NDArray z = x.applyReduce3(nd4j::reduce3::EuclideanDistance, y, {0}, nullptr);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete z;
 }
 
 TEST_F(NDArrayTest2, all_tads_1) {
     auto x = NDArrayFactory::create<float>('c', {3, 5});
 
     auto arrays = x.allTensorsAlongDimension({1});
-    ASSERT_EQ(3, arrays->size());
-
-    delete arrays;
+    ASSERT_EQ(3, arrays.size());
 }
 
 TEST_F(NDArrayTest2, test_trueBroadcast_empty_1) {

@@ -274,7 +274,6 @@ public class FlatBuffersMapper {
                 return OpType.TRANSFORM_STRICT;
             case SPECIAL:
                 return OpType.TRANSFORM_STRICT;
-            case VARIANCE:
             case REDUCE_FLOAT:
                 return OpType.REDUCE_FLOAT;
             case REDUCE_BOOL:
@@ -302,6 +301,7 @@ public class FlatBuffersMapper {
             case PAIRWISE_BOOL:
                 return OpType.PAIRWISE_BOOL;
             case SUMMARYSTATS:
+            case VARIANCE:
                 return OpType.SUMMARYSTATS;
             default:
                 throw new UnsupportedOperationException("Unknown op type passed in: " + type);
@@ -799,7 +799,8 @@ public class FlatBuffersMapper {
         }
 
         int[] dims;
-        if (node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3) {
+        if (node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL
+                || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3) {
             dims = node.getDimensions();
             if (dims == null)
                 dims = new int[0];

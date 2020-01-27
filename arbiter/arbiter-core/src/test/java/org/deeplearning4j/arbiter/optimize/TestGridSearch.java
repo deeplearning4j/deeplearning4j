@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
@@ -26,7 +27,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TestGridSearch {
+public class TestGridSearch extends BaseDL4JTest {
 
     @Test
     public void testIndexing() {

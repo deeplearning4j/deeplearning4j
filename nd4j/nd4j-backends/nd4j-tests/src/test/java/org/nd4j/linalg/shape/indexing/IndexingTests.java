@@ -33,8 +33,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * @author Adam Gibson
@@ -52,7 +51,7 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testGet() {
-        System.out.println("Testing sub-array put and get with a 3D array ...");
+//        System.out.println("Testing sub-array put and get with a 3D array ...");
 
         INDArray arr = Nd4j.linspace(0, 124, 125).reshape(5, 5, 5);
 
@@ -99,13 +98,13 @@ public class IndexingTests extends BaseNd4jTest {
 
         INDArray whatToPut = arr.get(whereToGet);
         assertEquals(subArr_A, whatToPut);
-        System.out.println(whatToPut);
+//        System.out.println(whatToPut);
         INDArrayIndex[] whereToPut = new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all()};
 
         subArr_B.put(whereToPut, whatToPut);
 
         assertEquals(subArr_A, subArr_B);
-        System.out.println("... done");
+//        System.out.println("... done");
     }
 
     /*
@@ -154,7 +153,7 @@ public class IndexingTests extends BaseNd4jTest {
             INDArrayIndex ndi_Slice = NDArrayIndex.point(s);
             for (int i = 0; i < rows; i++) {
                 for (int j = 0; j < cols; j++) {
-                    log.info("Running for ( {}, {} - {} , {} - {} )", s, i, rows, j, cols);
+//                    log.info("Running for ( {}, {} - {} , {} - {} )", s, i, rows, j, cols);
                     INDArrayIndex ndi_I = NDArrayIndex.interval(i, rows);
                     INDArrayIndex ndi_J = NDArrayIndex.interval(j, cols);
                     INDArray aView = A.get(ndi_Slice, NDArrayIndex.all(), NDArrayIndex.all()).get(ndi_I, ndi_J);

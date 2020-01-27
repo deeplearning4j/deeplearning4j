@@ -24,6 +24,8 @@
 //#include <graph/Context.h>
 #include <ShapeUtils.h>
 #include <helpers/RandomLauncher.h>
+#include <execution/Threads.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace nd4j {
 namespace ops {
@@ -46,8 +48,8 @@ namespace helpers {
             NDArray alphaBroadcasted(broadcasted, alpha->dataType(), false, context);
             NDArray betaBroadcasted(broadcasted, beta->dataType(), false, context);
 
-            copyAlpha = (alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), alpha));
-            copyBeta = (betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), beta));
+            copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *alpha));
+            copyBeta  = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *beta));
 
         }
 //        bool directAlpha = alpha->ews() == 1 && alpha->ordering() == 'c';
@@ -150,6 +152,61 @@ namespace helpers {
     void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
         BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomUniform_, (context, rng, min, max, output), NUMERIC_TYPES);
     }
+
+    // used https://en.wikipedia.org/wiki/Categorical_distribution
+    // methods: gumbel trick + softmax + argmax
+    template <typename Tx, typename Tz>
+    void fillRandomMultiNomial_(LaunchContext* context, graph::RandomGenerator& rng, NDArray& input, NDArray& output, const Nd4jLong numOfSamples, const int dimC) {
+        
+        const Tx* x = input.bufferAsT<Tx>();
+        Tz* z = output.bufferAsT<Tz>();
+        
+        Tx minVal = DataTypeUtils::min<Tx>();
+        Tx maxVal = 1.0; 
+
+        auto dimA = (0 == dimC) ? 1 : 0;
+        const Nd4jLong batchValue = output.sizeAt(dimC);
+        const Nd4jLong numOfClassX = input.sizeAt(dimA);
+
+        const Nd4jLong zDimAstride = output.stridesOf()[dimA];
+        const Nd4jLong xDimAstride = input.stridesOf()[dimA];
+        const Nd4jLong zDimCstride = output.stridesOf()[dimC];
+        const Nd4jLong xDimCstride = input.stridesOf()[dimC];
+
+        auto func = PRAGMA_THREADS_FOR_2D{
+                for (auto nBatchIndex = start_x; nBatchIndex < stop_x; nBatchIndex += inc_x) {
+                    for (auto nSampleIndexInBatch = start_y; nSampleIndexInBatch < stop_y; nSampleIndexInBatch += inc_y) {
+                        
+                        const Tx* xTad = x + (nBatchIndex * xDimCstride);
+                        Tz* zTad = z + (nBatchIndex * zDimCstride);
+                        Tz& arg = zTad[nSampleIndexInBatch * zDimAstride];
+                        Tx Max = -minVal;
+
+                        auto nSamplesPerBatch = nBatchIndex * numOfClassX * numOfSamples;
+                        auto nClassesPerSample = nSampleIndexInBatch * numOfClassX;
+                        for (auto nClass = 0; nClass < numOfClassX; nClass += 1) {
+                            auto nIndex = nSamplesPerBatch + nClassesPerSample + nClass;
+                            auto unifornLog = nd4j::math::nd4j_log<Tx, Tx>(-nd4j::math::nd4j_log<Tx, Tx>(rng.relativeT<Tx>(nIndex, minVal, maxVal)));
+                            Tx tValue = (xTad[nClass * xDimAstride] - unifornLog);
+                            if (tValue > Max) {
+                                Max = tValue;
+                                arg = nClass;
+                            }
+                        }
+                    }
+                }
+        };
+
+        samediff::Threads::parallel_for(func, 0, batchValue, 1, 0, numOfSamples, 1);
+        rng.rewindH(output.lengthOf()*numOfClassX);
+
+        return;
+    }
+
+    void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, NDArray& input, NDArray& output, const Nd4jLong numOfSamples, const int dimC) {
+        BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), fillRandomMultiNomial_, (context, rng, input, output, numOfSamples, dimC), FLOAT_TYPES, INDEXING_TYPES);
+    }
+
 }
 }
 }

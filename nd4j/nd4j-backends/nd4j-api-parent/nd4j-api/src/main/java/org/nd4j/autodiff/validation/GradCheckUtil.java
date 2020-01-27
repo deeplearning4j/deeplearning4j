@@ -47,7 +47,7 @@ public class GradCheckUtil {
 
     public enum Subset {EVERY_N, RANDOM}
 
-    public static final boolean DEFAULT_PRINT = true;
+    public static final boolean DEFAULT_PRINT = false;
     public static final boolean DEFAULT_EXIT_FIRST_FAILURE = false;
     public static final boolean DEFAULT_DEBUG_MODE = false;
     public static final double DEFAULT_EPS = 1e-5;
@@ -330,11 +330,10 @@ public class GradCheckUtil {
                                     + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsError);
                         }
                     } else {
-                        if (print)
-                            log.info("Param " + i + " (" + name + strIdx + ") FAILED: grad= " + analyticGrad
-                                    + ", numericalGrad= " + numericalGrad + ", relError= " + relError
-                                    + ", absError=" + absError
-                                    + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
+                        log.info("Param " + i + " (" + name + strIdx + ") FAILED: grad= " + analyticGrad
+                                + ", numericalGrad= " + numericalGrad + ", relError= " + relError
+                                + ", absError=" + absError
+                                + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
                         if (exitOnFirstFailure)
                             return false;
                         totalNFailures++;
@@ -347,11 +346,9 @@ public class GradCheckUtil {
             }
         }
 
-        if (print) {
-            int nPass = totalCount - totalNFailures;
-            log.info("GradCheckUtil.checkGradients(): " + totalCount + " params checked, " + nPass + " passed, "
-                    + totalNFailures + " failed. Largest relative error = " + maxError);
-        }
+        int nPass = totalCount - totalNFailures;
+        log.info("GradCheckUtil.checkGradients(): " + totalCount + " params checked, " + nPass + " passed, "
+                + totalNFailures + " failed. Largest relative error = " + maxError);
 
         if(debugMode && !debugBefore){
             sd.disableDebugging();

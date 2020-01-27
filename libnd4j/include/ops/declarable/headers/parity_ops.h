@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -162,8 +162,24 @@ namespace nd4j {
          * Input : batched tensor with rank >=2
          * Output: tensor with rank lesser by 1 from input
          */
+        #if NOT_EXCLUDED(OP_matrix_diag_part)
         DECLARE_CUSTOM_OP(matrix_diag_part, 1, 1, false, 0, 0);
+        #endif
 
+        /**
+         * QR decomposition: A = QR, where Q is ortogonal (Q * QT = I) and R is upper triangular.
+         * For A (MxN) Q is M x M and R is (NxN). 
+         *
+         * Input : 
+         *    0 - float (or complex float) tensor with shape {.,..,...,M,N} - batch of float matricies
+         *
+         * Output: 
+         *    0 - float tensor with shape {.,..,...,MxN} - batch of ortogonal matricies {Qs}
+         *    1 - float tensor with shape {.,..,...,NxN} - batch of upper triangular matricies {Rs}
+         */
+        #if NOT_EXCLUDED(OP_qr)
+        DECLARE_CUSTOM_OP(qr, 1, 2, false, 0, 0);
+        #endif
 
         /**
          * This operation takes 2 arrays: original values, and values to be excluded. And returns 2 arrays: values left after exclusion, and indices in original array for surivals.
@@ -525,6 +541,20 @@ namespace nd4j {
         */
         #if NOT_EXCLUDED(OP_polygamma)
         DECLARE_CONFIGURABLE_OP(polygamma, 2, 1, false, 0, 0);
+        #endif
+
+       /**
+        * This op calculates lgamma function lgamma(x) = log(Gamma(x))
+        *
+        * Input arrays:
+        *    0: x - input matrix
+        *
+        * Output array:
+        *    0: log of Gamma(x)
+        *
+        */
+        #if NOT_EXCLUDED(OP_lgamma)
+        DECLARE_OP(lgamma, 1, 1, true);
         #endif
 
         /**
@@ -1025,6 +1055,43 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_matrix_inverse)
         DECLARE_OP(matrix_inverse, 1, 1, true);
+        #endif
+
+        /**
+         * triangular_solve op. - reverse Gaussian method for solve systems of linear equations.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M) - left parts of equations
+         *    1 - the tensor with dimension (x * y * z * ::: * M * K) - right parts of equations
+         *
+         * boolean args:
+         *    0 - lower - default is true (optional) - left part is lower triangular matrix
+         *    1 - adjoint - default is false (optional) - indicate input matrix or its adjoint (hermitian addition) should be used
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: * M * K) with solutions
+         *
+         */
+        #if NOT_EXCLUDED(OP_triangular_solve)
+        DECLARE_CUSTOM_OP(triangular_solve, 2, 1, true, 0, 0);
+        #endif
+
+        /**
+         * lu op. - make LUP decomposition of given batch of 2D square matricies
+         *
+         * input params:
+         *    0 - float tensor with dimension (x * y * z * ::: * M * M)
+         *
+         * return value:
+         *    0 - float tensor with dimension (x * y * z * ::: * M * M) with LU M x M matricies in it
+         *    1 - int (32 or 64) batched vector of permutations with length M - shape (x * y * z * ::: * M)
+         *
+         * int argument:
+         *    0 - data type of output permutaion vector (int32 or int64), optional, default INT32
+         */
+
+        #if NOT_EXCLUDED(OP_matrix_inverse)
+        DECLARE_CUSTOM_OP(lu, 1, 2, false, 0, 0);
         #endif
 
         /**
@@ -1688,6 +1755,27 @@ namespace nd4j {
         */
         #if NOT_EXCLUDED(OP_resize_bicubic)
         DECLARE_CUSTOM_OP(resize_bicubic, 1, 1, false, 0, -2);
+        #endif
+
+       /**
+        * This op make area interpolated resize (as OpenCV INTER_AREA algorithm) for given tensor
+        *
+        * input array:
+        *    0 - images - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - size -   1D-Tensor with 2 values (newWidth, newHeight) (if missing a pair of integer args should be provided).
+        *
+        * int args: - proveded only when size tensor is missing
+        *    0 - new height
+        *    1 - new width
+        * boolean args:
+        *    0 - align_corners - optional (default is false)
+        *
+        * output array:
+        *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
+        *
+        */
+        #if NOT_EXCLUDED(OP_resize_area)
+        DECLARE_CUSTOM_OP(resize_area, 1, 1, false, 0, -2);
         #endif
 
        /**

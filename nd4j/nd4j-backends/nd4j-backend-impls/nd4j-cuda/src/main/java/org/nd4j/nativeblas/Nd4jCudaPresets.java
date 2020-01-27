@@ -33,10 +33,12 @@ import org.bytedeco.javacpp.tools.InfoMapper;
 @Properties(target = "org.nd4j.nativeblas.Nd4jCuda", helper = "org.nd4j.nativeblas.Nd4jCudaHelper",
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
                         "array/DataType.h",
+                        "array/DataBuffer.h",
                         "array/ConstantDescriptor.h",
                         "array/ConstantDataBuffer.h",
                         "array/TadPack.h",
                         "execution/ErrorReference.h",
+                        "execution/Engine.h",
                         "memory/MemoryType.h",
                         "Environment.h",
                         "types/utf8string.h",
@@ -165,6 +167,7 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
                 .put(new Info("OpaqueContext").pointerTypes("OpaqueContext"))
                 .put(new Info("OpaqueRandomGenerator").pointerTypes("OpaqueRandomGenerator"))
                 .put(new Info("OpaqueLaunchContext").pointerTypes("OpaqueLaunchContext"))
+                .put(new Info("OpaqueDataBuffer").pointerTypes("OpaqueDataBuffer"))
                 .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
                         "@Cast(\"char*\") BytePointer"))
                 .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") BytePointer",
@@ -185,10 +188,11 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
                              "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable", "nd4j::NDArray::subarray").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                                            .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
-               .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
-               .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
+                .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
+                .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
                 .put(new Info("std::vector<std::vector<Nd4jLong> >").pointerTypes("LongVectorVector").define())
-               .put(new Info("std::vector<nd4j::NDArray*>").pointerTypes("NDArrayVector").define())
+                .put(new Info("std::vector<nd4j::NDArray*>").pointerTypes("NDArrayVector").define())
+                .put(new Info("std::vector<const nd4j::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
                 .put(new Info("nd4j::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
                .put(new Info("nd4j::IndicesList").purify());

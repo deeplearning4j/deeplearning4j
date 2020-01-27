@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.zoo;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
@@ -30,6 +31,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.io.File;
 
 public class MiscTests extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
 
     @Test
     public void testTransferVGG() throws Exception {

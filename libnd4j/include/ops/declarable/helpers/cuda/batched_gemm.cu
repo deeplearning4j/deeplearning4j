@@ -45,21 +45,21 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
     for(int i = 0; i < bS; ++i) {
 
         if(vA[i]->ews() != 1) {
-            pA[i] = vA[i]->dup('f');
+            pA[i] = new NDArray(vA[i]->dup('f'));
             toDelete.emplace_back(pA[i]);
         }
         else
             pA[i] = vA[i];
 
         if(vB[i]->ews() != 1) {
-            pB[i] = vB[i]->dup('f');
+            pB[i] = new NDArray(vB[i]->dup('f'));
             toDelete.emplace_back(pB[i]);
         }
         else
             pB[i] = vB[i];
 
         if(vC[i]->ews() != 1) {
-            pC[i] = vC[i]->dup('f');
+            pC[i] = new NDArray(vC[i]->dup('f'));
             toDelete.emplace_back(pC[i]);
         }
         else

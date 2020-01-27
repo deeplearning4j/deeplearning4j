@@ -30,11 +30,11 @@ namespace helpers {
         Nd4jLong N = input->sizeAt(-1);
         Nd4jLong lastDim = input->rankOf() - 1;
         Nd4jLong preLastDim = input->rankOf() - 2;
-        std::unique_ptr<ResultSet> listOut(output->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
-        std::unique_ptr<ResultSet> listDiag(input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
-        for (Nd4jLong e = 0; e < listOut->size(); ++e) {
-            NDArray* inputMatrix = listDiag->at(e);
-            NDArray* outputMatrix = listOut->at(e);
+        ResultSet listOut = output->allTensorsAlongDimension({(int)preLastDim, (int)lastDim});
+        ResultSet listDiag = input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim});
+        for (Nd4jLong e = 0; e < listOut.size(); ++e) {
+            NDArray* inputMatrix = listDiag.at(e);
+            NDArray* outputMatrix = listOut.at(e);
             if (outputMatrix != inputMatrix) // if not inplace
                 outputMatrix->assign(inputMatrix);
             if (lowerBand >= 0) {

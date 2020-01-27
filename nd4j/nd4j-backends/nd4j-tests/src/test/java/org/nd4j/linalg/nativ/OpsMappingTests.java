@@ -59,9 +59,9 @@ public class OpsMappingTests extends BaseNd4jTest {
         return 'c';
     }
 
-    @Test
-    public void testCustomOpsMapping() {
-        Nd4j.create(1);
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
     }
 
     @Test

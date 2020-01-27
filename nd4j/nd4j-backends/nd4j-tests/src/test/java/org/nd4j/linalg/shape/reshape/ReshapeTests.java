@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNotNull;
 
@@ -66,7 +67,7 @@ public class ReshapeTests extends BaseNd4jTest {
         double delta = 1e-1;
         INDArray arr = Nd4j.create(1, 3);
         INDArray reshaped = arr.reshape('f', 3, 1);
-        assertArrayEquals(new int[] {3, 1}, reshaped.shape());
+        assertArrayEquals(new long[] {3, 1}, reshaped.shape());
         assertEquals(0.0, reshaped.getDouble(1), delta);
         assertEquals(0.0, reshaped.getDouble(2), delta);
         log.info("Reshaped: {}", reshaped.shapeInfoDataBuffer().asInt());

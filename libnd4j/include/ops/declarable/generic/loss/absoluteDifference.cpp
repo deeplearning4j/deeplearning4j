@@ -169,10 +169,10 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 	NDArray E = *predictions - *labels;
 
 	// dE_i/dp_i = sign(p_i - y_i)
-	E.applyTransform(nd4j::transform::Sign, dLdp);	// dE/dp
+	E.applyTransform(nd4j::transform::Sign, *dLdp);	// dE/dp
 	// dE_i/dy_i = -sign(p_i - y_i)
 
-	E.applyTransform(nd4j::transform::Abs);
+	E.applyTransform(nd4j::transform::Abs, E);
 
 	switch (reductionMode) {
 
@@ -184,7 +184,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 				dLdw->assign(E.reduceNumber(reduce::Sum));
 			else if(weights != weightsBroad) {
 				std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-				E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+				E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 			}
 			else
 				dLdw->assign(E);
@@ -210,7 +210,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 					*dLdw = 0.;
 				else if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 				}
 				else
 					dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
@@ -238,7 +238,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 					dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 				else if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
-					E.reduceAlongDimension(reduce::Sum, dLdw, axesToReduceAlong, true, false, false);
+					E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 					*dLdw /= numOfNonZeroWeightsScalar;
 				}
 				else

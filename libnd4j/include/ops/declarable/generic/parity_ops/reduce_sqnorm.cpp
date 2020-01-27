@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm, 1, 1, false, 0, 0) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -input->rankOf() && item < input->rankOf(), 0, "REDUCE_SQNORM OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , input->rankOf(), input->rankOf(), item);
 
-    input->reduceAlongDimension(reduce::SquaredNorm, gradI, dimensions, keepDims);
+    input->reduceAlongDimension(reduce::SquaredNorm, *gradI, dimensions, keepDims);
 
     return Status::OK();
 }
@@ -86,7 +86,7 @@ DECLARE_TYPES(reduce_sqnorm) {
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
-#endif 
+#endif
 
 #if NOT_EXCLUDED(OP_reduce_sqnorm_bp)
 

@@ -854,5 +854,29 @@
                 <os.arch>arm</os.arch>
             </properties>
         </profile>
+        
+        <!-- Integration Tests Profile. By default (when this profile is not enabled) unit tests are run only.
+             Note also that some tests may run fewer/quicker cases for unit tests vs. integration tests
+        -->
+        <profile>
+            <id>integration-tests</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>${maven-surefire-plugin.version}</version>
+                        <inherited>true</inherited>
+                        <configuration>
+                            <environmentVariables>
+                                <DL4J_INTEGRATION_TESTS>true</DL4J_INTEGRATION_TESTS>
+                            </environmentVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

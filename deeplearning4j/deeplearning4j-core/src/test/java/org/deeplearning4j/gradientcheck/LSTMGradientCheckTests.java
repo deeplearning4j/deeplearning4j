@@ -124,8 +124,8 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             String testName = "testLSTMBasic(" + (graves ? "GravesLSTM" : "LSTM") + ")";
             if (PRINT_RESULTS) {
                 System.out.println(testName);
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+//                for (int j = 0; j < mln.getnLayers(); j++)
+//                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             }
 
             boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -213,12 +213,12 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                         + outputActivation + ", l2=" + l2 + ", l1=" + l1;
                 if (PRINT_RESULTS) {
                     System.out.println(testName);
-                    for (int j = 0; j < mln.getnLayers(); j++)
-                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+//                    for (int j = 0; j < mln.getnLayers(); j++)
+//                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                 }
 
-                boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 128);
+                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                        .labels(labels).subset(true).maxPerParam(128));
 
                 assertTrue(testName, gradOK);
                 TestUtils.testModelSerialization(mln);
@@ -341,8 +341,8 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
                     System.out.println("testGradientGravesBidirectionalLSTMFull() - activationFn=" + afn
                             + ", lossFn=" + lf + ", outputActivation=" + outputActivation + ", l2=" + l2
                             + ", l1=" + l1);
-                    for (int j = 0; j < mln.getnLayers(); j++)
-                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+//                    for (int j = 0; j < mln.getnLayers(); j++)
+//                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                 }
 
                 boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
@@ -394,8 +394,8 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
 
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 128);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                    .labels(labels).subset(true).maxPerParam(128));
 
             String msg = "testGradientGravesLSTMEdgeCases() - timeSeriesLength=" + timeSeriesLength[i]
                             + ", miniBatchSize=" + miniBatchSize[i];
@@ -452,8 +452,8 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
             System.out.println("layer " + i + "\t" + mln.getLayer(i).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 32);
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                .labels(labels).subset(true).maxPerParam(32));
         assertTrue(gradOK);
         TestUtils.testModelSerialization(mln);
     }

@@ -120,7 +120,7 @@ public class ImageSparkTransformServerTest {
         INDArray batchResult = getNDArray(jsonNodeBatch);
         assertEquals(3, batchResult.size(0));
 
-        System.out.println(array);
+//        System.out.println(array);
     }
 
     @Test
@@ -136,7 +136,7 @@ public class ImageSparkTransformServerTest {
         INDArray batchResult = getNDArray(jsonNode);
         assertEquals(3, batchResult.size(0));
 
-        System.out.println(batchResult);
+//        System.out.println(batchResult);
     }
 
     @Test
@@ -153,7 +153,7 @@ public class ImageSparkTransformServerTest {
         INDArray result = getNDArray(jsonNode);
         assertEquals(1, result.size(0));
 
-        System.out.println(result);
+//        System.out.println(result);
     }
 
     public INDArray getNDArray(JsonNode node) throws IOException {

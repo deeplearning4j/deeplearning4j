@@ -206,6 +206,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
     @Override
     public INDArray[] getOutputs(SameDiffOp op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                  Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables) {
+        at.setFrameIter(outputFrameIter);
         if (listeners != null && listeners.size() > 0) {
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOp().getOwnName());
             for (Listener l : listeners) {
@@ -363,6 +364,11 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             String[] argNames = s.argNames();       //Order: input, boolean array
             VarId vidPredicate = outputFrameIter.toVarId(argNames[1]);
             INDArray predicate = this.nodeOutputs.get(vidPredicate);
+            if(predicate == null && !constAndPhInputs.isEmpty() && constAndPhInputs.contains(argNames[1])){
+                //Constant predicate...
+                predicate = this.nodeOutputs.get(new VarId(argNames[1], OUTER_FRAME, 0, null));
+            }
+            Preconditions.checkNotNull(predicate, "Error during graph execution: Predicate array was null. VarId=%s", vidPredicate);
             Preconditions.checkState(predicate.isScalar() && predicate.dataType() == DataType.BOOL, "Expected boolean predicate: got %ndSInfo", predicate);
             VarId vid = outputFrameIter.toVarId(argNames[0]);
             if (predicate.getDouble(0) == 0.0) {
@@ -477,11 +483,11 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                 }
                 throw new IllegalStateException(s);
             }
-            return ((Assert) op).outputArguments();
+            return ((Assert) op).outputArguments().toArray(new INDArray[0]);
         } else if (op instanceof CustomOp) {
             CustomOp c = (CustomOp) op;
             Nd4j.exec(c);
-            return c.outputArguments();
+            return c.outputArguments().toArray(new INDArray[0]);
         } else if (op instanceof Op) {
             Op o = (Op) op;
             Nd4j.exec(o);

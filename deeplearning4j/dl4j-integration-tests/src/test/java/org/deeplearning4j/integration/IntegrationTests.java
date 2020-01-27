@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.integration;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.integration.testcases.*;
 import org.junit.AfterClass;
 import org.junit.Ignore;

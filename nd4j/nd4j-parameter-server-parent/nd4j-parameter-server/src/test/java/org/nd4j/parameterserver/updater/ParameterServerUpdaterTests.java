@@ -17,6 +17,7 @@
 package org.nd4j.parameterserver.updater;
 
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.ndarrayholder.InMemoryNDArrayHolder;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,7 +30,7 @@ import static org.junit.Assume.assumeNotNull;
 /**
  * Created by agibsonccc on 12/2/16.
  */
-public class ParameterServerUpdaterTests {
+public class ParameterServerUpdaterTests extends BaseND4JTest {
 
     @Test(timeout = 30000L)
     public void synchronousTest() {

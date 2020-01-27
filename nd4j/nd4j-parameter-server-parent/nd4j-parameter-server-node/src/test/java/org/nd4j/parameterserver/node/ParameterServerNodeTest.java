@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,7 +39,7 @@ import static org.junit.Assert.*;
 @Slf4j
 @Ignore
 @Deprecated
-public class ParameterServerNodeTest {
+public class ParameterServerNodeTest extends BaseND4JTest {
     private static MediaDriver mediaDriver;
     private static Aeron aeron;
     private static ParameterServerNode parameterServerNode;

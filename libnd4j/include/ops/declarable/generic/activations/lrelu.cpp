@@ -31,7 +31,7 @@ namespace nd4j {
 
             float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
 
-            input->applyScalar(nd4j::scalar::LeakyRELU, alpha, output);
+            input->applyScalar(nd4j::scalar::LeakyRELU, alpha, *output);
             STORE_RESULT(output);
 
             return Status::OK();

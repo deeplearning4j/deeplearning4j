@@ -27,7 +27,7 @@
 
 namespace nd4j {
     namespace ops {
-        REDUCTION_OP_IMPL(hashcode, 1, 1, false, 0, 0) {
+        CUSTOM_OP_IMPL(hashcode, 1, 1, false, 0, 0) {
             REQUIRE_TRUE(block.width() == 1, 0, "hashcode: this op can't be applied along dimension");
 
             auto input = INPUT_VARIABLE(0);
@@ -39,6 +39,10 @@ namespace nd4j {
 
             return Status::OK();
         };
+
+        DECLARE_SHAPE_FN(hashcode) {
+            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64));
+        }
 
 
         DECLARE_TYPES(hashcode) {

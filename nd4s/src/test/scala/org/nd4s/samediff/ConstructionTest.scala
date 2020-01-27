@@ -122,15 +122,15 @@ class ConstructionTest extends FlatSpec with Matchers {
     val learning_rate = 0.1
     val seed = 7
 
-    val target = Nd4j.createUninitialized(1000)
+    val target = Nd4j.createUninitialized(DataType.DOUBLE, 1000)
     val rng = Nd4j.getRandom
     rng.setSeed(seed)
     val x1_label1 = Nd4j.randn(3.0, 1.0, target, rng)
-    val target1 = Nd4j.createUninitialized(1000)
+    val target1 = Nd4j.createUninitialized(DataType.DOUBLE, 1000)
     val x2_label1 = Nd4j.randn(2.0, 1.0, target1, rng)
-    val target2 = Nd4j.createUninitialized(1000)
+    val target2 = Nd4j.createUninitialized(DataType.DOUBLE, 1000)
     val x1_label2 = Nd4j.randn(7.0, 1.0, target2, rng)
-    val target3 = Nd4j.createUninitialized(1000)
+    val target3 = Nd4j.createUninitialized(DataType.DOUBLE, 1000)
     val x2_label2 = Nd4j.randn(6.0, 1.0, target3, rng)
 
     // np.append, was not able to guess proper method

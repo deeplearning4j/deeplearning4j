@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.models.sequencevectors.export;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +27,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class ExportContainerTest {
+public class ExportContainerTest extends BaseDL4JTest {
     @Before
     public void setUp() throws Exception {
 

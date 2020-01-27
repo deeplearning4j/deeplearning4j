@@ -148,7 +148,7 @@ public class SpecialTests extends BaseNd4jTest {
             //views.add(Nd4j.create(1, 10));
         }
 
-        log.info("Starting...");
+//        log.info("Starting...");
 
         //while (true) {
         for (int i = 0; i < 1; i++) {
@@ -186,7 +186,7 @@ public class SpecialTests extends BaseNd4jTest {
         executor.submit(new Runnable() {
             @Override
             public void run() {
-                System.out.println("A");
+//                System.out.println("A");
             }
         });
     }
@@ -220,7 +220,7 @@ public class SpecialTests extends BaseNd4jTest {
             t.join();
             threads.add(t);
 
-            log.info("------------------------");
+//            log.info("------------------------");
         }
 
         for (val t:threads)
@@ -320,7 +320,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         for( int i=0; i<100; i++ ) {
             try(val ws2 = ws.notifyScopeEntered()) {
-                System.out.println("Iteration: " + i);
+//                System.out.println("Iteration: " + i);
                 INDArray ok = arr.eq(0.0);
                 ok.dup();
 
@@ -339,7 +339,7 @@ public class SpecialTests extends BaseNd4jTest {
             for (val dZ: dtypes) {
                 val array = Nd4j.create(dX, 2, 5).assign(1);
 
-                log.info("Trying to cast {} to {}", dX, dZ);
+//                log.info("Trying to cast {} to {}", dX, dZ);
                 val casted = array.castTo(dZ);
 
                 val exp = Nd4j.create(dZ, 2, 5).assign(1);
@@ -358,7 +358,7 @@ public class SpecialTests extends BaseNd4jTest {
             for (val dZ: dtypes) {
                 try(val ws2 = ws.notifyScopeEntered()) {
                     val array = Nd4j.create(dX, 2, 5).assign(1);
-                    log.info("Trying to cast {} to {}", dX, dZ);
+//                    log.info("Trying to cast {} to {}", dX, dZ);
                     val casted = array.castTo(dZ);
                     val exp = Nd4j.create(dZ, 2, 5).assign(1);
                     assertEquals(exp, casted);
@@ -373,7 +373,7 @@ public class SpecialTests extends BaseNd4jTest {
     public void testCastLong_1() {
         val array = Nd4j.create(DataType.LONG, 100, 100).assign(1);
         val second = Nd4j.create(DataType.LONG, 100, 100).assign(1);
-        log.info("----------------");
+//        log.info("----------------");
         val castedA = array.castTo(DataType.BYTE).assign(3);
         val castedB = array.castTo(DataType.BYTE).assign(3);
         Nd4j.getExecutioner().commit();
@@ -438,7 +438,7 @@ public class SpecialTests extends BaseNd4jTest {
                 try(val ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS")) {
                     val array = Nd4j.create(dX, 100, 100).assign(1);
 
-                    log.info("Trying to cast {} to {}", dX, dZ);
+//                    log.info("Trying to cast {} to {}", dX, dZ);
                     val casted = array.castTo(dZ);
 
                     val exp = Nd4j.create(dZ, 100, 100).assign(1);
@@ -475,7 +475,7 @@ public class SpecialTests extends BaseNd4jTest {
         }
 
         INDArray out = Nd4j.concat(1, toConcat);
-        System.out.println(out);
+//        System.out.println(out);
     }
 
     @Test
@@ -495,12 +495,12 @@ public class SpecialTests extends BaseNd4jTest {
         INDArray out = null;
         for (int e = 0; e < 5; e++) {
             if (e % 10 == 0)
-                log.info("Iteration: [{}]", e);
+//                log.info("Iteration: [{}]", e);
 
             out = Nd4j.concat(1, arrs);
         }
         Nd4j.getExecutioner().commit();
-        System.out.println(out);
+//        System.out.println(out);
     }
 
     @Test
@@ -518,7 +518,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         for( int i=0; i<10; i++ ){
             try(val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, "ws")){
-                System.out.println("STARTING: " + i);
+//                System.out.println("STARTING: " + i);
 
                 INDArray objectPresentMask = Nd4j.create(DataType.BOOL, 1,4,4);
 
@@ -537,7 +537,7 @@ public class SpecialTests extends BaseNd4jTest {
 
                 Broadcast.mul(intMask, objectPresentMask, intMask, 0, 2, 3);
                 Nd4j.getExecutioner().commit();
-                System.out.println("DONE: " + i);
+//                System.out.println("DONE: " + i);
             }
         }
     }
@@ -603,7 +603,7 @@ public class SpecialTests extends BaseNd4jTest {
 
         for( int i=0; i<10; i++ ){
             try(val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(WS_ALL_LAYERS_ACT_CONFIG, "ws")){
-                System.out.println("STARTING: " + i);
+//                System.out.println("STARTING: " + i);
 
                 val nhw = new long[]{1, 5, 7};
 
@@ -620,7 +620,7 @@ public class SpecialTests extends BaseNd4jTest {
                 val m = labelCenterXY.muli(0.5);  //In terms of grid units
                 INDArray labelsCenterXYInGridBox = labelCenterXY.dup(labelCenterXY.ordering());         //[mb, 2, H, W]
                 Nd4j.getExecutioner().commit();
-                System.out.println("DONE: " + i);
+//                System.out.println("DONE: " + i);
             }
         }
     }
@@ -649,8 +649,8 @@ public class SpecialTests extends BaseNd4jTest {
         INDArray f = c.dup('f');
         val fr = f.reshape('f', 3, 2).dup('f');
 
-        log.info("FO: {}", f.data().asFloat());
-        log.info("FR: {}", fr.data().asFloat());
+//        log.info("FO: {}", f.data().asFloat());
+//        log.info("FR: {}", fr.data().asFloat());
 
         INDArray outC = Nd4j.create(DataType.DOUBLE, 3,2);
         INDArray outF = Nd4j.create(DataType.DOUBLE, 3,2);

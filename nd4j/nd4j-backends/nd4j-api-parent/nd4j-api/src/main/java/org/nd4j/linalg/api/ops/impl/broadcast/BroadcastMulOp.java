@@ -76,11 +76,6 @@ public class BroadcastMulOp extends BaseBroadcastOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "mul";
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }

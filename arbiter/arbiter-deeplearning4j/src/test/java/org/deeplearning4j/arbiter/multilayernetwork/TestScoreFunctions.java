@@ -18,6 +18,7 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
@@ -60,7 +61,13 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
-public class TestScoreFunctions {
+public class TestScoreFunctions extends BaseDL4JTest {
+
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 60000L;
+    }
 
     @Test
     public void testROCScoreFunctions() throws Exception {
@@ -107,7 +114,7 @@ public class TestScoreFunctions {
                 List<ResultReference> list = runner.getResults();
 
                 for (ResultReference rr : list) {
-                    DataSetIterator testIter = new MnistDataSetIterator(32, 2000, false, false, true, 12345);
+                    DataSetIterator testIter = new MnistDataSetIterator(4, 16, false, false, false, 12345);
                     testIter.setPreProcessor(new PreProc(rocType));
 
                     OptimizationResult or = rr.getResult();
@@ -141,10 +148,10 @@ public class TestScoreFunctions {
                     }
 
 
-                    DataSetIterator iter = new MnistDataSetIterator(32, 8000, false, true, true, 12345);
+                    DataSetIterator iter = new MnistDataSetIterator(4, 16, false, false, false, 12345);
                     iter.setPreProcessor(new PreProc(rocType));
 
-                    assertEquals(msg, expScore, or.getScore(), 1e-5);
+                    assertEquals(msg, expScore, or.getScore(), 1e-4);
                 }
             }
         }
@@ -158,7 +165,7 @@ public class TestScoreFunctions {
         @Override
         public Object trainData(Map<String, Object> dataParameters) {
             try {
-                DataSetIterator iter = new MnistDataSetIterator(32, 8000, false, true, true, 12345);
+                DataSetIterator iter = new MnistDataSetIterator(4, 16, false, false, false, 12345);
                 iter.setPreProcessor(new PreProc(rocType));
                 return iter;
             } catch (IOException e){
@@ -169,7 +176,7 @@ public class TestScoreFunctions {
         @Override
         public Object testData(Map<String, Object> dataParameters) {
             try {
-                DataSetIterator iter = new MnistDataSetIterator(32, 2000, false, false, true, 12345);
+                DataSetIterator iter = new MnistDataSetIterator(4, 16, false, false, false, 12345);
                 iter.setPreProcessor(new PreProc(rocType));
                 return iter;
             } catch (IOException e){

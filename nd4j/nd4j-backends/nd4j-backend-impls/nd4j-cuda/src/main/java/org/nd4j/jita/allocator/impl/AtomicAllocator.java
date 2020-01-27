@@ -19,12 +19,10 @@ package org.nd4j.jita.allocator.impl;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
-import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
-import org.nd4j.jita.allocator.garbage.GarbageBufferReference;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.time.Ring;
@@ -37,29 +35,25 @@ import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
 import org.nd4j.jita.workspace.CudaWorkspace;
-import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
-import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
+import org.nd4j.linalg.jcublas.buffer.CudaUtf8Buffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 
-import java.lang.ref.ReferenceQueue;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -285,16 +279,10 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(@NonNull DataBuffer buffer, CudaContext context) {
-        if (buffer instanceof Utf8Buffer)
-            return null;
-
         return memoryHandler.getDevicePointer(buffer, context);
     }
 
     public Pointer getPointer(DataBuffer buffer) {
-        if (buffer instanceof Utf8Buffer)
-            return null;
-
         return memoryHandler.getDevicePointer(buffer, getDeviceContext());
     }
 
@@ -320,7 +308,7 @@ public class AtomicAllocator implements Allocator {
     public Pointer getPointer(INDArray array, CudaContext context) {
         //    DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
         if (array.isEmpty() || array.isS())
-            return null;
+            throw new UnsupportedOperationException("Pew-pew");
 
         return memoryHandler.getDevicePointer(array.data(), context);
     }
@@ -372,20 +360,17 @@ public class AtomicAllocator implements Allocator {
     @Override
     public void synchronizeHostData(DataBuffer buffer) {
         // we don't want non-committed ops left behind
-        //Nd4j.getExecutioner().push();
+        Nd4j.getExecutioner().commit();
 
-        // we don't synchronize constant buffers, since we assume they are always valid on host side
-        if (buffer.isConstant() || buffer.dataType() == DataType.UTF8 || AtomicAllocator.getInstance().getAllocationPoint(buffer).getPointers().getHostPointer() == null) {
-            return;
-        }
+        val oPtr = NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(((BaseCudaDataBuffer) buffer).getOpaqueDataBuffer());
 
-        // we actually need synchronization only in device-dependant environment. no-op otherwise
-        if (memoryHandler.isDeviceDependant()) {
-            val point = getAllocationPoint(buffer.getTrackingPoint());
-            if (point == null)
-                throw new RuntimeException("AllocationPoint is NULL");
-            memoryHandler.synchronizeThreadDevice(Thread.currentThread().getId(), memoryHandler.getDeviceId(), point);
-        }
+        // we actually need synchronization only in device-dependant environment. no-op otherwise. managed by native code
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSyncToPrimary(((BaseCudaDataBuffer) buffer).getOpaqueDataBuffer());
+
+        val cPtr = NativeOpsHolder.getInstance().getDeviceNativeOps().dbPrimaryBuffer(((BaseCudaDataBuffer) buffer).getOpaqueDataBuffer());
+
+        //assert oPtr.address() == cPtr.address();
+        //assert buffer.address() == oPtr.address();
     }
 
 
@@ -446,6 +431,7 @@ public class AtomicAllocator implements Allocator {
 
 
     public AllocationPoint pickExternalBuffer(DataBuffer buffer) {
+        /**
         AllocationPoint point = new AllocationPoint();
         Long allocId = objectsTracker.getAndIncrement();
         point.setObjectId(allocId);
@@ -458,6 +444,9 @@ public class AtomicAllocator implements Allocator {
         point.tickHostRead();
 
         return point;
+         */
+
+        throw new UnsupportedOperationException("Pew-pew");
     }
 
     /**
@@ -469,69 +458,8 @@ public class AtomicAllocator implements Allocator {
      * @param location
      */
     @Override
-    public AllocationPoint allocateMemory(DataBuffer buffer, AllocationShape requiredMemory, AllocationStatus location,
-                    boolean initialize) {
-        AllocationPoint point = new AllocationPoint();
-
-        useTracker.set(System.currentTimeMillis());
-
-        // we use these longs as tracking codes for memory tracking
-        Long allocId = objectsTracker.getAndIncrement();
-        //point.attachBuffer(buffer);
-        point.setObjectId(allocId);
-        point.setShape(requiredMemory);
-        /*
-        if (buffer instanceof CudaIntDataBuffer) {
-            buffer.setConstant(true);
-            point.setConstant(true);
-        }
-        */
-        /*int numBuckets = configuration.getNumberOfGcThreads();
-        int bucketId = RandomUtils.nextInt(0, numBuckets);
-
-        GarbageBufferReference reference =
-                        new GarbageBufferReference((BaseDataBuffer) buffer, queueMap.get(bucketId), point);*/
-        //point.attachReference(reference);
-        point.setDeviceId(-1);
-
-        if (buffer.isAttached()) {
-            long reqMem = AllocationUtils.getRequiredMemory(requiredMemory);
-
-            // workaround for init order
-            getMemoryHandler().getCudaContext();
-            point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
-
-            val workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
-
-            val pair = new PointersPair();
-            val ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
-
-            if (ptrDev != null) {
-                pair.setDevicePointer(ptrDev);
-                point.setAllocationStatus(AllocationStatus.DEVICE);
-            } else {
-                // we allocate initial host pointer only
-                val ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
-                pair.setHostPointer(ptrHost);
-
-                pair.setDevicePointer(ptrHost);
-                point.setAllocationStatus(AllocationStatus.HOST);
-            }
-
-            point.setAttached(true);
-
-            point.setPointers(pair);
-        } else {
-            // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
-            PointersPair pair = memoryHandler.alloc(location, point, requiredMemory, initialize);
-            point.setPointers(pair);
-        }
-
-        allocationsMap.put(allocId, point);
-        //point.tickHostRead();
-        point.tickDeviceWrite();
-        //point.setAllocationStatus(location);
-        return point;
+    public AllocationPoint allocateMemory(DataBuffer buffer, AllocationShape requiredMemory, AllocationStatus location, boolean initialize) {
+        throw new UnsupportedOperationException("Pew-pew");
     }
 
 
@@ -619,10 +547,11 @@ public class AtomicAllocator implements Allocator {
                  */
                 if (point.getBuffer() == null) {
                     purgeZeroObject(bucketId, object, point, false);
-                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                    //freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                    throw new UnsupportedOperationException("Pew-pew");
 
-                    elementsDropped.incrementAndGet();
-                    continue;
+                    //elementsDropped.incrementAndGet();
+                    //continue;
                 } else {
                     elementsSurvived.incrementAndGet();
                 }
@@ -682,13 +611,14 @@ public class AtomicAllocator implements Allocator {
                 if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
                     // we deallocate device memory
                     purgeDeviceObject(threadId, deviceId, object, point, false);
-                    freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
+                    //freeSpace.addAndGet(AllocationUtils.getRequiredMemory(point.getShape()));
 
                     // and we deallocate host memory, since object is dereferenced
-                    purgeZeroObject(point.getBucketId(), object, point, false);
+                    //purgeZeroObject(point.getBucketId(), object, point, false);
 
-                    elementsDropped.incrementAndGet();
-                    continue;
+                    //elementsDropped.incrementAndGet();
+                    //continue;
+                    throw new UnsupportedOperationException("Pew-pew");
                 } ;
             } else {
                 elementsSurvived.incrementAndGet();
@@ -1014,6 +944,31 @@ public class AtomicAllocator implements Allocator {
         this.memoryHandler.memcpy(dstBuffer, srcBuffer);
     }
 
+    @Override
+    public void tickHostWrite(DataBuffer buffer) {
+        getAllocationPoint(buffer).tickHostWrite();
+    }
+
+    @Override
+    public void tickHostWrite(INDArray array) {
+        getAllocationPoint(array.data()).tickHostWrite();
+    }
+
+    @Override
+    public void tickDeviceWrite(INDArray array) {
+        getAllocationPoint(array.data()).tickDeviceWrite();
+    }
+
+    @Override
+    public AllocationPoint getAllocationPoint(INDArray array) {
+        return getAllocationPoint(array.data());
+    }
+
+    @Override
+    public AllocationPoint getAllocationPoint(DataBuffer buffer) {
+        return ((BaseCudaDataBuffer) buffer).getAllocationPoint();
+    }
+
     /**
      * This method returns deviceId for current thread
      * All values >= 0 are considered valid device IDs, all values < 0 are considered stubs.
@@ -1029,48 +984,6 @@ public class AtomicAllocator implements Allocator {
     @Override
     public Pointer getDeviceIdPointer() {
         return new CudaPointer(getDeviceId());
-    }
-
-    @Override
-    public void tickHostWrite(DataBuffer buffer) {
-        AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
-        point.tickHostWrite();
-    }
-
-    @Override
-    public void tickHostWrite(INDArray array) {
-        DataBuffer buffer =
-                        array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-
-        tickHostWrite(buffer);
-    }
-
-    @Override
-    public void tickDeviceWrite(INDArray array) {
-        DataBuffer buffer =
-                        array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-        AllocationPoint point = getAllocationPoint(buffer.getTrackingPoint());
-
-        point.tickDeviceWrite();
-    }
-
-    @Override
-    public AllocationPoint getAllocationPoint(INDArray array) {
-        if (array.isEmpty())
-            return null;
-
-        DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-        return getAllocationPoint(buffer);
-    }
-
-    @Override
-    public AllocationPoint getAllocationPoint(DataBuffer buffer) {
-        if (buffer instanceof CompressedDataBuffer) {
-            log.warn("Trying to get AllocationPoint from CompressedDataBuffer");
-            throw new RuntimeException("AP CDB");
-        }
-
-        return getAllocationPoint(buffer.getTrackingPoint());
     }
 
     @Override

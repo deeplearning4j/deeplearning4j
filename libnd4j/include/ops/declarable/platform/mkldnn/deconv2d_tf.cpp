@@ -145,7 +145,7 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
 
 
 //////////////////////////////////////////////////////////////////////////
-PLATFORM_IMPL(deconv2d_tf) {
+PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
 
     auto gradO      = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     auto weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
@@ -222,7 +222,7 @@ PLATFORM_IMPL(deconv2d_tf) {
     return Status::OK();
 }
 
-PLATFORM_CHECK(deconv2d_tf) {
+PLATFORM_CHECK(deconv2d_tf, ENGINE_CPU) {
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto gradO   = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
     auto gradI   = OUTPUT_VARIABLE(0);                                               // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW), gradI

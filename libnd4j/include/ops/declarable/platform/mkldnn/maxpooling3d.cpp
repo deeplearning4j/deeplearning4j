@@ -31,7 +31,7 @@ using namespace dnnl;
 namespace nd4j {
     namespace ops {
         namespace platforms {
-            PLATFORM_IMPL(maxpool3dnew) {
+            PLATFORM_IMPL(maxpool3dnew, ENGINE_CPU) {
                 auto input = INPUT_VARIABLE(
                         0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
                 auto output = OUTPUT_VARIABLE(
@@ -140,7 +140,7 @@ namespace nd4j {
                 return Status::OK();
             }
 
-            PLATFORM_CHECK(maxpool3dnew) {
+            PLATFORM_CHECK(maxpool3dnew, ENGINE_CPU) {
                 auto input = INPUT_VARIABLE(0);
                 auto output = OUTPUT_VARIABLE(0);
 

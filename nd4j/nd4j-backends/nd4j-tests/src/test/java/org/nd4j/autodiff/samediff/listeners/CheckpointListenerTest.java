@@ -63,8 +63,12 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         return sd;
     }
 
-    public static DataSetIterator getIter(){
-        return new IrisDataSetIterator(15, 150);
+    public static DataSetIterator getIter() {
+        return getIter(15, 150);
+    }
+
+    public static DataSetIterator getIter(int batch, int totalExamples){
+        return new IrisDataSetIterator(batch, totalExamples);
     }
 
 
@@ -125,7 +129,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         boolean[] found = new boolean[names.size()];
         for(File f : files){
             String s = f.getAbsolutePath();
-            System.out.println(s);
+//            System.out.println(s);
             for( int i=0; i<names.size(); i++ ){
                 if(s.contains(names.get(i))){
                     found[i] = true;
@@ -148,15 +152,15 @@ public class CheckpointListenerTest extends BaseNd4jTest {
 
         CheckpointListener l = new CheckpointListener.Builder(dir)
                 .keepLast(2)
-                .saveEvery(3, TimeUnit.SECONDS)
+                .saveEvery(1, TimeUnit.SECONDS)
                 .build();
         sd.setListeners(l);
 
-        DataSetIterator iter = getIter();
+        DataSetIterator iter = getIter(15, 150);
 
         for(int i=0; i<5; i++ ){   //10 iterations total
             sd.fit(iter, 1);
-            Thread.sleep(4000);
+            Thread.sleep(1000);
         }
 
         //Expect models saved at iterations: 10, 20, 30, 40
@@ -171,7 +175,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
         boolean[] found = new boolean[names.size()];
         for(File f : files){
             String s = f.getAbsolutePath();
-            System.out.println(s);
+//            System.out.println(s);
             for( int i=0; i<names.size(); i++ ){
                 if(s.contains(names.get(i))){
                     found[i] = true;

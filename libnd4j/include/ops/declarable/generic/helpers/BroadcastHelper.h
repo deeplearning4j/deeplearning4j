@@ -30,7 +30,7 @@
 namespace nd4j {
     namespace ops {
         class BroadcastHelper {
-        public: 
+        public:
             static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z, ExtraArguments *extraArgs = nullptr) {
 
                 if(x->isEmpty() || y->isEmpty()) {
@@ -42,34 +42,34 @@ namespace nd4j {
                 std::unique_ptr<NDArray> ptr;
                 if (!Environment::getInstance()->isExperimentalBuild()) {
                     if (y->dataType() != x->dataType()) {
-                        y = y->cast(x->dataType());
+                        y = new NDArray(y->cast(x->dataType()));
                         std::unique_ptr<NDArray> ptr2(y);
                         ptr.swap(ptr2);
                     }
                 }
 
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
-				    x->applyPairwiseTransform(op.p, y, z, nullptr);
+				    x->applyPairwiseTransform(op.p, *y, *z);
                 } else if (!x->isScalar() && y->isScalar()) {
-                    x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z);
+                    x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
                 } else if (x->isScalar() && !y->isScalar()) {
                     if (z->isSameShape(y)) {
                         if (op.s == scalar::Add || op.s == scalar::Multiply ) {
-                            y->applyScalarArr(op.s, x, z, nullptr);
+                            y->applyScalarArr(op.s, *x, *z);
                         } else if (op.s == scalar::SquaredSubtract) {
-                            y->applyScalarArr(scalar::SquaredReverseSubtract, x, z, nullptr);
+                            y->applyScalarArr(scalar::SquaredReverseSubtract, *x, *z);
                         } else if (op.s == scalar::Subtract) {
-                            y->applyScalarArr(scalar::ReverseSubtract, x, z, nullptr);
+                            y->applyScalarArr(scalar::ReverseSubtract, *x, *z);
                         } else if (op.s == scalar::Divide) {
-                            y->applyScalarArr(scalar::ReverseDivide, x, z, nullptr);
+                            y->applyScalarArr(scalar::ReverseDivide, *x, *z);
                         } else if (op.s == scalar::Pow) {
-                            y->applyScalarArr(scalar::ReversePow, x, z, nullptr);
+                            y->applyScalarArr(scalar::ReversePow, *x, *z);
                         } else if (op.s == scalar::ReverseSubtract) {
-                            y->applyScalarArr(scalar::Subtract, x, z, nullptr);
+                            y->applyScalarArr(scalar::Subtract, *x, *z);
                         } else if (op.s == scalar::ReverseDivide) {
-                            y->applyScalarArr(scalar::Divide, x, z, nullptr);
+                            y->applyScalarArr(scalar::Divide, *x, *z);
                         } else if (op.s == scalar::MaxPairwise || op.s == scalar::MinPairwise || op.s == scalar::AMaxPairwise || op.s == scalar::AMinPairwise) {
-                            y->applyScalarArr(op.s, x, z, nullptr);
+                            y->applyScalarArr(op.s, *x, *z);
                         } else if (op.s == scalar::CopyPws) {
                             z->assign(y);
                         } else {
@@ -84,9 +84,9 @@ namespace nd4j {
                         return tZ;
                     }
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
-				    x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z, nullptr);
+				    x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
 			    } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
-                    x->applyTrueBroadcast(op, y, z, true, extraArgs);
+                    x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
                     return z;
                 } else {
                     auto sx = ShapeUtils::shapeAsString(x);
@@ -107,16 +107,16 @@ namespace nd4j {
                 }
 
                 if (!x->isScalar() && !y->isScalar() && x->isSameShape(y)) {
-                    x->applyPairwiseTransform(op.p, y, z, nullptr);
+                    x->applyPairwiseTransform(op.p, *y, *z);
                 } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
-                    x->applyTrueBroadcast(op, y, z, true, extraArgs);
+                    x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
                     return z;
                 } else if (!x->isScalar() && y->isScalar()) {
-                    x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z);
+                    x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
                 } else if (x->isScalar() && !y->isScalar()) {
                     if (z->isSameShape(y)) {
                         //z->assign(x);
-                        x->applyPairwiseTransform(op.p, y, z, extraArgs);
+                        x->applyPairwiseTransform(op.p, *y, *z, extraArgs);
                         return z;
                     } else {
                         auto v = y->getShapeAsVector();
@@ -125,9 +125,9 @@ namespace nd4j {
                         return tZ;
                     }
                 } else if (x->isScalar() && y->isScalar()) { // x->isScalar() && y->isScalar()
-                    x->applyScalarArr(op.s, const_cast<const NDArray*>(y), z, nullptr);
+                    x->applyScalarArr(op.s, const_cast<const NDArray&>(*y), *z);
                 } else if (ShapeUtils::areShapesBroadcastable(*x, *y)) {
-                    x->applyTrueBroadcast(op, y, z, true, extraArgs);
+                    x->applyTrueBroadcast(op, *y, *z, true, extraArgs);
                     return z;
                 } else {
                     auto sx = ShapeUtils::shapeAsString(x);

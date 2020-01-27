@@ -149,16 +149,15 @@ public class TestPCA extends BaseNd4jTest {
         INDArray reduced100 = myPCA.reducedBasis(1.0);
         assertTrue("100% variance coverage should include all eigenvectors", reduced100.columns() == m.columns());
         NDArrayStrings ns = new NDArrayStrings(5);
-        System.out.println("Eigenvectors:\n" + ns.format(myPCA.getEigenvectors()));
-        System.out.println("Eigenvalues:\n" + ns.format(myPCA.getEigenvalues()));
+//        System.out.println("Eigenvectors:\n" + ns.format(myPCA.getEigenvectors()));
+//        System.out.println("Eigenvalues:\n" + ns.format(myPCA.getEigenvalues()));
         double variance = 0.0;
 
         // sample 1000 of the randomly generated samples with the reduced basis set
         for (long i = 0; i < 1000; i++)
             variance += myPCA.estimateVariance(m.getRow(i), reduced70.columns());
         variance /= 1000.0;
-        System.out.println("Fraction of variance using 70% variance with " + reduced70.columns() + " columns: "
-                        + variance);
+        System.out.println("Fraction of variance using 70% variance with " + reduced70.columns() + " columns: " + variance);
         assertTrue("Variance does not cover intended 70% variance", variance > 0.70);
         // create "dummy" data with the same exact trends
         INDArray testSample = myPCA.generateGaussianSamples(10000);
@@ -171,8 +170,8 @@ public class TestPCA extends BaseNd4jTest {
                         0.5 * myPCA.getEigenvalues().columns()));
         assertTrue("Eigenvectors are not close enough", myPCA.getEigenvectors()
                         .equalsWithEps(analyzePCA.getEigenvectors(), 0.1 * analyzePCA.getEigenvectors().length()));
-        System.out.println("Original cov:\n" + ns.format(myPCA.getCovarianceMatrix()) + "\nDummy cov:\n"
-                        + ns.format(analyzePCA.getCovarianceMatrix()));
+//        System.out.println("Original cov:\n" + ns.format(myPCA.getCovarianceMatrix()) + "\nDummy cov:\n"
+//                        + ns.format(analyzePCA.getCovarianceMatrix()));
         INDArray testSample2 = analyzePCA.convertBackToFeatures(analyzePCA.convertToComponents(testSample));
         assertTrue("Transformation does not work.", testSample.equalsWithEps(testSample2, 1e-5 * testSample.length()));
     }

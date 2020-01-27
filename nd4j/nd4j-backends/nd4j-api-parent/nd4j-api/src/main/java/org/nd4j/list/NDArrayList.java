@@ -18,6 +18,7 @@ package org.nd4j.list;
 
 import lombok.NonNull;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,7 +47,12 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
      * @param size the initial size of the array
      */
     public NDArrayList(int size) {
-        this.container = Nd4j.create(10L);
+        this(DataType.DOUBLE, size);
+    }
+
+    public NDArrayList(DataType dataType, int size) {
+        Preconditions.checkState(size >= 0, "Size must be non-negative - got %s", size);
+        this.container = Nd4j.create(dataType, Math.max(10L, size));
         this.size = size;
     }
 
@@ -84,6 +90,7 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
      * directly, this gives you the relevant subset that reflects the content of the list)
      * @return the view of the underlying ndarray relative to the collection's real size
      */
+    @Override
     public INDArray array() {
         if(isEmpty()) {
             throw new ND4JIllegalStateException("Array is empty!");
@@ -136,6 +143,8 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
         container.putScalar(size++,aDouble);
         return true;
     }
+
+
 
     @Override
     public boolean remove(Object o) {

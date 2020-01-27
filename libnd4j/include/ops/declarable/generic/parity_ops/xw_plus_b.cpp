@@ -41,7 +41,7 @@ namespace nd4j {
             MmulHelper::mmul(x, y, z, 1.0, 0.0);
 
             // adding b vector
-            z->addiRowVector(b);
+            z->addiRowVector(*b);
 
             return Status::OK();
         }
@@ -49,7 +49,7 @@ namespace nd4j {
         DECLARE_SHAPE_FN(xw_plus_b) {
             auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), inputShape->at(1), false, false,
                     ArrayOptions::dataType(inputShape->at(0)), block.getWorkspace());
-            
+
             return SHAPELIST(CONSTANT(outputShape));
         }
 

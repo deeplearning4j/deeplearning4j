@@ -922,32 +922,6 @@ public abstract class AbstractSession<T, O> {
     }
 
     /**
-     * FrameIter: Identifies a frame + iteration (but not a specific op or variable).<br>
-     * Note that frames can be nested - which generally represents nested loop situations.
-     */
-    @Data
-    @AllArgsConstructor
-    public static class FrameIter {
-        private String frame;
-        private int iteration;
-        private FrameIter parentFrame;
-
-        @Override
-        public String toString() {
-            return "(\"" + frame + "\"," + iteration + (parentFrame == null ? "" : ",parent=" + parentFrame.toString()) + ")";
-        }
-
-        @Override
-        public FrameIter clone() {
-            return new FrameIter(frame, iteration, (parentFrame == null ? null : parentFrame.clone()));
-        }
-
-        public VarId toVarId(String name) {
-            return new VarId(name, frame, iteration, parentFrame);
-        }
-    }
-
-    /**
      * ExecType: Execution type, as used in ExecStep<br>
      * OP: Operation execution<br>
      * VARIABLE: Variable "execution", mainly used to trigger ops that depend on the variable<br>

@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
@@ -33,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.*;
 
 @Slf4j
-public class DummyTransportTest {
+public class DummyTransportTest extends BaseND4JTest {
 
     @Test
     public void testBasicConnection_1() throws Exception {

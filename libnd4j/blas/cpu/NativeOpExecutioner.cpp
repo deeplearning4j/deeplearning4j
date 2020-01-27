@@ -398,7 +398,7 @@ void NativeOpExecutioner::execPairwiseTransform(nd4j::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 
 #endif
 }
@@ -433,7 +433,7 @@ void NativeOpExecutioner::execPairwiseBoolTransform(nd4j::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 
 }
 
@@ -466,7 +466,7 @@ void NativeOpExecutioner::execPairwiseIntTransform(nd4j::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 
 }
 
@@ -505,7 +505,7 @@ void NativeOpExecutioner::execReduceFloat(nd4j::LaunchContext  *lc,
 
     const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == nd4j::LoopKind::Kind::SMALLARR2DX ? 1 : nd4j::Environment::getInstance()->maxThreads());
+    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == nd4j::LoopKind::Kind::SMALLARR2DX ? 1 : nd4j::Environment::getInstance()->maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -533,7 +533,7 @@ void NativeOpExecutioner::execReduceSame(nd4j::LaunchContext  *lc,
 
     const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == nd4j::LoopKind::Kind::SMALLARR2DX ? 1 : nd4j::Environment::getInstance()->maxThreads());
+    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == nd4j::LoopKind::Kind::SMALLARR2DX ? 1 : nd4j::Environment::getInstance()->maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -561,7 +561,7 @@ void NativeOpExecutioner::execReduceBool(nd4j::LaunchContext  *lc,
 
     const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == nd4j::LoopKind::Kind::SMALLARR2DX ? 1 : nd4j::Environment::getInstance()->maxThreads());
+    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == nd4j::LoopKind::Kind::SMALLARR2DX ? 1 : nd4j::Environment::getInstance()->maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -589,7 +589,7 @@ void NativeOpExecutioner::execReduceLong(nd4j::LaunchContext  *lc,
 
     const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == nd4j::LoopKind::Kind::SMALLARR2DX ? 1 : nd4j::Environment::getInstance()->maxThreads());
+    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == nd4j::LoopKind::Kind::SMALLARR2DX ? 1 : nd4j::Environment::getInstance()->maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -876,7 +876,7 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 
 #endif
 }
@@ -913,7 +913,7 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
     };
 
     auto yLen = shape::length(hScalarShapeInfo);
-    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxThreads()));
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxMasterThreads()));
 
 #endif
 }
@@ -947,7 +947,7 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1,  !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1,  !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 
 }
 
@@ -983,7 +983,7 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
     };
 
     auto yLen = shape::length(hScalarShapeInfo);
-    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxThreads()));
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxMasterThreads()));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1015,7 +1015,7 @@ void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 
 }
 
@@ -1051,7 +1051,7 @@ void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
     };
 
     auto yLen = shape::length(hScalarShapeInfo);
-    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxThreads()));
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxMasterThreads()));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1164,7 +1164,7 @@ void NativeOpExecutioner::execTransformFloat(nd4j::LaunchContext  *lc,
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, FLOAT_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1186,7 +1186,7 @@ void NativeOpExecutioner::execTransformBool(nd4j::LaunchContext  *lc,
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, BOOL_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1208,7 +1208,7 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, LIBND4J_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1230,7 +1230,7 @@ void NativeOpExecutioner::execTransformSame(nd4j::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1252,7 +1252,7 @@ void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), FLOAT_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxThreads())));
+    samediff::Threads::parallel_do(func, nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, nd4j::Environment::getInstance()->maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////

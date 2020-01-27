@@ -44,7 +44,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         ValidationResult vr0 = Nd4jCommonValidator.isValidFile(fNonExistent);
         assertFalse(vr0.isValid());
         assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty file:
         File fEmpty = new File(f, "0.bin");
@@ -52,7 +52,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         ValidationResult vr1 = Nd4jCommonValidator.isValidFile(fEmpty);
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test directory
         File directory = new File(f, "dir");
@@ -61,14 +61,14 @@ public class ValidationUtilTests extends BaseNd4jTest {
         ValidationResult vr2 = Nd4jCommonValidator.isValidFile(directory);
         assertFalse(vr2.isValid());
         assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test valid non-empty file - valid
         File f3 = new File(f, "1.txt");
         FileUtils.writeStringToFile(f3, "Test", StandardCharsets.UTF_8);
         ValidationResult vr3 = Nd4jCommonValidator.isValidFile(f3);
         assertTrue(vr3.isValid());
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
     }
 
     @Test
@@ -80,7 +80,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         ValidationResult vr0 = Nd4jCommonValidator.isValidZipFile(fNonExistent, false);
         assertFalse(vr0.isValid());
         assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty zip:
         File fEmpty = new ClassPathResource("validation/empty_zip.zip").getFile();
@@ -88,7 +88,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         ValidationResult vr1 = Nd4jCommonValidator.isValidZipFile(fEmpty, false);
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test directory (not zip file)
         File directory = new File(f, "dir");
@@ -97,7 +97,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         ValidationResult vr2 = Nd4jCommonValidator.isValidFile(directory);
         assertFalse(vr2.isValid());
         assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test non-empty zip - valid
         File f3 = new File(f, "1.zip");
@@ -108,7 +108,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         }
         ValidationResult vr3 = Nd4jCommonValidator.isValidZipFile(f3, false);
         assertTrue(vr3.isValid());
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
 
         //Test non-empty zip - but missing required entries
         ValidationResult vr4 = Nd4jCommonValidator.isValidZipFile(f3, false, "content.txt", "someFile1.bin", "someFile2.bin");
@@ -117,7 +117,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         String s = vr4.getIssues().get(0);
         assertTrue(s, s.contains("someFile1.bin") && s.contains("someFile2.bin"));
         assertFalse(s, s.contains("content.txt"));
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
     }
 
 
@@ -131,7 +131,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr0.isValid());
         assertEquals("INDArray Text File", vr0.getFormatType());
         assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty file:
         File fEmpty = new File(f, "empty.txt");
@@ -141,7 +141,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("INDArray Text File", vr1.getFormatType());
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test directory (not zip file)
         File directory = new File(f, "dir");
@@ -151,7 +151,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("INDArray Text File", vr2.getFormatType());
         assertFalse(vr2.isValid());
         assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test non-INDArray format:
         File fText = new File(f, "text.txt");
@@ -161,7 +161,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr3.isValid());
         String s = vr3.getIssues().get(0);
         assertTrue(s, s.contains("text") && s.contains("INDArray") && s.contains("corrupt"));
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
 
         //Test corrupted txt format:
         File fValid = new File(f, "valid.txt");
@@ -179,7 +179,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
         assertTrue(s, s.contains("text") && s.contains("INDArray") && s.contains("corrupt"));
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
 
 
         //Test valid npz format:
@@ -188,7 +188,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertTrue(vr5.isValid());
         assertNull(vr5.getIssues());
         assertNull(vr5.getException());
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
     }
 
 
@@ -204,7 +204,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr0.isValid());
         assertEquals("Numpy .npy File", vr0.getFormatType());
         assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty file:
         File fEmpty = new File(f, "empty.npy");
@@ -214,7 +214,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("Numpy .npy File", vr1.getFormatType());
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test directory (not zip file)
         File directory = new File(f, "dir");
@@ -224,7 +224,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("Numpy .npy File", vr2.getFormatType());
         assertFalse(vr2.isValid());
         assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test non-numpy format:
         File fText = new File(f, "text.txt");
@@ -234,7 +234,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr3.isValid());
         String s = vr3.getIssues().get(0);
         assertTrue(s, s.contains("npy") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
 
         //Test corrupted npy format:
         File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
@@ -250,7 +250,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
         assertTrue(s, s.contains("npy") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
 
 
         //Test valid npy format:
@@ -259,7 +259,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertTrue(vr5.isValid());
         assertNull(vr5.getIssues());
         assertNull(vr5.getException());
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
     }
 
     @Test
@@ -273,7 +273,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr0.isValid());
         assertEquals("Numpy .npz File", vr0.getFormatType());
         assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty file:
         File fEmpty = new File(f, "empty.npz");
@@ -283,7 +283,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("Numpy .npz File", vr1.getFormatType());
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test directory (not zip file)
         File directory = new File(f, "dir");
@@ -293,7 +293,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("Numpy .npz File", vr2.getFormatType());
         assertFalse(vr2.isValid());
         assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test non-numpy format:
         File fText = new File(f, "text.txt");
@@ -303,7 +303,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr3.isValid());
         String s = vr3.getIssues().get(0);
         assertTrue(s, s.contains("npz") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
 
         //Test corrupted npz format:
         File fValid = new ClassPathResource("numpy_arrays/npz/float32.npz").getFile();
@@ -319,7 +319,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
         assertTrue(s, s.contains("npz") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
 
 
         //Test valid npz format:
@@ -328,7 +328,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertTrue(vr5.isValid());
         assertNull(vr5.getIssues());
         assertNull(vr5.getException());
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
     }
 
     @Test
@@ -341,7 +341,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr0.isValid());
         assertEquals("Numpy text file", vr0.getFormatType());
         assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty file:
         File fEmpty = new File(f, "empty.txt");
@@ -351,7 +351,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("Numpy text file", vr1.getFormatType());
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test directory (not zip file)
         File directory = new File(f, "dir");
@@ -361,7 +361,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("Numpy text file", vr2.getFormatType());
         assertFalse(vr2.isValid());
         assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test non-numpy format:
         File fText = new File(f, "text.txt");
@@ -371,7 +371,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr3.isValid());
         String s = vr3.getIssues().get(0);
         assertTrue(s, s.contains("text") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
 
         //Test corrupted txt format:
         File fValid = new ClassPathResource("numpy_arrays/txt/arange_3,4_float32.txt").getFile();
@@ -387,7 +387,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
         assertTrue(s, s.contains("text") && s.toLowerCase().contains("numpy") && s.contains("corrupt"));
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
 
 
         //Test valid npz format:
@@ -396,7 +396,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertTrue(vr5.isValid());
         assertNull(vr5.getIssues());
         assertNull(vr5.getException());
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
     }
 
     @Test
@@ -418,7 +418,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr0.isValid());
         assertEquals("SameDiff FlatBuffers file", vr0.getFormatType());
         assertTrue(vr0.getIssues().get(0), vr0.getIssues().get(0).contains("exist"));
-        System.out.println(vr0.toString());
+//        System.out.println(vr0.toString());
 
         //Test empty file:
         File fEmpty = new File(f, "empty.fb");
@@ -428,7 +428,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("SameDiff FlatBuffers file", vr1.getFormatType());
         assertFalse(vr1.isValid());
         assertTrue(vr1.getIssues().get(0), vr1.getIssues().get(0).contains("empty"));
-        System.out.println(vr1.toString());
+//        System.out.println(vr1.toString());
 
         //Test directory (not zip file)
         File directory = new File(f, "dir");
@@ -438,7 +438,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertEquals("SameDiff FlatBuffers file", vr2.getFormatType());
         assertFalse(vr2.isValid());
         assertTrue(vr2.getIssues().get(0), vr2.getIssues().get(0).contains("directory"));
-        System.out.println(vr2.toString());
+//        System.out.println(vr2.toString());
 
         //Test non-flatbuffers
         File fText = new File(f, "text.fb");
@@ -448,7 +448,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr3.isValid());
         String s = vr3.getIssues().get(0);
         assertTrue(s, s.contains("FlatBuffers") && s.contains("SameDiff") && s.contains("corrupt"));
-        System.out.println(vr3.toString());
+//        System.out.println(vr3.toString());
 
         //Test corrupted flatbuffers format:
         byte[] fbBytes = FileUtils.readFileToByteArray(fOrig);
@@ -463,7 +463,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertFalse(vr4.isValid());
         s = vr4.getIssues().get(0);
         assertTrue(s, s.contains("FlatBuffers") && s.contains("SameDiff") && s.contains("corrupt"));
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
 
 
         //Test valid npz format:
@@ -472,7 +472,7 @@ public class ValidationUtilTests extends BaseNd4jTest {
         assertTrue(vr5.isValid());
         assertNull(vr5.getIssues());
         assertNull(vr5.getException());
-        System.out.println(vr4.toString());
+//        System.out.println(vr4.toString());
     }
 
     @Override

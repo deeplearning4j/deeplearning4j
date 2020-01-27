@@ -489,6 +489,7 @@ mkbuilddir() {
     cd "blasbuild/$CHIP"
 }
 
+HELPERS=""
 if [ "$HELPER" == "" ]; then
   echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
   echo "!!                                                                                                           !!"
@@ -503,6 +504,14 @@ if [ "$HELPER" == "" ]; then
   echo "!!                                                                                                           !!"
   echo "!!                                                                                                           !!"
   echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+else
+  #  if helpers were defined, we'll propagate them to CMake
+  IFS=','
+  read -ra HLP <<< "$HELPER"
+  for i in "${HLP[@]}"; do
+    HELPERS="${HELPERS} -DHELPERS_$i=true"
+  done
+  IFS=' '
 fi
 
 echo PACKAGING  = "${PACKAGING}"
@@ -519,10 +528,10 @@ echo MINIFIER = "${MINIFIER_ARG}"
 echo TESTS = "${TESTS_ARG}"
 echo NAME = "${NAME_ARG}"
 echo OPENBLAS_PATH = "$OPENBLAS_PATH"
-echo HELPERS = "$HELPER"
+echo HELPERS = "$HELPERS"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DHELPERS_"$HELPER"=true "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" $HELPERS "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
 fi

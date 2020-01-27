@@ -51,10 +51,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 public class GradientCheckTestsMasking extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
-    private static final boolean RETURN_ON_FIRST_FAILURE = false;
-    private static final double DEFAULT_EPS = 1e-6;
-    private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-7;
 
     static {
         Nd4j.setDataType(DataType.DOUBLE);
@@ -130,8 +126,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                 mln.init();
 
-                boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, maskArr);
+                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                        .labels(labels).labelMask(maskArr));
 
                 String msg = "gradientCheckMaskingOutputSimple() - timeSeriesLength=" + timeSeriesLength
                                 + ", miniBatchSize=" + 1;
@@ -146,9 +142,9 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345L);
 
         int timeSeriesLength = 5;
-        int nIn = 5;
+        int nIn = 3;
         int layerSize = 3;
-        int nOut = 3;
+        int nOut = 2;
 
         int miniBatchSize = 2;
 
@@ -174,24 +170,16 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(conf);
             mln.init();
 
-            Random r = new Random(12345L);
             INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength}, 'f').subi(0.5);
 
-            INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
-            for (int i = 0; i < miniBatchSize; i++) {
-                for (int j = 0; j < nIn; j++) {
-                    labels.putScalar(i, r.nextInt(nOut), j, 1.0);
-                }
-            }
+            INDArray labels = TestUtils.randomOneHotTimeSeries(miniBatchSize, nOut, timeSeriesLength);
 
             if (PRINT_RESULTS) {
                 System.out.println("testBidirectionalLSTMMasking() - testNum = " + testNum++);
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
             }
 
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, mask, mask, true, 16);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                    .labels(labels).inputMask(mask).labelMask(mask).subset(true).maxPerParam(12));
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
@@ -271,8 +259,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
                 System.out.println(msg);
 
-                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels, null, labelMask);
+                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(features)
+                        .labels(labels).labelMask(labelMask));
 
                 assertTrue(msg, gradOK);
                 TestUtils.testModelSerialization(net);
@@ -366,8 +354,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
                 System.out.println(msg);
 
-                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, features, labels, null, labelMask);
+                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(features)
+                        .labels(labels).labelMask(labelMask));
 
                 assertTrue(msg, gradOK);
 
@@ -387,9 +375,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 ComputationGraph graph = new ComputationGraph(cg);
                 graph.init();
 
-                gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                                new INDArray[] {features}, new INDArray[] {labels}, null, new INDArray[]{labelMask}, null);
+                gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{features})
+                        .labels(new INDArray[]{labels}).labelMask(new INDArray[]{labelMask}));
 
                 assertTrue(msg + " (compgraph)", gradOK);
                 TestUtils.testModelSerialization(graph);
@@ -425,8 +412,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
         assertTrue(lm.sumNumber().intValue() > 0);
 
-        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, f, l, null, lm);
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f)
+                .labels(l).labelMask(lm));
         assertTrue(gradOK);
 
         //Also ensure score doesn't depend on masked feature or label values
@@ -478,9 +465,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
 
         assertTrue(lm.sumNumber().intValue() > 0);
 
-        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{f}, new INDArray[]{l},
-                null, new INDArray[]{lm});
+        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{f})
+                .labels(new INDArray[]{l}).labelMask(new INDArray[]{lm}));
         assertTrue(gradOK);
 
         //Also ensure score doesn't depend on masked feature or label values

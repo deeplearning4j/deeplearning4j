@@ -76,6 +76,13 @@
             <version>2.3.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- WebJars Dependencies -->
         <dependency>
             <groupId>org.webjars.npm</groupId>
@@ -416,6 +423,16 @@
                 <groupId>org.webjars.npm</groupId>
                 <artifactId>weaverjs</artifactId>
                 <version>1.2.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>explorercanvas</artifactId>
+                <version>r3-1</version>
+            </dependency>
+            <dependency>
+                <groupId>org.webjars</groupId>
+                <artifactId>bootstrap</artifactId>
+                <version>2.2.2-1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

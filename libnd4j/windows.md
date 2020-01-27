@@ -274,3 +274,7 @@ To build libnd4j with MKL:
 Then build libnd4j as before. You may have to be careful about having multiple BLAS implementations on your path. Ideally, have only MKL on the path while building libnd4j.
 
 Note: you may be able to get some additional performance on hyperthreaded processors by setting the system/environment variable MKL_DYNAMIC to have the value 'false'.
+
+
+float16_nhcw
+float16_nhwc

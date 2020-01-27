@@ -19,14 +19,22 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class FusedBatchNorm extends DynamicCustomOp {
+
+    private DataType outputDataType;
 
     public FusedBatchNorm() {}
 
@@ -38,6 +46,7 @@ public class FusedBatchNorm extends DynamicCustomOp {
         if (yOut != null && batchMeanOut != null && batchMeanVar != null) {
             addOutputArgument(yOut, batchMeanOut, batchMeanVar);
         }
+        this.outputDataType = x.dataType();
     }
 
     public FusedBatchNorm(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable scale, @NonNull SDVariable offset,
@@ -51,14 +60,25 @@ public class FusedBatchNorm extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "FusedBatchNormV2";
+    public String[] tensorflowNames() {
+        return new String[]{"FusedBatchNormV2","FusedBatchNormV3"};
+    }
+
+    @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        boolean isNchw = attributesForNode.containsKey("data_format") && attributesForNode.get("data_format").getS().toStringUtf8().equalsIgnoreCase("NCHW");
+        boolean training = !attributesForNode.containsKey("is_training") ? true : attributesForNode.get("is_training").getB();
+        addIArgument(isNchw ? 1 : 0);
+        addIArgument(training ? 1 : 0);
+        if(attributesForNode.containsKey("T")){
+            outputDataType = TFGraphMapper.convertType(attributesForNode.get("T").getType());
+        }
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        return Collections.singletonList(inputDataTypes.get(0));
+        return Arrays.asList(outputDataType, DataType.FLOAT, DataType.FLOAT);   //Activations may be half, bfloat16, float32; mean/var is always float
     }
 }

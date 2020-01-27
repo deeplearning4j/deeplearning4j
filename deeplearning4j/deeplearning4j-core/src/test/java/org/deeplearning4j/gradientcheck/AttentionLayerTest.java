@@ -46,12 +46,6 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
-    private static final boolean PRINT_RESULTS = true;
-    private static final boolean RETURN_ON_FIRST_FAILURE = false;
-    private static final double DEFAULT_EPS = 1e-6;
-    private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
-
     @Test
     public void testSelfAttentionLayer() {
         int nIn = 3;
@@ -104,8 +98,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                            .labels(labels).inputMask(inMask).subset(true).maxPerParam(100));
                     assertTrue(name, gradOK);
                 }
             }
@@ -165,8 +159,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                            .labels(labels).inputMask(inMask).subset(true).maxPerParam(100));
                     assertTrue(name, gradOK);
                 }
             }
@@ -226,8 +220,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     String name = "testLearnedSelfAttentionLayer() - mb=" + mb + ", tsLength = " + tsLength + ", maskType=" + maskType + ", projectInput = " + projectInput;
                     System.out.println("Starting test: " + name);
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100);
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                            .labels(labels).inputMask(inMask).subset(true).maxPerParam(100));
                     assertTrue(name, gradOK);
                 }
             }
@@ -320,8 +314,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                 net.init();
 
                 //System.out.println("Original");
-                boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, in, labels, inMask, null, true, 100, null);
+                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                        .labels(labels).inputMask(inMask).subset(true).maxPerParam(100));
                 assertTrue(name, gradOK);
             }
         }
@@ -383,8 +377,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     ComputationGraph net = new ComputationGraph(graph);
                     net.init();
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in}, new INDArray[]{labels}, inMask != null ? new INDArray[]{inMask} : null, null);
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{in})
+                            .labels(new INDArray[]{labels}).inputMask(inMask != null ? new INDArray[]{inMask} : null).subset(true).maxPerParam(100));
                     assertTrue(name, gradOK);
                 }
             }
@@ -445,9 +439,8 @@ public class AttentionLayerTest extends BaseDL4JTest {
                     ComputationGraph net = new ComputationGraph(graph);
                     net.init();
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in},
-                            new INDArray[]{labels}, inMask != null ? new INDArray[]{inMask} : null, null);
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{in})
+                            .labels(new INDArray[]{labels}).inputMask(inMask != null ? new INDArray[]{inMask} : null));
                     assertTrue(name, gradOK);
                 }
             }

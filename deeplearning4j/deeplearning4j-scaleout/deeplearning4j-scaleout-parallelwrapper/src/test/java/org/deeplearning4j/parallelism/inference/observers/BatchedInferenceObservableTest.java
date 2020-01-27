@@ -17,7 +17,7 @@
 package org.deeplearning4j.parallelism.inference.observers;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.parallelism.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

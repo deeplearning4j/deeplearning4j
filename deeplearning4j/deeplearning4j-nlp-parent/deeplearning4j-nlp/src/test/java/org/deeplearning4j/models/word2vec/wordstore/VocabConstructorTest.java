@@ -22,6 +22,7 @@ import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.iterators.AbstractSequenceIterator;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.sql.Time;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -52,6 +54,9 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 public class VocabConstructorTest extends BaseDL4JTest {
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     protected static final Logger log = LoggerFactory.getLogger(VocabConstructorTest.class);
 

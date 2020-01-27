@@ -78,7 +78,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 DECLARE_TYPES(pad) {
     getOpDescriptor()
     	->setAllowedInputTypes(0, nd4j::DataType::ANY)
-            ->setAllowedInputTypes(1, {DataType::INT32}) // INT32 with TF
+    	->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}) // INT32 with TF
 //    	->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}) // INT32 with TF, but used also INT64 due long shapes
     	->setSameMode(true);
 }

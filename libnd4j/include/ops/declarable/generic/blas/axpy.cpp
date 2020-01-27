@@ -37,14 +37,14 @@ namespace nd4j {
 
             if (block.width() > 2) {
                 auto alpha = INPUT_VARIABLE(2);
-                REQUIRE_TRUE(alpha->isScalar(), 0, "Axpy: alpha argument should be scalar or TArg"); 
+                REQUIRE_TRUE(alpha->isScalar(), 0, "Axpy: alpha argument should be scalar or TArg");
             } else if (block.getTArguments()->size() > 0) {
                 a = T_ARG(0);
             }
 
             ExtraArguments arguments({a});
 
-            y->applyPairwiseTransform(pairwise::Axpy, x, z, &arguments);
+            y->applyPairwiseTransform(pairwise::Axpy, *x, *z, &arguments);
 
             return ND4J_STATUS_OK;
         }

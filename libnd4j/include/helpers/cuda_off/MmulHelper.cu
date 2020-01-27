@@ -235,6 +235,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     if(C == nullptr)
         C = new NDArray(outOrder, {M,N}, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
 
+    if (C->isEmpty())
+        return C;
+
     const int major = Environment::getInstance()->capabilities()[AffinityManager::currentDeviceId()].first();
 
     const auto aType = A->dataType();
@@ -285,17 +288,17 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
         bool cNcont = N == 1 || C->strideAt(1) == 1;
 
         if(!aMcont && !aKcont) {
-            pA = A->dup('f');
+            pA = new NDArray(A->dup('f'));
             toDelete.push_back(pA);
             aMcont = true;
         }
         if(!bKcont && !bNcont) {
-            pB = B->dup('f');
+            pB = new NDArray(B->dup('f'));
             toDelete.push_back(pB);
             bKcont = true;
         }
         if(!cMcont) {
-            pC = C->dup('f');
+            pC = new NDArray(C->dup('f'));
             toDelete.push_back(pC);
             cMcont = true;
         }
@@ -376,6 +379,9 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
     if(Y == nullptr)
         Y = new NDArray(outOrder, {M}, DataTypeUtils::pickPairwiseResultType(A->dataType(), X->dataType()), A->getContext());
 
+    if (Y->isEmpty())
+        return Y;
+
     const int incx = X->strideAt(xLenDim);
     const int incy = Y->strideAt(yLenDim);
 
@@ -418,7 +424,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
         bool aNcont = N == 1 || A->strideAt(1) == 1;
 
         if(!aMcont && !aNcont) {
-            pA = A->dup('f');
+            pA = new NDArray(A->dup('f'));
             aMcont = true;
         }
 
@@ -633,6 +639,9 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
     }
     else
         C = new NDArray(outOrder, cExpectedShape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
+
+    if (C->isEmpty())
+        return C;
 
     const int cRank = C->rankOf();
 
@@ -866,12 +875,12 @@ NDArray* MmulHelper::mmulNxNold2(const NDArray* A, const NDArray* B, NDArray* C,
     bool cNcont = N == 1 || C->strideAt(-1) == 1;
 
     if(!aMcont && !aKcont) {
-        pA = A->dup('c');
+        pA = new NDArray(A->dup('c'));
         toDelete.push_back(pA);
         aKcont = true;
     }
     if(!bKcont && !bNcont) {
-        pB = B->dup('c');
+        pB = new NDArray(B->dup('c'));
         toDelete.push_back(pB);
         bNcont = true;
     }

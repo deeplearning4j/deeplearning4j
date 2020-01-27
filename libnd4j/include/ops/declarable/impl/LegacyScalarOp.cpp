@@ -38,7 +38,7 @@ namespace nd4j {
         }
 
         LegacyScalarOp::LegacyScalarOp(int opNum, NDArray &scalar)  : LegacyOp::LegacyOp(1, opNum){
-            _scalar = scalar.dup(scalar.ordering());
+            _scalar = new NDArray(scalar.dup(scalar.ordering()));
         }
 
         ShapeList *LegacyScalarOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
@@ -69,9 +69,9 @@ namespace nd4j {
             } else if (block.getTArguments()->size() > 0) {
                 auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
 
-                NDArray::prepareSpecialUse({z}, {x, &y});
-
-                NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), extras.argumentsAsT(z->dataType(), 1));
+                x->applyScalarArr(static_cast<nd4j::scalar::Ops>(opNum), y, *z);
+                // NDArray::prepareSpecialUse({z}, {x, &y});
+                // NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), extras.argumentsAsT(z->dataType(), 1));
 
                 manager.synchronize();
             } else {

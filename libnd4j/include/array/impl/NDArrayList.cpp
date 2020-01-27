@@ -44,7 +44,7 @@ namespace nd4j {
     }
 
     NDArray* NDArrayList::read(int idx) {
-        return readRaw(idx)->dup();
+        return new NDArray(readRaw(idx)->dup());
     }
 
     nd4j::DataType NDArrayList::dataType() {
@@ -114,7 +114,7 @@ namespace nd4j {
             } else
                 return Status::CODE(ND4J_STATUS_BAD_INPUT, "NDArrayList: all arrays must have same size along inner dimensions");
         }
-        
+
         //_elements++;
 
         // storing reference
@@ -136,11 +136,10 @@ namespace nd4j {
         std::vector<int> args({axis});
         auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(), args);
         auto result = array->allTensorsAlongDimension(newAxis);
-        for (int e = 0; e < result->size(); e++) {
-            auto chunk = result->at(e);//->dup(array->ordering());
-            write(e, chunk->dup(array->ordering()));
+        for (int e = 0; e < result.size(); e++) {
+            auto chunk = result.at(e);//->dup(array->ordering());
+            write(e, new NDArray(chunk->dup(array->ordering())));
         }
-        delete result;
     }
 
     NDArray* NDArrayList::stack() {
@@ -161,7 +160,7 @@ namespace nd4j {
 
         auto result = op.execute(inputs, {}, {}, {});
 
-        auto array = result->at(0)->dup();
+        auto array = new NDArray(result->at(0)->dup());
 
         delete result;
 
@@ -214,13 +213,11 @@ namespace nd4j {
         auto tads = array->allTensorsAlongDimension(axis);
         int indicesSize = indices.size();
 
-        if (tads->size() != indicesSize)
+        if (tads.size() != indicesSize)
             throw std::runtime_error("Number of TADs should match number of indices");
 
         for (int e = 0; e < indicesSize; e++)
-            tads->at(e)->assign(_chunks[indices[e]]);
-
-        delete tads;
+            tads.at(e)->assign(_chunks[indices[e]]);
 
         return array;
     }
@@ -234,7 +231,7 @@ namespace nd4j {
         list->_elements.store(_elements.load());
 
         for (auto const& v : _chunks) {
-            list->_chunks[v.first] = v.second->dup();
+            list->_chunks[v.first] = new NDArray(v.second->dup());
         }
 
         return list;

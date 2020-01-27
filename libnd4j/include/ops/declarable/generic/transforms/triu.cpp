@@ -36,7 +36,7 @@ CUSTOM_OP_IMPL(triu, 1, 1, false, 0, 0) {
 
     const int diag = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;
 
-    BUILD_SINGLE_SELECTOR(input->dataType(), input->fillAsTriangular, (0, diag, 0, 'l', output), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input->dataType(), input->fillAsTriangular, (0, diag, 0, *output, 'l' ), LIBND4J_TYPES);
 
     return Status::OK();
 }

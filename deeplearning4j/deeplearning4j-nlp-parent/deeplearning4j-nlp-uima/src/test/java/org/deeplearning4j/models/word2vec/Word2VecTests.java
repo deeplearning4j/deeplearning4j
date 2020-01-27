@@ -16,6 +16,11 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.LineIterator;
+import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
+import org.junit.Rule;
+import org.junit.rules.Timeout;
 import org.nd4j.shade.guava.primitives.Doubles;
 import org.nd4j.shade.guava.primitives.Ints;
 import lombok.val;
@@ -49,8 +54,8 @@ import org.nd4j.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -67,6 +72,9 @@ public class Word2VecTests extends BaseDL4JTest {
     private File inputFile2;
     private String pathToWriteto;
     private WordVectors googleModel;
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @Before
     public void before() throws Exception {
@@ -180,7 +188,12 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testWord2VecMultiEpoch() throws Exception {
-        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        SentenceIterator iter;
+        if(isIntegrationTests()){
+            iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        } else {
+            iter = new CollectionSentenceIterator(firstNLines(inputFile, 50000));
+        }
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -384,7 +397,12 @@ public class Word2VecTests extends BaseDL4JTest {
     @Test
     public void testW2VnegativeOnRestore() throws Exception {
         // Strip white space before and after for each line
-        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        SentenceIterator iter;
+        if(isIntegrationTests()){
+            iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        } else {
+            iter = new CollectionSentenceIterator(firstNLines(inputFile, 300));
+        }
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -486,7 +504,12 @@ public class Word2VecTests extends BaseDL4JTest {
     @Test
     public void orderIsCorrect_WhenParallelized() throws Exception {
         // Strip white space before and after for each line
-        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        SentenceIterator iter;
+        if(isIntegrationTests()){
+            iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        } else {
+            iter = new CollectionSentenceIterator(firstNLines(inputFile, 300));
+        }
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
@@ -505,9 +528,10 @@ public class Word2VecTests extends BaseDL4JTest {
         System.out.println(vec.getVocab().numWords());
 
         val words = vec.getVocab().words();
-        for (val word : words) {
-            System.out.println(word);
-        }
+        assertTrue(words.size() > 0);
+//        for (val word : words) {
+//            System.out.println(word);
+//        }
     }
 
     @Test
@@ -750,7 +774,16 @@ public class Word2VecTests extends BaseDL4JTest {
     @Test
     public void weightsNotUpdated_WhenLocked() throws Exception {
 
-        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        boolean isIntegration = isIntegrationTests();
+        SentenceIterator iter;
+        SentenceIterator iter2;
+        if(isIntegration){
+            iter = new BasicLineIterator(inputFile);
+            iter2 = new BasicLineIterator(inputFile2.getAbsolutePath());
+        } else {
+            iter = new CollectionSentenceIterator(firstNLines(inputFile, 300));
+            iter2 = new CollectionSentenceIterator(firstNLines(inputFile2, 300));
+        }
 
         Word2Vec vec1 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(64).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(42).learningRate(0.025).minLearningRate(0.001)
@@ -762,13 +795,12 @@ public class Word2VecTests extends BaseDL4JTest {
 
         vec1.fit();
 
-        iter = new BasicLineIterator(inputFile2.getAbsolutePath());
         Word2Vec vec2 = new Word2Vec.Builder().minWordFrequency(1).iterations(3).batchSize(32).layerSize(100)
                 .stopWords(new ArrayList<String>()).seed(32).learningRate(0.021).minLearningRate(0.001)
                 .sampling(0).elementsLearningAlgorithm(new SkipGram<VocabWord>())
                 .epochs(1).windowSize(5).allowParallelTokenization(true)
                 .workers(1)
-                .iterate(iter)
+                .iterate(iter2)
                 .intersectModel(vec1, true)
                 .modelUtils(new BasicModelUtils<VocabWord>()).build();
 
@@ -856,6 +888,22 @@ public class Word2VecTests extends BaseDL4JTest {
         }
         System.out.print("\n");
     }
-    //
+
+    public static List<String> firstNLines(File f, int n){
+        List<String> lines = new ArrayList<>();
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            LineIterator lineIter = IOUtils.lineIterator(is, StandardCharsets.UTF_8);
+            try{
+                for( int i=0; i<n && lineIter.hasNext(); i++ ){
+                    lines.add(lineIter.next());
+                }
+            } finally {
+                lineIter.close();
+            }
+            return lines;
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
+    }
 }
 

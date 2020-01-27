@@ -59,6 +59,87 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(PlaygroundTests, test_avx) {
+    nd4j_printf("Optimal level: %i; Binary level: %i;\n", ::optimalLevel(), ::binaryLevel());
+}
+
+/*
+TEST_F(PlaygroundTests, test_s_0) {
+    auto x = NDArrayFactory::create<float>('c', {32, 112, 112, 16});
+    auto y = NDArrayFactory::create<float>('c', {16});
+    auto z = x.ulike();
+
+    std::vector<Nd4jLong> values;
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setInputArray(1, &y);
+    ctx.setOutputArray(0, &z);
+
+    nd4j::ops::biasadd op;
+
+
+    for (int e = 0; e < 10000; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        op.execute(&ctx);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+}
+*/
+/*
+TEST_F(PlaygroundTests, test_s_1) {
+    auto x0 = NDArrayFactory::create<float>('c', {32, 7, 7, 176});
+    auto x1 = x0.ulike();
+    auto x2 = x0.ulike();
+    auto x3 = x0.ulike();
+    auto x4 = x0.ulike();
+    auto x5 = x0.ulike();
+
+    auto y = NDArrayFactory::create<int >(3);
+    auto z = NDArrayFactory::create<float>('c', {32, 7, 7, 1056});
+
+    Context ctx(1);
+    ctx.setInputArray(0, &x0);
+    ctx.setInputArray(1, &x1);
+    ctx.setInputArray(2, &x2);
+    ctx.setInputArray(3, &x3);
+    ctx.setInputArray(4, &x4);
+    ctx.setInputArray(5, &x5);
+
+    ctx.setInputArray(6, &y);
+    ctx.setOutputArray(0, &z);
+    ctx.setBArguments({true});
+
+    std::vector<Nd4jLong> values;
+
+    nd4j::ops::concat op;
+    op.execute(&ctx);
+
+    for (int e = 0; e < 1000; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        op.execute(&ctx);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+}
+*/
+
 /*
 TEST_F(PlaygroundTests, test_s_1) {
     auto t = ::runLightBenchmarkSuit(true);
@@ -341,4 +422,50 @@ TEST_F(PlaygroundTests, my) {
     delete variableSpace;
 }
 
+
+#include<ops/declarable/helpers/batchnorm.h>
+
+TEST_F(PlaygroundTests, my) {
+
+    const int N = 10000;
+    const Nd4jLong dim0(128), dim1(128), dim2(128);
+
+    NDArray input('c', {dim0,dim1,dim2}, nd4j::DataType::DOUBLE);
+    NDArray mean('c', {dim1}, nd4j::DataType::DOUBLE);
+    NDArray variance('c', {dim1}, nd4j::DataType::DOUBLE);
+    NDArray gamma('c', {dim1}, nd4j::DataType::DOUBLE);
+    NDArray beta ('c', {dim1}, nd4j::DataType::DOUBLE);
+
+    NDArray output('c', {dim0,dim1,dim2}, nd4j::DataType::DOUBLE);
+
+    input.linspace(-100, 0.1);
+    mean.linspace(-50, 0.15);
+    variance.linspace(-5, 0.2);
+    gamma = 1.5;
+    beta = -2.5;
+
+    // warm up
+    ops::helpers::batchnorm(&input, &mean, &variance, &gamma, &beta, &output, {1}, 1e-5);
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int i = 0; i < N; ++i)
+        ops::helpers::batchnorm(&input, &mean, &variance, &gamma, &beta, &output, {1}, 1e-5);
+
+    auto timeEnd = std::chrono::system_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/N).count();
+
+    printf("time: %li \n", time);
+
+}
+
+
 */
+
+
+
+
+
+
+
+
+

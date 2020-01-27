@@ -30,7 +30,7 @@ namespace nd4j {
                     return BitwiseUtils::flip_bits(_x);
                 };
 
-                in.applyLambda<T>(lambda, &out);
+                in.applyLambda<T>(lambda, out);
             }
 
             void __toggle_bits(nd4j::LaunchContext * context, NDArray& in, NDArray& out) {

@@ -235,9 +235,9 @@ namespace helpers {
         for (size_t i = 0; i < axes.size(); i++) {
             int axe = axes[i];
             if (axe == input->rankOf() - 1) { // last dimension
-                std::unique_ptr<ResultSet> listOfTensors(output->allTensorsAlongDimension({axe}));
-                std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension({axe}));
-                int fullLen = listOfTensors->size();
+                ResultSet listOfTensors = output->allTensorsAlongDimension({axe});
+                ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
+                int fullLen = listOfTensors.size();
                 int theShift = shifts[i];
 //                if (theShift > 0) {
 //                    theShift %= fullLen;
@@ -246,7 +246,7 @@ namespace helpers {
 //                    theShift -= fullLen * (theShift / fullLen - 1);
 //                }
                 for (int k = 0; k < fullLen; k++) {
-                    rollFunctorLinear(output->getContext(), listOfTensors->at(k), listOfOutTensors->at(k), theShift, true);
+                    rollFunctorLinear(output->getContext(), listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
                 }
             } else {
                 std::vector<int> dims(input->rankOf() - axe - 1);

@@ -17,7 +17,7 @@
 package org.deeplearning4j.graph.models.deepwalk;
 
 import org.apache.commons.io.FilenameUtils;
-import org.deeplearning4j.graph.BaseDL4JTest;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
 import org.deeplearning4j.graph.data.GraphLoader;

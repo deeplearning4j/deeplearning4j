@@ -20,6 +20,7 @@ package org.nd4j.tensorflow.conversion;
 import junit.framework.TestCase;
 import org.apache.commons.io.FileUtils;
 import org.bytedeco.tensorflow.TF_Tensor;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.resources.Resources;
 import org.nd4j.shade.protobuf.Descriptors;
@@ -46,7 +47,17 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class GraphRunnerTest {
+public class GraphRunnerTest extends BaseND4JTest {
+
+    @Override
+    public DataType getDataType() {
+        return DataType.FLOAT;
+    }
+
+    @Override
+    public DataType getDefaultFPDataType() {
+        return DataType.FLOAT;
+    }
 
     public static ConfigProto getConfig(){
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");

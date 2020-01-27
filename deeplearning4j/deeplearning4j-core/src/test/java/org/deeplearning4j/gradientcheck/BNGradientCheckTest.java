@@ -56,11 +56,6 @@ import static org.junit.Assert.assertTrue;
  *
  */
 public class BNGradientCheckTest extends BaseDL4JTest {
-    private static final boolean PRINT_RESULTS = true;
-    private static final boolean RETURN_ON_FIRST_FAILURE = false;
-    private static final double DEFAULT_EPS = 1e-5;
-    private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-9;
 
     static {
         Nd4j.setDataType(DataType.DOUBLE);
@@ -93,17 +88,15 @@ public class BNGradientCheckTest extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
 
-            if (PRINT_RESULTS) {
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-            }
+//            for (int j = 0; j < mln.getnLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
 
             //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
             //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                    .labels(labels).excludeParams(excludeParams));
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
@@ -140,17 +133,15 @@ public class BNGradientCheckTest extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
 
-            if (PRINT_RESULTS) {
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-            }
+//            for (int j = 0; j < mln.getnLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
 
             //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
             //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                    .labels(labels).excludeParams(excludeParams));
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
@@ -220,7 +211,7 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                             String name = new Object() {
                             }.getClass().getEnclosingMethod().getName();
 
-                            System.out.println("Num params: " + mln.numParams());
+//                            System.out.println("Num params: " + mln.numParams());
 
                             if (doLearningFirst) {
                                 //Run a number of iterations of learning
@@ -241,20 +232,18 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                 assertTrue(msg, scoreAfter < 0.9 * scoreBefore);
                             }
 
-                            if (PRINT_RESULTS) {
-                                System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
-                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
-                                for (int k = 0; k < mln.getnLayers(); k++)
-                                    System.out.println("Layer " + k + " # params: " + mln.getLayer(k).numParams());
-                            }
+                            System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
+                                    + ", outputActivation=" + outputActivation + ", doLearningFirst="
+                                    + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
+//                            for (int k = 0; k < mln.getnLayers(); k++)
+//                                System.out.println("Layer " + k + " # params: " + mln.getLayer(k).numParams());
 
                             //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
                             //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
                             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
                             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "3_mean", "3_var", "1_log10stdev", "3_log10stdev"));
-                            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, null, null, true, 25, excludeParams); //Most params are in output layer, only these should be skipped with this threshold
+                            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                                    .labels(labels).excludeParams(excludeParams).subset(true).maxPerParam(25)); //Most params are in output layer, only these should be skipped with this threshold
 
                             assertTrue(gradOK);
                             TestUtils.testModelSerialization(mln);
@@ -347,20 +336,18 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                                 assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
                             }
 
-                            if (PRINT_RESULTS) {
-                                System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
-                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
-                                for (int k = 0; k < mln.getnLayers(); k++)
-                                    System.out.println("Layer " + k + " # params: " + mln.getLayer(k).numParams());
-                            }
+                            System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
+                                    + ", outputActivation=" + outputActivation + ", doLearningFirst="
+                                    + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
+//                            for (int k = 0; k < mln.getnLayers(); k++)
+//                                System.out.println("Layer " + k + " # params: " + mln.getLayer(k).numParams());
 
                             //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
                             //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
                             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
                             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "3_mean", "3_var", "1_log10stdev", "3_log10stdev"));
-                            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
+                            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                                    .labels(labels).excludeParams(excludeParams));
 
                             assertTrue(gradOK);
                             TestUtils.testModelSerialization(mln);
@@ -396,17 +383,15 @@ public class BNGradientCheckTest extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
 
-            if (PRINT_RESULTS) {
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-            }
+//            for (int j = 0; j < mln.getnLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
 
             //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
             //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                    .labels(labels).excludeParams(excludeParams));
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
@@ -443,17 +428,15 @@ public class BNGradientCheckTest extends BaseDL4JTest {
             MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
             mln.init();
 
-            if (PRINT_RESULTS) {
-                for (int j = 0; j < mln.getnLayers(); j++)
-                    System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
-            }
+//            for (int j = 0; j < mln.getnLayers(); j++)
+//                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
 
             //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
             //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "1_log10stdev"));
-            boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels, excludeParams);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(mln).input(input)
+                    .labels(labels).excludeParams(excludeParams));
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(mln);
@@ -496,9 +479,8 @@ public class BNGradientCheckTest extends BaseDL4JTest {
             //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
             //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
             Set<String> excludeParams = new HashSet<>(Arrays.asList("bn_mean", "bn_var"));
-            boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input},
-                    new INDArray[]{labels}, null, null, excludeParams);
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{input})
+                    .labels(new INDArray[]{labels}).excludeParams(excludeParams));
 
             assertTrue(gradOK);
             TestUtils.testModelSerialization(net);
@@ -585,21 +567,18 @@ public class BNGradientCheckTest extends BaseDL4JTest {
                             assertTrue(msg, scoreAfter < 0.9 * scoreBefore);
                         }
 
-                        if (PRINT_RESULTS) {
-                            System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
-                                    + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                    + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
-                            for (int k = 0; k < net.getNumLayers(); k++)
-                                System.out.println("Layer " + k + " # params: " + net.getLayer(k).numParams());
-                        }
+                        System.out.println(name + " - activationFn=" + afn + ", lossFn=" + lf
+                                + ", outputActivation=" + outputActivation + ", doLearningFirst="
+                                + doLearningFirst + ", l1=" + l1vals[j] + ", l2=" + l2vals[j]);
+//                        for (int k = 0; k < net.getNumLayers(); k++)
+//                            System.out.println("Layer " + k + " # params: " + net.getLayer(k).numParams());
 
                         //Mean and variance vars are not gradient checkable; mean/variance "gradient" is used to implement running mean/variance calc
                         //i.e., runningMean = decay * runningMean + (1-decay) * batchMean
                         //However, numerical gradient will be 0 as forward pass doesn't depend on this "parameter"
                         Set<String> excludeParams = new HashSet<>(Arrays.asList("1_mean", "1_var", "3_mean", "3_var", "1_log10stdev", "3_log10stdev"));
-                        boolean gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE,
-                                new INDArray[]{input}, new INDArray[]{labels}, null, null, excludeParams);
+                        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{input})
+                                .labels(new INDArray[]{labels}).excludeParams(excludeParams));
 
                         assertTrue(gradOK);
                         TestUtils.testModelSerialization(net);

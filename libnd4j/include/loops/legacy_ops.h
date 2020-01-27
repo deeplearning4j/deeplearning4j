@@ -80,7 +80,8 @@
        (30, LogicalAnd), \
        (31, DivideNoNan), \
        (32, IGamma), \
-       (33, IGammac)
+       (33, IGammac),\
+       (34, PowDerivative)
 
 // these ops return same data type as input
 #define TRANSFORM_SAME_OPS \

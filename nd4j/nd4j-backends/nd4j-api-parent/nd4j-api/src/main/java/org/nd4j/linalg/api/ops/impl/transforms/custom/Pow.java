@@ -62,11 +62,14 @@ public class Pow extends DynamicCustomOp {
         //dL/da = b*a^(b-1) * dL/dy
         //dL/db = a^b * log(a) * dL/dy
 
-        SDVariable a = arg(0);
+        /*SDVariable a = arg(0);
         SDVariable b = arg(1);
         SDVariable dlda = b.mul(sameDiff.math().pow(a,b.sub(1))).mul(f1.get(0));
         SDVariable dldb = outputVariable().mul(sameDiff.math().log(a)).mul(f1.get(0));
-        return Arrays.asList(dlda, dldb);
+        return Arrays.asList(dlda, dldb);*/
+
+        SDVariable[] g = f().powBp(arg(0), arg(1), f1.get(0));
+        return Arrays.asList(g);
     }
 
     @Override

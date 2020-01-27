@@ -129,7 +129,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(dataBuffer);
 
-        long requiredMemoryBytes = AllocationUtils.getRequiredMemory(point.getShape());
+        long requiredMemoryBytes = point.getNumberOfBytes();
         val originalBytes = requiredMemoryBytes;
         requiredMemoryBytes += 8 - (requiredMemoryBytes % 8);
 
@@ -147,13 +147,13 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (currentOffset + requiredMemoryBytes >= MAX_CONSTANT_LENGTH || requiredMemoryBytes > MAX_BUFFER_LENGTH) {
             if (point.getAllocationStatus() == AllocationStatus.HOST
                             && CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.DELAYED) {
-                AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(),
-                                false);
+                //AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);
+                throw new UnsupportedOperationException("Pew-pew");
             }
 
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(), originalBytes, 1, context.getSpecialStream()) == 0) {
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getDevicePointer(), point.getHostPointer(), originalBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
             flowController.commitTransfer(context.getSpecialStream());
@@ -176,14 +176,13 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (currentOffset >= MAX_CONSTANT_LENGTH) {
             if (point.getAllocationStatus() == AllocationStatus.HOST
                             && CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.DELAYED) {
-                AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(),
-                                false);
+                //AtomicAllocator.getInstance().getMemoryHandler().alloc(AllocationStatus.DEVICE, point, point.getShape(), false);
+                throw new UnsupportedOperationException("Pew-pew");
             }
 
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
 
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
-                    originalBytes, 1, context.getSpecialStream()) == 0) {
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getDevicePointer(), point.getHostPointer(), originalBytes, 1, context.getSpecialStream()) == 0) {
                 throw new ND4JIllegalStateException("memcpyAsync failed");
             }
             flowController.commitTransfer(context.getSpecialStream());
@@ -202,8 +201,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
 
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyConstantAsync(currentOffset, point.getPointers().getHostPointer(), originalBytes, 1,
-                        context.getSpecialStream());
+        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyConstantAsync(currentOffset, point.getHostPointer(), originalBytes, 1, context.getSpecialStream());
         flowController.commitTransfer(context.getSpecialStream());
 
         long cAddr = deviceAddresses.get(deviceId).address() + currentOffset;
@@ -212,7 +210,10 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         //    logger.info("copying to constant: {}, bufferLength: {}, bufferDtype: {}, currentOffset: {}, currentAddres: {}", requiredMemoryBytes, dataBuffer.length(), dataBuffer.dataType(), currentOffset, cAddr);
 
         point.setAllocationStatus(AllocationStatus.CONSTANT);
-        point.getPointers().setDevicePointer(new CudaPointer(cAddr));
+        //point.setDevicePointer(new CudaPointer(cAddr));
+        if (1 > 0)
+            throw new UnsupportedOperationException("Pew-pew");
+
         point.setConstant(true);
         point.tickDeviceWrite();
         point.setDeviceId(deviceId);

@@ -39,13 +39,10 @@ template<typename T>
 __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis) {
 
     T* z = reinterpret_cast<T*>(vz);
-    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
+    __shared__ Nd4jLong zLen, totalThreads;
     __shared__ int rank;
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
-
         zLen = shape::length(zShapeInfo);
         rank = shape::rank(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
@@ -54,27 +51,26 @@ __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jL
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if(tid >= zLen)
-        return;
+    Nd4jLong coords[MAX_RANK];
 
-    auto coords = sharedMem + threadIdx.x * rank;
+    for (uint64_t i = tid; i < zLen; i += totalThreads) {
+        shape::index2coords(i, zShapeInfo, coords);
 
-    shape::index2coords(tid, zShapeInfo, coords);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(zShapeInfo, coords);
+        int inArrIdx = 0;
+        Nd4jLong *xShapeInfo = reinterpret_cast<Nd4jLong **>(pxShapeInfo)[inArrIdx];
 
-    int inArrIdx = 0;
-    Nd4jLong *xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[inArrIdx];
+        while (coords[axis] >= xShapeInfo[axis + 1]) {
+            coords[axis] -= xShapeInfo[axis + 1];
+            xShapeInfo = reinterpret_cast<Nd4jLong **>(pxShapeInfo)[++inArrIdx];
+        }
 
-    while(coords[axis] >= xShapeInfo[axis + 1]) {
-        coords[axis] -= xShapeInfo[axis + 1];
-        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[++inArrIdx];
+        const auto *x = reinterpret_cast<T *>(reinterpret_cast<void **>(pVx)[inArrIdx]);
+        const auto xOffset = shape::getOffset(xShapeInfo, coords);
+
+        z[zOffset] = x[xOffset];
     }
-
-    const auto* x      = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[inArrIdx]);
-    const auto xOffset = shape::getOffset(xShapeInfo, coords);
-
-    z[zOffset] = x[xOffset];
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -89,9 +85,9 @@ BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int blocksPerGrid
 //////////////////////////////////////////////////////////////////////////
 void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
 
-    const int threadsPerBlock = MAX_NUM_THREADS / 4;
-    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+    const int threadsPerBlock = 256;
+    const int blocksPerGrid = 512;
+    const int sharedMem = 512;
 
     const int numOfArrs = inArrs.size();
 

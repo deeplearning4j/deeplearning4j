@@ -147,7 +147,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
         //        Nd4j.getShapeInfoProvider().purgeCache();
 
         // purge memory cache
-        AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().purgeCache();
+        //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().purgeCache();
 
     }
 

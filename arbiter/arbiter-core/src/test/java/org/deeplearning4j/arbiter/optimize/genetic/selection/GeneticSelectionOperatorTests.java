@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.optimize.genetic.selection;
 
 import org.apache.commons.math3.random.RandomGenerator;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverOperator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
@@ -36,7 +37,7 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import static org.junit.Assert.assertArrayEquals;
 
-public class GeneticSelectionOperatorTests {
+public class GeneticSelectionOperatorTests extends BaseDL4JTest {
 
     private class TestCullOperator implements CullOperator {
 

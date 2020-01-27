@@ -100,7 +100,7 @@ namespace nd4j {
                         }
 
                         if (beta != 0.0) {
-                            C[zIdx] = static_cast<Z>(dot + beta * C[zIdx]);
+                            C[zIdx] = static_cast<Z>(dot + static_cast<Z>(beta) * C[zIdx]);
                         } else {
                             C[zIdx] = static_cast<Z>(dot);
                         }
@@ -134,8 +134,8 @@ namespace nd4j {
                     int aIdx = linearIndexC(M, N, r, 0);
                     auto aX = aT + aIdx;
 
-                    auto dot = nd4j::math::nd4j_dot<X, Y, Z>(aX, y, lda) * alpha;
-                    z[r] = beta == 0.0f ? dot : dot + beta * z[r];
+                    auto dot = nd4j::math::nd4j_dot<X, Y, Z>(aX, y, lda) * static_cast<Z>(alpha);
+                    z[r] = beta == 0.0f ? dot : dot + static_cast<Z>(beta) * z[r];
                 }
             };
             samediff::Threads::parallel_for(func, 0, M);

@@ -23,7 +23,6 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.FastMath;
 import org.bytedeco.javacpp.BytePointer;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -998,14 +997,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
 
-        Pair<DataBuffer, DataBuffer> tadInfo =
-                Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension);
+        Pair<DataBuffer, DataBuffer> tadInfo = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(this, dimension);
         DataBuffer shapeInfo = tadInfo.getFirst();
-        val shape = Shape.shape(shapeInfo);
-        val stride = Shape.stride(shapeInfo).asLong();
+        val jShapeInfo = shapeInfo.asLong();
+        val shape = Shape.shape(jShapeInfo);
+        val stride = Shape.stride(jShapeInfo);
         long offset = offset() + tadInfo.getSecond().getLong(index);
-        val ews = shapeInfo.getLong(shapeInfo.getLong(0) * 2 + 2);
-        char tadOrder = (char) shapeInfo.getInt(shapeInfo.getLong(0) * 2 + 3);
+        val ews = shapeInfo.getLong(jShapeInfo[0] * 2 + 2);
+        char tadOrder = (char) shapeInfo.getInt(jShapeInfo[0] * 2 + 3);
         val toTad = Nd4j.create(data(), shape, stride, offset, ews, tadOrder);
         return toTad;
     }
@@ -2217,9 +2216,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(isEmpty() || isS())
             return false;
 
-        return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
-                || (length() < data().length() && data.dataType() != DataType.INT)
-                || data().originalDataBuffer() != null;
+        val c2 = (length() < data().length() && data.dataType() != DataType.INT);
+        val c3 = (data().originalDataBuffer() != null && data != data.originalDataBuffer());
+
+        return c2 || c3;
     }
 
     @Override
@@ -3585,6 +3585,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             case DOUBLE:
             case FLOAT:
             case HALF:
+            case BFLOAT16:
                 return getDouble(i);
             case LONG:
             case INT:
@@ -3592,6 +3593,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             case UBYTE:
             case BYTE:
             case BOOL:
+            case UINT64:
+            case UINT32:
+            case UINT16:
                 return getLong(i);
             case UTF8:
             case COMPRESSED:
@@ -4350,29 +4354,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         //epsilon equals
         if (isScalar() && n.isScalar()) {
-            if (data.dataType() == DataType.FLOAT) {
-                double val = getDouble(0);
-                double val2 = n.getDouble(0);
+            if (isZ()) {
+                val val = getLong(0);
+                val val2 =  n.getLong(0);
+
+                return val == val2;
+            } else if (isR()) {
+                val val = getDouble(0);
+                val val2 = n.getDouble(0);
 
                 if (Double.isNaN(val) != Double.isNaN(val2))
                     return false;
 
                 return Math.abs(val - val2) < eps;
-            } else {
-                double val = getDouble(0);
-                double val2 = n.getDouble(0);
+            } else if (isB()) {
+                val val = getInt(0);
+                val val2 =  n.getInt(0);
 
-                if (Double.isNaN(val) != Double.isNaN(val2))
-                    return false;
-
-                return Math.abs(val - val2) < eps;
+                return val == val2;
             }
 
         } else if (isVector() && n.isVector()) {
-
-            EqualsWithEps op = new EqualsWithEps(this, n, eps);
-            Nd4j.getExecutioner().exec(op);
-            double diff = op.z().getDouble(0);
+            val op = new EqualsWithEps(this, n, eps);
+            Nd4j.exec(op);
+            val diff = op.z().getDouble(0);
 
             return diff < 0.5;
         }
@@ -4750,8 +4755,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
 
         checkArrangeArray(rearrange);
-        int[] newShape = doPermuteSwap(shapeOf(), rearrange);
-        int[] newStride = doPermuteSwap(strideOf(), rearrange);
+        val newShape = doPermuteSwap(shape(), rearrange);
+        val newStride = doPermuteSwap(stride(), rearrange);
 
         char newOrder = Shape.getOrder(newShape, newStride, 1);
 
@@ -4777,23 +4782,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
 
         checkArrangeArray(rearrange);
-        val newShape = doPermuteSwap(Shape.shapeOf(shapeInfo), rearrange);
-        val newStride = doPermuteSwap(Shape.stride(shapeInfo), rearrange);
+        val newShape = doPermuteSwap(shape(), rearrange);
+        val newStride = doPermuteSwap(stride(), rearrange);
         char newOrder = Shape.getOrder(newShape, newStride, 1);
 
-        //Set the shape information of this array: shape, stride, order.
-        //Shape info buffer: [rank, [shape], [stride], offset, elementwiseStride, order]
-        /*for( int i=0; i<rank; i++ ){
-            shapeInfo.put(1+i,newShape[i]);
-            shapeInfo.put(1+i+rank,newStride[i]);
-        }
-        shapeInfo.put(3+2*rank,newOrder);
-        */
         val ews = shapeInfo.get(2 * rank + 2);
-        /*
-        if (ews < 1 && !attemptedToFindElementWiseStride)
-            throw new RuntimeException("EWS is -1");
-            */
 
         val si = Nd4j.getShapeInfoProvider().createShapeInformation(newShape, newStride,  ews, newOrder, dataType(), isEmpty());
         setShapeInformation(si);
@@ -4813,6 +4806,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
+    @Deprecated
     protected long[] doPermuteSwap(LongBuffer shape, int[] rearrange) {
         val ret = new long[rearrange.length];
         for (int i = 0; i < rearrange.length; i++) {
@@ -4821,6 +4815,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ret;
     }
 
+    @Deprecated
     protected int[] doPermuteSwap(IntBuffer shape, int[] rearrange) {
         int[] ret = new int[rearrange.length];
         for (int i = 0; i < rearrange.length; i++) {
@@ -4829,10 +4824,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ret;
     }
 
+    @Deprecated
     protected int[] doPermuteSwap(DataBuffer shape, int[] rearrange) {
         int[] ret = new int[rearrange.length];
         for (int i = 0; i < rearrange.length; i++) {
             ret[i] = shape.getInt(rearrange[i]);
+        }
+        return ret;
+    }
+
+    protected long[] doPermuteSwap(long[] shape, int[] rearrange) {
+        val ret = new long[rearrange.length];
+        for (int i = 0; i < rearrange.length; i++) {
+            ret[i] = shape[rearrange[i]];
         }
 
         return ret;
@@ -5413,29 +5417,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    protected int stringBuffer(FlatBufferBuilder builder, DataBuffer buffer) {
-        Preconditions.checkArgument(buffer.dataType() == DataType.UTF8, "This method can be called on UTF8 buffers only");
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            DataOutputStream dos = new DataOutputStream(bos);
-
-            val numWords = this.length();
-            val ub = (Utf8Buffer) buffer;
-            // writing length first
-            val t = length();
-            val ptr = (BytePointer) ub.pointer();
-
-            // now write all strings as bytes
-            for (int i = 0; i < ub.length(); i++) {
-                dos.writeByte(ptr.get(i));
-            }
-
-            val bytes = bos.toByteArray();
-            return FlatArray.createBufferVector(builder, bytes);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    protected abstract int stringBuffer(FlatBufferBuilder builder, DataBuffer buffer);
 
     @Override
     public int toFlatArray(FlatBufferBuilder builder) {
@@ -5543,13 +5525,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return !any();
     }
 
-    @Override
-    public String getString(long index) {
-        if (!isS())
-            throw new UnsupportedOperationException("This method is usable only on String dataType, but got [" + this.dataType() + "]");
-
-        return ((Utf8Buffer) data).getString(index);
-    }
 
     /**
      * Validate that the operation is being applied on a numerical array (not boolean or utf8).

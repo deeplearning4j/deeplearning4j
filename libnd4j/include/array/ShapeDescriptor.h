@@ -21,7 +21,7 @@
 #ifndef DEV_TESTS_SHAPEDESCRIPTOR_H
 #define DEV_TESTS_SHAPEDESCRIPTOR_H
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <dll.h>
 #include <pointercast.h>

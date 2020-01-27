@@ -119,7 +119,7 @@ public class Convolution3D extends ConvolutionLayer {
             throw new IllegalStateException("Invalid input for Convolution3D layer (layer name=\"" + getLayerName()
                             + "\"): Expected CNN3D input, got " + inputType);
         }
-        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
+        return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, dataFormat, kernelSize, stride, padding, dilation, convolutionMode,
                         nOut, layerIndex, getLayerName(), Convolution3DLayer.class);
     }
 

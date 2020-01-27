@@ -19,8 +19,13 @@ public class RectifiedLinearDerivative extends DynamicCustomOp {
         super(sd, new SDVariable[]{input, gradient});
     }
 
-    public RectifiedLinearDerivative(@NonNull INDArray input, @NonNull INDArray gradient, INDArray output){
+    public RectifiedLinearDerivative(@NonNull INDArray input, @NonNull INDArray gradient, INDArray output) {
+        this(input, gradient, output, 0.0);
+    }
+
+    public RectifiedLinearDerivative(@NonNull INDArray input, @NonNull INDArray gradient, INDArray output, double scalar){
         super(new INDArray[]{input, gradient}, wrapOrNull(output));
+        addTArgument(scalar);
     }
 
     @Override

@@ -17,6 +17,7 @@
 package org.deeplearning4j.datasets.datavec;
 
 
+import org.junit.rules.Timeout;
 import org.nd4j.shade.guava.io.Files;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
@@ -68,6 +69,9 @@ public class RecordReaderMultiDataSetIteratorTest extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    @Rule
+    public Timeout timeout = Timeout.seconds(300);
 
     @Test
     public void testsBasic() throws Exception {

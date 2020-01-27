@@ -59,6 +59,10 @@ namespace nd4j {
             }
         }
 
+        samediff::Engine ContextPrototype::engine() {
+            return _engine;
+        }
+
         bool ContextPrototype::hasVariablesFilled() {
             return this->_inputs.size() > 0;
         }

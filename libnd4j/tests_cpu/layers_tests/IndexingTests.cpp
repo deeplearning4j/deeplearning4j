@@ -42,18 +42,10 @@ TEST_F(IndexingTests, StridedSlice_1) {
     auto begin = NDArrayFactory::create<int>({2,2, 0});
     auto end = NDArrayFactory::create<int>({3,3,3});
     auto strides = NDArrayFactory::create<int>({1,1,1});
-    //nd4j_debug("print x->rankOf(): %i", x.rankOf());
 
-    /*
-    auto tads = x.allTensorsAlongDimension({0});
-    nd4j_debug("numTads: %i\n", tads->size());
-    for (int e = 0; e < tads->size(); e++)
-        tads->at(e)->assign((float) e);
-    */
 
     nd4j::ops::strided_slice op;
 
-//    auto result = op.execute({&x}, {}, {0,0,0,0,0, 2,2,0,  3,3,3,  1,1,1});
     auto result = op.execute({&x, &begin, &end, &strides}, {}, {0,0,0,0,0}); //, 2,2,0,  3,3,3,  1,1,1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -202,8 +194,8 @@ TEST_F(IndexingTests, SimpleSlice_4) {
 TEST_F(IndexingTests, MaskedSlice_0) {
     auto matrix = NDArrayFactory::create<float>('c', {3, 5});
     auto tads = matrix.allTensorsAlongDimension({1});
-    for (int e = 0; e < tads->size(); e++) {
-        tads->at(e)->assign((float) (e+1));
+    for (int e = 0; e < tads.size(); e++) {
+        tads.at(e)->assign((float) (e+1));
     }
 
     auto exp = NDArrayFactory::create<float>('c', {1, 5});
@@ -222,15 +214,14 @@ TEST_F(IndexingTests, MaskedSlice_0) {
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
-    delete tads;
 }
 
 
 TEST_F(IndexingTests, MaskedSlice_00) {
     auto matrix = NDArrayFactory::create<float>('c', {3, 5});
     auto tads = matrix.allTensorsAlongDimension({1});
-    for (int e = 0; e < tads->size(); e++) {
-        tads->at(e)->assign((float) (e+1));
+    for (int e = 0; e < tads.size(); e++) {
+        tads.at(e)->assign((float) (e+1));
     }
 
     auto exp = NDArrayFactory::create<float>('c', {1, 2}, {2, 2});
@@ -243,21 +234,18 @@ TEST_F(IndexingTests, MaskedSlice_00) {
 
     auto z = result->at(0);
 
-    // z->printShapeInfo("z");
-
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
-    delete tads;
 }
 
 
 TEST_F(IndexingTests, MaskedSlice_1) {
     auto matrix = NDArrayFactory::create<float>('c', {3, 5});
     auto tads = matrix.allTensorsAlongDimension({1});
-    for (int e = 0; e < tads->size(); e++) {
-        tads->at(e)->assign((float) (e+1));
+    for (int e = 0; e < tads.size(); e++) {
+        tads.at(e)->assign((float) (e+1));
     }
 
     auto exp = NDArrayFactory::create<float>('c', {5});
@@ -276,7 +264,6 @@ TEST_F(IndexingTests, MaskedSlice_1) {
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
-    delete tads;
 }
 
 TEST_F(IndexingTests, MaskedSlice_2) {

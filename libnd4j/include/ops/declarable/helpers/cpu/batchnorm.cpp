@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author Yurii Shyrma, created on 25.02.2018
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 
@@ -31,112 +31,160 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
+static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta,
+                       NDArray* output,
+                       const std::vector<int>& axes, const double epsilon) {
 
     // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
 
-    NDArray sigmaInvGam(mean);  // do not copy mean's buffer, take only its shapeInfo
-    T eps = epsilon;
+    const T* x = input->bufferAsT<T>();
+          T* z = output->bufferAsT<T>();
+    const T* m = mean->bufferAsT<T>();
+    const T* v = variance->bufferAsT<T>();
+    const T* g = gamma == nullptr ? nullptr : gamma->bufferAsT<T>();
+    const T* b = beta  == nullptr ? nullptr : beta->bufferAsT<T>();
 
-    if(gamma != nullptr) {
-        auto lambda = LAMBDA_TT(x, y, eps) {return x / nd4j::math::nd4j_sqrt<T, T>(y + eps);};
-        const_cast<NDArray*>(gamma)->applyPairwiseLambda<T>(variance, lambda, &sigmaInvGam);
-    }
-    else {
-        auto lambda = LAMBDA_T(x, eps) { return 1. / nd4j::math::nd4j_sqrt<T, T>(x + eps); };
-        const_cast<NDArray*>(variance)->applyLambda<T>(lambda, &sigmaInvGam);
-    }
+    const bool xzSameOffset = shape::haveSameShapeAndStrides(input->getShapeInfo(), output->getShapeInfo());
 
-    // auto sigmaInvGam = (*variance + epsilon).transform(transform::RSqrt);   //  sigmaInvGam = 1 / sqrt(variance + epsilon)
-    // if(gamma != nullptr) sigmaInvGam *= *gamma;
-
-    const T* sigmaBuff = sigmaInvGam.bufferAsT<T>();
-    const T* meanBuff  = mean->bufferAsT<T>();
-    const T* inBuff    = input->bufferAsT<T>();
-          T* outBuff   = output->bufferAsT<T>();
+    bool paramSameOffset = shape::haveSameShapeAndStrides(mean->getShapeInfo(), variance->getShapeInfo());
+    if(paramSameOffset && gamma != nullptr)
+        paramSameOffset &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), gamma->getShapeInfo());
+    if(paramSameOffset && beta != nullptr)
+        paramSameOffset &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), beta->getShapeInfo());
 
     const Nd4jLong  lenBig        = input->lengthOf();
     const Nd4jLong  lenSmall      = mean->lengthOf();
-    const Nd4jLong* inShapeInfo   = input->getShapeInfo();
-    const Nd4jLong* meanShapeInfo = mean->getShapeInfo();
 
-    uint inShapeInfoCast[MAX_RANK];
-    uint meanShapeInfoCast[MAX_RANK];
-    bool canCastIn   = nd4j::DataTypeUtils::castShapeInfo(inShapeInfo, inShapeInfoCast);
-    bool canCastMean = nd4j::DataTypeUtils::castShapeInfo(meanShapeInfo, meanShapeInfoCast);
-
-    const Nd4jLong step = lenBig / lenSmall;
+    const Nd4jLong steps = lenBig / lenSmall;
     std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 
     OmpLaunchHelper info(lenBig, lenSmall);
 
-    if(beta != nullptr) {
-        const T* betaBuff  = beta->bufferAsT<T>();
-        auto func = PRAGMA_THREADS_DO {
-            const auto threadNum = thread_id;
-            Nd4jLong* inOffsets = new Nd4jLong[step];
-            Nd4jLong* memBuff = new Nd4jLong[2 * inShapeInfo[0]];
+    auto func = PRAGMA_THREADS_DO {
 
-            for (int j = 0; j < lenSmall; ++j) {
+        Nd4jLong* xOffsets = new Nd4jLong[steps];
+        Nd4jLong* zOffsets = xzSameOffset ? xOffsets : new Nd4jLong[steps];
+        Nd4jLong* auxBuff = new Nd4jLong[2 * input->rankOf()];
 
-                const bool isOwner = j < info._numThreads ? threadNum == j : threadNum == j % info._numThreads;
-                if (!isOwner) continue;
+        for (int j = 0; j < lenSmall; ++j) {
 
-                const Nd4jLong start = j * step;
-                const Nd4jLong end   = start + step;
+            const bool isOwner = (j < info._numThreads) ? thread_id == j : thread_id == (j % info._numThreads);
 
-                // calculate offset for mean, variance, gamma, beta (all of them have the same shape)
-                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, canCastMean);
-                // calculate offset for input and output (all of them have the same shape)
-                shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, memBuff, dimsToExclude.data());
+            if(!isOwner)
+                continue;
 
-                PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < step; ++i) {
-                    auto offsetBig = inOffsets[i];
-                    outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall] + betaBuff[offsetSmall];
+            const auto meanOffset = shape::getIndexOffset(j, mean->getShapeInfo());
+            const auto varOffset  = paramSameOffset ? meanOffset : shape::getIndexOffset(j, variance->getShapeInfo());
+
+            const auto meanVal = m[meanOffset];
+            auto sigmaInvGam   = static_cast<T>(1) / nd4j::math::nd4j_sqrt<T, T>(v[varOffset] + epsilon);
+
+            if(g != nullptr) {
+                const auto gammaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, gamma->getShapeInfo());
+                sigmaInvGam *= g[gammaOffset];
+            }
+
+            T betaVal = static_cast<T>(0);
+            if(b != nullptr) {
+                const auto betaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, beta->getShapeInfo());
+                betaVal = b[betaOffset];
+            }
+
+            // calculate offsets for input and output
+            shape::outerArrayOffsets(xOffsets, j, input->getShapeInfo(), mean->getShapeInfo(), auxBuff, dimsToExclude.data());
+            if(!xzSameOffset)
+                shape::outerArrayOffsets(zOffsets, j, output->getShapeInfo(), mean->getShapeInfo(), auxBuff, dimsToExclude.data());
+
+            PRAGMA_OMP_SIMD
+            for (uint i = 0; i < steps; ++i)
+                z[zOffsets[i]] = (x[xOffsets[i]] - meanVal) * sigmaInvGam + betaVal;
+        }
+
+        delete []auxBuff;
+        delete []xOffsets;
+        if(!xzSameOffset)
+            delete []zOffsets;
+    };
+
+    samediff::Threads::parallel_do(func, info._numThreads);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta,
+                        NDArray* output,
+                        const std::vector<int>& axes, const double epsilon) {
+
+    // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+
+    const auto x = input->bufferAsT<T>();
+          auto z = output->bufferAsT<T>();
+    const auto m = mean->bufferAsT<T>();
+    const auto v = variance->bufferAsT<T>();
+    const auto g = gamma == nullptr ? nullptr : gamma->bufferAsT<T>();
+    const auto b = beta  == nullptr ? nullptr : beta->bufferAsT<T>();
+
+    // xRank == zRank, minRank = meanRank = varianceRank = gammaRank = betaRank
+    const uint xRank   = input->rankOf();
+    const uint minRank = mean->rankOf();
+    const uint numAxes = axes.size();
+
+    const bool xzSameOffset = shape::haveSameShapeAndStrides(input->getShapeInfo(), output->getShapeInfo());
+
+    bool paramSameOffset = shape::haveSameShapeAndStrides(mean->getShapeInfo(), variance->getShapeInfo());
+    if(paramSameOffset && gamma != nullptr)
+        paramSameOffset &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), gamma->getShapeInfo());
+    if(paramSameOffset && beta != nullptr)
+        paramSameOffset &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), beta->getShapeInfo());
+
+    auto func = PRAGMA_THREADS_FOR {
+
+        Nd4jLong coords[MAX_RANK];
+
+        for (auto i = start; i < stop; i += increment) {
+
+            shape::index2coords(i, input->getShapeInfo(), coords);
+
+            const auto xOffset = shape::getOffset(input->getShapeInfo(), coords);
+            const auto zOffset = xzSameOffset ? xOffset : shape::getOffset(output->getShapeInfo(), coords);
+
+            if(minRank == xRank) {
+                for (uint i = 0, j = 0; i < xRank; ++i) {
+                    if(j < numAxes && i != axes[j])
+                        coords[i] = 0;
+                    else
+                        ++j;
                 }
             }
-            delete []inOffsets;
-            delete []memBuff;
-        };
+            else    // minRank = numAxes = 1 in this case
+                coords[0] = coords[axes[0]];
 
-        samediff::Threads::parallel_do(func, info._numThreads);
-    }
-    else {
-        auto func = PRAGMA_THREADS_DO {
-            const auto threadNum = thread_id;
-            Nd4jLong* inOffsets = new Nd4jLong[step];
-            Nd4jLong* memBuff = new Nd4jLong[2 * inShapeInfo[0]];
+            const auto meanOffset     = shape::getOffset(mean->getShapeInfo(), coords);
+            const auto varianceOffset = paramSameOffset ? meanOffset : shape::getOffset(variance->getShapeInfo(), coords);
 
-            for (int j = 0; j < lenSmall; ++j) {
-                const bool isOwner = j < info._numThreads ? threadNum == j : threadNum == j % info._numThreads;
-                if (!isOwner) continue;
+            T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(v[varianceOffset] + epsilon);
 
-                const Nd4jLong start = j * step;
-                const Nd4jLong end   = start + step;
-
-                // calculate offset for mean, variance, gamma, beta (all of them have the same shape)
-                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, canCastMean);
-                // calculate offset for input and output (all of them have the same shape)
-                shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, memBuff, dimsToExclude.data());
-
-                PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < step; ++i) {
-                    auto offsetBig = inOffsets[i];
-                    outBuff[offsetBig] = (inBuff[offsetBig] - meanBuff[offsetSmall]) * sigmaBuff[offsetSmall];
-                }
+            if(g != nullptr) {
+                const auto gammaOffset = paramSameOffset ? meanOffset : shape::getOffset(gamma->getShapeInfo(), coords);
+                sigmaInvGam *= g[gammaOffset];
             }
-            delete []inOffsets;
-            delete []memBuff;
-        };
 
-        samediff::Threads::parallel_do(func, info._numThreads);
-    }
+            z[zOffset] = (x[xOffset] - m[meanOffset]) * sigmaInvGam;
+
+            if(b != nullptr) {
+                const auto betaOffset = paramSameOffset ? meanOffset : shape::getOffset(beta->getShapeInfo(), coords);
+                z[zOffset] += b[betaOffset];
+            }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, input->lengthOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
 void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
+    // batchnorm2_ is slower
     BUILD_SINGLE_SELECTOR(input->dataType(), batchnorm_, (input, mean, variance, gamma, beta, output, axes, epsilon), FLOAT_TYPES);
 }
 
