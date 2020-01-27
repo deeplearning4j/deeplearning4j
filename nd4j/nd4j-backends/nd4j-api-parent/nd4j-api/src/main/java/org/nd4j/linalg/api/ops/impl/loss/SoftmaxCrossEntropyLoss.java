@@ -58,7 +58,9 @@ public class SoftmaxCrossEntropyLoss extends BaseLoss {
     }
 
     public SoftmaxCrossEntropyLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double labelSmoothing){
-        //TODO: Implement.
+        super(lossReduce, predictions, weights, labels);
+        this.labelSmoothing = labelSmoothing;
+        addArgs();
     }
 
     public void addArgs() {

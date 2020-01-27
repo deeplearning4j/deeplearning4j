@@ -39,7 +39,8 @@ public class AbsoluteDifferenceLoss extends BaseLoss {
     }
 
     public AbsoluteDifferenceLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce){
-        //TODO: Implement.
+        super(lossReduce, predictions, weights, labels);
+        addArgs();
     }
 
     public AbsoluteDifferenceLoss(){ }

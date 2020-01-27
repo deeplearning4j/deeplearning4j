@@ -45,7 +45,9 @@ public class LogPoissonLoss extends BaseLoss {
     }
 
     public LogPoissonLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, boolean full){
-        //TODO: Implement.
+        super(lossReduce, predictions, weights, labels);
+        this.full = full;
+        addArgs();
     }
 
     public LogPoissonLoss(){ }

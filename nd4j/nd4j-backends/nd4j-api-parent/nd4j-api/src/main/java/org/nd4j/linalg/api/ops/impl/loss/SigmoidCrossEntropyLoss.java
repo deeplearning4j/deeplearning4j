@@ -56,7 +56,9 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
     }
 
     public SigmoidCrossEntropyLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double labelSmoothing){
-        //TODO: Implement.
+        super(lossReduce, predictions, weights, labels);
+        this.labelSmoothing = labelSmoothing;
+        addArgs();
     }
 
     public void addArgs() {

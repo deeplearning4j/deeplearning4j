@@ -42,7 +42,10 @@ public class HuberLoss extends BaseLoss {
     }
 
     public HuberLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double delta){
-        //TODO: Implement.
+        super(lossReduce, predictions, weights, labels);
+        this.delta = delta;
+        tArguments.add(delta);
+        addArgs();
     }
 
     public HuberLoss(){ }

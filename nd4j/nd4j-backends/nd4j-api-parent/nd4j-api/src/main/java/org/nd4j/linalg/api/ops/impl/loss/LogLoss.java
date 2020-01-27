@@ -42,7 +42,9 @@ public class LogLoss extends BaseLoss {
     }
 
     public LogLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double epsilon){
-        //TODO: Implement.
+        super(lossReduce, predictions, weights, labels);
+        this.epsilon = epsilon;
+        addTArgument(epsilon);
     }
 
 

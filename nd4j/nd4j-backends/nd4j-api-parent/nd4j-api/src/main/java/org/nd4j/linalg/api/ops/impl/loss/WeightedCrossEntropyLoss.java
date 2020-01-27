@@ -49,7 +49,7 @@ public class WeightedCrossEntropyLoss extends DynamicCustomOp {
     }
 
     public WeightedCrossEntropyLoss(INDArray targets, INDArray inputs, INDArray weights){
-        //TODO: implement.
+        super(new INDArray[] {targets, inputs, weights}, null);
     }
 
     @Override

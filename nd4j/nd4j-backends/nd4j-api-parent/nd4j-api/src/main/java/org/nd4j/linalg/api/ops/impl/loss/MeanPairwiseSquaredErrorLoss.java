@@ -35,7 +35,7 @@ public class MeanPairwiseSquaredErrorLoss extends BaseLoss {
     }
 
     public MeanPairwiseSquaredErrorLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce){
-        //TODO: Implement.
+        super(lossReduce, predictions, weights, labels);
     }
 
     public MeanPairwiseSquaredErrorLoss(){ }

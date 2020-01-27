@@ -49,7 +49,7 @@ public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
     }
 
     public SparseSoftmaxCrossEntropyLossWithLogits(INDArray logits, INDArray labels){
-        //TODO: implement.
+        super(new INDArray[]{labels, logits}, null);
     }
 
     public void addArgs() {

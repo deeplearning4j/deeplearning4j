@@ -38,7 +38,7 @@ public class L2Loss extends DynamicCustomOp {
     }
 
     public L2Loss(INDArray var){
-        //TODO: implement.
+        super(new INDArray[]{var}, null);
     }
 
     @Override

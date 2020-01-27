@@ -37,7 +37,7 @@ public class MeanSquaredErrorLoss extends BaseLoss {
     }
 
     public MeanSquaredErrorLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce){
-        //TODO: Implement.
+        super(lossReduce, predictions, weights, labels);
     }
 
     public MeanSquaredErrorLoss(){ }

@@ -40,7 +40,8 @@ public class CosineDistanceLoss extends BaseLoss {
     }
 
     public CosineDistanceLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, int dimension){
-        //TODO: implement.
+        super(lossReduce, predictions, weights, labels);
+        addArgs();
     }
 
     public CosineDistanceLoss(){ }
