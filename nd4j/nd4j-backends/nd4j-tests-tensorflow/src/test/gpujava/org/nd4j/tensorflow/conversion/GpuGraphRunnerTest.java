@@ -42,8 +42,7 @@ public class GpuGraphRunnerTest extends BaseND4JTest {
 
     @Test
     public void testGraphRunner() throws Exception {
-        byte[] content = IOUtils.toByteArray(new FileInputStream(new File("C:\\Users\\fariz\\code\\dl4j-test-resources\\src\\main\\resources\\tf_graphs\\nd4j_convert\\simple_graph\\frozen_model.pb")));
-        //byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
+        byte[] content = IOUtils.toByteArray(new ClassPathResource("/tf_graphs/nd4j_convert/simple_graph/frozen_model.pb").getInputStream());
         List<String> inputNames = Arrays.asList("input_0","input_1");
 
         ConfigProto configProto = ConfigProto.newBuilder()
