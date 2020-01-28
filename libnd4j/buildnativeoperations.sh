@@ -55,6 +55,7 @@ TESTS="false"
 VERBOSE="false"
 VERBOSE_ARG="VERBOSE=1"
 HELPER=
+CHECK_VECTORIZATION="OFF"
 NAME=
 while [[ $# > 0 ]]
 do
@@ -113,6 +114,9 @@ case $key in
     --name)
     NAME="$value"
     shift # past argument
+    ;;
+    --check-vectorization)
+    CHECK_VECTORIZATION="ON"
     ;;
     -j)
     MAKEJ="$value"
@@ -528,14 +532,27 @@ echo MINIFIER = "${MINIFIER_ARG}"
 echo TESTS = "${TESTS_ARG}"
 echo NAME = "${NAME_ARG}"
 echo OPENBLAS_PATH = "$OPENBLAS_PATH"
+echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
 echo HELPERS = "$HELPERS"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" $HELPERS "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DCHECK_VECTORIZATION="${CHECK_VECTORIZATION}"  $HELPERS "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
 fi
 if [ "$VERBOSE" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS $VERBOSE_ARG"
 fi
-eval $MAKE_COMMAND $MAKE_ARGUMENTS && cd ../../..
+
+if [ "$CHECK_VECTORIZATION" == "ON" ]; then
+
+if [ "$MAKE_COMMAND" == "make" ]; then
+    MAKE_ARGUMENTS="$MAKE_ARGUMENTS --output-sync=target"
+fi
+exec 3>&1 
+eval $MAKE_COMMAND $MAKE_ARGUMENTS 2>&1 >&3 3>&-  | python3 ../../auto_vectorization/auto_vect.py   && cd ../../..
+exec 3>&- 
+else
+eval $MAKE_COMMAND $MAKE_ARGUMENTS  && cd ../../..
+fi
