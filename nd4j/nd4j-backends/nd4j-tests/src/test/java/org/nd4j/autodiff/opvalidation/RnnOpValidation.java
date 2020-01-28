@@ -16,15 +16,12 @@
 
 package org.nd4j.autodiff.opvalidation;
 
-import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.LSTMCellOutputs;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.GRUWeights;

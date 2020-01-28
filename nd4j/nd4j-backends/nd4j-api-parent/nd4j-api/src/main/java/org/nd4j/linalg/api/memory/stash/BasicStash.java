@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.stash;
+package org.nd4j.linalg.api.memory.stash;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 

@@ -21,11 +21,9 @@ import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.impl.AggregateGEMM;
-import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.Nd4jBlas;
 

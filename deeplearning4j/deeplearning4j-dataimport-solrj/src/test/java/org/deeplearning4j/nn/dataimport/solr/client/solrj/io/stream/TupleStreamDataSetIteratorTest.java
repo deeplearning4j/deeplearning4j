@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
+import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
 import org.nd4j.rng.deallocator.NativeRandomDeallocator;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {

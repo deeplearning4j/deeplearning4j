@@ -17,7 +17,6 @@
 package org.nd4j.linalg.compression;
 
 import lombok.NonNull;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
 
 /**

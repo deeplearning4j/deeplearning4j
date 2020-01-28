@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.dataset.api.preprocessor.stats;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;

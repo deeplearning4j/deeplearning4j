@@ -21,7 +21,6 @@ import lombok.val;
 import lombok.var;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

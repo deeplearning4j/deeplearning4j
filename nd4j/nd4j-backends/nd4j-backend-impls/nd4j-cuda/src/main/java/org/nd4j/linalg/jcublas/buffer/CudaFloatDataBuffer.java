@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.jcublas.buffer;
 
-import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;

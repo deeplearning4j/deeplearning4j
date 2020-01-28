@@ -42,10 +42,8 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import org.bytedeco.cuda.cudart.*;
-import org.bytedeco.cuda.cublas.*;
 import org.bytedeco.cuda.cusolver.*;
 
-import static org.bytedeco.cuda.global.cudart.*;
 import static org.bytedeco.cuda.global.cublas.*;
 import static org.bytedeco.cuda.global.cusolver.*;
 

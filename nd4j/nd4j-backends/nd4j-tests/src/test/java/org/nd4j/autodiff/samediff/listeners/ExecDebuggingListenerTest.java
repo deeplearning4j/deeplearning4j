@@ -13,10 +13,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 public class ExecDebuggingListenerTest extends BaseNd4jTest {
 
     public ExecDebuggingListenerTest(Nd4jBackend backend) {

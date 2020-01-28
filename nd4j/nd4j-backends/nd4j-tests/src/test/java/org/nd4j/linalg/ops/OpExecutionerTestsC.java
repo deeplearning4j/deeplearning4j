@@ -51,7 +51,6 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.Histogram;
-import org.nd4j.linalg.api.ops.impl.transforms.HistogramFixedWidth;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;

@@ -20,10 +20,8 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
-import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
 
 import java.util.ArrayList;
 import java.util.List;

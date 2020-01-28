@@ -20,7 +20,6 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -40,7 +39,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
-import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.evaluation.IEvaluation;
@@ -78,9 +76,7 @@ import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.UniformInitScheme;
-import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 /**
  * Created by agibsonccc on 4/11/17.

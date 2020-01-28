@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.memory.pointers;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

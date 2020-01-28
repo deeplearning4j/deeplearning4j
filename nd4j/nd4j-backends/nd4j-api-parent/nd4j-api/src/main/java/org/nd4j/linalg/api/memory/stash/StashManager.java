@@ -14,11 +14,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory;
+package org.nd4j.linalg.api.memory.stash;
 
-public enum MemcpyDirection {
-    HOST_TO_DEVICE,
-    DEVICE_TO_DEVICE,
-    DEVICE_TO_HOST,
-    HOST_TO_HOST
+/**
+ * This interface describes factory/holder for manipulating Stash objects
+ *
+ * @author raver119@gmail.com
+ */
+public interface StashManager {
+
+    <T extends Object> boolean checkIfStashExists(T stashId);
+
+    <T extends Object> Stash<T> getStash(T stashId);
+
+    <T extends Object> Stash<T> createStashIfNotExists(T stashId);
 }

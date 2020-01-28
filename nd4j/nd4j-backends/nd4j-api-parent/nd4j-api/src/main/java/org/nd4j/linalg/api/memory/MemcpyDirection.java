@@ -14,25 +14,11 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.memory.stash;
+package org.nd4j.linalg.api.memory;
 
-/**
- * @author raver119@gmail.com
- */
-public class BasicStashManager implements StashManager {
-
-    @Override
-    public <T> boolean checkIfStashExists(T stashId) {
-        return false;
-    }
-
-    @Override
-    public <T> Stash<T> getStash(T stashId) {
-        return null;
-    }
-
-    @Override
-    public <T> Stash<T> createStashIfNotExists(T stashId) {
-        return null;
-    }
+public enum MemcpyDirection {
+    HOST_TO_DEVICE,
+    DEVICE_TO_DEVICE,
+    DEVICE_TO_HOST,
+    HOST_TO_HOST
 }

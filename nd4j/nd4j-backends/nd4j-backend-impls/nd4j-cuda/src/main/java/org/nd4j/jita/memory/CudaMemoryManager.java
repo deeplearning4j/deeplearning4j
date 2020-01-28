@@ -32,8 +32,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
-import org.nd4j.linalg.memory.BasicMemoryManager;
+import org.nd4j.linalg.api.memory.BasicMemoryManager;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.nativeblas.NativeOpsHolder;
 

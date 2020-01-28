@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 /**
  * Cuda double  buffer

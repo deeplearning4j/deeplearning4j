@@ -38,7 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.shade.guava.primitives.Floats;
 import org.nd4j.shade.guava.primitives.Ints;
-import org.nd4j.shade.protobuf.InvalidProtocolBufferException;
 import org.nd4j.shade.protobuf.Message;
 import org.nd4j.shade.protobuf.TextFormat;
 import org.tensorflow.framework.*;

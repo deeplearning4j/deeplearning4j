@@ -21,7 +21,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.*;
 
-import lombok.NonNull;
 import org.junit.Test;
 import org.nd4j.autodiff.listeners.*;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;

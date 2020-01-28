@@ -19,11 +19,8 @@ package org.nd4j.nativeblas;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
-
-import java.util.concurrent.locks.LockSupport;
 
 /**
  * This class is a opaque pointer to InteropDataBuffer, used for Java/C++ interop related to INDArray DataBuffer

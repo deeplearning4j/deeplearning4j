@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.indexing;
 
-import com.google.common.base.Function;
 import lombok.val;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -31,11 +30,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.conditions.AbsValueGreaterThan;
-import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.conditions.GreaterThan;
-import org.nd4j.linalg.indexing.functions.Value;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Arrays;

@@ -17,20 +17,11 @@
 package org.nd4j.jita.allocator.tad;
 
 import lombok.val;
-import org.bytedeco.javacpp.LongPointer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.TADManager;
-import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
-import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaIntDataBuffer;
-import org.nd4j.linalg.jcublas.buffer.CudaLongDataBuffer;
-import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;

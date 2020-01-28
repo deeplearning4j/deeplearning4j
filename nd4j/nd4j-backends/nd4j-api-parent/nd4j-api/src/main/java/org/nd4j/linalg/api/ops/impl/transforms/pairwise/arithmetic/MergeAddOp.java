@@ -23,7 +23,6 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
-import org.nd4j.linalg.api.shape.Shape;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -22,7 +22,6 @@ import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IMetric;
-import org.nd4j.evaluation.classification.Evaluation.Metric;
 import org.nd4j.evaluation.curves.Histogram;
 import org.nd4j.evaluation.curves.ReliabilityDiagram;
 import org.nd4j.linalg.api.buffer.DataType;

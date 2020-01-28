@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
+import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

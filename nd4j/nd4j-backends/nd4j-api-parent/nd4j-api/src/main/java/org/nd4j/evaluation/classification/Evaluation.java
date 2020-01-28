@@ -25,8 +25,6 @@ import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 import org.nd4j.evaluation.meta.Prediction;
-import org.nd4j.evaluation.regression.RegressionEvaluation;
-import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.evaluation.serde.ConfusionMatrixDeserializer;
 import org.nd4j.evaluation.serde.ConfusionMatrixSerializer;
 import org.nd4j.linalg.api.buffer.DataType;

@@ -36,7 +36,7 @@ import org.nd4j.linalg.cpu.nativecpu.buffer.FloatBuffer;
 import org.nd4j.linalg.cpu.nativecpu.buffer.LongBuffer;
 import org.nd4j.linalg.cpu.nativecpu.buffer.Utf8Buffer;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.api.memory.MemcpyDirection;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
 
 import java.io.ByteArrayOutputStream;

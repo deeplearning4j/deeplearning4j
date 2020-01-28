@@ -18,7 +18,6 @@ package org.nd4j.linalg.serde;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -30,12 +29,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Map;
 
 import static org.junit.Assert.*;

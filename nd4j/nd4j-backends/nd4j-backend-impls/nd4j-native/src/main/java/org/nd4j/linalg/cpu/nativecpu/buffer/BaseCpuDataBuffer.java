@@ -27,16 +27,11 @@ import org.nd4j.linalg.api.memory.Deallocatable;
 import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
-import org.nd4j.linalg.cpu.nativecpu.ops.NativeOpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.deallocation.DeallocatorService;
-import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.nio.ByteBuffer;
 
-import static org.nd4j.linalg.api.buffer.DataType.INT16;
 import static org.nd4j.linalg.api.buffer.DataType.INT8;
 
 /**

@@ -17,7 +17,6 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

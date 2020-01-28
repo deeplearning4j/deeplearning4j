@@ -18,9 +18,7 @@ package org.nd4j.linalg.env.impl;
 
 import lombok.val;
 import org.nd4j.config.ND4JEnvironmentVars;
-import org.nd4j.linalg.api.memory.enums.DebugMode;
 import org.nd4j.linalg.env.EnvironmentalAction;
-import org.nd4j.linalg.factory.Nd4j;
 
 public class OmpNumThreadsAction implements EnvironmentalAction {
     @Override

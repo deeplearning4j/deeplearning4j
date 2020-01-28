@@ -22,7 +22,7 @@ import lombok.val;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.performance.primitives.AveragingTransactionsHolder;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.MemcpyDirection;
+import org.nd4j.linalg.api.memory.MemcpyDirection;
 
 import java.util.HashMap;
 import java.util.Map;

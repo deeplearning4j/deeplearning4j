@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -33,7 +32,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
