@@ -45,7 +45,6 @@ public class HuberLoss extends BaseLoss {
         super(lossReduce, predictions, weights, labels);
         this.delta = delta;
         tArguments.add(delta);
-        addArgs();
     }
 
     public HuberLoss(){ }
