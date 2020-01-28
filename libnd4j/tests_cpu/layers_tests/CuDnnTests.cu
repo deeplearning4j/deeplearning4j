@@ -57,6 +57,17 @@ TEST_F(CuDnnTests, helpers_includer) {
     nd4j::ops::platforms::PLATFORM_depthwise_conv2d_ENGINE_CUDA depthwise_conv2d;
     nd4j::ops::platforms::PLATFORM_depthwise_conv2d_bp_ENGINE_CUDA depthwise_conv2d_bp;
     nd4j::ops::platforms::PLATFORM_batchnorm_ENGINE_CUDA batchnorm;
+    nd4j::ops::platforms::PLATFORM_batchnorm_bp_ENGINE_CUDA batchnorm_bp;
+    nd4j::ops::platforms::PLATFORM_avgpool2d_ENGINE_CUDA avgpool2d;
+    nd4j::ops::platforms::PLATFORM_avgpool2d_bp_ENGINE_CUDA avgpool2d_bp;
+    nd4j::ops::platforms::PLATFORM_maxpool2d_ENGINE_CUDA maxpool2d;
+    nd4j::ops::platforms::PLATFORM_maxpool2d_bp_ENGINE_CUDA maxpool2d_bp;
+    nd4j::ops::platforms::PLATFORM_avgpool3dnew_ENGINE_CUDA avgpool3dnew;
+    nd4j::ops::platforms::PLATFORM_avgpool3dnew_bp_ENGINE_CUDA avgpool3dnew_bp;
+    nd4j::ops::platforms::PLATFORM_maxpool3dnew_ENGINE_CUDA maxpool3dnew;
+    nd4j::ops::platforms::PLATFORM_maxpool3dnew_bp_ENGINE_CUDA maxpool3dnew_bp;
+
+
 
     printer({&conv2d});
     printer({&conv2d_bp});
@@ -65,6 +76,15 @@ TEST_F(CuDnnTests, helpers_includer) {
     printer({&depthwise_conv2d});
     printer({&depthwise_conv2d_bp});
     printer({&batchnorm});
+    printer({&batchnorm_bp});
+    printer({&avgpool2d});
+    printer({&avgpool2d_bp});
+    printer({&maxpool2d});
+    printer({&maxpool2d_bp});
+    printer({&avgpool3dnew});
+    printer({&avgpool3dnew_bp});
+    printer({&maxpool3dnew});
+    printer({&maxpool3dnew_bp});
 #endif
 }
 

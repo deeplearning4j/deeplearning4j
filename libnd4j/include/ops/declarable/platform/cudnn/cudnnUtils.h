@@ -30,8 +30,8 @@
 
 #include <cudnn.h>
 
-namespace nd4j {
-namespace ops {
+namespace nd4j      {
+namespace ops       {
 namespace platforms {
 
     DECLARE_PLATFORM(conv2d, ENGINE_CUDA);
@@ -45,6 +45,18 @@ namespace platforms {
 
     DECLARE_PLATFORM(batchnorm, ENGINE_CUDA);
     DECLARE_PLATFORM(batchnorm_bp, ENGINE_CUDA);
+
+    DECLARE_PLATFORM(avgpool2d, ENGINE_CUDA);
+    DECLARE_PLATFORM(avgpool2d_bp, ENGINE_CUDA);
+
+    DECLARE_PLATFORM(maxpool2d, ENGINE_CUDA);
+    DECLARE_PLATFORM(maxpool2d_bp, ENGINE_CUDA);
+
+    DECLARE_PLATFORM(avgpool3dnew, ENGINE_CUDA);
+    DECLARE_PLATFORM(avgpool3dnew_bp, ENGINE_CUDA);
+
+    DECLARE_PLATFORM(maxpool3dnew, ENGINE_CUDA);
+    DECLARE_PLATFORM(maxpool3dnew_bp, ENGINE_CUDA);
 
 //////////////////////////////////////////////////////////////////////////
 FORCEINLINE cudnnDataType_t cudnnDataType(nd4j::DataType dataType) {
@@ -65,91 +77,62 @@ FORCEINLINE cudnnDataType_t cudnnDataType(nd4j::DataType dataType) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-FORCEINLINE void checkConv2dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
-                                            const int iH, const int iW,
-                                            const int oH, const int oW,
-                                            const int kH, const int kW,
-                                            const int sH, const int sW,
-                                            const int pH, const int pW,
-                                            const int dH, const int dW,
-                                            const bool isNCHW) {
-
-    const auto pHsum = ((oH - 1) * sH + ((kH - 1) * dH + 1) - iH);
-    const auto pWsum = ((oW - 1) * sW + ((kW - 1) * dW + 1) - iW);
-
-    const bool isPHasymm = pH != (pHsum - pH);
-    const bool isPWasymm = pW != (pWsum - pW);
-
-    if(!isPHasymm && !isPWasymm)
-        return;
-
-    std::vector<Nd4jLong> newShape = input->getShapeAsVector();
-
-    const int iHposition = isNCHW ? 2 : 1;
-
-    if(isPHasymm)
-        newShape[iHposition] += 1;
-    if(isPWasymm)
-        newShape[iHposition + 1] += 1;
-
-    NDArray* newInput = new NDArray(input->ordering(), newShape, input->dataType(), input->getContext());
-
-    if(isNCHW)
-        (*newInput)({0,0,  0,0,  0,input->sizeAt(2),  0,input->sizeAt(3)}).assign(input);
-    else
-        (*newInput)({0,0,  0,input->sizeAt(1),  0,input->sizeAt(2),  0,0}).assign(input);
-
-    input = newInput;
-
-    if(gradI != nullptr)
-        gradI = new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext());
-}
-
+void checkConv2dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
+                                    const int iH, const int iW,
+                                    const int oH, const int oW,
+                                    const int kH, const int kW,
+                                    const int sH, const int sW,
+                                    const int pH, const int pW,
+                                    const int dH, const int dW,
+                                    const bool isNCHW);
 
 //////////////////////////////////////////////////////////////////////////
-FORCEINLINE void checkConv3dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
-                                            const int iD, const int iH, const int iW,
-                                            const int oD, const int oH, const int oW,
-                                            const int kD, const int kH, const int kW,
-                                            const int sD, const int sH, const int sW,
-                                            const int pD, const int pH, const int pW,
-                                            const int dD, const int dH, const int dW,
-                                            const bool isNCDHW) {
+void checkConv3dCUDNNPadAsymmetric(NDArray* &input, NDArray* &gradI,
+                                    const int iD, const int iH, const int iW,
+                                    const int oD, const int oH, const int oW,
+                                    const int kD, const int kH, const int kW,
+                                    const int sD, const int sH, const int sW,
+                                    const int pD, const int pH, const int pW,
+                                    const int dD, const int dH, const int dW,
+                                    const bool isNCDHW);
 
-    const auto pDsum = ((oD - 1) * sD + ((kD - 1) * dD + 1) - iD);
-    const auto pHsum = ((oH - 1) * sH + ((kH - 1) * dH + 1) - iH);
-    const auto pWsum = ((oW - 1) * sW + ((kW - 1) * dW + 1) - iW);
+//////////////////////////////////////////////////////////////////////////
+void pooling2dCUDNN(const LaunchContext* context,
+                    const NDArray* input, NDArray* output,
+                    const int kH, const int kW,
+                    const int sH, const int sW,
+                    const int pH, const int pW,
+                    const int dH, const int dW,
+                    const bool isNCHW, const cudnnPoolingMode_t mode);
 
-    const bool isPDasymm = pD != (pDsum - pD);
-    const bool isPHasymm = pH != (pHsum - pH);
-    const bool isPWasymm = pW != (pWsum - pW);
+//////////////////////////////////////////////////////////////////////////
+void pooling2dBpCUDNN(const LaunchContext* context,
+                      const NDArray* input, const NDArray* gradO,
+                            NDArray* gradI,
+                      const int kH, const int kW,
+                      const int sH, const int sW,
+                      const int pH, const int pW,
+                      const int dH, const int dW,
+                      const bool isNCHW, const cudnnPoolingMode_t mode);
 
-    if(!isPDasymm && !isPHasymm && !isPWasymm)
-        return;
+//////////////////////////////////////////////////////////////////////////
+void pooling3dCUDNN(const LaunchContext* context,
+                    const NDArray* input, NDArray* output,
+                    const int kD, const int kH, const int kW,
+                    const int sD, const int sH, const int sW,
+                    const int pD, const int pH, const int pW,
+                    const int dD, const int dH, const int dW,
+                    const bool isNCDHW, const cudnnPoolingMode_t mode);
 
-    std::vector<Nd4jLong> newShape = input->getShapeAsVector();
-
-    const int iDposition = isNCDHW ? 2 : 1;
-
-    if(isPDasymm)
-        newShape[iDposition] += 1;
-    if(isPHasymm)
-        newShape[iDposition + 1] += 1;
-    if(isPWasymm)
-        newShape[iDposition + 2] += 1;
-
-    NDArray* newInput = new NDArray(input->ordering(), newShape, input->dataType(), input->getContext());
-
-    if(isNCDHW)
-        (*newInput)({0,0,  0,0,  0,input->sizeAt(2),  0,input->sizeAt(3),  0,input->sizeAt(4)}).assign(input);
-    else
-        (*newInput)({0,0,  0,input->sizeAt(1),  0,input->sizeAt(2),  0,input->sizeAt(3),  0,0}).assign(input);
-
-    input = newInput;
-
-    if(gradI != nullptr)
-        gradI = new NDArray(gradI->ordering(), newShape, gradI->dataType(), gradI->getContext());
-}
+//////////////////////////////////////////////////////////////////////////
+void pooling3dBpCUDNN(const LaunchContext* context,
+                    const NDArray* input, const NDArray* gradO,
+                          NDArray* gradI,
+                    const int kD, const int kH, const int kW,
+                    const int sD, const int sH, const int sW,
+                    const int pD, const int pH, const int pW,
+                    const int dD, const int dH, const int dW,
+                    const bool isNCDHW, const cudnnPoolingMode_t mode);
 
 }
 }

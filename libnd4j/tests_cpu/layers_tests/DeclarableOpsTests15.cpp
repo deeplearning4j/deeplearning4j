@@ -72,71 +72,6 @@ TEST_F(DeclarableOpsTests15, Test_Half_assign_1) {
     ASSERT_EQ(10, x.sumNumber().e<int>(0));
 }
 
-TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
-    int inOutH = 5;// 35;
-    int inOutW = 5;// 35;
-    int inOutC = 10;// 192;
-
-    auto x = NDArrayFactory::create<double>('c', {1, inOutH, inOutW, inOutC});
-    x.linspace(1.0);
-
-    nd4j::ops::avgpool2d op;
-    auto result = op.execute({&x}, {}, {3,3, 1,1, 0,0, 1,1, 1, 0, 1});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    int totalPadHeight = (inOutH - 1) * 1 + 3 - inOutH;
-    int padTop = totalPadHeight / 2;
-    int padBottom = totalPadHeight - totalPadHeight / 2;
-
-    int k = 3;
-
-    auto m = NDArrayFactory::create<double>('c', {1, inOutH, inOutW, inOutC});
-    auto c = NDArrayFactory::create<double>('c', {1, inOutH, inOutW, inOutC});
-
-    for (int h = 0; h < inOutH; h++) {
-        for (int w = 0; w < inOutW; w++) {
-            int hFrom = h - padTop;
-            int wFrom = w - padBottom;
-
-            int hTo = hFrom + k;
-            int wTo = wFrom + k;
-
-            hFrom = nd4j::math::nd4j_max<int>(0, hFrom);
-            wFrom = nd4j::math::nd4j_max<int>(0, wFrom);
-
-            hTo = nd4j::math::nd4j_min<int>(inOutH, hTo);
-            wTo = nd4j::math::nd4j_min<int>(inOutW, wTo);
-
-            int idxOut[4];
-            int idxIn[4];
-            for (int ch = 0; ch < inOutC; ch++) {
-                idxOut[1] = h;
-                idxOut[2] = w;
-                idxOut[3] = ch;
-                idxIn[3] = ch;
-
-                for (int kh = hFrom; kh < hTo; kh++) {
-                    for (int kw = wFrom; kw < wTo; kw++) {
-                        idxIn[1] = kh;
-                        idxIn[2] = kw;
-
-                        auto inVal = x.e<double>(0, kh, kw, ch);
-                        m.p(0, h, w, ch, inVal + m.e<double>(0, h, w, ch));
-                        c.p(0, h, w, ch, 1 + c.e<int>(0, h, w, ch));
-                    }
-                }
-            }
-        }
-    }
-    m /= c;
-
-    ASSERT_EQ(m, *z);
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests15, Test_standarize_1) {
     auto x = NDArrayFactory::create<float>('c', {5}, {1.f, 1.f, 1.f, 1.f, 1.f});
     auto e = NDArrayFactory::create<float>('c', {5}, {0.f, 0.f, 0.f, 0.f, 0.f});
@@ -1097,7 +1032,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_2) {
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-    
+
     delete result;
 }
 
@@ -1106,7 +1041,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_3) {
     // rank 2
     NDArray rgbs('c', { 3, 4 }, { -9.4,  9.9, 9.7, 9.0, 1.14, 1.01, 1.11,  9.6, 1.05, 10.0, 1.03, 10.22 }, nd4j::DataType::FLOAT32);
     NDArray expected('c', { 3, 4 }, {  -2.021720, 4.692970, 3.669290, 9.491281, 1.511627, 2.611648, -1.298824, 0.358612, -6.472839, 4.568039, 5.290639, -0.430992 }, nd4j::DataType::FLOAT32);
-    
+
     nd4j::ops::rgb_to_yuv op;
     auto result = op.execute({ &rgbs }, {}, { 0 });
     auto output = result->at(0);
@@ -1170,7 +1105,7 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_7) {
     // rank 3
     NDArray rgbs('f', { 2, 2, 3 }, { 1.7750e+01f,-7.1062e+01f, -1.0019e+02f, -2.3406e+01f,5.2094e+01f,9.5438e+01f, -6.7461e+00f,3.8562e+01f, 6.5078e+00f,      3.3562e+01f,-5.8844e+01f,2.2750e+01f }, nd4j::DataType::FLOAT32);
     NDArray expected('f', { 2,2,3 }, { 36.628319,38.600643, -40.624989,18.231001, -14.822637,-2.479566, -8.965780, 2.223851,  -16.561626,- 96.205162,-52.255379, -36.527435 }, nd4j::DataType::FLOAT32);
- 
+
     nd4j::ops::rgb_to_yuv op;
     auto result = op.execute({ &rgbs }, {}, {});
     auto output = result->at(0);
@@ -1210,7 +1145,7 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_2) {
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-    
+
     delete result;
 }
 
@@ -1484,7 +1419,7 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test7) {
     auto Y = NDArrayFactory::create<float>(2.f);
     NDArray x('c', { 2, 2, 2 }, nd4j::DataType::FLOAT32);
     NDArray dLdzC('c', { 2, 2, 2 }, nd4j::DataType::FLOAT32);
-    
+
     dLdzC.linspace(0.1, 0.1);
     x = 4.f;
 

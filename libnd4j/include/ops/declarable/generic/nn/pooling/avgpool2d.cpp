@@ -31,30 +31,27 @@ namespace ops  {
 CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
 
     auto input = INPUT_VARIABLE(0);
-
-    REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
+    auto output = OUTPUT_VARIABLE(0);
 
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-    auto argI = *(block.getIArguments());
-    auto output = OUTPUT_VARIABLE(0);
 
     const auto kH = INT_ARG(0);
     const auto kW = INT_ARG(1);
     const auto sH = INT_ARG(2);
     const auto sW = INT_ARG(3);
-          int pH = INT_ARG(4);
-          int pW = INT_ARG(5);
+          auto pH = INT_ARG(4);
+          auto pW = INT_ARG(5);
     const auto dH = INT_ARG(6);
     const auto dW = INT_ARG(7);
     const auto isSameMode = static_cast<bool>(INT_ARG(8));
     const auto extraParam0 = INT_ARG(9);
+    const int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // INT_ARG(10): 0-NCHW, 1-NHWC
 
+    REQUIRE_TRUE(input->rankOf() == 4, 0, "AVGPOOL2D op: input should have rank of 4, but got %i instead", input->rankOf());
     REQUIRE_TRUE(dH != 0 && dW != 0, 0, "AVGPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
     int oH = 0;
     int oW = 0;
-
-    int isNCHW  = block.getIArguments()->size() > 10 ? !INT_ARG(10) : 1;       // INT_ARG(10): 0-NCHW, 1-NHWC
 
     const int iH = static_cast<int>(isNCHW ? input->sizeAt(2) : input->sizeAt(1));
     const int iW = static_cast<int>(isNCHW ? input->sizeAt(3) : input->sizeAt(2));
@@ -207,7 +204,6 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     }
 
     return Status::OK();
-
 }
 
 DECLARE_SHAPE_FN(avgpool2d_bp) {
