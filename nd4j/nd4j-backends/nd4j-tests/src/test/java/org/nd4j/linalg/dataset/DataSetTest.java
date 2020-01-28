@@ -738,52 +738,52 @@ public class DataSetTest extends BaseNd4jTest {
 
     @Test
     public void testShuffleNd() {
-        int numDims = 7;
-        int nLabels = 3;
-        Random r = new Random();
+            int numDims = 7;
+            int nLabels = 3;
+            Random r = new Random();
 
 
-        int[] shape = new int[numDims];
-        int entries = 1;
-        for (int i = 0; i < numDims; i++) {
-            //randomly generating shapes bigger than 1 
-            shape[i] = r.nextInt(4) + 2;
-            entries *= shape[i];
-        }
-        int labels = shape[0] * nLabels;
+            int[] shape = new int[numDims];
+            int entries = 1;
+            for (int i = 0; i < numDims; i++) {
+                //randomly generating shapes bigger than 1
+                shape[i] = r.nextInt(4) + 2;
+                entries *= shape[i];
+            }
+            int labels = shape[0] * nLabels;
 
-        INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.INT).reshape(shape);
-        INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.INT).reshape(shape[0], nLabels);
+            INDArray ds_data = Nd4j.linspace(1, entries, entries, DataType.INT).reshape(shape);
+            INDArray ds_labels = Nd4j.linspace(1, labels, labels, DataType.INT).reshape(shape[0], nLabels);
 
-        DataSet ds = new DataSet(ds_data, ds_labels);
-        ds.shuffle();
+            DataSet ds = new DataSet(ds_data, ds_labels);
+            ds.shuffle();
 
-        //Checking Nd dataset which is the data
-        for (int dim = 1; dim < numDims; dim++) {
-            //get tensor along dimension - the order in every dimension but zero should be preserved
-            for (int tensorNum = 0; tensorNum < ds_data.tensorsAlongDimension(dim); tensorNum++) {
-                //the difference between consecutive elements should be equal to the stride
-                for (int i = 0, j = 1; j < shape[dim]; i++, j++) {
-                    int f_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(i);
-                    int f_next_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(j);
-                    int f_element_diff = f_next_element - f_element;
-                    assertEquals(f_element_diff, ds_data.stride(dim));
+            //Checking Nd dataset which is the data
+            for (int dim = 1; dim < numDims; dim++) {
+                //get tensor along dimension - the order in every dimension but zero should be preserved
+                for (int tensorNum = 0; tensorNum < ds_data.tensorsAlongDimension(dim); tensorNum++) {
+                    //the difference between consecutive elements should be equal to the stride
+                    for (int i = 0, j = 1; j < shape[dim]; i++, j++) {
+                        int f_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(i);
+                        int f_next_element = ds.getFeatures().tensorAlongDimension(tensorNum, dim).getInt(j);
+                        int f_element_diff = f_next_element - f_element;
+                        assertEquals(f_element_diff, ds_data.stride(dim));
+                    }
                 }
             }
-        }
 
-        //Checking 2d, features
-        int dim = 1;
-        //get tensor along dimension - the order in every dimension but zero should be preserved
-        for (int tensorNum = 0; tensorNum < ds_labels.tensorsAlongDimension(dim); tensorNum++) {
-            //the difference between consecutive elements should be equal to the stride
-            for (int i = 0, j = 1; j < nLabels; i++, j++) {
-                int l_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(i);
-                int l_next_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(j);
-                int l_element_diff = l_next_element - l_element;
-                assertEquals(l_element_diff, ds_labels.stride(dim));
+            //Checking 2d, features
+            int dim = 1;
+            //get tensor along dimension - the order in every dimension but zero should be preserved
+            for (int tensorNum = 0; tensorNum < ds_labels.tensorsAlongDimension(dim); tensorNum++) {
+                //the difference between consecutive elements should be equal to the stride
+                for (int i = 0, j = 1; j < nLabels; i++, j++) {
+                    int l_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(i);
+                    int l_next_element = ds.getLabels().tensorAlongDimension(tensorNum, dim).getInt(j);
+                    int l_element_diff = l_next_element - l_element;
+                    assertEquals(l_element_diff, ds_labels.stride(dim));
+                }
             }
-        }
     }
 
     @Test
