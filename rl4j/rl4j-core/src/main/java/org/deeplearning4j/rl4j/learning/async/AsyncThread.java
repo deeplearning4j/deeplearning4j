@@ -46,7 +46,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 @Slf4j
 public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                extends Thread implements StepCountable, IEpochTrainer {
+                extends Thread implements IEpochTrainer {
 
     @Getter
     private int threadNumber;

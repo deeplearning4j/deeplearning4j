@@ -18,6 +18,8 @@ package org.deeplearning4j.rl4j.policy;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.rl4j.learning.IEpochTrainer;
+import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.StepCountable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -46,7 +48,7 @@ public class EpsGreedy<O, A, AS extends ActionSpace<A>> extends Policy<O, A> {
     final private int epsilonNbStep;
     final private Random rnd;
     final private float minEpsilon;
-    final private StepCountable learning;
+    final private IEpochTrainer learning;
 
     public NeuralNet getNeuralNet() {
         return policy.getNeuralNet();
