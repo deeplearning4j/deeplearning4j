@@ -92,6 +92,8 @@ public class NDRNN {
    * @param SRUWeights Configuration Object
    * @return output The cell's outputs. (NUMERIC type)
    */
+
+//  TODO figure out with overloading of methods below
   public INDArray sruCell(INDArray x, INDArray cLast, SRUWeights SRUWeights) {
     NDValidation.validateNumerical("sruCell", "x", x);
     NDValidation.validateNumerical("sruCell", "cLast", cLast);

@@ -22,6 +22,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.SRUWeights;
 import org.tensorflow.framework.AttrValue;
@@ -45,6 +46,14 @@ public class SRUCell extends DynamicCustomOp {
         super(null, sameDiff, weights.argsWithInputs(x, cLast));
         this.weights = weights;
     }
+
+
+
+    public SRUCell(INDArray x, INDArray cLast, SRUWeights sruWeights) {
+        super(null, null, sruWeights.argsWithInputs(x, cLast));
+        this.weights = sruWeights;
+    }
+
 
     @Override
     public String opName() {

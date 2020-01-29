@@ -39,19 +39,6 @@ public class NDCNN {
   }
 
   /**
-   * Separable 2D convolution operation with/without optional bias<br>
-   *
-   * @param inputs the inputs to separable conv2 operation. Should be length 3 (layerInput, depthWeights, pointWeights)
-   *                      or length 4 (layerInput, depthWeights, pointWeights, bias) as described in {@link #separableConv2d(SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)} (NUMERIC type)
-   * @param Conv2DConfig Configuration Object
-   * @return output result of separable convolution 2d operation (NUMERIC type)
-   */
-  public INDArray sConv2D(INDArray inputs, Conv2DConfig Conv2DConfig) {
-    NDValidation.validateNumerical("SConv2D", "inputs", inputs);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(inputs, Conv2DConfig))[0];
-  }
-
-  /**
    * 2D Convolution layer operation - average pooling 2d<br>
    *
    * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
@@ -110,8 +97,7 @@ public class NDCNN {
   }
 
   /**
-   * See {@link #conv1d(String, SDVariable, SDVariable, SDVariable, Conv1DConfig)}, no bias.<br>
-   *     <br>
+   * Computes a 1-D convolution given 3-D input and filter tensors.<br>
    *
    * @param input the inputs to conv1d (NUMERIC type)
    * @param weights weights for conv1d op - rank 3 array with shape [kernelSize, inputChannels, outputChannels] (NUMERIC type)
@@ -141,7 +127,7 @@ public class NDCNN {
   }
 
   /**
-   * See {@link #conv2d(String, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.<br>
+   * Computes a 2-D convolution given 4-D input.<br>
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
    * @param weights Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels] (NUMERIC type)
@@ -175,8 +161,7 @@ public class NDCNN {
    * 2D Convolution operation with optional bias<br>
    *    <br>
    *
-   * @param inputs inputs an array with either 2 elements (layerInput, weights) or 3 elements (layerInput, weights, bias) as
-   *                described in {@link #conv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)} (NUMERIC type)
+   * @param inputs inputs an array with either 2 elements (layerInput, weights) or 3 elements (layerInput, weights, bias) (NUMERIC type)
    * @param Conv2DConfig Configuration Object
    * @return output result of convolution 2d operation (NUMERIC type)
    */
@@ -186,7 +171,7 @@ public class NDCNN {
   }
 
   /**
-   * See {@link #conv3d(String, SDVariable, SDVariable, SDVariable, Conv3DConfig)}, no bias.<br>
+   * Computes a 3-D convolution given 5-D input.<br>
    *
    * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
    * (shape [minibatch, channels, depth, height, width]) or NDHWC format
@@ -221,7 +206,7 @@ public class NDCNN {
   }
 
   /**
-   * See {@link #deconv2d(String, SDVariable, SDVariable, SDVariable, DeConv2DConfig)}, no bias.<br>
+   * The transpose of conv2d..<br>
    *
    * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
    * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
@@ -256,8 +241,7 @@ public class NDCNN {
   /**
    * 2D deconvolution operation with or without optional bias <br>
    *
-   * @param inputs Inputs to the deconvolution 2d operation - input array of length 2 (layerInput, weights)
-   *                        or length 3 (layerInput, weights, bias) as described in {@link #deconv2d(SDVariable[], DeConv2DConfig)} (NUMERIC type)
+   * @param inputs Inputs to the deconvolution 2d operation - input array of length 2 (layerInput, weights) (NUMERIC type)
    * @param DeConv2DConfig Configuration Object
    * @return output result of deconv2d op (NUMERIC type)
    */
@@ -267,7 +251,7 @@ public class NDCNN {
   }
 
   /**
-   * See {@link #deconv3d(String, SDVariable, SDVariable, SDVariable, DeConv3DConfig)}, no bias.<br>
+   * The transpose of conv3d..<br>
    *
    * @param input Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW) (NUMERIC type)
    * @param weights Weights array - shape [kD, kH, kW, oC, iC] (NUMERIC type)
@@ -315,7 +299,7 @@ public class NDCNN {
   }
 
   /**
-   * See {@link #depthWiseConv2d(String, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.<br>
+   * Depthwise 2-D convolution.<br>
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
    * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
@@ -350,8 +334,7 @@ public class NDCNN {
    * Depth-wise convolution 2D operation.<br>
    *
    * @param inputs the inputs to depth-wise conv2d. An array with either 2 elements (layerInput, depthWeights)
-   *                           or 3 elements (layerInput, depthWeights, bias) as described in
-   *                           {@link #depthWiseConv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)} (NUMERIC type)
+   * or 3 elements (layerInput, depthWeights, bias) (NUMERIC type)
    * @param Conv2DConfig Configuration Object
    * @return output result of depthwise conv2d op (NUMERIC type)
    */
@@ -452,7 +435,7 @@ public class NDCNN {
   }
 
   /**
-   * See {@link #separableConv2d(String, SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.<br>
+   * 2-D convolution with separable filters.<br>
    *
    * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
    *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
@@ -466,7 +449,7 @@ public class NDCNN {
     NDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
     NDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
     NDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.separableConv2d(layerInput, depthWeights, pointWeights, Conv2DConfig))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, Conv2DConfig))[0];
   }
 
   /**
@@ -486,7 +469,7 @@ public class NDCNN {
     NDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
     NDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
     NDValidation.validateNumerical("separableConv2d", "bias", bias);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SeparableConv2d(layerInput, depthWeights, pointWeights, bias, Conv2DConfig))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(layerInput, depthWeights, pointWeights, bias, Conv2DConfig))[0];
   }
 
   /**
@@ -525,7 +508,7 @@ public class NDCNN {
   }
 
   /**
-   * See {@link #upsampling2d(String, SDVariable, boolean, int, int)},<br>
+   * Upsampling layer for 2D inputs.<br>
    * scale is used for both height and width dimensions. <br>
    *
    * @param input Input in NCHW format (NUMERIC type)

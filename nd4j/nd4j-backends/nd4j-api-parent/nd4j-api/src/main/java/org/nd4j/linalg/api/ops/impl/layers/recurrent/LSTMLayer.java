@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
@@ -89,6 +90,15 @@ public class LSTMLayer extends DynamicCustomOp {
         this.weights = weights;
         addIArgument(configuration.iArgs(true));
         addTArgument(configuration.tArgs());
+    }
+
+    public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
+        super(null, null, lstmWeights.argsWithInputs(maxTSLength, x, cLast, yLast));
+        this.configuration = lstmConfiguration;
+        this.weights = lstmWeights;
+        addIArgument(configuration.iArgs(true));
+        addTArgument(configuration.tArgs());
+    }
     }
 
     @Override
