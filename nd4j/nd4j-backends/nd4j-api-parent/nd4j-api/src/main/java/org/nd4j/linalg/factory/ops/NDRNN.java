@@ -88,45 +88,43 @@ public class NDRNN {
    * The SRU layer.  Does a single time step operation.<br>
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
-   * @param cLast Previous cell state, with shape [batchSize, inSize] (NUMERIC type)
-   * @param SRUWeights Configuration Object
-   * @return output The cell's outputs. (NUMERIC type)
-   */
-
-//  TODO figure out with overloading of methods below
-  public INDArray sruCell(INDArray x, INDArray cLast, SRUWeights SRUWeights) {
-    NDValidation.validateNumerical("sruCell", "x", x);
-    NDValidation.validateNumerical("sruCell", "cLast", cLast);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell(x, cLast, SRUWeights))[0];
-  }
-
-  /**
-   * The SRU layer.  Does a single time step operation.<br>
-   *
-   * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
-   * @param initialC Initial cell state, with shape [batchSize, inSize] (NUMERIC type)
-   * @param SRUWeights Configuration Object
-   * @return output The cell's outputs.. (NUMERIC type)
-   */
-  public INDArray sruCell(INDArray x, INDArray initialC, SRUWeights SRUWeights) {
-    NDValidation.validateNumerical("sruCell", "x", x);
-    NDValidation.validateNumerical("sruCell", "initialC", initialC);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU(x, initialC, SRUWeights))[0];
-  }
-
-  /**
-   * The SRU layer.  Does a single time step operation.<br>
-   *
-   * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param initialC Initial cell state, with shape [batchSize, inSize] (NUMERIC type)
    * @param mask An optional dropout mask, with shape [batchSize, inSize] (NUMERIC type)
    * @param SRUWeights Configuration Object
    * @return output The cell's outputs.. (NUMERIC type)
    */
-  public INDArray sruCell(INDArray x, INDArray initialC, INDArray mask, SRUWeights SRUWeights) {
-    NDValidation.validateNumerical("sruCell", "x", x);
-    NDValidation.validateNumerical("sruCell", "initialC", initialC);
-    NDValidation.validateNumerical("sruCell", "mask", mask);
+  public INDArray sru(INDArray x, INDArray initialC, INDArray mask, SRUWeights SRUWeights) {
+    NDValidation.validateNumerical("sru", "x", x);
+    NDValidation.validateNumerical("sru", "initialC", initialC);
+    NDValidation.validateNumerical("sru", "mask", mask);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU(x, initialC, mask, SRUWeights))[0];
+  }
+
+  /**
+   * The SRU layer.  Does a single time step operation.<br>
+   *
+   * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
+   * @param initialC Initial cell state, with shape [batchSize, inSize] (NUMERIC type)
+   * @param SRUWeights Configuration Object
+   * @return output The cell's outputs.. (NUMERIC type)
+   */
+  public INDArray sru(INDArray x, INDArray initialC, SRUWeights SRUWeights) {
+    NDValidation.validateNumerical("sru", "x", x);
+    NDValidation.validateNumerical("sru", "initialC", initialC);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU(x, initialC, null, SRUWeights))[0];
+  }
+
+  /**
+   * The SRU layer.  Does a single time step operation.<br>
+   *
+   * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
+   * @param cLast Previous cell state, with shape [batchSize, inSize] (NUMERIC type)
+   * @param SRUWeights Configuration Object
+   * @return output The cell's outputs. (NUMERIC type)
+   */
+  public INDArray sruCell(INDArray x, INDArray cLast, SRUWeights SRUWeights) {
+    NDValidation.validateNumerical("sruCell", "x", x);
+    NDValidation.validateNumerical("sruCell", "cLast", cLast);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell(x, cLast, SRUWeights))[0];
   }
 }
