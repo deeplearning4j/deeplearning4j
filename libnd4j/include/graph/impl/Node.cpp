@@ -587,6 +587,12 @@ namespace nd4j {
                                 block->getIArguments()->emplace_back(node->extraInteger()->Get(e));
                             }
 
+                        if (node->outputTypes() != nullptr && node->outputTypes()->size() > 0) {
+                            for (int e = 0; e < (int) node->outputTypes()->size(); e++) {
+                                block->getDArguments()->emplace_back((nd4j::DataType) node->outputTypes()->Get(e));
+                            }
+                        }
+
                         this->setContextPrototype(block);
                         this->setCustomOp(Node::buildOpByType(_opType, (int) node->input()->size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), (int) _opNum, &_scalar));
                         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
@@ -617,6 +623,12 @@ namespace nd4j {
                             for (int e = 0; e < (int) node->extraInteger()->size(); e++) {
                                 block->getIArguments()->emplace_back(node->extraInteger()->Get(e));
                             }
+
+                        if (node->outputTypes() != nullptr && node->outputTypes()->size() > 0) {
+                            for (int e = 0; e < (int) node->outputTypes()->size(); e++) {
+                                block->getDArguments()->emplace_back((nd4j::DataType) node->outputTypes()->Get(e));
+                            }
+                        }
 
                         this->setContextPrototype(block);
 
@@ -651,6 +663,12 @@ namespace nd4j {
                             for (int e = 0; e < (int) node->extraBools()->size(); e++) {
                                 block->getBArguments()->push_back(node->extraBools()->Get(e));
                             }
+
+                        if (node->outputTypes() != nullptr && node->outputTypes()->size() > 0) {
+                            for (int e = 0; e < (int) node->outputTypes()->size(); e++) {
+                                block->getDArguments()->emplace_back((nd4j::DataType) node->outputTypes()->Get(e));
+                            }
+                        }
 
                         for (auto v: _dimensions)
                             block->getAxis()->emplace_back(v);

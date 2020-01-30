@@ -37,16 +37,16 @@ public final class FlatVariable extends Table {
   public int controlDepsForVarLength() { int o = __offset(22); return o != 0 ? __vector_len(o) : 0; }
 
   public static int createFlatVariable(FlatBufferBuilder builder,
-                                       int idOffset,
-                                       int nameOffset,
-                                       byte dtype,
-                                       int shapeOffset,
-                                       int ndarrayOffset,
-                                       int device,
-                                       byte variabletype,
-                                       int controlDepsOffset,
-                                       int controlDepForOpOffset,
-                                       int controlDepsForVarOffset) {
+      int idOffset,
+      int nameOffset,
+      byte dtype,
+      int shapeOffset,
+      int ndarrayOffset,
+      int device,
+      byte variabletype,
+      int controlDepsOffset,
+      int controlDepForOpOffset,
+      int controlDepsForVarOffset) {
     builder.startObject(10);
     FlatVariable.addControlDepsForVar(builder, controlDepsForVarOffset);
     FlatVariable.addControlDepForOp(builder, controlDepForOpOffset);
@@ -87,5 +87,4 @@ public final class FlatVariable extends Table {
   public static void finishFlatVariableBuffer(FlatBufferBuilder builder, int offset) { builder.finish(offset); }
   public static void finishSizePrefixedFlatVariableBuffer(FlatBufferBuilder builder, int offset) { builder.finishSizePrefixed(offset); }
 }
-
 

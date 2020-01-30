@@ -48,7 +48,7 @@ namespace ops {
 
         auto conv = ArrayUtils::toLongVector(*block.getIArguments());
 
-        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), shape::order(in), conv);
+        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), shape::order(in), conv);
 
         return SHAPELIST(newShape);
     }

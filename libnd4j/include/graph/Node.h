@@ -38,7 +38,9 @@ namespace nd4j {
 
         class ND4J_EXPORT Node {
         protected:
+            // TODO: this field must be removed
             nd4j::DataType _dataType;
+
             OpType _opType;
             ContextPrototype* _protoContext = nullptr;
             Nd4jLong _opNum;
@@ -61,6 +63,7 @@ namespace nd4j {
 
 
             // optional scalar. used in scalar ops and in summary stats
+            // TODO: this field must be removed
             NDArray _scalar;
 
             bool _hasExternalOutputs;
@@ -87,15 +90,15 @@ namespace nd4j {
             int _scope_id = 0;
             std::string _scope_name;
 
+            // TODO: these 3 fields should be removed
             int _rewindNode = -1;
             std::pair<int, int> _rewindLayer = {-1, -1};
-
             Nd4jLong _frameId = -1;
 
         public:
-            Node(nd4j::ops::DeclarableOp *customOp, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
-            Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
-            Node(const nd4j::graph::FlatNode *node);
+            explicit Node(nd4j::ops::DeclarableOp *customOp, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
+            explicit Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
+            explicit Node(const nd4j::graph::FlatNode *node);
             ~Node();
 
             bool equals(Node *other);

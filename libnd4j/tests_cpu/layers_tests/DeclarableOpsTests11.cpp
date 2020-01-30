@@ -43,7 +43,7 @@ TEST_F(DeclarableOpsTests11, test_listdiff_1) {
     auto y = NDArrayFactory::create<int>('c',{2}, {3, 1});
 
     nd4j::ops::listdiff op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     delete result;
@@ -68,7 +68,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test1) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0}, {});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {0}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -100,7 +100,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test2) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -130,7 +130,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test3) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {1});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -162,7 +162,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test4) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {1});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -195,7 +195,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test5) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -227,7 +227,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test6) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -253,7 +253,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test7) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -288,7 +288,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test8) {
     weights.p(3, 0.);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -325,7 +325,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test9) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -357,7 +357,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test10) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -383,7 +383,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test11) {
     weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -420,7 +420,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test12) {
 
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -459,7 +459,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
     weights.t<double>(2) = 0.;
 
     nd4j::ops::log_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -642,7 +642,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test1) {
 
     auto size = NDArrayFactory::create<int>({30, 30});
     nd4j::ops::resize_bicubic op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
     NDArray* result = results->at(0);
@@ -716,7 +716,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test2) {
     input.linspace(1);
     auto size = NDArrayFactory::create<int>({10, 8});
     nd4j::ops::resize_bicubic op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -753,7 +753,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test3) {
     input.linspace(1);
     auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_bicubic op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -790,7 +790,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test4) {
     input.linspace(1);
     auto size = NDArrayFactory::create<int>({6, 8});
     nd4j::ops::resize_bicubic op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -833,7 +833,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test5) {
     input.linspace(1);
     auto size = NDArrayFactory::create<int>({8, 8});
     nd4j::ops::resize_bicubic op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -963,7 +963,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test6) {
 
     auto size = NDArrayFactory::create<int>({30, 30});
     nd4j::ops::resize_bicubic op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
     NDArray* result = results->at(0);
@@ -1021,7 +1021,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test7) {
     });
     auto size = NDArrayFactory::create<int>({9, 9});
     nd4j::ops::resize_bicubic op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1074,7 +1074,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test8) {
 
     auto size = NDArrayFactory::create<int>({9, 9});
     nd4j::ops::resize_bicubic op;
-    auto results = op.execute({&input, &size}, {}, {}, {true, false});
+    auto results = op.evaluate({&input, &size}, {}, {}, {true, false});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1135,7 +1135,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
     input.linspace(1);
     auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1162,7 +1162,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test2) {
     input.linspace(1);
     auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1190,7 +1190,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test3) {
     input.linspace(1);
     auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1228,7 +1228,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test4) {
     //input.linspace(1);
     auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1266,7 +1266,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test5) {
     //input.linspace(1);
     auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1304,7 +1304,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test6) {
     //input.linspace(1);
     auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input, &size}, {}, {}, {true});
+    auto results = op.evaluate({&input, &size}, {}, {}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1342,7 +1342,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test7) {
     //input.linspace(1);
 //    auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input}, {}, {6, 6}, {true});
+    auto results = op.evaluate({&input}, {}, {6, 6}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1372,7 +1372,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test8) {
     //input.linspace(1);
 //    auto size = NDArrayFactory::create<int>({6, 6});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input}, {}, {6, 6}, {true});
+    auto results = op.evaluate({&input}, {}, {6, 6}, {true});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1399,7 +1399,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test9) {
     //input.linspace(1);
     auto size = NDArrayFactory::create<int>({10, 10});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input, &size}, {}, {});
+    auto results = op.evaluate({&input, &size}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1426,7 +1426,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test10) {
     //input.linspace(1);
     //auto size = NDArrayFactory::create<int>({10, 10});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input}, {}, {10, 10});
+    auto results = op.evaluate({&input}, {}, {10, 10});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1453,7 +1453,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test11) {
     //input.linspace(1);
     //auto size = NDArrayFactory::create<int>({10, 10});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input}, {}, {6, 9});
+    auto results = op.evaluate({&input}, {}, {6, 9});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1480,7 +1480,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test12) {
     //input.linspace(1);
     //auto size = NDArrayFactory::create<int>({10, 10});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input}, {}, {10, 15});
+    auto results = op.evaluate({&input}, {}, {10, 15});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1507,7 +1507,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test13) {
     //input.linspace(1);
     //auto size = NDArrayFactory::create<int>({10, 10});
     nd4j::ops::resize_area op;
-    auto results = op.execute({&input}, {}, {9, 9});
+    auto results = op.evaluate({&input}, {}, {9, 9});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1558,7 +1558,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1590,7 +1590,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test2) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1618,7 +1618,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test3) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1650,7 +1650,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test4) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1679,7 +1679,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test5) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1711,7 +1711,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test6) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1737,7 +1737,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test7) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1770,7 +1770,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test8) {
     weights.p(3, 0.);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1805,7 +1805,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test9) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1837,7 +1837,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test10) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1863,7 +1863,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test11) {
     weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1896,7 +1896,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
     weights.t<double>(3) = 0.;
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1933,7 +1933,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
     weights.t<double>(2) = 0.;
 
     nd4j::ops::mean_sqerr_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1956,7 +1956,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test1) {
     auto y = NDArrayFactory::create<float>('c',{4}, {3, 2, 1, 0});
     auto exp = NDArrayFactory::create<float>('c', {4}, {9, 1,1, 9});
     nd4j::ops::squaredsubtract op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
 
@@ -1968,7 +1968,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test2) {
     auto y = NDArrayFactory::create<float>('c',{4}, {3, 2, 1, 0});
     auto exp = NDArrayFactory::create<float>('c', {2, 4}, {9, 1,1, 9, 9, 1, 1, 9});
     nd4j::ops::squaredsubtract op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
@@ -1980,7 +1980,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
     auto exp = NDArrayFactory::create<float>('c', {2, 4}, {-6, -4, 6, 24, -30, -12, 14, 48});
     auto eps = NDArrayFactory::create<float>('c', {2, 4}, {1,2,3,4,5,6,7,8});
     nd4j::ops::squaredsubtract_bp op;
-    auto result = op.execute({&x, &y, &eps}, {}, {});
+    auto result = op.evaluate({&x, &y, &eps}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
@@ -2003,7 +2003,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test1) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2035,7 +2035,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test2) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2063,7 +2063,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test3) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2095,7 +2095,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test4) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2124,7 +2124,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test5) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2156,7 +2156,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test6) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2182,7 +2182,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test7) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2215,7 +2215,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test8) {
     weights.p(3, 0.);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2250,7 +2250,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test9) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2282,7 +2282,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test10) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2308,7 +2308,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test11) {
     weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2341,7 +2341,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test12) {
     weights.t<double>(3) = 0.;
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2378,7 +2378,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test13) {
     weights.t<double>(2) = 0.;
 
     nd4j::ops::absolute_difference_loss_grad op;
-    auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
+    auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2407,7 +2407,7 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_1) {
     y.linspace(1);
     exp.linspace(2,2);
     nd4j::ops::add op;
-    auto results = op.execute({&x, &y}, {}, {});
+    auto results = op.evaluate({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2428,7 +2428,7 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_2) {
     y.linspace(1);
     exp.linspace(2,2);
     nd4j::ops::add op;
-    auto results = op.execute({&x, &y}, {}, {});
+    auto results = op.evaluate({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2449,7 +2449,7 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_3) {
     y.linspace(1);
     exp.linspace(2,2);
     nd4j::ops::add op;
-    auto results = op.execute({&x, &y}, {}, {});
+    auto results = op.evaluate({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2478,7 +2478,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test1) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2514,7 +2514,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test2) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {0});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2550,7 +2550,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test3) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {1});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2582,7 +2582,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test4) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {1});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2613,7 +2613,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test5) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2645,7 +2645,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test6) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2671,7 +2671,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test7) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2705,7 +2705,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test8) {
     weights.p(3, 0.);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2741,7 +2741,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test9) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2773,7 +2773,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test10) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2799,7 +2799,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test11) {
     weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2834,7 +2834,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test12) {
 
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2872,7 +2872,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test13) {
     weights.t<double>(2) = 0.;
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2901,7 +2901,7 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_4) {
     y.linspace(1);
     exp.linspace(2,2);
     nd4j::ops::add op;
-    auto results = op.execute({&x, &y}, {}, {});
+    auto results = op.evaluate({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2922,7 +2922,7 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_5) {
     y.linspace(1);
     exp.linspace(1);
     nd4j::ops::subtract op;
-    auto results = op.execute({&x, &y}, {}, {});
+    auto results = op.evaluate({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2943,7 +2943,7 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_6) {
     y.linspace(1);
     exp.linspace(1);
     nd4j::ops::subtract op;
-    auto results = op.execute({&x, &y}, {}, {});
+    auto results = op.evaluate({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2968,7 +2968,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test1) {
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2999,7 +2999,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test2) {
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {1});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3030,7 +3030,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test3) {
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {1});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3061,7 +3061,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test4) {
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {2});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3092,7 +3092,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test5) {
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {3});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3123,7 +3123,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test6) {
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3154,7 +3154,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test7) {
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {3});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3196,7 +3196,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {2});
+    auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3237,7 +3237,7 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test1) {
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&logits, &labels}, {}, {});
+    auto results = op.evaluate({&logits, &labels}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3261,7 +3261,7 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test2) {
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&logits, &labels}, {}, {1});
+    auto results = op.evaluate({&logits, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3284,7 +3284,7 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test3) {
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&logits, &labels}, {}, {0});
+    auto results = op.evaluate({&logits, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3306,7 +3306,7 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test4) {
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&logits, &labels}, {}, {1});
+    auto results = op.evaluate({&logits, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3328,7 +3328,7 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test5) {
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&logits, &labels}, {}, {0});
+    auto results = op.evaluate({&logits, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3350,7 +3350,7 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test6) {
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&logits, &labels}, {}, {0});
+    auto results = op.evaluate({&logits, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3372,7 +3372,7 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test7) {
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&logits, &labels}, {}, {0});
+    auto results = op.evaluate({&logits, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3394,7 +3394,7 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test8) {
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&logits, &labels}, {}, {0});
+    auto results = op.evaluate({&logits, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3421,7 +3421,7 @@ TEST_F(DeclarableOpsTests11, Multiply_BP_Test1) {
     dLdpExp.assign(1.0);
     nd4j::ops::multiply_bp op;
 
-    auto results = op.execute({&x, &y, &dLdp}, {}, {});
+    auto results = op.evaluate({&x, &y, &dLdp}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3444,7 +3444,7 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test1) {
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.evaluate({&labels, &logits}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3468,7 +3468,7 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test2) {
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.evaluate({&labels, &logits}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3490,7 +3490,7 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test3) {
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.evaluate({&labels, &logits}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3514,7 +3514,7 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test4) {
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.evaluate({&labels, &logits}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3536,7 +3536,7 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test5) {
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
-    auto results = op.execute({&labels, &logits}, {}, {});
+    auto results = op.evaluate({&labels, &logits}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

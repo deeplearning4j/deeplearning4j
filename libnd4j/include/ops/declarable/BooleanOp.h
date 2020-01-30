@@ -36,9 +36,8 @@ namespace nd4j {
         public:
             BooleanOp(const char *name, int numInputs, bool scalar);
 
-            bool evaluate(std::initializer_list<nd4j::NDArray*> args);
-            bool evaluate(std::vector<nd4j::NDArray*>& args);
-            bool evaluate(nd4j::graph::Context& block);
+            bool verify(const std::vector<nd4j::NDArray*>& args);
+            bool verify(nd4j::graph::Context& block);
 
             Nd4jStatus execute(Context* block) override;
 

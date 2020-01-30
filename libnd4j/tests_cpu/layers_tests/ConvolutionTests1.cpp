@@ -140,7 +140,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_2) {
     input.linspace(1);
 
     nd4j::ops::conv2d op;
-    auto result = op.execute({&input, &weights}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
+    auto result = op.evaluate({&input, &weights}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -172,7 +172,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_3) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv2d op;
-    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -201,7 +201,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_4) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv2d op;
-    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -231,7 +231,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_5) {
     weights.permutei({2,3,1,0});
 
     nd4j::ops::conv2d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     // output->printIndexedBuffer();
@@ -250,7 +250,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_6) {
     auto weights = NDArrayFactory::create<TypeParam>('c', {1, 2, 12, 2});
 
     nd4j::ops::conv2d op;
-    auto result = op.execute({&input, &weights}, {}, {-1,-1,  1,1,  0,0,  1,1,  1,1});
+    auto result = op.evaluate({&input, &weights}, {}, {-1,-1,  1,1,  0,0,  1,1,  1,1});
     ASSERT_EQ(Status::OK(), result->status());
 
     delete result;
@@ -271,7 +271,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_7) {
     weights = 3.;
 
     nd4j::ops::conv2d op;
-    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -305,7 +305,7 @@ TEST_F(ConvolutionTests1, conv2d_8) {
         1.764169, 2.584944, 2.521004, 1.744296, 1.707578, 2.237938, 2.325231, 0.984485, 1.766936, 1.590640, 1.347524, 1.404648, 1.422042, 1.709862, 1.155412});
 
     nd4j::ops::conv2d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     // output->printBuffer();
@@ -419,7 +419,7 @@ TYPED_TEST(TypedConvolutionTests1, sconv2d_2) {
 
     nd4j::ops::sconv2d op;
 
-    auto resultFF = op.execute({&input, &weightsD, &weightsP}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0}, {});
+    auto resultFF = op.evaluate({&input, &weightsD, &weightsP},  {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
 
     auto z = resultFF->at(0);
     //z->printShapeInfo("FF shape");
@@ -452,8 +452,8 @@ TYPED_TEST(TypedConvolutionTests1, sconv2d_3) {
     auto expOutput = NDArrayFactory::create<TypeParam>('c', {3, 2, 8, 8});
 
     nd4j::ops::sconv2d op;
-    Nd4jStatus status = op.execute({&input, &weightsD, &weightsP, &bias}, {&output}, {},  {1, 1, 1, 1, 0, 0, 1, 1, 0}, {});
-    auto result = op.execute({&input, &weightsD, &weightsP, &bias}, {},  {1, 1, 1, 1, 0, 0, 1, 1, 0}, {});
+    Nd4jStatus status = op.execute({&input, &weightsD, &weightsP, &bias}, {&output}, {1, 1, 1, 1, 0, 0, 1, 1, 0});
+    auto result = op.evaluate({&input, &weightsD, &weightsP, &bias}, {1, 1, 1, 1, 0, 0, 1, 1, 0});
 
     auto z = result->at(0);
 
@@ -493,7 +493,7 @@ TEST_F(ConvolutionTests1, sconv2d_4) {
         0.962232, 0.980667, 1.623775, 1.417320, 1.845710, 1.237095, 1.762792, 1.352515});
 
     nd4j::ops::sconv2d op;
-    auto results = op.execute({&input, &weightsD, &weightsP, &biases}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weightsD, &weightsP, &biases}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -531,7 +531,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_BP_Bias_1) {
 
     nd4j::ops::conv2d_bp op;
 
-    auto results = op.execute({&input, &weights, &bias, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
+    auto results = op.evaluate({&input, &weights, &bias, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
 
     ASSERT_TRUE(results->size() == 3);
 
@@ -581,7 +581,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_BP_NoBias_1) {
 
     nd4j::ops::conv2d_bp op;
 
-    auto results = op.execute({&input, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
+    auto results = op.evaluate({&input, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1}, {});
 
     ASSERT_TRUE(results->size() == 2);
 
@@ -664,7 +664,7 @@ TYPED_TEST(TypedConvolutionTests1, sconv2d_conv2d_1) {
     input.linspace(1);
 
     nd4j::ops::sconv2d op;
-    auto resultFF = op.execute({&input, &weightsD}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0}, {});
+    auto resultFF = op.evaluate({&input, &weightsD}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0}, {});
 
     auto z = resultFF->at(0);
 
@@ -674,7 +674,7 @@ TYPED_TEST(TypedConvolutionTests1, sconv2d_conv2d_1) {
 
     nd4j::ops::conv2d op2d;
     // weightsP.printShapeInfo();
-    auto result2D = op2d.execute({z, &weightsP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
+    auto result2D = op2d.evaluate({z, &weightsP}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
 
     auto z2d = result2D->at(0);
     // z2d->printBuffer();
@@ -717,7 +717,7 @@ TEST_F(ConvolutionTests1, TestDeconv_bp_1) {
 
 
     nd4j::ops::deconv2d_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -771,7 +771,7 @@ TEST_F(ConvolutionTests1, TestDeconv_bp_2) {
 
     nd4j::ops::deconv2d_bp<double> op;
 
-    auto result = op.execute({&input, &weights, &bias, &epsilon}, {}, {2, 2, 1, 1, 0, 0, 2, 2, 0});
+    auto result = op.evaluate({&input, &weights, &bias, &epsilon}, {}, {2, 2, 1, 1, 0, 0, 2, 2, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
 
@@ -791,7 +791,7 @@ TYPED_TEST(TypedConvolutionTests1, Test_Conv1D_ff_1) {
     bias.linspace(1);
 
     nd4j::ops::conv1d op;
-    auto result_FF = op.execute({&input, &weights, &bias}, {}, {2, 1, 0, 1, 0, 0});
+    auto result_FF = op.evaluate({&input, &weights, &bias}, {}, {2, 1, 0, 1, 0, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result_FF->status());
 
@@ -805,7 +805,7 @@ TYPED_TEST(TypedConvolutionTests1, Test_Conv1D_ff_1) {
     auto epsilonNxt = new NDArray(z->dup());
     epsilonNxt->linspace(1);
 
-    auto result_BP = op_bp.execute({&input, &weights, &bias, epsilonNxt}, {}, {2, 1, 0, 1, 0, 0});
+    auto result_BP = op_bp.evaluate({&input, &weights, &bias, epsilonNxt}, {}, {2, 1, 0, 1, 0, 0});
     ASSERT_EQ(ND4J_STATUS_OK, result_BP->status());
 
     auto eps = result_BP->at(0);
@@ -833,7 +833,7 @@ TYPED_TEST(TypedConvolutionTests1, Test_Conv1D_ff_2) {
     input.linspace(1);
 
     nd4j::ops::conv1d op;
-    auto result = op.execute({&input, &weights}, {}, {2, 1, 0, 1, 1,0});
+    auto result = op.evaluate({&input, &weights}, {}, {2, 1, 0, 1, 1,0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -860,7 +860,7 @@ TEST_F(ConvolutionTests1, conv1d_causal_1) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv1d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW,  paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {kW, sW, pW, dW,  paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -892,7 +892,7 @@ TEST_F(ConvolutionTests1, conv1d_causal_2) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv1d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {kW, sW, pW, dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -923,7 +923,7 @@ TEST_F(ConvolutionTests1, conv1d_causal_3) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv1d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {kW, sW, pW, dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -954,7 +954,7 @@ TEST_F(ConvolutionTests1, conv1d_causal_4) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv1d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {kW, sW, pW, dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -985,7 +985,7 @@ TEST_F(ConvolutionTests1, conv1d_causal_5) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv1d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {kW, sW, pW, dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1016,7 +1016,7 @@ TEST_F(ConvolutionTests1, conv1d_causal_6) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv1d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kW, sW, pW, dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {kW, sW, pW, dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1048,7 +1048,7 @@ TEST_F(ConvolutionTests1, conv1d_causal_7) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv1d op;
-    auto results = op.execute({&input, &weights}, {}, {kW, sW, pW, dW,  paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {kW, sW, pW, dW,  paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1081,7 +1081,7 @@ TEST_F(ConvolutionTests1, conv1d_causal_8) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv1d op;
-    auto results = op.execute({&input, &weights}, {}, {kW, sW, pW, dW,  paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {kW, sW, pW, dW,  paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1129,7 +1129,7 @@ TEST_F(ConvolutionTests1, Test_Dilation2D_1) {
     weights.linspace(1);
 
     nd4j::ops::dilation2d op;
-    auto result = op.execute({&input, &weights}, {}, {1, 1,2,2,1, 1,2,2,1});
+    auto result = op.evaluate({&input, &weights}, {1, 1,2,2,1, 1,2,2,1});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -1149,7 +1149,7 @@ TEST_F(ConvolutionTests1, Test_Dilation2D_2) {
     weights.linspace(1);
 
     nd4j::ops::dilation2d op;
-    auto result = op.execute({&input, &weights}, {}, {0, 1,2,2,1, 1,2,2,1});
+    auto result = op.evaluate({&input, &weights}, {0, 1,2,2,1, 1,2,2,1});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -1188,7 +1188,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_bp_test1) {
     gradO.linspace(0.01, 0.01);
 
     nd4j::ops::conv2d_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto gradI = results->at(0);
     auto gradW = results->at(1);
 
@@ -1231,7 +1231,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_bp_test2) {
     gradO.linspace(0.01, 0.01);
 
     nd4j::ops::conv2d_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto gradI = results->at(0);
     auto gradW = results->at(1);
 
@@ -1276,7 +1276,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2d_bp_test3) {
     expGradW.permutei({2,3,1,0});
 
     nd4j::ops::conv2d_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto gradI = results->at(0);
     auto gradW = results->at(1);
     auto gradB = results->at(2);
@@ -1358,7 +1358,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_bp_test1) {
     gradO.linspace(0.01, 0.01);
 
     nd4j::ops::conv3dnew_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto gradI = results->at(0);
     auto gradW = results->at(1);
 
@@ -1406,7 +1406,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_bp_test2) {
     gradO.linspace(0.01, 0.01);
 
     nd4j::ops::conv3dnew_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto gradI = results->at(0);
     auto gradW = results->at(1);
 
@@ -1459,7 +1459,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_bp_test3) {
     expGradW.permutei({2, 3, 4, 1, 0});
 
     nd4j::ops::conv3dnew_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* gradI = results->at(0);
     auto* gradW = results->at(1);
     auto* gradB = results->at(2);
@@ -1502,7 +1502,7 @@ TEST_F(ConvolutionTests1, depthwise_conv2d_bp_test1) {
     gradO.linspace(0.01, 0.01);
 
     nd4j::ops::depthwise_conv2d_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto* gradI = results->at(0);
     auto* gradW = results->at(1);
 
@@ -1540,7 +1540,7 @@ TEST_F(ConvolutionTests1, depthwise_conv2d_bp_test2) {
     gradO.linspace(0.01, 0.01);
 
     nd4j::ops::depthwise_conv2d_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto* gradI = results->at(0);
     auto* gradW = results->at(1);
 
@@ -1568,7 +1568,7 @@ TEST_F(ConvolutionTests1, depthwise_conv2d_bp_test3) {
     auto gradB = b.like();
 
     nd4j:ops::depthwise_conv2d_bp op;
-    auto status = op.execute({&in, &w, &b, &grad}, {&gradI, &gradW, &gradB}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1, 0}, {});
+    auto status = op.execute({&in, &w, &b, &grad}, {&gradI, &gradW, &gradB}, {2, 2, 1, 1, 0, 0, 1, 1, 1, 0});
     ASSERT_EQ(Status::OK(), status);
 }
 
@@ -1607,7 +1607,7 @@ TEST_F(ConvolutionTests1, depthwise_conv2d_bp_test4) {
     NDArray expGradB('c', {oC}, {-2960., -2970., -2980., -2990., -3000., -3010., -3020., -3030.}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::depthwise_conv2d_bp op;
-    ResultSet* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    ResultSet* results = op.evaluate({&input, &weights, &bias, &gradO}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray* gradI = results->at(0);
     NDArray* gradW = results->at(1);
     NDArray* gradB = results->at(2);
@@ -1662,7 +1662,7 @@ TEST_F(ConvolutionTests1, depthwise_conv2d_bp_test5) {
     NDArray expGradB('c', {oC}, {505., -495., -1495., -2495., -3495., -4494.999512, -5495., -6495.}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::depthwise_conv2d_bp op;
-    ResultSet* results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    ResultSet* results = op.evaluate({&input, &weights, &bias, &gradO}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     NDArray* gradI = results->at(0);
     NDArray* gradW = results->at(1);
     NDArray* gradB = results->at(2);
@@ -1706,7 +1706,7 @@ TEST_F(ConvolutionTests1, depthwise_conv2d_bp_test6) {
     gradO.linspace(0.01, 0.01);
 
     nd4j::ops::depthwise_conv2d_bp op;
-    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias, &gradO}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto* gradI = results->at(0);
     auto* gradW = results->at(1);
 
@@ -1742,7 +1742,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test1) {
     weights = 1.;
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1774,7 +1774,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test2) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1801,7 +1801,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test3) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1827,7 +1827,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test4) {
     expected = 48.;
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1855,7 +1855,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test5) {
     bias = 1.;
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     // output->printIndexedBuffer();
@@ -1884,7 +1884,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test6) {
     weights = 0.5;
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     // output->printIndexedBuffer();
@@ -1915,7 +1915,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test7) {
     weights.permutei({2, 3, 4, 1, 0});
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     // output->printIndexedBuffer();
@@ -1944,7 +1944,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test8) {
     weights.permutei({2, 3, 4, 1, 0});
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -1961,7 +1961,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test9) {
     auto e = NDArrayFactory::create<TypeParam>('c', {4, 1, 7, 10, 4});
 
     nd4j::ops::conv3dnew op;
-    auto result = op.execute({&x, &y}, {}, {2,5,5, 5,4,3, 0,0,0, 1,1,1, 1,1});
+    auto result = op.evaluate({&x, &y}, {}, {2,5,5, 5,4,3, 0,0,0, 1,1,1, 1,1});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -1977,7 +1977,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test10) {
     auto exp = NDArrayFactory::create<TypeParam>('c', {4, 1, 7, 10, 4});
 
     nd4j::ops::conv3dnew op;
-    auto result = op.execute({&x, &w}, {}, {2,5,5, 5,4,3, 0,0,0, 1,1,1, 1,1});
+    auto result = op.evaluate({&x, &w}, {}, {2,5,5, 5,4,3, 0,0,0, 1,1,1, 1,1});
     ASSERT_EQ(Status::OK(), result->status());
 
     ShapeList shapeList({x.shapeInfo(), w.shapeInfo()});
@@ -2039,7 +2039,7 @@ TYPED_TEST(TypedConvolutionTests1, pointwise_conv2d_test1) {
     bias = 1.;
 
     nd4j::ops::pointwise_conv2d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {}, {dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2063,7 +2063,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test11) {
     weights = 1.;
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2087,7 +2087,7 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test12) {
     weights = 1.;
 
     nd4j::ops::conv3dnew op;
-    auto results = op.execute({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2205,7 +2205,7 @@ TEST_F(ConvolutionTests1, upsampling2d_test1) {
                                         31.f, 32.f, 33.f, 31.f, 32.f, 33.f, 31.f, 32.f, 33.f, 34.f, 35.f, 36.f, 34.f, 35.f, 36.f, 34.f, 35.f, 36.f, 31.f, 32.f, 33.f, 31.f, 32.f, 33.f, 31.f, 32.f, 33.f, 34.f, 35.f, 36.f, 34.f, 35.f, 36.f, 34.f, 35.f, 36.f});
 
     nd4j::ops::upsampling2d op;
-    auto results = op.execute({&input}, {}, {factorH, factorW, isNCHW});
+    auto results = op.evaluate({&input}, {factorH, factorW, isNCHW});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2233,7 +2233,7 @@ TEST_F(ConvolutionTests1, upsampling2d_test2) {
                                 33.f, 33.f, 33.f, 34.f, 34.f, 34.f, 33.f, 33.f, 33.f, 34.f, 34.f, 34.f, 35.f, 35.f, 35.f, 36.f, 36.f, 36.f, 35.f, 35.f, 35.f, 36.f, 36.f, 36.f});
 
     nd4j::ops::upsampling2d op;
-    auto results = op.execute({&input}, {}, {factorH, factorW, isNCHW});
+    auto results = op.evaluate({&input}, {factorH, factorW, isNCHW});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2271,7 +2271,7 @@ TEST_F(ConvolutionTests1, upsampling3d_test1) {
             67.f, 68.f, 69.f, 67.f, 68.f, 69.f, 70.f, 71.f, 72.f, 70.f, 71.f, 72.f, 67.f, 68.f, 69.f, 67.f, 68.f, 69.f, 70.f, 71.f, 72.f, 70.f, 71.f, 72.f});
 
     nd4j::ops::upsampling3d op;
-    auto results = op.execute({&input}, {}, {factorD, factorH, factorW, isNCDHW});
+    auto results = op.evaluate({&input}, {factorD, factorH, factorW, isNCDHW});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2305,7 +2305,7 @@ TEST_F(ConvolutionTests1, upsampling3d_test2) {
             65.f, 65.f, 66.f, 66.f, 65.f, 65.f, 66.f, 66.f, 65.f, 65.f, 66.f, 66.f, 67.f, 67.f, 68.f, 68.f, 67.f, 67.f, 68.f, 68.f, 67.f, 67.f, 68.f, 68.f, 69.f, 69.f, 70.f, 70.f, 69.f, 69.f, 70.f, 70.f, 69.f, 69.f, 70.f, 70.f, 71.f, 71.f, 72.f, 72.f, 71.f, 71.f, 72.f, 72.f, 71.f, 71.f, 72.f, 72.f, 69.f, 69.f, 70.f, 70.f, 69.f, 69.f, 70.f, 70.f, 69.f, 69.f, 70.f, 70.f, 71.f, 71.f, 72.f, 72.f, 71.f, 71.f, 72.f, 72.f, 71.f, 71.f, 72.f, 72.f});
 
     nd4j::ops::upsampling3d op;
-    auto results = op.execute({&input}, {}, {factorD, factorH, factorW, isNCDHW});
+    auto results = op.evaluate({&input}, {factorD, factorH, factorW, isNCDHW});
     auto* output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2332,7 +2332,7 @@ TEST_F(ConvolutionTests1, upsampling3d_bp_test1) {
     expGradI = 8.;
 
     nd4j::ops::upsampling3d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {isNCDHW});
+    auto results = op.evaluate({&input, &gradO}, {isNCDHW});
     auto* gradI = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2359,7 +2359,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_input_BP_test1) {
 
     nd4j::ops::conv2d_input_bp op;
 
-    auto results = op.execute({&inputShape, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
+    auto results = op.evaluate({&inputShape, &weights, &epsilonNext}, {},  {3, 3, 1, 1, 0, 0, 1, 1, 1});
 
     ASSERT_TRUE(results->size() == 1);
 
@@ -2424,7 +2424,7 @@ TEST_F(ConvolutionTests1, upsampling3d_bp_test3) {
         4.225355, 4.377341, 4.4398847, 4.710785, 4.4199953, 3.928307, 4.8769503}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::upsampling3d_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {isNCDHW});
+    auto results = op.evaluate({&input, &gradO}, {isNCDHW});
     auto* gradI = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2457,7 +2457,7 @@ TEST_F(ConvolutionTests1, deconv2d_test1) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::deconv2d op;
-    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
@@ -2490,7 +2490,7 @@ TEST_F(ConvolutionTests1, deconv2d_test2) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::deconv2d op;
-    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
@@ -2522,7 +2522,7 @@ TEST_F(ConvolutionTests1, deconv2d_test3) {
     bias = 0.2;
 
     nd4j::ops::deconv2d op;
-    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
@@ -2557,7 +2557,7 @@ TEST_F(ConvolutionTests1, deconv2d_test4) {
     weights.permutei({2,3,1,0});
 
     nd4j::ops::deconv2d op;
-    auto result = op.execute({&input, &weights}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
+    auto result = op.evaluate({&input, &weights}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
 
     auto z = result->at(0);
     // z->printShapeInfo();
@@ -2584,7 +2584,7 @@ TEST_F(ConvolutionTests1, deconv2d_test5) {
     weights.permutei({2,3,1,0});
 
     nd4j::ops::deconv2d op;
-    auto result = op.execute({&input, &weights}, {&z}, {}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0},{});
+    auto result = op.execute({&input, &weights}, {&z}, {5, 5, 1, 1, 0, 0, 1, 1, 0, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -2615,7 +2615,7 @@ TYPED_TEST(TypedConvolutionTests1, deconv2d_test6) {
     input.linspace(1);
 
     nd4j::ops::deconv2d op;
-    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
 
     ASSERT_EQ(Status::OK(), results->status());
 
@@ -2640,7 +2640,7 @@ TEST_F(ConvolutionTests1, deconv2d_test7) {
 
     nd4j::ops::deconv2d op;
 
-    auto result = op.execute({&input, &weights, &bias}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 1, 0});
+    auto result = op.evaluate({&input, &weights, &bias}, {1, 1, 1, 1, 0, 0, 1, 1, 1, 0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -2683,7 +2683,7 @@ TEST_F(ConvolutionTests1, deconv2d_test8) {
         1.471922, 1.484062, 1.212039, 1.144419, 1.266123});
 
     nd4j::ops::deconv2d op;
-    auto results = op.execute({&input, &weights, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&input, &weights, &bias}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
 
     ASSERT_EQ(Status::OK(), results->status());
 
@@ -2718,7 +2718,7 @@ TYPED_TEST(TypedConvolutionTests1, deconv2d_tf_test1) {
     weights.linspace(0.1, 0.1);
 
     nd4j::ops::deconv2d_tf op;
-    auto results = op.execute({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    auto results = op.evaluate({&outShape, &weights, &input}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());

@@ -307,7 +307,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_2) {
     auto exp = x.transpose();
 
     nd4j::ops::transpose op;
-    auto result = op.execute({&x},{}, {});
+    auto result = op.evaluate({&x});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);

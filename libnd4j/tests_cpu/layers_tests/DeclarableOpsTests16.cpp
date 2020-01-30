@@ -46,7 +46,7 @@ TEST_F(DeclarableOpsTests16, scatter_upd_1) {
     auto e = NDArrayFactory::create<float>('c', { 3 }, { 3.f, 1.f, 1.f });
 
     nd4j::ops::scatter_upd op;
-    auto result = op.execute({ &x, &y, &w }, {}, {});
+    auto result = op.evaluate({ &x, &y, &w });
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -66,7 +66,7 @@ TEST_F(DeclarableOpsTests16, scatter_upd_2) {
     x.linspace(1);
 
     nd4j::ops::scatter_upd op;
-    auto result = op.execute({ &x, &indices, &updates }, {}, {});
+    auto result = op.evaluate({ &x, &indices, &updates });
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -135,7 +135,7 @@ TEST_F(DeclarableOpsTests16, test_hamming_distance_1) {
     auto e = NDArrayFactory::create<Nd4jLong>(18);
 
     nd4j::ops::bits_hamming_distance op;
-    auto result = op.execute({ &x, &y }, {}, {});
+    auto result = op.evaluate({ &x, &y });
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -166,7 +166,7 @@ TEST_F(DeclarableOpsTests16, test_empty_cast_1) {
     auto e = NDArrayFactory::create<Nd4jLong>('c', { 1, 0, 2 });
 
     nd4j::ops::cast op;
-    auto result = op.execute({ &x }, {}, { 10 });
+    auto result = op.evaluate({&x},  {10});
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_EQ(e, *result->at(0));
 

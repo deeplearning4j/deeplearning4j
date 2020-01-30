@@ -133,7 +133,7 @@ TEST_F(MultiDataTypeTests, Basic_Test_7) {
     auto e = NDArrayFactory::create<float>('c', {2, 3}, {0.f, 2.f, 4.f, 6.f, 8.f, 10.f});
 
     nd4j::ops::add op;
-    auto result = op.execute({&x, &y},{}, {});
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);

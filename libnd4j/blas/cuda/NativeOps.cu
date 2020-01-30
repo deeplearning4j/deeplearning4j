@@ -2831,7 +2831,7 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 
 
 	// hypothetically at this point we have everything filled
-	auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, isInplace);
+	auto dZ = op->execute(inputs, outputs, ttArgs, iiArgs, bbArgs, std::vector<nd4j::DataType>(), isInplace);
 	//auto dZ = op->execute(inputs, ttArgs, iiArgs, isInplace);
 
 
@@ -3594,6 +3594,14 @@ void setGraphContextIArguments(nd4j::graph::Context* ptr, Nd4jLong *arguments, i
 
 void setGraphContextBArguments(nd4j::graph::Context* ptr, bool *arguments, int numberOfArguments) {
     ptr->setBArguments(arguments, numberOfArguments);
+}
+
+void setGraphContextDArguments(OpaqueContext* ptr, int *arguments, int numberOfArguments) {
+    std::vector<nd4j::DataType> dtypes(numberOfArguments);
+    for (int e = 0; e < numberOfArguments; e++)
+        dtypes[e] = (nd4j::DataType) arguments[e];
+
+    ptr->setDArguments(dtypes);
 }
 
 void deleteGraphContext(nd4j::graph::Context* ptr) {

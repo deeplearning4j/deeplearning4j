@@ -551,6 +551,18 @@ namespace nd4j {
         bool Context::isInference() {
             return _execMode == samediff::ExecutionMode::MODE_INFERENCE;
         }
+
+        void Context::setDArguments(nd4j::DataType *arguments, int numberOfArguments) {
+            _dArgs.clear();
+            for (int e = 0; e < numberOfArguments; e++)
+                _dArgs.emplace_back(arguments[e]);
+        }
+
+        void Context::setDArguments(const std::vector<nd4j::DataType> &dArgs) {
+            _dArgs.clear();
+            for (auto d:dArgs)
+                _dArgs.emplace_back(d);
+        }
     }
 }
 

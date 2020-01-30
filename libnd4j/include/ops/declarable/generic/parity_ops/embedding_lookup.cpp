@@ -66,7 +66,7 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
 
         nd4j::ops::gather op;
 
-        std::unique_ptr<ResultSet> result(op.execute({input, indeces}, {}, {0}, {}));
+        std::unique_ptr<ResultSet> result(op.evaluate({input, indeces}, {0}));
         REQUIRE_TRUE(result->status() == Status::OK(), 0, "embedding_lookup: cannot retrieve results from gather op.");
         REQUIRE_TRUE(result->at(0)->isSameShape(output), 0, "embedding_lookup: wrong shape of return from gather op.");
         output->assign(result->at(0));
@@ -94,7 +94,7 @@ DECLARE_SHAPE_FN(embedding_lookup) {
         for (int e = 1; e < outRank; e++)
             shapeInfo[e] = shape::sizeAt(inShapeInfo, e);
 
-        auto outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), shape::order(inShapeInfo), shapeInfo);
+        auto outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), shapeInfo);
         return SHAPELIST(outShapeInfo);
     }
 

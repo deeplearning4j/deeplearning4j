@@ -60,11 +60,13 @@ enum DType {
   DType_QINT16 = 16,
   DType_BFLOAT16 = 17,
   DType_UTF8 = 50,
+  DType_UTF16 = 51,
+  DType_UTF32 = 52,
   DType_MIN = DType_INHERIT,
-  DType_MAX = DType_UTF8
+  DType_MAX = DType_UTF32
 };
 
-inline const DType (&EnumValuesDType())[19] {
+inline const DType (&EnumValuesDType())[21] {
   static const DType values[] = {
     DType_INHERIT,
     DType_BOOL,
@@ -84,7 +86,9 @@ inline const DType (&EnumValuesDType())[19] {
     DType_QINT8,
     DType_QINT16,
     DType_BFLOAT16,
-    DType_UTF8
+    DType_UTF8,
+    DType_UTF16,
+    DType_UTF32
   };
   return values;
 }
@@ -142,6 +146,8 @@ inline const char * const *EnumNamesDType() {
     "",
     "",
     "UTF8",
+    "UTF16",
+    "UTF32",
     nullptr
   };
   return names;
