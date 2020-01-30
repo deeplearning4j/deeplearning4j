@@ -112,6 +112,14 @@ public struct FlatNode : IFlatbufferObject
   public int VarControlDepsLength { get { int o = __p.__offset(44); return o != 0 ? __p.__vector_len(o) : 0; } }
   public string ControlDepFor(int j) { int o = __p.__offset(46); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
   public int ControlDepForLength { get { int o = __p.__offset(46); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public DType ExtraTypes(int j) { int o = __p.__offset(48); return o != 0 ? (DType)__p.bb.GetSbyte(__p.__vector(o) + j * 1) : (DType)0; }
+  public int ExtraTypesLength { get { int o = __p.__offset(48); return o != 0 ? __p.__vector_len(o) : 0; } }
+#if ENABLE_SPAN_T
+  public Span<byte> GetExtraTypesBytes() { return __p.__vector_as_span(48); }
+#else
+  public ArraySegment<byte>? GetExtraTypesBytes() { return __p.__vector_as_arraysegment(48); }
+#endif
+  public DType[] GetExtraTypesArray() { return __p.__vector_as_array<DType>(48); }
 
   public static Offset<FlatNode> CreateFlatNode(FlatBufferBuilder builder,
       int id = 0,
@@ -135,9 +143,11 @@ public struct FlatNode : IFlatbufferObject
       Offset<FlatArray> scalarOffset = default(Offset<FlatArray>),
       VectorOffset controlDepsOffset = default(VectorOffset),
       VectorOffset varControlDepsOffset = default(VectorOffset),
-      VectorOffset controlDepForOffset = default(VectorOffset)) {
-    builder.StartObject(22);
+      VectorOffset controlDepForOffset = default(VectorOffset),
+      VectorOffset extraTypesOffset = default(VectorOffset)) {
+    builder.StartObject(23);
     FlatNode.AddOpNum(builder, opNum);
+    FlatNode.AddExtraTypes(builder, extraTypesOffset);
     FlatNode.AddControlDepFor(builder, controlDepForOffset);
     FlatNode.AddVarControlDeps(builder, varControlDepsOffset);
     FlatNode.AddControlDeps(builder, controlDepsOffset);
@@ -162,7 +172,7 @@ public struct FlatNode : IFlatbufferObject
     return FlatNode.EndFlatNode(builder);
   }
 
-  public static void StartFlatNode(FlatBufferBuilder builder) { builder.StartObject(22); }
+  public static void StartFlatNode(FlatBufferBuilder builder) { builder.StartObject(23); }
   public static void AddId(FlatBufferBuilder builder, int id) { builder.AddInt(0, id, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddOpType(FlatBufferBuilder builder, OpType opType) { builder.AddSbyte(2, (sbyte)opType, 0); }
@@ -224,6 +234,10 @@ public struct FlatNode : IFlatbufferObject
   public static VectorOffset CreateControlDepForVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
   public static VectorOffset CreateControlDepForVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
   public static void StartControlDepForVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddExtraTypes(FlatBufferBuilder builder, VectorOffset extraTypesOffset) { builder.AddOffset(22, extraTypesOffset.Value, 0); }
+  public static VectorOffset CreateExtraTypesVector(FlatBufferBuilder builder, DType[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddSbyte((sbyte)data[i]); return builder.EndVector(); }
+  public static VectorOffset CreateExtraTypesVectorBlock(FlatBufferBuilder builder, DType[] data) { builder.StartVector(1, data.Length, 1); builder.Add(data); return builder.EndVector(); }
+  public static void StartExtraTypesVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
   public static Offset<FlatNode> EndFlatNode(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatNode>(o);

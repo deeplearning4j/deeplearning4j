@@ -587,9 +587,9 @@ namespace nd4j {
                                 block->getIArguments()->emplace_back(node->extraInteger()->Get(e));
                             }
 
-                        if (node->outputTypes() != nullptr && node->outputTypes()->size() > 0) {
-                            for (int e = 0; e < (int) node->outputTypes()->size(); e++) {
-                                block->getDArguments()->emplace_back((nd4j::DataType) node->outputTypes()->Get(e));
+                        if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
+                            for (int e = 0; e < (int) node->extraTypes()->size(); e++) {
+                                block->getDArguments()->emplace_back((nd4j::DataType) node->extraTypes()->Get(e));
                             }
                         }
 
@@ -624,9 +624,9 @@ namespace nd4j {
                                 block->getIArguments()->emplace_back(node->extraInteger()->Get(e));
                             }
 
-                        if (node->outputTypes() != nullptr && node->outputTypes()->size() > 0) {
-                            for (int e = 0; e < (int) node->outputTypes()->size(); e++) {
-                                block->getDArguments()->emplace_back((nd4j::DataType) node->outputTypes()->Get(e));
+                        if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
+                            for (int e = 0; e < (int) node->extraTypes()->size(); e++) {
+                                block->getDArguments()->emplace_back((nd4j::DataType) node->extraTypes()->Get(e));
                             }
                         }
 
@@ -664,9 +664,9 @@ namespace nd4j {
                                 block->getBArguments()->push_back(node->extraBools()->Get(e));
                             }
 
-                        if (node->outputTypes() != nullptr && node->outputTypes()->size() > 0) {
-                            for (int e = 0; e < (int) node->outputTypes()->size(); e++) {
-                                block->getDArguments()->emplace_back((nd4j::DataType) node->outputTypes()->Get(e));
+                        if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
+                            for (int e = 0; e < (int) node->extraTypes()->size(); e++) {
+                                block->getDArguments()->emplace_back((nd4j::DataType) node->extraTypes()->Get(e));
                             }
                         }
 

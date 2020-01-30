@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
@@ -57,11 +58,17 @@ public interface CustomOp {
 
     boolean[] bArgs();
 
+    DataType[] dArgs();
+
+    void addTArgument(double... arg);
+
     void addIArgument(int... arg);
 
     void addIArgument(long... arg);
 
     void addBArgument(boolean... arg);
+
+    void addDArgument(DataType... arg);
 
     void removeIArgument(Integer arg);
 
@@ -71,8 +78,6 @@ public interface CustomOp {
 
     int numIArguments();
 
-    void addTArgument(double... arg);
-
     void removeTArgument(Double arg);
 
     Double getTArgument(int index);
@@ -80,6 +85,8 @@ public interface CustomOp {
     int numTArguments();
 
     int numBArguments();
+
+    int numDArguments();
 
     void addInputArgument(INDArray... arg);
 

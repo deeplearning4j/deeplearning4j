@@ -83,6 +83,9 @@ public class OneHot extends DynamicCustomOp {
         addIArgument(depth);
         addTArgument(on);
         addTArgument(off);
+
+        if (outputType != null)
+            addDArgument(outputType);
     }
 
     @Override

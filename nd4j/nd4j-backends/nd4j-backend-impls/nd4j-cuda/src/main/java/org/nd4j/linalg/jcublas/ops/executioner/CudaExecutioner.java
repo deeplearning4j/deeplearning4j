@@ -1928,6 +1928,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val bArgs = op.bArgs().length > 0 ? new BooleanPointer(op.bArgs().length) : null;
 
+        val dArgs = op.numDArguments() > 0 ? new IntPointer(op.numDArguments()) : null;
+
         cnt = 0;
         for (val b: op.bArgs())
             bArgs.put(cnt++, b);
@@ -1936,7 +1938,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         for (val t: op.tArgs())
             tArgs.put(cnt++, t);
 
-        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null, hash, inputBuffers, inputShapes, op.inputArguments().size(), tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments());
+        cnt = 0;
+        val dArgs1 = op.dArgs();
+        for (val d: dArgs1)
+            dArgs.put(cnt++, d.toInt());
+
+        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null, hash, inputBuffers, inputShapes, op.inputArguments().size(), tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments(), dArgs, op.numDArguments());
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
@@ -2003,6 +2010,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             context.setBArguments(op.bArgs());
             context.setIArguments(op.iArgs());
             context.setTArguments(op.tArgs());
+            context.setDArguments(op.dArgs());
 
             val result = exec(op, context);
             val states = context.getRngStates();

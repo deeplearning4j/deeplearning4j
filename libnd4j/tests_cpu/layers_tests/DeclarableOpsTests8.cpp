@@ -2979,6 +2979,24 @@ TEST_F(DeclarableOpsTests8, ones_as_test2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests8, ones_as_test3) {
+
+    auto x = NDArrayFactory::create<double>(10.);
+    //auto y = NDArrayFactory::create<double>(100.);
+    auto exp = NDArrayFactory::create<int>(1.);
+
+    nd4j::ops::ones_as op;
+
+    auto results = op.evaluate({&x}, {}, {}, {}, {nd4j::DataType::INT32});
+    ASSERT_EQ(Status::OK(), results->status());
+    auto y = results->at(0);
+    ASSERT_TRUE(y->isSameShape(exp));
+    ASSERT_TRUE(y->equalsTo(exp));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests8, NormalizeMoments_SGO_1) {
 
     auto data   = NDArrayFactory::create<double>('c', {10, 10});

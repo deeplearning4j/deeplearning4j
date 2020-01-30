@@ -191,7 +191,7 @@ TEST_F(DeclarableOpsTests16, test_range_2) {
 
     double tArgs[] = { -1.0, 1.0, 0.01 };
 
-    auto shapes = ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 3, nullptr, 0, nullptr, 0);
+    auto shapes = ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 3, nullptr, 0, nullptr, 0, nullptr, 0);
     shape::printShapeInfoLinear("Result", shapes->at(0));
     ASSERT_TRUE(shape::shapeEquals(z.shapeInfo(), shapes->at(0)));
 

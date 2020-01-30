@@ -112,7 +112,7 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     Nd4jLong iArgs[] = {1};
     auto hash = op.getOpHash();
 
-    auto shapeList = calculateOutputShapes2(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1, nullptr, 0);
+    auto shapeList = calculateOutputShapes2(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1, nullptr, 0, nullptr, 0);
 
     ASSERT_EQ(3, shapeList->size());
 
@@ -1065,7 +1065,7 @@ TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
 
     NDArray::prepareSpecialUse({}, {&arrayX, &arrayY});
     nd4j::ops::greater_equal op;
-    auto shapeList = calculateOutputShapes2(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0);
+    auto shapeList = calculateOutputShapes2(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0);
     NDArray::registerSpecialUse({}, {&arrayX, &arrayY});
     delete shapeList;
 }

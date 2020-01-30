@@ -3439,6 +3439,16 @@ public class Nd4j {
     }
 
     /**
+     * Create 2D double array based on java 2d double array. and ordering
+     *
+     * @param data the data to use
+     * @return the created ndarray.
+     */
+    public static INDArray create(int[][] data) {
+        return createFromArray(data);
+    }
+
+    /**
      * create 3D int array based on 3D java int array.
      * @param data java 3D i array.
      * @return the created ndarray.
