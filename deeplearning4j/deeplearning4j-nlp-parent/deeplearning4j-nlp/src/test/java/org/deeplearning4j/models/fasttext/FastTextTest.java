@@ -1,9 +1,9 @@
 package org.deeplearning4j.models.fasttext;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.word2vec.Word2Vec;
-import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.Rule;
@@ -14,12 +14,13 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.resources.Resources;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
-
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-
 
 @Slf4j
 public class FastTextTest extends BaseDL4JTest {
@@ -31,7 +32,6 @@ public class FastTextTest extends BaseDL4JTest {
     private File supModelFile = Resources.asFile("models/fasttext/supervised.model.bin");
     private File cbowModelFile = Resources.asFile("models/fasttext/cbow.model.bin");
     private File supervisedVectors = Resources.asFile("models/fasttext/supervised.model.vec");
-
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
@@ -90,7 +90,7 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    public void tesLoadCBOWModel() throws IOException {
+    public void tesLoadCBOWModel() {
 
         FastText fastText = new FastText(cbowModelFile);
         fastText.test(cbowModelFile);
@@ -155,7 +155,7 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testVocabulary() throws IOException {
+    public void testVocabulary() {
         FastText fastText = new FastText(supModelFile);
         assertEquals(48, fastText.vocab().numWords());
         assertEquals(48, fastText.vocabSize());
@@ -171,78 +171,73 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testLoadIterator() {
-        try {
-            SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
-            FastText fastText =
-                    FastText.builder().supervised(true).iterator(iter).build();
-            fastText.loadIterator();
-
-        } catch (IOException e) {
-            log.error("",e);
-        }
+    public void testLoadIterator() throws FileNotFoundException {
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+         FastText
+                .builder()
+                .supervised(true)
+                .iterator(iter)
+                .build()
+                .loadIterator();
     }
 
     @Test(expected=IllegalStateException.class)
     public void testState() {
         FastText fastText = new FastText();
-        String label = fastText.predict("something");
+        fastText.predict("something");
     }
 
     @Test
     public void testPretrainedVectors() throws IOException {
         File output = testDir.newFile();
 
-        FastText fastText =
-                FastText.builder().supervised(true).
-                        inputFile(inputFile.getAbsolutePath()).
-                        pretrainedVectorsFile(supervisedVectors.getAbsolutePath()).
-                        outputFile(output.getAbsolutePath()).build();
+        FastText fastText = FastText
+                .builder()
+                .supervised(true)
+                .inputFile(inputFile.getAbsolutePath())
+                .pretrainedVectorsFile(supervisedVectors.getAbsolutePath())
+                .outputFile(output.getAbsolutePath())
+                .build();
+
         log.info("\nTraining supervised model ...\n");
         fastText.fit();
     }
 
     @Test
     public void testWordsStatistics() throws IOException {
-
         File output = testDir.newFile();
 
-        FastText fastText =
-                FastText.builder().supervised(true).
-                        inputFile(inputFile.getAbsolutePath()).
-                        outputFile(output.getAbsolutePath()).build();
+        FastText fastText = FastText
+                .builder()
+                .supervised(true)
+                .inputFile(inputFile.getAbsolutePath())
+                .outputFile(output.getAbsolutePath())
+                .build();
 
         log.info("\nTraining supervised model ...\n");
         fastText.fit();
 
-        Word2Vec word2Vec = WordVectorSerializer.readAsCsv(new File(output.getAbsolutePath() + ".vec"));
+        File file = new File(output.getAbsolutePath() + ".vec");
+        Word2Vec word2Vec = WordVectorSerializer.readAsCsv(file);
 
-        assertEquals(48,  word2Vec.getVocab().numWords());
-
-        System.out.println(word2Vec.wordsNearest("association", 3));
-        System.out.println(word2Vec.similarity("Football", "teams"));
-        System.out.println(word2Vec.similarity("professional", "minutes"));
-        System.out.println(word2Vec.similarity("java","cpp"));
+        assertEquals(48, word2Vec.getVocab().numWords());
+        assertEquals("", 0.1667751520872116, word2Vec.similarity("Football", "teams"), 1e-4);
+        assertEquals("", 0.10083991289138794, word2Vec.similarity("professional", "minutes"), 1e-4);
+        assertEquals("", Double.NaN, word2Vec.similarity("java","cpp"), 0.0);
+        assertThat(word2Vec.wordsNearest("association", 3), hasItems("Football", "Soccer", "men's"));
     }
 
-
     @Test
-    public void testWordsNativeStatistics() throws IOException {
-
-        File output = testDir.newFile();
-
+    public void testWordsNativeStatistics() {
         FastText fastText = new FastText();
         fastText.loadPretrainedVectors(supervisedVectors);
 
         log.info("\nTraining supervised model ...\n");
 
         assertEquals(48,  fastText.vocab().numWords());
-
-        String[] result = new String[3];
-        fastText.wordsNearest("association", 3).toArray(result);
-        assertArrayEquals(new String[]{"most","eleven","hours"}, result);
+        assertThat(fastText.wordsNearest("association", 3), hasItems("most","eleven","hours"));
         assertEquals(0.1657, fastText.similarity("Football", "teams"), 1e-4);
         assertEquals(0.3661, fastText.similarity("professional", "minutes"), 1e-4);
-        assertEquals(Double.NaN, fastText.similarity("java","cpp"), 1e-4);
+        assertEquals(Double.NaN, fastText.similarity("java","cpp"), 0.0);
     }
 }
