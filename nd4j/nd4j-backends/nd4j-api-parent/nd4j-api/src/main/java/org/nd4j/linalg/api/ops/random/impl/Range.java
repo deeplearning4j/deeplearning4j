@@ -51,6 +51,7 @@ public class Range extends DynamicCustomOp {
     public Range(SameDiff sd, double from, double to, double step, DataType dataType){
         super(null, sd, new SDVariable[0]);
         addTArgument(from, to, step);
+        addDArgument(dataType);
         this.from = from;
         this.to = to;
         this.delta = step;
@@ -63,11 +64,13 @@ public class Range extends DynamicCustomOp {
         this.to = to;
         this.delta = step;
         this.dataType = dataType;
+        addDArgument(dataType);
     }
 
     public Range(SameDiff sd, SDVariable from, SDVariable to, SDVariable step, DataType dataType){
         super(null, sd, new SDVariable[]{from, to, step});
         this.dataType = dataType;
+        addDArgument(dataType);
     }
 
 
@@ -99,6 +102,7 @@ public class Range extends DynamicCustomOp {
         if(attributesForNode.containsKey("Tidx")){
             dataType = TFGraphMapper.convertType(attributesForNode.get("Tidx").getType());
         }
+        addDArgument(dataType);
     }
 
     @Override

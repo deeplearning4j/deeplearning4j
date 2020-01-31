@@ -1683,4 +1683,12 @@ public class CustomOpsTests extends BaseNd4jTest {
         val z = Nd4j.exec(new OnesLike(x, DataType.INT32))[0];
         assertEquals(e, z);
     }
+
+    @Test
+    public void testLinSpaceEdge_1() {
+        val x = Nd4j.linspace(1,10,1, DataType.FLOAT);
+        val e = Nd4j.scalar(1.0f);
+
+        assertEquals(e, x);
+    }
 }

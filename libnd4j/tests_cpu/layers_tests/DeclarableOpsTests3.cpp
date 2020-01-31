@@ -438,6 +438,26 @@ TEST_F(DeclarableOpsTests3, Test_Range_3) {
 }
 
 
+TEST_F(DeclarableOpsTests3, Test_Range_10) {
+    auto start= NDArrayFactory::create<float>('c', {1, 1}, {0.f});
+    auto stop= NDArrayFactory::create<float>('c', {1, 1}, {2.f});
+    auto step= NDArrayFactory::create<float>('c', {1, 1}, {1.f});
+    auto exp= NDArrayFactory::create<double>('c', {2}, {0.f, 1.f});
+
+    nd4j::ops::range op;
+    auto result = op.evaluate({&start, &stop, &step}, {nd4j::DataType::DOUBLE});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
 TEST_F(DeclarableOpsTests3, Test_Range_4) {
     auto exp= NDArrayFactory::create<float>('c', {13}, {-10.f,  -8.334f,  -6.668f,  -5.002f,  -3.336f,  -1.67f,  -0.004f,   1.662f,   3.328f,   4.994f,   6.66f,   8.326f,   9.992f});
 
