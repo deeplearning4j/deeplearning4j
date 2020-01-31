@@ -809,7 +809,7 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_1) {
 
     NDArray x('c', {1, 2, 2, 2, 3}, nd4j::DataType::FLOAT32);
     NDArray blockShape('c', {3}, {2, 2, 2} , nd4j::DataType::INT32);    // three spatial dimensions
-    NDArray paddings('c', {3, 2}, {0, 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
+    NDArray paddings('c', {3, 2}, std::vector<double>{0, 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
 
     NDArray exp('c', {8, 1, 1, 1, 3}, nd4j::DataType::FLOAT32);
 
@@ -892,8 +892,8 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_1) {
 
     NDArray x('c', {8, 1, 1, 1, 3}, nd4j::DataType::FLOAT32);
 
-    NDArray blockShape('c', {3}, {2, 2, 2} , nd4j::DataType::INT32);    // three spatial dimensions
-    NDArray crop('c', {3, 2}, {0, 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
+    NDArray blockShape('c', {3}, {2., 2, 2} , nd4j::DataType::INT32);    // three spatial dimensions
+    NDArray crop('c', {3, 2}, {0., 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
 
     NDArray exp('c', {1, 2, 2, 2, 3}, nd4j::DataType::FLOAT32);
 
@@ -990,7 +990,7 @@ TEST_F(DeclarableOpsTests13, mergemax_1) {
 TEST_F(DeclarableOpsTests13, mergemax_2) {
 
     NDArray x1('c', {1, 3}, {0., 1, 2}, nd4j::DataType::FLOAT32);
-    NDArray x2('c', {1, 1}, {1.}, nd4j::DataType::FLOAT32);
+    NDArray x2('c', {1, 1}, std::vector<double>{1.}, nd4j::DataType::FLOAT32);
     NDArray out('c', {1, 3}, {-1., -1, -1}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::mergemax op;
@@ -2143,10 +2143,10 @@ TEST_F(DeclarableOpsTests13, batchnorm_test7) {
     NDArray input2('c', {3,15,15,3}, nd4j::DataType::FLOAT32);
     input2.permutei({0,3,1,2});
 
-    NDArray mean    ('c', {3}, {0, 0, 0}, nd4j::DataType::FLOAT32);
-    NDArray variance('c', {3}, {1, 1, 1}, nd4j::DataType::FLOAT32);
-    NDArray gamma   ('c', {3}, {1, 1, 1}, nd4j::DataType::FLOAT32);
-    NDArray beta    ('c', {3}, {0, 0, 0}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {3}, {0., 0, 0}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {3}, {1., 1, 1}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {3}, {1., 1, 1}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {3}, {0., 0, 0}, nd4j::DataType::FLOAT32);
 
     NDArray out1('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
     NDArray out2('c', {3,3,15,15}, nd4j::DataType::FLOAT32);

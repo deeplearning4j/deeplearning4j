@@ -127,7 +127,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test3) {
     NDArray weights('c', {1}, nd4j::DataType::DOUBLE);
 
     NDArray dLdpExp('c', {4}, {0.05, -0.15, -1.,  0.7});
-    NDArray dLdwExp('c', {1}, {1.3});
+    NDArray dLdwExp('c', {1}, std::vector<double>{1.3});
     NDArray dLdlExp('c', {4}, {0.2,  0.1, -0. , -0.1});
 
     predictions.linspace(-0.4, 0.2);
@@ -158,10 +158,10 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test4) {
 
     NDArray labels('c', {1,4}, {-0.1, 0.3, 2, -1.4});
     NDArray predictions('c', {1,4}, nd4j::DataType::DOUBLE);
-    NDArray weights('c', {}, {0.}, nd4j::DataType::DOUBLE);
+    NDArray weights('c', {}, std::vector<double>{0.}, nd4j::DataType::DOUBLE);
 
     NDArray dLdpExp('c', {1,4}, {0.05, -0.15, -1.,  0.7});
-    NDArray dLdwExp('c', {}, {1.3});
+    NDArray dLdwExp('c', {}, std::vector<double>{1.3});
     NDArray dLdlExp('c', {1,4}, {0.2,  0.1, -0. , -0.1});
 
     predictions.linspace(-0.4, 0.2);
@@ -196,7 +196,7 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test5) {
     NDArray weights('c', {1,1}, nd4j::DataType::DOUBLE);
 
     NDArray dLdpExp('c', {4}, {0.1, -0.3, -2. ,  1.4});
-    NDArray dLdwExp('c', {1,1}, {0.});
+    NDArray dLdwExp('c', {1,1}, std::vector<double>{0.});
     NDArray dLdlExp('c', {4}, {0.4,  0.2, -0. , -0.2});
 
     predictions.linspace(-0.4, 0.2);
@@ -369,10 +369,10 @@ TEST_F(DeclarableOpsTests12, cosine_distance_loss_grad_test9) {
 TEST_F(DeclarableOpsTests12, hinge_loss_14) {
 
     NDArray logits('c', {3,4}, nd4j::DataType::DOUBLE);
-    NDArray weights('c', {}, {1.});
+    NDArray weights('c', {}, std::vector<double>{1.});
     NDArray labels('c', {3,4}, {0,1,1,0,1,0,1,0,1,0,1,0});
 
-    NDArray output('c', {}, {0.}, nd4j::DataType::DOUBLE);
+    NDArray output('c', {}, std::vector<double>{0.}, nd4j::DataType::DOUBLE);
 
     logits.linspace(1.);
     weights.assign(1.);
@@ -576,7 +576,7 @@ TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
 TEST_F(DeclarableOpsTests12, reverse_test15) {
 
     NDArray x('c', {5}, {1,2,3,4,5}, nd4j::DataType::DOUBLE);
-    NDArray axis('c', {}, {0}, nd4j::DataType::INT32);
+    NDArray axis('c', {}, std::vector<double>{0}, nd4j::DataType::INT32);
     NDArray z('c', {5}, nd4j::DataType::DOUBLE);
     NDArray exp('c', {5}, {5,4,3,2,1}, nd4j::DataType::DOUBLE);
 
@@ -711,7 +711,7 @@ TEST_F(DeclarableOpsTests12, multiUnique_2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, tensormmul_6) {
 
-    NDArray x('c', {1}, {2}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {1}, std::vector<double>{2}, nd4j::DataType::FLOAT32);
     NDArray y('c', {2,1,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {2,2}, {2,4,6,8}, nd4j::DataType::FLOAT32);
 
@@ -1140,9 +1140,9 @@ TEST_F(DeclarableOpsTests12, lrn_bp_9) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, lrn_bp_10) {
 
-    NDArray input('c', {1,1,1,1}, {1});
-    NDArray gradO('c', {1,1,1,1}, {1});
-    NDArray exp('c', {1,1,1,1}, {0.19245008});
+    NDArray input('c', {1,1,1,1}, std::vector<double>{1});
+    NDArray gradO('c', {1,1,1,1}, std::vector<double>{1});
+    NDArray exp('c', {1,1,1,1}, std::vector<double>{0.19245008});
 
     nd4j::ops::lrn_bp op;
 
@@ -1193,8 +1193,8 @@ TEST_F(DeclarableOpsTests12, lrn_2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, lrn_3) {
 
-    NDArray input('c', {1,1,1,1}, {1.});
-    NDArray exp('c', {1,1,1,1}, {0.69006556});
+    NDArray input('c', {1,1,1,1}, std::vector<double>{1.});
+    NDArray exp('c', {1,1,1,1}, std::vector<double>{0.69006556});
 
     nd4j::ops::lrn op;
 
@@ -1208,8 +1208,8 @@ TEST_F(DeclarableOpsTests12, lrn_3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, lrn_4) {
 
-    NDArray input('c', {1,1,1,1}, {1.});
-    NDArray exp('c', {1,1,1,1}, {0.69006556});
+    NDArray input('c', {1,1,1,1}, std::vector<double>{1.});
+    NDArray exp('c', {1,1,1,1}, std::vector<double>{0.69006556});
 
     nd4j::ops::lrn op;
 
@@ -1239,10 +1239,10 @@ TEST_F(DeclarableOpsTests12, lrn_5) {
 TEST_F(DeclarableOpsTests12, inTopK_1) {
 
     NDArray x('c', {4, 5}, {11.0, 14.0, 6.0, 9.0, 3.5, 7.0, 21.0, 3.0,  15.0, 6.0, 9.0, 3.5, 7.0, 11.0, 13.0, 5.0, 16.0, 9.0, 13.5, 7.0});
-    NDArray y('c', {4}, {0, 0, 0, 0}, nd4j::DataType::INT64);
-    NDArray z('c', {4}, {1, 1, 1, 1}, nd4j::DataType::BOOL);
+    NDArray y('c', {4}, {0., 0, 0, 0}, nd4j::DataType::INT64);
+    NDArray z('c', {4}, {1., 1, 1, 1}, nd4j::DataType::BOOL);
 
-    NDArray expV('c', {4}, {1, 0, 0, 0}, nd4j::DataType::BOOL);
+    NDArray expV('c', {4}, {1., 0, 0, 0}, nd4j::DataType::BOOL);
 
     nd4j::ops::in_top_k op;
     Nd4jStatus status = op.execute({&x, &y, }, {&z}, {}, {2}, {});

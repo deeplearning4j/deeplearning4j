@@ -775,7 +775,7 @@ TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test2
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, sparse_softmax_cross_entropy_loss_with_logits_test3) {
 
-    NDArray labels('c', {1}, {0}, nd4j::DataType::INT32);
+    NDArray labels('c', {1}, std::vector<double>{0}, nd4j::DataType::INT32);
     auto logits = NDArrayFactory::create<double>('c', {1,3});
     auto expected = NDArrayFactory::create<double>('c', {1}, {1.20194});
 
@@ -2735,7 +2735,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
 
     NDArray images   ('c', {1,2,2,1}, {1,2,3,4}, nd4j::DataType::FLOAT32);
     NDArray boxes('c', {1,4}, {0,0,1,1}, nd4j::DataType::FLOAT32);
-    NDArray boxI('c', {1}, {0}, nd4j::DataType::INT64);
+    NDArray boxI('c', {1}, std::vector<double>{0}, nd4j::DataType::INT64);
     NDArray cropSize = NDArrayFactory::create<Nd4jLong>({3, 3});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
@@ -2759,7 +2759,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
 
     NDArray images('c', {1,2,2,1}, {1, 2, 3, 4}, nd4j::DataType::FLOAT32);
     NDArray boxes('c', {1,4}, {0,0,1,1}, nd4j::DataType::FLOAT32);
-    NDArray boxI('c', {1}, {0}, nd4j::DataType::INT32);
+    NDArray boxI('c', {1}, std::vector<double>({0.}), nd4j::DataType::INT32);
     NDArray cropSize = NDArrayFactory::create<int>({3, 3});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
@@ -2933,8 +2933,8 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
 
     NDArray x('c', {2,3}, {-63.80f, -63.75f, -63.70f, -63.5f, 0.0f, 0.1f}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {2,3},  {-63.75f, -63.75f, -63.75f, -63.5f, 0.f, 0.f}, nd4j::DataType::FLOAT32);
-    NDArray min('c', {},  {-63.65f}, nd4j::DataType::FLOAT32);
-    NDArray max('c', {},  {0.1f}, nd4j::DataType::FLOAT32);
+    NDArray min('c', {},  std::vector<double>{-63.65f}, nd4j::DataType::FLOAT32);
+    NDArray max('c', {},  std::vector<double>{0.1f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::fake_quant_with_min_max_vars op;
     auto results = op.evaluate({&x, &min, &max}, {}, {});

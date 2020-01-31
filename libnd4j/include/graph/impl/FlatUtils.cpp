@@ -49,12 +49,11 @@ namespace nd4j {
                 delete[] newShape;
                 return NDArrayFactory::empty_(dtype, nullptr);
             }
-
+            // TODO fix UTF16 and UTF32
             if (dtype == UTF8) {
                 bool isBe = BitwiseUtils::isBE();
                 bool canKeep = (isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_BE) || (!isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_LE);
-                auto order = shape::order(newShape);
-
+                
                 std::vector<std::string> substrings(length);
                 std::vector<Nd4jLong> shapeVector(rank);
                 for (int e = 0; e < rank; e++)
@@ -88,8 +87,8 @@ namespace nd4j {
 
                 delete[] offsets;
                 delete[] newShape;
-
-                return NDArrayFactory::string_(order, shapeVector, substrings);
+                // string order always 'c'
+                return NDArrayFactory::string_(shapeVector, substrings);
             }
 
 

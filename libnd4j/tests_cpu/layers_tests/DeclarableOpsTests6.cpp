@@ -1411,7 +1411,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_2) {
 TEST_F(DeclarableOpsTests6, MatrixDeterminant_3) {
 
     auto x = NDArrayFactory::create<double>('c', {1, 3, 3}, {3.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 3.0});
-    NDArray exp('c', {1}, {-54.0});
+    NDArray exp('c', {1}, std::vector<double>{-54.0});
 
     nd4j::ops::matrix_determinant op;
     auto result = op.evaluate({&x}, {}, {});
@@ -1453,7 +1453,7 @@ TEST_F(DeclarableOpsTests6, MatrixDeterminant_4) {
 TEST_F(DeclarableOpsTests6, MatrixDeterminant_5) {
 
     auto x = NDArrayFactory::create<double>('c', {1, 4, 4});
-    NDArray exp('c', {1}, {-16.0});
+    NDArray exp('c', {1}, std::vector<double>{-16.0});
     x.linspace(1);
     x.p(5, 4.0);
     x.p(12, 12.0);

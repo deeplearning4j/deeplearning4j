@@ -243,7 +243,7 @@ TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterMul_test1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
-    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    NDArray idc('c', {1}, std::vector<double>({0LL}), nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10.f, 2.f, 3.f, 4.f});
 
@@ -261,7 +261,7 @@ TEST_F(DeclarableOpsTests5, scatterMul_test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
-    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    NDArray idc('c', {1}, std::vector<double>({0LL}), nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.10f, 2.f, 3.f, 4.f});
 
@@ -279,7 +279,7 @@ TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, scatterSub_test1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1.f, 2.f, 3.f, 4.f});
-    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    NDArray idc('c', {1}, std::vector<double>({0LL}), nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10.f, 1.f});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-9.f, 1.f, 3.f, 4.f});
 

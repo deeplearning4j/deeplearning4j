@@ -122,7 +122,7 @@ namespace nd4j {
     }
 
     FORCEINLINE bool DataTypeUtils::isS(nd4j::DataType dataType) {
-        return dataType == nd4j::DataType::UTF8;
+        return dataType == nd4j::DataType::UTF8 || dataType == nd4j::DataType::UTF16 || dataType == nd4j::DataType::UTF32;
     }
 
     FORCEINLINE bool DataTypeUtils::isZ(nd4j::DataType dataType) {
@@ -370,6 +370,10 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
             return std::string("UINT64");
         case UTF8:
             return std::string("UTF8");
+        case UTF16:
+            return std::string("UTF16");
+        case UTF32:
+            return std::string("UTF32");
         default:
             throw std::runtime_error("Unknown data type used");
     }
@@ -431,6 +435,8 @@ FORCEINLINE _CUDA_HD T DataTypeUtils::eps() {
             case nd4j::DataType::UINT16: return (size_t) 2;
 
             case nd4j::DataType::UTF8:
+            case nd4j::DataType::UTF16:
+            case nd4j::DataType::UTF32:
             case nd4j::DataType::INT32:
             case nd4j::DataType::UINT32:
             case nd4j::DataType::HALF2:
@@ -455,6 +461,10 @@ FORCEINLINE _CUDA_HD T DataTypeUtils::eps() {
             return nd4j::DataType::BOOL;
         } else if (std::is_same<T, std::string>::value) {
             return nd4j::DataType::UTF8;
+        } else if (std::is_same<T, std::u16string>::value) {
+            return nd4j::DataType::UTF16;
+        } else if (std::is_same<T, std::u32string>::value) {
+            return nd4j::DataType::UTF32;
         } else if (std::is_same<T, float>::value) {
             return nd4j::DataType::FLOAT32;
         } else if (std::is_same<T, float16>::value) {

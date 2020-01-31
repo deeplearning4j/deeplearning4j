@@ -626,7 +626,7 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test1) {
 
     NDArray expGradI('c', {bS, oD, oH, oW, oC}, {62., 67.6, 68.4, 74.8, 81.2, 89.2, 87.6, 96.4, 119.6, 132.4, 126., 139.6, 138.8, 154., 145.2, 161.2}, nd4j::DataType::FLOAT32);
     NDArray expGradW('c', {kD, kH, kW, iC, oC}, {28., 28., 32., 32., 40., 40., 44., 44., 64, 64., 68., 68., 76., 76., 80., 80.}, nd4j::DataType::FLOAT32);
-    NDArray expGradB('c', {iC}, {364.5}, nd4j::DataType::FLOAT32);
+    NDArray expGradB('c', {iC},  std::vector<double>{364.5}, nd4j::DataType::FLOAT32);
 
     input = 0.5;
     weights.linspace(0.1, 0.1);

@@ -599,7 +599,7 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_2) {
 TEST_F(BroadcastableOpsTests, broadcast_empty_3) {
 
     NDArray x = NDArrayFactory::create<float>('c', {1, 0, 2});
-    NDArray y('c', {}, {0.1}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {}, std::vector<double>{0.1}, nd4j::DataType::FLOAT32);
     NDArray e = NDArrayFactory::create<float>('c', {1, 0, 2});;
 
     nd4j::ops::maximum op;

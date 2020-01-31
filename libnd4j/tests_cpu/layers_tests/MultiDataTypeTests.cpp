@@ -204,7 +204,7 @@ TEST_F(MultiDataTypeTests, ndarray_repeat_test1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_bufferAsT_test1) {
     NDArray x('f', {2}, {1.5, 3.5}, nd4j::DataType::FLOAT32);
-    NDArray y('c', {}, {1.5}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {}, std::vector<double>{1.5}, nd4j::DataType::FLOAT32);
 
     const int* buffX = x.bufferAsT<int>();
     const int* buffY = y.bufferAsT<int>();
@@ -217,8 +217,8 @@ TEST_F(MultiDataTypeTests, ndarray_assign_test1) {
     NDArray x('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::UINT8);
     NDArray exp('c', {2,2}, {10, 10, 20, 20}, nd4j::DataType::UINT8);
 
-    NDArray scalar1('c', {}, {10.5}, nd4j::DataType::FLOAT32);
-    NDArray scalar2('c', {}, {20.8}, nd4j::DataType::DOUBLE);
+    NDArray scalar1('c', {}, std::vector<double>{10.5}, nd4j::DataType::FLOAT32);
+    NDArray scalar2('c', {}, std::vector<double>{20.8}, nd4j::DataType::DOUBLE);
 
     x(0,{0}).assign(scalar1);
     x(1,{0}).assign(scalar2);
@@ -233,9 +233,9 @@ TEST_F(MultiDataTypeTests, ndarray_assign_test1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test1) {
     NDArray x('f', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
-    NDArray exp1('c', {}, {3}, nd4j::DataType::INT64);
-    NDArray exp2('c', {1,1}, {1}, nd4j::DataType::INT64);
-    NDArray exp3('c', {2}, {1,2}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {1,1}, std::vector<double>{1}, nd4j::DataType::INT64);
+    NDArray exp3('c', {2}, std::vector<double>{1,2}, nd4j::DataType::INT64);
 
     auto scalar1 = x.reduceAlongDimension(nd4j::reduce::CountNonZero, {}/*whole range*/);
     ASSERT_EQ(scalar1, exp1);
@@ -250,7 +250,7 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test2) {
     NDArray x('c', {2, 2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
-    NDArray exp1('c', {}, {1.5}, nd4j::DataType::FLOAT32);
+    NDArray exp1('c', {}, std::vector<double>{1.5}, nd4j::DataType::FLOAT32);
     NDArray exp2('c', {2}, {0.5,2.5}, nd4j::DataType::FLOAT32);
 
     auto scalar1 = x.reduceAlongDimension(nd4j::reduce::Mean, {}/*whole range*/);
@@ -265,7 +265,7 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test2) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test3) {
     NDArray x('c', {2, 2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::HALF);
-    NDArray exp1('c', {}, {8.}, nd4j::DataType::HALF);
+    NDArray exp1('c', {}, std::vector<double>{8.}, nd4j::DataType::HALF);
     NDArray exp2('c', {2}, {2.,6.}, nd4j::DataType::HALF);
 
     auto scalar1 = x.reduceAlongDimension(nd4j::reduce::Sum, {}/*whole range*/);
@@ -278,8 +278,8 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test3) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test4) {
     NDArray x('c', {2, 2}, {10.5, 1.5, -2.5, -3.5}, nd4j::DataType::HALF);
-    NDArray exp1('c', {}, {1}, nd4j::DataType::BOOL);
-    NDArray exp2('c', {2}, {1,0}, nd4j::DataType::BOOL);
+    NDArray exp1('c', {}, std::vector<double>{1}, nd4j::DataType::BOOL);
+    NDArray exp2('c', {2}, std::vector<double>{1, 0}, nd4j::DataType::BOOL);
 
     auto scalar1 = x.reduceAlongDimension(nd4j::reduce::IsPositive, {}/*whole range*/);
     ASSERT_EQ(scalar1, exp1);
@@ -291,8 +291,8 @@ TEST_F(MultiDataTypeTests, ndarray_reduceAlongDimension_test4) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_varianceNumber_test1) {
     NDArray x('f', {2, 2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
-    NDArray exp1('c', {}, {1.666666667}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {}, {1.118033989}, nd4j::DataType::FLOAT32);
+    NDArray exp1('c', {}, std::vector<double>{1.666666667}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {}, std::vector<double>{1.118033989}, nd4j::DataType::FLOAT32);
 
     auto scalar1 = x.varianceNumber(variance::SummaryStatsVariance);
     ASSERT_EQ(scalar1, exp1);
@@ -475,8 +475,8 @@ TEST_F(MultiDataTypeTests, ndarray_operatorPlusEqual_test1) {
     if (!Environment::getInstance()->isExperimentalBuild())
         return;
 
-    NDArray scalar1('c', {0}, {4}, nd4j::DataType::INT32);
-    NDArray scalar2('c', {0}, {1.5}, nd4j::DataType::HALF);
+    NDArray scalar1('c', {0}, std::vector<double>{4}, nd4j::DataType::INT32);
+    NDArray scalar2('c', {0}, std::vector<double>{1.5}, nd4j::DataType::HALF);
 
     NDArray x1('c', {2,3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5},  nd4j::DataType::FLOAT32);
     NDArray x2('c', {3,2}, {10, 20, 30, 40, 50, 60},  nd4j::DataType::INT64);
@@ -485,8 +485,8 @@ TEST_F(MultiDataTypeTests, ndarray_operatorPlusEqual_test1) {
     NDArray x5('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::HALF);
     NDArray x6('c', {2},   {0.4, 0.5},  nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {0}, {5},  nd4j::DataType::INT32);
-    NDArray exp2('c', {0}, {6.5},  nd4j::DataType::HALF);
+    NDArray exp1('c', {0}, std::vector<double>{5},  nd4j::DataType::INT32);
+    NDArray exp2('c', {0}, std::vector<double>{6.5},  nd4j::DataType::HALF);
     NDArray exp3('c', {3,2}, {11, 22, 33, 44, 55, 66},  nd4j::DataType::INT64);
     NDArray exp4('c', {2,3}, {12.5, 24.5, 36.5, 48.5, 60.5, 72.5},  nd4j::DataType::FLOAT32);
     NDArray exp5('c', {2,2}, {0.4, 1.5, 2.4, 3.5},  nd4j::DataType::HALF);
@@ -553,8 +553,8 @@ TEST_F(MultiDataTypeTests, ndarray_operatorMinusEqual_test1) {
     if (!Environment::getInstance()->isExperimentalBuild())
         return;
 
-    NDArray scalar1('c', {0}, {4}, nd4j::DataType::INT32);
-    NDArray scalar2('c', {0}, {1.5}, nd4j::DataType::HALF);
+    NDArray scalar1('c', {0}, std::vector<double>{4}, nd4j::DataType::INT32);
+    NDArray scalar2('c', {0}, std::vector<double>{1.5}, nd4j::DataType::HALF);
 
     NDArray x1('c', {2,3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5},  nd4j::DataType::FLOAT32);
     NDArray x2('c', {3,2}, {10, 20, 30, 40, 50, 60},  nd4j::DataType::INT64);
@@ -563,8 +563,8 @@ TEST_F(MultiDataTypeTests, ndarray_operatorMinusEqual_test1) {
     NDArray x5('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::HALF);
     NDArray x6('c', {2},   {0.4, 0.5},  nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {0}, {2},  nd4j::DataType::INT32);
-    NDArray exp2('c', {0}, {-0.5},  nd4j::DataType::HALF);
+    NDArray exp1('c', {0}, std::vector<double>{2},  nd4j::DataType::INT32);
+    NDArray exp2('c', {0}, std::vector<double>{-0.5},  nd4j::DataType::HALF);
     NDArray exp3('c', {3,2}, {8, 17, 26, 35, 44, 53},  nd4j::DataType::INT64);
     NDArray exp4('c', {2,3}, {-6.5, -14.5, -22.5, -30.5, -38.5, -46.5},  nd4j::DataType::FLOAT32);
     NDArray exp5('c', {2,2}, {0.4, -0.5, -1.6, -2.5},  nd4j::DataType::HALF);
@@ -631,8 +631,8 @@ TEST_F(MultiDataTypeTests, ndarray_operatorMultiplyEqual_test1) {
     if (!Environment::getInstance()->isExperimentalBuild())
         return;
 
-    NDArray scalar1('c', {0}, {3}, nd4j::DataType::INT32);
-    NDArray scalar2('c', {0}, {2.5}, nd4j::DataType::HALF);
+    NDArray scalar1('c', {0}, std::vector<double>{3}, nd4j::DataType::INT32);
+    NDArray scalar2('c', {0}, std::vector<double>{2.5}, nd4j::DataType::HALF);
 
     NDArray x1('c', {2,3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5},  nd4j::DataType::FLOAT32);
     NDArray x2('c', {3,2}, {1, 2, 3, 4, 5, 6},  nd4j::DataType::INT64);
@@ -641,8 +641,8 @@ TEST_F(MultiDataTypeTests, ndarray_operatorMultiplyEqual_test1) {
     NDArray x5('c', {2,2}, {0, 1, 2, 3},  nd4j::DataType::HALF);
     NDArray x6('c', {2},   {0.4, 0.5},  nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {0}, {7},  nd4j::DataType::INT32);
-    NDArray exp2('c', {0}, {17.5},  nd4j::DataType::HALF);
+    NDArray exp1('c', {0}, std::vector<double>{7},  nd4j::DataType::INT32);
+    NDArray exp2('c', {0}, std::vector<double>{17.5},  nd4j::DataType::HALF);
     NDArray exp3('c', {3,2}, {1, 5, 10, 18, 27, 39},  nd4j::DataType::INT64);
     NDArray exp4('c', {2,3}, {1.5, 12.5, 35, 81, 148.5, 253.5},  nd4j::DataType::FLOAT32);
     NDArray exp5('c', {2,2}, {0., 0.5, 0.8, 1.5},  nd4j::DataType::HALF);
@@ -709,8 +709,8 @@ TEST_F(MultiDataTypeTests, ndarray_operatorDivideEqual_test1) {
     if (!Environment::getInstance()->isExperimentalBuild())
         return;
 
-    NDArray scalar1('c', {0}, {3}, nd4j::DataType::INT32);
-    NDArray scalar2('c', {0}, {2.5}, nd4j::DataType::HALF);
+    NDArray scalar1('c', {0}, std::vector<double>{3}, nd4j::DataType::INT32);
+    NDArray scalar2('c', {0}, std::vector<double>{2.5}, nd4j::DataType::HALF);
 
     NDArray x1('c', {2,3}, {1.5, 2.5, 3.5, 4.5, 5.5, 6.5},  nd4j::DataType::FLOAT32);
     NDArray x2('c', {3,2}, {10, 20, 30, 40, 50, 60},  nd4j::DataType::INT64);
@@ -719,8 +719,8 @@ TEST_F(MultiDataTypeTests, ndarray_operatorDivideEqual_test1) {
     NDArray x5('c', {2,2}, {1, 2, 3, 4},  nd4j::DataType::HALF);
     NDArray x6('c', {2},   {0.4, 0.5},  nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {0}, {1},  nd4j::DataType::INT32);
-    NDArray exp2('c', {0}, {2.5},  nd4j::DataType::HALF);
+    NDArray exp1('c', {0}, std::vector<double>{1},  nd4j::DataType::INT32);
+    NDArray exp2('c', {0}, std::vector<double>{2.5},  nd4j::DataType::HALF);
     NDArray exp3('c', {3,2}, {6, 8, 8, 8, 9, 9},  nd4j::DataType::INT64);
     NDArray exp4('c', {2,3}, {0.25, 0.3125, 0.4375, 0.5625, 0.611111111, 0.722222222}, nd4j::DataType::FLOAT32);
     NDArray exp5('c', {2,2}, {0.4, 0.25, 0.1333333, 0.125},  nd4j::DataType::HALF);
@@ -792,10 +792,10 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberFloat_test1) {
     NDArray x3('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {0}, {1.5}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {0}, {2},   nd4j::DataType::HALF);
-    NDArray exp3('c', {0}, {2},   nd4j::DataType::DOUBLE);
-    NDArray exp4('c', {0}, {0.25},nd4j::DataType::FLOAT32);
+    NDArray exp1('c', {0}, std::vector<double>{1.5}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {0}, std::vector<double>{2},   nd4j::DataType::HALF);
+    NDArray exp3('c', {0}, std::vector<double>{2},   nd4j::DataType::DOUBLE);
+    NDArray exp4('c', {0}, std::vector<double>{0.25},nd4j::DataType::FLOAT32);
 
 
     NDArray scalar = x1.reduceNumber(reduce::Mean);
@@ -829,10 +829,10 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberSame_test1) {
     NDArray x3('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {0}, {6}, nd4j::DataType::INT64);
-    NDArray exp2('c', {0}, {8}, nd4j::DataType::HALF);
-    NDArray exp3('c', {0}, {8}, nd4j::DataType::DOUBLE);
-    NDArray exp4('c', {0}, {1}, nd4j::DataType::BOOL);
+    NDArray exp1('c', {0}, std::vector<double>{6}, nd4j::DataType::INT64);
+    NDArray exp2('c', {0}, std::vector<double>{8}, nd4j::DataType::HALF);
+    NDArray exp3('c', {0}, std::vector<double>{8}, nd4j::DataType::DOUBLE);
+    NDArray exp4('c', {0}, std::vector<double>{1}, nd4j::DataType::BOOL);
 
 
     NDArray scalar = x1.reduceNumber(reduce::Sum);
@@ -866,7 +866,7 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberBool_test1) {
     NDArray x3('c', {2,2}, {0.5, 1.5, 2.5, 3.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {-2, -1, 0, 1}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);
+    NDArray exp1('c', {0}, std::vector<double>{1}, nd4j::DataType::BOOL);
 
     NDArray scalar = x1.reduceNumber(reduce::IsFinite);
     ASSERT_EQ(scalar, exp1);
@@ -899,10 +899,10 @@ TEST_F(MultiDataTypeTests, ndarray_reduceNumberLong_test1) {
     NDArray x3('c', {2,2}, {0.5, -1.5, 0, 3.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {0}, {3}, nd4j::DataType::INT64);
-    NDArray exp2('c', {0}, {4}, nd4j::DataType::INT64);
-    NDArray exp3('c', {0}, {3}, nd4j::DataType::INT64);
-    NDArray exp4('c', {0}, {2}, nd4j::DataType::INT64);
+    NDArray exp1('c', {0}, std::vector<double>{3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {0}, std::vector<double>{4}, nd4j::DataType::INT64);
+    NDArray exp3('c', {0}, std::vector<double>{3}, nd4j::DataType::INT64);
+    NDArray exp4('c', {0}, std::vector<double>{2}, nd4j::DataType::INT64);
 
     NDArray scalar = x1.reduceNumber(reduce::CountNonZero);
     ASSERT_EQ(scalar, exp1);
@@ -934,9 +934,9 @@ TEST_F(MultiDataTypeTests, ndarray_indexReduceNumber_test1) {
     NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::HALF);
     NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {0}, {3}, nd4j::DataType::INT64);
-    NDArray exp2('c', {0}, {2}, nd4j::DataType::INT64);
-    NDArray exp3('c', {0}, {1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {0}, std::vector<double>{3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {0}, std::vector<double>{2}, nd4j::DataType::INT64);
+    NDArray exp3('c', {0}, std::vector<double>{1}, nd4j::DataType::INT64);
 
     NDArray scalar = x1.indexReduceNumber(nd4j::indexreduce::IndexAbsoluteMax);
     ASSERT_EQ(scalar, exp1);
@@ -1238,15 +1238,15 @@ TEST_F(MultiDataTypeTests, ndarray_applyTrueBroadcast_test1) {
     NDArray x7('c', {2}, {1, 2}, nd4j::DataType::INT64);
     NDArray x8('c', {2,2}, nd4j::DataType::BOOL);
 
-    NDArray x13('c', {0}, {3}, nd4j::DataType::INT64);
-    NDArray x14('c', {0}, {1.5}, nd4j::DataType::DOUBLE);
+    NDArray x13('c', {0}, std::vector<double>{3}, nd4j::DataType::INT64);
+    NDArray x14('c', {0}, std::vector<double>{1.5}, nd4j::DataType::DOUBLE);
     NDArray x15(nd4j::DataType::DOUBLE);
     NDArray x16('c', {2,2}, nd4j::DataType::DOUBLE);
 
     NDArray exp1('c', {2,2}, {11, 22, 31, 42}, nd4j::DataType::HALF);
     NDArray exp2('c', {2,2}, {11, 22, 31, 42}, nd4j::DataType::INT32);
     NDArray exp3('c', {2,2}, {1, 1, 1, 1}, nd4j::DataType::BOOL);
-    NDArray exp4('c', {0}, {4.5}, nd4j::DataType::DOUBLE);
+    NDArray exp4('c', {0}, std::vector<double>{4.5}, nd4j::DataType::DOUBLE);
     NDArray exp5('c', {2,2}, {11.5, 21.5, 31.5, 41.5}, nd4j::DataType::DOUBLE);
 
     x1.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), x2, x3);
@@ -1289,13 +1289,13 @@ TEST_F(MultiDataTypeTests, ndarray_applyTrueBroadcast_test2) {
     NDArray x1('c', {2,2}, {10, 20, 30, 40}, nd4j::DataType::HALF);
     NDArray x2('c', {2},   {10, 40}, nd4j::DataType::HALF);
     NDArray x3('c', {2,2}, nd4j::DataType::BOOL);
-    NDArray x4('c', {0}, {10}, nd4j::DataType::HALF);
-    NDArray x5('c', {0}, {20}, nd4j::DataType::HALF);
+    NDArray x4('c', {0}, std::vector<double>{10}, nd4j::DataType::HALF);
+    NDArray x5('c', {0}, std::vector<double>{20}, nd4j::DataType::HALF);
     NDArray x6(nd4j::DataType::BOOL);
 
     NDArray exp1('c', {2,2}, {1, 0, 0, 1}, nd4j::DataType::BOOL);
     NDArray exp2('c', {2,2}, {1, 0, 0, 0}, nd4j::DataType::BOOL);
-    NDArray exp3('c', {0}, {0}, nd4j::DataType::BOOL);
+    NDArray exp3('c', {0}, std::vector<double>{0}, nd4j::DataType::BOOL);
 
     x1.applyTrueBroadcast(BroadcastBoolOpsTuple(nd4j::scalar::EqualTo, nd4j::pairwise::EqualTo, nd4j::broadcast::EqualTo), x2, x3);
     ASSERT_EQ(x3, exp1);
@@ -1459,16 +1459,16 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexedLambda_test1) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyPairwiseLambda_test1) {
 
-    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::DOUBLE);
-    NDArray x2('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
-    NDArray x3('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+    NDArray x1('c', {2,2}, {0., 1, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray x2('c', {2,2}, {0., 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x3('c', {2,2}, {0., 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
     NDArray x4('c', {2,2}, nd4j::DataType::DOUBLE);
     NDArray x5('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
     NDArray x6('c', {2,2}, {0.1, -1, -1, 0.1}, nd4j::DataType::BOOL);
     NDArray x7('c', {2,2}, nd4j::DataType::BOOL);
     NDArray other1('c', {2,2}, {0.1, 0.1, 0.1, 0.1}, nd4j::DataType::FLOAT32);
     NDArray other2('c', {2,2}, {0.1, 0.1, 0.1, 0.1}, nd4j::DataType::DOUBLE);
-    NDArray other3('c', {2,2}, {0, -1, -2, -3}, nd4j::DataType::INT64);
+    NDArray other3('c', {2,2}, {0., -1, -2, -3}, nd4j::DataType::INT64);
     NDArray other4('c', {2,2}, {1, 0, 0.1, 0}, nd4j::DataType::BOOL);
 
     auto func1 = [](float elem1, float elem2) { return elem1 + elem2; };
@@ -1478,10 +1478,10 @@ TEST_F(MultiDataTypeTests, ndarray_applyPairwiseLambda_test1) {
     auto func5 = [](float elem1, int elem2) { return elem1 - elem2; };
 
     NDArray exp1('c', {2,2}, {0.1, 1.1, 2.1, 3.1}, nd4j::DataType::DOUBLE);
-    NDArray exp2('c', {2,2}, {0, 0, 0, 0}, nd4j::DataType::INT64);
+    NDArray exp2('c', {2,2}, {0., 0, 0, 0}, nd4j::DataType::INT64);
     NDArray exp3('c', {2,2}, {0.1, 1.1, 2.1, 3.1}, nd4j::DataType::FLOAT32);
     NDArray exp4('c', {2,2}, {0.1, 1.6, 2.6, 3.6}, nd4j::DataType::FLOAT32);
-    NDArray exp5('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray exp5('c', {2,2}, {0., 1, 0, 1}, nd4j::DataType::BOOL);
 
     x1.applyPairwiseLambda<double>(other2, func1, x4);
     ASSERT_EQ(x4, exp1);
@@ -1505,16 +1505,16 @@ TEST_F(MultiDataTypeTests, ndarray_applyPairwiseLambda_test1) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyIndexedPairwiseLambda_test1) {
 
-    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::DOUBLE);
-    NDArray x2('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
-    NDArray x3('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+    NDArray x1('c', {2,2}, {0., 1, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray x2('c', {2,2}, {0., 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray x3('c', {2,2}, {0., 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
     NDArray x4('c', {2,2}, nd4j::DataType::DOUBLE);
     NDArray x5('c', {2,2}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
     NDArray x6('c', {2,2}, {0.1, -1, -1,  0.1}, nd4j::DataType::BOOL);
     NDArray x7('c', {2,2}, nd4j::DataType::BOOL);
     NDArray other1('c', {2,2}, {0.1, 0.1, 0.1, 0.1}, nd4j::DataType::FLOAT32);
     NDArray other2('c', {2,2}, {0.1, 0.1, 0.1, 0.1}, nd4j::DataType::DOUBLE);
-    NDArray other3('c', {2,2}, {0, -1, -2, -3}, nd4j::DataType::INT64);
+    NDArray other3('c', {2,2}, {0., -1, -2, -3}, nd4j::DataType::INT64);
     NDArray other4('c', {2,2}, {1, 0, 0.1, 0}, nd4j::DataType::BOOL);
 
     auto func1 = [](Nd4jLong idx, float elem1, float elem2) { return elem1 + elem2 + idx; };
@@ -1524,10 +1524,10 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexedPairwiseLambda_test1) {
     auto func5 = [](Nd4jLong idx, float elem1, int elem2) { return elem1 - elem2 + idx; };
 
     NDArray exp1('c', {2,2}, {0.1, 2.1, 4.1, 6.1}, nd4j::DataType::DOUBLE);
-    NDArray exp2('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {2,2}, {0., 1, 2, 3}, nd4j::DataType::INT64);
     NDArray exp3('c', {2,2}, {0.1, 2.1, 4.1, 6.1}, nd4j::DataType::FLOAT32);
     NDArray exp4('c', {2,2}, {0.1, 2.6, 4.6, 6.6}, nd4j::DataType::FLOAT32);
-    NDArray exp5('c', {2,2}, {0, 1, 1, 1}, nd4j::DataType::BOOL);
+    NDArray exp5('c', {2,2}, {0., 1, 1, 1}, nd4j::DataType::BOOL);
 
     x1.applyIndexedPairwiseLambda<double>(other2, func1, x4);
     ASSERT_EQ(x4, exp1);
@@ -1551,25 +1551,25 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexedPairwiseLambda_test1) {
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyTriplewiseLambda_test1) {
 
-    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::DOUBLE);
-    NDArray x2('c', {2,2}, {0, -1, -2, -3}, nd4j::DataType::DOUBLE);
+    NDArray x1('c', {2,2}, {0., 1, 2, 3}, nd4j::DataType::DOUBLE);
+    NDArray x2('c', {2,2}, {0., -1, -2, -3}, nd4j::DataType::DOUBLE);
     NDArray x3('c', {2,2}, {0, -1.5, -2.5, -3.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, nd4j::DataType::DOUBLE);
 
-    NDArray x5('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
-    NDArray x6('c', {2,2}, {0, -1, -2, -3}, nd4j::DataType::INT32);
-    NDArray x7('c', {2,2}, {0, 10, 20, 30}, nd4j::DataType::INT32);
+    NDArray x5('c', {2,2}, {0., 1, 2, 3}, nd4j::DataType::INT32);
+    NDArray x6('c', {2,2}, {0., -1, -2, -3}, nd4j::DataType::INT32);
+    NDArray x7('c', {2,2}, {0., 10, 20, 30}, nd4j::DataType::INT32);
 
-    NDArray x8('c', {2,2}, {0, 1, 0, 1}, nd4j::DataType::BOOL);
-    NDArray x9('c', {2,2}, {1, 1, 0, 1}, nd4j::DataType::BOOL);
-    NDArray x10('c', {2,2}, {0, 0, 0, 0}, nd4j::DataType::BOOL);
+    NDArray x8('c', {2,2}, {0., 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x9('c', {2,2}, {1., 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x10('c', {2,2}, {0., 0, 0, 0}, nd4j::DataType::BOOL);
 
     auto func1 = [](double elem1, float elem2, int elem3) { return elem1 + elem2 + elem3; };
     auto func2 = [](float elem1, float elem2, float elem3) { return elem1 + elem2 + elem3; };
     auto func3 = [](int elem1, int elem2, int elem3) { return elem1 + elem2 + elem3; };
     auto func4 = [](bool elem1, bool elem2, bool elem3) { return elem1 + elem2 + elem3; };
 
-    NDArray exp('c', {2,2}, {1, 1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray exp('c', {2,2}, {1., 1, 0, 1}, nd4j::DataType::BOOL);
 
     x1.applyTriplewiseLambda<double>(x2, x3, func1, x4);
     ASSERT_EQ(x4, x2);
@@ -1590,7 +1590,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyTriplewiseLambda_test1) {
 TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 
     NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);
-    NDArray exp1('c', {}, {5}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{5}, nd4j::DataType::INT64);
     NDArray exp2('c', {2}, {2,2}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::INT64);
 
@@ -1608,10 +1608,10 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
 
     NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, nd4j::DataType::DOUBLE);
-    NDArray scalar('c', {}, {5}, nd4j::DataType::INT64);
+    NDArray scalar('c', {}, std::vector<double>{5}, nd4j::DataType::INT64);
     NDArray vec1('c', {2}, {2,2}, nd4j::DataType::INT64);
     NDArray vec2('c', {3}, {1,1,1}, nd4j::DataType::INT64);
-    NDArray exp1('c', {}, {5}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{5}, nd4j::DataType::INT64);
     NDArray exp2('c', {2}, {2,2}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::INT64);
 
@@ -1632,8 +1632,8 @@ TEST_F(MultiDataTypeTests, applyReduce3_test1) {
     NDArray x2('c', {2,2}, {-1,-2,-3,-4}, nd4j::DataType::INT32);
     NDArray x3('c', {2,2}, {1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {1,2,3,4}, nd4j::DataType::DOUBLE);
-    NDArray exp1('c', {}, {-30}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {}, {15}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, std::vector<double>{-30}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {}, std::vector<double>{15}, nd4j::DataType::DOUBLE);
 
     auto result = x1.applyReduce3(reduce3::Dot, x2);
     ASSERT_EQ(result, exp1);
@@ -1654,8 +1654,8 @@ TEST_F(MultiDataTypeTests, applyReduce3_test2) {
     NDArray x7('c', {2,3}, {1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray x8('c', {2,3}, {1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {}, {-30}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {}, {15}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, std::vector<double>{-30}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {}, std::vector<double>{15}, nd4j::DataType::DOUBLE);
     NDArray exp3('c', {3}, {-18,-20,-18}, nd4j::DataType::FLOAT32);
     NDArray exp4('c', {2}, {-28,-28}, nd4j::DataType::FLOAT32);
     NDArray exp5('c', {3}, {7.5,10.5,13.5}, nd4j::DataType::DOUBLE);

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,6 +17,7 @@
 
 //
 // Created by raver119 on 20/04/18.
+// @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
 
 #ifndef LIBND4J_STRINGUTILS_H
@@ -27,6 +29,7 @@
 #include <sstream>
 #include <vector>
 #include <NDArray.h>
+#include <unicode.h>
 
 namespace nd4j {
     class ND4J_EXPORT StringUtils {
@@ -85,6 +88,55 @@ namespace nd4j {
          * @return
          */
         static std::vector<std::string> split(const std::string &haystack, const std::string &delimiter);
+
+
+        /**
+         * This method convert u8 string to u16
+         * @param const reference to input string
+         * @param reference to output u16string
+         * @return boolean status
+         */
+        static bool u8StringToU16String(const std::string& u8, std::u16string& u16);
+
+        /**
+         * This method convert u8 string to u32
+         * @param const reference to input string
+         * @param reference to output u32string
+         * @return boolean status
+         */
+        static bool u8StringToU32String(const std::string& u8, std::u32string& u32);
+
+        /**
+         * This method convert u16 string to u32
+         * @param const reference to input u16string
+         * @param reference to output u32string
+         * @return boolean status
+         */
+        static bool u16StringToU32String(const std::u16string& u16, std::u32string& u32);
+
+        /**
+         * This method convert u16 string to u8 string
+         * @param const reference to input u16string
+         * @param reference to output string
+         * @return boolean status
+         */
+        static bool u16StringToU8String(const std::u16string& u16, std::string& u8);
+
+        /**
+         * This method convert u32 string to u16 string
+         * @param const reference to input u32string
+         * @param reference to output u16string
+         * @return boolean status
+         */
+        static bool u32StringToU16String(const std::u32string& u32, std::u16string& u16);
+
+        /**
+        * This method convert u32 string to u8 string
+        * @param const reference to input u32string
+        * @param reference to output string
+        * @return boolean status
+        */
+        static bool u32StringToU8String(const std::u32string& u32, std::string& u8);
     };
 }
 

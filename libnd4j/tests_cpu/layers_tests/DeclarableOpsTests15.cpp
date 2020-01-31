@@ -858,7 +858,7 @@ TEST_F(DeclarableOpsTests15, test_empty_decreasing_1) {
 TEST_F(DeclarableOpsTests15, test_rgb_to_grs_1) {
     // rank 1
     NDArray rgbs('c', { 3 }, { 10, 50, 200 }, nd4j::DataType::INT32);
-    NDArray expected('c', { 1 }, { 55 }, nd4j::DataType::INT32);
+    NDArray expected('c', { 1 }, std::vector<double>{ 55 }, nd4j::DataType::INT32);
     nd4j::ops::rgb_to_grs op;
     auto result = op.evaluate({&rgbs}, {}, {});
     auto output = result->at(0);
@@ -1395,7 +1395,7 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test6) {
     y.assign(4.0);
     dLdzC.linspace(0.1, 0.1);
 
-    NDArray dLdxExpXC('c', { 1 }, { 115.2 }, nd4j::DataType::FLOAT32);
+    NDArray dLdxExpXC('c', { 1 }, std::vector<double>{ 115.2 }, nd4j::DataType::FLOAT32);
     NDArray dLdyExpXC('c', { 2, 2, 2 }, { 1.10904, 2.21807, 3.32711, 4.43614, 5.54518, 6.65421, 7.76325, 8.87228 }, nd4j::DataType::FLOAT32);
 
     nd4j::ops::Pow_bp op;

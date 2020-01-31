@@ -79,7 +79,7 @@ TEST_F(DeclarableOpsTests2, gather_2) {
 TEST_F(DeclarableOpsTests2, gather_3) {
 
     NDArray input   ('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
-    NDArray indices ('c', {1,1},   {2}, nd4j::DataType::INT32);
+    NDArray indices ('c', {1,1},   std::vector<double>{2}, nd4j::DataType::INT32);
     NDArray expected('c', {2,1,1,4}, {9,10,11,12,21,22,23,24});
 
     nd4j::ops::gather op;
@@ -186,7 +186,7 @@ TEST_F(DeclarableOpsTests2, gather_7) {
 TEST_F(DeclarableOpsTests2, gather_8) {
 
     NDArray input('c', {3,5}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}, nd4j::DataType::FLOAT32);
-    NDArray indices('c', {1}, {2}, nd4j::DataType::INT32);
+    NDArray indices('c', {1}, std::vector<double>{2}, nd4j::DataType::INT32);
     NDArray expected('c', {1,5}, {11, 12, 13, 14, 15.}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::gather op;
@@ -206,7 +206,7 @@ TEST_F(DeclarableOpsTests2, gather_8) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, gather_9) {
     NDArray x('c', {2, 4, 3, 2}, nd4j::DataType::FLOAT32);
-    NDArray indices('c', {2}, {1, 0}, nd4j::DataType::INT32);
+    NDArray indices('c', {2}, std::vector<double>{1, 0}, nd4j::DataType::INT32);
 
     nd4j::ops::gather op;
     auto result = op.evaluate({&x, &indices}, {}, {-2});
@@ -238,7 +238,7 @@ TEST_F(DeclarableOpsTests2, gather_10) {
 TEST_F(DeclarableOpsTests2, gather_11) {
 
     NDArray x('c', {2, 2}, {1, 2, 3, 4});
-    NDArray indices('c', {2}, {1, 0}, nd4j::DataType::INT64);
+    NDArray indices('c', {2}, std::vector<double>{1, 0}, nd4j::DataType::INT64);
     NDArray e('c', {2, 2}, {3, 4, 1, 2});
 
     nd4j::ops::gather op;
