@@ -14,16 +14,13 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.models.sequencevectors.serialization;
+package org.deeplearning4j.models.embeddings.loader;
 
 import lombok.val;
-import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
-import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.fasttext.FastText;
@@ -46,7 +43,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class WordVectorSerializerTest extends BaseDL4JTest {
     private AbstractCache<VocabWord> cache;
@@ -76,10 +77,11 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
                 syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
                 syn1Neg = Nd4j.rand(DataType.FLOAT, 10, 2);
 
-        InMemoryLookupTable<VocabWord> lookupTable =
-                (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
-                        .useAdaGrad(false).cache(cache)
-                        .build();
+        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable
+                .Builder<VocabWord>()
+                .useAdaGrad(false)
+                .cache(cache)
+                .build();
 
         lookupTable.setSyn0(syn0);
         lookupTable.setSyn1(syn1);
@@ -90,7 +92,6 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
                 lookupTable(lookupTable).
                 build();
         SequenceVectors<VocabWord> deser = null;
-        String json = StringUtils.EMPTY;
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             WordVectorSerializer.writeSequenceVectors(vectors, baos);
@@ -124,10 +125,11 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
                 syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
                 syn1Neg = Nd4j.rand(DataType.FLOAT, 10, 2);
 
-        InMemoryLookupTable<VocabWord> lookupTable =
-                (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
-                        .useAdaGrad(false).cache(cache)
-                        .build();
+        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable
+                .Builder<VocabWord>()
+                .useAdaGrad(false)
+                .cache(cache)
+                .build();
 
         lookupTable.setSyn0(syn0);
         lookupTable.setSyn1(syn1);
@@ -202,10 +204,11 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
                 syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
                 syn1Neg = Nd4j.rand(DataType.FLOAT, 10, 2);
 
-        InMemoryLookupTable<VocabWord> lookupTable =
-                (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
-                        .useAdaGrad(false).cache(cache)
-                        .build();
+        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable
+                .Builder<VocabWord>()
+                .useAdaGrad(false)
+                .cache(cache)
+                .build();
 
         lookupTable.setSyn0(syn0);
         lookupTable.setSyn1(syn1);
@@ -250,10 +253,11 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
                 syn1 = Nd4j.rand(DataType.FLOAT, 10, 2),
                 syn1Neg = Nd4j.rand(DataType.FLOAT, 10, 2);
 
-        InMemoryLookupTable<VocabWord> lookupTable =
-                (InMemoryLookupTable<VocabWord>) new InMemoryLookupTable.Builder<VocabWord>()
-                        .useAdaGrad(false).cache(cache)
-                        .build();
+        InMemoryLookupTable<VocabWord> lookupTable = new InMemoryLookupTable
+                .Builder<VocabWord>()
+                .useAdaGrad(false)
+                .cache(cache)
+                .build();
 
         lookupTable.setSyn0(syn0);
         lookupTable.setSyn1(syn1);
@@ -265,7 +269,6 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
         WeightLookupTable<VocabWord> deser = null;
         try {
             WordVectorSerializer.writeLookupTable(lookupTable, file);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             deser = WordVectorSerializer.readLookupTable(file);
         } catch (Exception e) {
             e.printStackTrace();
@@ -303,7 +306,6 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
 
         FastText deser = null;
         try {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             deser = WordVectorSerializer.readWordVectors(new File(dir, "some.data"));
         } catch (Exception e) {
             e.printStackTrace();
@@ -320,5 +322,33 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
         assertEquals(fastText.isQuantize(), deser.isQuantize());
         assertEquals(fastText.getInputFile(), deser.getInputFile());
         assertEquals(fastText.getOutputFile(), deser.getOutputFile());
+    }
+
+    @Test
+    public void testIsHeader_withValidHeader () {
+
+        /* Given */
+        AbstractCache<VocabWord> cache = new AbstractCache<>();
+        String line = "48 100";
+
+        /* When */
+        boolean isHeader = WordVectorSerializer.isHeader(line, cache);
+
+        /* Then */
+        assertTrue(isHeader);
+    }
+
+    @Test
+    public void testIsHeader_notHeader () {
+
+        /* Given */
+        AbstractCache<VocabWord> cache = new AbstractCache<>();
+        String line = "your -0.0017603 0.0030831 0.00069072 0.0020581 -0.0050952 -2.2573e-05 -0.001141";
+
+        /* When */
+        boolean isHeader = WordVectorSerializer.isHeader(line, cache);
+
+        /* Then */
+        assertFalse(isHeader);
     }
 }

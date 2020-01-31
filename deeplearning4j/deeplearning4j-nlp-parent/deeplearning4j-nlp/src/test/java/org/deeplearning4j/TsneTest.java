@@ -77,7 +77,7 @@ public class TsneTest extends BaseDL4JTest {
                 log.info("Load & Vectorize data....");
                 File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
                 //Get the data of all unique word vectors
-                Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
+                Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(new FileInputStream(wordFile));
                 VocabCache cache = vectors.getSecond();
                 weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list
 
@@ -129,7 +129,7 @@ public class TsneTest extends BaseDL4JTest {
                 log.info("Load & Vectorize data....");
                 File wordFile = new ClassPathResource("deeplearning4j-tsne/words.txt").getFile();   //Open the file
                 //Get the data of all unique word vectors
-                Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(wordFile);
+                Pair<InMemoryLookupTable, VocabCache> vectors = WordVectorSerializer.loadTxt(new FileInputStream(wordFile));
                 VocabCache cache = vectors.getSecond();
                 weights = vectors.getFirst().getSyn0();    //seperate weights of unique words into their own list
 
