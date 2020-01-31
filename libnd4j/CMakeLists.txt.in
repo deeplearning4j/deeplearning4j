@@ -5,7 +5,7 @@ project(flatbuffers-download NONE)
 include(ExternalProject)
 ExternalProject_Add(flatbuffers
   GIT_REPOSITORY    https://github.com/google/flatbuffers.git
-  GIT_TAG           v1.11.0
+  GIT_TAG           v1.10.0
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/flatbuffers-build"
   CONFIGURE_COMMAND ""
