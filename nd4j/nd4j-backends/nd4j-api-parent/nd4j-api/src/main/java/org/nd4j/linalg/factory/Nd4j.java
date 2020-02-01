@@ -16,10 +16,7 @@
 
 package org.nd4j.linalg.factory;
 
-import org.nd4j.linalg.factory.ops.NDBitwise;
-import org.nd4j.linalg.factory.ops.NDMath;
-import org.nd4j.linalg.factory.ops.NDNN;
-import org.nd4j.linalg.factory.ops.NDRandom;
+import org.nd4j.linalg.factory.ops.*;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -135,6 +132,11 @@ public class Nd4j {
     public static final NDNN nn = new NDNN();
 
     /**
+     * Loss function namespace - operations related to loss functions.
+     */
+    public static final NDLoss loss = new NDLoss();
+
+    /**
      * Bitwise namespace - operations related to bitwise manipulation of arrays
      */
     public static NDBitwise bitwise() {
@@ -161,6 +163,11 @@ public class Nd4j {
     public static NDNN nn() {
         return nn;
     }
+
+    /**
+     * Loss function namespace - operations related to loss functions.
+     */
+    public static NDLoss loss(){ return loss; }
 
     private final static String DATA_BUFFER_OPS = "databufferfactory";
     private final static String CONVOLUTION_OPS = "convops";
