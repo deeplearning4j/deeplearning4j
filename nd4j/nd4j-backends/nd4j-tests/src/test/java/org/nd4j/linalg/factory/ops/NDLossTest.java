@@ -388,7 +388,7 @@ public class NDLossTest extends BaseNd4jTest {
 
 
         INDArray predictionsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
-        INDArray labelsArr = Nd4j.create(DataType.DOUBLE, minibatch);
+        INDArray labelsArr = Nd4j.create(DataType.INT32, minibatch);
         for( int i=0; i<minibatch; i++ ){
             labelsArr.putScalar(i, i%nOut);
         }
@@ -400,7 +400,6 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray y_exp = loss.eval();
 
         NDLoss ndLoss = new NDLoss();
-        //TODO: Test fails. probably a bug in Op constructor.
         INDArray y = ndLoss.sparseSoftmaxCrossEntropy(predictionsArr, labelsArr);
         assertEquals(y_exp, y);
     }
