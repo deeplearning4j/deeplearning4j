@@ -6935,9 +6935,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val arrayY = Nd4j.create(128, 128, 'f');
         val arrayZ = Nd4j.create(128, 128, 'f');
 
-        int iterations = 10000;
+        int iterations = 100;
         // warmup
-        for (int e = 0; e < 1000; e++)
+        for (int e = 0; e < 10; e++)
             arrayX.addi(arrayY);
 
         for (int e = 0; e < iterations; e++) {
