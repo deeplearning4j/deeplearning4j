@@ -3807,7 +3807,6 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype);
 
-
         /**
         * This method returns new array with the same shape & data type
         * @return
