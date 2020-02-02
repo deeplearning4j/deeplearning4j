@@ -165,10 +165,7 @@ namespace nd4j {
                 // we build list of input shapes
                 if (ctx.isFastPath()) {
                     for (const auto p:ctx.fastpath_in()) {
-                        if (p == nullptr)
-                            continue;
-
-                        inSha.push_back(p->getShapeInfo());
+                        inSha.push_back(p == nullptr ? nullptr : p->getShapeInfo());
                     }
                 } else {
                     for (auto p: *ctx.inputs()) {
@@ -184,6 +181,11 @@ namespace nd4j {
                     }
                 }
 
+                // if we override shape function, we'll return size of fastPath
+                if (ctx.isFastPath() && ctx.shapeFunctionOverride()) {
+                    return (int) ctx.fastpath_out().size();
+                }
+
                 // optionally saving input time
                 if (Environment::getInstance()->isProfiling() && node != nullptr) {
                     inputEnd = std::chrono::system_clock::now();
@@ -191,11 +193,6 @@ namespace nd4j {
                     node->setInputTime(inputTime);
 
                     shapeStart = std::chrono::system_clock::now();
-                }
-
-                // if we override shape function, we'll return size of fastPath
-                if (ctx.isFastPath() && ctx.shapeFunctionOverride()) {
-                    return (int) ctx.fastpath_out().size();
                 }
 
                 auto outSha = this->calculateOutputShape(&inSha, ctx);
@@ -870,16 +867,10 @@ namespace nd4j {
             Context ctx(1);
 
             for (int e = 0; e < inputs.size(); e++) {
-                if (inputs[e] == nullptr)
-                    break;
-
                 ctx.setInputArray(e, inputs[e]);
             }
 
             for (int e = 0; e < outputs.size(); e++) {
-                if (outputs[e] == nullptr)
-                    break;
-
                 ctx.setOutputArray(e, outputs[e]);
             }
 

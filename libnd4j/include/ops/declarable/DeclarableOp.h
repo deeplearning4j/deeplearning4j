@@ -171,7 +171,7 @@ namespace nd4j {
 
             Nd4jStatus execute(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs);
 
-            template <class T>
+            template <class T, typename = std::enable_if<DataTypeUtils::scalarTypesForExecution<T>::value>>
             Nd4jStatus execute(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs, std::initializer_list<T> tArgs);
 
             Nd4jStatus execute(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<nd4j::DataType> &dArgs = std::vector<nd4j::DataType>(), bool isInplace = false);
@@ -179,7 +179,7 @@ namespace nd4j {
 
             nd4j::ResultSet* evaluate(const std::vector<NDArray*> &inputs);
 
-            template <class T>
+            template <class T, typename = std::enable_if<DataTypeUtils::scalarTypesForExecution<T>::value>>
             nd4j::ResultSet* evaluate(const std::vector<NDArray*> &inputs, std::initializer_list<T> args);
 
             nd4j::ResultSet* evaluate(const std::vector<NDArray*> &inputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<nd4j::DataType> &dArgs = std::vector<nd4j::DataType>(), bool isInplace = false);
