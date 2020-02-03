@@ -138,7 +138,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Before
     public void before() throws Exception {
-        super.beforeTest();
         Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
         Nd4j.getExecutioner().enableDebugMode(false);
@@ -147,7 +146,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @After
     public void after() throws Exception {
-        super.afterTest();
         Nd4j.setDataType(initialType);
     }
 
