@@ -61,13 +61,17 @@ public class NDLossTest extends BaseNd4jTest {
 
 
         SDVariable loss = sd.loss().absoluteDifference("loss", labels, predictions, w, reduction);
+        SDVariable loss2 = sd.loss().absoluteDifference("loss2", labels, predictions, null, reduction);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().absoluteDifference(labelsArr, predictionsArr, wArr, reduction);
+        INDArray y2 = Nd4j.loss().absoluteDifference(labelsArr, predictionsArr, null, reduction);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -93,14 +97,17 @@ public class NDLossTest extends BaseNd4jTest {
         labelsArr.diviColumnVector(labelsArr.norm2(1));
 
         SDVariable loss = sd.loss().cosineDistance("loss", labels, predictions, w, reduction, 0);
+        SDVariable loss2 = sd.loss().cosineDistance("loss2", labels, predictions, null, reduction, 0);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
-        System.out.println(y_exp);
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().cosineDistance(labelsArr, predictionsArr, wArr, reduction, 0);
+        INDArray y2 = Nd4j.loss().cosineDistance(labelsArr, predictionsArr, null, reduction, 0);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -123,13 +130,17 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
         SDVariable loss = sd.loss().hingeLoss("loss", labels, predictions, w, reduction);
+        SDVariable loss2 = sd.loss().hingeLoss("loss2", labels, predictions, null, reduction);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().hingeLoss(labelsArr, predictionsArr, wArr, reduction);
+        INDArray y2 = Nd4j.loss().hingeLoss(labelsArr, predictionsArr, null, reduction);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -152,13 +163,17 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
         SDVariable loss = sd.loss().huberLoss("loss", labels, predictions, w, reduction, 0.02);
+        SDVariable loss2 = sd.loss().huberLoss("loss2", labels, predictions, null, reduction, 0.02);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().huberLoss(labelsArr, predictionsArr, wArr, reduction, 0.02);
+        INDArray y2 = Nd4j.loss().huberLoss(labelsArr, predictionsArr, null, reduction, 0.02);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -203,14 +218,18 @@ public class NDLossTest extends BaseNd4jTest {
         double eps = 1e-7;
 
         SDVariable loss = sd.loss().logLoss("loss", labels, predictions, w, reduction, eps);
+        SDVariable loss2 = sd.loss().logLoss("loss2", labels, predictions, null, reduction, eps);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         //TODO: Test fails.   "Op [log_loss] execution failed"
         INDArray y = Nd4j.loss().logLoss(labelsArr, predictionsArr, wArr, reduction, eps);
+        INDArray y2 = Nd4j.loss().logLoss(labelsArr, predictionsArr, null, reduction, eps);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -233,13 +252,17 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
         SDVariable loss = sd.loss().logPoisson("loss", labels, predictions, w, reduction);
+        SDVariable loss2 = sd.loss().logPoisson("loss2", labels, predictions, null, reduction);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().logPoisson(labelsArr, predictionsArr, wArr, reduction, false);
+        INDArray y2 = Nd4j.loss().logPoisson(labelsArr, predictionsArr, null, reduction, false);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -262,13 +285,17 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
         SDVariable loss = sd.loss().meanPairwiseSquaredError("loss", labels, predictions, w, reduction);
+        SDVariable loss2 = sd.loss().meanPairwiseSquaredError("loss2", labels, predictions, null, reduction);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().meanPairwiseSquaredError(labelsArr, predictionsArr, wArr, reduction);
+        INDArray y2 = Nd4j.loss().meanPairwiseSquaredError(labelsArr, predictionsArr, null, reduction);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -291,13 +318,17 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
         SDVariable loss = sd.loss().meanSquaredError("loss", labels, predictions, w, reduction);
+        SDVariable loss2 = sd.loss().meanSquaredError("loss2", labels, predictions, null, reduction);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().meanSquaredError(labelsArr, predictionsArr, wArr, reduction);
+        INDArray y2 = Nd4j.loss().meanSquaredError(labelsArr, predictionsArr, null, reduction);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -321,13 +352,17 @@ public class NDLossTest extends BaseNd4jTest {
         double labelSmoothing = 0.01;
 
         SDVariable loss = sd.loss().sigmoidCrossEntropy("loss", labels, predictions, w, reduction, labelSmoothing);
+        SDVariable loss2 = sd.loss().sigmoidCrossEntropy("loss2", labels, predictions, null, reduction, labelSmoothing);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().sigmoidCrossEntropy(labelsArr, predictionsArr, wArr, reduction, labelSmoothing);
+        INDArray y2 = Nd4j.loss().sigmoidCrossEntropy(labelsArr, predictionsArr, null, reduction, labelSmoothing);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
@@ -354,13 +389,17 @@ public class NDLossTest extends BaseNd4jTest {
         double labelSmoothing = 0.0;
 
         SDVariable loss = sd.loss().softmaxCrossEntropy("loss", labels, predictions, w, reduction, labelSmoothing);
+        SDVariable loss2 = sd.loss().softmaxCrossEntropy("loss2", labels, predictions, null, reduction, labelSmoothing);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
         INDArray y_exp = loss.eval();
+        INDArray y_exp2 = loss2.eval();
 
         INDArray y = Nd4j.loss().softmaxCrossEntropy(labelsArr, predictionsArr, wArr, reduction, labelSmoothing);
+        INDArray y2 = Nd4j.loss().softmaxCrossEntropy(labelsArr, predictionsArr, null, reduction, labelSmoothing);
         assertEquals(y_exp, y);
+        assertEquals(y_exp2, y2);
     }
 
     @Test
