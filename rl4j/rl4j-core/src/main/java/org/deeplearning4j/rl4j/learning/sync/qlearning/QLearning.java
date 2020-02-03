@@ -141,6 +141,8 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
             incrementStep();
         }
 
+        finishEpoch(obs);
+
         meanQ /= (numQ + 0.001); //avoid div zero
 
 
@@ -148,6 +150,10 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
                         getEgPolicy().getEpsilon(), startQ, meanQ);
 
         return statEntry;
+    }
+
+    protected void finishEpoch(Observation observation) {
+        // Do Nothing
     }
 
     @Override

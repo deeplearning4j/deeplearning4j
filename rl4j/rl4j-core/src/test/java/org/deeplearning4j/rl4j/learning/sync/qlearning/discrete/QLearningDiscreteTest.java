@@ -120,6 +120,7 @@ public class QLearningDiscreteTest {
                 new double[] { 12.0, 14.0, 16.0, 18.0, 20.0 },
                 new double[] { 14.0, 16.0, 18.0, 20.0, 22.0 },
         };
+        assertEquals(expectedTrObservations.length, expReplay.transitions.size());
         for(int i = 0; i < expectedTrRewards.length; ++i) {
             Transition tr = expReplay.transitions.get(i);
             assertEquals(expectedTrRewards[i], tr.getReward(), 0.0001);

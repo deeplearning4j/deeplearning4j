@@ -185,4 +185,12 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         return tdTargetAlgorithm.computeTDTargets(transitions);
     }
+
+    @Override
+    protected void finishEpoch(Observation observation) {
+        if(pendingTransition != null) {
+            pendingTransition.setNextObservation(observation);
+            getExpReplay().store(pendingTransition);
+        }
+    }
 }
