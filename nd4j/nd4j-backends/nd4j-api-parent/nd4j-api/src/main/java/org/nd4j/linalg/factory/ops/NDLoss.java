@@ -30,7 +30,7 @@ public class NDLoss {
   }
 
   /**
-   * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )<br>
+   * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )}<br>
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -47,7 +47,7 @@ public class NDLoss {
   }
 
   /**
-   * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )<br>
+   * Absolute difference loss: {@code sum_i abs( label[i] - predictions[i] )}<br>
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
@@ -145,9 +145,8 @@ public class NDLoss {
    * though is less sensitive to outliers than squared error.<br>
    * Huber loss implements:<br>
    * <pre><br>
-   * {@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta<br>
-   * L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise<br>
-   * }<br>
+   * {@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta}<br>
+   * {@code L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise}<br>
    * </pre><br>
    *
    * @param label Label array (NUMERIC type)
@@ -170,9 +169,8 @@ public class NDLoss {
    * though is less sensitive to outliers than squared error.<br>
    * Huber loss implements:<br>
    * <pre><br>
-   * {@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta<br>
-   * L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise<br>
-   * }<br>
+   * {@code L = 0.5 * (label[i] - predictions[i])^2 if abs(label[i] - predictions[i]) < delta}<br>
+   * {@code L = delta * abs(label[i] - predictions[i]) - 0.5 * delta^2 otherwise}<br>
    * </pre><br>
    *
    * @param label Label array (NUMERIC type)
@@ -442,15 +440,14 @@ public class NDLoss {
    * @param oneHotLabels Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut]) (NUMERIC type)
    * @param logitPredictions Predictions array (pre-softmax) (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param labelSmoothing Label smoothing value. Default value: 0
    * @return output Loss variable (NUMERIC type)
    */
   public INDArray softmaxCrossEntropy(INDArray oneHotLabels, INDArray logitPredictions,
-      INDArray weights, double labelSmoothing) {
+      INDArray weights) {
     NDValidation.validateNumerical("softmaxCrossEntropy", "oneHotLabels", oneHotLabels);
     NDValidation.validateNumerical("softmaxCrossEntropy", "logitPredictions", logitPredictions);
     NDValidation.validateNumerical("softmaxCrossEntropy", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, labelSmoothing))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyLoss(oneHotLabels, logitPredictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0))[0];
   }
 
   /**
