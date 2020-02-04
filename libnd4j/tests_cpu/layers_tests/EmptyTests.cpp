@@ -66,7 +66,7 @@ TEST_F(EmptyTests, Test_Concat_1) {
     ASSERT_TRUE(empty->isEmpty());
 
     nd4j::ops::concat op;
-    auto result = op.execute({empty, vector}, {}, {0});
+    auto result = op.evaluate({empty, vector}, {}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -91,7 +91,7 @@ TEST_F(EmptyTests, Test_Concat_2) {
     ASSERT_TRUE(empty->isEmpty());
 
     nd4j::ops::concat op;
-    auto result = op.execute({empty, scalar1, scalar2}, {}, {0});
+    auto result = op.evaluate({empty, scalar1, scalar2}, {}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -116,7 +116,7 @@ TEST_F(EmptyTests, Test_Concat_3) {
     ASSERT_TRUE(empty.isEmpty());
 
     nd4j::ops::concat op;
-    auto result = op.execute({&empty, &scalar1, &scalar2}, {}, {0});
+    auto result = op.evaluate({&empty, &scalar1, &scalar2}, {}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -135,7 +135,7 @@ TEST_F(EmptyTests, Test_Concat_4) {
     ASSERT_TRUE(empty.isEmpty());
 
     nd4j::ops::concat op;
-    auto result = op.execute({&scalar1, &empty, &scalar2}, {}, {0});
+    auto result = op.evaluate({&scalar1, &empty, &scalar2}, {}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -151,7 +151,7 @@ TEST_F(EmptyTests, Test_Reshape_1) {
     auto empty = NDArrayFactory::empty_<int>();
 
     nd4j::ops::reshape op;
-    auto result = op.execute({&vector, empty}, {}, {});
+    auto result = op.evaluate({&vector, empty}, {}, {});
 
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -167,7 +167,7 @@ TEST_F(EmptyTests, Test_Reshape_2) {
     auto empty = NDArrayFactory::empty_<Nd4jLong>();
 
     nd4j::ops::reshape op;
-    auto result = op.execute({&vector, empty}, {}, {}, {}, true);
+    auto result = op.evaluate({&vector, empty}, {}, {}, {}, {}, true);
 
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -184,7 +184,7 @@ TEST_F(EmptyTests, Test_Reshape_3) {
     auto e = NDArrayFactory::create<float>('c', {10, 0});
 
     nd4j::ops::reshape op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -213,7 +213,7 @@ TEST_F(EmptyTests, test_empty_scatter_1) {
     x.linspace(1.0f);
 
     nd4j::ops::scatter_upd op;
-    auto result = op.execute({&x, &indices, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&x, &indices, &updates}, {}, {}, {true});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -311,12 +311,12 @@ TEST_F(EmptyTests, test_empty_reshape_1) {
     auto e1 = NDArrayFactory::create<float>('c', {0, 1});
 
     nd4j::ops::reshape op;
-    auto result0 = op.execute({&x0, &shape0}, {}, {});
+    auto result0 = op.evaluate({&x0, &shape0}, {}, {});
     ASSERT_EQ(Status::OK(), result0->status());
     auto z0 = result0->at(0);
     ASSERT_EQ(e0, *z0);
 
-    auto result1 = op.execute({&x1, &shape1}, {}, {});
+    auto result1 = op.evaluate({&x1, &shape1}, {}, {});
     ASSERT_EQ(Status::OK(), result1->status());
     auto z1 = result1->at(0);
     ASSERT_EQ(e1, *z1);
@@ -332,7 +332,7 @@ TEST_F(EmptyTests, test_empty_matmul_1) {
     auto e = NDArrayFactory::create<float>('c', {0, 0});
 
     nd4j::ops::matmul op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -347,7 +347,7 @@ TEST_F(EmptyTests, test_empty_matmul_2) {
     auto e = NDArrayFactory::create<float>('c', {1, 0, 0});
 
     nd4j::ops::matmul op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);

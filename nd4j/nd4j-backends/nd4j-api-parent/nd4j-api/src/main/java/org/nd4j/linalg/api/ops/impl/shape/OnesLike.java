@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -23,6 +24,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -53,6 +55,22 @@ public class OnesLike extends DynamicCustomOp {
     public OnesLike(String name, SameDiff sameDiff, SDVariable input, DataType dataType) {
         super(name, sameDiff, new SDVariable[]{input}, false);
         this.outputType = dataType;
+        addArgs();
+    }
+
+    public OnesLike(@NonNull INDArray input, DataType dataType) {
+        this.addInputArgument(input);
+        this.outputType = dataType;
+        addArgs();
+    }
+
+    public OnesLike(@NonNull INDArray input) {
+        this(input, input.dataType());
+    }
+
+    public void addArgs() {
+        if (outputType != null)
+            addDArgument(outputType);
     }
 
 
@@ -78,6 +96,8 @@ public class OnesLike extends DynamicCustomOp {
         if(attributesForNode.containsKey("T")) {
             outputType = TFGraphMapper.convertType(attributesForNode.get("T").getType());
         }
+
+        addArgs();
     }
 
     @Override

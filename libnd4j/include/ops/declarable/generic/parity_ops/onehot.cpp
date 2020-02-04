@@ -74,6 +74,8 @@ namespace nd4j {
         DECLARE_SHAPE_FN(onehot) {
             auto inShape = inputShape->at(0);
 
+            nd4j::DataType dtype = block.numD() > 0 ? D_ARG(0) : nd4j::DataType::FLOAT32;
+
             int depth = -1;
             Nd4jLong axis = -1;
 
@@ -99,7 +101,7 @@ namespace nd4j {
                 shape.push_back(shape::shapeOf(inShape)[e]);
 
             shape.insert(shape.begin() + axis, depth);
-            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', rank + 1, shape.data());
+            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', rank + 1, shape.data());
 
             return SHAPELIST(newShape);
         }

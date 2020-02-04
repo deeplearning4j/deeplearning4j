@@ -46,7 +46,7 @@ TEST_F(IndexingTests, StridedSlice_1) {
 
     nd4j::ops::strided_slice op;
 
-    auto result = op.execute({&x, &begin, &end, &strides}, {}, {0,0,0,0,0}); //, 2,2,0,  3,3,3,  1,1,1});
+    auto result = op.evaluate({&x, &begin, &end, &strides}, {}, {0,0,0,0,0}); //, 2,2,0,  3,3,3,  1,1,1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -65,7 +65,7 @@ TEST_F(IndexingTests, StridedSlice_2) {
 
     nd4j::ops::strided_slice op;
 
-    auto result = op.execute({&x}, {}, {0,0,0,0,0, 3,2,0,  5,5,3,  1,1,1});
+    auto result = op.evaluate({&x}, {}, {0,0,0,0,0, 3,2,0,  5,5,3,  1,1,1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -85,7 +85,7 @@ TEST_F(IndexingTests, StridedSlice_3) {
 
     nd4j::ops::strided_slice op;
 
-    auto result = op.execute({&x}, {}, {0,0,0,0,0, 3,2,0,  5,5,3,  1,1,2});
+    auto result = op.evaluate({&x}, {}, {0,0,0,0,0, 3,2,0,  5,5,3,  1,1,2});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -108,7 +108,7 @@ TEST_F(IndexingTests, SimpleSlice_1) {
 
     nd4j::ops::slice op;
 
-    auto result = op.execute({&input}, {}, {1,0,0, 1,1,3});
+    auto result = op.evaluate({&input}, {}, {1,0,0, 1,1,3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -134,7 +134,7 @@ TEST_F(IndexingTests, SimpleSlice_2) {
 
     nd4j::ops::slice op;
 
-    auto result = op.execute({&input}, {}, {1,0,0, 1,2,3});
+    auto result = op.evaluate({&input}, {}, {1,0,0, 1,2,3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -159,7 +159,7 @@ TEST_F(IndexingTests, SimpleSlice_3) {
 
     nd4j::ops::slice op;
 
-    auto result = op.execute({&input}, {}, {1,0,0, 2,1,3});
+    auto result = op.evaluate({&input}, {}, {1,0,0, 2,1,3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -179,7 +179,7 @@ TEST_F(IndexingTests, SimpleSlice_4) {
 
     nd4j::ops::slice op;
 
-    auto result = op.execute({&input, &start, &stop}, {}, {});
+    auto result = op.evaluate({&input, &start, &stop});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -202,7 +202,7 @@ TEST_F(IndexingTests, MaskedSlice_0) {
     exp.assign(2.0f);
 
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&matrix}, {}, {0,0,0,0,0,   1, 2, 1});
+    auto result = op.evaluate({&matrix}, {}, {0,0,0,0,0,   1, 2, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -228,7 +228,7 @@ TEST_F(IndexingTests, MaskedSlice_00) {
 
 
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&matrix}, {}, {0,0,0,0,0,   1, 1, 2, 3, 1, 1});
+    auto result = op.evaluate({&matrix}, {}, {0,0,0,0,0,   1, 1, 2, 3, 1, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -252,7 +252,7 @@ TEST_F(IndexingTests, MaskedSlice_1) {
     exp.assign(2.0f);
 
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&matrix}, {}, {0,0,0,0,1,   1, 2, 1});
+    auto result = op.evaluate({&matrix}, {}, {0,0,0,0,1,   1, 2, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -273,7 +273,7 @@ TEST_F(IndexingTests, MaskedSlice_2) {
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&matrix}, {}, {0,0,0,0,1,   1, 0, 0,  3, 3, 3,  1, 1, 1});
+    auto result = op.evaluate({&matrix}, {}, {0,0,0,0,1,   1, 0, 0,  3, 3, 3,  1, 1, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -293,7 +293,7 @@ TEST_F(IndexingTests, MaskedSlice_3) {
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&matrix}, {}, {0,0,0,0,2,   1, 0, 0,  3, 3, 3,  1, 1, 1});
+    auto result = op.evaluate({&matrix}, {}, {0,0,0,0,2,   1, 0, 0,  3, 3, 3,  1, 1, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -313,7 +313,7 @@ TEST_F(IndexingTests, MaskedSlice_4) {
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&matrix}, {}, {0,0,0,0, 3,   1, 0, 0,  3, 3, 3,  1, 1, 1});
+    auto result = op.evaluate({&matrix}, {}, {0,0,0,0, 3,   1, 0, 0,  3, 3, 3,  1, 1, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -336,7 +336,7 @@ TEST_F(IndexingTests, Live_Slice_1) {
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&matrix, &begin, &end, &stride}, {}, {0,0,0,0,3});
+    auto result = op.evaluate({&matrix, &begin, &end, &stride}, {}, {0,0,0,0,3});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -359,7 +359,7 @@ TEST_F(IndexingTests, Test_StridedSlice_1) {
     auto exp = NDArrayFactory::create<float>({5.0f, 2});
 
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
+    auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -379,7 +379,7 @@ TEST_F(IndexingTests, Test_StridedSlice_2) {
     auto exp = NDArrayFactory::create<float>('c', {1}, {5.0});
 
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
+    auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -402,7 +402,7 @@ TEST_F(IndexingTests, Test_StridedSlice_3) {
     auto exp = NDArrayFactory::create<float>('c', {1}, {6.0});
 
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
+    auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -423,7 +423,7 @@ TEST_F(IndexingTests, Test_StridedSlice_4) {
     auto exp = NDArrayFactory::create<float>({5.0f, 2});
 
     nd4j::ops::strided_slice op;
-    auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
+    auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
 //    auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1, 0, 1, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());

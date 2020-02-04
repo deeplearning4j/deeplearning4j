@@ -57,7 +57,9 @@ table FlatNode {
 	controlDeps:[string];
 	varControlDeps:[string];
 	controlDepFor:[string];
-	
+
+	// DArgs
+	extraTypes:[DType];
 }
 
 root_type FlatNode;

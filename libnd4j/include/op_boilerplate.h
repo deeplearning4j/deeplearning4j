@@ -1516,7 +1516,9 @@
 
 #define INPUT_LIST(INDEX)     reinterpret_cast<nd4j::NDArrayList *>(block.getVariable(INDEX)->getNDArrayList())
 
+#define D_ARG(INDEX)     block.getDArguments()->at(INDEX)
 #define INT_ARG(INDEX)     block.getIArguments()->at(INDEX)
+#define I_ARG(INDEX)     INT_ARG(INDEX)
 #define T_ARG(INDEX)     block.getTArguments()->at(INDEX)
 #define B_ARG(INDEX)     block.getBArguments()->at(INDEX)
 

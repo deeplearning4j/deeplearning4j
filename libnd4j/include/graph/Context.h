@@ -197,10 +197,12 @@ namespace nd4j {
             void setTArguments(double *arguments, int numberOfArguments);
             void setIArguments(Nd4jLong *arguments, int numberOfArguments);
             void setBArguments(bool *arguments, int numberOfArguments);
+            void setDArguments(nd4j::DataType *arguments, int numberOfArguments);
 
             void setTArguments(const std::vector<double> &tArgs);
             void setIArguments(const std::vector<Nd4jLong> &tArgs);
             void setBArguments(const std::vector<bool> &tArgs);
+            void setDArguments(const std::vector<nd4j::DataType> &dArgs);
 
             void setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer);
 

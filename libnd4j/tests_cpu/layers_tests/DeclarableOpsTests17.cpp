@@ -48,36 +48,36 @@ TEST_F(DeclarableOpsTests17, test_sparse_to_dense_1) {
 
 
     nd4j::ops::compat_sparse_to_dense op;
-    auto result = op.execute({&ranges, &shape, &values, &def}, {}, {});
+    auto result = op.evaluate({&ranges, &shape, &values, &def});
     ASSERT_EQ(Status::OK(), result->status());
 
     delete result;
 }
 
 TEST_F(DeclarableOpsTests17, test_sparse_to_dense_2) {
-    auto values = NDArrayFactory::string('c', {3}, {"alpha", "beta", "gamma"});
+    auto values = NDArrayFactory::string({3}, {"alpha", "beta", "gamma"});
     auto shape = NDArrayFactory::create<Nd4jLong>({3, 3});
     auto ranges = NDArrayFactory::create<Nd4jLong>({0,0, 1,1, 2,2});
     auto def = NDArrayFactory::string("d");
-    auto exp = NDArrayFactory::string('c', {3, 3}, {"alpha","d","d",  "d","beta","d",  "d","d","gamma"});
+    auto exp = NDArrayFactory::string( {3, 3}, {"alpha","d","d",  "d","beta","d",  "d","d","gamma"});
 
 
     nd4j::ops::compat_sparse_to_dense op;
-    auto result = op.execute({&ranges, &shape, &values, &def}, {}, {});
+    auto result = op.evaluate({&ranges, &shape, &values, &def});
     ASSERT_EQ(Status::OK(), result->status());
 
     delete result;
 }
 
 TEST_F(DeclarableOpsTests17, test_compat_string_split_1) {
-    auto x = NDArrayFactory::string('c', {2}, {"first string", "second"});
+    auto x = NDArrayFactory::string( {2}, {"first string", "second"});
     auto delimiter = NDArrayFactory::string(" ");
 
     auto exp0 = NDArrayFactory::create<Nd4jLong>({0,0, 0,1, 1,0});
-    auto exp1 = NDArrayFactory::string('c', {3}, {"first", "string", "second"});
+    auto exp1 = NDArrayFactory::string( {3}, {"first", "string", "second"});
 
     nd4j::ops::compat_string_split op;
-    auto result = op.execute({&x, &delimiter}, {}, {});
+    auto result = op.evaluate({&x, &delimiter});
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_EQ(2, result->size());
 

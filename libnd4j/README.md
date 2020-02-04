@@ -17,7 +17,10 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
  -b release OR -b debug // enables/desables debug builds. release is considered by default
  -j XX // this argument defines how many threads will be used to binaries on your box. i.e. -j 8 
  -cc XX// CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
+ --check-vectorization  auto-vectorization report for developers. (Currently, only GCC is supported)
 ```
+
+[More about AutoVectorization report](auto_vectorization/AutoVectorization.md)  
 
 You can find the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus).
 

@@ -102,6 +102,8 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AffinityManager affinityManager = Nd4j.getAffinityManager();
 
+    private final transient ThreadLocal<CudaContext> tlContext = new ThreadLocal<>();
+
     /*
     table for Thread, Device, Object allocations of device memory. Objects should be used to grab Allocation point from allocationsMap
     */
@@ -1018,18 +1020,25 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     public CudaContext getCudaContext() {
-        val lc = nativeOps.defaultLaunchContext();
+        var ctx = tlContext.get();
+        if (ctx == null) {
+            val lc = nativeOps.defaultLaunchContext();
 
-        return CudaContext.builder()
-                .bufferScalar(nativeOps.lcScalarPointer(lc))
-                .bufferReduction(nativeOps.lcReductionPointer(lc))
-                .bufferAllocation(nativeOps.lcAllocationPointer(lc))
-                .bufferSpecial(nativeOps.lcScalarPointer(lc))
-                .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc)))
-                .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)))
-                .cublasHandle(getCudaCublasHandle(lc))
-                .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc)))
-                .build();
+            ctx = CudaContext.builder()
+                    .bufferScalar(nativeOps.lcScalarPointer(lc))
+                    .bufferReduction(nativeOps.lcReductionPointer(lc))
+                    .bufferAllocation(nativeOps.lcAllocationPointer(lc))
+                    .bufferSpecial(nativeOps.lcScalarPointer(lc))
+                    .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc)))
+                    .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)))
+                    .cublasHandle(getCudaCublasHandle(lc))
+                    .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc)))
+                    .build();
+            
+            tlContext.set(ctx);
+            return ctx;
+        } else
+            return ctx;
     }
 
     /**

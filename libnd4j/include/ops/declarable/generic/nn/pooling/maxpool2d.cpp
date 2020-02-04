@@ -32,6 +32,7 @@ namespace ops  {
 //////////////////////////////////////////////////////////////////////////
 // maxpool2d corresponds to poolingMode=0
 CUSTOM_OP_IMPL(maxpool2d, 1, 1, false, 0, 9) {
+
     auto input = INPUT_VARIABLE(0);
 
     REQUIRE_TRUE(input->rankOf() == 4, 0, "MAXPOOL2D OP: input array should have rank of 4, but got %i instead", input->rankOf());

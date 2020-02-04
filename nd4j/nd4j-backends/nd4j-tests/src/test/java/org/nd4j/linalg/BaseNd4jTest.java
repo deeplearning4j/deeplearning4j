@@ -81,10 +81,8 @@ public abstract class BaseNd4jTest extends BaseND4JTest {
         return ret;
     }
 
-    @Override
     @Before
-    public void beforeTest(){
-        super.beforeTest();
+    public void beforeTest2(){
         Nd4j.factory().setOrder(ordering());
     }
 

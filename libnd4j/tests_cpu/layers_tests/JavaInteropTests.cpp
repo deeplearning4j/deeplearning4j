@@ -112,7 +112,7 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     Nd4jLong iArgs[] = {1};
     auto hash = op.getOpHash();
 
-    auto shapeList = calculateOutputShapes2(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1, nullptr, 0);
+    auto shapeList = calculateOutputShapes2(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1, nullptr, 0, nullptr, 0);
 
     ASSERT_EQ(3, shapeList->size());
 
@@ -1065,7 +1065,7 @@ TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
 
     NDArray::prepareSpecialUse({}, {&arrayX, &arrayY});
     nd4j::ops::greater_equal op;
-    auto shapeList = calculateOutputShapes2(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0);
+    auto shapeList = calculateOutputShapes2(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0);
     NDArray::registerSpecialUse({}, {&arrayX, &arrayY});
     delete shapeList;
 }
@@ -1277,14 +1277,14 @@ TEST_F(JavaInteropTests, test_size_dtype_1) {
 }
 
 TEST_F(JavaInteropTests, test_expandable_array_op_1) {
-    auto x = NDArrayFactory::string('c', {2}, {"first string", "second"});
-    auto d = NDArrayFactory::string(" ");
+    auto x = NDArrayFactory::string( {2}, {"first string", "second"});
+    auto d = NDArrayFactory::string(" ", nd4j::DataType::UTF8);
 
     auto z0 = NDArrayFactory::create<Nd4jLong>('c', {6});
-    auto z1 = NDArrayFactory::string('c', {3}, {"", "", ""});
+    auto z1 = NDArrayFactory::string( {3}, {"", "", ""});
 
     auto exp0 = NDArrayFactory::create<Nd4jLong>({0,0, 0,1, 1,0});
-    auto exp1 = NDArrayFactory::string('c', {3}, {"first", "string", "second"});
+    auto exp1 = NDArrayFactory::string( {3}, {"first", "string", "second"});
 
     InteropDataBuffer iz0(z0.dataBuffer());
     InteropDataBuffer iz1(z1.dataBuffer());

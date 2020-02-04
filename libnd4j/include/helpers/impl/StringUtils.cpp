@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,6 +17,7 @@
 
 //
 // Created by raver119 on 20/04/18.
+// @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
 
 #include <helpers/StringUtils.h>
@@ -49,13 +51,8 @@ namespace nd4j {
         if (!array.isS())
             throw nd4j::datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType());
 
-        uint64_t result = 0;
-
-        // our buffer stores offsets, and the last value is basically number of bytes used
         auto buffer = array.bufferAsT<Nd4jLong>();
-        result = buffer[array.lengthOf()];
-
-        return result;
+        return buffer[array.lengthOf()];
     }
 
     std::vector<std::string> StringUtils::split(const std::string &haystack, const std::string &delimiter) {
@@ -73,4 +70,89 @@ namespace nd4j {
 
         return output;
     }
+    
+    bool StringUtils::u8StringToU16String(const std::string& u8, std::u16string& u16) {
+
+        if (u8.empty()) 
+            return false;
+
+        u16.resize(unicode::offsetUtf8StringInUtf16(u8.data(), u8.size()) / sizeof(char16_t));
+        if (u8.size() == u16.size()) 
+            u16.assign(u8.begin(), u8.end());
+        else
+            return unicode::utf8to16(u8.data(), &u16[0], u8.size());
+        
+        return true;
+    }
+
+    bool StringUtils::u8StringToU32String(const std::string& u8, std::u32string& u32) {
+
+        if (u8.empty()) 
+            return false;
+
+        u32.resize( unicode::offsetUtf8StringInUtf32(u8.data(), u8.size()) / sizeof(char32_t) );
+        if (u8.size() == u32.size()) 
+            u32.assign(u8.begin(), u8.end());
+        else 
+            return unicode::utf8to32(u8.data(), &u32[0], u8.size());
+        
+        return true;
+    }
+
+    bool StringUtils::u16StringToU32String(const std::u16string& u16, std::u32string& u32) {
+        
+        if (u16.empty()) 
+            return false;
+
+        u32.resize(unicode::offsetUtf16StringInUtf32(u16.data(), u16.size()) / sizeof(char32_t));
+        if (u16.size() == u32.size()) 
+            u32.assign(u16.begin(), u16.end());
+        else 
+            return unicode::utf16to32(u16.data(), &u32[0], u16.size());
+        
+        return true;
+    }
+    
+    bool StringUtils::u16StringToU8String(const std::u16string& u16, std::string& u8) {
+
+        if (u16.empty()) 
+            return false;
+        
+        u8.resize(unicode::offsetUtf16StringInUtf8(u16.data(), u16.size()));
+        if (u16.size() == u8.size()) 
+            u8.assign(u16.begin(), u16.end());
+        else
+            return unicode::utf16to8(u16.data(), &u8[0], u16.size());
+        
+        return true;
+    }
+    
+    bool StringUtils::u32StringToU16String(const std::u32string& u32, std::u16string& u16) {
+        
+        if (u32.empty()) 
+            return false;
+
+        u16.resize(unicode::offsetUtf32StringInUtf16(u32.data(), u32.size()) / sizeof(char16_t));
+        if (u32.size() == u16.size()) 
+            u16.assign(u32.begin(), u32.end());
+        else 
+            return unicode::utf32to16(u32.data(), &u16[0], u32.size());
+        
+        return true;
+    }
+    
+    bool StringUtils::u32StringToU8String(const std::u32string& u32, std::string& u8) {
+        
+        if (u32.empty()) 
+            return false;
+
+        u8.resize(unicode::offsetUtf32StringInUtf8(u32.data(), u32.size()));
+        if (u32.size() == u8.size()) 
+            u8.assign(u32.begin(), u32.end());
+        else 
+            return unicode::utf32to8(u32.data(), &u8[0], u32.size());
+
+        return true;
+    }
+
 }

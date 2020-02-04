@@ -1226,8 +1226,8 @@ TEST_F(NDArrayCudaBasicsTests, applyReduce3_3) {
     NDArray x3('c', {3,2}, {1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {3,2}, {1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {}, {-204}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {}, {31.5}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, std::vector<double>{-204}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {}, std::vector<double>{31.5}, nd4j::DataType::DOUBLE);
 
 
     auto z = x1.applyReduce3(reduce3::Dot, x2);
@@ -1260,7 +1260,7 @@ TEST_F(NDArrayCudaBasicsTests, applyAllReduce3_1) {
     NDArray exp2('c', {6,4}, {-36.f, -44.f, -52.f, -60.f,-42.f, -52.f, -62.f, -72.f, 2.f, 0.f, -2.f,
                               -4.f, 6.f, 4.f, 2.f, 0.f, 10.f, 8.f, 6.f, 4.f, 14.f, 12.f, 10.f, 8.f},
             nd4j::DataType::FLOAT32);
-    NDArray exp3('c', {1,1}, {31.5}, nd4j::DataType::DOUBLE);
+    NDArray exp3('c', {1,1}, std::vector<double>{31.5}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,3}, {4.5, 10.5, 16.5,4.5, 10.5, 16.5,4.5, 10.5, 16.5}, nd4j::DataType::DOUBLE);
 
     auto z = x1.applyAllReduce3(reduce3::Dot, x2, {0,2});
@@ -1292,15 +1292,15 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test1) {
 
     NDArray x('c', {2,3}, {0, 10, 1, 2, 2.5,-4}, nd4j::DataType::DOUBLE);
 
-    NDArray scalar('c', {}, {100}, nd4j::DataType::INT64);
+    NDArray scalar('c', {}, std::vector<double>{100}, nd4j::DataType::INT64);
     NDArray vec1('c', {2}, {100,100}, nd4j::DataType::INT64);
     NDArray vec2('c', {3}, {100,100,100}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {}, {1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{1}, nd4j::DataType::INT64);
     NDArray exp2('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,0,0}, nd4j::DataType::INT64);
 
-    NDArray exp4('c', {}, {2}, nd4j::DataType::INT64);
+    NDArray exp4('c', {}, std::vector<double>{2}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp6('c', {3}, {1,0,0}, nd4j::DataType::INT64);
 
@@ -1331,11 +1331,11 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test2) {
 
     NDArray x('c', {2,3}, {0, 10, 1, 2, 2.5,-4}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {}, {1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{1}, nd4j::DataType::INT64);
     NDArray exp2('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,0,0}, nd4j::DataType::INT64);
 
-    NDArray exp4('c', {}, {2}, nd4j::DataType::INT64);
+    NDArray exp4('c', {}, std::vector<double>{2}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp6('c', {3}, {1,0,0}, nd4j::DataType::INT64);
 
@@ -1365,13 +1365,13 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test1) {
 
     NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::INT32);
 
-    NDArray z1('c', {}, {100}, nd4j::DataType::DOUBLE);
+    NDArray z1('c', {}, std::vector<double>{100}, nd4j::DataType::DOUBLE);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::DOUBLE);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {}, {2.166667}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, std::vector<double>{2.166667}, nd4j::DataType::DOUBLE);
     NDArray exp2('c', {2,2}, {3.f,4.f,1.f,0.666667f}, nd4j::DataType::FLOAT32);
     NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::FLOAT32);
@@ -1403,7 +1403,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test2) {
 
     NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {}, {2.166667}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, std::vector<double>{2.166667}, nd4j::DataType::DOUBLE);
     NDArray exp2('c', {2,2}, {3,4,1,0.666667}, nd4j::DataType::DOUBLE);
     NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::DOUBLE);
@@ -1477,13 +1477,13 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test1) {
 
     NDArray x('c', {2,3,2}, {1.5f,2.f,3.f,4.f,5.f,6.f,7.5f,8.f,-1.f,-2.f,-3.5f,-4.f}, nd4j::DataType::FLOAT32);
 
-    NDArray z1('c', {}, {100}, nd4j::DataType::FLOAT32);
+    NDArray z1('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {}, {26.5f}, nd4j::DataType::FLOAT32);
+    NDArray exp1('c', {}, std::vector<double>{26.5f}, nd4j::DataType::FLOAT32);
     NDArray exp2('c', {2,2}, {9.5f,12.f,3.f,2.f}, nd4j::DataType::FLOAT32);
     NDArray exp3('c', {3}, {19.f,4.f,3.5f}, nd4j::DataType::FLOAT32);
     NDArray exp4('c', {3,2}, {9.f,10.f,2.f,2.f,1.5f,2.f}, nd4j::DataType::FLOAT32);
@@ -1515,7 +1515,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test2) {
 
     NDArray x('c', {2,3,2}, {1.5,2,3,4,5,6,7.5,8,-1,-2,-3.5,-4,}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {}, {26}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{26}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {9,12,3,2}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {18,4,4}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {8,10,2,2,2,2}, nd4j::DataType::INT64);
@@ -1547,13 +1547,13 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test1) {
 
     NDArray x('c', {2,3,2}, {0.5,2,3,-4,5,6,-7.5,8,-1,-0.5,-3.5,4}, nd4j::DataType::DOUBLE);
 
-    NDArray z1('c', {}, {true}, nd4j::DataType::BOOL);
+    NDArray z1('c', {}, std::vector<double>{true}, nd4j::DataType::BOOL);
     NDArray z2('c', {2,2}, {true,true,true,true}, nd4j::DataType::BOOL);
     NDArray z3('c', {3}, {true,true,true}, nd4j::DataType::BOOL);
     NDArray z4('c', {3,2}, {true,true,true,true,true,true}, nd4j::DataType::BOOL);
     NDArray z5('c', {2}, {true,true}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {}, {true}, nd4j::DataType::BOOL);
+    NDArray exp1('c', {}, std::vector<double>{true}, nd4j::DataType::BOOL);
     NDArray exp2('c', {2,2}, {true,true,false,true}, nd4j::DataType::BOOL);
     NDArray exp3('c', {3}, {true,true,true}, nd4j::DataType::BOOL);
     NDArray exp4('c', {3,2}, {true,true,true,false,true,true}, nd4j::DataType::BOOL);
@@ -1585,7 +1585,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test2) {
 
     NDArray x('c', {2,3,2}, {0.5,2,3,-4,5,6,-7.5,8,-1,-0.5,-3.5,4}, nd4j::DataType::INT32);
 
-    NDArray exp1('c', {}, {1}, nd4j::DataType::BOOL);
+    NDArray exp1('c', {}, std::vector<double>{1}, nd4j::DataType::BOOL);
     NDArray exp2('c', {2,2}, {1,1,0,1}, nd4j::DataType::BOOL);
     NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::BOOL);
     NDArray exp4('c', {3,2}, {0,1,1,0,1,1}, nd4j::DataType::BOOL);
@@ -1617,13 +1617,13 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test1) {
 
     NDArray x('c', {2,3,2}, {0.5f,2.f,3.f,-0.f,5.f,6.f,-7.5f,0.f,-1.f,-0.5f,-3.5f,4.f}, nd4j::DataType::FLOAT32);
 
-    NDArray z1('c', {}, {100}, nd4j::DataType::INT64);
+    NDArray z1('c', {}, std::vector<double>{100}, nd4j::DataType::INT64);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::INT64);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::INT64);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::INT64);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {}, {2}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{2}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {0,1,0,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,1,0}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {0,1,0,1,0,0}, nd4j::DataType::INT64);
@@ -1655,7 +1655,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test2) {
 
     NDArray x('c', {2,3,2}, {0.5,2,3,-0,5,6,-7.5,0,-1,-0.5,-3.5,4}, nd4j::DataType::INT32);
 
-    NDArray exp1('c', {}, {4}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{4}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {1,1,0,2}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {2,2,0}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {1,1,0,2,0,0}, nd4j::DataType::INT64);

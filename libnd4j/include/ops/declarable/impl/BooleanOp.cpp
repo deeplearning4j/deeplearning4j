@@ -36,7 +36,7 @@ namespace nd4j {
             return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::BOOL));
         }
 
-        bool BooleanOp::evaluate(nd4j::graph::Context &block) {
+        bool BooleanOp::verify(nd4j::graph::Context &block) {
             // check if scalar or not
 
             // validation?
@@ -56,11 +56,6 @@ namespace nd4j {
                 nd4j_printf("Got error %i during [%s] evaluation: ", (int) status, this->getOpDescriptor()->getOpName()->c_str());
                 throw std::runtime_error("Internal error");
             }
-        }
-
-        bool BooleanOp::evaluate(std::initializer_list<nd4j::NDArray *> args) {
-            std::vector<nd4j::NDArray *> vec(args);
-            return this->evaluate(vec);
         }
 
         bool BooleanOp::prepareOutputs(Context& ctx) {
@@ -120,7 +115,7 @@ namespace nd4j {
             return ND4J_STATUS_KERNEL_FAILURE;
         }
 
-        bool BooleanOp::evaluate(std::vector<nd4j::NDArray *> &args) {
+        bool BooleanOp::verify(const std::vector<nd4j::NDArray *> &args) {
             VariableSpace variableSpace;
 
             int cnt = -1;
@@ -135,7 +130,7 @@ namespace nd4j {
             Context block(1, &variableSpace, false);
             block.fillInputs(in);
 
-            return this->evaluate(block);
+            return this->verify(block);
         }
     }
 }

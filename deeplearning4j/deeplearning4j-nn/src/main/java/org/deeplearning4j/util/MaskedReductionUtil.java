@@ -56,6 +56,7 @@ public class MaskedReductionUtil {
             throw new IllegalArgumentException("Expect rank 2 array for mask: got " + mask.rank());
         }
 
+        toReduce = toReduce.castTo(dataType);
         mask = mask.castTo(dataType);
 
         //Sum pooling: easy. Multiply by mask, then sum as normal
@@ -64,13 +65,7 @@ public class MaskedReductionUtil {
 
         switch (poolingType) {
             case MAX:
-                //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
-                INDArray negInfMask;
-                if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(dataType);
-                } else {
-                    negInfMask = mask.rsub(1.0);
-                }
+                INDArray negInfMask = mask.castTo(dataType).rsub(1.0);
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
                 INDArray withInf = Nd4j.createUninitialized(dataType, toReduce.shape());
@@ -121,18 +116,14 @@ public class MaskedReductionUtil {
         //Mask: [minibatch, tsLength]
         //Epsilon: [minibatch, vectorSize]
 
+        mask = mask.castTo(input.dataType());
+
         switch (poolingType) {
             case MAX:
-                //TODO This is ugly - replace it with something better... Need something like a Broadcast CAS op
-                INDArray negInfMask;
-                if(mask.dataType() == DataType.BOOL){
-                    negInfMask = Transforms.not(mask).castTo(Nd4j.defaultFloatingPointType());
-                } else {
-                    negInfMask = mask.rsub(1.0);
-                }
+                INDArray negInfMask = mask.rsub(1.0);
                 BooleanIndexing.replaceWhere(negInfMask, Double.NEGATIVE_INFINITY, Conditions.equals(1.0));
 
-                INDArray withInf = Nd4j.createUninitialized(input.shape());
+                INDArray withInf = Nd4j.createUninitialized(input.dataType(), input.shape());
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, 0, 2));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
@@ -145,7 +136,7 @@ public class MaskedReductionUtil {
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut
                 //With masking: N differs for different time series
 
-                INDArray out = Nd4j.createUninitialized(input.shape(), 'f');
+                INDArray out = Nd4j.createUninitialized(input.dataType(), input.shape(), 'f');
 
                 //Broadcast copy op, then divide and mask to 0 as appropriate
                 Nd4j.getExecutioner().exec(new BroadcastCopyOp(out, epsilon2d, out, 0, 1));
@@ -162,7 +153,7 @@ public class MaskedReductionUtil {
 
             case PNORM:
                 //Similar to average and sum pooling: there's no N term here, so we can just set the masked values to 0
-                INDArray masked2 = Nd4j.createUninitialized(input.shape());
+                INDArray masked2 = Nd4j.createUninitialized(input.dataType(), input.shape());
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(input, mask, masked2, 0, 2));
 
                 INDArray abs = Transforms.abs(masked2, true);

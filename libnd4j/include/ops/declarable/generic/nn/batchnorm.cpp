@@ -197,8 +197,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     // ***** calculations ***** //
 
     // notations:
-    // f = g * (gamma * ((x - m) / (v + eps)^0.5) + beta) -> means dLdO * ff_output
-    // g = dLdO
+    // f = g * (gamma * ((x - m) / (v + eps)^0.5) + beta) -> means dLdO * ff_output, g = dLdO
     // stdInv = 1 / (v + eps)^0.5
     // N - batch size (product of spatial dimensions)
 

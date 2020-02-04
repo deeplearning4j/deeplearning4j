@@ -33,6 +33,11 @@
 #include <type_boilerplate.h>
 
 
+#define LIBND4J_STRINGTYPES \
+        (nd4j::DataType::UTF8, std::string),\
+        (nd4j::DataType::UTF16, std::u16string), \
+        (nd4j::DataType::UTF32, std::u32string)
+
 #define LIBND4J_TYPES \
         (nd4j::DataType::BFLOAT16, bfloat16),\
         (nd4j::DataType::HALF, float16), \

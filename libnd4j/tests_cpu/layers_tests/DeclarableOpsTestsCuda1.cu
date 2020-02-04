@@ -50,7 +50,7 @@ TEST_F(DeclarableOpsTestsCuda1, Test_CHOOSE_SCALAR_LARGE) {
 
     nd4j::ops::choose op;
     //greater than test
-    auto result = op.execute({&x}, {0.0},{3});
+    auto result = op.evaluate({&x}, {0.0},{3});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(1);

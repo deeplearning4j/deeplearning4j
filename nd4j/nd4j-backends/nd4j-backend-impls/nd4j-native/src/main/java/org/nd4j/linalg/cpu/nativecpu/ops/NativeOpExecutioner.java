@@ -1636,6 +1636,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             context.setBArguments(op.bArgs());
             context.setIArguments(op.iArgs());
             context.setTArguments(op.tArgs());
+            context.setDArguments(op.dArgs());
 
             val result = exec(op, context);
             val states = context.getRngStates();
@@ -1712,6 +1713,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             val bArgs = op.numBArguments() > 0 ? new BooleanPointer(op.numBArguments()) : null;
 
+            val dArgs = op.numDArguments() > 0 ? new IntPointer(op.numDArguments()) : null;
+
             cnt = 0;
             val bArgs1 = op.bArgs();
             for (val b: bArgs1)
@@ -1722,11 +1725,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
+            cnt = 0;
+            val dArgs1 = op.dArgs();
+            for (val d: dArgs1)
+                dArgs.put(cnt++, d.toInt());
+
+
             OpaqueShapeList ptrptr;
             try {
                 ptrptr = loop.calculateOutputShapes2(null,
                         hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
-                        op.numTArguments(), iArgs, op.numIArguments(), bArgs, op.numBArguments());
+                        op.numTArguments(), iArgs, op.numIArguments(), bArgs, op.numBArguments(), dArgs, op.numDArguments());
 
                 if (loop.lastErrorCode() != 0)
                     throw new RuntimeException(loop.lastErrorMessage());

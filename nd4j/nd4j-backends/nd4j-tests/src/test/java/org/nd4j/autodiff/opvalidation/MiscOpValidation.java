@@ -1170,6 +1170,26 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testOneHot4() {
+
+        INDArray indicesArr = Nd4j.createFromArray(0, 2, -1, 1);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable indices = sd.constant("indices", indicesArr);
+        int depth = 3;
+        int axis = -1;
+        SDVariable oneHot = sd.oneHot("oneHot", indices, depth, axis, 5.0, 0.0, DataType.INT32);
+
+        INDArray exp = Nd4j.create(new int[][]{{5, 0, 0}, {0,0,5}, {0,0,0}, {0, 5, 0}});
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .expected(oneHot, exp)
+                .gradientCheck(false));
+
+        assertNull(err);
+    }
+
+    @Test
     public void testOneHot3() {
         //https://github.com/deeplearning4j/deeplearning4j/issues/6872
 
@@ -1203,8 +1223,6 @@ public class MiscOpValidation extends BaseOpValidation {
 
         assertNull(err);
     }
-
-
 
     @Test
     public void testLinspace(){

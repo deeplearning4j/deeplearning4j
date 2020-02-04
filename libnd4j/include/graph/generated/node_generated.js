@@ -399,10 +399,35 @@ nd4j.graph.FlatNode.prototype.controlDepForLength = function() {
 };
 
 /**
+ * @param {number} index
+ * @returns {nd4j.graph.DType}
+ */
+nd4j.graph.FlatNode.prototype.extraTypes = function(index) {
+  var offset = this.bb.__offset(this.bb_pos, 48);
+  return offset ? /** @type {nd4j.graph.DType} */ (this.bb.readInt8(this.bb.__vector(this.bb_pos + offset) + index)) : /** @type {nd4j.graph.DType} */ (0);
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatNode.prototype.extraTypesLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 48);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @returns {Int8Array}
+ */
+nd4j.graph.FlatNode.prototype.extraTypesArray = function() {
+  var offset = this.bb.__offset(this.bb_pos, 48);
+  return offset ? new Int8Array(this.bb.bytes().buffer, this.bb.bytes().byteOffset + this.bb.__vector(this.bb_pos + offset), this.bb.__vector_len(this.bb_pos + offset)) : null;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatNode.startFlatNode = function(builder) {
-  builder.startObject(22);
+  builder.startObject(23);
 };
 
 /**
@@ -852,6 +877,35 @@ nd4j.graph.FlatNode.createControlDepForVector = function(builder, data) {
  */
 nd4j.graph.FlatNode.startControlDepForVector = function(builder, numElems) {
   builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} extraTypesOffset
+ */
+nd4j.graph.FlatNode.addExtraTypes = function(builder, extraTypesOffset) {
+  builder.addFieldOffset(22, extraTypesOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<nd4j.graph.DType>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatNode.createExtraTypesVector = function(builder, data) {
+  builder.startVector(1, data.length, 1);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addInt8(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatNode.startExtraTypesVector = function(builder, numElems) {
+  builder.startVector(1, numElems, 1);
 };
 
 /**

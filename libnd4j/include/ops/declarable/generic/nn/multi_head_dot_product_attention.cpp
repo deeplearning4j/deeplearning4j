@@ -239,7 +239,7 @@ namespace ops  {
         auto epsPostReshape = epsPerm.reshape(eps->ordering(), {miniBatchSize * queryCount, outSize});
         nd4j::ops::matmul_bp matmulBp;
         NDArray dLdPreWo(attnResults.shapeInfo(), false, block.launchContext());
-        matmulBp.execute({&attnResults, Wo, &epsPostReshape}, {&dLdPreWo, dLdWo}, {}, {}, {});
+        matmulBp.execute({&attnResults, Wo, &epsPostReshape}, std::vector<NDArray*>{&dLdPreWo, dLdWo}, {}, {}, {});
 
         // dLdAttn
         dLdPreWo.reshapei({miniBatchSize, queryCount, numHeads, projectedValues.sizeAt(2)});

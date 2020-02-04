@@ -57,13 +57,11 @@ public class Nd4jTestsComparisonC extends BaseNd4jTest {
 
     @Before
     public void before() throws Exception {
-        super.beforeTest();
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
     @After
     public void after() throws Exception {
-        super.afterTest();
         DataTypeUtil.setDTypeForContext(initialType);
     }
 

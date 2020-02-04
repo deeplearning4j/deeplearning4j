@@ -184,7 +184,7 @@ TEST_F(NDArrayConstructorsTests, test_linspace_1) {
 TEST_F(NDArrayConstructorsTests, test_constructor_10) {
 
     NDArray scalar1(nd4j::DataType::DOUBLE); // scalar1 = 0
-    NDArray scalar2('c', {}, {0});
+    NDArray scalar2('c', {}, std::vector<double>{0});
 
     ASSERT_TRUE(scalar1.isActualOnDeviceSide());
     ASSERT_TRUE(!scalar1.isActualOnHostSide());

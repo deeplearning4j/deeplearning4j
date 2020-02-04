@@ -173,5 +173,13 @@ namespace nd4j {
 
             return clone;
         }
+
+        std::vector<nd4j::DataType> *ContextPrototype::getDArguments() {
+            return &_dArgs;
+        }
+
+        size_t ContextPrototype::numD() {
+            return _dArgs.size();
+        }
     }
 }

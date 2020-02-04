@@ -38,6 +38,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.OpValidationSuite;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
@@ -3526,6 +3527,29 @@ public class SameDiffTests extends BaseNd4jTest {
             SDVariable random = sameDiff.random().uniform("data", 0.0, 10.0, sdShape, dt);
             INDArray out = random.eval();
             String s = out.toString();
+        }
+    }
+
+    @Test
+    public void testMissingPlaceholderError(){
+
+        SameDiff sd = SameDiff.create();
+
+        int nOut = 4;
+        int minibatch = 10;
+        SDVariable predictions = sd.var("in", DataType.DOUBLE, minibatch, nOut);
+        SDVariable labels = sd.placeHolder("labels", DataType.DOUBLE, -1, nOut);
+
+        LossReduce reduction = LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT;
+
+        SDVariable   loss = sd.loss().absoluteDifference("loss", labels, predictions, null, reduction);
+
+        try {
+            loss.eval();
+            fail("Exception should have been thrown");
+        } catch (IllegalStateException e){
+            String msg = e.getMessage();
+            assertTrue(msg, msg.contains("\"labels\"") && msg.contains("No array was provided"));
         }
     }
 }

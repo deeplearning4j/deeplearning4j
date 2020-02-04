@@ -34,11 +34,15 @@ template <>
 ND4J_EXPORT utf8string NDArray::e(const Nd4jLong i) const;
 template <>
 ND4J_EXPORT std::string NDArray::e(const Nd4jLong i) const;
+template <>
+ND4J_EXPORT std::u16string NDArray::e(const Nd4jLong i) const;
+template <>
+ND4J_EXPORT std::u32string NDArray::e(const Nd4jLong i) const;
 
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
-
+    
     _context = other._context;
     _offset  = 0;
 
@@ -293,6 +297,560 @@ NDArray::NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std
 
     _isView =  _length * DataTypeUtils::sizeOf(_dataType) < buffer->getLenInBytes();
 }
+/////////////////////////////////////////////////////////////////////////
+// u16 string constructors
+NDArray::NDArray(const std::u16string& u16string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+
+    if (!DataTypeUtils::isS(dtype)) {
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+    }
+
+    if (!unicode::isStringValidU16(u16string.data(), u16string.data() + u16string.size())) {
+        throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+    }
+    
+    // one word that is why used 1
+    Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
+
+    Nd4jLong dataLength = [&] {
+        if (dtype == DataType::UTF16) {
+            return static_cast<Nd4jLong>(u16string.size() * sizeof(uint16_t));
+        }
+        if (dtype == DataType::UTF32) {
+            return unicode::offsetUtf16StringInUtf32(u16string.data(), u16string.size());
+        }
+        return unicode::offsetUtf16StringInUtf8(u16string.data(), u16string.size());
+    }();
+
+    Nd4jLong offsets[2] = { 0 , dataLength };
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dtype, context->getWorkspace(), true);
+
+    _context = context;
+    _isAttached = getContext()->getWorkspace() != nullptr;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
+
+    memcpy(bufferAsT<int8_t>(), &offsets[0], 2 * sizeof(Nd4jLong));
+
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+    if (dtype == DataType::UTF8) {
+        unicode::utf16to8(u16string.data(), data, u16string.size());
+    }
+    else if (dtype == DataType::UTF16) {
+        memcpy(data, u16string.data(), dataLength);
+    }
+    else {
+        unicode::utf16to32(u16string.data(), data, u16string.size());
+    }
+
+    tickWriteHost();
+    syncToDevice();
+}
+
+/////////////////////////////////////////////////////////////////////////
+// u32 string constructors
+NDArray::NDArray(const std::u32string& u32string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+
+    if (!DataTypeUtils::isS(dtype)) {
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+    }
+
+    if (!unicode::isStringValidU32(u32string.data(), u32string.data() + u32string.size())) {
+        throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+    }
+    // one word that is why used 1
+    Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
+
+    Nd4jLong dataLength = [&] {
+        if (dtype == DataType::UTF16) {
+            return unicode::offsetUtf32StringInUtf16(u32string.data(), u32string.size());
+        }
+        if (dtype == DataType::UTF32) {
+            return static_cast<Nd4jLong>(sizeof(uint32_t) * u32string.size());
+        }
+        return unicode::offsetUtf32StringInUtf8(u32string.data(), u32string.size());
+    }();
+
+    Nd4jLong offsets[2] = { 0 , dataLength };
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dtype, context->getWorkspace(), true);
+
+    _context = context;
+    _isAttached = getContext()->getWorkspace() != nullptr;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
+
+    memcpy(bufferAsT<int8_t>(), &offsets[0], 2 * sizeof(Nd4jLong));
+
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+    if (dtype == DataType::UTF8) {
+        unicode::utf32to8(u32string.data(), data, u32string.size());
+    }
+    else if (dtype == DataType::UTF16) {
+        unicode::utf32to16(u32string.data(), data, u32string.size());
+    }
+    else {
+        memcpy(data, u32string.data(), u32string.size() * sizeof(uint32_t));
+    }
+
+    tickWriteHost();
+    syncToDevice();
+}
+
+/////////////////////////////////////////////////////////////////////////
+// u8 string constructors
+/////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const std::string& str, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+
+    if (!DataTypeUtils::isS(dtype)) {
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+    }
+
+    if (!unicode::isStringValidU8(str.data(), str.data() + str.size())) {
+        throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+    }
+
+    // one word that is why used 1
+    auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
+
+    Nd4jLong dataLength = [&] {
+        if (dtype == DataType::UTF16) {
+            return unicode::offsetUtf8StringInUtf16(str.data(), str.size());
+        }
+        if (dtype == DataType::UTF32) {
+            return unicode::offsetUtf8StringInUtf32(str.data(), str.size());
+        }
+        return static_cast<Nd4jLong>(str.size());
+    }();
+
+    Nd4jLong offsets[2] = { 0 , dataLength };
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dtype, context->getWorkspace(), true);
+
+    _context = context;
+    _isAttached = getContext()->getWorkspace() != nullptr;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
+    
+    memcpy(bufferAsT<int8_t>(), &offsets[0], 2 * sizeof(Nd4jLong));
+    
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+    
+    if (dtype == DataType::UTF8) {
+        memcpy(data, str.data(), str.size());
+    }
+    else if (dtype == DataType::UTF16) {
+        unicode::utf8to16(str.data(), data, str.size());
+    }
+    else {
+        unicode::utf8to32(str.data(), data, str.size());
+    }
+
+    tickWriteHost();
+    syncToDevice();
+}
+/////////////////////////////////////////////////////////////////////////
+// constructors for vector of  strings
+NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const char*>& string, const nd4j::DataType dataType, nd4j::LaunchContext* context) {
+    
+    if (!DataTypeUtils::isS(dataType))
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+
+    if (shape::prodLong(shape.data(), shape.size()) != string.size())
+        throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+        
+    for (const auto& str : string) {
+        if (!unicode::isStringValidU8(str, str + std::char_traits<char>::length(str)) ) {
+            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+        }
+    }
+
+    Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+
+    std::vector<Nd4jLong> offsets(string.size() + 1);
+    Nd4jLong dataLength = 0;
+    for (int e = 0; e < string.size(); e++) {
+        offsets[e] = dataLength;
+        dataLength += [&] {
+            if (dataType == DataType::UTF16)
+                return unicode::offsetUtf8StringInUtf16(string[e], std::char_traits<char>::length(string[e]));
+            if (dataType == DataType::UTF32)
+                return  unicode::offsetUtf8StringInUtf32(string[e], std::char_traits<char>::length(string[e]));
+            return static_cast<Nd4jLong>(std::char_traits<char>::length(string[e]));
+        }();
+    }
+    offsets[string.size()] = dataLength;
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dataType, context->getWorkspace(), true);
+
+    _context = context;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor(dataType, 'c', shape));
+
+    _isView = false;
+
+    setAttached(context->getWorkspace() != nullptr);
+
+    memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
+    
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+
+    auto func = PRAGMA_THREADS_FOR{
+        for (auto e = start; e < stop; e += increment) {
+                auto cdata = data + offsets[e];
+                if (dataType == DataType::UTF16) {
+                    unicode::utf8to16(string[e], cdata, std::char_traits<char>::length(string[e]));
+                }
+                else if (dataType == DataType::UTF32) {
+                    unicode::utf8to32(string[e], cdata, std::char_traits<char>::length(string[e]));
+                }
+                else {
+                    memcpy(cdata, string[e], std::char_traits<char>::length(string[e]));
+                }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+
+    tickWriteHost();
+    syncToDevice();
+}
+/////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::string>& string, const nd4j::DataType dataType, nd4j::LaunchContext* context) {
+
+    if (!DataTypeUtils::isS(dataType))
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+
+    if (shape::prodLong(shape.data(), shape.size()) != string.size())
+        throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+
+    for (const auto& str : string) {
+        if (!unicode::isStringValidU8(str.data(), str.data() + str.size())) {
+            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+        }
+    }
+
+    Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+
+    std::vector<Nd4jLong> offsets(string.size() + 1);
+    Nd4jLong dataLength = 0;
+    for (int e = 0; e < string.size(); e++) {
+        offsets[e] = dataLength;
+        dataLength += [&] {
+            if (dataType == DataType::UTF16)
+                return unicode::offsetUtf8StringInUtf16(string[e].data(), string[e].size());
+            if (dataType == DataType::UTF32)
+                return  unicode::offsetUtf8StringInUtf32(string[e].data(), string[e].size());
+            return static_cast<Nd4jLong>(string[e].size());
+        }();
+    }
+
+    offsets[string.size()] = dataLength;
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dataType, context->getWorkspace(), true);
+
+    _context = context;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor(dataType, 'c', shape));
+
+    _isView = false;
+
+    setAttached(context->getWorkspace() != nullptr);
+
+    memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+
+    auto func = PRAGMA_THREADS_FOR{
+        for (auto e = start; e < stop; e += increment) {
+             auto cdata = data + offsets[e];
+             if (dataType == DataType::UTF16) {
+                 unicode::utf8to16(string[e].data(), cdata, string[e].size());
+             }
+             else if (dataType == DataType::UTF32) {
+                 unicode::utf8to32(string[e].data(), cdata, string[e].size());
+             }
+             else {
+                 memcpy(cdata, string[e].data(), string[e].size());
+             }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+
+
+    tickWriteHost();
+    syncToDevice();
+}
+/////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u16string>& string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+
+    if (!DataTypeUtils::isS(dtype))
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+
+    if (shape::prodLong(shape.data(), shape.size()) != string.size())
+        throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+
+    for (const auto& str : string) {
+        if (!unicode::isStringValidU16(str.data(), str.data() + str.size())) {
+            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+        }
+    }
+
+    Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+
+    std::vector<Nd4jLong> offsets(string.size() + 1);
+    Nd4jLong dataLength = 0;
+    for (int e = 0; e < string.size(); e++) {
+        offsets[e] = dataLength;
+        dataLength += [&] {
+            if (dtype == DataType::UTF16)
+                return static_cast<Nd4jLong>(sizeof(uint16_t) * string[e].size());
+            if (dtype == DataType::UTF32)
+                return unicode::offsetUtf16StringInUtf32(string[e].data(), string[e].size());
+            return unicode::offsetUtf16StringInUtf8(string[e].data(), string[e].size());
+        }();
+    }
+    offsets[string.size()] = dataLength;
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dtype, context->getWorkspace(), true);
+
+    _context = context;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor(dtype, 'c', shape));
+
+    _isView = false;
+
+    setAttached(context->getWorkspace() != nullptr);
+
+    memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
+    
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+    
+    auto func = PRAGMA_THREADS_FOR{
+        for (auto e = start; e < stop; e += increment) {
+             auto cdata = data + offsets[e];
+             if (dtype == DataType::UTF16) {
+                 memcpy(cdata, string[e].data(), string[e].size() * sizeof(uint16_t));
+             }
+             else if (dtype == DataType::UTF32) {
+                 unicode::utf16to32(string[e].data(), cdata, string[e].size());
+             }
+             else {
+                 unicode::utf16to8(string[e].data(), cdata, string[e].size());
+             }
+        }
+    };
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+
+    tickWriteHost();
+    syncToDevice();
+}
+/////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const char16_t*>& string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+
+    if (!DataTypeUtils::isS(dtype))
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+
+    if (shape::prodLong(shape.data(), shape.size()) != string.size())
+        throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+
+    for (const auto& str : string) {
+        if (!unicode::isStringValidU16(str, str + std::char_traits<char16_t>::length(str))) {
+            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+        }
+    }
+
+    Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+
+    std::vector<Nd4jLong> offsets(string.size() + 1);
+    Nd4jLong dataLength = 0;
+    for (int e = 0; e < string.size(); e++) {
+        offsets[e] = dataLength;
+        dataLength += [&] {
+            if (dtype == DataType::UTF16)
+                return static_cast<Nd4jLong>(sizeof(uint16_t) * std::char_traits<char16_t>::length(string[e]));
+            if (dtype == DataType::UTF32)
+                return unicode::offsetUtf16StringInUtf32(string[e], std::char_traits<char16_t>::length(string[e]));
+            return unicode::offsetUtf16StringInUtf8(string[e], std::char_traits<char16_t>::length(string[e]));
+        }();
+    }
+    offsets[string.size()] = dataLength;
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dtype, context->getWorkspace(), true);
+
+    _context = context;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor(dtype, 'c', shape));
+
+    _isView = false;
+
+    setAttached(context->getWorkspace() != nullptr);
+
+    memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+
+    
+    auto func = PRAGMA_THREADS_FOR{
+        for (auto e = start; e < stop; e += increment) {
+             auto cdata = data + offsets[e];
+             if (dtype == DataType::UTF16) {
+                 memcpy(cdata, string[e], std::char_traits<char16_t>::length(string[e]) * sizeof(uint16_t));
+             }
+             else if (dtype == DataType::UTF32) {
+                 unicode::utf16to32(string[e], cdata, std::char_traits<char16_t>::length(string[e]));
+             }
+             else {
+                 unicode::utf16to8(string[e], cdata, std::char_traits<char16_t>::length(string[e]));
+             }
+        }
+    };
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+    
+    tickWriteHost();
+    syncToDevice();
+}
+/////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u32string>& string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+
+    if (!DataTypeUtils::isS(dtype))
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
+
+    if (shape::prodLong(shape.data(), shape.size()) != string.size())
+        throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+
+    for (auto str : string) {
+        if (!unicode::isStringValidU32(str.data(), str.data() + str.size())) {
+            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+        }
+    }
+
+    Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+
+    std::vector<Nd4jLong> offsets(string.size() + 1);
+
+    Nd4jLong dataLength = 0;
+    for (int e = 0; e < string.size(); e++) {
+        offsets[e] = dataLength;
+        dataLength += [&] {
+            if (dtype == DataType::UTF16)
+                return unicode::offsetUtf32StringInUtf16(string[e].data(), string[e].size());
+            if (dtype == DataType::UTF32)
+                return static_cast<Nd4jLong>(sizeof(uint32_t) * string[e].size());
+            return unicode::offsetUtf32StringInUtf16(string[e].data(), string[e].size());
+        }();
+    }
+    offsets[string.size()] = dataLength;
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dtype, context->getWorkspace(), true);
+
+    _context = context;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor(dtype, 'c', shape));
+
+    _isView = false;
+
+    setAttached(context->getWorkspace() != nullptr);
+
+    memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength); 
+    
+    auto func = PRAGMA_THREADS_FOR{
+        for (auto e = start; e < stop; e += increment) {
+            auto cdata = data + offsets[e];
+            if (dtype == DataType::UTF16) {
+                unicode::utf32to16(string[e].data(), cdata, string[e].size());
+            }
+            else if (dtype == DataType::UTF32) {
+                memcpy(cdata, string[e].data(), string[e].size() * sizeof(uint32_t));
+            }
+            else {
+                unicode::utf32to8(string[e].data(), cdata, string[e].size());
+            }
+        }
+    };
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+    
+    tickWriteHost();
+    syncToDevice();
+}
+/////////////////////////////////////////////////////////////////////////
+NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const char32_t *>& string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+
+    if (!DataTypeUtils::isS(dtype))
+        throw std::invalid_argument("NDArray::NDArray: invalid DataType used");
+
+    if (shape::prodLong(shape.data(), shape.size()) != string.size())
+        throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
+
+    for (const auto& str : string) {
+        if (!unicode::isStringValidU32(str, str + std::char_traits<char32_t>::length(str))) {
+            throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
+        }
+    }
+
+    Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
+
+    std::vector<Nd4jLong> offsets(string.size() + 1);
+
+    Nd4jLong dataLength = 0;
+    for (int e = 0; e < string.size(); e++) {
+        offsets[e] = dataLength;
+        dataLength += [&] {
+            if (dtype == DataType::UTF16)
+                return unicode::offsetUtf32StringInUtf16(string[e], std::char_traits<char32_t>::length(string[e]));
+            if (dtype == DataType::UTF32)
+                return static_cast<Nd4jLong>(sizeof(uint32_t) * std::char_traits<char32_t>::length(string[e]));
+            return unicode::offsetUtf32StringInUtf16(string[e], std::char_traits<char32_t>::length(string[e]));
+        }();
+    }
+    offsets[string.size()] = dataLength;
+
+    _buffer = std::make_shared<DataBuffer>(headerLength + dataLength, dtype, context->getWorkspace(), true);
+
+    _context = context;
+    _offset = 0;
+
+    setShapeInfo(ShapeDescriptor(dtype, 'c', shape));
+
+    _isView = _length * DataTypeUtils::sizeOf(_dataType) < _buffer->getLenInBytes();
+
+    setAttached(context->getWorkspace() != nullptr);
+
+    memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+    
+    auto func = PRAGMA_THREADS_FOR{
+        for (auto e = start; e < stop; e += increment) {
+            auto cdata = data + offsets[e];
+            if (dtype == DataType::UTF16) {
+                unicode::utf32to16(string[e], cdata, std::char_traits<char32_t>::length(string[e]));
+            }
+            else if (dtype == DataType::UTF32) {
+                memcpy(cdata, string[e], std::char_traits<char32_t>::length(string[e]) * sizeof(uint32_t));
+            }
+            else {
+                unicode::utf32to8(string[e], cdata, std::char_traits<char32_t>::length(string[e]));
+            }
+        }
+    };
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+    
+    tickWriteHost();
+    syncToDevice();
+}
 
 ////////////////////////////////////////////////////////////////////////
 // assignment operator
@@ -329,7 +887,9 @@ bool NDArray::isC() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isS() const {
-    return dataType() == DataType::UTF8;
+    return (dataType() == DataType::UTF8 || 
+            dataType() == DataType::UTF16 || 
+            dataType() == DataType::UTF32);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -407,7 +967,7 @@ std::string NDArray::asString(Nd4jLong limit) {
             os << toStringValue(this->e<Nd4jLong>(e));
         else if (this->isB())
             os << toStringValue(this->e<bool>(e));
-        else if (this->isS())
+        else if (this->isS()) // todo add utf16 and utf32
             os << this->e<std::string>(e);
         if (e < limit - 1)
             os << ", ";
@@ -476,8 +1036,6 @@ std::vector<Nd4jLong> NDArray::getShapeInfoAsVector() {
 
 ////////////////////////////////////////////////////////////////////////
 std::vector<int8_t> NDArray::asByteVector() {
-
-
 
     if (isS()) {
         // string data type requires special treatment
@@ -1066,8 +1624,17 @@ void NDArray::printBuffer(const char* msg, Nd4jLong limit, const bool sync) cons
             if (e < limit - 1)
                 printf(", ");
         }
-    }
+    } 
     else if (this->isS()) {
+        // todo do we need this print offsets
+        /*
+        for (Nd4jLong e = 0; e < limit; e++) {
+            printf("\"%lld\"", this->getOffset(e));
+            if (e < limit - 1)
+                printf(", ");
+        }
+        printf("]\n[");
+        */
         for (Nd4jLong e = 0; e < limit; e++) {
             printf("\"%s\"", this->e<std::string>(e).c_str());
             if (e < limit - 1)
@@ -1123,8 +1690,9 @@ static void printFormatted(NDArray const* arr, int depth, int limit) {
                 printf("%lld, ", arr->e<Nd4jLong>(i));
             else if (arr->isB())
                 printf("%s, ", arr->e<bool>(i)?"true":"false");
-            else if (arr->isS())
+            else if (arr->isS()) {
                 printf("\"%s\", ", arr->e<std::string>(i).c_str());
+            }
         }
         printf("]\n");
     }
@@ -1149,8 +1717,9 @@ static void printFormatted(NDArray const* arr, int depth, int limit) {
                     printf("%lld", arr->e<Nd4jLong>(row, col));
                 else if (arr->isB())
                     printf("%s", arr->e<bool>(row, col)?"true":"false");
-                else if (arr->isS())
+                else if (arr->isS()) {
                     printf("\"%s\"", arr->e<std::string>(row * cols + col).c_str());
+                }
             }
             if (row < rows - 1)
                 printf("]\n");
@@ -1204,6 +1773,8 @@ void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
             printf("%s\n", this->e<bool>(0)?"true":"false");
         }
         else if (this->isS()) {
+            // todo do we need this 
+            // printf("\"%lld\"\n", this->getOffset(e));
             printf("\"%s\"\n", this->e<std::string>(0).c_str());
         }
     }
@@ -1708,9 +2279,8 @@ NDArray NDArray::subarray(const Intervals& idx) const {
 template <typename T>
 NDArray NDArray::asT() const{
 
-    auto result = isScalar() ? NDArray('c', {}, {0.}, DataTypeUtils::fromT<T>(), this->getContext()) : NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
-    auto l = this->lengthOf();
-
+    auto result = isScalar() ? NDArray('c', {}, std::vector<double>{0.}, DataTypeUtils::fromT<T>(), this->getContext()) : NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
+    
     NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.getSpecialBuffer(), result.getSpecialShapeInfo(), nullptr, nullptr, nullptr);
     NDArray::registerSpecialUse({&result}, {this});
@@ -1719,20 +2289,145 @@ NDArray NDArray::asT() const{
 }
 BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArray::asT, () const, LIBND4J_TYPES);
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+NDArray NDArray::asS() const {
+
+    if (!isS())
+        throw std::runtime_error("NDArray::asS: you can use this method only for String array!");
+
+    auto dtype = DataTypeUtils::fromT<T>();
+
+    if (!(DataTypeUtils::isS(dtype))) 
+        throw std::invalid_argument("NDArray::asS: invalid DataType used");
+    
+    if (dtype == dataType()) {
+        
+        Nd4jLong offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
+        const auto nInputoffsets = bufferAsT<Nd4jLong>();
+        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(offsetsLength + nInputoffsets[lengthOf()], dtype, getContext()->getWorkspace(), true);
+        
+        NDArray res(pBuffer, ShapeDescriptor(dtype, ordering(), getShapeAsVector()), getContext());
+        res.setAttached(getContext()->getWorkspace() != nullptr);
+
+        preparePrimaryUse({ &res }, { this });
+        memcpy(res.bufferAsT<int8_t>(), nInputoffsets, offsetsLength);
+        auto data = res.bufferAsT<int8_t>() + offsetsLength;
+        const auto inData = bufferAsT<int8_t>() + offsetsLength;
+        memcpy(data, inData, nInputoffsets[lengthOf()]);
+
+        registerPrimaryUse({ &res }, { this });
+        return res;
+    }
+ 
+    Nd4jLong offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
+
+    std::vector<Nd4jLong> offsets(lengthOf() + 1);
+
+    const auto nInputoffsets = bufferAsT<Nd4jLong>();
+
+    Nd4jLong start = 0, stop = 0;
+    Nd4jLong dataLength = 0;
+
+    auto data = bufferAsT<int8_t>() + offsetsLength;
+    for (int e = 0; e < lengthOf(); e++) {
+        offsets[e] = dataLength;
+        start = nInputoffsets[e];
+        stop = nInputoffsets[e + 1];
+        if (dataType() == DataType::UTF8) {
+            dataLength +=  (dtype == DataType::UTF16) ? unicode::offsetUtf8StringInUtf16(data + start, stop)
+                        : unicode::offsetUtf8StringInUtf32(data + start, stop);
+        }
+        else if (dataType() == DataType::UTF16) {
+            dataLength += (dtype == DataType::UTF32) ? unicode::offsetUtf16StringInUtf32(data + start, (stop / sizeof(char16_t)) )
+                        : unicode::offsetUtf16StringInUtf8(data + start, (stop / sizeof(char16_t)));
+        }
+        else {
+            dataLength += (dtype == DataType::UTF16) ? unicode::offsetUtf32StringInUtf16(data + start, (stop / sizeof(char32_t)))
+                        : unicode::offsetUtf32StringInUtf8(data + start, (stop / sizeof(char32_t)));
+        }
+    }
+    offsets[lengthOf()] = dataLength;
+
+    std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(offsetsLength + dataLength, dtype, getContext()->getWorkspace(), true);
+
+    NDArray res(pBuffer, ShapeDescriptor(dtype, ordering(), getShapeAsVector()), getContext());
+    res.setAttached(getContext()->getWorkspace() != nullptr);
+    
+    preparePrimaryUse({ &res }, { this });
+
+    memcpy(res.bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
+
+    auto outData = res.bufferAsT<int8_t>() + offsetsLength;
+    const auto inData = bufferAsT<int8_t>() + offsetsLength;
+
+    auto func = PRAGMA_THREADS_FOR{
+        for (int e = start; e < stop; e += increment) {
+           auto cdata = outData + offsets[e];
+           auto end = nInputoffsets[e + 1];
+           auto idata = inData + nInputoffsets[e];
+           if (dtype == DataType::UTF16) {
+               if (dataType() == DataType::UTF8) {
+                   unicode::utf8to16(idata, outData, end);
+               }
+               else {
+                   unicode::utf32to16(idata, outData, (end / sizeof(char32_t)));
+               }
+           }
+           else if (dtype == DataType::UTF32) {
+               if (dataType() == DataType::UTF8) {
+                   unicode::utf8to32(idata, cdata, end);
+               }
+               else {
+                   unicode::utf16to32(idata, outData, (end / sizeof(char16_t)));
+               }
+           }
+           else {
+               if (dataType() == DataType::UTF16) {
+                   unicode::utf16to8(idata, outData, (end / sizeof(char16_t)));
+               }
+               else {
+                   unicode::utf32to8(idata, outData, (end / sizeof(char32_t)));
+               }
+           }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+
+    registerPrimaryUse({ &res }, { this });
+
+    return res;
+}
+BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArray::asS, () const, LIBND4J_STRINGTYPES);
+
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArray::asT(DataType dtype) const {
-    if (isS())
-        throw std::runtime_error("NDArray::asT: you can't use this method on String array!");
+    
+    if (isS() && !DataTypeUtils::isS(dtype))
+        throw std::runtime_error("NDArray::asT: you can't use this method on String array with not string DataType!");
 
-    BUILD_SINGLE_SELECTOR(dtype, return asT, (), LIBND4J_TYPES);
+    if (!isS() && DataTypeUtils::isS(dtype))
+        throw std::runtime_error("NDArray::asT: you can't use this method on not String array with string DataType!");
+
+    if (isS()){
+        BUILD_SINGLE_SELECTOR(dtype, return asS, (), LIBND4J_STRINGTYPES);
+    } else {
+        BUILD_SINGLE_SELECTOR(dtype, return asT, (), LIBND4J_TYPES);
+    }
 
     return NDArray();
 }
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArray::cast(DataType dtype) const {
-    if (isS())
-        throw std::runtime_error("NDArray::cast: you can't use this method on String array!");
+
+    if (isS() && !DataTypeUtils::isS(dtype))
+        throw std::runtime_error("NDArray::cast: you can't use this method on String array with not string DataType!");
+
+    if (!isS() && DataTypeUtils::isS(dtype))
+        throw std::runtime_error("NDArray::cast: you can't use this method on not String array with string DataType!");
+
     return this->asT(dtype);
 }
 
@@ -2765,14 +3460,44 @@ NDArray NDArray::dup(const char newOrder) const {
     char order = newOrder == 'a' ? ordering() : newOrder;
 
     // for now string arrays require special treatment
-    if (dataType() == DataType::UTF8) {
+    if (isS()) {
+        if (dataType() == DataType::UTF8) {
+            std::vector<std::string> strings(lengthOf());
+            
+            auto func = PRAGMA_THREADS_FOR{
+                    for (auto i = start; i < stop; i += increment) {
+                           strings[i] = std::move(this->e<std::string>(i));
+                    }
+            };
 
-        std::vector<std::string> strings(lengthOf());
-        for (int e = 0; e < lengthOf(); e++)
-            strings[e] = this->e<std::string>(e);
+            samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
-        auto result = NDArrayFactory::string(order, getShapeAsVector(), strings, getContext());
-        return result;
+            return NDArray(getShapeAsVector(), strings, dataType(), getContext());
+        }
+        if (dataType() == DataType::UTF16) {
+            std::vector<std::u16string> strings(lengthOf());
+
+            auto func = PRAGMA_THREADS_FOR{
+                    for (auto i = start; i < stop; i += increment) {
+                           strings[i] = std::move(this->e<std::u16string>(i));
+                    }
+            };
+
+            samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+
+            return NDArray(getShapeAsVector(), strings, dataType(), getContext());
+        }
+
+        std::vector<std::u32string> strings(lengthOf());
+        auto func = PRAGMA_THREADS_FOR{
+               for (auto i = start; i < stop; i += increment) {
+                      strings[i] = std::move(this->e<std::u32string>(i));
+               }
+        };
+
+        samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
+
+        return NDArray(getShapeAsVector(), strings, dataType(), getContext());
     }
 
     NDArray result(order, isScalar() ? std::vector<Nd4jLong>({0}) : getShapeAsVector(), dataType(), getContext());
@@ -2796,12 +3521,33 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
 
     if (isS()) {
         // string is special case, we'll compare them one by one, considering both arrays are guaranteed to have the same length
-        for (int e = 0; e < this->lengthOf(); e++) {
-            auto s1 = this->e<std::string>(e);
-            auto s2 = other->e<std::string>(e);
+        
+        if (dataType() == DataType::UTF8) {
+            for (int e = 0; e < this->lengthOf(); e++) {
+                auto s1 = this->e<std::string>(e);
+                auto s2 = other->e<std::string>(e);
 
-            if (s1 != s2)
-                return false;
+                if (s1 != s2)
+                    return false;
+            }
+        }
+        else if (dataType() == DataType::UTF16) {
+            for (int e = 0; e < this->lengthOf(); e++) {
+                auto s1 = this->e<std::u16string>(e);
+                auto s2 = other->e<std::u16string>(e);
+
+                if (s1 != s2)
+                    return false;
+            }
+        }
+        else {
+            for (int e = 0; e < this->lengthOf(); e++) {
+                auto s1 = this->e<std::u32string>(e);
+                auto s2 = other->e<std::u32string>(e);
+
+                if (s1 != s2)
+                    return false;
+            }
         }
 
         return true;
@@ -2836,19 +3582,112 @@ std::string NDArray::e(const Nd4jLong i) const {
     if (!isS())
         throw std::runtime_error("Can't get std::string out of non-string array");
 
+    if (i == lengthOf())
+        throw std::runtime_error("Can't get std::string for index out of range");
+
+    
+    if (this->dataType() == DataType::UTF16) {
+        auto u16 = this->e<std::u16string>(i);
+        std::string s;
+        StringUtils::u16StringToU8String(u16, s);
+        return s;
+    }
+
+    if (this->dataType() == DataType::UTF32) {
+        auto u32 = this->e<std::u32string>(i);
+        std::string s;
+        StringUtils::u32StringToU8String(u32, s);
+        return s;
+    }
+
     NDArray::preparePrimaryUse({}, {this});
 
-    // getting "virtual" offset. it's not real though,since it doesn't take lengths into account
-    auto offset = getOffset(i);
-    auto offsets = reinterpret_cast<Nd4jLong *>(getBuffer());
+    auto offsets = bufferAsT<Nd4jLong>();
     auto offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
-    auto start = offsets[offset];
-    auto end = offsets[offset + 1];
-    auto data = static_cast<int8_t*>(getBuffer()) + offsetsLength + start;
+    auto start = offsets[i];
+    auto end = offsets[i + 1];
+    auto data = bufferAsT<int8_t>() + offsetsLength + start;
 
     std::string r(reinterpret_cast<const char*>(data), (end - start));
 
     registerPrimaryUse({}, {this});
+
+    return r;
+}
+
+template <>
+std::u16string NDArray::e(const Nd4jLong i) const {
+
+    if (!isS())
+        throw std::runtime_error("Can't get std::u16string out of non-string array");
+
+    if(i == lengthOf())
+        throw std::runtime_error("Can't get std::u16string for index out of range");
+
+    if (this->dataType() == DataType::UTF8) {
+        auto u = this->e<std::string>(i);
+        std::u16string s;
+        StringUtils::u8StringToU16String(u, s);
+        return s;
+    }
+
+    if (this->dataType() == DataType::UTF32) {
+        auto u32 = this->e<std::u32string>(i);
+        std::u16string s;
+        StringUtils::u32StringToU16String(u32, s);
+        return s;
+    }
+
+    NDArray::preparePrimaryUse({}, { this });
+
+    auto offsets = bufferAsT<Nd4jLong>();
+    Nd4jLong offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
+    Nd4jLong start = offsets[i];
+    Nd4jLong end = offsets[i + 1];
+    auto data = bufferAsT<int8_t>() + offsetsLength + start;
+
+    std::u16string r(reinterpret_cast<const char16_t*>(data), (end - start) / sizeof(char16_t));
+
+    registerPrimaryUse({}, { this });
+
+    return r;
+}
+
+template <>
+std::u32string NDArray::e(const Nd4jLong i) const {
+
+    if (!isS())
+        throw std::runtime_error("Can't get std::u32string out of non-string array");
+
+    if (i == lengthOf())
+        throw std::runtime_error("Can't get std::u32string for index out of range");
+
+    if (this->dataType() == DataType::UTF8) {
+        auto u = this->e<std::string>(i);
+        std::u32string s;
+        StringUtils::u8StringToU32String(u, s);
+        return s;
+    }
+
+    if (this->dataType() == DataType::UTF16) {
+        auto u16 = this->e<std::u16string>(i);
+        std::u32string s;
+        StringUtils::u16StringToU32String(u16, s);
+        return s;
+    }
+
+    NDArray::preparePrimaryUse({}, { this });
+
+    auto offsets = bufferAsT<Nd4jLong>();
+    Nd4jLong offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
+    Nd4jLong start = offsets[i];
+    Nd4jLong end = offsets[i + 1];
+
+    auto data = bufferAsT<int8_t>() + offsetsLength + start;
+
+    std::u32string r(reinterpret_cast<const char32_t*>(data), (end - start) / sizeof(char32_t));
+
+    registerPrimaryUse({}, { this });
 
     return r;
 }

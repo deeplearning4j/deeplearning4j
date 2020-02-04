@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(ones_as, 1, 1, false) {
+        CUSTOM_OP_IMPL(ones_as, 1, 1, false, 0, 0) {
             auto output = OUTPUT_VARIABLE(0);
 
             output->assign(1);
@@ -33,11 +33,21 @@ namespace nd4j {
             return Status::OK();
         }
 
+        DECLARE_SHAPE_FN(ones_as) {
+            auto in = inputShape->at(0);
+            auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
+            auto shape = nd4j::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, in);
+
+            nd4j_printf("numD: %i; dtype: %s\n", block.numD(), DataTypeUtils::asString(dtype).c_str());
+
+            return SHAPELIST(shape);
+        }
+
         DECLARE_TYPES(ones_as) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setAllowedOutputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setSameMode(false);
         }
     }
 }

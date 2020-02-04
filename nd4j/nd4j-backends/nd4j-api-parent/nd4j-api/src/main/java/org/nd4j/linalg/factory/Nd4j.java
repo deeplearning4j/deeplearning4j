@@ -1944,6 +1944,9 @@ public class Nd4j {
         if(lower == upper && num == 1) {
             return Nd4j.scalar(dtype, lower);
         }
+        if (num == 1) {
+            return Nd4j.scalar(dtype, lower);
+        }
         if (dtype.isIntType()) {
             return linspaceWithCustomOp(lower, upper, (int)num, dtype);
         } else if (dtype.isFPType()) {
@@ -1964,6 +1967,9 @@ public class Nd4j {
      */
     public static INDArray linspace(@NonNull DataType dataType, double lower, double step, long num) {
         Preconditions.checkState(dataType.isFPType());
+        if (num == 1)
+            return Nd4j.scalar(dataType, lower);
+
         return Nd4j.getExecutioner().exec(new Linspace(lower, num, step, dataType));
     }
 
@@ -1977,10 +1983,15 @@ public class Nd4j {
      */
     public static INDArray linspace( double lower, double upper, long num, @NonNull DataType dataType) {
         Preconditions.checkState(dataType.isFPType());
+        if (num == 1)
+            return Nd4j.scalar(dataType, lower);
+
         return Nd4j.getExecutioner().exec(new Linspace(lower, upper, num, dataType));
     }
 
     private static INDArray linspaceWithCustomOp(long lower, long upper, int num, DataType dataType) {
+        if (num == 1)
+            return Nd4j.scalar(dataType, lower);
 
         INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
 
@@ -1994,6 +2005,8 @@ public class Nd4j {
     }
 
     private static INDArray linspaceWithCustomOpByRange(long lower, long upper, long num, long step, DataType dataType) {
+        if (num == 1)
+            return Nd4j.scalar(dataType, lower);
 
         INDArray result = Nd4j.createUninitialized(dataType, new long[] {num}, Nd4j.order());
 
@@ -3436,6 +3449,16 @@ public class Nd4j {
      */
     public static INDArray create(float[][][] data) {
         return create(ArrayUtil.flatten(data), data.length, data[0].length, data[0][0].length);
+    }
+
+    /**
+     * Create 2D double array based on java 2d double array. and ordering
+     *
+     * @param data the data to use
+     * @return the created ndarray.
+     */
+    public static INDArray create(int[][] data) {
+        return createFromArray(data);
     }
 
     /**

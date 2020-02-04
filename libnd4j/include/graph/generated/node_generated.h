@@ -38,7 +38,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SCALAR = 40,
     VT_CONTROLDEPS = 42,
     VT_VARCONTROLDEPS = 44,
-    VT_CONTROLDEPFOR = 46
+    VT_CONTROLDEPFOR = 46,
+    VT_EXTRATYPES = 48
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -106,6 +107,9 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDepFor() const {
     return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPFOR);
   }
+  const flatbuffers::Vector<int8_t> *extraTypes() const {
+    return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_EXTRATYPES);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
@@ -153,6 +157,8 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            VerifyOffset(verifier, VT_CONTROLDEPFOR) &&
            verifier.VerifyVector(controlDepFor()) &&
            verifier.VerifyVectorOfStrings(controlDepFor()) &&
+           VerifyOffset(verifier, VT_EXTRATYPES) &&
+           verifier.VerifyVector(extraTypes()) &&
            verifier.EndTable();
   }
 };
@@ -226,6 +232,9 @@ struct FlatNodeBuilder {
   void add_controlDepFor(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepFor) {
     fbb_.AddOffset(FlatNode::VT_CONTROLDEPFOR, controlDepFor);
   }
+  void add_extraTypes(flatbuffers::Offset<flatbuffers::Vector<int8_t>> extraTypes) {
+    fbb_.AddOffset(FlatNode::VT_EXTRATYPES, extraTypes);
+  }
   explicit FlatNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -261,9 +270,11 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::Offset<FlatArray> scalar = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> varControlDeps = 0,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepFor = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepFor = 0,
+    flatbuffers::Offset<flatbuffers::Vector<int8_t>> extraTypes = 0) {
   FlatNodeBuilder builder_(_fbb);
   builder_.add_opNum(opNum);
+  builder_.add_extraTypes(extraTypes);
   builder_.add_controlDepFor(controlDepFor);
   builder_.add_varControlDeps(varControlDeps);
   builder_.add_controlDeps(controlDeps);
@@ -311,7 +322,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     flatbuffers::Offset<FlatArray> scalar = 0,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *varControlDeps = nullptr,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepFor = nullptr) {
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepFor = nullptr,
+    const std::vector<int8_t> *extraTypes = nullptr) {
   return nd4j::graph::CreateFlatNode(
       _fbb,
       id,
@@ -335,7 +347,8 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       scalar,
       controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0,
       varControlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*varControlDeps) : 0,
-      controlDepFor ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepFor) : 0);
+      controlDepFor ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepFor) : 0,
+      extraTypes ? _fbb.CreateVector<int8_t>(*extraTypes) : 0);
 }
 
 inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {
