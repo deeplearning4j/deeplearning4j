@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
+import lombok.Getter;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.learning.sync.support.MockStatEntry;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -88,12 +89,15 @@ public class SyncLearningTest {
 
         private final LConfiguration conf;
 
+        @Getter
+        private int currentEpochStep = 0;
+
         public MockSyncLearning(LConfiguration conf) {
             this.conf = conf;
         }
 
         @Override
-        protected void preEpoch() { }
+        protected void preEpoch() { currentEpochStep = 0;  }
 
         @Override
         protected void postEpoch() { }
@@ -101,7 +105,7 @@ public class SyncLearningTest {
         @Override
         protected IDataManager.StatEntry trainEpoch() {
             setStepCounter(getStepCounter() + 1);
-            return new MockStatEntry(getEpochCounter(), getStepCounter(), 1.0);
+            return new MockStatEntry(getCurrentEpochStep(), getStepCounter(), 1.0);
         }
 
         @Override

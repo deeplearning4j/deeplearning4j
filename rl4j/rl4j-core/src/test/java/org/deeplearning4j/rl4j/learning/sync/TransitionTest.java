@@ -21,7 +21,7 @@ public class TransitionTest {
         Observation nextObservation = buildObservation(nextObs);
 
         // Act
-        Transition transition = new Transition(observation, 123, 234.0, false, nextObservation);
+        Transition transition = buildTransition(observation, 123, 234.0, nextObservation);
 
         // Assert
         double[][] expectedObservation = new double[][] { obs };
@@ -52,7 +52,7 @@ public class TransitionTest {
         Observation nextObservation = buildObservation(nextObs);
 
         // Act
-        Transition transition = new Transition(observation, 123, 234.0, false, nextObservation);
+        Transition transition = buildTransition(observation, 123, 234.0, nextObservation);
 
         // Assert
         assertExpected(obs, transition.getObservation().getData());
@@ -71,12 +71,12 @@ public class TransitionTest {
         double[] obs1 = new double[] { 0.0, 1.0, 2.0 };
         Observation observation1 = buildObservation(obs1);
         Observation nextObservation1 = buildObservation(new double[] { 100.0, 101.0, 102.0 });
-        transitions.add(new Transition(observation1,0, 0.0, false, nextObservation1));
+        transitions.add(buildTransition(observation1,0, 0.0, nextObservation1));
 
         double[] obs2 = new double[] { 10.0, 11.0, 12.0 };
         Observation observation2 = buildObservation(obs2);
         Observation nextObservation2 = buildObservation(new double[] { 110.0, 111.0, 112.0 });
-        transitions.add(new Transition(observation2, 0, 0.0, false, nextObservation2));
+        transitions.add(buildTransition(observation2, 0, 0.0, nextObservation2));
 
         // Act
         INDArray result = Transition.buildStackedObservations(transitions);
@@ -101,7 +101,7 @@ public class TransitionTest {
         double[] nextObs1 = new double[] { 100.0, 101.0, 102.0 };
         Observation nextObservation1 = buildNextObservation(obs1, nextObs1);
 
-        transitions.add(new Transition(observation1, 0, 0.0, false, nextObservation1));
+        transitions.add(buildTransition(observation1, 0, 0.0, nextObservation1));
 
         double[][] obs2 = new double[][] {
                 { 10.0, 11.0, 12.0 },
@@ -112,7 +112,7 @@ public class TransitionTest {
 
         double[] nextObs2 = new double[] { 110.0, 111.0, 112.0 };
         Observation nextObservation2 = buildNextObservation(obs2, nextObs2);
-        transitions.add(new Transition(observation2, 0, 0.0, false, nextObservation2));
+        transitions.add(buildTransition(observation2, 0, 0.0, nextObservation2));
 
         // Act
         INDArray result = Transition.buildStackedObservations(transitions);
@@ -131,13 +131,13 @@ public class TransitionTest {
         double[] nextObs1 = new double[] { 100.0, 101.0, 102.0 };
         Observation observation1 = buildObservation(obs1);
         Observation nextObservation1 = buildObservation(nextObs1);
-        transitions.add(new Transition(observation1, 0, 0.0, false, nextObservation1));
+        transitions.add(buildTransition(observation1, 0, 0.0, nextObservation1));
 
         double[] obs2 = new double[] { 10.0, 11.0, 12.0 };
         double[] nextObs2 = new double[] { 110.0, 111.0, 112.0 };
         Observation observation2 = buildObservation(obs2);
         Observation nextObservation2 = buildObservation(nextObs2);
-        transitions.add(new Transition(observation2, 0, 0.0, false, nextObservation2));
+        transitions.add(buildTransition(observation2, 0, 0.0, nextObservation2));
 
         // Act
         INDArray result = Transition.buildStackedNextObservations(transitions);
@@ -162,7 +162,7 @@ public class TransitionTest {
         double[] nextObs1 = new double[] { 100.0, 101.0, 102.0 };
         Observation nextObservation1 = buildNextObservation(obs1, nextObs1);
 
-        transitions.add(new Transition(observation1, 0, 0.0, false, nextObservation1));
+        transitions.add(buildTransition(observation1, 0, 0.0, nextObservation1));
 
         double[][] obs2 = new double[][] {
                 { 10.0, 11.0, 12.0 },
@@ -174,7 +174,7 @@ public class TransitionTest {
         double[] nextObs2 = new double[] { 110.0, 111.0, 112.0 };
         Observation nextObservation2 = buildNextObservation(obs2, nextObs2);
 
-        transitions.add(new Transition(observation2, 0, 0.0, false, nextObservation2));
+        transitions.add(buildTransition(observation2, 0, 0.0, nextObservation2));
 
         // Act
         INDArray result = Transition.buildStackedNextObservations(transitions);
@@ -207,7 +207,13 @@ public class TransitionTest {
                 Nd4j.create(obs[1]).reshape(1, 3),
         };
         return new Observation(nextHistory);
+    }
 
+    private Transition buildTransition(Observation observation, int action, double reward, Observation nextObservation) {
+        Transition result = new Transition(observation, action, reward, false);
+        result.setNextObservation(nextObservation);
+
+        return result;
     }
 
     private void assertExpected(double[] expected, INDArray actual) {

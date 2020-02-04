@@ -18,8 +18,8 @@ public class ExpReplayTest {
         ExpReplay<Integer> sut = new ExpReplay<Integer>(2, 1, randomMock);
 
         // Act
-        Transition<Integer> transition = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                123, 234, false, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                123, 234, new Observation(Nd4j.create(1)));
         sut.store(transition);
         List<Transition<Integer>> results = sut.getBatch(1);
 
@@ -36,12 +36,12 @@ public class ExpReplayTest {
         ExpReplay<Integer> sut = new ExpReplay<Integer>(2, 1, randomMock);
 
         // Act
-        Transition<Integer> transition1 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                1, 2, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition2 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                3, 4, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition3 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                5, 6, false, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition1 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                1, 2, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition2 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                3, 4, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition3 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                5, 6, new Observation(Nd4j.create(1)));
         sut.store(transition1);
         sut.store(transition2);
         sut.store(transition3);
@@ -78,12 +78,12 @@ public class ExpReplayTest {
         ExpReplay<Integer> sut = new ExpReplay<Integer>(5, 1, randomMock);
 
         // Act
-        Transition<Integer> transition1 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                1, 2, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition2 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                3, 4, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition3 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                5, 6, false, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition1 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                1, 2, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition2 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                3, 4, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition3 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                5, 6, new Observation(Nd4j.create(1)));
         sut.store(transition1);
         sut.store(transition2);
         sut.store(transition3);
@@ -100,12 +100,12 @@ public class ExpReplayTest {
         ExpReplay<Integer> sut = new ExpReplay<Integer>(5, 1, randomMock);
 
         // Act
-        Transition<Integer> transition1 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                1, 2, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition2 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                3, 4, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition3 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                5, 6, false, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition1 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                1, 2, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition2 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                3, 4, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition3 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                5, 6, new Observation(Nd4j.create(1)));
         sut.store(transition1);
         sut.store(transition2);
         sut.store(transition3);
@@ -131,16 +131,16 @@ public class ExpReplayTest {
         ExpReplay<Integer> sut = new ExpReplay<Integer>(5, 1, randomMock);
 
         // Act
-        Transition<Integer> transition1 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                1, 2, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition2 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                3, 4, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition3 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                5, 6, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition4 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                7, 8, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition5 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                9, 10, false, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition1 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                1, 2, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition2 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                3, 4, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition3 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                5, 6, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition4 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                7, 8, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition5 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                9, 10, new Observation(Nd4j.create(1)));
         sut.store(transition1);
         sut.store(transition2);
         sut.store(transition3);
@@ -168,16 +168,16 @@ public class ExpReplayTest {
         ExpReplay<Integer> sut = new ExpReplay<Integer>(5, 1, randomMock);
 
         // Act
-        Transition<Integer> transition1 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                1, 2, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition2 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                3, 4, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition3 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                5, 6, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition4 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                7, 8, false, new Observation(Nd4j.create(1)));
-        Transition<Integer> transition5 = new Transition<Integer>(new Observation(new INDArray[] { Nd4j.create(1) }),
-                9, 10, false, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition1 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                1, 2, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition2 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                3, 4, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition3 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                5, 6, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition4 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                7, 8, new Observation(Nd4j.create(1)));
+        Transition<Integer> transition5 = buildTransition(new Observation(new INDArray[] { Nd4j.create(1) }),
+                9, 10, new Observation(Nd4j.create(1)));
         sut.store(transition1);
         sut.store(transition2);
         sut.store(transition3);
@@ -196,6 +196,12 @@ public class ExpReplayTest {
 
         assertEquals(5, (int)results.get(2).getAction());
         assertEquals(6, (int)results.get(2).getReward());
+    }
 
+    private Transition<Integer> buildTransition(Observation observation, Integer action, double reward, Observation nextObservation) {
+        Transition<Integer> result = new Transition<Integer>(observation, action, reward, false);
+        result.setNextObservation(nextObservation);
+
+        return result;
     }
 }
