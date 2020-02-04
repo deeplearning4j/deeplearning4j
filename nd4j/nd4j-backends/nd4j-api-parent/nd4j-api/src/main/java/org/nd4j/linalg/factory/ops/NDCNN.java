@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -142,6 +142,20 @@ public class NDCNN {
     NDValidation.validateNumerical("conv2d", "weights", weights);
     NDValidation.validateNumerical("conv2d", "bias", bias);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, bias, Conv2DConfig))[0];
+  }
+
+  /**
+   * 2D Convolution operation with optional bias<br>
+   *
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param weights Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of conv2d op (NUMERIC type)
+   */
+  public INDArray conv2d(INDArray layerInput, INDArray weights, Conv2DConfig Conv2DConfig) {
+    NDValidation.validateNumerical("conv2d", "layerInput", layerInput);
+    NDValidation.validateNumerical("conv2d", "weights", weights);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(layerInput, weights, null, Conv2DConfig))[0];
   }
 
   /**
