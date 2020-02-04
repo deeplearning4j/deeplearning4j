@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.rl4j.observation;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -27,6 +29,9 @@ public class Observation {
     // TODO: Presently only a dummy container. Will contain observation channels when done.
 
     private final DataSet data;
+
+    @Getter @Setter
+    private boolean skipped;
 
     public Observation(INDArray[] data) {
         this(data, false);
