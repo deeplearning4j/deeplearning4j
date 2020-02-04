@@ -725,7 +725,6 @@ public class ArrowConverter {
                 case Time: ret.add(timeVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 case NDArray: ret.add(ndarrayVectorOf(bufferAllocator,schema.getName(i),numRows)); break;
                 default: throw new IllegalArgumentException("Illegal type found for creation of field vectors" + schema.getType(i));
-
             }
         }
 
@@ -802,8 +801,13 @@ public class ArrowConverter {
                     //for proper offsets
                     ByteBuffer byteBuffer = BinarySerde.toByteBuffer(arr.get());
                     nd4jArrayVector.setSafe(row,byteBuffer,0,byteBuffer.capacity());
+                case Boolean:
+                    BitVector bitVector = (BitVector) fieldVector;
+                    if(value instanceof Boolean)
+                        bitVector.set(row, (boolean) value ? 1 : 0);
+                    else
+                        bitVector.set(row, ((BooleanWritable) value).get() ? 1 : 0);
                     break;
-
             }
         }catch(Exception e) {
             log.warn("Unable to set value at row " + row);

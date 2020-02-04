@@ -24,28 +24,30 @@ public class PythonUtils {
      * Create a {@link Schema}
      * from {@link PythonVariables}.
      * Types are mapped to types of the same name.
+     *
      * @param input the input {@link PythonVariables}
      * @return the output {@link Schema}
      */
     public static Schema fromPythonVariables(PythonVariables input) {
         Schema.Builder schemaBuilder = new Schema.Builder();
-        Preconditions.checkState(input.getVariables() != null && input.getVariables().length > 0,"Input must have variables. Found none.");
-        for(Map.Entry<String,PythonVariables.Type> entry : input.getVars().entrySet()) {
-            switch(entry.getValue()) {
+        Preconditions.checkState(input.getVariables() != null && input.getVariables().length > 0, "Input must have variables. Found none.");
+        for (String varName: input.getVariables()) {
+
+            switch (input.getType(varName).getName()) {
                 case INT:
-                    schemaBuilder.addColumnInteger(entry.getKey());
+                    schemaBuilder.addColumnInteger(varName);
                     break;
                 case STR:
-                    schemaBuilder.addColumnString(entry.getKey());
+                    schemaBuilder.addColumnString(varName);
                     break;
                 case FLOAT:
-                    schemaBuilder.addColumnFloat(entry.getKey());
+                    schemaBuilder.addColumnFloat(varName);
                     break;
                 case NDARRAY:
-                    schemaBuilder.addColumnNDArray(entry.getKey(),null);
+                    schemaBuilder.addColumnNDArray(varName, null);
                     break;
                 case BOOL:
-                    schemaBuilder.addColumn(new BooleanMetaData(entry.getKey()));
+                    schemaBuilder.addColumn(new BooleanMetaData(varName));
             }
         }
 
@@ -56,34 +58,36 @@ public class PythonUtils {
      * Create a {@link Schema} from an input
      * {@link PythonVariables}
      * Types are mapped to types of the same name
+     *
      * @param input the input schema
      * @return the output python variables.
      */
     public static PythonVariables fromSchema(Schema input) {
         PythonVariables ret = new PythonVariables();
-        for(int i = 0; i < input.numColumns(); i++) {
+        for (int i = 0; i < input.numColumns(); i++) {
             String currColumnName = input.getName(i);
             ColumnType columnType = input.getType(i);
-            switch(columnType) {
+            switch (columnType) {
                 case NDArray:
-                    ret.add(currColumnName, PythonVariables.Type.NDARRAY);
+                    ret.add(currColumnName, PythonType.NDARRAY);
                     break;
                 case Boolean:
-                    ret.add(currColumnName, PythonVariables.Type.BOOL);
+                    ret.add(currColumnName, PythonType.BOOL);
                     break;
                 case Categorical:
                 case String:
-                    ret.add(currColumnName, PythonVariables.Type.STR);
+                    ret.add(currColumnName, PythonType.STR);
                     break;
                 case Double:
                 case Float:
-                    ret.add(currColumnName, PythonVariables.Type.FLOAT);
+                    ret.add(currColumnName, PythonType.FLOAT);
                     break;
                 case Integer:
                 case Long:
-                    ret.add(currColumnName, PythonVariables.Type.INT);
+                    ret.add(currColumnName, PythonType.INT);
                     break;
                 case Bytes:
+                    ret.add(currColumnName, PythonType.BYTES);
                     break;
                 case Time:
                     throw new UnsupportedOperationException("Unable to process dates with python yet.");
@@ -92,9 +96,11 @@ public class PythonUtils {
 
         return ret;
     }
+
     /**
      * Convert a {@link Schema}
      * to {@link PythonVariables}
+     *
      * @param schema the input schema
      * @return the output {@link PythonVariables} where each
      * name in the map is associated with a column name in the schema.
@@ -107,7 +113,7 @@ public class PythonUtils {
         for (int i = 0; i < numCols; i++) {
             String colName = schema.getName(i);
             ColumnType colType = schema.getType(i);
-            switch (colType){
+            switch (colType) {
                 case Long:
                 case Integer:
                     pyVars.addInt(colName);
@@ -122,6 +128,9 @@ public class PythonUtils {
                 case NDArray:
                     pyVars.addNDArray(colName);
                     break;
+                case Boolean:
+                    pyVars.addBool(colName);
+                    break;
                 default:
                     throw new Exception("Unsupported python input type: " + colType.toString());
             }
@@ -131,117 +140,104 @@ public class PythonUtils {
     }
 
 
-    public static NumpyArray mapToNumpyArray(Map map){
-        String dtypeName = (String)map.get("dtype");
+    public static NumpyArray mapToNumpyArray(Map map) {
+        String dtypeName = (String) map.get("dtype");
         DataType dtype;
-        if (dtypeName.equals("float64")){
+        if (dtypeName.equals("float64")) {
             dtype = DataType.DOUBLE;
-        }
-        else if (dtypeName.equals("float32")){
+        } else if (dtypeName.equals("float32")) {
             dtype = DataType.FLOAT;
-        }
-        else if (dtypeName.equals("int16")){
+        } else if (dtypeName.equals("int16")) {
             dtype = DataType.SHORT;
-        }
-        else if (dtypeName.equals("int32")){
+        } else if (dtypeName.equals("int32")) {
             dtype = DataType.INT;
-        }
-        else if (dtypeName.equals("int64")){
+        } else if (dtypeName.equals("int64")) {
             dtype = DataType.LONG;
-        }
-        else{
+        } else {
             throw new RuntimeException("Unsupported array type " + dtypeName + ".");
         }
-        List shapeList = (List)map.get("shape");
+        List shapeList = (List) map.get("shape");
         long[] shape = new long[shapeList.size()];
         for (int i = 0; i < shape.length; i++) {
-            shape[i] = (Long)shapeList.get(i);
+            shape[i] = (Long) shapeList.get(i);
         }
 
-        List strideList = (List)map.get("shape");
+        List strideList = (List) map.get("shape");
         long[] stride = new long[strideList.size()];
         for (int i = 0; i < stride.length; i++) {
-            stride[i] = (Long)strideList.get(i);
+            stride[i] = (Long) strideList.get(i);
         }
-        long address = (Long)map.get("address");
-        NumpyArray numpyArray = new NumpyArray(address, shape, stride, true,dtype);
+        long address = (Long) map.get("address");
+        NumpyArray numpyArray = new NumpyArray(address, shape, stride, dtype, true);
         return numpyArray;
     }
 
-    public static PythonVariables expandInnerDict(PythonVariables pyvars, String key){
+    public static PythonVariables expandInnerDict(PythonVariables pyvars, String key) {
         Map dict = pyvars.getDictValue(key);
-        String[] keys = (String[])dict.keySet().toArray(new String[dict.keySet().size()]);
+        String[] keys = (String[]) dict.keySet().toArray(new String[dict.keySet().size()]);
         PythonVariables pyvars2 = new PythonVariables();
-        for (String subkey: keys){
+        for (String subkey : keys) {
             Object value = dict.get(subkey);
-            if (value instanceof Map){
-                Map map = (Map)value;
-                if (map.containsKey("_is_numpy_array")){
+            if (value instanceof Map) {
+                Map map = (Map) value;
+                if (map.containsKey("_is_numpy_array")) {
                     pyvars2.addNDArray(subkey, mapToNumpyArray(map));
 
-                }
-                else{
-                    pyvars2.addDict(subkey, (Map)value);
+                } else {
+                    pyvars2.addDict(subkey, (Map) value);
                 }
 
-            }
-            else if (value instanceof List){
+            } else if (value instanceof List) {
                 pyvars2.addList(subkey, ((List) value).toArray());
-            }
-            else if (value instanceof String){
-                System.out.println((String)value);
+            } else if (value instanceof String) {
+                System.out.println((String) value);
                 pyvars2.addStr(subkey, (String) value);
-            }
-            else if (value instanceof Integer || value instanceof Long) {
+            } else if (value instanceof Integer || value instanceof Long) {
                 Number number = (Number) value;
                 pyvars2.addInt(subkey, number.intValue());
-            }
-            else if (value instanceof Float || value instanceof Double) {
+            } else if (value instanceof Float || value instanceof Double) {
                 Number number = (Number) value;
                 pyvars2.addFloat(subkey, number.doubleValue());
-            }
-            else if (value instanceof NumpyArray){
-                pyvars2.addNDArray(subkey, (NumpyArray)value);
-            }
-            else if (value == null){
+            } else if (value instanceof NumpyArray) {
+                pyvars2.addNDArray(subkey, (NumpyArray) value);
+            } else if (value == null) {
                 pyvars2.addStr(subkey, "None"); // FixMe
-            }
-            else{
+            } else {
                 throw new RuntimeException("Unsupported type!" + value);
             }
         }
         return pyvars2;
     }
 
-    public static long[] jsonArrayToLongArray(JSONArray jsonArray){
+    public static long[] jsonArrayToLongArray(JSONArray jsonArray) {
         long[] longs = new long[jsonArray.length()];
-        for (int i=0; i<longs.length; i++){
+        for (int i = 0; i < longs.length; i++) {
 
             longs[i] = jsonArray.getLong(i);
         }
         return longs;
     }
 
-    public static Map<String, Object> toMap(JSONObject jsonobj)  {
+    public static Map<String, Object> toMap(JSONObject jsonobj) {
         Map<String, Object> map = new HashMap<>();
-        String[] keys = (String[])jsonobj.keySet().toArray(new String[jsonobj.keySet().size()]);
-        for (String key: keys){
+        String[] keys = (String[]) jsonobj.keySet().toArray(new String[jsonobj.keySet().size()]);
+        for (String key : keys) {
             Object value = jsonobj.get(key);
             if (value instanceof JSONArray) {
                 value = toList((JSONArray) value);
             } else if (value instanceof JSONObject) {
-                JSONObject jsonobj2 = (JSONObject)value;
-                if (jsonobj2.has("_is_numpy_array")){
+                JSONObject jsonobj2 = (JSONObject) value;
+                if (jsonobj2.has("_is_numpy_array")) {
                     value = jsonToNumpyArray(jsonobj2);
-                }
-                else{
+                } else {
                     value = toMap(jsonobj2);
                 }
 
             }
 
             map.put(key, value);
-        }   return map;
+        }
+        return map;
     }
 
 
@@ -265,40 +261,35 @@ public class PythonUtils {
     }
 
 
-    private static NumpyArray jsonToNumpyArray(JSONObject map){
-        String dtypeName = (String)map.get("dtype");
+    private static NumpyArray jsonToNumpyArray(JSONObject map) {
+        String dtypeName = (String) map.get("dtype");
         DataType dtype;
-        if (dtypeName.equals("float64")){
+        if (dtypeName.equals("float64")) {
             dtype = DataType.DOUBLE;
-        }
-        else if (dtypeName.equals("float32")){
+        } else if (dtypeName.equals("float32")) {
             dtype = DataType.FLOAT;
-        }
-        else if (dtypeName.equals("int16")){
+        } else if (dtypeName.equals("int16")) {
             dtype = DataType.SHORT;
-        }
-        else if (dtypeName.equals("int32")){
+        } else if (dtypeName.equals("int32")) {
             dtype = DataType.INT;
-        }
-        else if (dtypeName.equals("int64")){
+        } else if (dtypeName.equals("int64")) {
             dtype = DataType.LONG;
-        }
-        else{
+        } else {
             throw new RuntimeException("Unsupported array type " + dtypeName + ".");
         }
-        List shapeList = (List)map.get("shape");
+        List shapeList = map.getJSONArray("shape").toList();
         long[] shape = new long[shapeList.size()];
         for (int i = 0; i < shape.length; i++) {
-            shape[i] = (Long)shapeList.get(i);
+            shape[i] = ((Number) shapeList.get(i)).longValue();
         }
 
-        List strideList = (List)map.get("shape");
+        List strideList = map.getJSONArray("shape").toList();
         long[] stride = new long[strideList.size()];
         for (int i = 0; i < stride.length; i++) {
-            stride[i] = (Long)strideList.get(i);
+            stride[i] = ((Number) strideList.get(i)).longValue();
         }
-        long address = (Long)map.get("address");
-        NumpyArray numpyArray = new NumpyArray(address, shape, stride, true,dtype);
+        long address = ((Number) map.get("address")).longValue();
+        NumpyArray numpyArray = new NumpyArray(address, shape, stride, dtype, true);
         return numpyArray;
     }
 
