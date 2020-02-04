@@ -1691,4 +1691,50 @@ public class CustomOpsTests extends BaseNd4jTest {
 
         assertEquals(e, x);
     }
+
+    @Test
+    public void testLinearSolve() {
+        INDArray a = Nd4j.createFromArray(new float[]{
+                2.f, -1.f, -2.f, -4.f, 6.f, 3.f, -4.f, -2.f, 8.f
+        }).reshape(3, 3);
+
+        INDArray b = Nd4j.createFromArray(new float[]{
+                2.f, 4.f, 3.f
+        }).reshape(3, 1);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                7.625f, 3.25f, 5.f
+        }).reshape(3, 1);
+
+        val op = new LinearSolve(a, b);
+        INDArray[] ret = Nd4j.exec(op);
+
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testLinearSolveAdjust() {
+        INDArray a = Nd4j.createFromArray(new float[]{
+                0.7788f,    0.8012f,    0.7244f,
+                0.2309f,    0.7271f,    0.1804f,
+                0.5056f,    0.8925f,    0.5461f
+        }).reshape(3, 3);
+
+        INDArray b = Nd4j.createFromArray(new float[]{
+                0.7717f,    0.9281f,    0.9846f,
+                0.4838f,    0.6433f,    0.6041f,
+                0.6501f,    0.7612f,    0.7605f
+        }).reshape(3, 3);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                1.5504692f,  1.8953944f,  2.2765768f,
+                0.03399149f,  0.2883001f ,  0.5377323f,
+                -0.8774802f, -1.2155888f, -1.8049058f
+        }).reshape(3, 3);
+
+        val op = new LinearSolve(a, b, true);
+        INDArray[] ret = Nd4j.exec(op);
+
+        assertEquals(expected, ret[0]);
+    }
 }
