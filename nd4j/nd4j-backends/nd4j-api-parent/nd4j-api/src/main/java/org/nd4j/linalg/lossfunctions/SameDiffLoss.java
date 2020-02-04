@@ -3,13 +3,28 @@ package org.nd4j.linalg.lossfunctions;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import org.nd4j.linalg.factory.Nd4j;
 
 import org.nd4j.linalg.primitives.Pair;
 
+
+
+
 public abstract class SameDiffLoss implements ILossFunction {
+
+    SameDiff sameDiff = SameDiff.create();
+
+
+    protected SameDiffLoss(){
+
+        SDVariable layerInput =  sameDiff.placeHolder("layerInput", DataType.FLOAT ,-1);
+        SDVariable labels = sameDiff.placeHolder("labels", DataType.FLOAT ,-1);
+        this.defineLoss(sameDiff, layerInput, labels);
+
+
+    }
     /**
      * Compute the score (loss function value) for the given inputs.
      *  @param labels       Label/expected preOutput
@@ -23,8 +38,10 @@ public abstract class SameDiffLoss implements ILossFunction {
             // The score overall consists of the
             // sum of the negative log likelihoods for each
             // of the individual labels.
+
             INDArray scoreArr = computeScoreArray(labels, preOutput, activationFn, mask);
-            double score = scoreArr.sumNumber().doubleValue();
+
+        double score = scoreArr.sumNumber().doubleValue();
             if (average) {
                 score /= scoreArr.size(0);
             }
@@ -46,7 +63,24 @@ public abstract class SameDiffLoss implements ILossFunction {
      */
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask){
 
-      return computeScoreArray(labels, preOutput, activationFn, mask);
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException(
+                    "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
+
+        }
+        INDArray scoreArr;
+        INDArray output = activationFn.getActivation(preOutput.dup(), true);
+        scoreArr = output.rsubi(labels).divi(labels);
+        scoreArr.muli(100.0 / labels.size(1));
+
+
+
+        if (mask != null) {
+            LossUtil.applyMask(scoreArr, mask);
+        }
+        return scoreArr.sum(1);
+
 
     }
 
@@ -61,18 +95,17 @@ public abstract class SameDiffLoss implements ILossFunction {
      * @return Gradient dL/dPreOut
      */
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
-        labels = labels.castTo(preOutput.dataType());   //No-op if already correct dtype
-        long nSamples = labels.size(0);
 
-        INDArray output = activationFn.getActivation(preOutput.dup(), false);
+        SDVariable output = sameDiff.var("output", activationFn.getActivation(preOutput.dup(), true));
+        INDArray gradients = sameDiff.grad("output").eval();
 
-        INDArray gradient = Nd4j.zeros(nSamples, preOutput.columns());
 
-        INDArray gradients = activationFn.backprop(preOutput, gradient).getFirst();
 
         if (mask != null) {
             LossUtil.applyMask(gradients, mask);
         }
+
+
 
         return gradients;
     }
@@ -95,8 +128,8 @@ public abstract class SameDiffLoss implements ILossFunction {
 
             Pair<Double, INDArray> GradientAndScore = new Pair<>();
 
-        GradientAndScore.setFirst(computeScore(labels, preOutput, activationFn, mask, average));
-        GradientAndScore.setSecond(computeGradient(labels, preOutput, activationFn, mask));
+        GradientAndScore.setFirst(this.computeScore(labels, preOutput, activationFn, mask, average));
+        GradientAndScore.setSecond(this.computeGradient(labels, preOutput, activationFn, mask));
 
         return GradientAndScore;
     }
@@ -108,8 +141,9 @@ public abstract class SameDiffLoss implements ILossFunction {
 
 
 
-    public abstract void defineLoss(SameDiff sameDiff, SDVariable layerInput, SDVariable labels);
+    public abstract SDVariable defineLoss(SameDiff sameDiff, SDVariable layerInput, SDVariable labels);
 
 
 
 }
+
