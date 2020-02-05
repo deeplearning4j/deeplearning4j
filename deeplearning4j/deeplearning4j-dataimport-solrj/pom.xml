@@ -37,7 +37,7 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <configuration>
-                        <argLine>-Ddtype=float -Xmx8g -Dtest.solr.allowed.securerandom=NativePRNG</argLine>
+                        <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g -Dtest.solr.allowed.securerandom=NativePRNG</argLine>
                         <includes>
                             <!-- Default setting only runs tests that start/end with "Test" -->
                             <include>*.java</include>

@@ -380,7 +380,7 @@
                          -->
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
-                        <argLine>-Ddtype=float -Xmx8g</argLine>
+                        <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g</argLine>
                         <includes>
                             <!-- Default setting only runs tests that start/end with "Test" -->
                             <include>*.java</include>
