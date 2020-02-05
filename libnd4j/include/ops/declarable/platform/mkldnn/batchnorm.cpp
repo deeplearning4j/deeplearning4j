@@ -456,10 +456,6 @@ PLATFORM_IMPL(batchnorm, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
-    // we don't want to use mkldnn if cpu doesn't support avx/avx2
-    // if (::optimalLevel() < 2)
-    //     return false;
-
     auto input    = INPUT_VARIABLE(0);  // 2D:nc, 4D:nchw, 5D:ncdhw
     auto mean     = INPUT_VARIABLE(1);  // [c]
     auto variance = INPUT_VARIABLE(2);  // [c]

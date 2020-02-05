@@ -401,10 +401,6 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
-    // we don't want to use mkldnn if cpu doesn't support avx/avx2
-    if (::optimalLevel() < 2)
-        return false;
-
     auto input   = INPUT_VARIABLE(0);
     auto weights = INPUT_VARIABLE(1);
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -477,7 +473,6 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
-
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC] = [iC*mC]

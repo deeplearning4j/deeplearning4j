@@ -153,4 +153,10 @@ public abstract class BaseOpContext implements OpContext {
         for (int e = 0; e < arrays.length; e++)
             setOutputArray(e, arrays[e]);
     }
+
+    @Override
+    public void purge() {
+        fastpath_in.clear();
+        fastpath_out.clear();
+    }
 }

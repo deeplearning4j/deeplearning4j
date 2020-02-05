@@ -1161,6 +1161,7 @@ public interface NativeOps {
     void ctxAllowHelpers(OpaqueContext ptr, boolean reallyAllow);
     void ctxSetExecutionMode(OpaqueContext ptr, int execMode);
     void ctxShapeFunctionOverride(OpaqueContext ptr, boolean reallyOverride);
+    void ctxPurge(OpaqueContext ptr);
     void deleteGraphContext(OpaqueContext ptr);
 
     OpaqueRandomGenerator createRandomGenerator(long rootSeed, long nodeSeed);

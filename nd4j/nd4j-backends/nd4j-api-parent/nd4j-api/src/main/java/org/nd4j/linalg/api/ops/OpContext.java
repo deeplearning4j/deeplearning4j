@@ -162,4 +162,9 @@ public interface OpContext extends AutoCloseable {
      * @param mode
      */
     void setExecutionMode(ExecutionMode mode);
+
+    /**
+     * This method removes all in/out arrays from this OpContext
+     */
+    void purge();
 }

@@ -407,10 +407,6 @@ PLATFORM_IMPL(deconv2d, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(deconv2d, ENGINE_CPU) {
-    // we don't want to use mkldnn if cpu doesn't support avx/avx2
-    // if (::optimalLevel() < 2)
-    //     return false;
-
     auto input   = INPUT_VARIABLE(0);
     auto weights = INPUT_VARIABLE(1);
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;

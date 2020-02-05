@@ -2815,6 +2815,10 @@ void ctxSetExecutionMode(OpaqueContext* ptr, int execMode) {
     ptr->setExecutionMode((samediff::ExecutionMode) execMode);
 }
 
+void ctxPurge(OpaqueContext* ptr) {
+    ptr->clearFastPath();
+}
+
 nd4j::graph::RandomGenerator* createRandomGenerator(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
     return new nd4j::graph::RandomGenerator(rootSeed, nodeSeed);
 }
