@@ -36,10 +36,12 @@ namespace helpers {
     static void adjointMatrix_(nd4j::LaunchContext* context, NDArray const* input, NDArray* output) {
         auto inputPart = input->allTensorsAlongDimension({-2, -1});
         auto outputPart = output->allTensorsAlongDimension({-2, -1});
+        auto rows = input->sizeAt(-2);
         output->assign(input);
+
         auto batchLoop = PRAGMA_THREADS_FOR {
             for (auto batch = start; batch < stop; batch += increment) {
-                for (auto r = 0; r < input->rows(); r++) {
+                for (auto r = 0; r < rows; r++) {
                     for (auto c = 0; c < r; c++) {
                         math::nd4j_swap(outputPart[batch]->t<T>(r, c) , outputPart[batch]->t<T>(c, r));
                     }

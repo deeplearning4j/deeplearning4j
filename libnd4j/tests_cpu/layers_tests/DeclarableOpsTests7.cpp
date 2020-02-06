@@ -758,7 +758,7 @@ TEST_F(DeclarableOpsTests7, Test_Dynamic_Partition_119_2) {
 
 TEST_F(DeclarableOpsTests7, Test_SequenceMask_1) {
     auto input = NDArrayFactory::create<int>('c', {4, 4},   {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
-    auto exp = NDArrayFactory::create<bool>('c', {4, 4, 16}, {1, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0, 0,1, 1, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0, 0,
+    auto exp = NDArrayFactory::create<bool>('c', {4, 4, 16}, {1, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0, 0,  0,  0,  0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0, 0,
                                         1, 1, 1, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0, 0,1, 1, 1, 1, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0, 0,
                                         1, 1, 1, 1, 1, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0, 0,1, 1, 1, 1, 1, 1, 0, 0, 0,  0,  0,  0,  0,  0,  0, 0,
                                         1, 1, 1, 1, 1, 1, 1, 0, 0,  0,  0,  0,  0,  0,  0, 0,1, 1, 1, 1, 1, 1, 1, 1, 0,  0,  0,  0,  0,  0,  0, 0,
@@ -791,6 +791,66 @@ TEST_F(DeclarableOpsTests7, Test_SequenceMask_2) {
 
     nd4j::ops::sequence_mask op;
     auto result = op.evaluate({&input}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+//    z->printBuffer("Output");
+//    z->printShapeInfo("Shape");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests7, Test_SequenceMask_3) {
+    auto input = NDArrayFactory::create<int>('c', {2, 2, 2},   {10, 20, 30, 4, 0, 6, 7, 8});
+    auto exp = NDArrayFactory::create<int>('c', {2, 2, 2, 30}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                                                                 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+
+    nd4j::ops::sequence_mask op;
+    auto result = op.evaluate({&input}, {nd4j::DataType::INT32});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+//    z->printBuffer("Output");
+//    z->printShapeInfo("Shape");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests7, Test_SequenceMask_4) {
+    auto input = NDArrayFactory::create<int>({1, 3, 2});
+    auto maxLen = NDArrayFactory::create<int>(5);
+    auto exp = NDArrayFactory::create<float>('c', {3,5}, {
+        1.f, 0.f, 0.f, 0.f, 0.f,   1.f, 1.f, 1.f, 0.f, 0.f,   1.f, 1.f, 0.f, 0.f, 0.f
+    });
+
+    nd4j::ops::sequence_mask op;
+    auto result = op.evaluate({&input, &maxLen}, {nd4j::DataType::FLOAT32});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+//    z->printBuffer("Output");
+//    z->printShapeInfo("Shape");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests7, Test_SequenceMask_5) {
+    auto input = NDArrayFactory::create<int>({1, 3, 2});
+    auto exp = NDArrayFactory::create<float>('c', {3,5}, {
+            1.f, 0.f, 0.f, 0.f, 0.f,   1.f, 1.f, 1.f, 0.f, 0.f,   1.f, 1.f, 0.f, 0.f, 0.f
+    });
+
+    nd4j::ops::sequence_mask op;
+    auto result = op.evaluate({&input}, {5, (int)nd4j::DataType::FLOAT32});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
