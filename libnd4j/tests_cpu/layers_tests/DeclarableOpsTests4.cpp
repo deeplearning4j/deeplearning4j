@@ -360,7 +360,6 @@ TEST_F(DeclarableOpsTests4, avgpool2d_12) {
                                                       917.5,  918.5,  919.5, 925. ,  926. ,  927. , 934. ,  935. ,  936. , 941.5,  942.5,  943.5, 992.5,  993.5,  994.5,1000. , 1001. , 1002. ,1009. , 1010. , 1011. ,1016.5, 1017.5, 1018.5,
                                                      1082.5, 1083.5, 1084.5,1090. , 1091. , 1092. ,1099. , 1100. , 1101. ,1106.5, 1107.5, 1108.5,1157.5, 1158.5, 1159.5,1165. , 1166. , 1167. ,1174. , 1175. , 1176. ,1181.5, 1182.5, 1183.5});
     input.linspace(1.);
-    input.syncToDevice();
 
     nd4j::ops::avgpool2d op;
     auto results = op.evaluate({&input}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 0, dataFormat});
@@ -375,6 +374,160 @@ TEST_F(DeclarableOpsTests4, avgpool2d_12) {
     ASSERT_TRUE(expected.equalsTo(output));
 
     delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, avgpool2d_13) {
+
+    const int bS = 2;       // batch size
+    const int iD = 1;       // input depth (number of picture channels, for example rgb=3)
+    const int iH = 28;      // picture height in pixels
+    const int iW = 28;      // picture width in pixels
+    const int kH = 5;       // kernel height in pixels
+    const int kW = 5;       // kernel width in pixels
+    const int sH = 1;       // stride step in horizontal direction
+    const int sW = 1;       // stride step in vertical direction
+    const int pH = 0;       // padding height
+    const int pW = 0;       // padding width
+    const int dH = 2;       // dilation height
+    const int dW = 2;       // dilation width
+    const int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     // output height
+    const int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;     // output width
+
+    auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
+    auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
+    // auto z('c',{bS,iD,oH,oW});
+
+    auto variableSpace = new VariableSpace();
+    variableSpace->putVariable(-1, x);
+    // variableSpace->putVariable(1, &z);
+
+    auto block = new Context(1, variableSpace, false);
+    block->fillInputs({-1});
+    std::vector<int>* argI = block->getIArguments();
+    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+
+    nd4j::ops::avgpool2d pooling;
+    Nd4jStatus status = pooling.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
+    ASSERT_TRUE(exp.isSameShape(result));
+
+
+    delete variableSpace;
+    delete block;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, avgpool2d_14) {
+    const int bS = 2;
+    const int iD = 1;
+    const int iH = 28;
+    const int iW = 28;
+    const int kH = 5;
+    const int kW = 5;
+    const int sH = 1;
+    const int sW = 1;
+    const int pH = 0;
+    const int pW = 0;
+    const int dH = 1;
+    const int dW = 1;
+    const int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     // output height
+    const int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;     // output width
+
+
+    auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
+    auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
+    // auto z('c',{bS,iD,oH,oW});
+
+    auto variableSpace = new VariableSpace();
+    variableSpace->putVariable(-1, x);
+    // variableSpace->putVariable(1, &z);
+
+    auto block = new Context(1, variableSpace, false);
+    block->fillInputs({-1});
+    std::vector<int>* argI = block->getIArguments();
+    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+
+    nd4j::ops::avgpool2d pooling;
+    Nd4jStatus status = pooling.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
+    // result->printShapeInfo();
+    ASSERT_TRUE(exp.isSameShape(result));
+
+    delete variableSpace;
+    delete block;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, Avgpool2d_test15) {
+    const int bS = 2;
+    const int iD = 1;
+    const int iH = 28;
+    const int iW = 28;
+    const int kH = 5;
+    const int kW = 5;
+    const int sH = 1;
+    const int sW = 1;
+    const int pH = 0;
+    const int pW = 0;
+    const int dH = 1;
+    const int dW = 1;
+    const int oH = (int) nd4j::math::nd4j_ceil<float, int>(iH * 1.f / sH);
+    const int oW = (int) nd4j::math::nd4j_ceil<float, int>(iW * 1.f / sW);
+
+
+    auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
+    auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
+    // auto z('c',{bS,iD,oH,oW});
+
+    auto variableSpace = new VariableSpace();
+    variableSpace->putVariable(-1, x);
+    // variableSpace->putVariable(1, &z);
+
+    auto block = new Context(1, variableSpace, false);
+    block->fillInputs({-1});
+    std::vector<int>* argI = block->getIArguments();
+    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 1, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
+
+    nd4j::ops::avgpool2d pooling;
+    Nd4jStatus status = pooling.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
+    // result->printShapeInfo();
+    ASSERT_TRUE(exp.isSameShape(result));
+
+    delete variableSpace;
+    delete block;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, avgpool2d_16) {
+
+    int bS=2, iH=4,iW=4,  iC=2,  kH=2,kW=2,  sH=2,sW=2,  pH=0,pW=0,  dH=1,dW=1;
+    int       oH=2,oW=2;
+    int paddingMode = 1;             // 1-SAME,  0-VALID
+    int dataFormat  = 1;             // 1-NHWC, 0-NDHW
+
+    NDArray input('c', {bS, iH, iW, iC}, nd4j::DataType::FLOAT32);
+    NDArray output('f', {bS, oH, oW, iC}, nd4j::DataType::FLOAT32);
+    NDArray expected('c', {bS, oH, oW, iC}, {6.f, 7.f, 10.f, 11.f, 22.f, 23.f, 26.f, 27.f, 38.f, 39.f, 42.f, 43.f, 54.f, 55.f, 58.f, 59.f}, nd4j::DataType::FLOAT32);
+
+    input.linspace(1.);
+
+    nd4j::ops::avgpool2d op;
+    auto status = op.execute({&input}, {&output}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 0, dataFormat}, {});
+
+    ASSERT_EQ(Status::OK(), status);
+
+    // output.printBuffer();
+    //expected.printIndexedBuffer("expected");
+
+    ASSERT_TRUE(expected.equalsTo(output));
 }
 
 //////////////////////////////////////////////////////////////////////

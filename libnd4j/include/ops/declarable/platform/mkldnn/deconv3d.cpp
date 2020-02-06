@@ -34,17 +34,14 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////////
 static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output,
                             const int kD, const int kH, const int kW, const int sD, const int sH, const int sW,
-                            const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+                            const int pD, const int pH, const int pW, const int dD, const int dH, const int dW,
+                            const bool isNCDHW) {
 
-    // input [bS, iD, iH, iW, iC] ncdhw, mkl doesn't support format ndhwc
-    // weights [oC, iC, kD, kH, kW] always, mkl doesn't support weights format [kD, kH, kW, oC, iC]
-    // bias [oC], may be nullptr
-
-    // output [bS, oD, oH, oW, oC] ncdhw, mkl doesn't support format ndhwc
+    // weights [oC, iC, kD, kH, kW] always, mkl doesn't support [kD, kH, kW, oC, iC], so we'll perform permutation
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(true, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWoC, indWiC, indWkD);
+    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
     dnnl::memory::dims strides   = { sD, sH, sW };
     dnnl::memory::dims padding   = { pD, pH, pW };
@@ -80,8 +77,7 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     else
         zType = dnnl::memory::data_type::s32;
 
-
-    dnnl::memory::format_tag xFormat = dnnl::memory::format_tag::ncdhw;
+    dnnl::memory::format_tag xFormat = isNCDHW ? dnnl::memory::format_tag::ncdhw : dnnl::memory::format_tag::ndhwc;
     dnnl::memory::format_tag wFormat = dnnl::memory::format_tag::oidhw;
 
     dnnl::memory::dims xDims = {bS, iC, iD, iH, iW};
@@ -93,22 +89,24 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xFormat);
-    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    x_user_md.data.format_desc.blocking.strides[0] = input->stridesOf()[0];
-    x_user_md.data.format_desc.blocking.strides[1] = input->stridesOf()[1];
-    x_user_md.data.format_desc.blocking.strides[2] = input->stridesOf()[2];
-    x_user_md.data.format_desc.blocking.strides[3] = input->stridesOf()[3];
-    x_user_md.data.format_desc.blocking.strides[4] = input->stridesOf()[4];
+    if(input->ews() != 1 || input->ordering() != 'c') {
+        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        x_user_md.data.format_desc.blocking.strides[0] = input->strideAt(0);
+        x_user_md.data.format_desc.blocking.strides[1] = input->strideAt(1);
+        x_user_md.data.format_desc.blocking.strides[2] = input->strideAt(2);
+        x_user_md.data.format_desc.blocking.strides[3] = input->strideAt(3);
+        x_user_md.data.format_desc.blocking.strides[4] = input->strideAt(4);
+    }
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
     dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormat);
     w_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    w_user_md.data.format_desc.blocking.strides[0] = weights->stridesOf()[0];
-    w_user_md.data.format_desc.blocking.strides[1] = weights->stridesOf()[1];
-    w_user_md.data.format_desc.blocking.strides[2] = weights->stridesOf()[2];
-    w_user_md.data.format_desc.blocking.strides[3] = weights->stridesOf()[3];
-    w_user_md.data.format_desc.blocking.strides[4] = weights->stridesOf()[4];
+    w_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(3);   // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
+    w_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(4);
+    w_user_md.data.format_desc.blocking.strides[2] = weights->strideAt(0);
+    w_user_md.data.format_desc.blocking.strides[3] = weights->strideAt(1);
+    w_user_md.data.format_desc.blocking.strides[4] = weights->strideAt(2);
 
     // bias
     dnnl::memory::desc b_mkl_md;
@@ -118,12 +116,14 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     // output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zDims, zType, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, zType, xFormat);
-    z_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    z_user_md.data.format_desc.blocking.strides[0] = output->stridesOf()[0];
-    z_user_md.data.format_desc.blocking.strides[1] = output->stridesOf()[1];
-    z_user_md.data.format_desc.blocking.strides[2] = output->stridesOf()[2];
-    z_user_md.data.format_desc.blocking.strides[3] = output->stridesOf()[3];
-    z_user_md.data.format_desc.blocking.strides[4] = output->stridesOf()[4];
+    if(output->ews() !=1 || output->ordering() != 'c') {
+        z_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        z_user_md.data.format_desc.blocking.strides[0] = output->strideAt(0);
+        z_user_md.data.format_desc.blocking.strides[1] = output->strideAt(1);
+        z_user_md.data.format_desc.blocking.strides[2] = output->strideAt(2);
+        z_user_md.data.format_desc.blocking.strides[3] = output->strideAt(3);
+        z_user_md.data.format_desc.blocking.strides[4] = output->strideAt(4);
+    }
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -184,16 +184,14 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
                                     const int kD, const int kH, const int kW,
                                     const int sD, const int sH, const int sW,
                                     const int pD, const int pH, const int pW,
-                                    const int dD, const int dH, const int dW) {
+                                    const int dD, const int dH, const int dW,
+                                    const bool isNCDHW) {
 
-    // input and gradI [bS, iD, iH, iW, iC], mkl doesn't support ndhwc format
-    // weights and gradW [oC, iC, kD, kH, kW] always, mkl doesn't support weights format [kD, kH, kW, oC, iC]
-    // gradB [oC], may be nullptr
-    // gradO [bS, oD, oH, oW, oC]
+    // weights and gradW [oC, iC, kD, kH, kW] always, mkl doesn't support [kD, kH, kW, oC, iC], so we'll perform permutation
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(true, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWoC, indWiC, indWkD);
+    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
     dnnl::memory::dims strides   = { sD, sH, sW };
     dnnl::memory::dims padding   = { pD, pH, pW };
@@ -213,7 +211,7 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     // gradB type
     dnnl::memory::data_type gradBType = gradB != nullptr ? (gradB->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16) : dnnl::memory::data_type::f32;
 
-    dnnl::memory::format_tag xFormat = dnnl::memory::format_tag::ncdhw; // isNCDHW ? dnnl::memory::format_tag::ncdhw : dnnl::memory::format_tag::ndhwc;
+    dnnl::memory::format_tag xFormat = isNCDHW ? dnnl::memory::format_tag::ncdhw : dnnl::memory::format_tag::ndhwc;
     dnnl::memory::format_tag wFormat = dnnl::memory::format_tag::oidhw;
 
     dnnl::memory::dims xDims = {bS, iC, iD, iH, iW};
@@ -225,52 +223,58 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xFormat);
-    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    x_user_md.data.format_desc.blocking.strides[0] = input->stridesOf()[0];
-    x_user_md.data.format_desc.blocking.strides[1] = input->stridesOf()[1];
-    x_user_md.data.format_desc.blocking.strides[2] = input->stridesOf()[2];
-    x_user_md.data.format_desc.blocking.strides[3] = input->stridesOf()[3];
-    x_user_md.data.format_desc.blocking.strides[4] = input->stridesOf()[4];
+    if(input->ews() != 1 || input->ordering() != 'c') {
+        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        x_user_md.data.format_desc.blocking.strides[0] = input->strideAt(0);
+        x_user_md.data.format_desc.blocking.strides[1] = input->strideAt(1);
+        x_user_md.data.format_desc.blocking.strides[2] = input->strideAt(2);
+        x_user_md.data.format_desc.blocking.strides[3] = input->strideAt(3);
+        x_user_md.data.format_desc.blocking.strides[4] = input->strideAt(4);
+    }
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
     dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormat);
     w_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    w_user_md.data.format_desc.blocking.strides[0] = weights->stridesOf()[0];
-    w_user_md.data.format_desc.blocking.strides[1] = weights->stridesOf()[1];
-    w_user_md.data.format_desc.blocking.strides[2] = weights->stridesOf()[2];
-    w_user_md.data.format_desc.blocking.strides[3] = weights->stridesOf()[3];
-    w_user_md.data.format_desc.blocking.strides[4] = weights->stridesOf()[4];
+    w_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(3);   // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
+    w_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(4);
+    w_user_md.data.format_desc.blocking.strides[2] = weights->strideAt(0);
+    w_user_md.data.format_desc.blocking.strides[3] = weights->strideAt(1);
+    w_user_md.data.format_desc.blocking.strides[4] = weights->strideAt(2);
 
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormat);
-    gradO_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    gradO_user_md.data.format_desc.blocking.strides[0] = gradO->stridesOf()[0];
-    gradO_user_md.data.format_desc.blocking.strides[1] = gradO->stridesOf()[1];
-    gradO_user_md.data.format_desc.blocking.strides[2] = gradO->stridesOf()[2];
-    gradO_user_md.data.format_desc.blocking.strides[3] = gradO->stridesOf()[3];
-    gradO_user_md.data.format_desc.blocking.strides[4] = gradO->stridesOf()[4];
+    if(gradO->ews() != 1 || gradO->ordering() != 'c') {
+        gradO_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        gradO_user_md.data.format_desc.blocking.strides[0] = gradO->strideAt(0);
+        gradO_user_md.data.format_desc.blocking.strides[1] = gradO->strideAt(1);
+        gradO_user_md.data.format_desc.blocking.strides[2] = gradO->strideAt(2);
+        gradO_user_md.data.format_desc.blocking.strides[3] = gradO->strideAt(3);
+        gradO_user_md.data.format_desc.blocking.strides[4] = gradO->strideAt(4);
+    }
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormat);
-    gradI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    gradI_user_md.data.format_desc.blocking.strides[0] = gradI->stridesOf()[0];
-    gradI_user_md.data.format_desc.blocking.strides[1] = gradI->stridesOf()[1];
-    gradI_user_md.data.format_desc.blocking.strides[2] = gradI->stridesOf()[2];
-    gradI_user_md.data.format_desc.blocking.strides[3] = gradI->stridesOf()[3];
-    gradI_user_md.data.format_desc.blocking.strides[4] = gradI->stridesOf()[4];
+    if(gradI->ews() != 1 || gradI->ordering() != 'c') {
+        gradI_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        gradI_user_md.data.format_desc.blocking.strides[0] = gradI->strideAt(0);
+        gradI_user_md.data.format_desc.blocking.strides[1] = gradI->strideAt(1);
+        gradI_user_md.data.format_desc.blocking.strides[2] = gradI->strideAt(2);
+        gradI_user_md.data.format_desc.blocking.strides[3] = gradI->strideAt(3);
+        gradI_user_md.data.format_desc.blocking.strides[4] = gradI->strideAt(4);
+    }
 
     // gradW
     dnnl::memory::desc gradW_mkl_md  = dnnl::memory::desc(wDims, gradWType, wFormat);
     dnnl::memory::desc gradW_user_md = dnnl::memory::desc(wDims, gradWType, wFormat);
     gradW_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    gradW_user_md.data.format_desc.blocking.strides[0] = gradW->stridesOf()[0];
-    gradW_user_md.data.format_desc.blocking.strides[1] = gradW->stridesOf()[1];
-    gradW_user_md.data.format_desc.blocking.strides[2] = gradW->stridesOf()[2];
-    gradW_user_md.data.format_desc.blocking.strides[3] = gradW->stridesOf()[3];
-    gradW_user_md.data.format_desc.blocking.strides[4] = gradW->stridesOf()[4];
+    gradW_user_md.data.format_desc.blocking.strides[0] = gradW->strideAt(3);   // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
+    gradW_user_md.data.format_desc.blocking.strides[1] = gradW->strideAt(4);
+    gradW_user_md.data.format_desc.blocking.strides[2] = gradW->strideAt(0);
+    gradW_user_md.data.format_desc.blocking.strides[3] = gradW->strideAt(1);
+    gradW_user_md.data.format_desc.blocking.strides[4] = gradW->strideAt(2);
 
     // gradB
     dnnl::memory::desc gradB_mkl_md;
@@ -317,11 +321,15 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
 
     // gradO
     auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, gradO->getBuffer());
-    const bool gradOReorder = op_data_bp_prim_desc.diff_dst_desc() != gradO_user_mem.get_desc();
-    auto gradO_mkl_mem = gradOReorder ? dnnl::memory(op_data_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
-    if (gradOReorder)
-        dnnl::reorder(gradO_user_mem, gradO_mkl_mem).execute(stream, gradO_user_mem, gradO_mkl_mem);
-    args[DNNL_ARG_DIFF_DST] = gradO_mkl_mem;
+    const bool gradOReorderW = op_weights_bp_prim_desc.diff_dst_desc() != gradO_user_mem.get_desc();
+    const bool gradOReorderD = op_data_bp_prim_desc.diff_dst_desc()    != gradO_user_mem.get_desc();
+    auto gradO_mkl_memW = gradOReorderW ? dnnl::memory(op_weights_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
+    auto gradO_mkl_memD = gradOReorderD ? dnnl::memory(op_data_bp_prim_desc.diff_dst_desc(), engine)    : gradO_user_mem;
+    if (gradOReorderW)
+        dnnl::reorder(gradO_user_mem, gradO_mkl_memW).execute(stream, gradO_user_mem, gradO_mkl_memW);
+    if (gradOReorderD)
+        dnnl::reorder(gradO_user_mem, gradO_mkl_memD).execute(stream, gradO_user_mem, gradO_mkl_memD);
+    args[DNNL_ARG_DIFF_DST] = gradO_mkl_memD;
 
     // gradI
     auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
@@ -343,6 +351,9 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
 
     // run backward data calculations
     dnnl::deconvolution_backward_data(op_data_bp_prim_desc).execute(stream, args);
+
+    if(gradOReorderW || gradOReorderD)
+        args[DNNL_ARG_DIFF_DST] = gradO_mkl_memW;
 
     // run backward weights calculations
     dnnl::deconvolution_backward_weights(op_weights_bp_prim_desc).execute(stream, args);
@@ -400,23 +411,7 @@ PLATFORM_IMPL(deconv3d, ENGINE_CPU) {
         ConvolutionUtils::calcPadding3D(pD, pH, pW, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
     }
 
-    // mkl supports only [oC, iC, kD, kH, kW] format for weights
-    weights = new NDArray(weights->permute({3,4,0,1,2}));        // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
-
-    // mkl supports only NCDHW
-    if(!isNCDHW) {
-        input = new NDArray(input->permute({0,4,1,2,3}));       // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-        output = new NDArray(output->permute({0,4,1,2,3}));     // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
-    }
-
-    deconv3dMKLDNN(input, weights, bias, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW);
-
-    delete weights;
-
-    if(!isNCDHW) {
-        delete input;
-        delete output;
-    }
+    deconv3dMKLDNN(input, weights, bias, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isNCDHW);
 
     return Status::OK();
 }
@@ -495,27 +490,7 @@ PLATFORM_IMPL(deconv3d_bp, ENGINE_CPU) {
     if(isSameMode)               // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward pass
         ConvolutionUtils::calcPadding3D(pD, pH, pW, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
-    // mkl supports only [oC, iC, kD, kH, kW] for weights
-    weights = new NDArray(weights->permute({3,4,0,1,2}));        // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
-    gradW   = new NDArray(gradW->permute({3,4,0,1,2}));          // [kD, kH, kW, oC, iC] -> [oC, iC, kD, kH, kW]
-
-    // mkl supports NCDHW format only
-    if(!isNCDHW) {
-        input = new NDArray(input->permute({0,4,1,2,3}));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-        gradI = new NDArray(gradI->permute({0,4,1,2,3}));    // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-        gradO = new NDArray(gradO->permute({0,4,1,2,3}));    // [bS, oD, oH, oW, oC] -> [bS, oC, oD, oH, oW]
-    }
-
-    deconv3dBackPropMKLDNN(input, weights, gradO, gradI, gradW, gradB, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW);
-
-    delete weights;
-    delete gradW;
-
-    if(!isNCDHW) {
-        delete input;
-        delete gradI;
-        delete gradO;
-    }
+    deconv3dBackPropMKLDNN(input, weights, gradO, gradI, gradW, gradB, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, isNCDHW);
 
     return Status::OK();
 }

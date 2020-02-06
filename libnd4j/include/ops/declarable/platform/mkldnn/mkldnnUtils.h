@@ -16,6 +16,7 @@
 
 //
 // @author saudet
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #ifndef DEV_TESTS_MKLDNNUTILS_H
@@ -81,17 +82,27 @@ namespace nd4j{
             DECLARE_PLATFORM(deconv3d_bp, ENGINE_CPU);
 
             DECLARE_PLATFORM(depthwise_conv2d, ENGINE_CPU);
-            
+
             DECLARE_PLATFORM(depthwise_conv2d_bp, ENGINE_CPU);
         }
     }
 
     namespace mkldnnUtils {
 
+        void poolingMKLDNN(const NDArray *input, NDArray *output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int isNCHW, const dnnl::algorithm mode);
+
+        void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int isNCHW, const dnnl::algorithm mode);
+
+        void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+                            dnnl::memory::desc* lrn_src_md, dnnl::memory::desc* lrn_diff_src_md, dnnl::memory::desc* lrn_dst_md,
+                            dnnl::memory::desc* user_src_md, dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis);
+
+        dnnl::engine& getEngine(void *ptr);
+
         /**
          * Utility methods for MKLDNN
          */
-        void getMKLDNNMemoryDescConv2d(
+/*        void getMKLDNNMemoryDescConv2d(
                 int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, const int paddingMode, bool isNCHW,
                 int bS, int iC, int iH, int iW, int oC, int oH, int oW, const NDArray* src, const NDArray* diff_src,
                 const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
@@ -130,12 +141,7 @@ namespace nd4j{
         void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
                                           dnnl::memory::desc* batchnorm_src_md, dnnl::memory::desc* batchnorm_diff_src_md, dnnl::memory::desc* batchnorm_dst_md,
                                           dnnl::memory::desc* user_src_md, dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis);
-
-        void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
-                                    dnnl::memory::desc* lrn_src_md, dnnl::memory::desc* lrn_diff_src_md, dnnl::memory::desc* lrn_dst_md,
-                                    dnnl::memory::desc* user_src_md, dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis);
-
-        dnnl::engine& getEngine(void *ptr);
+*/
     }
 }
 

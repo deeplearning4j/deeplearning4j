@@ -16,6 +16,7 @@
 
 //
 // @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <ops/declarable/PlatformHelper.h>
@@ -34,10 +35,9 @@ namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(maxpool3dnew, ENGINE_CPU) {
-    auto input = INPUT_VARIABLE(
-            0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-    auto output = OUTPUT_VARIABLE(
-            0);                                   // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
+
+    auto input   = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+    auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
 
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
     int kH = INT_ARG(1);                                                        // filter(kernel) height
@@ -51,95 +51,24 @@ PLATFORM_IMPL(maxpool3dnew, ENGINE_CPU) {
     int dD = INT_ARG(9);                                                        // dilations depth
     int dH = INT_ARG(10);                                                       // dilations height
     int dW = INT_ARG(11);                                                       // dilations width
-    int isSameMode = INT_ARG(12);                                               // 1-SAME,  0-VALID
+    int paddingMode = INT_ARG(12);                                               // 1-SAME,  0-VALID
     // int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
-    int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW
+    int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW
 
-    REQUIRE_TRUE(input->rankOf() == 5, 0,
-                 "MAXPOOL3DNEW OP: rank of input array must be equal to 5, but got %i instead !",
-                 input->rankOf());
-    REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0,
-                 "MAXPOOL3DNEW op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
+    REQUIRE_TRUE(input->rankOf() == 5, 0, "MAXPOOL3DNEW MKLDNN OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());
+    REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0, "MAXPOOL3DNEW MKLDNN op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW,
-                                               indIOioC, indIOioD, indWiC, indWoC, indWkD);
+    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
-    std::string expectedOutputShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx(
-            {bS, iC, oD, oH, oW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2}));
-    REQUIRE_TRUE(expectedOutputShape == ShapeUtils::shapeAsString(output), 0,
-                 "MAXPOOL3D op: wrong shape of output array, expected is %s, but got %s instead !",
-                 expectedOutputShape.c_str(), ShapeUtils::shapeAsString(output).c_str());
-    // REQUIRE_TRUE(iD   >= kD && iH   >= kH && iW   >= kW, 0, "MAXPOOL3D OP: the input depth/height/width must be greater or equal to kernel(filter) depth/height/width, but got [%i, %i, %i] and [%i, %i, %i] correspondingly !", iD,iH,iW, kD,kH,kW);
-    // REQUIRE_TRUE(kD/2 >= pD && kH/2 >= pH && kW/2 >= pW, 0, "MAXPOOL3D OP: pad depth/height/width must not be greater than half of kernel depth/height/width, but got [%i, %i, %i] and [%i, %i, %i] correspondingly !", pD,pH,pW, kD,kH,kW);
+    if(paddingMode)                       // SAME
+        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
-    if (!isNCDHW) {
-        input = new NDArray(
-                input->permute({0, 4, 1, 2, 3}));          // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-        output = new NDArray(
-                output->permute({0, 4, 1, 2, 3}));         // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
-    }
-
-    if (isSameMode)                       // SAME
-        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH,
-                                        dW);
-
-
-    auto poolingMode = PoolingType::MAX_POOL;
-    auto extraParam0 = 1;
-
-    dnnl_memory_desc_t empty;
-    dnnl::memory::desc pool_src_md(empty), pool_dst_md(empty);
-    dnnl::memory::desc user_src_md(empty), user_dst_md(empty);
-    dnnl::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-    dnnl::algorithm algorithm;
-
-    mkldnnUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode,
-                                               extraParam0, true,
-                                               bS, iC, iD, iH, iW, oC, oD, oH, oW, input, nullptr, output,
-                                               algorithm,
-                                               &pool_src_md, nullptr, &pool_dst_md, &user_src_md, nullptr,
-                                               &user_dst_md,
-                                               pool_strides, pool_kernel, pool_padding, pool_padding_r);
-
-    auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md,
-                                               pool_dst_md, pool_strides, pool_kernel, pool_padding,
-                                               pool_padding_r);
-
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
-    dnnl::stream stream(engine);
-    auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
-    auto user_src_memory = dnnl::memory(user_src_md, engine, input->buffer());
-    auto user_dst_memory = dnnl::memory(user_dst_md, engine, output->buffer());
-
-    auto pool_src_memory = user_src_memory;
-    if (pool_prim_desc.src_desc() != user_src_memory.get_desc()) {
-        pool_src_memory = dnnl::memory(pool_prim_desc.src_desc(), engine);
-        reorder(user_src_memory, pool_src_memory).execute(stream, user_src_memory, pool_src_memory);
-    }
-
-    auto pool_dst_memory = user_dst_memory;
-    if (pool_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
-        pool_dst_memory = dnnl::memory(pool_prim_desc.dst_desc(), engine);
-    }
-
-    pooling_forward(pool_prim_desc).execute(stream, {{DNNL_ARG_SRC, pool_src_memory},
-                                                         {DNNL_ARG_DST, pool_dst_memory}});
-
-    if (pool_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
-        reorder(pool_dst_memory, user_dst_memory).execute(stream, pool_dst_memory, user_dst_memory);
-    }
-
-    stream.wait();
-
-
-    if (!isNCDHW) {
-        delete input;
-        delete output;
-    }
+    mkldnnUtils::poolingMKLDNN(input, output, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, algorithm::pooling_max);
 
     return Status::OK();
+
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -152,6 +81,7 @@ PLATFORM_CHECK(maxpool3dnew, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(maxpool3dnew_bp, ENGINE_CPU) {
+
     auto input = INPUT_VARIABLE(0);                          // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto gradO = INPUT_VARIABLE(1);                          // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
     auto gradI = OUTPUT_VARIABLE(0);                         // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
@@ -162,127 +92,30 @@ PLATFORM_IMPL(maxpool3dnew_bp, ENGINE_CPU) {
     const int sD = INT_ARG(3);                                                  // strides depth
     const int sH = INT_ARG(4);                                                  // strides height
     const int sW = INT_ARG(5);                                                  // strides width
-    int pD = INT_ARG(6);                                                  // paddings depth
-    int pH = INT_ARG(7);                                                  // paddings height
-    int pW = INT_ARG(8);                                                  // paddings width
+          int pD = INT_ARG(6);                                                  // paddings depth
+          int pH = INT_ARG(7);                                                  // paddings height
+          int pW = INT_ARG(8);                                                  // paddings width
     const int dD = INT_ARG(9);                                                  // dilations depth
     const int dH = INT_ARG(10);                                                 // dilations height
     const int dW = INT_ARG(11);                                                 // dilations width
-    const int isSameMode = INT_ARG(12);                                         // 1-SAME,  0-VALID
+    const int paddngMode = INT_ARG(12);                                         // 1-SAME,  0-VALID
     // int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
-    int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW
+    int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW
 
-    REQUIRE_TRUE(input->rankOf() == 5, 0,
-                 "MAXPOOL3D_BP op: input should have rank of 5, but got %i instead", input->rankOf());
-    REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0,
-                 "MAXPOOL3DNEW op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
+    REQUIRE_TRUE(input->rankOf() == 5, 0, "MAXPOOL3DNEW_BP MKLDNN op: input should have rank of 5, but got %i instead", input->rankOf());
+    REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0, "MAXPOOL3DNEW_BP MKLDNN op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
-    int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
+    int bS, iC, iD, iH, iW, oC, oD, oH, oW;               // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
-                                               indIOioC, indIOioD, indWiC, indWoC, indWkD);
+    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
-    std::string expectedGradOShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx(
-            {bS, iC, oD, oH, oW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2}));
-    std::string expectedGradIShape = ShapeUtils::shapeAsString(ShapeUtils::composeShapeUsingDimsAndIdx(
-            {bS, iC, iD, iH, iW, 0, indIOioC, indIOioD, indIOioD + 1, indIOioD + 2}));
-    REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0,
-                 "MAXPOOL3D_BP op: wrong shape of output's gradients array (next epsilon), expected is %s, but got %s instead !",
-                 expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
-    REQUIRE_TRUE(expectedGradIShape == ShapeUtils::shapeAsString(gradI), 0,
-                 "MAXPOOL3D_BP op: wrong shape of input's gradients array (epsilon), expected is %s, but got %s instead !",
-                 expectedGradIShape.c_str(), ShapeUtils::shapeAsString(gradI).c_str());
+    std::vector<Nd4jLong> expectedGradOShape = ShapeUtils::composeShapeUsingDimsAndIdx({bS,iC,oD,oH,oW,  0,indIOioC,indIOioD,indIOioD+1,indIOioD+2});
+    REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0, "MAXPOOL3DNEW_BP MKLDNN op: wrong shape of output's gradients array (next epsilon), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradO).c_str());
 
-    if (!isNCDHW) {
-        input = new NDArray(input->permute(
-                {0, 4, 1, 2, 3}));                   // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-        gradI = new NDArray(gradI->permute(
-                {0, 4, 1, 2, 3}));                   // [bS, iD, iH, iW, iC] -> [bS, iC, iD, iH, iW]
-        gradO = new NDArray(gradO->permute(
-                {0, 4, 1, 2, 3}));                   // [bS, oD, oH, oW, iC] -> [bS, iC, oD, oH, oW]
-    }
+    if(paddngMode)                       // SAME
+        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
-    if (isSameMode)                       // SAME
-        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH,
-                                        dW);
-
-
-    auto poolingMode = PoolingType::MAX_POOL;
-    auto extraParam0 = 1;
-
-    dnnl_memory_desc_t empty;
-    dnnl::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
-    dnnl::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
-    dnnl::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-    dnnl::algorithm algorithm;
-
-    mkldnnUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode,
-                                               extraParam0, true,
-                                               bS, iC, iD, iH, iW, oC, oD, oH, oW, input, gradI, gradO,
-                                               algorithm,
-                                               &pool_src_md, &pool_diff_src_md, &pool_dst_md, &user_src_md,
-                                               &user_diff_src_md, &user_dst_md,
-                                               pool_strides, pool_kernel, pool_padding, pool_padding_r);
-
-    // input is sometimes null, so we can't rely on pool_src_md being valid
-    if (input->buffer() == nullptr) {
-        pool_src_md = pool_diff_src_md;
-        user_src_md = user_diff_src_md;
-    }
-    auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm, pool_src_md, pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r);
-
-    auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
-    dnnl::stream stream(engine);
-    auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
-
-    auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r);
-
-    auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
-    auto userB_src_memory = dnnl::memory(user_diff_src_md, engine, gradI->buffer());
-    auto userB_dst_memory = dnnl::memory(user_dst_md, engine, gradO->buffer());
-
-    auto poolB_src_memory = userB_src_memory;
-    if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
-        poolB_src_memory = dnnl::memory(poolB_prim_desc.diff_src_desc(), engine);
-    }
-
-    auto poolB_dst_memory = userB_dst_memory;
-    if (poolB_prim_desc.diff_dst_desc() != userB_dst_memory.get_desc()) {
-        poolB_dst_memory = dnnl::memory(poolB_prim_desc.diff_dst_desc(), engine);
-        reorder(userB_dst_memory, poolB_dst_memory).execute(stream, userB_dst_memory, poolB_dst_memory);
-    }
-
-
-    auto user_src_memory = dnnl::memory(user_src_md, engine, input->buffer());
-
-    auto pool_src_memory = user_src_memory;
-    if (pool_prim_desc.src_desc() != user_src_memory.get_desc()) {
-        pool_src_memory = dnnl::memory(pool_prim_desc.src_desc(), engine);
-        reorder(user_src_memory, pool_src_memory).execute(stream, user_src_memory, pool_src_memory);
-    }
-
-    auto pool_dst_memory = dnnl::memory(pool_prim_desc.dst_desc(), engine);
-    auto pool_workspace_memory = dnnl::memory(pool_prim_desc.workspace_desc(), engine);
-
-    pooling_forward(pool_prim_desc).execute(stream, {{DNNL_ARG_SRC,       pool_src_memory},
-                                                         {DNNL_ARG_DST,       pool_dst_memory},
-                                                         {DNNL_ARG_WORKSPACE, pool_workspace_memory}});
-    pooling_backward(poolB_prim_desc).execute(stream, {{DNNL_ARG_DIFF_DST,  poolB_dst_memory},
-                                                           {DNNL_ARG_WORKSPACE, pool_workspace_memory},
-                                                           {DNNL_ARG_DIFF_SRC,  poolB_src_memory}});
-
-
-    if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
-        reorder(poolB_src_memory, userB_src_memory).execute(stream, poolB_src_memory, userB_src_memory);
-    }
-
-    stream.wait();
-
-    if (!isNCDHW) {
-        delete input;
-        delete gradI;
-        delete gradO;
-    }
+    mkldnnUtils::poolingBpMKLDNN(input, gradO, gradI, kD,kH,kW, sD,sH,sW, pD,pH,pW, isNCDHW, algorithm::pooling_max);
 
     return Status::OK();
 }

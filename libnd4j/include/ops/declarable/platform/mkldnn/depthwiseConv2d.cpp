@@ -86,7 +86,7 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     else
         zType = dnnl::memory::data_type::s32;
 
-    dnnl::memory::format_tag xzFrmat = dnnl::memory::format_tag::nchw;
+    dnnl::memory::format_tag xzFrmat = isNCHW ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;
     dnnl::memory::format_tag wFormat = dnnl::memory::format_tag::goihw;
 
     dnnl::memory::dims xDims = {bS, iC, iH, iW};
@@ -98,11 +98,13 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFrmat);
-    x_user_md.data.format_kind = dnnl_blocked;    // overrides format NHWC -> NCHW
-    x_user_md.data.format_desc.blocking.strides[0] = input->strideAt(0);
-    x_user_md.data.format_desc.blocking.strides[1] = input->strideAt(isNCHW ? 1 : 3);
-    x_user_md.data.format_desc.blocking.strides[2] = input->strideAt(isNCHW ? 2 : 1);
-    x_user_md.data.format_desc.blocking.strides[3] = input->strideAt(isNCHW ? 3 : 2);
+    if(input->ews() != 1 || input->ordering() != 'c') {
+        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        x_user_md.data.format_desc.blocking.strides[0] = input->strideAt(0);
+        x_user_md.data.format_desc.blocking.strides[1] = input->strideAt(1);  // do permutation  NHWC -> NCHW
+        x_user_md.data.format_desc.blocking.strides[2] = input->strideAt(2);
+        x_user_md.data.format_desc.blocking.strides[3] = input->strideAt(3);
+    }
 
     // weights, make permute [kH, kW, iC, mC] ->  [iC, mC, 1, kH, kW];
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -122,11 +124,13 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     // output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zDims, zType, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, zType, xzFrmat);
-    z_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    z_user_md.data.format_desc.blocking.strides[0] = output->strideAt(0);
-    z_user_md.data.format_desc.blocking.strides[1] = output->strideAt(isNCHW ? 1 : 3);
-    z_user_md.data.format_desc.blocking.strides[2] = output->strideAt(isNCHW ? 2 : 1);
-    z_user_md.data.format_desc.blocking.strides[3] = output->strideAt(isNCHW ? 3 : 2);
+    if(output->ews() != 1 || output->ordering() != 'c') {
+        z_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        z_user_md.data.format_desc.blocking.strides[0] = output->strideAt(0);
+        z_user_md.data.format_desc.blocking.strides[1] = output->strideAt(1);  // do permutation  NHWC -> NCHW
+        z_user_md.data.format_desc.blocking.strides[2] = output->strideAt(2);
+        z_user_md.data.format_desc.blocking.strides[3] = output->strideAt(3);
+    }
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -219,7 +223,7 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
     // gradB type
     dnnl::memory::data_type gradBType = gradB != nullptr ? (gradB->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16) : dnnl::memory::data_type::f32;
 
-    dnnl::memory::format_tag xFormat = dnnl::memory::format_tag::nchw;      // isNCHW ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;
+    dnnl::memory::format_tag xzFrmat = isNCHW ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;
     dnnl::memory::format_tag wFormat = dnnl::memory::format_tag::goihw;
 
     dnnl::memory::dims xDims = {bS, iC, iH, iW};
@@ -230,12 +234,14 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
 
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xFormat);
-    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    x_user_md.data.format_desc.blocking.strides[0] = input->strideAt(0);
-    x_user_md.data.format_desc.blocking.strides[1] = input->strideAt(isNCHW ? 1 : 3);
-    x_user_md.data.format_desc.blocking.strides[2] = input->strideAt(isNCHW ? 2 : 1);
-    x_user_md.data.format_desc.blocking.strides[3] = input->strideAt(isNCHW ? 3 : 2);
+    dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFrmat);
+    if(input->ews() != 1 || input->ordering() != 'c') {
+        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        x_user_md.data.format_desc.blocking.strides[0] = input->strideAt(0);
+        x_user_md.data.format_desc.blocking.strides[1] = input->strideAt(1);
+        x_user_md.data.format_desc.blocking.strides[2] = input->strideAt(2);
+        x_user_md.data.format_desc.blocking.strides[3] = input->strideAt(3);
+    }
 
     // weights, make permute [kH, kW, iC, mC] ->  [iC, mC, 1, kH, kW];
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -249,21 +255,25 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
 
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormat);
-    gradO_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    gradO_user_md.data.format_desc.blocking.strides[0] = gradO->strideAt(0);
-    gradO_user_md.data.format_desc.blocking.strides[1] = gradO->strideAt(isNCHW ? 1 : 3);
-    gradO_user_md.data.format_desc.blocking.strides[2] = gradO->strideAt(isNCHW ? 2 : 1);
-    gradO_user_md.data.format_desc.blocking.strides[3] = gradO->strideAt(isNCHW ? 3 : 2);
+    dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xzFrmat);
+    if(gradO->ews() != 1 || gradO->ordering() != 'c') {
+        gradO_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        gradO_user_md.data.format_desc.blocking.strides[0] = gradO->strideAt(0);
+        gradO_user_md.data.format_desc.blocking.strides[1] = gradO->strideAt(1);
+        gradO_user_md.data.format_desc.blocking.strides[2] = gradO->strideAt(2);
+        gradO_user_md.data.format_desc.blocking.strides[3] = gradO->strideAt(3);
+    }
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormat);
-    gradI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    gradI_user_md.data.format_desc.blocking.strides[0] = gradI->strideAt(0);
-    gradI_user_md.data.format_desc.blocking.strides[1] = gradI->strideAt(isNCHW ? 1 : 3);
-    gradI_user_md.data.format_desc.blocking.strides[2] = gradI->strideAt(isNCHW ? 2 : 1);
-    gradI_user_md.data.format_desc.blocking.strides[3] = gradI->strideAt(isNCHW ? 3 : 2);
+    dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xzFrmat);
+    if(gradI->ews() != 1 || gradI->ordering() != 'c') {
+        gradI_user_md.data.format_kind = dnnl_blocked;    // overrides format
+        gradI_user_md.data.format_desc.blocking.strides[0] = gradI->strideAt(0);
+        gradI_user_md.data.format_desc.blocking.strides[1] = gradI->strideAt(1);
+        gradI_user_md.data.format_desc.blocking.strides[2] = gradI->strideAt(2);
+        gradI_user_md.data.format_desc.blocking.strides[3] = gradI->strideAt(3);
+    }
 
     // gradW, make permute [kH, kW, iC, mC] ->  [iC, mC, 1, kH, kW];
     dnnl::memory::desc gradW_mkl_md  = dnnl::memory::desc(wDims, gradWType, dnnl::memory::format_tag::any);
@@ -319,11 +329,15 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
 
     // gradO
     auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, gradO->getBuffer());
-    const bool gradOReorder = op_data_bp_prim_desc.diff_dst_desc() != gradO_user_mem.get_desc();
-    auto gradO_mkl_mem = gradOReorder ? dnnl::memory(op_data_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
-    if (gradOReorder)
-        dnnl::reorder(gradO_user_mem, gradO_mkl_mem).execute(stream, gradO_user_mem, gradO_mkl_mem);
-    args[DNNL_ARG_DIFF_DST] = gradO_mkl_mem;
+    const bool gradOReorderW = op_weights_bp_prim_desc.diff_dst_desc() != gradO_user_mem.get_desc();
+    const bool gradOReorderD = op_data_bp_prim_desc.diff_dst_desc()    != gradO_user_mem.get_desc();
+    auto gradO_mkl_memW = gradOReorderW ? dnnl::memory(op_weights_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
+    auto gradO_mkl_memD = gradOReorderD ? dnnl::memory(op_data_bp_prim_desc.diff_dst_desc(), engine)    : gradO_user_mem;
+    if (gradOReorderW)
+        dnnl::reorder(gradO_user_mem, gradO_mkl_memW).execute(stream, gradO_user_mem, gradO_mkl_memW);
+    if (gradOReorderD)
+        dnnl::reorder(gradO_user_mem, gradO_mkl_memD).execute(stream, gradO_user_mem, gradO_mkl_memD);
+    args[DNNL_ARG_DIFF_DST] = gradO_mkl_memD;
 
     // gradI
     auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
@@ -345,6 +359,9 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
 
     // run backward data calculations
     dnnl::convolution_backward_data(op_data_bp_prim_desc).execute(stream, args);
+
+    if(gradOReorderW || gradOReorderD)
+        args[DNNL_ARG_DIFF_DST] = gradO_mkl_memW;
 
     // run backward weights calculations
     dnnl::convolution_backward_weights(op_weights_bp_prim_desc).execute(stream, args);
@@ -401,6 +418,7 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(depthwise_conv2d, ENGINE_CPU) {
+
     auto input   = INPUT_VARIABLE(0);
     auto weights = INPUT_VARIABLE(1);
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;
@@ -473,6 +491,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
 
 //////////////////////////////////////////////////////////////////////
 PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CPU) {
+
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC] = [iC*mC]
