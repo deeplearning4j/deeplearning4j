@@ -17,6 +17,7 @@
 package org.deeplearning4j.models.word2vec.iterator;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.models.paragraphvectors.ParagraphVectorsTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
 import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
@@ -59,7 +60,8 @@ public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
     public void testIterator1() throws Exception {
 
         File inputFile = Resources.asFile("big/raw_sentences.txt");
-        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+        SentenceIterator iter = ParagraphVectorsTest.getIterator(isIntegrationTests(), inputFile);
+//        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
         TokenizerFactory t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());

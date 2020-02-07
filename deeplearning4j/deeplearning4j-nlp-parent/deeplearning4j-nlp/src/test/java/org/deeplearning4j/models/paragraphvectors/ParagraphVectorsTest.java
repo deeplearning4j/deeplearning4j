@@ -32,6 +32,7 @@ import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.Par
 import org.deeplearning4j.text.sentenceiterator.*;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
@@ -80,12 +81,21 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 240000;
+        return isIntegrationTests() ? 600_000 : 240_000;
     }
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+    @Override
+    public DataType getDataType() {
+        return DataType.FLOAT;
+    }
+
+    @Override
+    public DataType getDefaultFPDataType() {
+        return DataType.FLOAT;
+    }
 
     /*
     @Test
@@ -359,8 +369,13 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     }
 
 
-    @Test(timeout = 300000)
+    @Test
     public void testParagraphVectorsDM() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //Skip CUDA except for integration tests due to very slow test speed
+        }
+
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
@@ -372,10 +387,10 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         LabelsSource source = new LabelsSource("DOC_");
 
         ParagraphVectors vec = new ParagraphVectors.Builder().minWordFrequency(1).iterations(2).seed(119).epochs(1)
-                        .layerSize(100).learningRate(0.025).labelsSource(source).windowSize(5).iterate(iter)
-                        .trainWordVectors(true).vocabCache(cache).tokenizerFactory(t).negativeSample(0)
-                        .useHierarchicSoftmax(true).sampling(0).workers(1).usePreciseWeightInit(true)
-                        .sequenceLearningAlgorithm(new DM<VocabWord>()).build();
+                .layerSize(100).learningRate(0.025).labelsSource(source).windowSize(5).iterate(iter)
+                .trainWordVectors(true).vocabCache(cache).tokenizerFactory(t).negativeSample(0)
+                .useHierarchicSoftmax(true).sampling(0).workers(1).usePreciseWeightInit(true)
+                .sequenceLearningAlgorithm(new DM<VocabWord>()).build();
 
         vec.fit();
 
@@ -404,7 +419,9 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         double similarityX = vec.similarity("DOC_3720", "DOC_9852");
         log.info("3720/9852 similarity: " + similarityX);
-        assertTrue(similarityX < 0.5d);
+        if(isIntegrationTests()) {
+            assertTrue(similarityX < 0.5d);
+        }
 
 
         // testing DM inference now
@@ -418,7 +435,6 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
         log.info("Cos O/A: {}", cosAO1);
         log.info("Cos A/B: {}", cosAB1);
-
     }
 
 
@@ -501,6 +517,11 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
     @Test(timeout = 300000)
     public void testParagraphVectorsWithWordVectorsModelling1() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //Skip CUDA except for integration tests due to very slow test speed
+        }
+
         File file = Resources.asFile("/big/raw_sentences.txt");
         SentenceIterator iter = new BasicLineIterator(file);
 
@@ -705,8 +726,12 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         In this test we'll build w2v model, and will use it's vocab and weights for ParagraphVectors.
         there's no need in this test within travis, use it manually only for problems detection
     */
-    @Test(timeout = 300000)
+    @Test
     public void testParagraphVectorsOverExistingWordVectorsModel() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //Skip CUDA except for integration tests due to very slow test speed
+        }
 
         // we build w2v from multiple sources, to cover everything
         File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
@@ -997,14 +1022,18 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         log.info("SimilarityB: {}", simB);
     }
 
-    @Test(timeout = 300000)
+    @Test
+    @Ignore //AB 2020/02/06 - https://github.com/eclipse/deeplearning4j/issues/8677
     public void testDirectInference() throws Exception {
-        File resource_sentences = Resources.asFile("/big/raw_sentences.txt");
+        boolean isIntegration = isIntegrationTests();
+        File resource = Resources.asFile("/big/raw_sentences.txt");
+        SentenceIterator sentencesIter = getIterator(isIntegration, resource);
+
         ClassPathResource resource_mixed = new ClassPathResource("paravec/");
         File local_resource_mixed = testDir.newFolder();
         resource_mixed.copyDirectory(local_resource_mixed);
         SentenceIterator iter = new AggregatingSentenceIterator.Builder()
-                        .addSentenceIterator(new BasicLineIterator(resource_sentences))
+                        .addSentenceIterator(sentencesIter)
                         .addSentenceIterator(new FileSentenceIterator(local_resource_mixed)).build();
 
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -1154,24 +1183,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
     public void testDoubleFit() throws Exception {
         boolean isIntegration = isIntegrationTests();
         File resource = Resources.asFile("/big/raw_sentences.txt");
-        SentenceIterator iter;
-        if(isIntegration){
-            iter = new BasicLineIterator(resource);
-        } else {
-            List<String> lines = new ArrayList<>();
-            try(InputStream is = new BufferedInputStream(new FileInputStream(resource))){
-                LineIterator lineIter = IOUtils.lineIterator(is, StandardCharsets.UTF_8);
-                try{
-                    for( int i=0; i<500 && lineIter.hasNext(); i++ ){
-                        lines.add(lineIter.next());
-                    }
-                } finally {
-                    lineIter.close();
-                }
-            }
-
-            iter = new CollectionSentenceIterator(lines);
-        }
+        SentenceIterator iter = getIterator(isIntegration, resource);
 
 
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -1196,6 +1208,30 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
         long num2 = vec.vocab().totalNumberOfDocs();
 
         assertEquals(num1, num2);
+    }
+
+    public static SentenceIterator getIterator(boolean isIntegration, File file) throws IOException {
+        return getIterator(isIntegration, file, 500);
+    }
+
+    public static SentenceIterator getIterator(boolean isIntegration, File file, int linesForUnitTest) throws IOException {
+        if(isIntegration){
+            return new BasicLineIterator(file);
+        } else {
+            List<String> lines = new ArrayList<>();
+            try(InputStream is = new BufferedInputStream(new FileInputStream(file))){
+                LineIterator lineIter = IOUtils.lineIterator(is, StandardCharsets.UTF_8);
+                try{
+                    for( int i=0; i<linesForUnitTest && lineIter.hasNext(); i++ ){
+                        lines.add(lineIter.next());
+                    }
+                } finally {
+                    lineIter.close();
+                }
+            }
+
+            return new CollectionSentenceIterator(lines);
+        }
     }
 }
 
