@@ -118,7 +118,9 @@ public class SameDiff extends SDBaseOps {
     @Getter
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
+    @Getter //TODO shouldn't be in public API
     private ArrayHolder constantArrays = new ThreadSafeArrayHolder(true);
+    @Getter //TODO shouldn't be in public API
     private ArrayHolder variablesArrays = new ThreadSafeArrayHolder(true);
     private final Map<Long, Map<String, INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
