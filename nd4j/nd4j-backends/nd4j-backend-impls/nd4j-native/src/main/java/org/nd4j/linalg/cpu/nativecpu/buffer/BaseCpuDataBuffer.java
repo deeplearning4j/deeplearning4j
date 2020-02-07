@@ -209,6 +209,26 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
     @Override
+    protected double getDoubleUnsynced(long index) {
+        return super.getDouble(index);
+    }
+
+    @Override
+    protected float getFloatUnsynced(long index) {
+        return super.getFloat(index);
+    }
+
+    @Override
+    protected long getLongUnsynced(long index) {
+        return super.getLong(index);
+    }
+
+    @Override
+    protected int getIntUnsynced(long index) {
+        return super.getInt(index);
+    }
+
+    @Override
     public void pointerIndexerByCurrentType(DataType currentType) {
 
         type = currentType;

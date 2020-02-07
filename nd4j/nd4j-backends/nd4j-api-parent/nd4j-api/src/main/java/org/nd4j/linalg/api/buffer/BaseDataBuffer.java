@@ -780,7 +780,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Unable to create array of length " + length);
         float[] ret = new float[(int) length];
         for (int i = 0; i < length; i++)
-            ret[i] = getFloat(i);
+            ret[i] = getFloatUnsynced(i);
         return ret;
     }
 
@@ -790,7 +790,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Unable to create array of length " + length);
         double[] ret = new double[(int) length];
         for (int i = 0; i < length; i++)
-            ret[i] = getDouble(i);
+            ret[i] = getDoubleUnsynced(i);
         return ret;
     }
 
@@ -800,7 +800,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Unable to create array of length " + length);
         int[] ret = new int[(int) length];
         for (int i = 0; i < length; i++)
-            ret[i] = getInt(i);
+            ret[i] = getIntUnsynced(i);
         return ret;
     }
 
@@ -810,7 +810,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             throw new IllegalArgumentException("Unable to create array of length " + length);
         long[] ret = new long[(int) length];
         for (int i = 0; i < length; i++)
-            ret[i] = getLong(i);
+            ret[i] = getLongUnsynced(i);
         return ret;
     }
 
@@ -1662,6 +1662,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
+    protected abstract double getDoubleUnsynced(long index);
+    protected abstract float getFloatUnsynced(long index);
+    protected abstract long getLongUnsynced(long index);
+    protected abstract int getIntUnsynced(long index);
+
     @Override
     public void write(DataOutputStream out) throws IOException {
         out.writeUTF(allocationMode.name());
@@ -1670,43 +1675,43 @@ public abstract class BaseDataBuffer implements DataBuffer {
         switch (dataType()) {
             case DOUBLE:
                 for (long i = 0; i < length(); i++)
-                    out.writeDouble(getDouble(i));
+                    out.writeDouble(getDoubleUnsynced(i));
                 break;
             case UINT64:
             case LONG:
                 for (long i = 0; i < length(); i++)
-                    out.writeLong(getLong(i));
+                    out.writeLong(getLongUnsynced(i));
                 break;
             case UINT32:
             case INT:
                 for (long i = 0; i < length(); i++)
-                    out.writeInt(getInt(i));
+                    out.writeInt(getIntUnsynced(i));
                 break;
             case UINT16:
             case SHORT:
                 for (long i = 0; i < length(); i++)
-                    out.writeShort((short) getInt(i));
+                    out.writeShort((short) getIntUnsynced(i));
                 break;
             case UBYTE:
             case BYTE:
                 for (long i = 0; i < length(); i++)
-                    out.writeByte((byte) getInt(i));
+                    out.writeByte((byte) getIntUnsynced(i));
                 break;
             case BOOL:
                 for (long i = 0; i < length(); i++)
-                    out.writeByte(getInt(i) == 0 ? (byte) 0 : (byte) 1);
+                    out.writeByte(getIntUnsynced(i) == 0 ? (byte) 0 : (byte) 1);
                 break;
             case BFLOAT16:
                 for (long i = 0; i < length(); i++)
-                    out.writeShort((short) Bfloat16Indexer.fromFloat(getFloat(i)));
+                    out.writeShort((short) Bfloat16Indexer.fromFloat(getFloatUnsynced(i)));
                 break;
             case HALF:
                 for (long i = 0; i < length(); i++)
-                    out.writeShort((short) HalfIndexer.fromFloat(getFloat(i)));
+                    out.writeShort((short) HalfIndexer.fromFloat(getFloatUnsynced(i)));
                 break;
             case FLOAT:
                 for (long i = 0; i < length(); i++)
-                    out.writeFloat(getFloat(i));
+                    out.writeFloat(getFloatUnsynced(i));
                 break;
         }
     }

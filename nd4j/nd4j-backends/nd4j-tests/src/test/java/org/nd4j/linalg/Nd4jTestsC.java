@@ -8262,31 +8262,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{10, 0}, out2.shape());
     }
 
-    @Test
-    public void testDealloc_1() throws Exception {
-
-        for (int e = 0; e < 5000; e++){
-            try(val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("someid")) {
-                val x = Nd4j.createUninitialized(DataType.FLOAT, 1, 1000);
-                //val y = x.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 100)).reshape('c', 10, 10);
-                //val z = x.get(NDArrayIndex.point(0), NDArrayIndex.interval(100, 200)).reshape('c', 10, 10);
-                //val a = x.get(NDArrayIndex.point(0), NDArrayIndex.interval(200, 300)).reshape('f', 10, 10);
-            } finally {
-                //System.gc();
-            }
-        }
-
-        Thread.sleep(1000);
-        System.gc();
-
-        Thread.sleep(1000);
-        System.gc();
-        System.gc();
-        System.gc();
-
-        //Nd4j.getMemoryManager().printRemainingStacks();
-    }
-
     @Override
     public char ordering() {
         return 'c';
