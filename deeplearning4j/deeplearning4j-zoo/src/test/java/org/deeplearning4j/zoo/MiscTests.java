@@ -34,7 +34,7 @@ public class MiscTests extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 120000L;
+        return 240000L;
     }
 
     @Test

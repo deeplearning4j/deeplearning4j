@@ -18,6 +18,8 @@ package org.deeplearning4j.nn.dataimport.solr.client.solrj.io.stream;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.ThreadFilter;
+
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +45,18 @@ import org.nd4j.rng.deallocator.NativeRandomDeallocator;
   TupleStreamDataSetIteratorTest.PrivateDeallocatorThreadsFilter.class
 })
 public class TupleStreamDataSetIteratorTest extends SolrCloudTestCase {
+
+  static {
+    /*
+    This is a hack around the backend-dependent nature of secure random implementations
+    though we can set the secure random algorithm in our pom.xml files (via maven surefire and test.solr.allowed.securerandom)
+    there isn't a mechanism that is completely platform independent.
+    By setting it there (for example, to NativePRNG) that makes it pass on some platforms like Linux but fails on some JVMs on Windows
+    For testing purposes, we don't need strict guarantees around RNG, hence we don't want to enforce the RNG algorithm
+     */
+    String algorithm = new SecureRandom().getAlgorithm();
+    System.setProperty("test.solr.allowed.securerandom", algorithm);
+  }
 
   public static class PrivateDeallocatorThreadsFilter implements ThreadFilter {
     /**
