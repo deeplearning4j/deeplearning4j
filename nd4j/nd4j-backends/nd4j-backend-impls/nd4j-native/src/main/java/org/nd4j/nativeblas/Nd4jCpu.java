@@ -19178,6 +19178,38 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * solve op. - solve systems of linear equations - general method.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M) - left parts of equations
+         *    1 - the tensor with dimension (x * y * z * ::: * M * K) - right parts of equations
+         *
+         * boolean args:
+         *    0 - adjoint - default is false (optional) - indicate input matrix or its adjoint (hermitian addition) should be used
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: * M * K) with solutions
+         *
+         */
+//         #if NOT_EXCLUDED(OP_solve)
+        @Namespace("nd4j::ops") public static class solve extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public solve(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public solve(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public solve position(long position) {
+                return (solve)super.position(position);
+            }
+        
+                                                                                    public solve() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
          * lu op. - make LUP decomposition of given batch of 2D square matricies
          *
          * input params:

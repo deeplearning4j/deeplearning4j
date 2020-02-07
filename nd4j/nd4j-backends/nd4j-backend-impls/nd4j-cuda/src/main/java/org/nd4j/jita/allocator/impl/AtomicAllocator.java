@@ -469,8 +469,8 @@ public class AtomicAllocator implements Allocator {
 
         memoryHandler.purgeZeroObject(bucketId, objectId, point, copyback);
 
-        getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
-        getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
+        //getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
+        //getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
     }
 
     /**

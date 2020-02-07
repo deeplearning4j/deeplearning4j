@@ -72,12 +72,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public void waitTillFinished(AllocationPoint point) {
-        /*CudaContext context = point.getCurrentContext(); //(CudaContext) allocator.getDeviceContext().getContext();
-        if (context == null)
-            context = (CudaContext) allocator.getDeviceContext().getContext();
-        context.syncOldStream();
-        */
-
+        // this should be always null, since synchronization happens in C++ now
         if (point.getLastWriteEvent() != null) {
             point.getLastWriteEvent().synchronize();
         }
@@ -181,8 +176,8 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public void registerAction(CudaContext context, AllocationPoint result, AllocationPoint... operands) {
-
-
+        // this method is irrelevant now, everything happens in C++ now
+        /*
         eventsProvider.storeEvent(result.getLastWriteEvent());
         result.setLastWriteEvent(eventsProvider.getEvent());
         result.getLastWriteEvent().register(context.getOldStream());
@@ -194,6 +189,7 @@ public class SynchronousFlowController implements FlowController {
             operand.getLastReadEvent().register(context.getOldStream());
         }
         //   context.syncOldStream();
+        */
     }
 
     @Override
@@ -204,9 +200,6 @@ public class SynchronousFlowController implements FlowController {
 
             val pointOperand = allocator.getAllocationPoint(operand);
             pointOperand.tickDeviceWrite();
-            eventsProvider.storeEvent(pointOperand.getLastWriteEvent());
-            pointOperand.setLastWriteEvent(eventsProvider.getEvent());
-            pointOperand.getLastWriteEvent().register(context.getOldStream());
         }
     }
 
@@ -216,18 +209,13 @@ public class SynchronousFlowController implements FlowController {
 
         val point = allocator.getAllocationPoint(result);
         point.tickDeviceWrite();
-        eventsProvider.storeEvent(point.getLastWriteEvent());
-        point.setLastWriteEvent(eventsProvider.getEvent());
-        point.getLastWriteEvent().register(context.getOldStream());
 
         for (INDArray operand : operands) {
             if (operand == null || operand.isEmpty())
                 continue;
 
             val pointOperand = allocator.getAllocationPoint(operand);
-            eventsProvider.storeEvent(pointOperand.getLastReadEvent());
-            pointOperand.setLastReadEvent(eventsProvider.getEvent());
-            pointOperand.getLastReadEvent().register(context.getOldStream());
+            pointOperand.tickDeviceRead();
         }
     }
 

@@ -307,7 +307,6 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         if (allocationPoint.getHostPointer() == null) {
             val location = allocationPoint.getAllocationStatus();
             if (parentWorkspace == null) {
-                //log.info("dbAllocate step");
                 // let cpp allocate primary buffer
                 NativeOpsHolder.getInstance().getDeviceNativeOps().dbAllocatePrimaryBuffer(ptrDataBuffer);
             } else {
