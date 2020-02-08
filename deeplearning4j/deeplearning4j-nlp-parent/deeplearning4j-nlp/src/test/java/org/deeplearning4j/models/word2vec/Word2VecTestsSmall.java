@@ -19,6 +19,7 @@ package org.deeplearning4j.models.word2vec;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.models.paragraphvectors.ParagraphVectorsTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -56,6 +57,11 @@ import static org.junit.Assert.assertEquals;
 public class Word2VecTestsSmall extends BaseDL4JTest {
     WordVectors word2vec;
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return isIntegrationTests() ? 240000 : 60000;
+    }
+
     @Before
     public void setUp() throws Exception {
         word2vec = WordVectorSerializer.readWord2VecModel(new ClassPathResource("vec.bin").getFile());
@@ -85,8 +91,8 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
     @Test(timeout = 300000)
     public void testUnkSerialization_1() throws Exception {
         val inputFile = Resources.asFile("big/raw_sentences.txt");
-
-        val iter = new BasicLineIterator(inputFile);
+//        val iter = new BasicLineIterator(inputFile);
+        val iter = ParagraphVectorsTest.getIterator(isIntegrationTests(), inputFile);
         val t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 
@@ -147,8 +153,8 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
 
         val inputFile = Resources.asFile("big/raw_sentences.txt");
-
-        val iter = new BasicLineIterator(inputFile);
+        val iter = ParagraphVectorsTest.getIterator(isIntegrationTests(), inputFile);
+//        val iter = new BasicLineIterator(inputFile);
         val t = new DefaultTokenizerFactory();
         t.setTokenPreProcessor(new CommonPreprocessor());
 

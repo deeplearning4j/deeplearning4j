@@ -26,11 +26,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class EventsProvider {
-    //private static final EventsProvider INSTANCE = new EventsProvider();
-
     private List<ConcurrentLinkedQueue<cudaEvent_t>> queue = new ArrayList<>();
     private AtomicLong newCounter = new AtomicLong(0);
     private AtomicLong cacheCounter = new AtomicLong(0);

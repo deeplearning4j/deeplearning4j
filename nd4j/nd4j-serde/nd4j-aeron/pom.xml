@@ -91,7 +91,7 @@
 
                   For testing large zoo models, this may not be enough (so comment it out).
               -->
-              <argLine>-Ddtype=float -Xmx8g</argLine>
+              <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g</argLine>
             </configuration>
           </plugin>
         </plugins>

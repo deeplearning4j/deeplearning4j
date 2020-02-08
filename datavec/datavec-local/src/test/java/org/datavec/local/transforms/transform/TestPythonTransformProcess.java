@@ -315,7 +315,7 @@ public class TestPythonTransformProcess {
     }
 
     @Test
-    public void testNumpyTransform() throws Exception {
+    public void testNumpyTransform() {
         PythonTransform pythonTransform = PythonTransform.builder()
                 .code("a += 2; b = 'hello world'")
                 .returnAllInputs(true)
@@ -334,7 +334,42 @@ public class TestPythonTransformProcess {
         assertFalse(execute.isEmpty());
         assertNotNull(execute.get(0));
         assertNotNull(execute.get(0).get(0));
-        assertEquals("hello world",execute.get(0).get(0).toString());
+        assertNotNull(execute.get(0).get(1));
+        assertEquals(Nd4j.scalar(3).reshape(1, 1),((NDArrayWritable)execute.get(0).get(0)).get());
+        assertEquals("hello world",execute.get(0).get(1).toString());
+    }
+
+    @Test
+    public void testWithSetupRun() throws Exception {
+
+        PythonTransform pythonTransform = PythonTransform.builder()
+                .code("five=None\n" +
+                        "def setup():\n" +
+                        "    global five\n"+
+                        "    five = 5\n\n" +
+                        "def run(a, b):\n" +
+                        "    c = a + b + five\n"+
+                        "    return {'c':c}\n\n")
+                .returnAllInputs(true)
+                .setupAndRun(true)
+                .build();
+
+        List<List<Writable>> inputs = new ArrayList<>();
+        inputs.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.scalar(1).reshape(1,1)),
+                new NDArrayWritable(Nd4j.scalar(2).reshape(1,1))));
+        Schema inputSchema = new Builder()
+                .addColumnNDArray("a",new long[]{1,1})
+                .addColumnNDArray("b", new long[]{1, 1})
+                .build();
+
+        TransformProcess tp = new TransformProcess.Builder(inputSchema)
+                .transform(pythonTransform)
+                .build();
+        List<List<Writable>> execute = LocalTransformExecutor.execute(inputs, tp);
+        assertFalse(execute.isEmpty());
+        assertNotNull(execute.get(0));
+        assertNotNull(execute.get(0).get(0));
+        assertEquals(Nd4j.scalar(8).reshape(1, 1),((NDArrayWritable)execute.get(0).get(3)).get());
     }
 
 }

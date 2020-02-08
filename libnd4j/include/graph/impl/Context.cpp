@@ -563,6 +563,16 @@ namespace nd4j {
             for (auto d:dArgs)
                 _dArgs.emplace_back(d);
         }
+
+        void Context::clearFastPath() {
+            _fastpath_in.clear();
+            _fastpath_out.clear();
+
+            for (auto v:_handles)
+                delete v;
+
+            _handles.clear();
+        }
     }
 }
 

@@ -132,13 +132,12 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
                 return null;
         }
 
-        context.getInputArrays().clear();
-        context.getOutputArrays().clear();
-
+        context.purge();
         context.setInputArray(0, input);
         context.setOutputArray(0, output);
 
         Nd4j.exec(op, context);
+
         return output;
     }
 

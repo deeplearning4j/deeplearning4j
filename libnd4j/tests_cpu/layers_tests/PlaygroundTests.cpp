@@ -422,50 +422,38 @@ TEST_F(PlaygroundTests, my) {
     delete variableSpace;
 }
 
-
-#include<ops/declarable/helpers/batchnorm.h>
-
 TEST_F(PlaygroundTests, my) {
 
-    const int N = 10000;
-    const Nd4jLong dim0(128), dim1(128), dim2(128);
+    int N = 100;
+    int bS=16, iH=128,iW=128,  iC=32,oC=64,  kH=4,kW=4,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int        oH=128,oW=128;
 
-    NDArray input('c', {dim0,dim1,dim2}, nd4j::DataType::DOUBLE);
-    NDArray mean('c', {dim1}, nd4j::DataType::DOUBLE);
-    NDArray variance('c', {dim1}, nd4j::DataType::DOUBLE);
-    NDArray gamma('c', {dim1}, nd4j::DataType::DOUBLE);
-    NDArray beta ('c', {dim1}, nd4j::DataType::DOUBLE);
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
 
-    NDArray output('c', {dim0,dim1,dim2}, nd4j::DataType::DOUBLE);
+    // NDArray input('c', {bS, iC, iH, iW}, nd4j::DataType::FLOAT32);
+    // NDArray output('c', {bS, oC, oH, oW}, nd4j::DataType::FLOAT32);
+    NDArray input('c', {bS, iH, iW, iC}, nd4j::DataType::FLOAT32);
+    NDArray output('c', {bS, oH, oW, oC}, nd4j::DataType::FLOAT32);
+    // NDArray weights('c', {kH, kW, iC, oC}, nd4j::DataType::FLOAT32);    // permute [kH, kW, iC, oC] -> [oC, iC, kH, kW]
+    NDArray weights('c', {oC, iC, kH, kW}, nd4j::DataType::FLOAT32);
+    NDArray bias('c', {oC}, nd4j::DataType::FLOAT32);
 
-    input.linspace(-100, 0.1);
-    mean.linspace(-50, 0.15);
-    variance.linspace(-5, 0.2);
-    gamma = 1.5;
-    beta = -2.5;
+    input = 5.;
+    weights = 3.;
+    bias = 1.;
 
-    // warm up
-    ops::helpers::batchnorm(&input, &mean, &variance, &gamma, &beta, &output, {1}, 1e-5);
+    nd4j::ops::conv2d op;
+    auto err = op.execute({&input, &weights, &bias}, {&output}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
 
     auto timeStart = std::chrono::system_clock::now();
     for (int i = 0; i < N; ++i)
-        ops::helpers::batchnorm(&input, &mean, &variance, &gamma, &beta, &output, {1}, 1e-5);
-
+        err = op.execute({&input, &weights, &bias}, {&output}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
     auto timeEnd = std::chrono::system_clock::now();
-    auto time = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart)/N).count();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
 
-    printf("time: %li \n", time);
-
+    printf("time: %i \n", time);
 }
 
 
 */
-
-
-
-
-
-
-
-
-

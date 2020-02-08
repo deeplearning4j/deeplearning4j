@@ -224,7 +224,7 @@
                                 Depending on a build machine, default value is not always enough.
                             -->
                             <skip>false</skip>
-                            <argLine>-Xmx6g</argLine>
+                            <argLine>-Xmx6g -Dfile.encoding=UTF-8</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -296,7 +296,7 @@
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.
                                 Depending on a build machine, default value is not always enough.
                             -->
-                            <argLine>-Xmx6g</argLine>
+                            <argLine>-Xmx6g -Dfile.encoding=UTF-8</argLine>
                             <skipTests>false</skipTests>
                             <skip>false</skip>
                         </configuration>

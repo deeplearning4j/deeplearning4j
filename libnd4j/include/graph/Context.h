@@ -204,6 +204,13 @@ namespace nd4j {
             void setBArguments(const std::vector<bool> &tArgs);
             void setDArguments(const std::vector<nd4j::DataType> &dArgs);
 
+            /**
+             * This method purges fastpath in/out contents and releases all the handles.
+             *
+             * PLEASE NOTE: I/T/B/D args will stay intact
+             */
+            void clearFastPath();
+
             void setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer);
 
             void allowHelpers(bool reallyAllow);

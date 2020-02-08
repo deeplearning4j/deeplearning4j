@@ -28,7 +28,7 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
  */
 @Slf4j
 public class CpuDeallocator implements Deallocator {
-    private OpaqueDataBuffer opaqueDataBuffer;
+    private final transient OpaqueDataBuffer opaqueDataBuffer;
 
     public CpuDeallocator(BaseCpuDataBuffer buffer) {
         opaqueDataBuffer = buffer.getOpaqueDataBuffer();

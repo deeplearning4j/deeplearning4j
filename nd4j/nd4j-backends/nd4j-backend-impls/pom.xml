@@ -117,7 +117,7 @@
                             Maximum heap size was set to 8g, as a minimum required value for tests run.
                             Depending on a build machine, default value is not always enough.
                         -->
-                        <argLine>-Ddtype=float -Xmx8g</argLine>
+                        <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g</argLine>
                     </configuration>
                 </plugin>
                 <plugin>

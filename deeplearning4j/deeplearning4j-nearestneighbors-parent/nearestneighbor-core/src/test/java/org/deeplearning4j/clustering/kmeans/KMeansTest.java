@@ -38,6 +38,11 @@ public class KMeansTest extends BaseDL4JTest {
 
     private boolean[] useKMeansPlusPlus = {true, false};
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 60000L;
+    }
+
     @Test
     public void testKMeans() {
         Nd4j.getRandom().setSeed(7);

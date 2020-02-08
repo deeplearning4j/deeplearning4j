@@ -43,7 +43,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     protected transient OpaqueDataBuffer ptrDataBuffer;
 
-    private final long instanceId = Nd4j.getDeallocatorService().nextValue();
+    private transient final long instanceId = Nd4j.getDeallocatorService().nextValue();
 
     protected BaseCpuDataBuffer() {
 
@@ -52,7 +52,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
     @Override
     public String getUniqueId() {
-        return "BCDB_" + instanceId;
+        return new String("BCDB_" + instanceId);
     }
 
     @Override
@@ -206,6 +206,26 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             temp = new PagedPointer(temp.address() + offset * getElementSize());
 
         Pointer.memcpy(ptr, temp, length * Nd4j.sizeOfDataType(dtype));
+    }
+
+    @Override
+    protected double getDoubleUnsynced(long index) {
+        return super.getDouble(index);
+    }
+
+    @Override
+    protected float getFloatUnsynced(long index) {
+        return super.getFloat(index);
+    }
+
+    @Override
+    protected long getLongUnsynced(long index) {
+        return super.getLong(index);
+    }
+
+    @Override
+    protected int getIntUnsynced(long index) {
+        return super.getInt(index);
     }
 
     @Override

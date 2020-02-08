@@ -57,7 +57,7 @@ namespace nd4j {
     ConstantDataBuffer ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
         int deviceId = AffinityManager::currentDeviceId();
 
-        _mutex.lock();
+        std::lock_guard<std::mutex> lock(_mutex);
 
         if (_cache[deviceId].count(descriptor) == 0) {
             auto hPtr = descriptor.toShapeInfo();
@@ -65,15 +65,9 @@ namespace nd4j {
             ConstantDataBuffer buffer(hPtr, dPtr, shape::shapeInfoLength(hPtr) * sizeof(Nd4jLong), DataType::INT64);
             ShapeDescriptor descriptor1(descriptor);
             _cache[deviceId][descriptor1] = buffer;
-            auto r = _cache[deviceId][descriptor1];
-            _mutex.unlock();
-
-            return r;
+            return _cache[deviceId][descriptor1];
         } else {
-            ConstantDataBuffer r = _cache[deviceId].at(descriptor);
-            _mutex.unlock();
-
-            return r;
+            return _cache[deviceId].at(descriptor);
         }
     }
 
@@ -83,18 +77,10 @@ namespace nd4j {
     }
 
     bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor) {
-        bool result;
         auto deviceId = AffinityManager::currentDeviceId();
-        _mutex.lock();
+        std::lock_guard<std::mutex> lock(_mutex);
 
-        if (_cache[deviceId].count(descriptor) == 0)
-            result = false;
-        else
-            result = true;
-
-        _mutex.unlock();
-
-        return result;
+        return _cache[deviceId].count(descriptor) != 0;
     }
 
     Nd4jLong* ConstantShapeHelper::createShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape) {

@@ -250,7 +250,7 @@ void pooling3dCUDNN(const LaunchContext* context,
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
     cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
     if (err != 0) throw nd4j::cuda_exception::build("pooling3dCUDNN: can't set stream for cuDNN", err);
-printf("fffffffffff\n");
+
     const int numDims = 5;
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;

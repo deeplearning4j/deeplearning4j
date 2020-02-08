@@ -147,8 +147,7 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
         }
 
         //Note: batchnorm op expects rank 1 inputs for mean/var etc, not rank 2 shape [1,x]
-        context.getInputArrays().clear();
-        context.getOutputArrays().clear();
+        context.purge();
         context.setInputArray(0, x);
         context.setInputArray(1, m);
         context.setInputArray(2, v);
