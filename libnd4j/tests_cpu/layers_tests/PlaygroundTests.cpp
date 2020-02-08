@@ -45,6 +45,7 @@
 #include <performance/benchmarking/LightBenchmarkSuit.h>
 
 #include <ops/declarable/helpers/legacy_helpers.h>
+#include <ops/declarable/helpers/addBias.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -63,6 +64,87 @@ public:
 TEST_F(PlaygroundTests, test_avx) {
     nd4j_printf("Optimal level: %i; Binary level: %i;\n", ::optimalLevel(), ::binaryLevel());
 }
+
+/*
+
+TEST_F(PlaygroundTests, test_s_0) {
+    std::vector<std::vector<Nd4jLong>> shapes = {{32, 224, 224, 3}, {32, 56, 56, 64}, {32, 7, 7, 512}};
+    std::vector<int> threads = {1, 2, 4, 8, 16};
+
+    for (auto shape: shapes) {
+        for (auto t: threads) {
+            nd4j::Environment::getInstance()->setMaxMasterThreads(t);
+
+            auto x = NDArrayFactory::create<float>('c', shape);
+            auto y = NDArrayFactory::create<float>('c', {shape[3]});
+            auto z = x.ulike();
+
+            std::vector<Nd4jLong> values;
+            Context ctx(1);
+            ctx.setInputArray(0, &x);
+            ctx.setInputArray(1, &y);
+            ctx.setOutputArray(0, &z);
+
+            nd4j::ops::biasadd op;
+
+
+            for (int e = 0; e < 10000; e++) {
+                auto timeStart = std::chrono::system_clock::now();
+
+                op.execute(&ctx);
+                nd4j::ops::helpers::addBias(ctx, x, y, z, false);
+
+                auto timeEnd = std::chrono::system_clock::now();
+                auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+                values.emplace_back(outerTime);
+            }
+
+            std::sort(values.begin(), values.end());
+
+            nd4j_printf("Shape: [%lld, %lld, %lld, %lld]; Threads: [%i]; Time: %lld us;\n", shape[0], shape[1], shape[2], shape[3], t, values[values.size() / 2]);
+        }
+    }
+}
+
+TEST_F(PlaygroundTests, test_s_1) {
+    std::vector<std::vector<Nd4jLong>> shapes = {{32, 3, 224, 224}, {32, 64, 56, 56}, {32, 512, 7, 7}};
+    std::vector<int> threads = {1, 2, 4, 8, 16};
+
+    for (auto shape: shapes) {
+        for (auto t: threads) {
+            nd4j::Environment::getInstance()->setMaxMasterThreads(t);
+
+            auto x = NDArrayFactory::create<float>('c', shape);
+            auto y = NDArrayFactory::create<float>('c', {shape[1]});
+            auto z = x.ulike();
+
+            std::vector<Nd4jLong> values;
+            Context ctx(1);
+            ctx.setInputArray(0, &x);
+            ctx.setInputArray(1, &y);
+            ctx.setOutputArray(0, &z);
+
+            nd4j::ops::biasadd op;
+
+
+            for (int e = 0; e < 10000; e++) {
+                auto timeStart = std::chrono::system_clock::now();
+
+                //op.execute({&x, &y}, {&z}, {true});
+                nd4j::ops::helpers::addBias(ctx, x, y, z, true);
+
+                auto timeEnd = std::chrono::system_clock::now();
+                auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+                values.emplace_back(outerTime);
+            }
+
+            std::sort(values.begin(), values.end());
+
+            nd4j_printf("Shape: [%lld, %lld, %lld, %lld]; Threads: [%i]; Time: %lld us;\n", shape[0], shape[1], shape[2], shape[3], t, values[values.size() / 2]);
+        }
+    }
+}
+*/
 
 /*
 TEST_F(PlaygroundTests, test_s_0) {

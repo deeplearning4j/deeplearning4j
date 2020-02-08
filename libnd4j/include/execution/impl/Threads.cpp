@@ -638,4 +638,86 @@ namespace samediff {
         return intermediatery[0];
     }
 
+
+    int  Threads::parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, size_t type_size , uint32_t req_numThreads) {
+        if (start > stop)
+            throw std::runtime_error("Threads::parallel_for got start > stop");
+        auto num_elements = (stop - start);
+        //this way we preserve increment starts offset
+        //so we will parition considering delta but not total elements
+        auto delta = (stop - start) / increment;
+
+        // in some cases we just fire func as is
+        if (delta == 0 || req_numThreads == 1) {
+            function(0, start, stop, increment);
+            return 1;
+        }
+        int numThreads = 0;
+
+        int adjusted_numThreads = samediff::ThreadsHelper::numberOfThreads(req_numThreads, (num_elements * sizeof(double)) / (200 * type_size));
+
+        if (adjusted_numThreads > delta)
+            adjusted_numThreads = delta;
+        // shortcut
+        if (adjusted_numThreads <= 1) {
+            function(0, start, stop, increment);
+            return 1;
+        }
+        //take span as ceil  
+        auto spand = std::ceil((double)delta / (double)adjusted_numThreads);
+        numThreads = static_cast<int>(std::ceil((double)delta / spand));
+        auto span  = static_cast<Nd4jLong>(spand);
+
+        auto ticket = samediff::ThreadPool::getInstance()->tryAcquire(numThreads);
+        if (ticket != nullptr) {
+            //tail_add is additional value of the last part
+            //it could be negative or positive
+            //we will spread that value across
+            auto tail_add = delta - numThreads * span;
+            Nd4jLong begin = 0;
+            Nd4jLong end = 0;
+
+            //we will try enqueu bigger parts first
+            decltype(span) span1, span2;
+            int last = 0;
+            if (tail_add >= 0) {
+                //for span == 1  , tail_add is  0 
+                last = tail_add;
+                span1 = span + 1;
+                span2 = span;
+            }
+            else {
+                last = numThreads + tail_add;// -std::abs(tail_add);
+                span1 = span;
+                span2 = span - 1;
+            }
+            for (int i = 0; i < last; i++) {
+                end = begin + span1 * increment;
+                // putting the task into the queue for a given thread
+                ticket->enqueue(i, numThreads, function, begin, end, increment);
+                begin = end;
+            }
+            for (int i = last; i < numThreads - 1; i++) {
+                end = begin + span2 * increment;
+                // putting the task into the queue for a given thread
+                ticket->enqueue(i, numThreads, function, begin, end, increment);
+                begin = end;
+            }
+            //for last one enqueue last offset as stop
+            //we need it in case our ((stop-start) % increment ) > 0
+            ticket->enqueue(numThreads - 1, numThreads, function, begin, stop, increment);
+            // block and wait till all threads finished the job
+            ticket->waitAndRelease();
+            // we tell that parallelism request succeeded
+            return numThreads;
+        }
+        else {
+            // if there were no threads available - we'll execute function right within current thread
+            function(0, start, stop, increment);
+            // we tell that parallelism request declined
+            return 1;
+        }
+    }
+
+
 }
