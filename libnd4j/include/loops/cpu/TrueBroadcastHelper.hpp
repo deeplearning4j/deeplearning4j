@@ -18,7 +18,7 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <TrueBroadcastHelper.h>
+#include <loops/TrueBroadcastHelper.h>
 #include <ops/ops.h>
 #include <execution/Threads.h>
 
@@ -210,6 +210,7 @@ void TrueBroadcastIntHelper<X>::exec(const nd4j::broadcast::IntOps opNum, const 
 	DISPATCH_BY_OPNUM_T(exec, PARAMS(xArr, yArr, zArr), BROADCAST_INT_OPS);
 }
 
+/*
 BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastHelper, , PAIRWISE_TYPES_0);
 BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastHelper, , PAIRWISE_TYPES_1);
 BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastHelper, , PAIRWISE_TYPES_2);
@@ -224,6 +225,6 @@ BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastHelper, , PAIRWI
 BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastBoolHelper, , LIBND4J_TYPES, BOOL_TYPES);
 
 BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastIntHelper, , INTEGER_TYPES);
-
+*/
 }
 }

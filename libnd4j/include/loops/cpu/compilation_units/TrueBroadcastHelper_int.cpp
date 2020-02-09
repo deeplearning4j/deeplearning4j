@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -19,10 +18,10 @@
 // @author raver119@gmail.com
 //
 
-#include "../reduce3.hpp"
+#include "../TrueBroadcastHelper.hpp"
 
-namespace functions {
-    namespace reduce3 {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES, FLOAT_TYPES_2);
+namespace nd4j {
+    namespace helpers {
+        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastIntHelper, , INTEGER_TYPES);
     }
 }

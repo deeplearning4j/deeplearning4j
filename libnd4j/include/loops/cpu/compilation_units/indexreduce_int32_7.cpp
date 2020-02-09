@@ -23,6 +23,6 @@
 
 namespace functions {
     namespace indexreduce {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES, (nd4j::DataType::INT64, Nd4jLong));
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES_7, (nd4j::DataType::INT32, int32_t));
     }
 }

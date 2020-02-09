@@ -19,10 +19,10 @@
 // @author raver119@gmail.com
 //
 
-#include "../reduce3.hpp"
+#include "../indexreduce.hpp"
 
 namespace functions {
-    namespace reduce3 {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES, FLOAT_TYPES_0);
+    namespace indexreduce {
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES_5, (nd4j::DataType::INT64, Nd4jLong));
     }
 }

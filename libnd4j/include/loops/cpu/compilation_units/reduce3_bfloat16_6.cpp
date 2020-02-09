@@ -23,6 +23,6 @@
 
 namespace functions {
     namespace reduce3 {
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES, FLOAT_TYPES_3);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES_6, FLOAT_TYPES_3);
     }
 }
