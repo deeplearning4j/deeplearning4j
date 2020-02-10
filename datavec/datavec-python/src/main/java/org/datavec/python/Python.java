@@ -144,6 +144,14 @@ public class Python {
         return attr("bytearray");
     }
 
+    public static PythonObject memoryview(PythonObject pythonObject) {
+        return attr("memoryview").call(pythonObject);
+    }
+
+    public static PythonObject memoryviewType() {
+        return attr("memoryview");
+    }
+
     public static PythonObject bytes(PythonObject pythonObject) {
         return attr("bytes").call(pythonObject);
     }
@@ -249,9 +257,6 @@ public class Python {
 
     public static void exec(String code)throws PythonException{
         PythonExecutioner.exec(code);
-    }
-    public static void exec(String code, PythonVariables inputs) throws PythonException{
-        PythonExecutioner.exec(code, inputs);
     }
     public static void exec(String code, PythonVariables inputs, PythonVariables outputs) throws PythonException{
         PythonExecutioner.exec(code, inputs, outputs);
