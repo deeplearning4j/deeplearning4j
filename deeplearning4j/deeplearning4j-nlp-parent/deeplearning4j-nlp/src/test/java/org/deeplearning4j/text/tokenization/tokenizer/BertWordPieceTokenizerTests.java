@@ -220,4 +220,23 @@ public class BertWordPieceTokenizerTests extends BaseDL4JTest {
         String exp = s.toLowerCase();
         assertEquals(exp, s2);
     }
+
+    @Test
+    public void testTokenizerHandlesLargeContiguousWhitespace() throws Exception {
+        StringBuilder sb = new StringBuilder();
+        sb.append("apple.");
+        for (int i = 0; i < 10000; i++) {
+            sb.append(" ");
+        }
+        sb.append(".pen. .pineapple");
+
+        File f = Resources.asFile("deeplearning4j-nlp/bert/uncased_L-12_H-768_A-12/vocab.txt");
+        BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(f, true, true, StandardCharsets.UTF_8);
+
+        Tokenizer tokenizer = t.create(sb.toString());
+        List<String> list = tokenizer.getTokens();
+        System.out.println(list);
+
+        assertEquals(8, list.size());
+    }
 }
