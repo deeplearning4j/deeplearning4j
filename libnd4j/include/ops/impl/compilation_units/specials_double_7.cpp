@@ -1,6 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,9 +16,11 @@
  ******************************************************************************/
 
 //
-// @author Yurii Shyrma (iuriish@yahoo.com)
+// @author raver119@gmail.com
 //
 
-#include "./IndexReductionLoops.hpp"
+#include "../specials.hpp"
 
-BUILD_DOUBLE_TEMPLATE(template void nd4j::IndexReductionLoops, ::wrapIndexReduce(const int opNum, void* vx, Nd4jLong* xShapeInfo, void* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams), LIBND4J_TYPES, (nd4j::DataType::INT64, Nd4jLong));
+namespace nd4j {
+    BUILD_DOUBLE_TEMPLATE(template class DoubleMethods, , LIBND4J_TYPES, LIBND4J_TYPES_7);
+}

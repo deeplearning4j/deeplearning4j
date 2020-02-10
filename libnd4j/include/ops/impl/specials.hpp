@@ -661,7 +661,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         samediff::Threads::parallel_tad(func, 0, numTads);
     }
 
-    BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES);
-    BUILD_DOUBLE_TEMPLATE(template class DoubleMethods, , LIBND4J_TYPES, LIBND4J_TYPES);
+    //BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES);
+    //BUILD_DOUBLE_TEMPLATE(template class DoubleMethods, , LIBND4J_TYPES, LIBND4J_TYPES);
 }
 
