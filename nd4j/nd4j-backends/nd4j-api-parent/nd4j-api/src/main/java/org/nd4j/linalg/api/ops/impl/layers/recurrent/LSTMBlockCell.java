@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
@@ -88,6 +89,15 @@ public class LSTMBlockCell extends DynamicCustomOp {
         addIArgument(configuration.iArgs(false));
         addTArgument(configuration.tArgs());
     }
+
+    public LSTMBlockCell(INDArray x, INDArray cLast, INDArray yLast, LSTMWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
+        super(null, null, lstmWeights.argsWithInputs(x, cLast, yLast));
+        this.configuration = lstmConfiguration;
+        this.weights = lstmWeights;
+        addIArgument(configuration.iArgs(false));
+        addTArgument(configuration.tArgs());
+    }
+
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {

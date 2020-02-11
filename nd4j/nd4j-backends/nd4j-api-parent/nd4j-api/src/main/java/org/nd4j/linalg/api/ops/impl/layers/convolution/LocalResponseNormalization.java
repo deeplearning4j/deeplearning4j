@@ -65,6 +65,13 @@ public class LocalResponseNormalization extends DynamicCustomOp {
         addArgs();
     }
 
+    public LocalResponseNormalization(@NonNull INDArray input, @NonNull LocalResponseNormalizationConfig LocalResponseNormalizationConfig){
+        super(new INDArray[]{input}, wrapOrNull(null));
+
+        this.config = config;
+        addArgs();
+    }
+
 
     @Override
     public Map<String, Object> propertiesForFunction() {

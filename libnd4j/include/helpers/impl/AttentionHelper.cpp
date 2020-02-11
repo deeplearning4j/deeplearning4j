@@ -40,7 +40,7 @@ namespace nd4j {
 
         NDArray projected('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(), context);  //[nHeads*hS, batch*timeSteps]
         nd4j::ops::matmul mmul;
-        mmul.execute({&projectionPrep, &inputPrep}, {&projected},  {}, {}, {});
+        mmul.execute({&projectionPrep, &inputPrep}, {&projected});
 
         projected.reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
         projected.permutei({2, 0, 1, 3});   //[minibatch, numHeads, projectedSize, seqLength]
@@ -66,7 +66,7 @@ namespace nd4j {
         nd4j::ops::matmul_bp mmulBp;
         NDArray dLdProjectionPrep(projectionPrep.shapeInfo(), false, context);
         NDArray dLdInputPrep(inputPrep.shapeInfo(), false, context);
-        mmulBp.execute({&projectionPrep, &inputPrep, &epsReshaped}, {&dLdProjectionPrep, &dLdInputPrep}, {}, {}, {});
+        mmulBp.execute({&projectionPrep, &inputPrep, &epsReshaped}, std::vector<NDArray*>{&dLdProjectionPrep, &dLdInputPrep}, {}, {}, {});
 
         dLdProjectionPrep.reshapei({numHeads, projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
         dLdProjectionMatrix->assign(dLdProjectionPrep);

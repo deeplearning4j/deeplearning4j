@@ -51,7 +51,7 @@ namespace helpers {
             throw std::runtime_error("multiUnique: cannot execute concat op properly.");
 
         nd4j::ops::unique opUnique;
-        auto uResult = opUnique.execute({&arrayFull}, {}, {}, {});
+        auto uResult = opUnique.evaluate({&arrayFull});
         if (Status::OK() != uResult->status())
             throw std::runtime_error("multiUnique: cannot execute unique op properly.");
 

@@ -41,7 +41,7 @@ TEST_F(ParityOpsTests, TestZeroAs1) {
 
     nd4j::ops::zeros_as op;
 
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.evaluate({&x}, {}, {});
 
     auto z = result->at(0);
 
@@ -60,7 +60,7 @@ TEST_F(ParityOpsTests, TestMaximum1) {
 
     nd4j::ops::maximum op;
 
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
 
     auto z = result->at(0);
 
@@ -80,7 +80,7 @@ TEST_F(ParityOpsTests, TestMinimum1) {
 
     nd4j::ops::minimum op;
 
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
 
     auto z = result->at(0);
 
@@ -99,7 +99,7 @@ TEST_F(ParityOpsTests, TestTear1) {
 
     nd4j::ops::tear op;
 
-    auto result = op.execute({&input}, {}, {1});
+    auto result = op.evaluate({&input}, {}, {1});
 
     ASSERT_EQ(10, result->size());
 
@@ -119,7 +119,7 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {0});
+    auto result = op.evaluate({&input}, {}, {0});
 
     ASSERT_EQ(10, result->size());
 
@@ -141,7 +141,7 @@ TEST_F(ParityOpsTests, TestUnstack2) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {2});
+    auto result = op.evaluate({&input}, {}, {2});
 
     ASSERT_EQ(6, result->size());
 
@@ -158,7 +158,7 @@ TEST_F(ParityOpsTests, TestUnstack3) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {2});
+    auto result = op.evaluate({&input}, {}, {2});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -177,7 +177,7 @@ TEST_F(ParityOpsTests, TestUnstack4) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {1});
+    auto result = op.evaluate({&input}, {}, {1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -195,7 +195,7 @@ TEST_F(ParityOpsTests, TestUnstack5) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {0});
+    auto result = op.evaluate({&input}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -213,7 +213,7 @@ TEST_F(ParityOpsTests, TestUnstack6) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {0});
+    auto result = op.evaluate({&input}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -231,7 +231,7 @@ TEST_F(ParityOpsTests, TestUnstack7) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {1});
+    auto result = op.evaluate({&input}, {}, {1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -249,7 +249,7 @@ TEST_F(ParityOpsTests, TestUnstack8) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {0});
+    auto result = op.evaluate({&input}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -267,7 +267,7 @@ TEST_F(ParityOpsTests, TestUnstack9) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {1});
+    auto result = op.evaluate({&input}, {}, {1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -286,7 +286,7 @@ TEST_F(ParityOpsTests, TestUnstack10) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {0});
+    auto result = op.evaluate({&input}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     ASSERT_TRUE(exp.isSameShape(result->at(0)));
@@ -304,7 +304,7 @@ TEST_F(ParityOpsTests, TestUnstack11) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {2});
+    auto result = op.evaluate({&input}, {}, {2});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     ASSERT_TRUE(exp.isSameShape(result->at(0)));
@@ -320,7 +320,7 @@ TEST_F(ParityOpsTests, TestUnstack12) {
 
     nd4j::ops::unstack op;
 
-    auto result = op.execute({&input}, {}, {1});
+    auto result = op.evaluate({&input}, {}, {1});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     ASSERT_TRUE(result->size() == 0);
@@ -334,7 +334,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
     auto reshaped = input.reshape('c', {5, 1, 5});
 
     nd4j::ops::expand_dims op;
-    auto result = op.execute({&input}, {}, {1});
+    auto result = op.evaluate({&input}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -353,7 +353,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest2) {
     auto reshaped = input.reshape('c', {1, 3, 4});
 
     nd4j::ops::expand_dims op;
-    auto result = op.execute({&input}, {}, {0});
+    auto result = op.evaluate({&input}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -372,7 +372,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest3) {
     auto reshaped = input.reshape('c', {3, 1, 4});
 
     nd4j::ops::expand_dims op;
-    auto result = op.execute({&input}, {}, {-2});
+    auto result = op.evaluate({&input}, {}, {-2});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -390,7 +390,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest4) {
     auto reshaped = input.reshape('c', {1, 3, 4});
 
     nd4j::ops::expand_dims op;
-    auto result = op.execute({&input}, {}, {-3});
+    auto result = op.evaluate({&input}, {}, {-3});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -408,7 +408,7 @@ TEST_F(ParityOpsTests, Test_Shape_1) {
     auto exp = NDArrayFactory::create<Nd4jLong>('c', {4}, {3, 4, 5, 6});
 
     nd4j::ops::shape_of op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.evaluate({&x}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -426,7 +426,7 @@ TEST_F(ParityOpsTests, Test_Equals_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 0, 1, 0, 1});
 
     nd4j::ops::equals op;
-    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -444,7 +444,7 @@ TEST_F(ParityOpsTests, Test_NotEquals_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 1, 0, 1, 0});
 
     nd4j::ops::not_equals op;
-    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -461,7 +461,7 @@ TEST_F(ParityOpsTests, Test_Less_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 1, 0, 0, 0});
 
     nd4j::ops::less op;
-    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -478,7 +478,7 @@ TEST_F(ParityOpsTests, Test_LessEquals_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {1, 1, 1, 0, 0});
 
     nd4j::ops::less_equal op;
-    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -495,7 +495,7 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 0, 1, 1, 1});
 
     nd4j::ops::greater_equal op;
-    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -512,7 +512,7 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_2) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 0, 1, 1, 1});
 
     nd4j::ops::greater_equal op;
-    auto result = op.execute({&x, &y}, {}, {}, {}, false);
+    auto result = op.evaluate({&x, &y}, {}, {}, {}, {}, false);
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -529,7 +529,7 @@ TEST_F(ParityOpsTests, Test_Greater_1) {
     auto exp = NDArrayFactory::create<bool>('c', {1, 5}, {0, 0, 0, 1, 1});
 
     nd4j::ops::greater op;
-    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -547,7 +547,7 @@ TEST_F(ParityOpsTests, Test_Where_1) {
     auto exp = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 6, 5, 4, 7, 8, 9});
 
     nd4j::ops::Where op;
-    auto result = op.execute({&mask, &x, &y}, {}, {});
+    auto result = op.evaluate({&mask, &x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -567,7 +567,7 @@ TEST_F(ParityOpsTests, Test_Where_2) {
     auto exp = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 6, 5, 4, 3, 2, 1});
 
     nd4j::ops::Where op;
-    auto result = op.execute({&mask, &x, &y}, {}, {});
+    auto result = op.evaluate({&mask, &x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -584,7 +584,7 @@ TEST_F(ParityOpsTests, Test_Where_3) {
     auto exp = NDArrayFactory::create<Nd4jLong>('c', {5, 3}, {0, 0, 1, 0, 0, 2, 0, 1, 1, 1, 0, 0, 1, 1, 2});
 
     nd4j::ops::Where op;
-    auto result = op.execute({&mask}, {}, {});
+    auto result = op.evaluate({&mask}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -604,7 +604,7 @@ TEST_F(ParityOpsTests, Test_Select_1) {
     auto exp = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 6, 5, 4, 3, 2, 1});
 
     nd4j::ops::select op;
-    auto result = op.execute({&mask, &x, &y}, {}, {});
+    auto result = op.evaluate({&mask, &x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -622,7 +622,7 @@ TEST_F(ParityOpsTests, Test_Select_2) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {1, 8, 3, 6});
 
     nd4j::ops::select op;
-    auto result = op.execute({&mask, &x, &y}, {}, {});
+    auto result = op.evaluate({&mask, &x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -641,7 +641,7 @@ TEST_F(ParityOpsTests, Test_Select_3) {
     auto exp = NDArrayFactory::create<float>('c', {1, 1}, {2});
 
     nd4j::ops::select op;
-    auto result = op.execute({&mask, &x, &y}, {}, {});
+    auto result = op.evaluate({&mask, &x, &y}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -660,7 +660,7 @@ TEST_F(ParityOpsTests, Test_Reshape_TF_1) {
 
     nd4j::ops::reshape op;
 
-    auto result = op.execute({&x, &shape}, {}, {});
+    auto result = op.evaluate({&x, &shape}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -677,7 +677,7 @@ TEST_F(ParityOpsTests, Test_Bias_Add_1) {
     auto bias = NDArrayFactory::create<float>('c', {5}, {1, 2, 3, 4, 5});
     nd4j::ops::biasadd op;
 
-    auto result = op.execute({&x, &bias}, {}, {});
+    auto result = op.evaluate({&x, &bias}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -692,12 +692,12 @@ TEST_F(ParityOpsTests, Test_Bias_Add_1) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    NDArray idc('c', {1}, {0}, nd4j::DataType::INT64);
+    NDArray idc('c', {1}, std::vector<double>({0}), nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {1, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {2, 3, 3, 4});
 
     nd4j::ops::scatter_add op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -710,12 +710,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
 TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
 
     auto vec = NDArrayFactory::create<float>('c', {4}, {1, 2, 3, 4});
-    NDArray idc('c', {1, 4}, {0, 1, 2, 3}, nd4j::DataType::INT64);
+    NDArray idc('c', {1, 4}, {0., 1, 2, 3}, nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 4}, {1, 1, 1, 1});
     auto exp = NDArrayFactory::create<float>('c', {1, 4}, {2, 3, 4, 5});
 
     nd4j::ops::scatter_add op;
-    auto result = op.execute({&vec, &idc, &updates}, {}, {});
+    auto result = op.evaluate({&vec, &idc, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -727,12 +727,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    NDArray idc('c', {1}, {0}, nd4j::DataType::INT64);
+    NDArray idc('c', {1}, std::vector<double>({0}), nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2}, {1, 1, 1, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {2, 3, 4, 5, 5, 6, 7, 8});
 
     nd4j::ops::scatter_add op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -744,12 +744,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_4) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    NDArray idc('c', {1, 2}, {0, 0}, nd4j::DataType::INT64);
+    NDArray idc('c', {1, 2}, std::vector<double>{0, 0}, nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2, 2}, {1, 1, 1, 1, 1, 1, 1, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {3, 4, 5, 6, 5, 6, 7, 8});
 
     nd4j::ops::scatter_add op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true, true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true, true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -761,12 +761,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_4) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_5) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 3}, {1, 1, 1, 1, 1, 1,   1, 1, 1, 1, 1, 1});
-    NDArray idc('c', {2, 2}, {1, 1, 0, 0}, nd4j::DataType::INT64);
+    NDArray idc('c', {2, 2}, {1., 1, 0, 0}, nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {2, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 3}, {9., 11., 13.,15., 17., 19., 9., 11., 13.,15., 17., 19.});
 
     nd4j::ops::scatter_add op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -784,7 +784,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {7, 9, 11, 13, 7, 9, 11, 13});
 
     nd4j::ops::scatter_add op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true, true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true, true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -796,12 +796,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
     auto matrix = NDArrayFactory::create<float>('c', {10, 3}, {1.f,2.f,3.f,4.f,5.f,6.f,7.f,8.f,9.f,10.f,11.f,12.f,13.f,14.f,15.f,16.f,17.f,18.f,19.f,20.f,21.f,22.f,23.f,24.f,25.f,26.f,27.f,28.f,29.f,30.f});
-    NDArray idc('c', {}, {5}, nd4j::DataType::INT64);
+    NDArray idc('c', {}, std::vector<double>{5}, nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {3}, {10.f, 20.f, 30.f});
     auto exp = NDArrayFactory::create<float>('c', {10, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f,11.f,12.f, 13.f,14.f,15.f, 26.f,37.f,48.f, 19.f,20.f,21.f, 22.f,23.f,24.f, 25.f,26.f,27.f, 28.f,29.f,30.f});
 
     nd4j::ops::scatter_add op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -845,12 +845,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_9) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(ParityOpsTests, scatterMax_test1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    NDArray idc('c', {1}, {0.}, nd4j::DataType::INT64);
+    NDArray idc('c', {1}, std::vector<double>{0.}, nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10, 2, 3, 4});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -867,7 +867,7 @@ TEST_F(ParityOpsTests, scatterMax_test2) {
     auto exp = NDArrayFactory::create<float>('c', {1, 4}, {10, 2, 30, 4});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&vec, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&vec, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -879,12 +879,12 @@ TEST_F(ParityOpsTests, scatterMax_test2) {
 
 TEST_F(ParityOpsTests, scatterMax_test3) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    NDArray idc('c', {1}, {0}, nd4j::DataType::INT64);
+    NDArray idc('c', {1}, std::vector<double>({0}), nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2}, {10, 1, 30, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {10, 2, 30, 4, 5, 6, 7, 8});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -896,12 +896,12 @@ TEST_F(ParityOpsTests, scatterMax_test3) {
 
 TEST_F(ParityOpsTests, scatterMax_test4) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    NDArray idc('c', {1,2}, {0,0}, nd4j::DataType::INT32);
+    NDArray idc('c', {1,2}, std::vector<double>{0.,0}, nd4j::DataType::INT32);
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2, 2}, {1,10,1,10, 1,1,10,1.});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 10, 10, 10, 5, 6, 7, 8});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {true}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {true}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -918,7 +918,7 @@ TEST_F(ParityOpsTests, scatterMax_test5) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 3}, {10, 2, 10,   2, 10, 2,   2, 10, 2,   10, 2, 10});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -935,7 +935,7 @@ TEST_F(ParityOpsTests, scatterMax_test6) {
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {2, 1, 2, 1, 1, 2, 1, 2});
 
     nd4j::ops::scatter_max op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -948,12 +948,12 @@ TEST_F(ParityOpsTests, scatterMax_test6) {
 
 TEST_F(ParityOpsTests, scatterMin_test1) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
-    NDArray idc('c', {1}, {0}, nd4j::DataType::INT32);
+    NDArray idc('c', {1}, std::vector<double>({0}), nd4j::DataType::INT32);
     auto updates = NDArrayFactory::create<float>('c', {1, 2}, {-1, 1});
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-1, 1, 3, 4});
 
     nd4j::ops::scatter_min op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -970,7 +970,7 @@ TEST_F(ParityOpsTests, scatterMin_test2) {
     auto exp = NDArrayFactory::create<float>('c', {1, 4}, {1, 1, 3, 1});
 
     nd4j::ops::scatter_min op;
-    auto result = op.execute({&vec, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&vec, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -982,12 +982,12 @@ TEST_F(ParityOpsTests, scatterMin_test2) {
 
 TEST_F(ParityOpsTests, scatterMin_test3) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    NDArray idc('c', {1}, {0}, nd4j::DataType::INT32);
+    NDArray idc('c', {1}, std::vector<double>({0}), nd4j::DataType::INT32);
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2}, {10, 1, 30, 2});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 1, 3, 2, 5, 6, 7, 8});
 
     nd4j::ops::scatter_min op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -999,12 +999,12 @@ TEST_F(ParityOpsTests, scatterMin_test3) {
 
 TEST_F(ParityOpsTests, scatterMin_test4) {
     auto matrix = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    NDArray idc('c', {1,2}, {0,0}, nd4j::DataType::INT32);
+    NDArray idc('c', {1,2}, std::vector<double>{0.,0}, nd4j::DataType::INT32);
     auto updates = NDArrayFactory::create<float>('c', {1, 2, 2, 2}, {1,10,1,10, 1,1,10,1.});
     auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {1, 1, 1, 1, 5, 6, 7, 8});
 
     nd4j::ops::scatter_min op;
-    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {true});
+    auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1036,7 +1036,7 @@ TEST_F(ParityOpsTests, scatterND_test1) {
     auto exp = NDArrayFactory::create<float>('c', {3, 4}, {50.f, 60.f, 70.f, 80.f, 10.f, 20.f, 30.f, 40.f, 0.f,  0.f,  0.f,  0.f});
 
     nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {false, true});
+    auto result = op.evaluate({&indices, &updates, &shape}, {}, {false, true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1058,7 +1058,7 @@ TEST_F(ParityOpsTests, scatterND_test2) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    auto result = op.evaluate({&indices, &updates, &shape}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1083,7 +1083,7 @@ TEST_F(ParityOpsTests, scatterND_test3) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {false, true});
+    auto result = op.evaluate({&indices, &updates, &shape}, {}, {false, true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1103,7 +1103,7 @@ TEST_F(ParityOpsTests, scatterND_test4) {
     auto exp = NDArrayFactory::create<float>('c', {8}, {0.f, 11.f, 0.f, 10.f, 9.f, 0.f, 0.f, 12.f});
 
     nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    auto result = op.evaluate({&indices, &updates, &shape}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1123,7 +1123,7 @@ TEST_F(ParityOpsTests, scatterND_test5) {
     auto exp = NDArrayFactory::create<float>('c', {8}, {0.f, 10.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f});
 
     nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {}, {true});
+    auto result = op.evaluate({&indices, &updates, &shape}, {}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1150,7 +1150,7 @@ TEST_F(ParityOpsTests, scatterND_test6) {
     updates.linspace(1);
 
     nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {});
+    auto result = op.evaluate({&indices, &updates, &shape}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1177,7 +1177,7 @@ TEST_F(ParityOpsTests, scatterND_test7) {
     updates.linspace(1);
 
     nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {}, {true, true});
+    auto result = op.evaluate({&indices, &updates, &shape}, {}, {}, {true, true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1198,7 +1198,7 @@ TEST_F(ParityOpsTests, scatterND_test8) {
     auto exp = NDArrayFactory::create<float>('c', {6,4}, {1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
 
     nd4j::ops::scatter_nd op;
-    auto result = op.execute({&indices, &updates, &shape}, {}, {true});
+    auto result = op.evaluate({&indices, &updates, &shape}, {}, {true});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1233,7 +1233,7 @@ TEST_F(ParityOpsTests, scatterND_add_test1) {
     auto exp = NDArrayFactory::create<float>('c', {8}, {1.f, 13.f, 3.f, 14.f, 14.f, 6.f, 7.f, 20.f});
 
     nd4j::ops::scatter_nd_add op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1256,7 +1256,7 @@ TEST_F(ParityOpsTests, scatterND_add_test2) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_add op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1280,7 +1280,7 @@ TEST_F(ParityOpsTests, scatterND_add_test3) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_add op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1307,7 +1307,7 @@ TEST_F(ParityOpsTests, scatterND_add_test4) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_add op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1343,7 +1343,7 @@ TEST_F(ParityOpsTests, scatterND_add_test5) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_add op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1376,7 +1376,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test1) {
     auto exp = NDArrayFactory::create<float>('c', {8}, {1.f, -9.f,  3.f, -6.f, -4.f,  6.f,  7.f, -4.f});
 
     nd4j::ops::scatter_nd_sub op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1399,7 +1399,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test2) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_sub op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1424,7 +1424,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test3) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_sub op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1451,7 +1451,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test4) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_sub op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1487,7 +1487,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test5) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_sub op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1508,7 +1508,7 @@ TEST_F(ParityOpsTests, scatterND_update_test1) {
     auto exp = NDArrayFactory::create<float>('c', {8}, {1.f, 11.f, 3.f, 10.f, 9.f, 6.f, 7.f, 12.f});
 
     nd4j::ops::scatter_nd_update op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1531,7 +1531,7 @@ TEST_F(ParityOpsTests, scatterND_update_test2) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_update op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1555,7 +1555,7 @@ TEST_F(ParityOpsTests, scatterND_update_test3) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_update op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1583,7 +1583,7 @@ TEST_F(ParityOpsTests, scatterND_update_test4) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_update op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1619,7 +1619,7 @@ TEST_F(ParityOpsTests, scatterND_update_test5) {
     updates.linspace(1.f);
 
     nd4j::ops::scatter_nd_update op;
-    auto result = op.execute({&input, &indices, &updates}, {}, {});
+    auto result = op.evaluate({&input, &indices, &updates}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -1652,7 +1652,7 @@ TEST_F(ParityOpsTests, scatter_update_1) {
     NDArray exp('c', {2,2}, {30,40,10,20}, nd4j::DataType::INT32);
 
     nd4j::ops::scatter_update op;
-    auto results = op.execute({&x, &updates}, {}, {6,   1,1,  2,1,0});
+    auto results = op.evaluate({&x, &updates}, {}, {6,   1,1,  2,1,0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
     // x.printBuffer();
@@ -1672,7 +1672,7 @@ TEST_F(ParityOpsTests, scatter_update_2) {
     NDArray exp('c', {2,2}, {20,10,40,30}, nd4j::DataType::INT32);
 
     nd4j::ops::scatter_update op;
-    auto results = op.execute({&x, &updates}, {}, {6,   1,0,  2,1,0});
+    auto results = op.evaluate({&x, &updates}, {}, {6,   1,0,  2,1,0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1691,7 +1691,7 @@ TEST_F(ParityOpsTests, scatter_update_3) {
     NDArray exp('c', {2,2,2}, {50,60,70,80,10,20,30,40}, nd4j::DataType::INT32);
 
     nd4j::ops::scatter_update op;
-    auto results = op.execute({&x, &updates}, {}, {6,  2,1,2,  2,1,0});
+    auto results = op.evaluate({&x, &updates}, {}, {6,  2,1,2,  2,1,0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1710,7 +1710,7 @@ TEST_F(ParityOpsTests, scatter_update_4) {
     NDArray exp('c', {2,2,2}, {20,2,3,10,60,6,7,50}, nd4j::DataType::INT32);
 
     nd4j::ops::scatter_update op;
-    auto results = op.execute({&x, &updates}, {}, {6,  1,0,  2,3,0});
+    auto results = op.evaluate({&x, &updates}, {}, {6,  1,0,  2,3,0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

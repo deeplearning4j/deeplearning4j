@@ -47,6 +47,9 @@ namespace nd4j {
             std::vector<int> _iArgs;
             std::vector<bool> _bArgs;
             std::vector<int> _axis;
+            std::vector<nd4j::DataType> _dArgs;
+
+            // TODO: remove this field
 			nd4j::DataType _dataType = nd4j::DataType::FLOAT32;
 			bool _isInplace;
 
@@ -93,6 +96,7 @@ namespace nd4j {
             std::vector<double>* getTArguments();
             std::vector<int>* getIArguments();
             std::vector<bool>* getBArguments();
+            std::vector<nd4j::DataType>* getDArguments();
             std::vector<int>* getAxis();
 
             samediff::Engine engine();
@@ -100,6 +104,7 @@ namespace nd4j {
             size_t numT();
             size_t numI();
             size_t numB();
+            size_t numD();
 
             std::pair<int, int>* input(int idx);
 

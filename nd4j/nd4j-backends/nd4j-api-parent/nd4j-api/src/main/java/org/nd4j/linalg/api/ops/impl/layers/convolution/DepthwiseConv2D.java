@@ -77,7 +77,20 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public DepthwiseConv2D() {
+
+
+    public DepthwiseConv2D(INDArray layerInput, INDArray depthWeights, Conv2DConfig conv2DConfig) {
+        this(wrapFilterNull(layerInput, depthWeights), null, conv2DConfig);
+    }
+
+    public DepthwiseConv2D(INDArray layerInput, INDArray depthWeights, INDArray bias, Conv2DConfig conv2DConfig) {
+        this(wrapFilterNull(layerInput, depthWeights, bias), null, conv2DConfig);
+
+
+    }
+
+    public DepthwiseConv2D(INDArray inputs, Conv2DConfig conv2DConfig) {
+        this(wrapFilterNull(inputs), null, conv2DConfig);
     }
 
     @Override

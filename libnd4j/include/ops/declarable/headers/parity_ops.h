@@ -487,7 +487,7 @@ namespace nd4j {
          *
          */
         #if NOT_EXCLUDED(OP_zeros_as)
-        DECLARE_OP(zeros_as, 1, 1, false);
+        DECLARE_CUSTOM_OP(zeros_as, 1, 1, false, 0, 0);
         #endif
 
         /**
@@ -497,7 +497,7 @@ namespace nd4j {
          *
          */
         #if NOT_EXCLUDED(OP_ones_as)
-        DECLARE_OP(ones_as, 1, 1, false);
+        DECLARE_CUSTOM_OP(ones_as, 1, 1, false, 0, 0);
         #endif
 
         /**

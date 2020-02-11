@@ -266,8 +266,8 @@ struct UIVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   VarType type() const {
     return static_cast<VarType>(GetField<int8_t>(VT_TYPE, 0));
   }
-  DataType datatype() const {
-    return static_cast<DataType>(GetField<int8_t>(VT_DATATYPE, 0));
+  DType datatype() const {
+    return static_cast<DType>(GetField<int8_t>(VT_DATATYPE, 0));
   }
   const flatbuffers::Vector<int64_t> *shape() const {
     return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
@@ -342,7 +342,7 @@ struct UIVariableBuilder {
   void add_type(VarType type) {
     fbb_.AddElement<int8_t>(UIVariable::VT_TYPE, static_cast<int8_t>(type), 0);
   }
-  void add_datatype(DataType datatype) {
+  void add_datatype(DType datatype) {
     fbb_.AddElement<int8_t>(UIVariable::VT_DATATYPE, static_cast<int8_t>(datatype), 0);
   }
   void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
@@ -389,7 +389,7 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariable(
     flatbuffers::Offset<IntPair> id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
     VarType type = VarType_VARIABLE,
-    DataType datatype = DataType_INHERIT,
+    DType datatype = DType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
     flatbuffers::Offset<flatbuffers::String> outputOfOp = 0,
@@ -421,7 +421,7 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
     flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
     VarType type = VarType_VARIABLE,
-    DataType datatype = DataType_INHERIT,
+    DType datatype = DType_INHERIT,
     const std::vector<int64_t> *shape = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
     const char *outputOfOp = nullptr,

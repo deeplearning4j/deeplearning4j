@@ -65,6 +65,14 @@ public class DeConv3D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
+    public DeConv3D(INDArray input, INDArray weights, DeConv3DConfig deConv3DConfig) {
+        this(wrapFilterNull(input, weights), wrapOrNull(null), deConv3DConfig);
+    }
+
+    public DeConv3D(INDArray input, INDArray weights, INDArray bias, DeConv3DConfig deConv3DConfig) {
+        this(wrapFilterNull(input, weights, bias), wrapOrNull(null), deConv3DConfig);
+    }
+
     private static SDVariable[] toArr(SDVariable input, SDVariable weights, SDVariable bias){
         if(bias != null){
             return new SDVariable[]{input, weights, bias};

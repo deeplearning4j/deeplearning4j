@@ -91,7 +91,7 @@ namespace ops  {
         }
 
         nd4j::ops::softmax softmax;
-        softmax.execute({weights}, {weights}, {}, {-2}, {}, true);
+        softmax.execute({weights}, std::vector<NDArray*>{weights}, {}, {-2}, {}, {}, true);
 
         mmul.execute({values, weights}, {output}, {}, {}, {});
 
@@ -189,7 +189,7 @@ namespace ops  {
 
         nd4j::ops::matmul_bp mmul_bp;
         NDArray dLdw(weights.getShapeInfo(), block.workspace());
-        mmul_bp.execute({values, &weights, eps}, {dLdv, &dLdw}, {}, {}, {});
+        mmul_bp.execute({values, &weights, eps}, std::vector<NDArray*>{dLdv, &dLdw}, {}, {}, {});
 
         NDArray dLds(preSoftmax.shapeInfo(), block.workspace());
         nd4j::ops::softmax_bp softmax_bp;
@@ -198,7 +198,7 @@ namespace ops  {
         if(normalization)
             dLds /= factor;
 
-        mmul_bp.execute({keys, queries, &dLds}, {dLdk, dLdq}, {}, {1}, {});
+        mmul_bp.execute({keys, queries, &dLds}, std::vector<NDArray*>{dLdk, dLdq}, {}, {1}, {});
 
         return Status::OK();
     }

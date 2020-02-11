@@ -24,6 +24,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.SRUWeights;
 import org.tensorflow.framework.AttrValue;
@@ -52,6 +53,21 @@ public class SRU extends DynamicCustomOp {
         this.mask = mask;
         this.weights = weights;
     }
+
+    public SRU(INDArray x, INDArray initialC, INDArray mask, SRUWeights sruWeights) {
+        super(null, null, wrapFilterNull(x, sruWeights.getWeights(), sruWeights.getBias(), initialC, mask));
+        this.mask = (SDVariable) mask;
+        this.weights = sruWeights;
+    }
+
+    public SRU(INDArray x, INDArray initialC, SRUWeights sruWeights) {
+        super(null, null, wrapFilterNull(x, sruWeights.getWeights(), sruWeights.getBias(), initialC));
+        this.mask = (SDVariable) mask;
+        this.weights = sruWeights;
+    }
+    }
+
+}
 
     @Override
     public String opName() {

@@ -66,7 +66,7 @@ namespace nd4j {
             auto gradY = OUTPUT_VARIABLE(1);
             gradX->assign(epsNext);
             nd4j::ops::floormod op;
-            std::unique_ptr<ResultSet> tmpResult(op.execute({x, y}, {}, {}, {}));
+            std::unique_ptr<ResultSet> tmpResult(op.evaluate({x, y}));
 
             if (gradY->rankOf() == gradX->rankOf())
                 epsNext->applyPairwiseTransform(pairwise::Multiply, *tmpResult->at(0), *gradY);

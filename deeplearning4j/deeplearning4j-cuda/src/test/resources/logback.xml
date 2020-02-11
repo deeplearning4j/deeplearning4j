@@ -19,8 +19,8 @@
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
         <file>logs/application.log</file>
         <encoder>
-            <pattern>%date - [%level] - from %logger in %thread
-                %n%message%n%xException%n</pattern>
+            <pattern> %logger{15} - %message%n%xException{5}
+            </pattern>
         </encoder>
     </appender>
 

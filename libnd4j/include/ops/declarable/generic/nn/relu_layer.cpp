@@ -40,7 +40,7 @@ namespace nd4j {
             //nd4j_printf("Matrix x(%ix%i), Matrix w(%ix%i), b(1x%i)\n", x->sizeAt(0), x->sizeAt(1), w->sizeAt(0), w->sizeAt(1), b->lengthOf());
 
             nd4j::ops::xw_plus_b op;
-            std::unique_ptr<ResultSet> result(op.execute({x, w, b}, {}, {}, {}));
+            std::unique_ptr<ResultSet> result(op.evaluate({x, w, b}));
             REQUIRE_TRUE(Status::OK() == result->status(), 0, "relu_layer: xw_plus_b op failed on input data.");
 
             auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;

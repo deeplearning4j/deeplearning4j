@@ -112,7 +112,7 @@ namespace ops {
         NDArray originalIndices(*indices); //->ordering(), indices->shapeInfo(), indices->dataType());
         originalIndices.linspace(0);
         ops::dynamic_partition op;
-        auto res = op.execute({&originalIndices, indices}, {}, {numPartition});
+        auto res = op.evaluate({&originalIndices, indices}, {numPartition});
         REQUIRE_TRUE(res->status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
         ops::dynamic_stitch stichOp;
         std::vector<NDArray*> partitions(numPartition * 2);
@@ -121,7 +121,7 @@ namespace ops {
             partitions[i + numPartition] = gradOutList[i];
         }
 
-        auto result = stichOp.execute(partitions, {}, {numPartition}, {}, false);
+        auto result = stichOp.evaluate(partitions, {numPartition});
         REQUIRE_TRUE(result->status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
         result->at(0)->reshapei(outputList[0]->getShapeAsVector());
         outputList[1]->assign(indices);

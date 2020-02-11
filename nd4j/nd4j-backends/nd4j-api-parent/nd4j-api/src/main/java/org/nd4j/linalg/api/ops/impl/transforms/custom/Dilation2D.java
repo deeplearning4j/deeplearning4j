@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -56,6 +57,8 @@ public class Dilation2D extends DynamicCustomOp {
     public Dilation2D(SameDiff sameDiff, SDVariable[] inputAndWeights, int[] strides,
                       int[] rates, boolean isSameMode, boolean inPlace ) {
         super(null, sameDiff, inputAndWeights, inPlace);
+        Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates)
+
 
         if (rates.length < 4)
             throw new IllegalArgumentException("Dilation rate length must be 4.");
@@ -79,7 +82,33 @@ public class Dilation2D extends DynamicCustomOp {
     public Dilation2D(INDArray[] inputArrays, INDArray[] outputs) {
         super(null, inputArrays, outputs);
 
+
     }
+
+    public Dilation2D(@NonNull INDArray df, @NonNull INDArray weights, @NonNull int[] strides, @NonNull int[] rates, boolean isSameMode) {
+        super(null, new INDArray[]{df, weights},null);
+        Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates)
+
+        this.isSameMode = isSameMode;
+
+        if (rates.length < 4)
+            throw new IllegalArgumentException("Dilation rate length must be 4.");
+        if (strides.length < 4)
+            throw new IllegalArgumentException("Strides length must be 4.");
+
+        r0 = rates[0];
+        r1 = rates[1];
+        r2 = rates[2];
+        r3 = rates[3];
+        s0 = strides[0];
+        s1 = strides[1];
+        s2 = strides[2];
+        s3 = strides[3];
+        addArgs();
+
+
+    }
+
 
     protected void addArgs() {
         addIArgument(isSameMode ? 1 : 0,

@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -63,6 +64,18 @@ public class BatchToSpace extends DynamicCustomOp {
         for (int e = 0; e < crops.length; e++)
             addIArgument(crops[e][0], crops[e][1]);
     }
+
+    public BatchToSpace(INDArray x, int[] blocks, int[] croppingTop, int[] croppingBottom) {
+        super(null,x,null,null,null);
+        this.blocks = blocks;
+        this.crops = new int[][]{croppingTop,croppingBottom};
+        for (val b : blocks)
+            addIArgument(b);
+
+        for (int e = 0; e < crops.length; e++)
+            addIArgument(crops[e][0], crops[e][1]);
+    }
+
 
     @Override
     public String opName() {

@@ -36,20 +36,16 @@ import java.util.*;
  */
 @NoArgsConstructor
 public class CropAndResize extends DynamicCustomOp {
+
     public enum Method {BILINEAR, NEAREST};
     protected Method method = Method.BILINEAR;
     protected double extrapolationValue = 0.0;
 
-    public CropAndResize(@NonNull SameDiff sameDiff, @NonNull SDVariable image, @NonNull SDVariable cropBoxes, @NonNull SDVariable boxIndices,
-                         @NonNull SDVariable cropOutSize, @NonNull Method method, double extrapolationValue){
-        super(sameDiff, new SDVariable[]{image, cropBoxes, boxIndices, cropOutSize});
-        this.method = method;
-        this.extrapolationValue = extrapolationValue;
-        addArgs();
-    }
+
+
 
     public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
-                         @NonNull INDArray cropOutSize, @NonNull Method method, double extrapolationValue,
+                         @NonNull INDArray cropOutSize, double extrapolationValue,
                          INDArray output){
         super(new INDArray[]{image, cropBoxes, boxIndices, cropOutSize}, null);
         Preconditions.checkArgument(image.rank() == 4, "Input image must be rank 4 with shape [batch, height, width, channels], got %ndShape", image);
@@ -61,6 +57,16 @@ public class CropAndResize extends DynamicCustomOp {
         addArgs();
         outputArguments.add(output);
     }
+
+    public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
+                         @NonNull INDArray cropOutSize, double extrapolationValue) {
+        this(image, cropBoxes, boxIndices, cropOutSize, extrapolationValue, null);
+
+    }
+
+
+
+
 
     @Override
     public String opName() {

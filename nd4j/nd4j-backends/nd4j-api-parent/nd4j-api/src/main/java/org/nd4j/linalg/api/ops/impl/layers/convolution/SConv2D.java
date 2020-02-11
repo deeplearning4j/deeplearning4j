@@ -48,11 +48,21 @@ public class SConv2D extends Conv2D {
         super(inputs, outputs, config);
     }
 
-    public SConv2D(@NonNull INDArray input, @NonNull INDArray depthWeights, INDArray pointWeights, INDArray bias, INDArray output, @NonNull Conv2DConfig config){
-        this(wrapFilterNull(input, depthWeights, pointWeights, bias), wrapOrNull(output), config);
+    public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights, INDArray pointWeights, INDArray bias, @NonNull Conv2DConfig Conv2DConfig){
+        this(wrapFilterNull(layerInput, depthWeights, pointWeights, bias), null, Conv2DConfig);
+    }
+
+    public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights, INDArray pointWeights, @NonNull Conv2DConfig Conv2DConfig){
+        this(wrapFilterNull(layerInput, depthWeights, pointWeights), null, Conv2DConfig);
     }
 
     public SConv2D() {}
+
+    public SConv2D(@NonNull INDArray inputs, Conv2DConfig conv2DConfig) {
+        super(inputs, conv2DConfig);
+    }
+
+
 
     @Override
     public String opName() {

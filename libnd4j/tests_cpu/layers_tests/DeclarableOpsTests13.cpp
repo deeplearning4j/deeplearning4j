@@ -58,7 +58,7 @@ TEST_F(DeclarableOpsTests13, test_pow_1) {
     auto e = NDArrayFactory::create<float>('c', {2, 2}, {8.f, 8.f, 8.f, 8.f});
 
     nd4j::ops::Pow op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -73,7 +73,7 @@ TEST_F(DeclarableOpsTests13, test_empty_range_1) {
     auto limit = NDArrayFactory::create<int>(0);
 
     nd4j::ops::range op;
-    auto result = op.execute({&start, &limit}, {}, {});
+    auto result = op.evaluate({&start, &limit});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -85,7 +85,7 @@ TEST_F(DeclarableOpsTests13, test_empty_range_1) {
 TEST_F(DeclarableOpsTests13, test_empty_range_2) {
 
     nd4j::ops::range op;
-    auto result = op.execute({}, {1.0, 1.0}, {});
+    auto result = op.evaluate({}, {1.0, 1.0});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -97,7 +97,7 @@ TEST_F(DeclarableOpsTests13, test_empty_range_2) {
 TEST_F(DeclarableOpsTests13, test_empty_range_3) {
 
     nd4j::ops::range op;
-    auto result = op.execute({}, {}, {1, 1});
+    auto result = op.evaluate({}, {1, 1});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -143,7 +143,7 @@ TEST_F(DeclarableOpsTests13, test_listdiff_1) {
     auto oi = NDArrayFactory::create<int>('c', {2});
 
     nd4j::ops::listdiff op;
-    auto result = op.execute({&x, &y}, {&od, &oi}, {}, {}, {});
+    auto result = op.execute({&x, &y}, std::vector<NDArray*>{&od, &oi}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 }
 
@@ -152,7 +152,7 @@ TEST_F(DeclarableOpsTests13, test_greater_1) {
     auto y = NDArrayFactory::create<float>('c', {1, 4});
 
     nd4j::ops::greater op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y});
     ASSERT_EQ(Status::OK(), result->status());
 
     delete result;
@@ -165,7 +165,7 @@ TEST_F(DeclarableOpsTests13, test_eval_reduction_shape_1) {
     auto exp = NDArrayFactory::create<Nd4jLong>('c', {2}, {1, 2});
 
     nd4j::ops::evaluate_reduction_shape op;
-    auto result = op.execute({&x, &y}, {}, {}, {true});
+    auto result = op.evaluate({&x, &y}, {true});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -218,7 +218,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_1) {
     auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
     auto exp = NDArrayFactory::create<double>('c', {2,3}, {1.2,2.2,3.2,4.2,5.2,6.2});
     nd4j::ops::barnes_gains op;
-    auto result = op.execute({&x, &y, &eps}, {}, {});
+    auto result = op.evaluate({&x, &y, &eps});
     ASSERT_EQ(result->status(), Status::OK());
     //result->at(0)->printBuffer("Gains out");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
@@ -232,7 +232,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_2) {
     auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
     auto exp = NDArrayFactory::create<double>('c', {2,3}, {1.2, 0.01, 3.2, 0.01, 5.2, 0.01});
     nd4j::ops::barnes_gains op;
-    auto result = op.execute({&x, &y, &eps}, {}, {});
+    auto result = op.evaluate({&x, &y, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
     //result->at(0)->printBuffer("Gains out");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
@@ -247,7 +247,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_GainsTest_3) {
     auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
     auto exp = NDArrayFactory::create<double>('c', {2,3}, {0.01, 2.2, 0.01, 4.2, 0.01, 6.2});
     nd4j::ops::barnes_gains op;
-    auto result = op.execute({&x, &y, &eps}, {}, {});
+    auto result = op.evaluate({&x, &y, &eps}, {}, {});
     ASSERT_EQ(result->status(), Status::OK());
     //result->at(0)->printBuffer("Gains out");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
@@ -269,7 +269,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
 //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
 //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
     nd4j::ops::barnes_edge_forces op;
-    auto result = op.execute({&rows, &cols, &vals, &data}, {}, {1});
+    auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {1});
 
 
     ASSERT_EQ(result->status(), Status::OK());
@@ -293,7 +293,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
 //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
 //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
     nd4j::ops::barnes_edge_forces op;
-    auto result = op.execute({&rows, &cols, &vals, &data}, {}, {2});
+    auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {2});
 
 
     ASSERT_EQ(result->status(), Status::OK());
@@ -317,7 +317,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_3) {
 //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
 //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
     nd4j::ops::barnes_edge_forces op;
-    auto result = op.execute({&rows, &cols, &vals, &data}, {}, {11});
+    auto result = op.evaluate({&rows, &cols, &vals, &data}, {}, {11});
 
     //nd4j_printf("rows %lld, cols %lld, vals %lld, res full %lld\n", rows.lengthOf(), cols.lengthOf(), vals.lengthOf(), exp1.lengthOf());
     ASSERT_EQ(result->status(), Status::OK());
@@ -340,7 +340,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_1) {
 //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
 //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
     nd4j::ops::barnes_symmetrized op;
-    auto result = op.execute({&rows, &cols, &vals}, {}, {1});
+    auto result = op.evaluate({&rows, &cols, &vals}, {}, {1});
     ASSERT_EQ(result->status(), Status::OK());
     //result->at(2)->printBuffer("Symmetrized1");
     ASSERT_TRUE(exp.equalsTo(result->at(2)));
@@ -359,7 +359,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
 //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
 //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
     nd4j::ops::barnes_symmetrized op;
-    auto result = op.execute({&rows, &cols, &vals}, {}, {3});
+    auto result = op.evaluate({&rows, &cols, &vals}, {}, {3});
     ASSERT_EQ(result->status(), Status::OK());
     //result->at(2)->printBuffer("Symmetrized2");
     //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
@@ -378,7 +378,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_3) {
 //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
 //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
     nd4j::ops::barnes_symmetrized op;
-    auto result = op.execute({&rows, &cols, &vals}, {}, {11});
+    auto result = op.evaluate({&rows, &cols, &vals}, {}, {11});
     ASSERT_EQ(result->status(), Status::OK());
     //result->at(2)->printBuffer("Symmetrized3");
     //exp.printBuffer("EXPect symm3");
@@ -402,7 +402,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
 //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
 //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
     nd4j::ops::barnes_symmetrized op;
-    auto result = op.execute({&rows, &cols, &vals}, {}, {11});
+    auto result = op.evaluate({&rows, &cols, &vals}, {}, {11});
     ASSERT_EQ(result->status(), Status::OK());
     auto res = result->at(2);
   //  res->printBuffer("Symmetrized4");
@@ -428,7 +428,7 @@ TEST_F(DeclarableOpsTests13, CellContains_test_1) {
     //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
     //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
     nd4j::ops::cell_contains op;
-    auto result = op.execute({&corners, &width, &point}, {}, {5});
+    auto result = op.evaluate({&corners, &width, &point}, {}, {5});
     ASSERT_EQ(result->status(), Status::OK());
     ASSERT_TRUE(result->at(0)->e<bool>(0));
     //result->at(2)->printBuffer("Symmetrized3");
@@ -446,7 +446,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_1) {
     NDArray exp  ('c', {2,2,3}, {100,0,44, 208,5,220, 177,230,97,  2,255,244}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    std::unique_ptr<nd4j::ResultSet> results (op.execute({&input, &factor}, {}, {2}));
+    std::unique_ptr<nd4j::ResultSet> results (op.evaluate({&input, &factor}, {}, {2}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -467,7 +467,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_2) {
 
 
     nd4j::ops::adjust_hue op;
-    std::unique_ptr<nd4j::ResultSet> results(op.execute({&input}, {0.9}, {2}));
+    std::unique_ptr<nd4j::ResultSet> results(op.evaluate({&input}, {0.9}, {2}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -487,7 +487,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_3) {
     NDArray exp  ('c', {2,2,3}, {0.,84.,100., 5.,220.,122.0001,  229.8,97.,230., 255.,142.8002,2.}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    std::unique_ptr<nd4j::ResultSet> results(op.execute({&input}, {-0.9}, {2}));
+    std::unique_ptr<nd4j::ResultSet> results(op.evaluate({&input}, {-0.9}, {2}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -506,7 +506,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_4) {
     NDArray exp  ('c', {2,3,2}, {100,208, 0,5,   44,220,  177,2,   230,255, 97,244}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    std::unique_ptr<nd4j::ResultSet> results(op.execute({&input}, {0.5}, {1}));
+    std::unique_ptr<nd4j::ResultSet> results(op.evaluate({&input}, {0.5}, {1}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -525,7 +525,7 @@ TEST_F(DeclarableOpsTests13, adjustHue_5) {
     NDArray exp  ('c', {3,2,2}, {100,208, 177,2,  0,5, 230,255,   44,220, 97,244}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_hue op;
-    std::unique_ptr<nd4j::ResultSet> results(op.execute({&input}, {0.5}, {0}));
+    std::unique_ptr<nd4j::ResultSet> results(op.evaluate({&input}, {0.5}, {0}));
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -545,7 +545,7 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_1) {
     NDArray exp  ('c', {2,2,3}, {50,100,78, 118.5,220,112.5,  190,163.5,230, 255,128.5,134}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_saturation op;
-    auto results = op.execute({&input, &factor}, {}, {2});
+    auto results = op.evaluate({&input, &factor}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -564,7 +564,7 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_2) {
     NDArray exp  ('c', {2,2,3}, {0.,100.,56., 12.279087,220.,0., 91.654228,0.,230., 255.,0.,11.087015}, nd4j::DataType::DOUBLE);
 
     nd4j::ops::adjust_saturation op;
-    auto results = op.execute({&input}, {10}, {2});
+    auto results = op.evaluate({&input}, {10}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -585,7 +585,7 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_3) {
     NDArray exp  ('c', {2,2,3}, {100.,100.,100., 220.,220.,220., 230.,230.,230., 255., 255., 255.}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_saturation op;
-    auto results = op.execute({&input}, {-10}, {2});
+    auto results = op.evaluate({&input}, {-10}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -605,7 +605,7 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_4) {
     NDArray exp  ('c', {2,3,2}, {50,118.5, 100,220, 78,112.5,  190,255, 163.5,128.5, 230,134}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_saturation op;
-    auto results = op.execute({&input}, {0.5}, {1});
+    auto results = op.evaluate({&input}, {0.5}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -625,7 +625,7 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_5) {
     NDArray exp  ('c', {3,2,2}, {50,118.5, 190,255,  100,220,  163.5,128.5, 78,112.5, 230,134}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::adjust_saturation op;
-    auto results = op.execute({&input}, {0.5}, {0});
+    auto results = op.evaluate({&input}, {0.5}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -646,7 +646,7 @@ TEST_F(DeclarableOpsTests13, shift_bits_1) {
     e.assign(512);
 
     nd4j::ops::shift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -664,7 +664,7 @@ TEST_F(DeclarableOpsTests13, rshift_bits_1) {
     e.assign(32);
 
     nd4j::ops::rshift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -682,7 +682,7 @@ TEST_F(DeclarableOpsTests13, cyclic_shift_bits_1) {
     e.assign(512);
 
     nd4j::ops::cyclic_shift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -700,7 +700,7 @@ TEST_F(DeclarableOpsTests13, cyclic_rshift_bits_1) {
     e.assign(32);
 
     nd4j::ops::cyclic_rshift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -719,7 +719,7 @@ TEST_F(DeclarableOpsTests13, shift_bits_2) {
     e.assign(512);
 
     nd4j::ops::shift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -738,7 +738,7 @@ TEST_F(DeclarableOpsTests13, rshift_bits_2) {
     e.assign(32);
 
     nd4j::ops::rshift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -757,7 +757,7 @@ TEST_F(DeclarableOpsTests13, cyclic_shift_bits_2) {
     e.assign(512);
 
     nd4j::ops::cyclic_shift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -776,7 +776,7 @@ TEST_F(DeclarableOpsTests13, cyclic_rshift_bits_2) {
     e.assign(32);
 
     nd4j::ops::cyclic_rshift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -794,7 +794,7 @@ TEST_F(DeclarableOpsTests13, shift_bits_3) {
     e.assign(512);
 
     nd4j::ops::shift_bits op;
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -809,7 +809,7 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_1) {
 
     NDArray x('c', {1, 2, 2, 2, 3}, nd4j::DataType::FLOAT32);
     NDArray blockShape('c', {3}, {2, 2, 2} , nd4j::DataType::INT32);    // three spatial dimensions
-    NDArray paddings('c', {3, 2}, {0, 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
+    NDArray paddings('c', {3, 2}, std::vector<double>{0, 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
 
     NDArray exp('c', {8, 1, 1, 1, 3}, nd4j::DataType::FLOAT32);
 
@@ -817,7 +817,7 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_1) {
     exp.linspace(1);
 
     nd4j::ops::space_to_batch_nd op;
-    auto result = op.execute({&x, &blockShape, &paddings}, {}, {});
+    auto result = op.evaluate({&x, &blockShape, &paddings}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -844,7 +844,7 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_2) {
     x.linspace(1);
 
     nd4j::ops::space_to_batch_nd op;
-    auto result = op.execute({&x, &blockShape, &paddings}, {}, {});
+    auto result = op.evaluate({&x, &blockShape, &paddings}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -875,7 +875,7 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_3) {
     x.linspace(1);
 
     nd4j::ops::space_to_batch_nd op;
-    auto result = op.execute({&x, &blockShape, &paddings}, {}, {});
+    auto result = op.evaluate({&x, &blockShape, &paddings}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -892,8 +892,8 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_1) {
 
     NDArray x('c', {8, 1, 1, 1, 3}, nd4j::DataType::FLOAT32);
 
-    NDArray blockShape('c', {3}, {2, 2, 2} , nd4j::DataType::INT32);    // three spatial dimensions
-    NDArray crop('c', {3, 2}, {0, 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
+    NDArray blockShape('c', {3}, {2., 2, 2} , nd4j::DataType::INT32);    // three spatial dimensions
+    NDArray crop('c', {3, 2}, {0., 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
 
     NDArray exp('c', {1, 2, 2, 2, 3}, nd4j::DataType::FLOAT32);
 
@@ -901,7 +901,7 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_1) {
     exp.linspace(1);
 
     nd4j::ops::batch_to_space_nd op;
-    auto result = op.execute({&x, &blockShape, &crop}, {}, {});
+    auto result = op.evaluate({&x, &blockShape, &crop}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -924,7 +924,7 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_2) {
     x.linspace(1);
 
     nd4j::ops::batch_to_space_nd op;
-    auto result = op.execute({&x, &blockShape, &crop}, {}, {});
+    auto result = op.evaluate({&x, &blockShape, &crop}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -948,7 +948,7 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_3) {
     x.linspace(1);
 
     nd4j::ops::batch_to_space_nd op;
-    auto result = op.execute({&x, &blockShape, &crop}, {}, {});
+    auto result = op.evaluate({&x, &blockShape, &crop}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -974,7 +974,7 @@ TEST_F(DeclarableOpsTests13, mergemax_1) {
 
 
     nd4j::ops::mergemax op;
-    auto result = op.execute({&x1, &x2, &x3}, {}, {});
+    auto result = op.evaluate({&x1, &x2, &x3}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -990,7 +990,7 @@ TEST_F(DeclarableOpsTests13, mergemax_1) {
 TEST_F(DeclarableOpsTests13, mergemax_2) {
 
     NDArray x1('c', {1, 3}, {0., 1, 2}, nd4j::DataType::FLOAT32);
-    NDArray x2('c', {1, 1}, {1.}, nd4j::DataType::FLOAT32);
+    NDArray x2('c', {1, 1}, std::vector<double>{1.}, nd4j::DataType::FLOAT32);
     NDArray out('c', {1, 3}, {-1., -1, -1}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::mergemax op;
@@ -1040,9 +1040,9 @@ TEST_F(DeclarableOpsTests13, lstmLayer_1) {
     hI = 1.;
     cI = 2.;
 
-    std::initializer_list<double>   tArgs = {cellClip};
-    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
-    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     auto expH = NDArrayFactory::create<float>('c', {sL, bS, nOut}, {0.57574f, 0.57574f, 0.57574f, 0.58006f, 0.58006f, 0.58006f, 0.58434f, 0.58434f, 0.58434f,
                                                            0.55114f, 0.55114f, 0.55114f, 0.55732f, 0.55732f, 0.55732f, 0.56338f, 0.56338f, 0.56338f,
@@ -1053,7 +1053,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_1) {
     auto expClast = NDArrayFactory::create<float>('c', {bS, nOut}, {1.1589154f, 1.1589154f, 1.1589154f, 1.1892855f, 1.1892855f, 1.1892855f, 1.219861f, 1.219861f, 1.219861f});
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1110,9 +1110,9 @@ TEST_F(DeclarableOpsTests13, lstmLayer_2) {
     hI = 1.;
     cI = 2.;
 
-    std::initializer_list<double>   tArgs = {cellClip};
-    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
-    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     auto expH = NDArrayFactory::create<float>('c', {bS, sL, nOut}, {0.575735f, 0.575735f, 0.575735f, 0.541562f, 0.541562f, 0.541562f, 0.514003f, 0.514003f, 0.514003f, 0.495597f, 0.495597f, 0.495597f, 0.485999f, 0.485999f, 0.485999f,
                                             0.596965f, 0.596965f, 0.596965f, 0.571978f, 0.571978f, 0.571978f, 0.552888f, 0.552888f, 0.552888f, 0.540606f, 0.540606f, 0.540606f, 0.534764f, 0.534764f, 0.534764f,
@@ -1121,7 +1121,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_2) {
     auto expClast = NDArrayFactory::create<float>('c', {bS, nOut}, {0.996965f, 0.996965f, 0.996965f, 1.146756f, 1.146756f, 1.146756f, 1.301922f, 1.301922f, 1.301922f});
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1178,9 +1178,9 @@ TEST_F(DeclarableOpsTests13, lstmLayer_3) {
     hI = 1.;
     cI = 2.;
 
-    std::initializer_list<double>   tArgs = {cellClip};
-    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
-    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     NDArray expH('c', {sL, bS, nOut}, {0.493883f, 0.493883f, 0.493883f, 0.510990f, 0.510990f, 0.510990f, 0.534701f, 0.534701f, 0.534701f, 0.549139f,
                                         0.549139f, 0.549139f, 0.571900f, 0.571900f, 0.571900f, 0.583561f, 0.583561f, 0.583561f, 0.605106f, 0.605106f,
@@ -1190,7 +1190,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_3) {
     NDArray expCL('c', {bS, nOut}, {1.061274f, 1.061274f, 1.061274f, 1.115888f, 1.115888f, 1.115888f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1256,9 +1256,9 @@ TEST_F(DeclarableOpsTests13, lstmLayer_4) {
     cI({0,1, 0,0, 0,0}) = 2;
     cI({1,2, 0,0, 0,0}) = -2;
 
-    std::initializer_list<double>   tArgs = {cellClip};
-    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
-    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     NDArray expH('c', {sL, bS, 2 * nOut}, {
                                          0.577661f,  0.577661f,  0.577661f, -0.107642f, -0.107642f, -0.107642f,  0.585289f,  0.585289f,  0.585289f,
@@ -1275,7 +1275,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_4) {
                                     -0.295768f, -0.295768f, -0.298453f, -0.298453f, -0.298453f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1340,9 +1340,9 @@ TEST_F(DeclarableOpsTests13, lstmLayer_5) {
     cI({0,1, 0,0, 0,0}) = 2;
     cI({1,2, 0,0, 0,0}) = -2;
 
-    std::initializer_list<double>   tArgs = {cellClip};
-    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
-    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     NDArray expH('c', {bS, sL, 2*nOut}, {
         0.577661f,  0.577661f,  0.577661f, -0.107659f, -0.107659f, -0.107659f, 0.548099f,  0.548099f,  0.548099f, -0.113406f, -0.113406f, -0.113406f,
@@ -1357,7 +1357,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_5) {
                                     -0.295811f, -0.295811f, -0.295811f, -0.305394f, -0.305394f, -0.305394f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1426,9 +1426,9 @@ TEST_F(DeclarableOpsTests13, lstmLayer_6) {
     cI({0,1, 0,0, 0,0}) = 2;
     cI({1,2, 0,0, 0,0}) = -2;
 
-    std::initializer_list<double>   tArgs = {cellClip};
-    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
-    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     NDArray expH('c', {sL, bS, nOut}, {
         0.470019f, 0.470019f, 0.470019f, 0.478352f, 0.478352f, 0.478352f, 0.444871f, 0.444871f, 0.444871f, 0.457060f,
@@ -1443,7 +1443,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_6) {
                                       nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1519,7 +1519,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_7) {
     NDArray expCL('c', {bS, nOut}, {1.147089, 1.147089, 1.147089,1.197228, 1.197228, 1.197228}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1597,7 +1597,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_8) {
     NDArray expCL('c', {bS, nOut}, {0.879804f, 0.879804f, 0.879804f, 0.914666f, 0.914666f, 0.914666f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1684,7 +1684,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_9) {
                                      -0.292174f, -0.292174f, -0.292174f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1769,7 +1769,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_10) {
     NDArray expCL('c', {bS, nOut}, {0.f, 0.f, 0.f, 1.534275f, 1.534275f, 1.534275f,  1.40183f,  1.40183f,  1.40183f, 1.449675f, 1.449675f, 1.449675f, 1.767702f, 1.767702f, 1.767702f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1849,7 +1849,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_11) {
     NDArray expCL('c', {bS, nOut}, {0.f, 0.f, 0.f, 2.092814f, 2.092814f, 2.092814f,  2.08832f,  2.08832f,  2.08832f, 2.009851f, 2.009851f, 2.009851f, 1.646034f, 1.646034f, 1.646034f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1940,7 +1940,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_12) {
                                       0.f, 0.f, 0.f, -0.86636f, -0.86636f, -0.86636f,  -0.470245f, -0.470245f, -0.470245f, -0.341856f, -0.341856f, -0.341856f,  -0.294986f, -0.294986f, -0.294986f}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::lstmLayer op;
-    auto results = op.execute({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    auto results = op.evaluate({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -1977,7 +1977,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test1) {
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2010,7 +2010,7 @@ TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test2) {
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2039,7 +2039,7 @@ TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test3) {
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2067,7 +2067,7 @@ TYPED_TEST(TypedDeclarableOpsTests13, batchnorm_test4) {
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,0,2});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,0,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2095,7 +2095,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test5) {
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1, 1, 1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2124,7 +2124,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test6) {
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,3});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2143,10 +2143,10 @@ TEST_F(DeclarableOpsTests13, batchnorm_test7) {
     NDArray input2('c', {3,15,15,3}, nd4j::DataType::FLOAT32);
     input2.permutei({0,3,1,2});
 
-    NDArray mean    ('c', {3}, {0, 0, 0}, nd4j::DataType::FLOAT32);
-    NDArray variance('c', {3}, {1, 1, 1}, nd4j::DataType::FLOAT32);
-    NDArray gamma   ('c', {3}, {1, 1, 1}, nd4j::DataType::FLOAT32);
-    NDArray beta    ('c', {3}, {0, 0, 0}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {3}, {0., 0, 0}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {3}, {1., 1, 1}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {3}, {1., 1, 1}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {3}, {0., 0, 0}, nd4j::DataType::FLOAT32);
 
     NDArray out1('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
     NDArray out2('c', {3,3,15,15}, nd4j::DataType::FLOAT32);
@@ -2193,7 +2193,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test8) {
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1, 1,2,3});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1, 1,2,3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2236,7 +2236,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test9) {
 
     nd4j::ops::batchnorm op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1, 1,2,3,4});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1, 1,2,3,4});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2271,7 +2271,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test1) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2314,7 +2314,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test2) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2356,7 +2356,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test3) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,0,2});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,0,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2395,7 +2395,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test4) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2439,7 +2439,7 @@ return;
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2484,7 +2484,7 @@ return;
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,3});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2532,7 +2532,7 @@ return;
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,4});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,4});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2581,7 +2581,7 @@ return;
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2635,7 +2635,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test9) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2687,7 +2687,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test10) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,3});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2751,7 +2751,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1, 1,2,3});
+    auto results = op.evaluate({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1, 1,2,3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

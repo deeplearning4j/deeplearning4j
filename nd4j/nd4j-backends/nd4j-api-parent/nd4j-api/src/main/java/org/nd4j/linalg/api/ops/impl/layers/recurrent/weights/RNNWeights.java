@@ -2,6 +2,7 @@ package org.nd4j.linalg.api.ops.impl.layers.recurrent.weights;
 
 import java.util.Arrays;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.ArrayUtil;
 
 public abstract class RNNWeights {
@@ -32,4 +33,8 @@ public abstract class RNNWeights {
     public SDVariable[] argsWithInputs(SDVariable... inputs){
         return ArrayUtil.combine(inputs, args());
     }
+
+    public SDVariable[] argsWithInputs(INDArray... inputs) { return (SDVariable[]) ArrayUtil.combine(inputs, args()); };
+
+
 }

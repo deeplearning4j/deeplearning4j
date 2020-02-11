@@ -1019,15 +1019,6 @@ std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const
     return numOfMinTads == 1 ? maxTadDims : std::vector<int>();
 }
 
-
-Nd4jLong ShapeUtils::stringBufferHeaderRequirements(Nd4jLong numStrings) {
-    // we store +1 offset
-    auto base = numStrings + 1;
-
-    // since we return number of bytes...
-    return base * sizeof(Nd4jLong);
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 /*
 bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2, std::vector<int>& sameDims) {

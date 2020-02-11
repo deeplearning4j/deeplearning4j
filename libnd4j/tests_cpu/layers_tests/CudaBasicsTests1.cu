@@ -132,11 +132,11 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
     NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::BFLOAT16);    
     NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
     
-    NDArray scalar('c', {}, {0}, nd4j::DataType::INT64);
+    NDArray scalar('c', {}, std::vector<double>{0}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {}, {3}, nd4j::DataType::INT64);
-    NDArray exp2('c', {}, {2}, nd4j::DataType::INT64);
-    NDArray exp3('c', {}, {1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {}, std::vector<double>{2}, nd4j::DataType::INT64);
+    NDArray exp3('c', {}, std::vector<double>{1}, nd4j::DataType::INT64);
 
     void *dX1, *dX2, *dX3, *dZ; 
     Nd4jLong *dX1ShapeInfo, *dX2ShapeInfo, *dX3ShapeInfo, *dZShapeInfo;
@@ -262,11 +262,11 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
     NDArray x3('c', {2,2}, {1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {1,2,3,4}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {}, {-30.f}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {}, {15.}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, std::vector<double>{-30.f}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {}, std::vector<double>{15.}, nd4j::DataType::DOUBLE);
     
-	NDArray scalar1('c', {}, {100.f}, nd4j::DataType::FLOAT32);
-    NDArray scalar2('c', {}, {100.}, nd4j::DataType::DOUBLE);
+	NDArray scalar1('c', {}, std::vector<double>{100.f}, nd4j::DataType::FLOAT32);
+    NDArray scalar2('c', {}, std::vector<double>{100.}, nd4j::DataType::DOUBLE);
 
     void *dX1, *dX2, *dX3, *dX4, *dZ1, *dZ2; 
     Nd4jLong *dX1ShapeInfo, *dX3ShapeInfo, *dZ1ShapeInfo, *dZ2ShapeInfo;
@@ -363,8 +363,8 @@ TEST_F(CudaBasicsTests1, execReduce3_1) {
     NDArray x('c', {2,2}, {1,2,3,4}, nd4j::DataType::INT32);
     NDArray y('c', {2,2}, {-1,-2,-3,-4}, nd4j::DataType::INT32);
 
-    NDArray exp('c', {}, {-30.f}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {}, {100.f},  nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, std::vector<double>{-30.f}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100.f},  nd4j::DataType::FLOAT32);
 
     std::vector<int> dimensions = {0, 1};
 
@@ -415,8 +415,8 @@ TEST_F(CudaBasicsTests1, execReduce3_2) {
 	NDArray x('c', {2,2}, {1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray y('c', {2,2}, {1,2,3,4}, nd4j::DataType::DOUBLE);
 
-    NDArray exp('c', {}, {15.}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {}, {100.},  nd4j::DataType::DOUBLE);
+    NDArray exp('c', {}, std::vector<double>{15.}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {}, std::vector<double>{100.},  nd4j::DataType::DOUBLE);
    
     std::vector<int> dimensions = {0, 1};   
 
@@ -975,7 +975,7 @@ TEST_F(CudaBasicsTests1, execScalar_1) {
     	
     NDArray x('c', {2,3},  {0,1,2,3,4,5}, nd4j::DataType::INT64); 
     NDArray exp('c',{2,3}, {0,0,1,1,2,2}, nd4j::DataType::INT64);
-    NDArray scalar('c',{}, {2.f}, nd4j::DataType::FLOAT32);
+    NDArray scalar('c',{}, std::vector<double>{2.f}, nd4j::DataType::FLOAT32);
     NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::INT64);
     
 	// create cuda stream and LaunchContext
@@ -1010,7 +1010,7 @@ TEST_F(CudaBasicsTests1, execScalar_2) {
     	
     NDArray x('c', {2,3},  {-1,-2,-3,-4,-5,-6}, nd4j::DataType::INT64); 
     NDArray exp('c',{2,3}, {10,10,10,10,10,10}, nd4j::DataType::FLOAT32);
-    NDArray scalar('c',{}, {10.f}, nd4j::DataType::FLOAT32);
+    NDArray scalar('c',{}, std::vector<double>{10.f}, nd4j::DataType::FLOAT32);
     NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     
 	// create cuda stream and LaunchContext
@@ -1103,7 +1103,7 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 TEST_F(CudaBasicsTests1, execScalarBool_1) {
     	
     NDArray x('c', {2,3},  {-1,-2,0,1,2,3}, nd4j::DataType::BFLOAT16); 
-    NDArray scalar('c',{}, {0}, nd4j::DataType::BFLOAT16);
+    NDArray scalar('c',{}, std::vector<double>{0}, nd4j::DataType::BFLOAT16);
     NDArray exp('c',{2,3}, {0,0,0,1,1,1}, nd4j::DataType::BOOL);    
     NDArray z('c', {2,3}, {100,100,100,100,100,100,}, nd4j::DataType::BOOL);    
 	
@@ -2245,8 +2245,8 @@ TEST_F(CudaBasicsTests1, execReduceLong_2) {
 TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, {100}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {}, {6.5}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, std::vector<double>{6.5}, nd4j::DataType::FLOAT32);
     x.permutei({2,1,0});
        
 	// create cuda stream and LaunchContext
@@ -2282,8 +2282,8 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
 TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, {100}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {}, {6.5}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {}, std::vector<double>{6.5}, nd4j::DataType::DOUBLE);
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2318,8 +2318,8 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
 TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, {100}, nd4j::DataType::INT32);
-    NDArray exp('c', {}, {156}, nd4j::DataType::INT32);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::INT32);
+    NDArray exp('c', {}, std::vector<double>{156}, nd4j::DataType::INT32);
     x.permutei({2,1,0});
        
 	// create cuda stream and LaunchContext
@@ -2355,8 +2355,8 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
 TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {}, {100}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {}, {156}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {}, std::vector<double>{156}, nd4j::DataType::DOUBLE);
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2391,8 +2391,8 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
 TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, {100}, nd4j::DataType::BOOL);
-    NDArray exp('c', {}, {1}, nd4j::DataType::BOOL);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::BOOL);
+    NDArray exp('c', {}, std::vector<double>{1}, nd4j::DataType::BOOL);
     x.permutei({2,1,0});
     x.syncShape();    
        
@@ -2429,8 +2429,8 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
 TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {}, {100}, nd4j::DataType::BOOL);
-    NDArray exp('c', {}, {1}, nd4j::DataType::BOOL);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::BOOL);
+    NDArray exp('c', {}, std::vector<double>{1}, nd4j::DataType::BOOL);
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2465,8 +2465,8 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
 TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
     	   	
     NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, {100}, nd4j::DataType::INT64);
-    NDArray exp('c', {}, {17}, nd4j::DataType::INT64);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::INT64);
+    NDArray exp('c', {}, std::vector<double>{17}, nd4j::DataType::INT64);
     x.permutei({2,1,0});
     x.syncShape();    
        
@@ -2503,8 +2503,8 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
 TEST_F(CudaBasicsTests1, execReduceLongScalar_2) {
     	   	
     NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {}, {100}, nd4j::DataType::INT64);
-    NDArray exp('c', {}, {17}, nd4j::DataType::INT64);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::INT64);
+    NDArray exp('c', {}, std::vector<double>{17}, nd4j::DataType::INT64);
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2685,8 +2685,8 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
     	
     NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
     NDArray y('c', {2,2,3}, {10,20,30,40,50,60,70,80,90,100,110,120}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {}, {1820}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {}, {100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, std::vector<double>{1820}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
 
     std::vector<int> dimensions = {0,1,2};
 
@@ -2739,8 +2739,8 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 TEST_F(CudaBasicsTests1, execSummaryStats_1) {
     	
     NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::INT64);    
-    NDArray exp('c', {}, {3.605551}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {}, {100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, std::vector<double>{3.605551}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
 
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2881,8 +2881,8 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 TEST_F(CudaBasicsTests1, execSummaryStatsScalar_1) {
     	
     NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::INT64);
-    NDArray exp('c', {}, {3.605551}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {}, {100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, std::vector<double>{3.605551}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
 
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;

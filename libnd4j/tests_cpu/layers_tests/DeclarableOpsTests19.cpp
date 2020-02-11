@@ -38,3 +38,32 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(DeclarableOpsTests19, test_conv1d_bp_1) {
+    /*
+    DynamicCustomOp op = DynamicCustomOp.builder("conv1d_bp")
+            .addInputs(
+                    Nd4j.create(DataType.FLOAT, 2,2,12),
+                    Nd4j.create(DataType.FLOAT, 3,2,3),
+                    Nd4j.create(DataType.FLOAT, 2,3,6)
+            )
+            .addOutputs(
+                    Nd4j.create(DataType.FLOAT, 2,2,12),
+                    Nd4j.create(DataType.FLOAT, 3,2,3))
+            .addIntegerArguments(3,2,0,1,2,0)
+            .build();
+
+    Nd4j.exec(op);
+     */
+
+    auto t = NDArrayFactory::create<float>('c', {2, 2, 12});
+    auto u = NDArrayFactory::create<float>('c', {3, 2, 3});
+    auto v = NDArrayFactory::create<float>('c', {2, 3, 6});
+
+    nd4j::ops::conv1d_bp op;
+    auto result = op.evaluate({&t, &u, &v}, {3, 2, 0, 1, 2,0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+
+    delete result;
+}

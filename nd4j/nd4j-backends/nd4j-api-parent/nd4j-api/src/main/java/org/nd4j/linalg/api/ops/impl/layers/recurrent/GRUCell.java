@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.GRUWeights;
 
@@ -45,6 +46,12 @@ public class GRUCell extends DynamicCustomOp {
         super(null, sameDiff, weights.argsWithInputs(x, hLast));
         this.weights = weights;
     }
+
+    public GRUCell(INDArray x, INDArray hLast, GRUWeights gruWeights) {
+        super(null, null, gruWeights.argsWithInputs(x, hLast));
+        this.weights = gruWeights;
+    }
+
 
     @Override
     public String opName() {

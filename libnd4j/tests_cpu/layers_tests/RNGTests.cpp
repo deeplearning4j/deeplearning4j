@@ -257,7 +257,7 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));
     nd4j::ops::moments op;
-    auto result = op.execute({&x0}, {}, {});
+    auto result = op.evaluate({&x0}, {}, {});
     //x0.printIndexedBuffer("X0 Normal");
     //x1.printIndexedBuffer("X1 Normal");
     ASSERT_TRUE(result->status() == Status::OK());
@@ -289,7 +289,7 @@ TEST_F(RNGTests, Test_Gaussian_22) {
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));
     nd4j::ops::moments op;
-    auto result = op.execute({&x0}, {}, {});
+    auto result = op.evaluate({&x0}, {}, {});
     //x0.printIndexedBuffer("X0 Normal");
     //x1.printIndexedBuffer("X1 Normal");
     ASSERT_TRUE(result->status() == Status::OK());
@@ -412,14 +412,14 @@ TEST_F(RNGTests, Test_Truncated_21) {
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.002);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.5);
     nd4j::ops::moments op;
-    auto result = op.execute({&x0}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
+    auto result = op.evaluate({&x0}, {}, {}, {}, {}, false);
     // result->at(0)->printBuffer("MEAN");
     // result->at(1)->printBuffer("VARIANCE");
     delete result;
     nd4j::ops::reduce_min minOp;
     nd4j::ops::reduce_max maxOp;
-    auto minRes = minOp.execute({&x1}, {}, {}, {});
-    auto maxRes = maxOp.execute({&x0}, {}, {}, {});
+    auto minRes = minOp.evaluate({&x1}, {}, {}, {});
+    auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
     // minRes->at(0)->printBuffer("MIN for Truncated");
     // maxRes->at(0)->printBuffer("MAX for Truncated");
 
@@ -459,14 +459,14 @@ TEST_F(RNGTests, Test_Truncated_22) {
     ASSERT_NEAR(mean.e<float>(0), 2.f, 0.01);
     ASSERT_NEAR(deviation.e<float>(0), 4.f, 0.52);
     nd4j::ops::moments op;
-    auto result = op.execute({&x0}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
+    auto result = op.evaluate({&x0}, {}, {}, {}, {}, false);
     // result->at(0)->printBuffer("MEAN");
     // result->at(1)->printBuffer("VARIANCE");
     delete result;
     nd4j::ops::reduce_min minOp;
     nd4j::ops::reduce_max maxOp;
-    auto minRes = minOp.execute({&x1}, {}, {}, {});
-    auto maxRes = maxOp.execute({&x0}, {}, {}, {});
+    auto minRes = minOp.evaluate({&x1}, {}, {}, {});
+    auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
     // minRes->at(0)->printBuffer("MIN for Truncated2");
     // maxRes->at(0)->printBuffer("MAX for Truncated2");
 
@@ -506,14 +506,14 @@ TEST_F(RNGTests, Test_Truncated_23) {
     ASSERT_NEAR(mean.e<float>(0), 0.f, 0.01);
     ASSERT_NEAR(deviation.e<float>(0), 1.f, 0.5);
     nd4j::ops::moments op;
-    auto result = op.execute({&x0}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
+    auto result = op.evaluate({&x0});
     // result->at(0)->printBuffer("MEAN");
     // result->at(1)->printBuffer("VARIANCE");
     delete result;
     nd4j::ops::reduce_min minOp;
     nd4j::ops::reduce_max maxOp;
-    auto minRes = minOp.execute({&x1}, {}, {}, {});
-    auto maxRes = maxOp.execute({&x0}, {}, {}, {});
+    auto minRes = minOp.evaluate({&x1}, {}, {}, {});
+    auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
     // minRes->at(0)->printBuffer("MIN for Truncated3");
     // maxRes->at(0)->printBuffer("MAX for Truncated3");
 
@@ -686,7 +686,7 @@ TEST_F(RNGTests, Test_GaussianDistribution_1) {
 
 
     nd4j::ops::random_normal op;
-    auto result = op.execute({&x}, {0.0, 1.0f}, {});
+    auto result = op.evaluate({&x}, {0.0, 1.0f}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -707,7 +707,7 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
 
 
     nd4j::ops::random_bernoulli op;
-    auto result = op.execute({&x}, {0.5f}, {});
+    auto result = op.evaluate({&x}, {0.5f}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -728,7 +728,7 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1) {
 
 
     nd4j::ops::random_exponential op;
-    auto result = op.execute({&x}, {0.25f}, {0});
+    auto result = op.evaluate({&x}, {0.25f}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -752,7 +752,7 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2) {
 
 
     nd4j::ops::random_exponential op;
-    auto result = op.execute({&x, &y}, {0.25f}, {0});
+    auto result = op.evaluate({&x, &y}, {0.25f}, {0});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -776,7 +776,7 @@ TEST_F(RNGTests, Test_PoissonDistribution_1) {
 
 
     nd4j::ops::random_poisson op;
-    auto result = op.execute({&x, &la}, {}, {});
+    auto result = op.evaluate({&x, &la}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -796,7 +796,7 @@ TEST_F(RNGTests, Test_GammaDistribution_1) {
 
 
     nd4j::ops::random_gamma op;
-    auto result = op.execute({&x, &al}, {}, {});
+    auto result = op.evaluate({&x, &al}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -817,7 +817,7 @@ TEST_F(RNGTests, Test_GammaDistribution_2) {
     be.assign(1.0);
 
     nd4j::ops::random_gamma op;
-    auto result = op.execute({&x, &al, &be}, {}, {});
+    auto result = op.evaluate({&x, &al, &be}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -838,7 +838,7 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
     be.assign(2.0);
 
     nd4j::ops::random_gamma op;
-    auto result = op.execute({&x, &al, &be}, {}, {});
+    auto result = op.evaluate({&x, &al, &be}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -857,7 +857,7 @@ TEST_F(RNGTests, Test_UniformDistribution_04) {
 
 
     nd4j::ops::randomuniform op;
-    auto result = op.execute({&x, &al, &be}, {}, {DataType::INT32});
+    auto result = op.evaluate({&x, &al, &be}, {}, {DataType::INT32});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -878,7 +878,7 @@ namespace nd4j {
                 auto min = NDArrayFactory::create(0.0);
                 auto max = NDArrayFactory::create(1.0);
                 nd4j::ops::randomuniform op;
-                op.execute(*rng, {&arrayI, &min, &max}, {arrayR}, {}, {DataType::DOUBLE}, {}, false);
+                op.execute(*rng, {&arrayI, &min, &max}, {arrayR}, {}, {DataType::DOUBLE}, {}, {}, false);
 
                 list.emplace_back(arrayR);
             }
@@ -1005,24 +1005,24 @@ TEST_F(RNGTests, test_uniform_119) {
 }
 
 TEST_F(RNGTests, test_multinomial_1) {
-    
+
     NDArray probs('f', { 3, 3 }, { 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
-    NDArray expected('f', { 3, 3 }, { 0, 1, 2,  2, 0, 0,  1, 2, 1 }, nd4j::DataType::INT64);
+    NDArray expected('f', { 3, 3 }, { 0., 1, 2,  2, 0, 0,  1, 2, 1 }, nd4j::DataType::INT64);
     NDArray output('f', { 3, 3 }, nd4j::DataType::INT64);
-    NDArray samples('f', { 1 }, { 3 }, nd4j::DataType::INT32);
-    
+    NDArray samples('f', { 1 }, std::vector<double>({3}), nd4j::DataType::INT32);
+
     nd4j::ops::random_multinomial op;
     RandomGenerator rng(1234, 1234);
-    ASSERT_EQ(Status::OK(),  op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64}, {}, false) );
+    ASSERT_EQ(Status::OK(),  op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64}, {}, {}, false) );
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-   
-    NDArray probsZ('c', { 1, 3 }, { 0.3, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
-    NDArray expectedZ('c', { 3, 3 }, { 0, 0, 0,  0, 0, 0,  0, 0, 0 }, nd4j::DataType::INT64);
 
-    auto result = op.execute({ &probsZ, &samples }, { }, { 1, INT64 });
+    NDArray probsZ('c', { 1, 3 }, { 0.3, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
+    NDArray expectedZ('c', { 3, 3 }, { 0., 0, 0,  0, 0, 0,  0, 0, 0 }, nd4j::DataType::INT64);
+
+    auto result = op.evaluate({ &probsZ, &samples }, { }, { 1, INT64 });
     auto outputZ = result->at(0);
-    
+
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_TRUE(expectedZ.isSameShape(outputZ));
     ASSERT_TRUE(expectedZ.equalsTo(outputZ));
@@ -1031,40 +1031,41 @@ TEST_F(RNGTests, test_multinomial_1) {
 
 TEST_F(RNGTests, test_multinomial_2) {
 
-    NDArray samples('c', { 1 }, { 20 }, nd4j::DataType::INT32);
+    NDArray samples('c', { 1 }, std::vector<double>{ 20 }, nd4j::DataType::INT32);
     NDArray probs('c', { 3, 5 }, { 0.2, 0.3, 0.5,    0.3, 0.5, 0.2,  0.5, 0.2, 0.3,  0.35, 0.25, 0.3,  0.25, 0.25, 0.5 }, nd4j::DataType::FLOAT32);
     NDArray expected('c', { 3, 20 }, { 0, 2, 0, 2, 0, 4, 2, 0, 1, 2, 0, 2, 3, 0, 0, 2, 4, 4, 1, 0, 2, 3, 2, 3, 0, 1, 3, 1, 1, 1, 2, 4, 3, 3, 1, 4, 4, 2, 0, 0, 3, 3, 3, 0, 0, 2, 2, 3, 3, 0,  0, 2, 3, 4, 2, 2, 3, 2, 1, 2   }, nd4j::DataType::INT64);
     NDArray output('c', { 3, 20 }, nd4j::DataType::INT64);
 
     nd4j::ops::random_multinomial op;
     RandomGenerator rng(1234, 1234);
-    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, false));
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, {}, false));
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-    
+
     NDArray probs2('c', { 5, 3 }, { 0.2, 0.3, 0.5,    0.3, 0.5, 0.2,  0.5, 0.2, 0.3,  0.35, 0.25, 0.3,  0.25, 0.25, 0.5 }, nd4j::DataType::FLOAT32);
     NDArray expected2('c', { 20, 3 }, {  0, 2, 3, 2, 3, 3, 0, 2, 3, 2,  3, 0, 0, 0, 0, 4, 1, 2, 2, 3,  2, 3, 1, 3, 1, 1, 3, 2, 1, 0, 0, 2, 0, 2, 4, 2, 3, 3, 3, 0,  3, 4, 0, 1, 2, 2, 0, 2, 4, 4, 0, 4, 2, 2, 1, 0, 1, 0, 0, 2  }, nd4j::DataType::INT64);
     NDArray output2('c', { 20, 3 }, nd4j::DataType::INT64);
-    
+
     rng.setStates(1234, 1234);
-    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs2, &samples }, { &output2 }, {}, { 1, INT64 }, {}, false));
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs2, &samples }, { &output2 }, {}, { 1, INT64 }, {}, {}, false));
     ASSERT_TRUE(expected2.isSameShape(output2));
     ASSERT_TRUE(expected2.equalsTo(output2));
 }
 
 TEST_F(RNGTests, test_multinomial_3) {
-    
+
     NDArray probs('c', {  4, 3 }, { 0.3, 0.3, 0.4,  0.3, 0.4, 0.3,  0.3, 0.3, 0.4,  0.4, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
     NDArray  expected('c', { 4, 5 }, nd4j::DataType::INT64);
     NDArray  output('c', { 4, 5 }, nd4j::DataType::INT64);
-    NDArray samples('c', { 1 }, { 5 }, nd4j::DataType::INT32);
+    NDArray samples('c', { 1 }, std::vector<double>{ 5 }, nd4j::DataType::INT32);
     RandomGenerator rng(1234, 1234);
 
     nd4j::ops::random_multinomial op;
-    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &expected }, {}, { 0, INT64 }, {}, false));
-   
+
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &expected }, {}, { 0, INT64 }, {}, {}, false));
+
     rng.setStates(1234, 1234);
-    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, false));
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, {}, false));
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 }
@@ -1074,14 +1075,14 @@ TEST_F(RNGTests, test_multinomial_4) {
     NDArray probs('c', { 3, 4 }, { 0.3, 0.3, 0.4, 0.3, 0.4, 0.3, 0.3, 0.3, 0.4, 0.4, 0.3, 0.3 }, nd4j::DataType::FLOAT32);
     NDArray  expected('c', { 5, 4 }, nd4j::DataType::INT64);
     NDArray  output('c', { 5, 4 }, nd4j::DataType::INT64);
-    NDArray samples('c', { 1 }, { 5 }, nd4j::DataType::INT32);
+    NDArray samples('c', { 1 }, std::vector<double>{ 5 }, nd4j::DataType::INT32);
 
     RandomGenerator rng(1234, 1234);
     nd4j::ops::random_multinomial op;
-    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &expected }, {}, { 1, INT64 }, {}, false));
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &expected }, {}, { 1, INT64 }, {}, {}, false));
 
     rng.setStates(1234, 1234);
-    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 1, INT64 }, {}, false));
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 1, INT64 }, {}, {}, false));
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 }
@@ -1092,16 +1093,16 @@ TEST_F(RNGTests, test_multinomial_5) {
     int ClassValue = 2;
     int Samples = 100000;
 
-    NDArray samples('c', { 1 }, { 1.*Samples }, nd4j::DataType::INT32);
-    
+    NDArray samples('c', { 1 }, std::vector<double>{ 1.*Samples }, nd4j::DataType::INT32);
+
     NDArray probs('c', { ClassValue, batchValue }, { 1.0, 1.0 }, nd4j::DataType::FLOAT32);
-    
+
     nd4j::ops::random_multinomial op;
 
     NDArray  output('c', { Samples, batchValue }, nd4j::DataType::INT64);
     RandomGenerator rng(1234, 1234);
-    
-    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 1 }, {}, false));
+
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 1 }, {}, {}, false));
     
     auto deviation = output.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     auto mean = output.meanNumber();
@@ -1109,13 +1110,13 @@ TEST_F(RNGTests, test_multinomial_5) {
     // theoretical values for binomial
     ASSERT_NEAR(0.5, deviation.e<double>(0), 4e-3); // 1000000 3e-3);
     ASSERT_NEAR(0.5, mean.e<double>(0), 4e-3); // 1000000 3e-3);
-    
+
     for (int i = 0; i < output.lengthOf(); i++) {
         auto value = output.e<Nd4jLong>(i);
         ASSERT_TRUE(value >= 0 && value < ClassValue);
     }
 
-    auto resultR = op.execute({ &probs, &samples }, { }, { 1 });
+    auto resultR = op.evaluate({ &probs, &samples }, { }, { 1 });
     auto outputR = resultR->at(0);
     ASSERT_EQ(Status::OK(), resultR->status());
 
@@ -1139,8 +1140,8 @@ TEST_F(RNGTests, test_multinomial_6) {
     int batchValue = 1;
     int ClassValue = 5;
     int Samples = 100000;
-    
-    NDArray samples('c', { 1 }, { 1. * Samples }, nd4j::DataType::INT32);
+
+    NDArray samples('c', { 1 }, std::vector<double>{ 1. * Samples }, nd4j::DataType::INT32);
 
     nd4j::ops::random_multinomial op;
     NDArray probExpect('c', { ClassValue }, { 0.058, 0.096, 0.1576, 0.2598, 0.4287 }, nd4j::DataType::DOUBLE);
@@ -1148,12 +1149,12 @@ TEST_F(RNGTests, test_multinomial_6) {
     // without seed
     NDArray probsR('c', { batchValue,  ClassValue }, { 1., 1.5, 2., 2.5, 3. }, nd4j::DataType::FLOAT32);
 
-    auto resultR = op.execute({ &probsR, &samples }, { }, { 0 });
+    auto resultR = op.evaluate({ &probsR, &samples }, { }, { 0 });
     auto outputR = resultR->at(0);
     ASSERT_EQ(Status::OK(), resultR->status());
 
-    NDArray countsR('c', { ClassValue }, { 0, 0, 0, 0, 0 }, nd4j::DataType::DOUBLE);
-    
+    NDArray countsR('c', { ClassValue }, { 0., 0, 0, 0, 0 }, nd4j::DataType::DOUBLE);
+
     for (int i = 0; i < outputR->lengthOf(); i++) {
         auto value = outputR->e<Nd4jLong>(i);
         ASSERT_TRUE(value >= 0 && value < ClassValue);
@@ -1179,11 +1180,11 @@ TEST_F(RNGTests, test_multinomial_6) {
     RandomGenerator rng(1234, 1234);
     NDArray probs('c', { batchValue, ClassValue }, { 1., 1.5, 2., 2.5, 3. }, nd4j::DataType::FLOAT32);
     NDArray  output('c', { batchValue, Samples }, nd4j::DataType::INT64);
-    
-    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, false));
 
-    NDArray counts('c', { ClassValue }, { 0, 0, 0, 0, 0 }, nd4j::DataType::DOUBLE);
-    
+    ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 0, INT64 }, {}, {}, false));
+
+    NDArray counts('c', { ClassValue }, { 0., 0, 0, 0, 0 }, nd4j::DataType::DOUBLE);
+
     for (int i = 0; i < output.lengthOf(); i++) {
         auto value = output.e<Nd4jLong>(i);
         ASSERT_TRUE(value >= 0 && value < ClassValue);

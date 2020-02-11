@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(zeros_as, 1, 1, false) {
+        CUSTOM_OP_IMPL(zeros_as, 1, 1, false, 0, 0) {
             auto out = OUTPUT_VARIABLE(0);
 
             out->assign(0); // output is filled by zero by default
@@ -35,11 +35,20 @@ namespace nd4j {
         DECLARE_SYN(zeroslike, zeros_as);
         DECLARE_SYN(zeros_like, zeros_as);
 
+
+        DECLARE_SHAPE_FN(zeros_as) {
+            auto in = inputShape->at(0);
+            auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
+            auto shape = nd4j::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, in);
+
+            return SHAPELIST(shape);
+        }
+
         DECLARE_TYPES(zeros_as) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setAllowedOutputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
+                    ->setSameMode(false);
         }
     }
 }

@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.function.Predicate;
@@ -295,9 +296,13 @@ public abstract class AbstractSession<T, O> {
                 }
             } else if (es.getType() == ExecType.PLACEHOLDER) {
                 VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
-                nodeOutputs.put(vid, placeholderValues.get(es.getName()));
+                T phVal = placeholderValues == null ? null : placeholderValues.get(es.getName());
+
+                nodeOutputs.put(vid, phVal);
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
                 if (allRequired.contains(es.getName())) {
+                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(es.getName()),
+                            "No array was provided for the placeholder variable \"%s\" that is required for execution", es.getName());
                     //User requested placeholder value as one of the outputs
                     out.put(es.getName(), placeholderValues.get(es.getName()));
                 }

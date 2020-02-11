@@ -158,7 +158,7 @@ namespace nd4j {
 
         iargs.push_back(_axis);
 
-        auto result = op.execute(inputs, {}, {}, {});
+        auto result = op.evaluate(inputs);
 
         auto array = new NDArray(result->at(0)->dup());
 

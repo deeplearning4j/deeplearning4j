@@ -118,7 +118,7 @@ namespace ops {
        DECLARE_TYPES(Pow_bp) {
            getOpDescriptor()
                ->setAllowedInputTypes({ ALL_FLOATS, ALL_INTS })
-               ->setAllowedOutputTypes({ ALL_FLOATS }); // TODO maybe wourth to add ALL_INTS
+               ->setAllowedOutputTypes({ ALL_FLOATS }); 
        }
 
 }

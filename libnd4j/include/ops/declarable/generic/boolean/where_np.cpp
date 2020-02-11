@@ -103,7 +103,7 @@ namespace nd4j {
 //                if (output->isEmpty())
                 Nd4jLong width = condition->rankOf();
                 nd4j::ops::Where op;
-                std::unique_ptr<ResultSet> res(op.execute({condition}, {}, {}, {}));
+                std::unique_ptr<ResultSet> res(op.evaluate({condition}));
                 REQUIRE_OK(res->status());
                 NDArray* whereTrue = res->at(0);
                 if (whereTrue->isEmpty())

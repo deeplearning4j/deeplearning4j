@@ -33,6 +33,10 @@ public class AdjustContrast extends BaseAdjustContrast {
         super(sameDiff,new SDVariable[]{in,factor});
     }
 
+    public AdjustContrast(@NonNull INDArray in, double factor) {
+        this(in, factor, null);
+    }
+
     @Override
     public String opName() {
         return "adjust_contrast";

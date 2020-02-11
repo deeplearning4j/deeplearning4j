@@ -58,7 +58,6 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @Before
     public void before() throws Exception {
-        super.beforeTest();
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(SEED);
 
@@ -66,7 +65,6 @@ public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
 
     @After
     public void after() throws Exception {
-        super.afterTest();
         DataTypeUtil.setDTypeForContext(initialType);
     }
 

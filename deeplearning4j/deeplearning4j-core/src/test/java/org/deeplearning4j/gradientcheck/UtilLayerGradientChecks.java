@@ -48,12 +48,6 @@ import static org.junit.Assert.assertTrue;
 
 public class UtilLayerGradientChecks extends BaseDL4JTest {
 
-    private static final boolean PRINT_RESULTS = true;
-    private static final boolean RETURN_ON_FIRST_FAILURE = false;
-    private static final double DEFAULT_EPS = 1e-6;
-    private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-6;
-
     static {
         Nd4j.setDataType(DataType.DOUBLE);
     }
@@ -182,9 +176,9 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
                     MultiLayerNetwork net = new MultiLayerNetwork(conf);
                     net.init();
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input)
-                            .minAbsoluteError(1e-7)
-                            .labels(label).inputMask(inMask));
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net)
+                            .minAbsoluteError(1e-6)
+                            .input(input).labels(label).inputMask(inMask));
                     assertTrue(gradOK);
 
                     TestUtils.testModelSerialization(net);
@@ -233,8 +227,9 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
             //Test ComputationGraph equivalent:
             ComputationGraph g = net.toComputationGraph();
 
-            boolean gradOKCG = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(g).inputs(new INDArray[]{in})
-                    .labels(new INDArray[]{labels}).excludeParams(excludeParams));
+            boolean gradOKCG = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(g)
+                    .minAbsoluteError(1e-6)
+                    .inputs(new INDArray[]{in}).labels(new INDArray[]{labels}).excludeParams(excludeParams));
             assertTrue(gradOKCG);
 
             TestUtils.testModelSerialization(g);

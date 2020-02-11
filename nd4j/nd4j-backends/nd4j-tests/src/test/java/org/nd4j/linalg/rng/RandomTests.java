@@ -810,9 +810,11 @@ public class RandomTests extends BaseNd4jTest {
             threads[x].start();
         }
 
-        for (int x = 0; x < threads.length; x++) {
+        // we want all threads finished before comparing arrays
+        for (int x = 0; x < threads.length; x++)
             threads[x].join();
 
+        for (int x = 0; x < threads.length; x++) {
             assertNotEquals(null, list.get(x));
 
             if (x > 0) {

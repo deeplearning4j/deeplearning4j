@@ -503,11 +503,11 @@ nd4j.graph.UIVariable.prototype.type = function() {
 };
 
 /**
- * @returns {nd4j.graph.DataType}
+ * @returns {nd4j.graph.DType}
  */
 nd4j.graph.UIVariable.prototype.datatype = function() {
   var offset = this.bb.__offset(this.bb_pos, 10);
-  return offset ? /** @type {nd4j.graph.DataType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.DataType.INHERIT;
+  return offset ? /** @type {nd4j.graph.DType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.DType.INHERIT;
 };
 
 /**
@@ -668,10 +668,10 @@ nd4j.graph.UIVariable.addType = function(builder, type) {
 
 /**
  * @param {flatbuffers.Builder} builder
- * @param {nd4j.graph.DataType} datatype
+ * @param {nd4j.graph.DType} datatype
  */
 nd4j.graph.UIVariable.addDatatype = function(builder, datatype) {
-  builder.addFieldInt8(3, datatype, nd4j.graph.DataType.INHERIT);
+  builder.addFieldInt8(3, datatype, nd4j.graph.DType.INHERIT);
 };
 
 /**
