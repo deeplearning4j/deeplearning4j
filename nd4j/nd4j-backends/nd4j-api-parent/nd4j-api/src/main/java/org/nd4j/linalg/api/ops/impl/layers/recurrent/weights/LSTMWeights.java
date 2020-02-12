@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 
@@ -50,8 +51,24 @@ public class LSTMWeights extends RNNWeights {
     @NonNull
     private SDVariable bias;
 
+
+    @NonNull
+    private INDArray ndarrayWeights;
+    @NonNull
+    private INDArray ndarrayInputPeepholeWeights;
+    @NonNull
+    private INDArray ndarrayForgetPeepholeWeights;
+    @NonNull
+    private INDArray ndarrayBias;
+
+
     @Override
     public SDVariable[] args() {
         return filterNonNull(weights, inputPeepholeWeights, forgetPeepholeWeights, outputPeepholeWeights, bias);
+    }
+
+    @Override
+    public INDArray[] ndarrayArgs() {
+        return filterNonNull(ndarrayWeights, ndarrayInputPeepholeWeights, ndarrayForgetPeepholeWeights, ndarrayBias);
     }
 }

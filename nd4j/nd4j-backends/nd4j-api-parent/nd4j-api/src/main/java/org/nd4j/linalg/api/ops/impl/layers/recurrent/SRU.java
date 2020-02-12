@@ -48,20 +48,20 @@ public class SRU extends DynamicCustomOp {
 
     public SRU() { }
 
-    public SRU(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable initialC, INDArray mask, @NonNull SRUWeights weights) {
-        super(null, sameDiff, new INDArray[]{x, weights.getWeights(), weights.getBias(), initialC, mask});
-        this.ndarrayMask = mask;
+    public SRU(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable initialC, SDVariable mask, @NonNull SRUWeights weights) {
+        super(null, sameDiff, wrapFilterNull(x, weights.getWeights(), weights.getBias(), initialC, mask));
+        this.mask = mask;
         this.weights = weights;
     }
 
     public SRU(@NonNull INDArray x,@NonNull INDArray initialC,@NonNull INDArray mask,@NonNull SRUWeights sruWeights) {
-        super(null, null, new INDArray[]{x, sruWeights.getWeights(), sruWeights.getBias(), initialC, mask});
+        super(null, null, new INDArray[]{x, initialC, mask});
         this.ndarrayMask = mask;
         this.weights = sruWeights;
     }
 
     public SRU(@NonNull INDArray x,@NonNull INDArray initialC,@NonNull SRUWeights sruWeights) {
-        super(null, null, new INDArray[]{x, sruWeights.getWeights(), sruWeights.getBias(), initialC});
+        super(null, null, new INDArray[]{x, initialC});
         this.weights = sruWeights;
 
     }

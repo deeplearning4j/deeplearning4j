@@ -42,7 +42,7 @@ public class SRUWeights extends RNNWeights {
     public SDVariable[] args() {
         return new SDVariable[]{weights, bias};
     }
-}
+
 
     @Override
     public INDArray[] ndarrayArgs() {

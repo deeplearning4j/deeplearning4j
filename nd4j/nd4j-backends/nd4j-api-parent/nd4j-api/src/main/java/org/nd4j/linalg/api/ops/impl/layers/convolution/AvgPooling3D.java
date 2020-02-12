@@ -50,7 +50,7 @@ public class AvgPooling3D extends Pooling3D {
     }
 
     public AvgPooling3D(@NonNull INDArray input,@NonNull Pooling3DConfig pooling3DConfig) {
-        super(null,null,input,null,false,pooling3DConfig,Pooling3DType.AVG);
+        super(null,null,new INDArray[]{input},null,false,pooling3DConfig,Pooling3DType.AVG);
     }
 
 

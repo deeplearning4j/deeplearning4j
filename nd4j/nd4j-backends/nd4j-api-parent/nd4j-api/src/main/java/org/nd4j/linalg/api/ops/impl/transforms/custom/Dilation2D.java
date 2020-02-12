@@ -57,7 +57,7 @@ public class Dilation2D extends DynamicCustomOp {
     public Dilation2D(SameDiff sameDiff, SDVariable[] inputAndWeights, int[] strides,
                       int[] rates, boolean isSameMode, boolean inPlace ) {
         super(null, sameDiff, inputAndWeights, inPlace);
-        Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates)
+        Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates);
 
 
         if (rates.length < 4)

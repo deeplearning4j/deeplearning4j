@@ -37,15 +37,37 @@ import java.util.*;
 @NoArgsConstructor
 public class CropAndResize extends DynamicCustomOp {
 
+
+
+
     public enum Method {BILINEAR, NEAREST};
     protected Method method = Method.BILINEAR;
     protected double extrapolationValue = 0.0;
 
-
+    public CropAndResize(@NonNull SameDiff sameDiff, @NonNull SDVariable image, @NonNull SDVariable cropBoxes, @NonNull SDVariable boxIndices,
+                         @NonNull SDVariable cropOutSize, @NonNull Method method, double extrapolationValue){
+        super(sameDiff, new SDVariable[]{image, cropBoxes, boxIndices, cropOutSize});
+        this.method = method;
+        this.extrapolationValue = extrapolationValue;
+        addArgs();
+    }
 
 
     public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
                          @NonNull INDArray cropOutSize, double extrapolationValue,
+                         INDArray output){
+        super(new INDArray[]{image, cropBoxes, boxIndices, cropOutSize}, null);
+        Preconditions.checkArgument(image.rank() == 4, "Input image must be rank 4 with shape [batch, height, width, channels], got %ndShape", image);
+        Preconditions.checkArgument(cropBoxes.rank() == 2 && cropBoxes.size(1) == 4, "Crop boxes must be rank 4 with shape [num_boxes, 5], got %ndShape", cropBoxes);
+        Preconditions.checkArgument(boxIndices.rank() == 1 && cropBoxes.size(0) == boxIndices.size(0),
+                "Box indices must be rank 1 array with shape [num_boxes] (same as cropBoxes.size(0), got array with shape %ndShape", boxIndices);
+        this.extrapolationValue = extrapolationValue;
+        addArgs();
+        outputArguments.add(output);
+    }
+
+    public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
+                         @NonNull INDArray cropOutSize,Method method, double extrapolationValue,
                          INDArray output){
         super(new INDArray[]{image, cropBoxes, boxIndices, cropOutSize}, null);
         Preconditions.checkArgument(image.rank() == 4, "Input image must be rank 4 with shape [batch, height, width, channels], got %ndShape", image);
@@ -63,6 +85,9 @@ public class CropAndResize extends DynamicCustomOp {
         this(image, cropBoxes, boxIndices, cropOutSize, extrapolationValue, null);
 
     }
+
+
+
 
 
 

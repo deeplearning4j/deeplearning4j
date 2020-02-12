@@ -41,7 +41,6 @@ import java.util.Map;
 @Getter
 public class MaxPooling3D extends Pooling3D {
     public MaxPooling3D() {
-        super(null, null, input, null, false, pooling3DConfig, Pooling3DType.AVG);
     }
 
     public MaxPooling3D(SameDiff sameDiff, SDVariable input, Pooling3DConfig config) {

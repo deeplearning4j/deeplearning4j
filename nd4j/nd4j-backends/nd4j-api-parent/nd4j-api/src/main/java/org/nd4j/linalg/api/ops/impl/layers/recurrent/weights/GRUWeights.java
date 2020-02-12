@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 
 /**
@@ -44,8 +45,23 @@ public class GRUWeights extends RNNWeights {
     @NonNull
     private SDVariable cBias;
 
+    @NonNull
+    private INDArray ndarrayRuWeight;
+    @NonNull
+    private INDArray ndarrayCWeight;
+    @NonNull
+
+    private INDArray ndarrayRuBias;
+    @NonNull
+    private INDArray ndarrayCBias;
+
+
     @Override
     public SDVariable[] args() {
         return filterNonNull(ruWeight, cWeight, ruBias, cBias);
+    }
+    @Override
+    public INDArray[] ndarrayArgs() {
+        return filterNonNull(ndarrayRuWeight, ndarrayCWeight, ndarrayRuBias, ndarrayCBias);
     }
 }

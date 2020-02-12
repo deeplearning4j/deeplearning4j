@@ -75,7 +75,7 @@ public class NDRNN {
    * @param LSTMConfiguration Configuration Object
    * @return output The layer's outputs. (NUMERIC type)
    */
-  public INDArray lstmLayer(INDArray x, INDArray cLast, INDArray yLast, int maxTSLength,
+  public INDArray lstmLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength,
       LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
     NDValidation.validateNumerical("lstmLayer", "x", x);
     NDValidation.validateNumerical("lstmLayer", "cLast", cLast);

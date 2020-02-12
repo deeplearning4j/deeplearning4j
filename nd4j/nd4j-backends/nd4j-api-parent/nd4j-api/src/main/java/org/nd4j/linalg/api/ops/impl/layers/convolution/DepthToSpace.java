@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
-import com.sun.istack.internal.NotNull;
 import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -69,7 +68,7 @@ public class DepthToSpace extends DynamicCustomOp {
         addIArgument(blockSize, isNHWC ? 1 : 0);
     }
 
-    public DepthToSpace(@NonNull INDArray x, @NonNull int blockSize, @NonNull @NotNull DataFormat dataFormat) {
+    public DepthToSpace(@NonNull INDArray x, @NonNull int blockSize, @NonNull DataFormat dataFormat) {
         this(x, null, blockSize,dataFormat.NHWC.toString());
     }
 
