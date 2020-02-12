@@ -322,5 +322,16 @@ public class TestPythonExecutioner {
         Python.setMainContext();
     }
 
+    @Test
+    public void testIsNone(){
+        PythonObject d = Python.dict();
+        PythonObject none = d.attr("get").call("x");
+        Assert.assertTrue(none.isNone());
+        d.set(new PythonObject("x"), new PythonObject("y"));
+        PythonObject notNone = d.attr("get").call("x");
+        Assert.assertFalse(notNone.isNone());
+        Assert.assertEquals("y", notNone.toString());
+    }
+
 
 }

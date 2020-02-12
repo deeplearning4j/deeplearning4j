@@ -583,7 +583,9 @@ public class PythonObject {
         }
     }
     public boolean isNone() {
-        return nativePythonObject == null;
+       return (nativePythonObject == null)||
+               (toString().equals("None") && Python.type(this).toString().equals("<class 'NoneType'>"));
+
     }
 
 }
