@@ -71,19 +71,19 @@ public class Conv2D extends DynamicCustomOp {
         initConfig(config);
     }
 
-    public Conv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config){
+    public Conv2D(@NonNull INDArray input, @NonNull INDArray weights,@NonNull INDArray bias, INDArray output, @NonNull Conv2DConfig config){
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public Conv2D(@NonNull INDArray layerInput, @NonNull INDArray weights, Conv2DConfig conv2DConfig) {
+    public Conv2D(@NonNull INDArray layerInput, @NonNull INDArray weights, @NonNullConv2DConfig conv2DConfig) {
         this(wrapFilterNull(layerInput, weights), null, conv2DConfig);
     }
 
-    public Conv2D(@NonNull INDArray layerInput, @NonNull INDArray weights, INDArray bias, Conv2DConfig conv2DConfig) {
+    public Conv2D(@NonNull INDArray layerInput, @NonNull INDArray weights, @NonNull INDArray bias,@NonNull Conv2DConfig conv2DConfig) {
         this(wrapFilterNull(layerInput, weights,bias), null, conv2DConfig);
     }
 
-    public Conv2D(@NonNull INDArray inputs, Conv2DConfig conv2DConfig) {
+    public Conv2D(@NonNull INDArray inputs,@NonNull Conv2DConfig conv2DConfig) {
         this(wrapFilterNull(inputs), null, conv2DConfig);
     }
 

@@ -40,25 +40,25 @@ import java.util.List;
 public class SConv2D extends Conv2D {
 
     @Builder(builderMethodName = "sameDiffSBuilder")
-    public SConv2D(SameDiff sameDiff, SDVariable[] inputFunctions, Conv2DConfig conv2DConfig) {
+    public SConv2D(SameDiff sameDiff, SDVariable[] inputFunctions,@NonNull Conv2DConfig conv2DConfig) {
         super(sameDiff, inputFunctions, conv2DConfig);
     }
 
-    public SConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
+    public SConv2D(@NonNull INDArray[] inputs, INDArray[] outputs,@NonNull Conv2DConfig config){
         super(inputs, outputs, config);
     }
 
-    public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights, INDArray pointWeights, INDArray bias, @NonNull Conv2DConfig Conv2DConfig){
+    public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights,@NonNull INDArray pointWeights,@NonNull INDArray bias, @NonNull Conv2DConfig Conv2DConfig){
         this(wrapFilterNull(layerInput, depthWeights, pointWeights, bias), null, Conv2DConfig);
     }
 
-    public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights, INDArray pointWeights, @NonNull Conv2DConfig Conv2DConfig){
+    public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights,@NonNull INDArray pointWeights, @NonNull Conv2DConfig Conv2DConfig){
         this(wrapFilterNull(layerInput, depthWeights, pointWeights), null, Conv2DConfig);
     }
 
     public SConv2D() {}
 
-    public SConv2D(@NonNull INDArray inputs, Conv2DConfig conv2DConfig) {
+    public SConv2D(@NonNull INDArray inputs,@NonNull Conv2DConfig conv2DConfig) {
         super(inputs, conv2DConfig);
     }
 

@@ -21,6 +21,7 @@ import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.util.ConvConfigUtil;
 
@@ -51,8 +52,8 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private String dataFormat = NCHW;
 
-    public Conv2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, long dH, long dW, boolean isSameMode,
-            String dataFormat) {
+    public Conv2DConfig(@NonNull long kH, @NonNull long kW,@NonNull long sH,@NonNull long sW,@NonNull long pH,@NonNull long pW,@NonNull long dH,@NonNull long dW, boolean isSameMode,
+                        String dataFormat) {
 
         this.kH = kH;
         this.kW = kW;

@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -47,11 +48,11 @@ public class MaxPooling3D extends Pooling3D {
         super(sameDiff, new SDVariable[]{input}, null, null, false, config, Pooling3DType.MAX);
     }
 
-    public MaxPooling3D(SameDiff sameDiff, INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
+    public MaxPooling3D(SameDiff sameDiff,@NonNull INDArray arrayInput, INDArray arrayOutput,@NonNull Pooling3DConfig config) {
         super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.MAX);
     }
 
-    public MaxPooling3D(INDArray input, Pooling3DConfig pooling3DConfig) {
+    public MaxPooling3D(@NonNull INDArray input,@NonNull Pooling3DConfig pooling3DConfig) {
         super(null, null, new INDArray[]{input},null, false, pooling3DConfig, Pooling3DType.MAX);
 
     }

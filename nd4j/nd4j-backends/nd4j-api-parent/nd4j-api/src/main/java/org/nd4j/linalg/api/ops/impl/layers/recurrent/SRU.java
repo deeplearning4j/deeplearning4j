@@ -16,8 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
-import java.util.Arrays;
-import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 import onnx.Onnx;
@@ -44,30 +42,30 @@ public class SRU extends DynamicCustomOp {
     private SRUWeights weights;
 
     @Getter
-    private SDVariable mask;
+    private INDArray mask;
 
     public SRU() { }
 
-    public SRU(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable initialC, SDVariable mask, @NonNull SRUWeights weights) {
+    public SRU(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable initialC, INDArray mask, @NonNull SRUWeights weights) {
         super(null, sameDiff, wrapFilterNull(x, weights.getWeights(), weights.getBias(), initialC, mask));
         this.mask = mask;
         this.weights = weights;
     }
 
-    public SRU(INDArray x, INDArray initialC, INDArray mask, SRUWeights sruWeights) {
+    public SRU(@NonNull INDArray x,@NonNull INDArray initialC,@NonNull INDArray mask,@NonNull SRUWeights sruWeights) {
         super(null, null, wrapFilterNull(x, sruWeights.getWeights(), sruWeights.getBias(), initialC, mask));
-        this.mask = (SDVariable) mask;
+        this.mask = mask;
         this.weights = sruWeights;
     }
 
-    public SRU(INDArray x, INDArray initialC, SRUWeights sruWeights) {
+    public SRU(@NonNull INDArray x,@NonNull INDArray initialC,@NonNull SRUWeights sruWeights) {
         super(null, null, wrapFilterNull(x, sruWeights.getWeights(), sruWeights.getBias(), initialC));
-        this.mask = (SDVariable) mask;
+        this.mask =  mask;
         this.weights = sruWeights;
-    }
+
     }
 
-}
+
 
     @Override
     public String opName() {

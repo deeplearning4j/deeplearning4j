@@ -62,27 +62,27 @@ public class DeConv2D extends DynamicCustomOp {
         addArgs();
     }
 
-    public DeConv2D(INDArray[] inputs, INDArray[] outputs, DeConv2DConfig config){
+    public DeConv2D(@NonNull INDArray[] inputs, INDArray[] outputs,@NonNull DeConv2DConfig config){
         super(inputs, outputs);
 
         this.config = config;
         addArgs();
     }
 
-    public DeConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull DeConv2DConfig config){
+    public DeConv2D(@NonNull INDArray input, @NonNull INDArray weights,@NonNull INDArray bias, INDArray output,@NonNull DeConv2DConfig config){
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public DeConv2D(INDArray layerInput, INDArray weights, DeConv2DConfig deConv2DConfig) {
-        this(wrapFilterNull(layerInput, weights), wrapOrNull(null), deConv2DConfig);
+    public DeConv2D(@NonNull INDArray layerInput,@NonNull INDArray weights, @NonNull DeConv2DConfig deConv2DConfig) {
+        this(wrapFilterNull(layerInput, weights), null, deConv2DConfig);
     }
 
-    public DeConv2D(INDArray layerInput, INDArray weights, INDArray bias, DeConv2DConfig deConv2DConfig) {
-        this(wrapFilterNull(layerInput, weights, bias), wrapOrNull(null), deConv2DConfig);
+    public DeConv2D(@NonNull INDArray layerInput,@NonNull INDArray weights,@NonNull INDArray bias,@NonNull DeConv2DConfig deConv2DConfig) {
+        this(wrapFilterNull(layerInput, weights, bias), null, deConv2DConfig);
     }
 
-    public DeConv2D(INDArray inputs, DeConv2DConfig deConv2DConfig) {
-        this(wrapFilterNull(inputs), wrapOrNull(null), deConv2DConfig);
+    public DeConv2D(@NonNull INDArray inputs,@NonNull DeConv2DConfig deConv2DConfig) {
+        this(wrapFilterNull(inputs),null, deConv2DConfig);
     }
 
 

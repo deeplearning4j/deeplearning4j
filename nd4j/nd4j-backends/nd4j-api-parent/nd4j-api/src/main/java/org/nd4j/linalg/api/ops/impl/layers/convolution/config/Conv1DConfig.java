@@ -44,7 +44,7 @@ public class Conv1DConfig extends BaseConvolutionConfig {
     private String dataFormat = NCW;
     private PaddingMode paddingMode;
 
-    public Conv1DConfig(long k, long s, long p, long d, String dataFormat, @NonNull PaddingMode paddingMode) {
+    public Conv1DConfig(@NonNull long k, @NonNull long s,@NonNull long p,@NonNull long d,@NonNull String dataFormat, @NonNull PaddingMode paddingMode) {
         this.k = k;
         this.s = s;
         this.p = p;
@@ -55,7 +55,7 @@ public class Conv1DConfig extends BaseConvolutionConfig {
         validate();
     }
 
-    public Conv1DConfig(long k, long s, long p, String dataFormat, boolean isSameMode) {
+    public Conv1DConfig(@NonNull long k,@NonNull long s,@NonNull long p,@NonNull String dataFormat, boolean isSameMode) {
         this.k = k;
         this.s = s;
         this.p = p;

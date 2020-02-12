@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
 import lombok.Getter;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -90,7 +91,7 @@ public class LSTMBlockCell extends DynamicCustomOp {
         addTArgument(configuration.tArgs());
     }
 
-    public LSTMBlockCell(INDArray x, INDArray cLast, INDArray yLast, LSTMWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
+    public LSTMBlockCell(@NonNull INDArray x,@NonNull INDArray cLast, @NonNull INDArray yLast,@NonNull LSTMWeights lstmWeights,@NonNull LSTMConfiguration lstmConfiguration) {
         super(null, null, lstmWeights.argsWithInputs(x, cLast, yLast));
         this.configuration = lstmConfiguration;
         this.weights = lstmWeights;

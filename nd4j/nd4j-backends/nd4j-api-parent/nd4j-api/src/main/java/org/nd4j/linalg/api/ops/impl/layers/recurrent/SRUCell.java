@@ -50,8 +50,10 @@ public class SRUCell extends DynamicCustomOp {
 
 
     public SRUCell(INDArray x, INDArray cLast, SRUWeights sruWeights) {
-        super(null, null, sruWeights.argsWithInputs(x, cLast));
+        super(null,new INDArray[]{x,cLast,},null);
         this.weights = sruWeights;
+
+
     }
 
 

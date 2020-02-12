@@ -40,9 +40,6 @@ import java.util.Map;
 @Slf4j
 @Getter
 public class AvgPooling3D extends Pooling3D {
-    public AvgPooling3D() {
-        super(null, null, input, null, false, pooling3DConfig, Pooling3DType.AVG);
-    }
 
     public AvgPooling3D(SameDiff sameDiff, SDVariable input, Pooling3DConfig config) {
         super(sameDiff, new SDVariable[]{input}, null, null, false, config, Pooling3DType.AVG);
@@ -52,7 +49,7 @@ public class AvgPooling3D extends Pooling3D {
         super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.AVG);
     }
 
-    public AvgPooling3D(@NonNull INDArray input, Pooling3DConfig pooling3DConfig) {
+    public AvgPooling3D(@NonNull INDArray input,@NonNull Pooling3DConfig pooling3DConfig) {
         super(null,null,input,null,false,pooling3DConfig,Pooling3DType.AVG);
     }
 

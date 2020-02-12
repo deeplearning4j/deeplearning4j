@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
@@ -23,15 +24,28 @@ public class SRUWeights extends RNNWeights {
      */
     @NonNull
     private SDVariable weights;
+    @NonNull
+
+    private  INDArray ndarrayWeights;
 
     /**
      * Biases, with shape [2*inSize].
      */
     @NonNull
     private SDVariable bias;
+    @NonNull
+
+    private  INDArray ndarrayBias;
+
 
     @Override
     public SDVariable[] args() {
         return new SDVariable[]{weights, bias};
+    }
+}
+
+    @Override
+    public INDArray[] ndarrayArgs() {
+        return new INDArray[]{ndarrayWeights, ndarrayBias};
     }
 }

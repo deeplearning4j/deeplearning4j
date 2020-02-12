@@ -60,15 +60,15 @@ public class Conv1D extends DynamicCustomOp {
         initConfig(config);
     }
 
-    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv1DConfig config){
+    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights,@NonNull INDArray bias, INDArray output, @NonNull Conv1DConfig config){
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public Conv1D( @NonNull INDArray input, @NonNull INDArray weights, INDArray bias, Conv1DConfig conv1DConfig) {
+    public Conv1D( @NonNull INDArray input, @NonNull INDArray weights,@NonNull INDArray bias,@NonNull Conv1DConfig conv1DConfig) {
         this(wrapFilterNull(input, weights, bias), null, conv1DConfig);
     }
 
-    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights, Conv1DConfig conv1DConfig) {
+    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights,@NonNull Conv1DConfig conv1DConfig) {
         this(wrapFilterNull(input, weights), null, conv1DConfig);
     }
 

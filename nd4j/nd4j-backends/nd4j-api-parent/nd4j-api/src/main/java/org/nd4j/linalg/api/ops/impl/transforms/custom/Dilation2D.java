@@ -79,7 +79,7 @@ public class Dilation2D extends DynamicCustomOp {
 
     }
 
-    public Dilation2D(INDArray[] inputArrays, INDArray[] outputs) {
+    public Dilation2D(@NonNull INDArray[] inputArrays, INDArray[] outputs) {
         super(null, inputArrays, outputs);
 
 
@@ -87,14 +87,10 @@ public class Dilation2D extends DynamicCustomOp {
 
     public Dilation2D(@NonNull INDArray df, @NonNull INDArray weights, @NonNull int[] strides, @NonNull int[] rates, boolean isSameMode) {
         super(null, new INDArray[]{df, weights},null);
-        Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates)
+        Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates);
+        Preconditions.checkArgument(strides.length == 4, "Dilation strides length must be 4, got an array with length %s with values %s", strides.length, strides);
 
         this.isSameMode = isSameMode;
-
-        if (rates.length < 4)
-            throw new IllegalArgumentException("Dilation rate length must be 4.");
-        if (strides.length < 4)
-            throw new IllegalArgumentException("Strides length must be 4.");
 
         r0 = rates[0];
         r1 = rates[1];

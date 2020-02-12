@@ -67,21 +67,20 @@ public class NDRNN {
   /**
    * The LSTM layer.  Does multiple time steps.<br>
    *
-   * @param maxTSLength  (NUMERIC type)
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param cLast Previous/initial cell state, with shape [batchSize, numUnits] (NUMERIC type)
    * @param yLast Previous/initial cell output, with shape [batchSize, numUnits] (NUMERIC type)
+   * @param maxTSLength 
    * @param LSTMWeights Configuration Object
    * @param LSTMConfiguration Configuration Object
    * @return output The layer's outputs. (NUMERIC type)
    */
-  public INDArray lstmLayer(INDArray maxTSLength, INDArray x, INDArray cLast, INDArray yLast,
+  public INDArray lstmLayer(INDArray x, INDArray cLast, INDArray yLast, int maxTSLength,
       LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
-    NDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
     NDValidation.validateNumerical("lstmLayer", "x", x);
     NDValidation.validateNumerical("lstmLayer", "cLast", cLast);
     NDValidation.validateNumerical("lstmLayer", "yLast", yLast);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(x, cLast, yLast, maxTSLength, LSTMWeights, LSTMConfiguration))[0];
   }
 
   /**

@@ -52,7 +52,7 @@ public class MaxPooling2D extends DynamicCustomOp {
 
     @Builder(builderMethodName = "sameDiffBuilder")
     @SuppressWarnings("Used in lombok")
-    public MaxPooling2D(SameDiff sameDiff, SDVariable input, Pooling2DConfig config) {
+    public MaxPooling2D(SameDiff sameDiff, SDVariable input,@NonNull Pooling2DConfig config) {
         super(null, sameDiff, new SDVariable[]{input}, false);
 
         config.setType(Pooling2D.Pooling2DType.MAX);
@@ -60,7 +60,7 @@ public class MaxPooling2D extends DynamicCustomOp {
         addArgs();
     }
 
-    public MaxPooling2D(INDArray input, INDArray output, @NonNull Pooling2DConfig config){
+    public MaxPooling2D(@NonNull INDArray input, INDArray output, @NonNull Pooling2DConfig config){
         super(null, new INDArray[]{input}, wrapOrNull(output));
         config.setType(Pooling2D.Pooling2DType.MAX);
 
@@ -68,8 +68,8 @@ public class MaxPooling2D extends DynamicCustomOp {
         addArgs();
     }
 
-    public MaxPooling2D(INDArray input, Pooling2DConfig pooling2DConfig) {
-        super(null, new INDArray[]{input}, wrapOrNull(null));
+    public MaxPooling2D(@NonNull INDArray input,@NonNull Pooling2DConfig pooling2DConfig) {
+        super(null, new INDArray[]{input}, null);
         config.setType(Pooling2D.Pooling2DType.MAX);
 
         this.config = pooling2DConfig;

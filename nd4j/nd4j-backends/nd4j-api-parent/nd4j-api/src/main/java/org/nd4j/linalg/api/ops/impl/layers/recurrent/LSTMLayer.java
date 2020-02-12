@@ -92,7 +92,7 @@ public class LSTMLayer extends DynamicCustomOp {
         addTArgument(configuration.tArgs());
     }
 
-    public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
+    public LSTMLayer(@NonNull INDArray x,@NonNull INDArray cLast,@NonNull INDArray yLast,@NonNull int maxTSLength,@NonNull LSTMWeights lstmWeights,@NonNull LSTMConfiguration lstmConfiguration) {
         super(null, null, lstmWeights.argsWithInputs(maxTSLength, x, cLast, yLast));
         this.configuration = lstmConfiguration;
         this.weights = lstmWeights;

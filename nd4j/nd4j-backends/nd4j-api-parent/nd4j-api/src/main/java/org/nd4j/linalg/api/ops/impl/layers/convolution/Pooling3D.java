@@ -52,9 +52,9 @@ public abstract class Pooling3D extends DynamicCustomOp {
         return super.iArgs();
     }
 
-    public Pooling3D(SameDiff sameDiff, SDVariable[] inputs, INDArray input, Object outputs, boolean inPlace, Pooling3DConfig pooling3DConfig, Pooling3DType avg) {}
+    public Pooling3D() {}
 
-    public Pooling3D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,
+    public Pooling3D(SameDiff sameDiff, SDVariable[] inputs, INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,
                      Pooling3DConfig pooling3DConfig, Pooling3DType type) {
         super(null,sameDiff, inputs, inPlace);
         Preconditions.checkState(pooling3DConfig.getDD() > 0 && pooling3DConfig.getDH() > 0 && pooling3DConfig.getDW() > 0,

@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -53,7 +54,7 @@ public class Col2Im extends DynamicCustomOp {
         addArgs();
     }
 
-    public Col2Im(SameDiff sd, SDVariable input, Conv2DConfig config){
+    public Col2Im(@NonNull SameDiff sd,@NonNull SDVariable input,@NonNull Conv2DConfig config){
         super(null, sd, new SDVariable[]{input});
         this.conv2DConfig = config;
         addArgs();
@@ -61,7 +62,7 @@ public class Col2Im extends DynamicCustomOp {
 
     public Col2Im() {}
 
-    public Col2Im(INDArray in, Conv2DConfig conv2DConfig) {
+    public Col2Im(@NonNull INDArray in,@NonNull Conv2DConfig conv2DConfig) {
         super("col2Im",in,null,null,null);
         this.conv2DConfig = conv2DConfig;
     }

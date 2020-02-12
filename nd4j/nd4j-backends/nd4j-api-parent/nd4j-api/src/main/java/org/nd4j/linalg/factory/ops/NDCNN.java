@@ -487,15 +487,13 @@ public class NDCNN {
    * 2D Convolution layer operation - Upsampling 2d <br>
    *
    * @param input Input in NCHW format (NUMERIC type)
-   * @param scaleH Scale to upsample in height dimension (NUMERIC type)
-   * @param scaleW Scale to upsample in width dimension (NUMERIC type)
+   * @param scaleH Scale to upsample in height dimension
+   * @param scaleW Scale to upsample in width dimension
    * @param nchw If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
    * @return output Upsampled input (NUMERIC type)
    */
-  public INDArray upsampling2d(INDArray input, INDArray scaleH, INDArray scaleW, boolean nchw) {
+  public INDArray upsampling2d(INDArray input, int scaleH, int scaleW, boolean nchw) {
     NDValidation.validateNumerical("upsampling2d", "input", input);
-    NDValidation.validateNumerical("upsampling2d", "scaleH", scaleH);
-    NDValidation.validateNumerical("upsampling2d", "scaleW", scaleW);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scaleH, scaleW, nchw))[0];
   }
 }
