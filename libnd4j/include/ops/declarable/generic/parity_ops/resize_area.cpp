@@ -80,8 +80,8 @@ namespace nd4j {
                              "resize_area: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
                 REQUIRE_TRUE(block.numI() <= 1, 0,
                              "resize_area: Resize params already given by the second param. Int params are expensive.");
-                width = newImageSize->e<int>(0);
-                height = newImageSize->e<int>(1);
+                width = newImageSize->e<int>(1);
+                height = newImageSize->e<int>(0);
             }
             else {
                 REQUIRE_TRUE(block.numI() == 2, 0, "resize_area: Resize params ommited as pair ints nor int tensor.");
@@ -95,13 +95,13 @@ namespace nd4j {
             outputShape[0] = inRank;
             if (inRank == 4) {
                 outputShape[1] = in[1];
-                outputShape[2] = width;
-                outputShape[3] = height;
+                outputShape[2] = height;
+                outputShape[3] = width;
                 outputShape[4] = in[4];
             }
             else {
-                outputShape[1] = width;
-                outputShape[2] = height;
+                outputShape[1] = height;
+                outputShape[2] = width;
                 outputShape[3] = in[3];
             }
             ShapeUtils::updateStridesAndType(outputShape, DataType::FLOAT32, shape::order(in));

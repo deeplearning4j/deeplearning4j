@@ -1520,6 +1520,65 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test13) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test14) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({8, 7});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 8, 7, 1}, {
+            1.f,  1.6f ,  2.1999993f,  2.9999995f ,  3.8f ,  4.399997f,  5.f ,  2.9999995f ,  3.5999997f ,  4.199999f,
+            4.9999995f,  5.8f ,  6.3999963f ,  7.f ,  5.999999f  ,       6.6f,  7.1999984f ,  7.9999995f ,  8.8f,
+            9.399994f,   10.f ,  10.f, 10.6f       , 11.199998f, 12.f,  12.8f, 13.399992f  , 14.f, 12.f  , 12.599999f,
+            13.199998f  , 13.999998f  , 14.800002f  , 15.399991f  , 16.f  ,    15.999999f  , 16.599998f  , 17.199995f,
+            18.f        , 18.800003f  , 19.399986f  , 20.000002f  , 19.f        , 19.599998f  , 20.199997f  ,
+            20.999998f  , 21.800003f  , 22.399984f  , 23.000002f  , 20.999998f  ,
+            21.599998f  , 22.199995f  , 22.999998f  , 23.800001f  , 24.399984f  ,
+            25.f
+    });    //input.linspace(1);
+//    auto size = NDArrayFactory::create<int>({6, 6});
+    nd4j::ops::resize_area op;
+    auto results = op.evaluate({&input, &size}, {}, {false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+//    result->printBuffer("Area Resized to 8x7");
+//    expected.printBuffer("Area Expect for 8x7");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests11, ImageResizeArea_Test15) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    //auto size = NDArrayFactory::create<int>({8, 7});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 8, 7, 1}, {
+            1.f,  1.6f ,  2.1999993f,  2.9999995f ,  3.8f ,  4.399997f,  5.f ,  2.9999995f ,  3.5999997f ,  4.199999f,
+            4.9999995f,  5.8f ,  6.3999963f ,  7.f ,  5.999999f  ,       6.6f,  7.1999984f ,  7.9999995f ,  8.8f,
+            9.399994f,   10.f ,  10.f, 10.6f       , 11.199998f, 12.f,  12.8f, 13.399992f  , 14.f, 12.f  , 12.599999f,
+            13.199998f  , 13.999998f  , 14.800002f  , 15.399991f  , 16.f  ,    15.999999f  , 16.599998f  , 17.199995f,
+            18.f        , 18.800003f  , 19.399986f  , 20.000002f  , 19.f        , 19.599998f  , 20.199997f  ,
+            20.999998f  , 21.800003f  , 22.399984f  , 23.000002f  , 20.999998f  , 21.599998f  , 22.199995f  ,
+            22.999998f  , 23.800001f  , 24.399984f  , 25.f
+    });
+
+    nd4j::ops::resize_area op;
+    auto results = op.evaluate({&input}, {}, {8, 7}, {false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+//    result->printBuffer("Area Resized to 8x7");
+//    expected.printBuffer("Area Expect for 8x7");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {
 

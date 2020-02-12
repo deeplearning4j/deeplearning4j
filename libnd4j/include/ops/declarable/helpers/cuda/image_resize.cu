@@ -1116,7 +1116,7 @@ namespace helpers {
         err = cudaMemcpyAsync(pSt, &st, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
         ScaleCache<T>* cachePool;
         err = cudaMalloc(&cachePool, sizeof(ScaleCache<T>) * st.batchSize * st.outWidth * st.outHeight);
-        resizeAreaKernel<T><<<128, 4, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->getSpecialShapeInfo(), outputPtr,
+        resizeAreaKernel<T><<<128, 2, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->getSpecialShapeInfo(), outputPtr,
                 output->specialShapeInfo(), cachePool);
         err = cudaStreamSynchronize(*stream);
         err = cudaFree(cachePool);
