@@ -32,9 +32,10 @@ template <typename X, typename  Y, typename Z>
 template<typename OpType>
 void TrueBroadcastHelper<X, Y, Z>::exec(const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
+
     const X* x = reinterpret_cast<X*>(xArr.getBuffer());
     const Y* y = reinterpret_cast<Y*>(yArr.getBuffer());
-    	  Z* z = reinterpret_cast<Z*>(zArr.getBuffer());
+    Z* z = reinterpret_cast<Z*>(zArr.getBuffer());
 
     const auto xShapeInfo = xArr.getShapeInfo();
     const auto yShapeInfo = yArr.getShapeInfo();
@@ -44,8 +45,26 @@ void TrueBroadcastHelper<X, Y, Z>::exec(const NDArray& xArr, const NDArray& yArr
     const int yRank = yArr.rankOf();
     const int zRank = zArr.rankOf();
 
-    const Nd4jLong zLen  = zArr.lengthOf();
+    bool bSpecialCase = (1 == xArr.ews() && 'c' == xArr.ordering() && 1 == yRank &&
+                         1 == yArr.ews() && 'c' == yArr.ordering() &&
+                         1 == zArr.ews() && 'c' == zArr.ordering());
 
+    if (bSpecialCase) {
+        auto yLen = (uint32_t)yArr.lengthOf();
+        auto func = PRAGMA_THREADS_FOR{
+           for (uint32_t i = start; i < stop; i++) {
+               auto rZ = z + (i * yLen);
+               auto v = x[i];
+               for (uint32_t j = 0; j < yLen; j++) {
+                    rZ[j] = OpType::op(v, y[j]);
+               }
+           }
+        };
+        samediff::Threads::parallel_tad(func, 0, xArr.lengthOf());
+        return;
+    }
+
+    const Nd4jLong zLen = zArr.lengthOf();
     auto func = PRAGMA_THREADS_FOR {
         std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
 
