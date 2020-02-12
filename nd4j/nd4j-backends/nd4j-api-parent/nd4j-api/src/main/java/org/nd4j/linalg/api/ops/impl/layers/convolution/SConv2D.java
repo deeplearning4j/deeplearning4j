@@ -49,11 +49,11 @@ public class SConv2D extends Conv2D {
     }
 
     public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights,@NonNull INDArray pointWeights,@NonNull INDArray bias, @NonNull Conv2DConfig Conv2DConfig){
-        this(wrapFilterNull(layerInput, depthWeights, pointWeights, bias), null, Conv2DConfig);
+        this(new INDArray[]{layerInput, depthWeights, pointWeights, bias}, null, Conv2DConfig);
     }
 
     public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights,@NonNull INDArray pointWeights, @NonNull Conv2DConfig Conv2DConfig){
-        this(wrapFilterNull(layerInput, depthWeights, pointWeights), null, Conv2DConfig);
+        this(new INDArray[]{layerInput, depthWeights, pointWeights}, null, Conv2DConfig);
     }
 
     public SConv2D() {}

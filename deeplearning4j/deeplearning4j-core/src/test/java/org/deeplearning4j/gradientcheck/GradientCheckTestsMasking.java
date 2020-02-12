@@ -56,6 +56,11 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     private static class GradientCheckSimpleScenario {
         private final ILossFunction lf;
         private final Activation act;
@@ -159,9 +164,8 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                             .updater(new NoOp())
                             .dataType(DataType.DOUBLE)
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                            .layer(0, new GravesBidirectionalLSTM.Builder().nIn(nIn).nOut(layerSize)
-                                            .activation(Activation.TANH).build())
-                            .layer(1, new GravesBidirectionalLSTM.Builder().nIn(layerSize).nOut(layerSize)
+                            .layer(0, new SimpleRnn.Builder().nIn(nIn).nOut(2).activation(Activation.TANH).build())
+                            .layer(1, new GravesBidirectionalLSTM.Builder().nIn(2).nOut(layerSize)
                                             .activation(Activation.TANH).build())
                             .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                             .activation(Activation.SOFTMAX).nIn(layerSize).nOut(nOut).build())
@@ -390,24 +394,24 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         Nd4j.getRandom().setSeed(12345);
         //Idea: RNN input, global pooling, OutputLayer - with "per example" mask arrays
 
-        int mb = 10;
+        int mb = 4;
         int tsLength = 5;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dataType(DataType.DOUBLE)
                 .weightInit(new NormalDistribution(0,2))
                 .updater(new NoOp())
                 .list()
-                .layer(new LSTM.Builder().nIn(10).nOut(10).build())
+                .layer(new LSTM.Builder().nIn(3).nOut(3).build())
                 .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build())
-                .layer(new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build())
-                .setInputType(InputType.recurrent(10))
+                .layer(new OutputLayer.Builder().nIn(3).nOut(3).activation(Activation.SOFTMAX).build())
+                .setInputType(InputType.recurrent(3))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        INDArray f = Nd4j.rand(new int[]{mb, 10, tsLength});
-        INDArray l = TestUtils.randomOneHot(mb, 10);
+        INDArray f = Nd4j.rand(new int[]{mb, 3, tsLength});
+        INDArray l = TestUtils.randomOneHot(mb, 3);
         INDArray lm = TestUtils.randomBernoulli(mb, 1);
 
         assertTrue(lm.sumNumber().intValue() > 0);
@@ -449,18 +453,18 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                 .updater(new NoOp())
                 .graphBuilder()
                 .addInputs("in")
-                .layer("0", new LSTM.Builder().nIn(10).nOut(10).build(), "in")
+                .layer("0", new LSTM.Builder().nIn(3).nOut(3).build(), "in")
                 .layer("1", new GlobalPoolingLayer.Builder().poolingType(PoolingType.AVG).build(), "0")
-                .layer("out", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build(), "1")
+                .layer("out", new OutputLayer.Builder().nIn(3).nOut(3).activation(Activation.SOFTMAX).build(), "1")
                 .setOutputs("out")
-                .setInputTypes(InputType.recurrent(10))
+                .setInputTypes(InputType.recurrent(3))
                 .build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
 
-        INDArray f = Nd4j.rand(new int[]{mb, 10, tsLength});
-        INDArray l = TestUtils.randomOneHot(mb, 10);
+        INDArray f = Nd4j.rand(new int[]{mb, 3, tsLength});
+        INDArray l = TestUtils.randomOneHot(mb, 3);
         INDArray lm = TestUtils.randomBernoulli(mb, 1);
 
         assertTrue(lm.sumNumber().intValue() > 0);

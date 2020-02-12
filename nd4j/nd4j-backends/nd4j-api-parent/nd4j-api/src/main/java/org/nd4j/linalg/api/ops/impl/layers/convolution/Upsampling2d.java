@@ -57,7 +57,7 @@ public class Upsampling2d extends DynamicCustomOp {
 
     public Upsampling2d() {}
 
-    public Upsampling2d(@NonNull INDArray input,@NonNull int scale) {
+    public Upsampling2d(@NonNull INDArray input, int scale) {
         super(null,input,null, null,null);
         this.scaleH = scale;
         this.scaleW = scale;
@@ -67,7 +67,7 @@ public class Upsampling2d extends DynamicCustomOp {
     }
 
 
-    public Upsampling2d(INDArray input, int scaleH,@NonNull int scaleW, boolean nchw) {
+    public Upsampling2d(INDArray input, int scaleH, int scaleW, boolean nchw) {
         super(null,input,null, null,null);
 
         this.nchw = nchw;

@@ -42,25 +42,26 @@ public class SRU extends DynamicCustomOp {
     private SRUWeights weights;
 
     @Getter
-    private INDArray mask;
+    private INDArray ndarrayMask;
+    private SDVariable mask;
+
 
     public SRU() { }
 
     public SRU(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable initialC, INDArray mask, @NonNull SRUWeights weights) {
-        super(null, sameDiff, wrapFilterNull(x, weights.getWeights(), weights.getBias(), initialC, mask));
-        this.mask = mask;
+        super(null, sameDiff, new INDArray[]{x, weights.getWeights(), weights.getBias(), initialC, mask});
+        this.ndarrayMask = mask;
         this.weights = weights;
     }
 
     public SRU(@NonNull INDArray x,@NonNull INDArray initialC,@NonNull INDArray mask,@NonNull SRUWeights sruWeights) {
-        super(null, null, wrapFilterNull(x, sruWeights.getWeights(), sruWeights.getBias(), initialC, mask));
-        this.mask = mask;
+        super(null, null, new INDArray[]{x, sruWeights.getWeights(), sruWeights.getBias(), initialC, mask});
+        this.ndarrayMask = mask;
         this.weights = sruWeights;
     }
 
     public SRU(@NonNull INDArray x,@NonNull INDArray initialC,@NonNull SRUWeights sruWeights) {
-        super(null, null, wrapFilterNull(x, sruWeights.getWeights(), sruWeights.getBias(), initialC));
-        this.mask =  mask;
+        super(null, null, new INDArray[]{x, sruWeights.getWeights(), sruWeights.getBias(), initialC});
         this.weights = sruWeights;
 
     }

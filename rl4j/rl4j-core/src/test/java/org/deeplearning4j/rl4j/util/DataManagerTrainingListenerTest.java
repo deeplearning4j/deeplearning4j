@@ -142,6 +142,11 @@ public class DataManagerTrainingListenerTest {
             return 0;
         }
 
+        @Override
+        public int getCurrentEpochStep() {
+            return 0;
+        }
+
         @Getter
         @Setter
         private IHistoryProcessor historyProcessor;

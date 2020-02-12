@@ -62,15 +62,15 @@ public class DeConv3D extends DynamicCustomOp {
     }
 
     public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights,@NonNull INDArray bias, INDArray output, @NonNull DeConv3DConfig config){
-        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
+        this(new INDArray[]{input, weights, bias}, wrapOrNull(output), config);
     }
 
     public DeConv3D(@NonNull INDArray input,@NonNull INDArray weights,@NonNull DeConv3DConfig deConv3DConfig) {
-        this(wrapFilterNull(input, weights), null, deConv3DConfig);
+        this(new INDArray[]{input, weights}, null, deConv3DConfig);
     }
 
     public DeConv3D(@NonNull INDArray input,@NonNull INDArray weights,@NonNull INDArray bias,@NonNull DeConv3DConfig deConv3DConfig) {
-        this(wrapFilterNull(input, weights, bias), null, deConv3DConfig);
+        this(new INDArray[]{input, weights, bias}, null, deConv3DConfig);
     }
 
     private static SDVariable[] toArr(SDVariable input, SDVariable weights, SDVariable bias){

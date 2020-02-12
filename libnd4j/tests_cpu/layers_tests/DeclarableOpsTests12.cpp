@@ -3008,3 +3008,33 @@ TEST_F(DeclarableOpsTests12, TriangularSolve_Test_5) {
     ASSERT_TRUE(exp.equalsTo(z));
     delete res;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests12, TriangularSolve_Test_6) {
+
+    auto a = NDArrayFactory::create<float>('c', {4, 4}, {
+            5.f,  1.f, -3.f,  3.f,
+            0.f,  1.f,  1.f, -1.f,
+            0.f,  0.f,  2.f, -9.f,
+            0.f,  0.f,  0.f,  4.f
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {4, 2}, {
+            5.f, 1.f,        2.f,  1.f,       0.f,  1.f,      -3.f, 1.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {4, 2}, {
+            1.f,0.2f,      1.f,0.8f,         1.f,0.4f,        1.f,1.2f
+    });
+
+    nd4j::ops::triangular_solve op;
+
+    auto res = op.evaluate({&a, &b}, {}, {}, {false, true});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+    z->printIndexedBuffer("TriangularSolve with adjoint");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}

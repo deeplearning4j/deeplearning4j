@@ -45,7 +45,7 @@ public class TypeConversion {
     }
 
     public int convertInt(String o) {
-        return Integer.parseInt(o);
+        return (int) Double.parseDouble(o);
     }
 
     public double convertDouble(Writable writable) {

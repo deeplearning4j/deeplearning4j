@@ -270,10 +270,6 @@ PLATFORM_IMPL(conv3dnew, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
-    // we don't want to use mkldnn if cpu doesn't support avx/avx2
-    if (::optimalLevel() < 2)
-        return false;
-
     auto input = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, iC, oC] always
     auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
@@ -335,7 +331,6 @@ PLATFORM_IMPL(conv3dnew_bp, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(conv3dnew_bp, ENGINE_CPU) {
-
     auto input = INPUT_VARIABLE(0);                                                // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                                // [kD, kH, kW, iC, oC] always
     auto bias = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]

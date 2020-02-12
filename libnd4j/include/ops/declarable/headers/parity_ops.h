@@ -1077,6 +1077,24 @@ namespace nd4j {
         #endif
 
         /**
+         * solve op. - solve systems of linear equations - general method.
+         *
+         * input params:
+         *    0 - the tensor with dimension (x * y * z * ::: * M * M) - left parts of equations
+         *    1 - the tensor with dimension (x * y * z * ::: * M * K) - right parts of equations
+         *
+         * boolean args:
+         *    0 - adjoint - default is false (optional) - indicate input matrix or its adjoint (hermitian addition) should be used
+         *
+         * return value:
+         *    tensor with dimension (x * y * z * ::: * M * K) with solutions
+         *
+         */
+        #if NOT_EXCLUDED(OP_solve)
+        DECLARE_CUSTOM_OP(solve, 2, 1, true, 0, 0);
+        #endif
+
+        /**
          * lu op. - make LUP decomposition of given batch of 2D square matricies
          *
          * input params:

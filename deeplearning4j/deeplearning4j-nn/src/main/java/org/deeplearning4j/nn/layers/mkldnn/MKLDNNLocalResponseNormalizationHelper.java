@@ -59,7 +59,8 @@ public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper imp
             context = Nd4j.getExecutioner().buildContext();
             context.setTArguments(k, alpha, beta);
             context.setIArguments((int)n);
-        }
+        } else
+            context.purge();
 
         LocalResponseNormalization op = new LocalResponseNormalization();
 
@@ -80,7 +81,8 @@ public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper imp
             context = Nd4j.getExecutioner().buildContext();
             context.setTArguments(k, alpha, beta);
             context.setIArguments((int)n);
-        }
+        } else
+            context.purge();
 
         context.setInputArray(0, x);
         context.setOutputArray(0, out);

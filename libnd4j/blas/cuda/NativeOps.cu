@@ -3771,6 +3771,10 @@ void ctxShapeFunctionOverride(OpaqueContext* ptr, bool reallyOverride) {
     ptr->setShapeFunctionOverride(reallyOverride);
 }
 
+void ctxPurge(OpaqueContext* ptr) {
+    ptr->clearFastPath();
+}
+
 int  binaryLevel() {
     return 0;
 }

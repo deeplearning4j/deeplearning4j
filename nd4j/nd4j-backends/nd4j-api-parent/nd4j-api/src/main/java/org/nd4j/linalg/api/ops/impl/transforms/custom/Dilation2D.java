@@ -85,7 +85,7 @@ public class Dilation2D extends DynamicCustomOp {
 
     }
 
-    public Dilation2D(@NonNull INDArray df, @NonNull INDArray weights, @NonNull int[] strides, @NonNull int[] rates, boolean isSameMode) {
+    public Dilation2D(@NonNull INDArray df, @NonNull INDArray weights, int[] strides,  int[] rates, boolean isSameMode) {
         super(null, new INDArray[]{df, weights},null);
         Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates);
         Preconditions.checkArgument(strides.length == 4, "Dilation strides length must be 4, got an array with length %s with values %s", strides.length, strides);

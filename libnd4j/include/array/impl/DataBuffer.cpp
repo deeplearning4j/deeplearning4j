@@ -305,12 +305,17 @@ namespace nd4j {
         if (_primaryBuffer != nullptr && _isOwnerPrimary) {
             deletePrimary();
         }
+
         _primaryBuffer = buffer;
         _isOwnerPrimary = false;
         _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
     }
 
     void DataBuffer::setSpecialBuffer(void *buffer, size_t length) {
+        if (_specialBuffer != nullptr && _isOwnerSpecial) {
+            deleteSpecial();
+        }
+
         this->setSpecial(buffer, false);
         _lenInBytes = length * DataTypeUtils::sizeOf(_dataType);
     }

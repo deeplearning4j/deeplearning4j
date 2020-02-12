@@ -1541,6 +1541,166 @@ TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {
     delete []arr;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Solve_Test_1) {
+
+    auto a = NDArrayFactory::create<float>('c', {3, 3}, {
+            2.f, -1.f, -2.f, -4.f, 6.f, 3.f, -4.f, -2.f, 8.f
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {3, 1}, {
+            2.f, 4.f, 3.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {3, 1}, {
+            7.625f, 3.25f, 5.f
+    });
+
+    nd4j::ops::solve op;
+
+    auto res = op.evaluate({&a, &b});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("Solve of 3x3");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Solve_Test_2) {
+
+    auto a = NDArrayFactory::create<float>('c', {4, 4}, {
+            1.f,  1.f,  1.f,  1.f,
+            0.f,  1.f,  1.f,  0.f,
+            0.f,  0.f,  2.f,  1.f,
+            0.f,  0.f,  0.f,  3.f,
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {4, 1}, {
+            2.f, 4.f, 2.f, 4.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {4, 1}, {
+            -3.3333333f,      3.6666666f,         0.333333f,        1.3333333f
+    });
+
+    nd4j::ops::solve op;
+
+    auto res = op.evaluate({&a, &b});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("Solve 4x4");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Solve_Test_3) {
+
+    auto a = NDArrayFactory::create<float>('c', {2, 4, 4}, {
+            1.f,  1.f,  1.f,  1.f,
+            0.f,  1.f,  1.f,  0.f,
+            0.f,  0.f,  2.f,  1.f,
+            0.f,  0.f,  0.f,  3.f,
+
+            3.f,  0.f,  0.f,  0.f,
+            2.f,  1.f,  0.f,  0.f,
+            1.f,  0.f,  1.f,  0.f,
+            1.f,  1.f,  1.f,  1.f
+
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {2, 4, 1}, {
+            2.f, 4.f, 2.f, 4.f,
+            4.f, 2.f, 4.f, 2.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {2, 4, 1}, {
+            -3.3333333f,      3.6666666f,         0.333333f,        1.3333333f,
+            1.333333f,      -0.6666667f,         2.6666667f,        -1.3333333f
+    });
+
+    nd4j::ops::solve op;
+
+    auto res = op.evaluate({&a, &b});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("Solve 4x4");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Solve_Test_4) {
+
+    auto a = NDArrayFactory::create<float>('c', {2, 2, 2}, {
+            0.7788f,    0.8012f,   0.7244f,    0.2309f,
+            0.7271f,    0.1804f,   0.5056f,    0.8925f
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {2, 2, 2}, {
+            0.7717f,    0.9281f, 0.9846f,    0.4838f,
+            0.6433f,    0.6041f, 0.6501f,    0.7612f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {
+//            1.524494767f,    0.432706356f,-0.518630624f,    0.737760842f,
+//            0.819143713f,    0.720401764f, 0.264349997f,    0.444699198f
+             1.5245394f,   0.4326952f,  -0.51873577f,  0.7377896f,
+            0.81915987f,  0.72049433f,    0.2643504f,  0.44472617f
+    });
+
+    nd4j::ops::solve op;
+
+    auto res = op.evaluate({&a, &b});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printBuffer("4 Solve 4x4");
+//    exp.printBuffer("4 Expec 4x4");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Solve_Test_5) {
+
+    auto a = NDArrayFactory::create<float>('c', {3, 3}, {
+            0.7788f,    0.8012f,    0.7244f,
+            0.2309f,    0.7271f,    0.1804f,
+            0.5056f,    0.8925f,    0.5461f
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {3, 3}, {
+            0.7717f,    0.9281f,    0.9846f,
+            0.4838f,    0.6433f,    0.6041f,
+            0.6501f,    0.7612f,    0.7605f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {
+             1.5504692f,  1.8953944f,  2.2765768f,
+            0.03399149f,  0.2883001f,  0.5377323f,
+            -0.8774802f, -1.2155888f, -1.8049058f
+    });
+
+    nd4j::ops::solve op;
+
+    auto res = op.evaluate({&a, &b}, {true});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+    z->printBuffer("4 Solve 4x4");
+    exp.printBuffer("4 Expec 4x4");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
 

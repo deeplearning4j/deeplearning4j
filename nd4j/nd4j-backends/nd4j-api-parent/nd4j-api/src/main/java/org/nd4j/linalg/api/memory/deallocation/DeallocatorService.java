@@ -43,7 +43,7 @@ public class DeallocatorService {
     private Map<String, DeallocatableReference> referenceMap = new ConcurrentHashMap<>();
     private List<List<ReferenceQueue<Deallocatable>>> deviceMap = new ArrayList<>();
 
-    private AtomicLong counter = new AtomicLong(0);
+    private final transient AtomicLong counter = new AtomicLong(0);
 
     public DeallocatorService() {
         // we need to have at least 2 threads, but for CUDA we'd need at least numDevices threads, due to thread->device affinity

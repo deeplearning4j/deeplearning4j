@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ops.impl.layers.recurrent.weights;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -10,48 +11,21 @@ public abstract class RNNWeights {
 
     public abstract INDArray[] ndarrayArgs();
 
-    protected static SDVariable[] filterNonNull(SDVariable... args){
+
+
+    protected static <T> T[] filterNonNull(T... in){
         int count = 0;
-        for(SDVariable v : args){
-            if(v != null){
-                count++;
+        for( int i=0; i<in.length; i++ ) {
+            if (in[i] != null) count++;
+        }
+        T[] out = (T[]) Array.newInstance(in.getClass().getComponentType(), count);
+        int j=0;
+        for( int i=0; i<in.length; i++ ){
+            if(in[i] != null){
+                out[j++] = in[i];
             }
         }
-
-        SDVariable[] res = new SDVariable[count];
-
-        int i = 0;
-
-        for(SDVariable v : args){
-            if(v != null){
-                res[i] = v;
-                i++;
-            }
-        }
-
-        return res;
-    }
-
-    protected static INDArray[] filterNonNull(INDArray... args){
-        int count = 0;
-        for(INDArray v : args){
-            if(v != null){
-                count++;
-            }
-        }
-
-        INDArray[] res = new INDArray[count];
-
-        int i = 0;
-
-        for(INDArray v : args){
-            if(v != null){
-                res[i] = v;
-                i++;
-            }
-        }
-
-        return res;
+        return out;
     }
 
     public SDVariable[] argsWithInputs(SDVariable... inputs){
