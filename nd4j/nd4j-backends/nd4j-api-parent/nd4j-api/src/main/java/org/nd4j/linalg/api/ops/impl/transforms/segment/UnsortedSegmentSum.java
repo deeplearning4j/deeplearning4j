@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.segment;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -32,6 +33,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@NoArgsConstructor
 public class UnsortedSegmentSum extends DynamicCustomOp {
 
     private int numSegments;
@@ -41,8 +43,6 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
         this.numSegments = numSegments;
         addIArgument(numSegments);
     }
-
-    public UnsortedSegmentSum(){ }
 
     @Override
     public String opName(){
@@ -61,7 +61,8 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
+                "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
         //TODO Allow customizing output type
         return Collections.singletonList(Nd4j.defaultFloatingPointType());
     }

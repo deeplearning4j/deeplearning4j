@@ -2545,7 +2545,7 @@ public class SDMath extends SDOps {
      * @param shift number of places to shift elements
      * @return array
      */
-    public SDVariable roll(String name, SDVariable input, SDVariable shift) {
+    public SDVariable roll(String name, SDVariable input, int shift) {
         SDVariable res = f().roll(input,shift);
         return updateVariableNameAndReference(res, name);
     }

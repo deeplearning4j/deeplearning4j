@@ -1016,7 +1016,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testConstant(){
-        OpValidationSuite.ignoreFailing();
+        //OpValidationSuite.ignoreFailing();
 
         //Case 0: no shape
         SameDiff sd = SameDiff.create();
@@ -1035,7 +1035,9 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray exp = Nd4j.valueArrayOf(new long[]{3,4,5}, 3.0);
         loss = constant.std(true);
 
-        assertNull(OpValidation.validate(new TestCase(sd).expected(constant, ia)));
+        assertNull(OpValidation.validate(new TestCase(sd)
+                .gradientCheck(false)
+                .expected(constant, Nd4j.create(DataType.FLOAT, 3,4,5))));
     }
 
 
@@ -1272,7 +1274,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
             SameDiff sd = SameDiff.create();
             SDVariable data = sd.var("data", d);
-            SDVariable segments = sd.var("segments", s);
+            SDVariable segments = sd.constant("segments", s);
 
             SDVariable sm;
             INDArray exp;
@@ -1326,6 +1328,7 @@ public class ShapeOpValidation extends BaseOpValidation {
             }
 
             SDVariable loss = sm.std(true);
+            sd.addLossVariable(loss);
 
             TestCase tc = new TestCase(sd)
                     .testName(op)
@@ -1363,17 +1366,19 @@ public class ShapeOpValidation extends BaseOpValidation {
 
     @Test
     public void testSequenceMask() {
-        OpValidationSuite.ignoreFailing();  //2018-01-09: output datatype issue?
         SameDiff sameDiff = SameDiff.create();
-        INDArray arr = Nd4j.create(new float[] {1, 3, 2}).reshape(3);
-        SDVariable lengths = sameDiff.var("lengths", arr);
+        INDArray arr = Nd4j.createFromArray(new int[] {1, 3, 2});
+        // arr is not trainable, so it's constant in model
+        SDVariable lengths = sameDiff.constant(arr);
 
         // Test with static max len
         int maxlen = 5;
-        INDArray expected = Nd4j.create(new float[] {1, 0, 0, 0, 0,
-                        1, 1, 1, 0, 0,
-                        1, 1, 0, 0, 0},
-                new long[]{3, 5});
+        INDArray expected = Nd4j.create(new float[] {
+                    1.f,     0.f,     0.f,    0.f,   0.f,
+                    1.f,     1.f,     1.f,    0.f,   0.f,
+                    1.f,     1.f,     0.f,    0.f,   0.f
+                }).reshape(3,5);
+        INDArray[] ret = Nd4j.exec(new SequenceMask(arr, maxlen, DataType.FLOAT));
         SDVariable result1 = sameDiff.sequenceMask(lengths, maxlen, DataType.FLOAT);
         assertArrayEquals(expected.shape(), result1.eval().shape());
         assertEquals(expected, result1.eval());
@@ -1382,14 +1387,14 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         String err = OpValidation.validate(new TestCase(sameDiff)
                 .expected(result1, expected)
-                .gradCheckSkipVariables(lengths.name()));
+                .gradientCheck(false));
         assertNull(err);
 
         // Test with dynamic maxlen
-        lengths = sameDiff.var("lengths2", arr); // required because of an internal samediff bug
-        SDVariable maxLen = sameDiff.var("maxLen", Nd4j.create(new float[]{5}).reshape(1));
+        lengths = sameDiff.constant("lengths2", arr);
+        SDVariable maxLen = sameDiff.constant("maxLen", Nd4j.scalar(5));
         SDVariable result2 = sameDiff.sequenceMask(lengths, maxLen, DataType.FLOAT);
-        assertArrayEquals(expected.shape(), result2.eval().shape());
+//        assertArrayEquals(expected.shape(), result2.eval().shape());
         assertEquals(expected, result2.eval());
     }
 

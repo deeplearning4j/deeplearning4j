@@ -787,9 +787,10 @@ public abstract class SDBaseOps {
      * @param number Number of values to generate
      * @return SDVariable with linearly spaced elements
      */
-    public SDVariable linspace(DataType dataType, double start, double stop, long number) {
+    // TODO: fix or remove, currently it is internal recursion
+    /*public SDVariable linspace(DataType dataType, double start, double stop, long number) {
         return linspace(dataType, start, stop, number);
-    }
+    }*/
 
     /**
      * Create a new 1d array with values evenly spaced between values 'start' and 'stop'
@@ -3093,6 +3094,9 @@ public abstract class SDBaseOps {
         return zerosLike(null, input);
     }
 
+    public SDVariable zerosLike(@NonNull SDVariable input, @NonNull DataType dataType) {
+        return zerosLike(null, input, dataType);
+    }
     /**
      * Return a variable of all 0s, with the same shape as the input variable. Note that this is dynamic:
      * if the input shape changes in later execution, the returned variable's shape will also be updated
@@ -3106,6 +3110,10 @@ public abstract class SDBaseOps {
         return updateVariableNameAndReference(ret, name);
     }
 
+    public SDVariable zerosLike(String name, @NonNull SDVariable input, @NonNull DataType dataType) {
+        SDVariable ret = f().zerosLike(name, input, dataType);
+        return updateVariableNameAndReference(ret, name);
+    }
 
     /**
      * See {@link #any(String, SDVariable, int...)}

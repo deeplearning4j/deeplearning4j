@@ -63,7 +63,7 @@ public class TextPipelineTest extends BaseSparkTest {
 
     @Before
     public void before() throws Exception {
-        conf = new SparkConf().setMaster("local[4]").setAppName("sparktest");
+        conf = new SparkConf().setMaster("local[4]").setAppName("sparktest").set("spark.driver.host", "localhost");
 
         // All the avaliable options. These are default values
         word2vec = new Word2Vec.Builder().minWordFrequency(1).setNGrams(1)

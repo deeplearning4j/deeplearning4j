@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.stats.CommonSparkTrainingStats;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -50,17 +51,13 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 17/06/2016.
  */
-public class TestTrainingStatsCollection {
+public class TestTrainingStatsCollection extends BaseSparkTest {
 
     @Test
     public void testStatsCollection() throws Exception {
-        int nWorkers = 4;
+        int nWorkers = numExecutors();
 
-        SparkConf sparkConf = new SparkConf();
-        sparkConf.setMaster("local[" + nWorkers + "]");
-        sparkConf.setAppName("Test");
-
-        JavaSparkContext sc = new JavaSparkContext(sparkConf);
+        JavaSparkContext sc = getContext();
 
         try {
 

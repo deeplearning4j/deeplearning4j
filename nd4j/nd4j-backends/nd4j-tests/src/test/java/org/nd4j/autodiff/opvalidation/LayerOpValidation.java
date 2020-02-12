@@ -50,6 +50,11 @@ public class LayerOpValidation extends BaseOpValidation {
         super(backend);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testXwPlusB() {
         Nd4j.getRandom().setSeed(12345);
@@ -319,7 +324,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testIm2Col() {
-        OpValidationSuite.ignoreFailing();      //TEMPORARY DUE TO JVM CRASH: https://github.com/deeplearning4j/deeplearning4j/issues/6873
+        //OpValidationSuite.ignoreFailing();      //TEMPORARY DUE TO JVM CRASH: https://github.com/deeplearning4j/deeplearning4j/issues/6873
         Nd4j.getRandom().setSeed(12345);
 
         int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};

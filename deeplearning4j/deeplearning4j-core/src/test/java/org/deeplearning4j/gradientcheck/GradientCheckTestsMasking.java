@@ -414,7 +414,11 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         INDArray l = TestUtils.randomOneHot(mb, 3);
         INDArray lm = TestUtils.randomBernoulli(mb, 1);
 
-        assertTrue(lm.sumNumber().intValue() > 0);
+        int attempts = 0;
+        while(attempts++ < 1000 && lm.sumNumber().intValue() == 0){
+            lm = TestUtils.randomBernoulli(mb, 1);
+        }
+        assertTrue("Could not generate non-zero mask after " + attempts + " attempts", lm.sumNumber().intValue() > 0);
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(f)
                 .labels(l).labelMask(lm));
@@ -467,7 +471,11 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         INDArray l = TestUtils.randomOneHot(mb, 3);
         INDArray lm = TestUtils.randomBernoulli(mb, 1);
 
-        assertTrue(lm.sumNumber().intValue() > 0);
+        int attempts = 0;
+        while(attempts++ < 1000 && lm.sumNumber().intValue() == 0){
+            lm = TestUtils.randomBernoulli(mb, 1);
+        }
+        assertTrue("Could not generate non-zero mask after " + attempts + " attempts", lm.sumNumber().intValue() > 0);
 
         boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(net).inputs(new INDArray[]{f})
                 .labels(new INDArray[]{l}).labelMask(new INDArray[]{lm}));

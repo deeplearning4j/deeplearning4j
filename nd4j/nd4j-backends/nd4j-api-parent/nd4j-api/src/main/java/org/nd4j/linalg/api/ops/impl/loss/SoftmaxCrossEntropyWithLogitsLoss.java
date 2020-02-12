@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,8 +39,14 @@ public class SoftmaxCrossEntropyWithLogitsLoss extends DynamicCustomOp {
 
     protected int classesDim;
 
-    public SoftmaxCrossEntropyWithLogitsLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels, int classesDim) {
-        super(null, sameDiff, new SDVariable[]{logits, weights, labels}, false);
+//    public SoftmaxCrossEntropyWithLogitsLoss(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels, int classesDim) {
+//        super(null, sameDiff, new SDVariable[]{logits, weights, labels}, false);
+//        this.classesDim = classesDim;
+//        addIArgument(classesDim);
+//    }
+
+    public SoftmaxCrossEntropyWithLogitsLoss(SameDiff sameDiff, SDVariable logits, SDVariable labels, int classesDim) {
+        super(null, sameDiff, new SDVariable[]{logits, labels}, false);
         this.classesDim = classesDim;
         addIArgument(classesDim);
     }
@@ -66,7 +73,8 @@ public class SoftmaxCrossEntropyWithLogitsLoss extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //No external gradient
         //Args: logits, weigths, label
-        SDVariable[] grads = f().lossSoftmaxCrossEntropyWithLogitsBp(arg(2), arg(0), arg(1), classesDim);
+        SDVariable[] args = args();
+        SDVariable[] grads = f().lossSoftmaxCrossEntropyWithLogitsBp(arg(0), arg(1), classesDim);
         return Arrays.asList(grads);
     }
 }

@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,16 +54,12 @@ public class SpaceToBatch extends DynamicCustomOp {
     }
 
     public SpaceToBatch(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] padding, boolean inPlace) {
-        super(null, sameDiff, args, inPlace);
+        super(null, sameDiff, new SDVariable[]{args[0], sameDiff.constant(Nd4j.createFromArray(padding))}, inPlace);
 
         this.blocks = blocks;
         this.padding = padding;
 
-        for (val b : blocks)
-            addIArgument(b);
-
-        for (int e = 0; e < padding.length; e++)
-            addIArgument(padding[e][0], padding[e][1]);
+        addIArgument(blocks[0]);
     }
 
     @Override

@@ -294,6 +294,11 @@ public class DifferentialFunctionFactory {
         return new ZerosLike(name, sameDiff(), input).outputVariable();
     }
 
+    public SDVariable zerosLike(String name, SDVariable input, DataType dataType) {
+        validateDifferentialFunctionsameDiff(input);
+        return new ZerosLike(name, sameDiff(), input, dataType).outputVariable();
+    }
+
     public SDVariable create(String name, SDVariable shape, boolean initialize, DataType dataType) {
         return create(name, shape, 'c', initialize, dataType);
     }
@@ -1751,12 +1756,12 @@ public class DifferentialFunctionFactory {
         return new SoftmaxCrossEntropyLossBp(sameDiff(), lossReduce, logits, weights, labels, labelSmoothing).outputVariables();
     }
 
-    public SDVariable lossSoftmaxCrossEntropyWithLogits(SDVariable labels, SDVariable logits, SDVariable weights, int classDim) {
-        return new SoftmaxCrossEntropyWithLogitsLoss(sameDiff(), logits, weights, labels, classDim).outputVariable();
+    public SDVariable lossSoftmaxCrossEntropyWithLogits(SDVariable labels, SDVariable logits, int classDim) {
+        return new SoftmaxCrossEntropyWithLogitsLoss(sameDiff(), logits, labels, classDim).outputVariable();
     }
 
-    public SDVariable[] lossSoftmaxCrossEntropyWithLogitsBp(SDVariable labels, SDVariable logits, SDVariable weights, int classDim) {
-        return new SoftmaxCrossEntropyWithLogitsLossBp(sameDiff(), logits, weights, labels, classDim).outputVariables();
+    public SDVariable[] lossSoftmaxCrossEntropyWithLogitsBp(SDVariable labels, SDVariable logits, int classDim) {
+        return new SoftmaxCrossEntropyWithLogitsLossBp(sameDiff(), logits, labels, classDim).outputVariables();
     }
 
     public SDVariable lossSparseSoftmaxCrossEntropy(SDVariable logits, SDVariable labels){
@@ -2638,7 +2643,7 @@ public class DifferentialFunctionFactory {
         return new Polygamma(sameDiff, n,x).outputVariable();
     }
 
-    public SDVariable roll(SDVariable input, SDVariable shift) {
+    public SDVariable roll(SDVariable input, int shift) {
         return new Roll(sameDiff, input, shift).outputVariable();
     }
 

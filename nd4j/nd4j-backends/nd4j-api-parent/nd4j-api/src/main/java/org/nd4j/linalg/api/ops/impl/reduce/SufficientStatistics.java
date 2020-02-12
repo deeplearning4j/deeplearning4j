@@ -16,9 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.*;
@@ -30,11 +33,8 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@NoArgsConstructor
 public class SufficientStatistics extends DynamicCustomOp {
-
-    public SufficientStatistics() {
-    }
-
 
     public SufficientStatistics(SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable axis, SDVariable shift) {
         super(null, sameDiff, argsNoNull(x, axis, shift), false);
@@ -48,14 +48,30 @@ public class SufficientStatistics extends DynamicCustomOp {
         }
     }
 
+    public SufficientStatistics(@NonNull INDArray x, @NonNull INDArray axes, INDArray shift) {
+        if (shift != null)
+            addInputArgument(x, axes, shift);
+        else
+            addInputArgument(x, axes);
+    }
+
+    public SufficientStatistics(@NonNull INDArray x, @NonNull INDArray axes) {
+        this(x,axes,null);
+    }
 
     @Override
     public String opName() {
         return "sufficient_statistics";
     }
+
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         throw new UnsupportedOperationException("Backprop not yet implemented for op: " + getClass().getSimpleName());
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
+        // FIXME
+        return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(0),inputDataTypes.get(0));
+    }
 }

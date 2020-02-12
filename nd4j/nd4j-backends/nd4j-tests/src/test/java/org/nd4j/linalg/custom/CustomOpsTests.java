@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
+import org.nd4j.linalg.api.ops.impl.shape.SequenceMask;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp;
@@ -1735,6 +1736,21 @@ public class CustomOpsTests extends BaseNd4jTest {
         val op = new LinearSolve(a, b, true);
         INDArray[] ret = Nd4j.exec(op);
 
+        assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testSequenceMask() {
+        INDArray arr = Nd4j.createFromArray(new int[]{1, 3, 2});
+        // Test with static max len
+        int maxlen = 2;
+        INDArray expected = Nd4j.createFromArray(new int[]{
+                1,0,0,
+                1,1,1,
+                1,1,0
+        }).reshape(3, 3);
+
+        INDArray[] ret = Nd4j.exec(new SequenceMask(arr, maxlen, DataType.INT32));
         assertEquals(expected, ret[0]);
     }
 }
