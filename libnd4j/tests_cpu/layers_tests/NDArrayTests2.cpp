@@ -1295,3 +1295,13 @@ TEST_F(NDArrayTest2, test_subarray_followed_by_reshape_1) {
 
     ASSERT_EQ(e, r);
 }
+
+TEST_F(NDArrayTest2, test_numpy_import_1) {
+    std::string fname("./resources/arr_3,4_float32.npy");
+    auto exp = NDArrayFactory::create<float>('c', {3, 4});
+    exp.linspace(0);
+
+    auto array = NDArrayFactory::fromNpyFile(fname.c_str());
+
+    ASSERT_EQ(exp, array);
+}

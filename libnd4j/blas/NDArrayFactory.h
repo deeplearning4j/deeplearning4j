@@ -109,6 +109,13 @@ namespace nd4j {
         static NDArray create(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<T>& data, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 
         /**
+         * This method creates NDArray from .npy file
+         * @param fileName
+         * @return
+         */
+        static NDArray fromNpyFile(const char *fileName);
+
+        /**
          * This factory create array from utf8 string
          * @return NDArray default dataType UTF8
          */
