@@ -144,7 +144,7 @@ namespace nd4j {
                 delete[] aT;
         }
 
-        BUILD_TRIPLE_TEMPLATE(template class  GEMV, , LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
-        BUILD_TRIPLE_TEMPLATE(template class  GEMM, , LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+        //BUILD_TRIPLE_TEMPLATE(template class  GEMV, , LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+        //BUILD_TRIPLE_TEMPLATE(template class  GEMM, , LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
     }
 }

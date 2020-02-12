@@ -24,11 +24,15 @@
 #include <exceptions/cuda_exception.h>
 #include <ConstantHelper.h>
 #include <ConstantShapeHelper.h>
+#include <GraphExecutioner.h>
 #include <ShapeUtils.h>
 #include <type_traits>
 
 
+
+
 #include <StringUtils.h>
+#include <NativeOps.h>
 
 namespace nd4j {
 
@@ -688,4 +692,27 @@ template ND4J_EXPORT NDArray NDArrayFactory::create(int16_t* buffer, const char 
           return NDArray( shape, string, dtype, context);
       }
 
+
+      NDArray NDArrayFactory::fromNpyFile(const char *fileName) {
+          auto size = nd4j::graph::getFileSize(fileName);
+          if (size < 0)
+              throw std::runtime_error("File doesn't exit");
+
+          auto pNPY = reinterpret_cast<char*>(::numpyFromFile(std::string(fileName)));
+
+          auto nBuffer = reinterpret_cast<void*>(::dataPointForNumpy(pNPY));
+          auto shape = reinterpret_cast<Nd4jLong *>(::shapeBufferForNumpy(pNPY));
+
+          auto length = shape::length(shape);
+          int8_t *buffer = nullptr;
+          nd4j::memory::Workspace *workspace = nullptr;
+          auto byteLen = length * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape));
+
+          ALLOCATE(buffer, workspace, byteLen, int8_t);
+          memcpy(buffer, nBuffer, byteLen);
+
+          free(pNPY);
+
+          return NDArray(buffer, shape, LaunchContext::defaultContext(), true);
+      }
 }

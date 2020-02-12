@@ -69,7 +69,11 @@ public class PythonObject {
     }
 
     public PythonObject(BytePointer bp){
-        nativePythonObject = PyByteArray_FromStringAndSize(bp, bp.capacity());
+
+        long address = bp.address();
+        long size = bp.capacity();
+        NumpyArray npArr = NumpyArray.builder().address(address).shape(new long[]{size}).strides(new long[]{1}).dtype(DataType.BYTE).build();
+        nativePythonObject = Python.memoryview(new PythonObject(npArr)).nativePythonObject;
     }
 
     public PythonObject(NumpyArray npArray) {
@@ -343,13 +347,28 @@ public class PythonObject {
             dtype = DataType.DOUBLE;
         } else if (dtypeName.equals("float32")) {
             dtype = DataType.FLOAT;
-        } else if (dtypeName.equals("int16")) {
+        } else if (dtypeName.equals("int8")){
+            dtype = DataType.INT8;
+        }else if (dtypeName.equals("int16")) {
             dtype = DataType.SHORT;
         } else if (dtypeName.equals("int32")) {
             dtype = DataType.INT;
         } else if (dtypeName.equals("int64")) {
             dtype = DataType.LONG;
-        } else {
+        }
+        else if (dtypeName.equals("uint8")){
+            dtype = DataType.UINT8;
+        }
+        else if (dtypeName.equals("uint16")){
+            dtype = DataType.UINT16;
+        }
+        else if (dtypeName.equals("uint32")){
+            dtype = DataType.UINT32;
+        }
+        else if (dtypeName.equals("uint64")){
+            dtype = DataType.UINT64;
+        }
+        else {
             throw new RuntimeException("Unsupported array type " + dtypeName + ".");
         }
         return new NumpyArray(address, jshape, jstrides, dtype);
@@ -518,6 +537,22 @@ public class PythonObject {
         else if (Python.isinstance(this, Python.bytearrayType())){
             return PyByteArray_AsString(nativePythonObject);
         }
+        else if (Python.isinstance(this, Python.memoryviewType())){
+
+//            PyObject np = PyImport_ImportModule("numpy");
+//            PyObject array = PyObject_GetAttrString(np, "asarray");
+//            PyObject npArr = PyObject_CallObject(array, nativePythonObject); // Doesn't work
+            // Invoke interpreter:
+            String tempContext = "temp" + UUID.randomUUID().toString().replace('-', '_');
+            String originalContext = Python.getCurrentContext();
+            Python.setContext(tempContext);
+            PythonExecutioner.setVariable("memview", this);
+            PythonExecutioner.exec("import numpy as np\narr = np.array(memview)");
+            BytePointer ret = new BytePointer(PythonExecutioner.getVariable("arr").toNumpy().getNd4jArray().data().pointer());
+            Python.setContext(originalContext);
+            Python.deleteContext(tempContext);
+            return ret;
+        }
         else{
             PyObject ctypes = PyImport_ImportModule("ctypes");
             PyObject cArrType = PyObject_GetAttrString(ctypes, "Array");
@@ -542,7 +577,7 @@ public class PythonObject {
                 return new BytePointer(ptr);
             }
             else{
-                throw new PythonException("Expected bytes, bytearray or ctypesArray. Received " + Python.type(this).toString());
+                throw new PythonException("Expected bytes, bytearray, memoryview or ctypesArray. Received " + Python.type(this).toString());
             }
 
         }

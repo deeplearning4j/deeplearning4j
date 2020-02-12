@@ -36,7 +36,7 @@ public abstract class PythonType<T> {
     public abstract T toJava(PythonObject pythonObject) throws PythonException;
     private final TypeName typeName;
 
-    enum TypeName{
+    public enum TypeName{
         STR,
         INT,
         FLOAT,

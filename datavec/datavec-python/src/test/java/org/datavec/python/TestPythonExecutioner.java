@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -237,11 +238,12 @@ public class TestPythonExecutioner {
         PythonVariables pyOutputs= new PythonVariables();
         pyOutputs.addStr("out");
 
-        String code = "out = buff.decode()";
+        String code = "out = bytes(buff).decode()";
         Python.exec(code, pyInputs, pyOutputs);
         Assert.assertEquals("abc", pyOutputs.getStrValue("out"));
 
       }
+
 
       @Test
       public void testByteBufferOutputNoCopy() throws Exception{
@@ -261,6 +263,24 @@ public class TestPythonExecutioner {
           Python.exec(code, pyInputs, pyOutputs);
           Assert.assertEquals("cba", pyOutputs.getBytesValue("buff").getString());
       }
+
+    @Test
+    public void testByteBufferInplace() throws Exception{
+        INDArray buff = Nd4j.zeros(new int[]{3}, DataType.BYTE);
+        buff.putScalar(0, 97); // a
+        buff.putScalar(1, 98); // b
+        buff.putScalar(2, 99); // c
+        PythonVariables pyInputs = new PythonVariables();
+        pyInputs.addBytes("buff", new BytePointer(buff.data().pointer()));
+        String code = "buff[0]+=2\nbuff[2]-=2";
+        Python.exec(code, pyInputs, null);
+        Assert.assertEquals("cba", pyInputs.getBytesValue("buff").getString());
+        INDArray expected = buff.dup();
+        expected.putScalar(0, 99);
+        expected.putScalar(2, 97);
+        Assert.assertEquals(buff, expected);
+
+    }
 
     @Test
     public void testByteBufferOutputWithCopy() throws Exception{
@@ -301,5 +321,6 @@ public class TestPythonExecutioner {
 
         Python.setMainContext();
     }
+
 
 }

@@ -20,23 +20,16 @@ package org.datavec.python;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.bytedeco.cpython.PyThreadState;
-import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.numpy.global.numpy;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.bytedeco.cpython.global.python.*;
-import static org.bytedeco.cpython.global.python.PyThreadState_Get;
 import static org.datavec.python.Python.*;
 
 /**
@@ -104,6 +97,7 @@ public class PythonExecutioner {
     static {
         init();
     }
+
 
     private static synchronized void init() {
         if (init.get()) {
@@ -204,6 +198,9 @@ public class PythonExecutioner {
     }
 
     public static void getVariables(PythonVariables pyVars) throws PythonException {
+        if (pyVars == null){
+            return;
+        }
         for (String varName : pyVars.getVariables()) {
             pyVars.setValue(varName, getVariable(varName, pyVars.getType(varName)));
         }
@@ -238,12 +235,6 @@ public class PythonExecutioner {
     public static void exec(String code) throws PythonException {
         simpleExec(getWrappedCode(code));
         throwIfExecutionFailed();
-    }
-
-    public static void exec(String code, PythonVariables outputVariables)throws PythonException {
-        simpleExec(getWrappedCode(code));
-        throwIfExecutionFailed();
-        getVariables(outputVariables);
     }
 
     public static void exec(String code, PythonVariables inputVariables, PythonVariables outputVariables) throws PythonException {
@@ -354,7 +345,6 @@ public class PythonExecutioner {
                     log.info("Setting python path " + path);
                     StringBuffer sb = new StringBuffer();
                     File[] packages = numpy.cachePackages();
-
                     JavaCppPathType pathAppendValue = JavaCppPathType.valueOf(System.getProperty(JAVACPP_PYTHON_APPEND_TYPE, DEFAULT_APPEND_TYPE).toUpperCase());
                     switch (pathAppendValue) {
                         case BEFORE:
@@ -395,4 +385,5 @@ public class PythonExecutioner {
             throw new IllegalStateException("Unable to reset python path. Already initialized.");
         }
     }
+    
 }

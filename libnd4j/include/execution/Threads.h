@@ -14,9 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// @author raver119@gmail.com
-//
+ //
+ // @author raver119@gmail.com
+ //
 #ifndef SAMEDIFF_THREADS_H
 #define SAMEDIFF_THREADS_H
 
@@ -165,6 +165,14 @@ namespace samediff {
         static int64_t parallel_long(FUNC_RL function, FUNC_AL aggregator, int64_t start, int64_t stop, int64_t increment = 1, uint64_t numThreads = nd4j::Environment::getInstance()->maxMasterThreads());
 
         static double parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t start, int64_t stop, int64_t increment = 1, uint64_t numThreads = nd4j::Environment::getInstance()->maxMasterThreads());
+
+        /**
+         * This method will execute function in parallel preserving the parts to be aligned increment size
+         * PLEASE NOTE: this function can use smaller number of threads than requested.
+         *
+        */
+        static int  parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, size_t type_size = sizeof(float), uint32_t req_numThreads = nd4j::Environment::getInstance()->maxMasterThreads());
+
     };
 }
 
