@@ -1056,7 +1056,7 @@ public interface NativeOps {
 
     OpaqueShapeList calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
 
-    OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs);
+    OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs, @Cast("int *") IntPointer dArgs, int numDArgs);
 
     long getShapeListSize(OpaqueShapeList list);
     LongPointer getShape(OpaqueShapeList list, long i);
@@ -1156,10 +1156,12 @@ public interface NativeOps {
     void setGraphContextOutputBuffer(OpaqueContext ptr, int index, OpaqueDataBuffer databuffer, Pointer shapeInfo, Pointer specialShapeInfo);
     void setGraphContextTArguments(OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);
     void setGraphContextIArguments(OpaqueContext ptr, LongPointer arguments, int numberOfArguments);
+    void setGraphContextDArguments(OpaqueContext ptr, IntPointer arguments, int numberOfArguments);
     void setGraphContextBArguments(OpaqueContext ptr, BooleanPointer arguments, int numberOfArguments);
     void ctxAllowHelpers(OpaqueContext ptr, boolean reallyAllow);
     void ctxSetExecutionMode(OpaqueContext ptr, int execMode);
     void ctxShapeFunctionOverride(OpaqueContext ptr, boolean reallyOverride);
+    void ctxPurge(OpaqueContext ptr);
     void deleteGraphContext(OpaqueContext ptr);
 
     OpaqueRandomGenerator createRandomGenerator(long rootSeed, long nodeSeed);

@@ -44,7 +44,7 @@ public class TestSerde {
         String yaml = y.serialize(t);
         String json = j.serialize(t);
 
-        Transform t2 = y.deserializeTransform(json);
+        Transform t2 = y.deserializeTransform(yaml);
         Transform t3 = j.deserializeTransform(json);
         assertEquals(t, t2);
         assertEquals(t, t3);

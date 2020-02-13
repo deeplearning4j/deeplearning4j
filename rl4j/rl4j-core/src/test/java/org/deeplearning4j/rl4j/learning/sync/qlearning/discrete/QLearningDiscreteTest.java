@@ -40,8 +40,10 @@ public class QLearningDiscreteTest {
             new int[] { 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 });
         MockMDP mdp = new MockMDP(observationSpace, random);
 
+        int initStepCount = 8;
+
         QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 24, 0, 5, 1, 1000,
-                0, 1.0, 0, 0, 0, 0, true);
+                initStepCount, 1.0, 0, 0, 0, 0, true);
         MockDataManager dataManager = new MockDataManager(false);
         MockExpReplay expReplay = new MockExpReplay();
         TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, dqn, conf, dataManager, expReplay, 10, random);
@@ -60,7 +62,7 @@ public class QLearningDiscreteTest {
         for(int i = 0; i < expectedRecords.length; ++i) {
             assertEquals(expectedRecords[i], hp.recordCalls.get(i).getDouble(0), 0.0001);
         }
-        double[] expectedAdds = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0 };
+        double[] expectedAdds = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0 };
         assertEquals(expectedAdds.length, hp.addCalls.size());
         for(int i = 0; i < expectedAdds.length; ++i) {
             assertEquals(expectedAdds[i], hp.addCalls.get(i).getDouble(0), 0.0001);
@@ -75,19 +77,19 @@ public class QLearningDiscreteTest {
         assertEquals(14, dqn.outputParams.size());
         double[][] expectedDQNOutput = new double[][] {
                 new double[] { 0.0, 2.0, 4.0, 6.0, 8.0 },
-                new double[] { 2.0, 4.0, 6.0, 8.0, 9.0 },
-                new double[] { 2.0, 4.0, 6.0, 8.0, 9.0 },
-                new double[] { 4.0, 6.0, 8.0, 9.0, 11.0 },
-                new double[] { 6.0, 8.0, 9.0, 11.0, 13.0 },
-                new double[] { 6.0, 8.0, 9.0, 11.0, 13.0 },
-                new double[] { 8.0, 9.0, 11.0, 13.0, 15.0 },
-                new double[] { 8.0, 9.0, 11.0, 13.0, 15.0 },
-                new double[] { 9.0, 11.0, 13.0, 15.0, 17.0 },
-                new double[] { 9.0, 11.0, 13.0, 15.0, 17.0 },
-                new double[] { 11.0, 13.0, 15.0, 17.0, 19.0 },
-                new double[] { 11.0, 13.0, 15.0, 17.0, 19.0 },
-                new double[] { 13.0, 15.0, 17.0, 19.0, 21.0 },
-                new double[] { 13.0, 15.0, 17.0, 19.0, 21.0 },
+                new double[] { 2.0, 4.0, 6.0, 8.0, 10.0 },
+                new double[] { 2.0, 4.0, 6.0, 8.0, 10.0 },
+                new double[] { 4.0, 6.0, 8.0, 10.0, 12.0 },
+                new double[] { 6.0, 8.0, 10.0, 12.0, 14.0 },
+                new double[] { 6.0, 8.0, 10.0, 12.0, 14.0 },
+                new double[] { 8.0, 10.0, 12.0, 14.0, 16.0 },
+                new double[] { 8.0, 10.0, 12.0, 14.0, 16.0 },
+                new double[] { 10.0, 12.0, 14.0, 16.0, 18.0 },
+                new double[] { 10.0, 12.0, 14.0, 16.0, 18.0 },
+                new double[] { 12.0, 14.0, 16.0, 18.0, 20.0 },
+                new double[] { 12.0, 14.0, 16.0, 18.0, 20.0 },
+                new double[] { 14.0, 16.0, 18.0, 20.0, 22.0 },
+                new double[] { 14.0, 16.0, 18.0, 20.0, 22.0 },
         };
         for(int i = 0; i < expectedDQNOutput.length; ++i) {
             INDArray outputParam = dqn.outputParams.get(i);
@@ -105,19 +107,20 @@ public class QLearningDiscreteTest {
         assertArrayEquals(new Integer[] {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 4, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 }, mdp.actions.toArray());
 
         // ExpReplay calls
-        double[] expectedTrRewards = new double[] { 9.0, 21.0, 25.0, 29.0, 33.0, 37.0, 41.0, 45.0 };
+        double[] expectedTrRewards = new double[] { 9.0, 21.0, 25.0, 29.0, 33.0, 37.0, 41.0 };
         int[] expectedTrActions = new int[] { 1, 4, 2, 4, 4, 4, 4, 4 };
-        double[] expectedTrNextObservation = new double[] { 2.0, 4.0, 6.0, 8.0, 9.0, 11.0, 13.0, 15.0 };
+        double[] expectedTrNextObservation = new double[] { 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0 };
         double[][] expectedTrObservations = new double[][] {
                 new double[] { 0.0, 2.0, 4.0, 6.0, 8.0 },
-                new double[] { 2.0, 4.0, 6.0, 8.0, 9.0 },
-                new double[] { 4.0, 6.0, 8.0, 9.0, 11.0 },
-                new double[] { 6.0, 8.0, 9.0, 11.0, 13.0 },
-                new double[] { 8.0, 9.0, 11.0, 13.0, 15.0 },
-                new double[] { 9.0, 11.0, 13.0, 15.0, 17.0 },
-                new double[] { 11.0, 13.0, 15.0, 17.0, 19.0 },
-                new double[] { 13.0, 15.0, 17.0, 19.0, 21.0 },
+                new double[] { 2.0, 4.0, 6.0, 8.0, 10.0 },
+                new double[] { 4.0, 6.0, 8.0, 10.0, 12.0 },
+                new double[] { 6.0, 8.0, 10.0, 12.0, 14.0 },
+                new double[] { 8.0, 10.0, 12.0, 14.0, 16.0 },
+                new double[] { 10.0, 12.0, 14.0, 16.0, 18.0 },
+                new double[] { 12.0, 14.0, 16.0, 18.0, 20.0 },
+                new double[] { 14.0, 16.0, 18.0, 20.0, 22.0 },
         };
+        assertEquals(expectedTrObservations.length, expReplay.transitions.size());
         for(int i = 0; i < expectedTrRewards.length; ++i) {
             Transition tr = expReplay.transitions.get(i);
             assertEquals(expectedTrRewards[i], tr.getReward(), 0.0001);
@@ -129,7 +132,7 @@ public class QLearningDiscreteTest {
         }
 
         // trainEpoch result
-        assertEquals(16, result.getStepCounter());
+        assertEquals(initStepCount + 16, result.getStepCounter());
         assertEquals(300.0, result.getReward(), 0.00001);
         assertTrue(dqn.hasBeenReset);
         assertTrue(((MockDQN)sut.getTargetQNetwork()).hasBeenReset);

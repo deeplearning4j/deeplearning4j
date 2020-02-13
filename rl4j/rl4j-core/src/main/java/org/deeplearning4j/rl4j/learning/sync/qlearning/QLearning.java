@@ -21,8 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
-import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.EpochStepCounter;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
@@ -34,9 +33,8 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager.StatEntry;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +47,8 @@ import java.util.List;
  */
 @Slf4j
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
-                extends SyncLearning<O, A, AS, IDQN> implements TargetQNetworkSource {
+                extends SyncLearning<O, A, AS, IDQN>
+                implements TargetQNetworkSource, EpochStepCounter {
 
     // FIXME Changed for refac
     // @Getter
@@ -104,18 +103,22 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     protected abstract QLStepReturn<Observation> trainStep(Observation obs);
 
+    @Getter
+    private int currentEpochStep = 0;
+
     protected StatEntry trainEpoch() {
+        resetNetworks();
+
         InitMdp<Observation> initMdp = refacInitMdp();
         Observation obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();
-        int step = initMdp.getSteps();
 
         Double startQ = Double.NaN;
         double meanQ = 0;
         int numQ = 0;
         List<Double> scores = new ArrayList<>();
-        while (step < getConfiguration().getMaxEpochStep() && !getMdp().isDone()) {
+        while (currentEpochStep < getConfiguration().getMaxEpochStep() && !getMdp().isDone()) {
 
             if (getStepCounter() % getConfiguration().getTargetDqnUpdateFreq() == 0) {
                 updateTargetNetwork();
@@ -136,49 +139,53 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
             reward += stepR.getStepReply().getReward();
             obs = stepR.getStepReply().getObservation();
             incrementStep();
-            step++;
         }
+
+        finishEpoch(obs);
 
         meanQ /= (numQ + 0.001); //avoid div zero
 
 
-        StatEntry statEntry = new QLStatEntry(getStepCounter(), getEpochCounter(), reward, step, scores,
+        StatEntry statEntry = new QLStatEntry(getStepCounter(), getEpochCounter(), reward, currentEpochStep, scores,
                         getEgPolicy().getEpsilon(), startQ, meanQ);
 
         return statEntry;
+    }
 
+    protected void finishEpoch(Observation observation) {
+        // Do Nothing
+    }
+
+    @Override
+    public void incrementStep() {
+        super.incrementStep();
+        ++currentEpochStep;
+    }
+
+    protected void resetNetworks() {
+        getQNetwork().reset();
+        getTargetQNetwork().reset();
     }
 
     private InitMdp<Observation> refacInitMdp() {
-        getQNetwork().reset();
-        getTargetQNetwork().reset();
+        currentEpochStep = 0;
 
-        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
-        IHistoryProcessor hp = getHistoryProcessor();
-
-        Observation observation = mdp.reset();
-
-        int step = 0;
         double reward = 0;
 
-        boolean isHistoryProcessor = hp != null;
+        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
+        Observation observation = mdp.reset();
 
-        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
-        int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
-
-        while (step < requiredFrame && !mdp.isDone()) {
-
-            A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
-
+        A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
+        while (observation.isSkipped() && !mdp.isDone()) {
             StepReply<Observation> stepReply = mdp.step(action);
+
             reward += stepReply.getReward();
             observation = stepReply.getObservation();
 
-            step++;
-
+            incrementStep();
         }
 
-        return new InitMdp(step, observation, reward);
+        return new InitMdp(0, observation, reward);
 
     }
 

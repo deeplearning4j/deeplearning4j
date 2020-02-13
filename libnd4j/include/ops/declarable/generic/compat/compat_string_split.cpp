@@ -81,7 +81,7 @@ namespace nd4j {
             }
 
             // now once we have all strings in single vector time to fill
-            auto tmp = NDArrayFactory::string('c', {(Nd4jLong) strings.size()}, strings);
+            auto tmp = NDArrayFactory::string({(Nd4jLong) strings.size()}, strings);
             auto blen = StringUtils::byteLength(tmp) + ShapeUtils::stringBufferHeaderRequirements(strings.size());
 
             // for CUDA mostly

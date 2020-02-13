@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,14 +17,22 @@
 
 //
 // Created by GS <sgazeos@gmail.com> on 2018-12-20.
+// @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
 
 #include <NDArrayFactory.h>
 #include <exceptions/cuda_exception.h>
 #include <ConstantHelper.h>
 #include <ConstantShapeHelper.h>
+#include <GraphExecutioner.h>
 #include <ShapeUtils.h>
 #include <type_traits>
+
+
+
+
+#include <StringUtils.h>
+#include <NativeOps.h>
 
 namespace nd4j {
 
@@ -84,45 +93,6 @@ namespace nd4j {
     template ND4J_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<int8_t>& data, nd4j::LaunchContext * context);
     template ND4J_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<uint8_t>& data, nd4j::LaunchContext * context);
     template ND4J_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool>& data, nd4j::LaunchContext * context);
-
-    NDArray NDArrayFactory::string(const char *str, nd4j::LaunchContext * context) {
-        std::string s(str);
-        return string(s, context);
-    }
-
-    NDArray* NDArrayFactory::string_(const char *str, nd4j::LaunchContext * context) {
-        return string_(std::string(str), context);
-    }
-
-    NDArray NDArrayFactory::string(const std::string &str, nd4j::LaunchContext * context) {
-
-        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
-
-        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(headerLength + str.length(), DataType::UTF8, context->getWorkspace(), true);
-
-        NDArray res(pBuffer, ShapeDescriptor::scalarDescriptor(DataType::UTF8), context);
-
-        int8_t* buffer = reinterpret_cast<int8_t*>(res.getBuffer());
-
-        auto offsets = reinterpret_cast<Nd4jLong *>(buffer);
-        offsets[0] = 0;
-        offsets[1] = str.length();
-
-        auto data = buffer + headerLength;
-
-        memcpy(data, str.c_str(), str.length());
-
-        res.tickWriteHost();
-        res.syncToDevice();
-
-        return res;
-    }
-
-    NDArray* NDArrayFactory::string_(const std::string &str, nd4j::LaunchContext * context) {
-        auto res = new NDArray();
-        *res = NDArrayFactory::string(str, context);
-        return res;
-    }
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -551,91 +521,198 @@ template ND4J_EXPORT NDArray NDArrayFactory::create(uint8_t * buffer, const char
 template ND4J_EXPORT NDArray NDArrayFactory::create(int8_t* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
 template ND4J_EXPORT NDArray NDArrayFactory::create(int16_t* buffer, const char order, const std::initializer_list<Nd4jLong>& shape, nd4j::LaunchContext * context);
 
+      /////////////////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const char16_t* u16string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return NDArray(u16string, dtype, context); 
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_(const char16_t* u16string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return string_(std::u16string(u16string), dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_(const std::u16string& u16string, nd4j::DataType dtype, nd4j::LaunchContext* context) {  
+          auto res = new NDArray();
+          *res = NDArray(u16string, dtype, context);
+          return res;
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const std::u16string& u16string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return NDArray(u16string, dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const char32_t* u32string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return NDArray(u32string, dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_(const char32_t* u32string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return string_(std::u32string(u32string), dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_(const std::u32string& u32string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          auto res = new NDArray();
+          *res = NDArray(u32string, dtype, context);
+          return res;
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const std::u32string& u32string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return NDArray(u32string, dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const char* str, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return NDArray(str, dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_(const char* str, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return string_(std::string(str), dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_(const std::string& str, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          auto res = new NDArray();
+          *res = NDArray(str, dtype, context);
+          return res;
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const std::string& str, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return NDArray(str, dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::DataType dataType, nd4j::LaunchContext * context) {
+          return NDArray(shape, std::vector<const char*>(strings), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::DataType dataType, nd4j::LaunchContext * context) {
+          return NDArray( shape, strings, dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::DataType dataType, nd4j::LaunchContext * context) {
+          return NDArray( shape, std::vector<std::string>(string), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::DataType dataType, nd4j::LaunchContext * context) {
+          return NDArrayFactory::string_( shape, std::vector<const char*>(strings), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::DataType dataType, nd4j::LaunchContext * context) {
+          std::vector<std::string> vec(strings.size());
+          int cnt = 0;
+          for (auto s:strings)
+              vec[cnt++] = std::string(s);
+      
+          return NDArrayFactory::string_( shape, vec, dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::DataType dataType, nd4j::LaunchContext * context) {
+          return NDArrayFactory::string_( shape, std::vector<std::string>(string), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::DataType dataType, nd4j::LaunchContext * context) {
+          return NDArray(shape, string, dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_(const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::DataType dataType, nd4j::LaunchContext * context) {
+          auto res = new NDArray();
+          *res = NDArray( shape, string, dataType, context);
+          return res;
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const std::vector<Nd4jLong>& shape, const std::initializer_list<const char16_t*>& strings, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          return NDArray( shape, std::vector<const char16_t*>(strings), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong>& shape, const std::vector<const char16_t*>& strings, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+         return NDArray( shape, strings, dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong>& shape, const std::initializer_list<std::u16string>& string, nd4j::DataType dataType, nd4j::LaunchContext* context) {          
+          return NDArray( shape, std::vector<std::u16string>(string), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong>& shape, const std::initializer_list<const char16_t*>& strings, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          return NDArrayFactory::string_( shape, std::vector<const char16_t*>(strings), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong>& shape, const std::vector<const char16_t*>& strings, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          std::vector<std::u16string> vec(strings.size());
+          int cnt = 0;
+          for (auto s : strings)
+              vec[cnt++] = std::u16string(s);
+      
+          return NDArrayFactory::string_( shape, vec, dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong>& shape, const std::initializer_list<std::u16string>& string, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          return NDArrayFactory::string_( shape, std::vector<std::u16string>(string), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong>& shape, const std::vector<std::u16string>& string, nd4j::DataType dataType, nd4j::LaunchContext* context) { 
+          auto res = new NDArray();
+          *res = NDArray( shape, string, dataType, context);
+          return res;
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong>& shape, const std::vector<std::u16string>& string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return NDArray( shape, string, dtype, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong>& shape, const std::initializer_list<const char32_t*>& strings, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          return NDArray( shape, std::vector<const char32_t*>(strings), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong>& shape, const std::vector<const char32_t*>& strings, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          return NDArray( shape, strings, dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string( const std::vector<Nd4jLong>& shape, const std::initializer_list<std::u32string>& string, nd4j::DataType dataType, nd4j::LaunchContext* context) {        
+          return NDArray(shape, std::vector<std::u32string>(string), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong>& shape, const std::initializer_list<const char32_t*>& strings, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          return NDArrayFactory::string_( shape, std::vector<const char32_t*>(strings), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong>& shape, const std::vector<const char32_t*>& strings, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          std::vector<std::u32string> vec(strings.size());
+          int cnt = 0;
+          for (auto s : strings)
+              vec[cnt++] = std::u32string(s);      
+          return NDArrayFactory::string_( shape, vec, dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong>& shape, const std::initializer_list<std::u32string>& string, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          return NDArrayFactory::string_( shape, std::vector<std::u32string>(string), dataType, context);
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray* NDArrayFactory::string_( const std::vector<Nd4jLong>& shape, const std::vector<std::u32string>& string, nd4j::DataType dataType, nd4j::LaunchContext* context) {
+          auto res = new NDArray();
+          *res = NDArray( shape, string, dataType, context);
+          return res;
+      }
+      /////////////////////////////////////////////////////////////////////////
+      NDArray NDArrayFactory::string(const std::vector<Nd4jLong>& shape, const std::vector<std::u32string>& string, nd4j::DataType dtype, nd4j::LaunchContext* context) {
+          return NDArray( shape, string, dtype, context);
+      }
 
-    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::LaunchContext * context) {
-        std::vector<const char*> vec(strings);
-        return NDArrayFactory::string(order, shape, vec, context);
-    }
 
-    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::LaunchContext * context) {
-        std::vector<std::string> vec(strings.size());
-        int cnt = 0;
-        for (auto s:strings)
-            vec[cnt++] = std::string(s);
+      NDArray NDArrayFactory::fromNpyFile(const char *fileName) {
+          auto size = nd4j::graph::getFileSize(fileName);
+          if (size < 0)
+              throw std::runtime_error("File doesn't exit");
 
-        return NDArrayFactory::string(order, shape, vec, context);
-    }
+          auto pNPY = reinterpret_cast<char*>(::numpyFromFile(std::string(fileName)));
 
+          auto nBuffer = reinterpret_cast<void*>(::dataPointForNumpy(pNPY));
+          auto shape = reinterpret_cast<Nd4jLong *>(::shapeBufferForNumpy(pNPY));
 
-    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::LaunchContext * context) {
-        std::vector<std::string> vec(string);
-        return NDArrayFactory::string(order, shape, vec, context);
-    }
+          auto length = shape::length(shape);
+          int8_t *buffer = nullptr;
+          nd4j::memory::Workspace *workspace = nullptr;
+          auto byteLen = length * DataTypeUtils::sizeOfElement(ArrayOptions::dataType(shape));
 
-    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<const char *> &strings, nd4j::LaunchContext * context) {
-        std::vector<const char*> vec(strings);
-        return NDArrayFactory::string_(order, shape, vec, context);
-    }
+          ALLOCATE(buffer, workspace, byteLen, int8_t);
+          memcpy(buffer, nBuffer, byteLen);
 
-    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<const char *> &strings, nd4j::LaunchContext * context) {
-        std::vector<std::string> vec(strings.size());
-        int cnt = 0;
-        for (auto s:strings)
-            vec[cnt++] = std::string(s);
+          free(pNPY);
 
-        return NDArrayFactory::string_(order, shape, vec, context);
-    }
-
-
-    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::initializer_list<std::string> &string, nd4j::LaunchContext * context) {
-        std::vector<std::string> vec(string);
-        return NDArrayFactory::string_(order, shape, vec, context);
-    }
-
-    NDArray NDArrayFactory::string(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::LaunchContext * context) {
-
-          if (context == nullptr)
-            context = nd4j::LaunchContext ::defaultContext();
-
-        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(string.size());
-
-        std::vector<Nd4jLong> offsets(string.size() + 1);
-        Nd4jLong dataLength = 0;
-        for (int e = 0; e < string.size(); e++) {
-            offsets[e] = dataLength;
-            dataLength += string[e].length();
-        }
-        offsets[string.size()] = dataLength;
-
-        std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(headerLength + dataLength, DataType::UTF8, context->getWorkspace(), true);
-
-        NDArray res(pBuffer, ShapeDescriptor(DataType::UTF8, order, shape), context);
-        res.setAttached(context->getWorkspace() != nullptr);
-
-        if (res.lengthOf() != string.size())
-            throw std::invalid_argument("Number of strings should match length of array");
-
-        memcpy(res.buffer(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
-
-        auto data = static_cast<int8_t*>(res.buffer()) + headerLength;
-        int resLen = res.lengthOf();
-        for (int e = 0; e < resLen; e++) {
-            auto length = offsets[e+1] - offsets[e];
-            auto cdata = data + offsets[e];
-            memcpy(cdata, string[e].c_str(), string[e].length());
-        }
-
-        res.tickWriteHost();
-        res.syncToDevice();
-
-        return res;
-    }
-
-    NDArray* NDArrayFactory::string_(char order, const std::vector<Nd4jLong> &shape, const std::vector<std::string> &string, nd4j::LaunchContext * context) {
-        auto res = new NDArray();
-        *res = NDArrayFactory::string(order, shape, string, context);
-        return res;
-    }
-
-
+          return NDArray(buffer, shape, LaunchContext::defaultContext(), true);
+      }
 }

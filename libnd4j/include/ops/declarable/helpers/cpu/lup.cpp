@@ -237,25 +237,65 @@ namespace helpers {
         samediff::Threads::parallel_tad(loop, currentRow + 1, rowNum, 1);
     }
 
+    template <typename T>
+    static void doolitleLU(LaunchContext* context, NDArray* compound, Nd4jLong rowNum) {
+        auto input = compound->dup();
+        compound->nullify();
+
+        // Decomposing matrix into Upper and Lower
+        // triangular matrix
+        for (auto i = 0; i < rowNum; i++) {
+
+            // Upper Triangular
+            for (auto k = i; k < rowNum; k++) {
+
+                // Summation of L(i, j) * U(j, k)
+                int sum = 0;
+                for (int j = 0; j < i; j++)
+                    sum += compound->t<T>(i,j) * compound->t<T>(j,k);
+
+                // Evaluating U(i, k)
+                compound->t<T>(i, k) = input.t<T>(i, k) - sum;
+            }
+
+            // Lower Triangular
+            for (int k = i + 1; k < rowNum; k++) {
+                // Summation of L(k, j) * U(j, i)
+                int sum = 0;
+                for (int j = 0; j < i; j++)
+                    sum += compound->t<T>(k,j) * compound->t<T>(j, i);
+
+                // Evaluating L(k, i)
+                compound->t<T>(k, i) = (input.t<T>(k, i) - sum) / compound->t<T>(i,i);
+            }
+        }
+    }
+
     template <typename T, typename I>
     static void luNN_(LaunchContext *context, NDArray* compound, NDArray* permutation, Nd4jLong rowNum) {
 
         //const int rowNum = compound->rows();
 //        const int columnNum = output->columns();
-        permutation->linspace(0);
-        auto permutationBuf = permutation->bufferAsT<I>(); //dataBuffer()->primaryAsT<I>();
-        auto compoundBuf = compound->bufferAsT<T>();
-        auto compoundShape = compound->shapeInfo();
-        auto permutationShape = permutation->shapeInfo();
-        for (auto i = 0; i < rowNum - 1; i++) {
-            auto pivotIndex = argmaxCol(i, compoundBuf, compoundShape);
-            if (pivotIndex < 0) {
-                throw std::runtime_error("helpers::luNN_: input matrix is singular.");
-            }
-            math::nd4j_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)], permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
-            swapRows(compoundBuf, compoundShape, i, pivotIndex);
+        if (permutation) { // LUP algorithm
+            permutation->linspace(0);
+            auto permutationBuf = permutation->bufferAsT<I>(); //dataBuffer()->primaryAsT<I>();
+            auto compoundBuf = compound->bufferAsT<T>();
+            auto compoundShape = compound->shapeInfo();
+            auto permutationShape = permutation->shapeInfo();
+            for (auto i = 0; i < rowNum - 1; i++) {
+                auto pivotIndex = argmaxCol(i, compoundBuf, compoundShape);
+                if (pivotIndex < 0) {
+                    throw std::runtime_error("helpers::luNN_: input matrix is singular.");
+                }
+                math::nd4j_swap(permutationBuf[shape::getIndexOffset(i, permutationShape)],
+                                permutationBuf[shape::getIndexOffset(pivotIndex, permutationShape)]);
+                swapRows(compoundBuf, compoundShape, i, pivotIndex);
 
-            processColumns(i, rowNum, compoundBuf, compoundShape);
+                processColumns(i, rowNum, compoundBuf, compoundShape);
+            }
+        }
+        else { // Doolitle algorithm with LU decomposition
+            doolitleLU<T>(context, compound, rowNum);
         }
     }
 
@@ -265,17 +305,20 @@ namespace helpers {
 
         output->assign(input); // fill up output tensor with zeros
         ResultSet outputs = output->allTensorsAlongDimension({-2, -1});
-        ResultSet permutations = permutationVectors->allTensorsAlongDimension({-1});
+        ResultSet permutations;
+        if (permutationVectors)
+            permutations = permutationVectors->allTensorsAlongDimension({-1});
+
         auto loop = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment) {
-                luNN_<T, I>(context, outputs.at(i), permutations.at(i), n);
+                luNN_<T, I>(context, outputs.at(i), permutationVectors?permutations.at(i):nullptr, n);
             }
         };
         samediff::Threads::parallel_for(loop, 0, outputs.size(), 1);
     }
 
     void lu(LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation) {
-        BUILD_DOUBLE_SELECTOR(input->dataType(), permutation->dataType(), lu_, (context, input, output, permutation), FLOAT_TYPES, INDEXING_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), permutation?permutation->dataType():DataType::INT32, lu_, (context, input, output, permutation), FLOAT_TYPES, INDEXING_TYPES);
     }
 
 //    BUILD_DOUBLE_TEMPLATE(template NDArray lu_, (LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES, INDEXING_TYPES);

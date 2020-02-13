@@ -192,7 +192,7 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
                     <configuration>
-                        <argLine>-Ddtype=double -Xmx3024m -Xms3024m</argLine>
+                        <argLine>-Ddtype=double -Dfile.encoding=UTF-8 -Xmx3024m -Xms3024m</argLine>
                         <!--
                          By default: Surefire will set the classpath based on the manifest. Because tests are not included
                          in the JAR, any tests that rely on class path scanning for resources in the tests directory will not

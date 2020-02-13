@@ -64,7 +64,7 @@ namespace nd4j {
     TadPack ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
         const int deviceId = AffinityManager::currentDeviceId();
 
-        _mutex.lock();
+        std::lock_guard<std::mutex> lock(_mutex);
 
         if (_cache[deviceId].count(descriptor) == 0) {
             const auto shapeInfo = descriptor.originalShape().toShapeInfo();
@@ -97,14 +97,12 @@ namespace nd4j {
             _cache[deviceId][descriptor] = t;
 
             TadPack r = _cache[deviceId][descriptor];
-            _mutex.unlock();
 
             delete[] shapeInfo;
 
             return r;
         } else {
             TadPack r = _cache[deviceId][descriptor];
-            _mutex.unlock();
 
             return r;
         }

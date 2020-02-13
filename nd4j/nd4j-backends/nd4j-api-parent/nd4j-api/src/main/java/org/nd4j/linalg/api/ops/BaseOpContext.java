@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.val;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
@@ -33,9 +34,10 @@ public abstract class BaseOpContext implements OpContext {
     protected Map<Integer,INDArray> fastpath_in = new HashMap<>();
     protected Map<Integer,INDArray> fastpath_out = new HashMap<>();
 
-    protected List<Double> fastpath_d = new ArrayList<>();
+    protected List<Double> fastpath_t = new ArrayList<>();
     protected List<Boolean> fastpath_b = new ArrayList<>();
     protected List<Long> fastpath_i = new ArrayList<>();
+    protected List<DataType> fastpath_d = new ArrayList<>();
 
     @Setter()
     @Getter
@@ -55,14 +57,14 @@ public abstract class BaseOpContext implements OpContext {
 
     @Override
     public void setTArguments(double... arguments) {
-        fastpath_d.clear();
+        fastpath_t.clear();
         for (val v:arguments)
-            fastpath_d.add(v);
+            fastpath_t.add(v);
     }
 
     @Override
     public List<Double> getTArguments(){
-        return fastpath_d;
+        return fastpath_t;
     }
 
     @Override
@@ -75,6 +77,18 @@ public abstract class BaseOpContext implements OpContext {
     @Override
     public List<Boolean> getBArguments(){
         return fastpath_b;
+    }
+
+    @Override
+    public void setDArguments(DataType... arguments) {
+        fastpath_d.clear();
+        for (val v:arguments)
+            fastpath_d.add(v);
+    }
+
+    @Override
+    public List<DataType> getDArguments() {
+        return fastpath_d;
     }
 
     @Override
@@ -138,5 +152,11 @@ public abstract class BaseOpContext implements OpContext {
     public void setOutputArrays(INDArray... arrays) {
         for (int e = 0; e < arrays.length; e++)
             setOutputArray(e, arrays[e]);
+    }
+
+    @Override
+    public void purge() {
+        fastpath_in.clear();
+        fastpath_out.clear();
     }
 }

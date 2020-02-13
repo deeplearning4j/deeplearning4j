@@ -46,6 +46,11 @@ public class MatrixBandPart extends DynamicCustomOp {
         super("", sameDiff, new SDVariable[]{input, minLower, maxUpper});
     }
 
+    public MatrixBandPart(@NonNull SameDiff sameDiff, @NonNull SDVariable input, int minLower, int maxUpper) {
+        super("", sameDiff, new SDVariable[]{input});
+        addIArgument(minLower, maxUpper);
+    }
+
     @Override
     public String opName() {
         return "matrix_band_part";

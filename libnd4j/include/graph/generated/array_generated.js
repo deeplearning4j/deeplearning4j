@@ -42,7 +42,9 @@ nd4j.graph.DType = {
   QINT8: 15,
   QINT16: 16,
   BFLOAT16: 17,
-  UTF8: 50
+  UTF8: 50,
+  UTF16: 51,
+  UTF32: 52
 };
 
 /**

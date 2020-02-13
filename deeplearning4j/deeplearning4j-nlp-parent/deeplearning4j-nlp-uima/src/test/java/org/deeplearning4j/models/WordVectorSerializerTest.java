@@ -16,25 +16,19 @@
 
 package org.deeplearning4j.models;
 
-import org.junit.rules.Timeout;
-import org.nd4j.shade.guava.io.Files;
-import org.nd4j.shade.guava.primitives.Doubles;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.models.sequencevectors.SequenceVectors;
-import org.deeplearning4j.models.sequencevectors.serialization.VocabWordFactory;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
+import org.deeplearning4j.models.sequencevectors.SequenceVectors;
+import org.deeplearning4j.models.sequencevectors.serialization.VocabWordFactory;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
@@ -48,11 +42,16 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.resources.Resources;
+import org.nd4j.shade.guava.primitives.Doubles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -272,7 +271,14 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
 
     @Test
     public void testFullModelSerialization() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         File inputFile = Resources.asFile("big/raw_sentences.txt");
+
+
         SentenceIterator iter = UimaSentenceIterator.createWithPath(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -892,5 +898,4 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
             fail(e.getMessage());
         }
     }
-
 }

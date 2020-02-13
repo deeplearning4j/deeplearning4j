@@ -17,6 +17,7 @@
 package org.nd4j.autodiff.samediff.serde;
 
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.guava.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import java.nio.ByteOrder;
@@ -361,6 +362,11 @@ public class FlatBuffersMapper {
         for (int i = 0; i < extraBools.length; i++) {
             extraBools[i] = fn.extraBools(i);
         }
+        DataType[] extraDTypes = new DataType[fn.extraTypesLength()];
+        for (int i = 0; i < extraDTypes.length; i++) {
+            extraDTypes[i] = DataType.fromInt(fn.extraTypes(i));
+        }
+
         int[] dimensions = new int[fn.dimensionsLength()];
         for (int i = 0; i < dimensions.length; i++) {
             dimensions[i] = fn.dimensions(i);
@@ -401,6 +407,7 @@ public class FlatBuffersMapper {
             ((CustomOp) op).addIArgument(extraInteger);
             ((CustomOp) op).addTArgument(extraParams);
             ((CustomOp) op).addBArgument(extraBools);
+            ((CustomOp) op).addDArgument(extraDTypes);
 
             op.setPropertiesForFunction(props);
             return op;
@@ -714,11 +721,20 @@ public class FlatBuffersMapper {
         }
 
         boolean[] boolArgs = null;
+        byte[] dtypeArgs = null;
         long[] extraBits = null;
         if (node.opType() == Op.Type.CUSTOM) {
-            DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) node;
+            val dynamicCustomOp = (DynamicCustomOp) node;
             extraBits = dynamicCustomOp.iArgs();
             boolArgs = dynamicCustomOp.bArgs();
+
+            if (dynamicCustomOp.numDArguments() > 0) {
+                dtypeArgs = new byte[dynamicCustomOp.numDArguments()];
+                val d = dynamicCustomOp.dArgs();
+                for (int e = 0; e < dtypeArgs.length; e++) {
+                    dtypeArgs[e] = (byte) d[e].toInt();
+                }
+            }
         } else if (node instanceof Enter) {
             // in case of Enter node we'll be storing unique frame reference
             val frameName = ((Enter) node).getFrameName();
@@ -799,8 +815,9 @@ public class FlatBuffersMapper {
         }
 
         int[] dims;
-        if (node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL
-                || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3) {
+        Type t = node.opType();
+        if (t == Op.Type.REDUCE_FLOAT || t == Op.Type.REDUCE_SAME || t == Op.Type.REDUCE_BOOL
+                || t == Op.Type.REDUCE_LONG || t == Op.Type.INDEXREDUCE || t == Op.Type.REDUCE3 || t == Type.VARIANCE || t == Type.SUMMARYSTATS) {
             dims = node.getDimensions();
             if (dims == null)
                 dims = new int[0];
@@ -817,6 +834,7 @@ public class FlatBuffersMapper {
         int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
         int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
         int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs != null ? boolArgs : new boolean[0]);
+        int dArgs = FlatNode.createOutputTypesVector(bufferBuilder, dtypeArgs != null ? dtypeArgs : new byte[0]);
         int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
         int fname = bufferBuilder.createString(node.getOwnName());
         int scopeName = bufferBuilder.createString("");
@@ -896,7 +914,8 @@ public class FlatBuffersMapper {
                 scalar,
                 opCds,
                 varCds,
-                cdsFor
+                cdsFor,
+                dArgs
         );
 
         return flatNode;

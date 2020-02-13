@@ -16,26 +16,48 @@
 
 package org.nd4j.linalg.api.buffer;
 
+/**
+ * Enum lists supported data types.
+ *
+ */
 public enum DataType {
 
     DOUBLE,
     FLOAT,
 
+    /**
+     * @deprecated Replaced by {@link DataType#FLOAT16}, use that instead
+     */
     @Deprecated
     HALF,
 
+    /**
+     * @deprecated Replaced by {@link DataType#INT64}, use that instead
+     */
     @Deprecated
     LONG,
 
+    /**
+     * @deprecated Replaced by {@link DataType#INT32}, use that instead
+     */
     @Deprecated
     INT,
 
+    /**
+     * @deprecated Replaced by {@link DataType#INT16}, use that instead
+     */
     @Deprecated
     SHORT,
 
+    /**
+     * @deprecated Replaced by {@link DataType#UINT8}, use that instead
+     */
     @Deprecated
     UBYTE,
 
+    /**
+     * @deprecated Replaced by {@link DataType#INT8}, use that instead
+     */
     @Deprecated
     BYTE,
 

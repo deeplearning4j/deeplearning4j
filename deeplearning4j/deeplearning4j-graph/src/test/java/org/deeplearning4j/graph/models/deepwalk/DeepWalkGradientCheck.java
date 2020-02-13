@@ -66,7 +66,7 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
         for (int i = 0; i < 7; i++) {
             INDArray vector = deepWalk.getVertexVector(i);
             assertArrayEquals(new long[] {vectorSize}, vector.shape());
-            System.out.println(Arrays.toString(vector.dup().data().asFloat()));
+//            System.out.println(Arrays.toString(vector.dup().data().asFloat()));
         }
 
         GraphWalkIterator<String> iter = new RandomWalkIterator<>(graph, 8);
@@ -182,10 +182,10 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
 
                     if (relError > MAX_REL_ERROR && absErr > MIN_ABS_ERROR)
                         fail(msg);
-                    else
-                        System.out.println(msg);
+//                    else
+//                        System.out.println(msg);
                 }
-                System.out.println();
+//                System.out.println();
             }
 
         }
@@ -216,7 +216,7 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
         for (int i = 0; i < nVertices; i++) {
             INDArray vector = deepWalk.getVertexVector(i);
             assertArrayEquals(new long[] {vectorSize}, vector.shape());
-            System.out.println(Arrays.toString(vector.dup().data().asFloat()));
+//            System.out.println(Arrays.toString(vector.dup().data().asFloat()));
         }
 
         GraphWalkIterator<String> iter = new RandomWalkIterator<>(graph, 10);
@@ -295,8 +295,8 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
 
                         if (relError > MAX_REL_ERROR && absErr > minAbsError)
                             fail(msg);
-                        else
-                            System.out.println(msg);
+//                        else
+//                            System.out.println(msg);
                     }
                 }
 

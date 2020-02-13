@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -27,6 +28,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
+@NoArgsConstructor
 public class BiasAddGrad extends DynamicCustomOp {
     protected boolean nchw = true;
 
@@ -40,7 +42,16 @@ public class BiasAddGrad extends DynamicCustomOp {
         super(new INDArray[]{input, bias, gradient}, wrapOrNull(output));
     }
 
-    public BiasAddGrad() {}
+    public BiasAddGrad(@NonNull INDArray input, @NonNull INDArray bias, @NonNull INDArray gradient,
+                       boolean nchw) {
+        addInputArgument(input, bias, gradient);
+        this.nchw = nchw;
+        addBArgument(nchw);
+    }
+
+    public BiasAddGrad(@NonNull INDArray input, @NonNull INDArray bias, @NonNull INDArray gradient) {
+        this(input, bias, gradient, false);
+    }
 
     @Override
     public int opNum() {

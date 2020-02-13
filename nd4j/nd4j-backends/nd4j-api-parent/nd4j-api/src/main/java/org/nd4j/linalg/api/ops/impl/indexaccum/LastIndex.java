@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
+import lombok.Data;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -36,6 +37,7 @@ import java.util.Map;
  *
  * @author raver119@gmail.com
  */
+@Data
 public class LastIndex extends BaseIndexAccumulation {
     protected Condition condition;
     protected double compare;

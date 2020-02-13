@@ -48,11 +48,21 @@ public class TsneTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 60000L;
+        return 180000L;
     }
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Override
+    public DataType getDataType() {
+        return DataType.FLOAT;
+    }
+
+    @Override
+    public DataType getDefaultFPDataType() {
+        return DataType.FLOAT;
+    }
 
     @Test
     public void testSimple() throws Exception {

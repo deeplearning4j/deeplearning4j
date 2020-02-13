@@ -20,19 +20,14 @@ import lombok.Getter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
-import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Stack;
 
@@ -74,17 +69,18 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
         IPolicy<O, Integer> policy = getPolicy(current);
 
         Integer action;
-        Integer lastAction = null;
+        Integer lastAction = getMdp().getActionSpace().noOp();
         IHistoryProcessor hp = getHistoryProcessor();
         int skipFrame = hp != null ? hp.getConf().getSkipFrame() : 1;
 
         double reward = 0;
         double accuReward = 0;
-        int i = 0;
-        while (!getMdp().isDone() && i < nstep * skipFrame) {
+        int stepAtStart = getCurrentEpochStep();
+        int lastStep = nstep * skipFrame + stepAtStart;
+        while (!getMdp().isDone() && getCurrentEpochStep() < lastStep) {
 
             //if step of training, just repeat lastAction
-            if (i % skipFrame != 0 && lastAction != null) {
+            if (obs.isSkipped()) {
                 action = lastAction;
             } else {
                 action = policy.nextAction(obs);
@@ -94,7 +90,7 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
             accuReward += stepReply.getReward() * getConf().getRewardFactor();
 
             //if it's not a skipped frame, you can do a step of training
-            if (i % skipFrame == 0 || lastAction == null || stepReply.isDone()) {
+            if (!obs.isSkipped() || stepReply.isDone()) {
 
                 INDArray[] output = current.outputAll(obs.getData());
                 rewards.add(new MiniTrans(obs.getData(), action, output, accuReward));
@@ -106,7 +102,6 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
 
             reward += stepReply.getReward();
 
-            i++;
             incrementStep();
             lastAction = action;
         }
@@ -114,7 +109,7 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
         //a bit of a trick usable because of how the stack is treated to init R
         // FIXME: The last element of minitrans is only used to seed the reward in calcGradient; observation, action and output are ignored.
 
-        if (getMdp().isDone() && i < nstep * skipFrame)
+        if (getMdp().isDone() && getCurrentEpochStep() < lastStep)
             rewards.add(new MiniTrans(obs.getData(), null, null, 0));
         else {
             INDArray[] output = null;
@@ -127,9 +122,9 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
             rewards.add(new MiniTrans(obs.getData(), null, output, maxQ));
         }
 
-        getAsyncGlobal().enqueue(calcGradient(current, rewards), i);
+        getAsyncGlobal().enqueue(calcGradient(current, rewards), getCurrentEpochStep());
 
-        return new SubEpochReturn(i, obs, reward, current.getLatestScore());
+        return new SubEpochReturn(getCurrentEpochStep() - stepAtStart, obs, reward, current.getLatestScore());
     }
 
     public abstract Gradient[] calcGradient(NN nn, Stack<MiniTrans<Integer>> rewards);

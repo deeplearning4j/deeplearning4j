@@ -29,6 +29,7 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.linalg.api.buffer.DataType;
 
+import static org.nd4j.linalg.api.buffer.DataType.FLOAT;
 
 
 /**
@@ -46,55 +47,45 @@ public class NumpyArray {
     private long[] strides;
     private DataType dtype;
     private INDArray nd4jArray;
+
     static {
         //initialize
         Nd4j.scalar(1.0);
-        nativeOps =   NativeOpsHolder.getInstance().getDeviceNativeOps();
+        nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     }
 
     @Builder
-    public NumpyArray(long address, long[] shape, long strides[], boolean copy,DataType dtype) {
+    public NumpyArray(long address, long[] shape, long strides[], DataType dtype, boolean copy) {
         this.address = address;
         this.shape = shape;
         this.strides = strides;
         this.dtype = dtype;
         setND4JArray();
-        if (copy){
+        if (copy) {
             nd4jArray = nd4jArray.dup();
             Nd4j.getAffinityManager().ensureLocation(nd4jArray, AffinityManager.Location.HOST);
             this.address = nd4jArray.data().address();
-
         }
     }
 
-    public NumpyArray copy(){
+
+
+    public NumpyArray copy() {
         return new NumpyArray(nd4jArray.dup());
     }
 
-    public NumpyArray(long address, long[] shape, long strides[]){
-        this(address, shape, strides, false,DataType.FLOAT);
+    public NumpyArray(long address, long[] shape, long strides[]) {
+        this(address, shape, strides, FLOAT, false);
     }
 
-    public NumpyArray(long address, long[] shape, long strides[], DataType dtype){
+    public NumpyArray(long address, long[] shape, long strides[], DataType dtype) {
         this(address, shape, strides, dtype, false);
     }
 
-    public NumpyArray(long address, long[] shape, long strides[], DataType dtype, boolean copy){
-        this.address = address;
-        this.shape = shape;
-        this.strides = strides;
-        this.dtype = dtype;
-        setND4JArray();
-        if (copy){
-            nd4jArray = nd4jArray.dup();
-            Nd4j.getAffinityManager().ensureLocation(nd4jArray, AffinityManager.Location.HOST);
-            this.address = nd4jArray.data().address();
-        }
-    }
 
     private void setND4JArray() {
         long size = 1;
-        for(long d: shape) {
+        for (long d : shape) {
             size *= d;
         }
         Pointer ptr = nativeOps.pointerForAddress(address);
@@ -107,11 +98,11 @@ public class NumpyArray {
             nd4jStrides[i] = strides[i] / elemSize;
         }
 
-        nd4jArray = Nd4j.create(buff, shape, nd4jStrides, 0, Shape.getOrder(shape,nd4jStrides,1), dtype);
+        nd4jArray = Nd4j.create(buff, shape, nd4jStrides, 0, Shape.getOrder(shape, nd4jStrides, 1), dtype);
         Nd4j.getAffinityManager().ensureLocation(nd4jArray, AffinityManager.Location.HOST);
     }
 
-    public NumpyArray(INDArray nd4jArray){
+    public NumpyArray(INDArray nd4jArray) {
         Nd4j.getAffinityManager().ensureLocation(nd4jArray, AffinityManager.Location.HOST);
         DataBuffer buff = nd4jArray.data();
         address = buff.pointer().address();
@@ -119,7 +110,7 @@ public class NumpyArray {
         long[] nd4jStrides = nd4jArray.stride();
         strides = new long[nd4jStrides.length];
         int elemSize = buff.getElementSize();
-        for(int i=0; i<strides.length; i++){
+        for (int i = 0; i < strides.length; i++) {
             strides[i] = nd4jStrides[i] * elemSize;
         }
         dtype = nd4jArray.dataType();

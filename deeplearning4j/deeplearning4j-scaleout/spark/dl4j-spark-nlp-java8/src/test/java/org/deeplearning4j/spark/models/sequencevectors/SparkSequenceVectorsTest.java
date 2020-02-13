@@ -67,7 +67,9 @@ public class SparkSequenceVectorsTest extends BaseDL4JTest {
             }
         }
 
-        SparkConf sparkConf = new SparkConf().setMaster("local[8]").setAppName("SeqVecTests");
+        SparkConf sparkConf = new SparkConf().setMaster("local[8]")
+                .set("spark.driver.host", "localhost")
+                .setAppName("SeqVecTests");
         sc = new JavaSparkContext(sparkConf);
     }
 

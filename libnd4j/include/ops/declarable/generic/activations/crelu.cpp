@@ -73,7 +73,7 @@ namespace nd4j {
 
             // at first step we build fwd activation
             nd4j::ops::crelu op;
-            auto tmpResult = op.execute({input}, {}, {}, {});
+            auto tmpResult = op.evaluate({input});
             if (tmpResult->status() != ND4J_STATUS_OK)
                 return tmpResult->status();
 
@@ -84,7 +84,7 @@ namespace nd4j {
             helpers::reluDerivative(block.launchContext(), actv, epsilonNext);
             // now we split updated array into 2 chunks along last dimension
             nd4j::ops::concat_bp opc;
-            auto dec = opc.execute({input, input, actv}, {}, {-1}, {});
+            auto dec = opc.evaluate({input, input, actv}, {-1});
             if (dec->status() != ND4J_STATUS_OK)
                 return dec->status();
 

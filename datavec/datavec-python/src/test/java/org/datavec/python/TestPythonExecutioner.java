@@ -15,13 +15,18 @@
  ******************************************************************************/
 
 package org.datavec.python;
+
+import org.bytedeco.javacpp.BytePointer;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 
 @javax.annotation.concurrent.NotThreadSafe
@@ -29,12 +34,12 @@ public class TestPythonExecutioner {
 
 
     @org.junit.Test
-    public void testPythonSysVersion() {
-        PythonExecutioner.exec("import sys; print(sys.version)");
+    public void testPythonSysVersion() throws PythonException {
+        Python.exec("import sys; print(sys.version)");
     }
 
     @Test
-    public void testStr() throws Exception{
+    public void testStr() throws Exception {
 
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
@@ -46,7 +51,7 @@ public class TestPythonExecutioner {
 
         String code = "z = x + ' ' + y";
 
-        PythonExecutioner.exec(code, pyInputs, pyOutputs);
+        Python.exec(code, pyInputs, pyOutputs);
 
         String z = pyOutputs.getStrValue("z");
 
@@ -56,7 +61,7 @@ public class TestPythonExecutioner {
     }
 
     @Test
-    public void testInt()throws Exception{
+    public void testInt() throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -68,7 +73,7 @@ public class TestPythonExecutioner {
         pyOutputs.addInt("z");
 
 
-        PythonExecutioner.exec(code, pyInputs, pyOutputs);
+        Python.exec(code, pyInputs, pyOutputs);
 
         long z = pyOutputs.getIntValue("z");
 
@@ -77,7 +82,7 @@ public class TestPythonExecutioner {
     }
 
     @Test
-    public void testList() throws Exception{
+    public void testList() throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -92,30 +97,28 @@ public class TestPythonExecutioner {
         pyOutputs.addList("z");
 
 
-        PythonExecutioner.exec(code, pyInputs, pyOutputs);
+        Python.exec(code, pyInputs, pyOutputs);
 
-        Object[] z = pyOutputs.getListValue("z");
+        Object[] z = pyOutputs.getListValue("z").toArray();
 
         Assert.assertEquals(z.length, x.length + y.length);
 
         for (int i = 0; i < x.length; i++) {
-            if(x[i] instanceof Number) {
+            if (x[i] instanceof Number) {
                 Number xNum = (Number) x[i];
                 Number zNum = (Number) z[i];
                 Assert.assertEquals(xNum.intValue(), zNum.intValue());
-            }
-            else {
+            } else {
                 Assert.assertEquals(x[i], z[i]);
             }
 
         }
-        for (int i = 0; i < y.length; i++){
-            if(y[i] instanceof Number) {
+        for (int i = 0; i < y.length; i++) {
+            if (y[i] instanceof Number) {
                 Number yNum = (Number) y[i];
                 Number zNum = (Number) z[x.length + i];
                 Assert.assertEquals(yNum.intValue(), zNum.intValue());
-            }
-            else {
+            } else {
                 Assert.assertEquals(y[i], z[x.length + i]);
 
             }
@@ -125,7 +128,7 @@ public class TestPythonExecutioner {
     }
 
     @Test
-    public void testNDArrayFloat()throws Exception{
+    public void testNDArrayFloat() throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -135,8 +138,8 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        PythonExecutioner.exec(code, pyInputs, pyOutputs);
-        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
+        Python.exec(code, pyInputs, pyOutputs);
+        INDArray z = pyOutputs.getNDArrayValue("z");
 
         Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
 
@@ -144,12 +147,13 @@ public class TestPythonExecutioner {
     }
 
     @Test
-    public void testTensorflowCustomAnaconda() {
-        PythonExecutioner.exec("import tensorflow as tf");
+    @Ignore
+    public void testTensorflowCustomAnaconda() throws PythonException {
+        Python.exec("import tensorflow as tf");
     }
 
     @Test
-    public void testNDArrayDouble()throws Exception {
+    public void testNDArrayDouble() throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -159,14 +163,14 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        PythonExecutioner.exec(code, pyInputs, pyOutputs);
-        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
+        Python.exec(code, pyInputs, pyOutputs);
+        INDArray z = pyOutputs.getNDArrayValue("z");
 
         Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
     }
 
     @Test
-    public void testNDArrayShort()throws Exception{
+    public void testNDArrayShort() throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -176,15 +180,15 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        PythonExecutioner.exec(code, pyInputs, pyOutputs);
-        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
+        Python.exec(code, pyInputs, pyOutputs);
+        INDArray z = pyOutputs.getNDArrayValue("z");
 
         Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
     }
 
 
     @Test
-    public void testNDArrayInt()throws Exception{
+    public void testNDArrayInt() throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -194,15 +198,15 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        PythonExecutioner.exec(code, pyInputs, pyOutputs);
-        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
+        Python.exec(code, pyInputs, pyOutputs);
+        INDArray z = pyOutputs.getNDArrayValue("z");
 
         Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
 
     }
 
     @Test
-    public void testNDArrayLong()throws Exception{
+    public void testNDArrayLong() throws Exception {
         PythonVariables pyInputs = new PythonVariables();
         PythonVariables pyOutputs = new PythonVariables();
 
@@ -212,12 +216,122 @@ public class TestPythonExecutioner {
 
         String code = "z = x + y";
 
-        PythonExecutioner.exec(code, pyInputs, pyOutputs);
-        INDArray z = pyOutputs.getNDArrayValue("z").getNd4jArray();
+        Python.exec(code, pyInputs, pyOutputs);
+        INDArray z = pyOutputs.getNDArrayValue("z");
 
         Assert.assertEquals(6.0, z.sum().getDouble(0), 1e-5);
 
+    }
+
+    @Test
+    public void testByteBufferInput() throws Exception{
+        //ByteBuffer buff = ByteBuffer.allocateDirect(3);
+        INDArray buff = Nd4j.zeros(new int[]{3}, DataType.BYTE);
+        buff.putScalar(0, 97); // a
+        buff.putScalar(1, 98); // b
+        buff.putScalar(2, 99); // c
+
+
+        PythonVariables pyInputs = new PythonVariables();
+        pyInputs.addBytes("buff", new BytePointer(buff.data().pointer()));
+
+        PythonVariables pyOutputs= new PythonVariables();
+        pyOutputs.addStr("out");
+
+        String code = "out = bytes(buff).decode()";
+        Python.exec(code, pyInputs, pyOutputs);
+        Assert.assertEquals("abc", pyOutputs.getStrValue("out"));
+
+      }
+
+
+      @Test
+      public void testByteBufferOutputNoCopy() throws Exception{
+          INDArray buff = Nd4j.zeros(new int[]{3}, DataType.BYTE);
+          buff.putScalar(0, 97); // a
+          buff.putScalar(1, 98); // b
+          buff.putScalar(2, 99); // c
+
+
+          PythonVariables pyInputs = new PythonVariables();
+          pyInputs.addBytes("buff", new BytePointer(buff.data().pointer()));
+
+          PythonVariables pyOutputs = new PythonVariables();
+          pyOutputs.addBytes("buff"); // same name as input, because inplace update
+
+          String code = "buff[0]=99\nbuff[1]=98\nbuff[2]=97";
+          Python.exec(code, pyInputs, pyOutputs);
+          Assert.assertEquals("cba", pyOutputs.getBytesValue("buff").getString());
+      }
+
+    @Test
+    public void testByteBufferInplace() throws Exception{
+        INDArray buff = Nd4j.zeros(new int[]{3}, DataType.BYTE);
+        buff.putScalar(0, 97); // a
+        buff.putScalar(1, 98); // b
+        buff.putScalar(2, 99); // c
+        PythonVariables pyInputs = new PythonVariables();
+        pyInputs.addBytes("buff", new BytePointer(buff.data().pointer()));
+        String code = "buff[0]+=2\nbuff[2]-=2";
+        Python.exec(code, pyInputs, null);
+        Assert.assertEquals("cba", pyInputs.getBytesValue("buff").getString());
+        INDArray expected = buff.dup();
+        expected.putScalar(0, 99);
+        expected.putScalar(2, 97);
+        Assert.assertEquals(buff, expected);
 
     }
+
+    @Test
+    public void testByteBufferOutputWithCopy() throws Exception{
+        INDArray buff = Nd4j.zeros(new int[]{3}, DataType.BYTE);
+        buff.putScalar(0, 97); // a
+        buff.putScalar(1, 98); // b
+        buff.putScalar(2, 99); // c
+
+
+        PythonVariables pyInputs = new PythonVariables();
+        pyInputs.addBytes("buff", new BytePointer(buff.data().pointer()));
+
+        PythonVariables pyOutputs = new PythonVariables();
+        pyOutputs.addBytes("out");
+
+        String code = "buff[0]=99\nbuff[1]=98\nbuff[2]=97\nout=bytes(buff)";
+        Python.exec(code, pyInputs, pyOutputs);
+        Assert.assertEquals("cba", pyOutputs.getBytesValue("out").getString());
+    }
+    @Test
+    public void testBadCode() throws Exception{
+        Python.setContext("badcode");
+        PythonVariables pyInputs = new PythonVariables();
+        PythonVariables pyOutputs = new PythonVariables();
+
+        pyInputs.addNDArray("x", Nd4j.zeros(DataType.LONG, 2, 3));
+        pyInputs.addNDArray("y", Nd4j.ones(DataType.LONG, 2, 3));
+        pyOutputs.addNDArray("z");
+
+        String code = "z = x + a";
+
+        try{
+            Python.exec(code, pyInputs, pyOutputs);
+            fail("No exception thrown");
+        } catch (PythonException pe ){
+            Assert.assertEquals("NameError: name 'a' is not defined", pe.getMessage());
+        }
+
+        Python.setMainContext();
+    }
+
+    @Test
+    public void testIsNone(){
+        PythonObject d = Python.dict();
+        PythonObject none = d.attr("get").call("x");
+        Assert.assertTrue(none.isNone());
+        d.set(new PythonObject("x"), new PythonObject("y"));
+        PythonObject notNone = d.attr("get").call("x");
+        Assert.assertFalse(notNone.isNone());
+        Assert.assertEquals("y", notNone.toString());
+    }
+
 
 }

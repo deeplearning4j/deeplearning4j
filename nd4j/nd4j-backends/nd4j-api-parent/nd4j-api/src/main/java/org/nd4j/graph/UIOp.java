@@ -32,12 +32,12 @@ public final class UIOp extends Table {
   public ByteBuffer uiLabelExtraInByteBuffer(ByteBuffer _bb) { return __vector_in_bytebuffer(_bb, 14, 1); }
 
   public static int createUIOp(FlatBufferBuilder builder,
-                               int nameOffset,
-                               int opNameOffset,
-                               int inputsOffset,
-                               int outputsOffset,
-                               int controlDepsOffset,
-                               int uiLabelExtraOffset) {
+      int nameOffset,
+      int opNameOffset,
+      int inputsOffset,
+      int outputsOffset,
+      int controlDepsOffset,
+      int uiLabelExtraOffset) {
     builder.startObject(6);
     UIOp.addUiLabelExtra(builder, uiLabelExtraOffset);
     UIOp.addControlDeps(builder, controlDepsOffset);

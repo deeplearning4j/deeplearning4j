@@ -27,15 +27,15 @@ public final class UIEvent extends Table {
   public int plugin() { int o = __offset(20); return o != 0 ? bb.getShort(o + bb_pos) & 0xFFFF : 0; }
 
   public static int createUIEvent(FlatBufferBuilder builder,
-                                  byte eventType,
-                                  byte eventSubType,
-                                  int nameIdx,
-                                  long timestamp,
-                                  int iteration,
-                                  int epoch,
-                                  short variableId,
-                                  int frameIterOffset,
-                                  int plugin) {
+      byte eventType,
+      byte eventSubType,
+      int nameIdx,
+      long timestamp,
+      int iteration,
+      int epoch,
+      short variableId,
+      int frameIterOffset,
+      int plugin) {
     builder.startObject(9);
     UIEvent.addTimestamp(builder, timestamp);
     UIEvent.addFrameIter(builder, frameIterOffset);

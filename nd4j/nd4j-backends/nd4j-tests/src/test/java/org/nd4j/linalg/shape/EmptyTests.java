@@ -320,6 +320,12 @@ public class EmptyTests extends BaseNd4jTest {
         Nd4j.exec(op);
     }
 
+    @Test
+    public void testEmptyConstructor_1() {
+        val x = Nd4j.create(new double[0]);
+        assertTrue(x.isEmpty());
+    }
+
     @Override
     public char ordering() {
         return 'c';

@@ -38,7 +38,7 @@ TEST_F(BooleanOpsTests, LtTest_1) {
     nd4j::ops::lt_scalar op;
 
 
-    ASSERT_TRUE(op.evaluate({x, y}));
+    ASSERT_TRUE(op.verify({x, y}));
 
     delete x;
     delete y;
@@ -51,7 +51,7 @@ TEST_F(BooleanOpsTests, LtTest_2) {
     nd4j::ops::lt_scalar op;
 
 
-    ASSERT_FALSE(op.evaluate({x, y}));
+    ASSERT_FALSE(op.verify({x, y}));
 
     delete x;
     delete y;
@@ -62,7 +62,7 @@ TEST_F(BooleanOpsTests, Is_non_decreasing_1) {
 
     nd4j::ops::is_non_decreasing op;
 
-    ASSERT_TRUE(op.evaluate({&x}));
+    ASSERT_TRUE(op.verify({&x}));
 
 }
 
@@ -71,7 +71,7 @@ TEST_F(BooleanOpsTests, Is_non_decreasing_2) {
 
     nd4j::ops::is_non_decreasing op;
 
-    ASSERT_FALSE(op.evaluate({&x}));
+    ASSERT_FALSE(op.verify({&x}));
 
 }
 
@@ -80,7 +80,7 @@ TEST_F(BooleanOpsTests, Is_strictly_increasing_1) {
 
     nd4j::ops::is_strictly_increasing op;
 
-    ASSERT_TRUE(op.evaluate({&x}));
+    ASSERT_TRUE(op.verify({&x}));
 
 }
 
@@ -89,7 +89,7 @@ TEST_F(BooleanOpsTests, Is_strictly_increasing_2) {
 
     nd4j::ops::is_strictly_increasing op;
 
-    ASSERT_FALSE(op.evaluate({&x}));
+    ASSERT_FALSE(op.verify({&x}));
 
 }
 
@@ -98,7 +98,7 @@ TEST_F(BooleanOpsTests, Is_strictly_increasing_3) {
 
     nd4j::ops::is_strictly_increasing op;
 
-    ASSERT_FALSE(op.evaluate({&x}));
+    ASSERT_FALSE(op.verify({&x}));
 }
 
 TEST_F(BooleanOpsTests, Is_strictly_increasing_5) {
@@ -107,7 +107,7 @@ TEST_F(BooleanOpsTests, Is_strictly_increasing_5) {
 
     nd4j::ops::is_strictly_increasing op;
 
-    ASSERT_TRUE(op.evaluate({&x}));
+    ASSERT_TRUE(op.verify({&x}));
 }
 
 TEST_F(BooleanOpsTests, Is_strictly_increasing_6) {
@@ -118,7 +118,7 @@ TEST_F(BooleanOpsTests, Is_strictly_increasing_6) {
 
     nd4j::ops::is_strictly_increasing op;
 
-    ASSERT_FALSE(op.evaluate({&x}));
+    ASSERT_FALSE(op.verify({&x}));
 }
 
 TEST_F(BooleanOpsTests, Is_numeric_tensor_1) {
@@ -126,7 +126,7 @@ TEST_F(BooleanOpsTests, Is_numeric_tensor_1) {
 
     nd4j::ops::is_numeric_tensor op;
 
-    ASSERT_TRUE(op.evaluate({&x}));
+    ASSERT_TRUE(op.verify({&x}));
 }
 
 TEST_F(BooleanOpsTests, test_where_1) {
@@ -136,7 +136,7 @@ TEST_F(BooleanOpsTests, test_where_1) {
 
     nd4j::ops::choose op;
 
-    auto result = op.execute({&x, &y}, {}, {3});
+    auto result = op.evaluate({&x, &y}, {3});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);

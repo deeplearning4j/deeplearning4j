@@ -30,8 +30,6 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,7 +46,7 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 @Slf4j
 public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                extends Thread implements StepCountable, IEpochTrainer {
+                extends Thread implements IEpochTrainer {
 
     @Getter
     private int threadNumber;
@@ -60,6 +58,9 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
     private int epochCounter = 0;
     @Getter @Setter
     private IHistoryProcessor historyProcessor;
+
+    @Getter
+    private int currentEpochStep = 0;
 
     private boolean isEpochStarted = false;
     private final LegacyMDPWrapper<O, A, AS> mdp;
@@ -138,7 +139,7 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
 
                 handleTraining(context);
 
-                if (context.epochElapsedSteps >= getConf().getMaxEpochStep() || getMdp().isDone()) {
+                if (currentEpochStep >= getConf().getMaxEpochStep() || getMdp().isDone()) {
                     boolean canContinue = finishEpoch(context);
                     if (!canContinue) {
                         break;
@@ -154,11 +155,10 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
     }
 
     private void handleTraining(RunContext context) {
-        int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - context.epochElapsedSteps);
+        int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - currentEpochStep);
         SubEpochReturn subEpochReturn = trainSubEpoch(context.obs, maxSteps);
 
         context.obs = subEpochReturn.getLastObs();
-        context.epochElapsedSteps += subEpochReturn.getSteps();
         context.rewards += subEpochReturn.getReward();
         context.score = subEpochReturn.getScore();
     }
@@ -169,7 +169,6 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
 
         context.obs = initMdp.getLastObs();
         context.rewards = initMdp.getReward();
-        context.epochElapsedSteps = initMdp.getSteps();
 
         isEpochStarted = true;
         preEpoch();
@@ -180,9 +179,9 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
     private boolean finishEpoch(RunContext context) {
         isEpochStarted = false;
         postEpoch();
-        IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, context.epochElapsedSteps, context.score);
+        IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, currentEpochStep, context.score);
 
-        log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + context.rewards);
+        log.info("ThreadNum-" + threadNumber + " Epoch: " + getCurrentEpochStep() + ", reward: " + context.rewards);
 
         return listeners.notifyEpochTrainingResult(this, statEntry);
     }
@@ -205,37 +204,30 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
     protected abstract SubEpochReturn trainSubEpoch(Observation obs, int nstep);
 
     private Learning.InitMdp<Observation> refacInitMdp() {
-        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
-        IHistoryProcessor hp = getHistoryProcessor();
+        currentEpochStep = 0;
 
-        Observation observation = mdp.reset();
-
-        int step = 0;
         double reward = 0;
 
-        boolean isHistoryProcessor = hp != null;
+        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
+        Observation observation = mdp.reset();
 
-        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
-        int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
-
-        while (step < requiredFrame && !mdp.isDone()) {
-
-            A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
-
+        A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
+        while (observation.isSkipped() && !mdp.isDone()) {
             StepReply<Observation> stepReply = mdp.step(action);
+
             reward += stepReply.getReward();
             observation = stepReply.getObservation();
 
-            step++;
-
+            incrementStep();
         }
 
-        return new Learning.InitMdp(step, observation, reward);
+        return new Learning.InitMdp(0, observation, reward);
 
     }
 
     public void incrementStep() {
         ++stepCounter;
+        ++currentEpochStep;
     }
 
     @AllArgsConstructor
@@ -260,7 +252,6 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
     private static class RunContext {
         private Observation obs;
         private double rewards;
-        private int epochElapsedSteps;
         private double score;
     }
 

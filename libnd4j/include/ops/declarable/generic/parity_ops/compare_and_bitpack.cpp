@@ -34,7 +34,7 @@ namespace nd4j {
             
             auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(GreaterThan), x, y, &z0);
             bitcast res;
-            auto status = res.execute({tZ}, {z}, {}, {DataType::UINT8}, {}, false);
+            auto status = res.execute({tZ}, {z}, {}, {DataType::UINT8}, {}, {}, false);
             if (tZ != &z0) {
                 delete tZ;
             }

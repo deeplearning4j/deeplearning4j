@@ -1579,7 +1579,7 @@ TEST_F(NativeOpsTests, CalculateOutputShapeTests_2) {
 #endif
 
     auto shapeList = ::calculateOutputShapes2(nullptr, op.getOpHash(), dataPtrs, shapePtrs, 2, const_cast<double*>(tArgs.data()), tArgs.size(),
-                                                     const_cast<Nd4jLong*>(iArgs.data()), iArgs.size(), nullptr, bArgsF.size());
+                                                     const_cast<Nd4jLong*>(iArgs.data()), iArgs.size(), nullptr, bArgsF.size(), nullptr, 0);
 //                               Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool *bArgs, int numBArgs
     ASSERT_EQ(1, shapeList->size());
 

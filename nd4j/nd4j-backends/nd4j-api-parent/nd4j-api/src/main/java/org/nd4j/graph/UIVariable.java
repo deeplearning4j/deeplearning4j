@@ -47,19 +47,19 @@ public final class UIVariable extends Table {
   public FlatArray constantValue(FlatArray obj) { int o = __offset(28); return o != 0 ? obj.__assign(__indirect(o + bb_pos), bb) : null; }
 
   public static int createUIVariable(FlatBufferBuilder builder,
-                                     int idOffset,
-                                     int nameOffset,
-                                     byte type,
-                                     byte datatype,
-                                     int shapeOffset,
-                                     int controlDepsOffset,
-                                     int outputOfOpOffset,
-                                     int inputsForOpOffset,
-                                     int controlDepsForOpOffset,
-                                     int controlDepsForVarOffset,
-                                     int gradientVariableOffset,
-                                     int uiLabelExtraOffset,
-                                     int constantValueOffset) {
+      int idOffset,
+      int nameOffset,
+      byte type,
+      byte datatype,
+      int shapeOffset,
+      int controlDepsOffset,
+      int outputOfOpOffset,
+      int inputsForOpOffset,
+      int controlDepsForOpOffset,
+      int controlDepsForVarOffset,
+      int gradientVariableOffset,
+      int uiLabelExtraOffset,
+      int constantValueOffset) {
     builder.startObject(13);
     UIVariable.addConstantValue(builder, constantValueOffset);
     UIVariable.addUiLabelExtra(builder, uiLabelExtraOffset);

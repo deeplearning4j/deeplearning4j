@@ -35,16 +35,20 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyWithLogitsLoss;
 import org.nd4j.linalg.api.ops.impl.reduce.Moments;
 import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
-import org.nd4j.linalg.api.ops.impl.reduce.floating.AMean;
+import org.nd4j.linalg.api.ops.impl.reduce.SufficientStatistics;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
 import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
+import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -96,7 +100,7 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testZeroCount() {
         List<String> allFailed = new ArrayList<>();
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 21; i++) {
             SameDiff sd = SameDiff.create();
 
             INDArray ia;
@@ -159,25 +163,25 @@ public class ReductionOpValidation extends BaseOpValidation {
 
     @Test
     public void testReductionGradientsSimple() {
-        OpValidationSuite.ignoreFailing();  //TODO TEMPORARY DUE TO CRASHES
+        //OpValidationSuite.ignoreFailing();  //TODO TEMPORARY DUE TO CRASHES
         //Test reductions: final and only function
         Nd4j.getRandom().setSeed(12345);
 
         List<String> failed = new ArrayList<>();
-
         for (int i = 0; i < 21; i++) {
 
             SameDiff sd = SameDiff.create();
 
             int nOut = 4;
             int minibatch = 10;
-            SDVariable input = sd.var("in", -1, nOut);
+            SDVariable input = sd.var("in", minibatch, nOut);
             INDArray inputArr = Nd4j.randn(minibatch, nOut).muli(100);
             long length = nOut * minibatch;
 
             SDVariable loss;
             String name;
             TestCase tc = new TestCase(sd);
+            boolean gradCheck = true;
             switch (i) {
                 case 0:
                     loss = sd.mean("loss", input);
@@ -234,11 +238,13 @@ public class ReductionOpValidation extends BaseOpValidation {
                     loss = sd.math().countNonZero("loss", input);
                     name = "countNonZero";
                     tc.expectedOutput("loss", Nd4j.scalar(inputArr.length()));
+                    gradCheck = false;  //Long out, not floating point
                     break;
                 case 11:
                     loss = sd.math().countZero("loss", input);
                     name = "countZero";
-                    tc.expectedOutput("loss", Nd4j.scalar(0));
+                    tc.expectedOutput("loss", Nd4j.scalar(0L));
+                    gradCheck = false;  //Long out, not floating point
                     break;
                 case 12:
                     loss = sd.math().amax("loss", input);
@@ -272,7 +278,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                     loss = sd.math().logSumExp("loss", input);
                     INDArray expArr = Transforms.exp(inputArr);
                     double sum = expArr.sumNumber().doubleValue();
-                    tc.expected("loss", Nd4j.create(new double[]{Math.log(sum)}));
+                    tc.expected("loss", Nd4j.scalar(Math.log(sum)));
                     break;
                 case 18:
                     inputArr = Nd4j.rand(minibatch, nOut);
@@ -307,9 +313,15 @@ public class ReductionOpValidation extends BaseOpValidation {
             log.info("*** Starting test: " + msg);
 
             sd.associateArrayWithVariable(inputArr, input);
-
+            if(gradCheck) {
+                sd.addLossVariable(loss);
+            }
 
             tc.testName(msg);
+            if(!gradCheck){
+                tc.gradientCheck(false);
+            }
+
             String error = OpValidation.validate(tc, true);
             if (error != null)
                 failed.add(error);
@@ -629,14 +641,14 @@ public class ReductionOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
         for (int[] reduceDims : new int[][]{{Integer.MAX_VALUE}, {0, 1, 2}, {0}, {1}, {2}, {0, 1}, {0, 2}, {1, 2}}) {
-            for (int i = 6; i < 7; i++) {
+            for (int i = 0; i < 7; i++) {
 
                 SameDiff sd = SameDiff.create();
                 sd.setLogExecution(false);
 
 
-                SDVariable in = sd.var("in", -1, d1, d2);
-                SDVariable in2 = sd.var("in2", -1, d1, d2);
+                SDVariable in = sd.var("in", d1, d1, d2);
+                SDVariable in2 = sd.var("in2", d0, d1, d2);
 
                 INDArray inArr = Nd4j.randn(new int[]{d0, d1, d2}).muli(100);
                 INDArray in2Arr = Nd4j.randn(inArr.shape()).muli(100);
@@ -645,40 +657,43 @@ public class ReductionOpValidation extends BaseOpValidation {
                 SDVariable reduced;
                 String name;
                 TestCase tc = new TestCase(sd);
+                Double maxRelError = null;
                 switch (i) {
                     case 0:
                         reduced = sd.math().manhattanDistance(in, in2, reduceDims);
                         name = "manhattan";
-                        exp = Nd4j.getExecutioner().exec(new ManhattanDistance(inArr, in2Arr, null, true, false, reduceDims));
+                        exp = Nd4j.getExecutioner().exec(new ManhattanDistance(inArr, in2Arr, null, false, false, reduceDims));
                         break;
                     case 1:
                         reduced = sd.math().euclideanDistance(in, in2, reduceDims);
                         name = "euclidean";
-                        exp = Nd4j.getExecutioner().exec(new EuclideanDistance(inArr, in2Arr, null, true, false, reduceDims));
+                        exp = Nd4j.getExecutioner().exec(new EuclideanDistance(inArr, in2Arr, null, false, false, reduceDims));
                         break;
                     case 2:
                         inArr.muli(1e-4);
                         in2Arr.muli(1e-4);
                         reduced = sd.math().cosineSimilarity(in, in2, reduceDims);
                         name = "cosine";
-                        exp = Nd4j.getExecutioner().exec(new CosineSimilarity(inArr, in2Arr, null, true, false, reduceDims));
+                        exp = Nd4j.getExecutioner().exec(new CosineSimilarity(inArr, in2Arr, null, false, false, reduceDims));
+                        maxRelError = 1e-4;
                         break;
                     case 3:
                         reduced = sd.math().cosineDistance(in, in2, reduceDims);
                         name = "cosinedistance";
-                        exp = Nd4j.getExecutioner().exec(new CosineDistance(inArr, in2Arr, null, true, false, reduceDims));
+                        exp = Nd4j.getExecutioner().exec(new CosineDistance(inArr, in2Arr, null, false, false, reduceDims));
+                        maxRelError = 1e-4;
                         break;
                     case 4:
                         reduced = sd.math().hammingDistance(in, in2, reduceDims);
                         name = "hamming";
-                        exp = Nd4j.getExecutioner().exec(new HammingDistance(inArr, in2Arr, null, true, false, reduceDims));
+                        exp = Nd4j.getExecutioner().exec(new HammingDistance(inArr, in2Arr, null, false, false, reduceDims));
                         break;
                     case 5:
                         name = "jaccard";
                         reduced = sd.math().jaccardDistance(name, in, in2, reduceDims);
                         inArr.divi(100).addi(0.1);
                         in2Arr.divi(100).addi(0.1);
-                        exp = Nd4j.getExecutioner().exec(new JaccardDistance(inArr, in2Arr, null, true, false, reduceDims));
+                        exp = Nd4j.getExecutioner().exec(new JaccardDistance(inArr, in2Arr, null, false, false, reduceDims));
 
                         if (OpValidationSuite.IGNORE_FAILING && reduceDims.length == 2)
                             continue;
@@ -707,6 +722,9 @@ public class ReductionOpValidation extends BaseOpValidation {
                 sd.associateArrayWithVariable(in2Arr, in2);
 
                 tc.expected(reduced, exp);
+
+                if(maxRelError != null)
+                    tc.gradCheckMaxRelativeError(maxRelError);
 
                 String error = OpValidation.validate(tc, true);
                 if (error != null) {
@@ -768,7 +786,6 @@ public class ReductionOpValidation extends BaseOpValidation {
     }
 
     @Test
-    @Ignore("AB 2019/06/24 - Failing: Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testNormalizeMomentsOp() {
         INDArray data = Nd4j.linspace(1, 100, 100, DataType.DOUBLE).reshape(10, 10);
         INDArray ssSum = data.sum(0);
@@ -780,7 +797,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         INDArray mean = Nd4j.createUninitialized(DataType.DOUBLE, meanExp.shape());
         INDArray var = Nd4j.createUninitialized(DataType.DOUBLE, varExp.shape());
 
-        OpTestCase op = new OpTestCase(new NormalizeMoments(Nd4j.scalar(DataType.INT, 10), ssSum, ssSqSum, mean, var));
+        OpTestCase op = new OpTestCase(new NormalizeMoments(Nd4j.scalar(DataType.DOUBLE, 10), ssSum, ssSqSum, mean, var));
         op.expectedOutput(0, meanExp);
         op.expectedOutput(1, varExp);
 
@@ -821,7 +838,7 @@ public class ReductionOpValidation extends BaseOpValidation {
         List<String> failed = new ArrayList<>();
         List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0, 1}, new int[0]);
 
-        INDArray in = Nd4j.rand(3, 4);
+        INDArray in = Nd4j.rand(DataType.DOUBLE,3, 4);
 
         for (int t = 0; t < 4; t++) {
             int[] d = dims.get(t);
@@ -838,52 +855,47 @@ public class ReductionOpValidation extends BaseOpValidation {
                 switch (i) {
                     case 0:
                         reduce = s.argmax(dim);
-                        exp = Nd4j.argMax(in, dim).castTo(DataType.DOUBLE);
+                        exp = Nd4j.argMax(in, dim);
                         name = "argmax";
                         break;
                     case 1:
                         reduce = s.argmin(dim);
-                        exp = Nd4j.argMin(in, dim).castTo(DataType.DOUBLE);
+                        exp = Nd4j.argMin(in, dim);
                         name = "argmin";
                         break;
                     case 2:
                         reduce = sd.math().iamax(s, dim);
                         exp = Nd4j.getExecutioner().exec(new IAMax(in.dup(), dim));
-                        exp = exp.castTo(DataType.DOUBLE);
                         name = "iamax";
                         break;
                     case 3:
                         reduce = sd.math().iamin(s, dim);
                         exp = Nd4j.getExecutioner().exec(new IAMin(in.dup(), dim));
-                        exp = exp.castTo(DataType.DOUBLE);
                         name = "iamin";
                         break;
                     case 4:
                         reduce = sd.math().firstIndex(s, Conditions.greaterThan(0), dim);
-                        exp = in.sum(dim).assign(0);
-                        exp = exp.castTo(DataType.DOUBLE);
+                        exp = in.sum(dim).assign(0).castTo(DataType.INT64);
                         name = "firstindex";
                         break;
                     case 5:
                         reduce = sd.math().lastIndex(s, Conditions.greaterThan(0), dim);
-                        if (t == 0) exp = Nd4j.create(new double[]{2, 2, 2, 2});
-                        else if (t == 1) exp = Nd4j.create(new double[]{3, 3, 3});
-                        else exp = Nd4j.scalar(11.0);
-                        exp = exp.castTo(DataType.DOUBLE);
+                        if (t == 0) exp = Nd4j.createFromArray(2L, 2, 2, 2);
+                        else if (t == 1) exp = Nd4j.createFromArray(3L, 3, 3);
+                        else exp = Nd4j.scalar(11L);
                         name = "lastindex";
                         break;
                     case 6:
                         reduce = sd.matchConditionCount("count", s, Conditions.greaterThan(0), false, dim);
-                        if (t == 0) exp = Nd4j.create(new double[]{3, 3, 3, 3});
-                        else if (t == 1) exp = Nd4j.create(new double[]{4, 4, 4});
-                        else exp = Nd4j.scalar(12.0);
-                        exp = exp.castTo(DataType.DOUBLE);
+                        if (t == 0) exp = Nd4j.createFromArray(3L, 3, 3, 3);
+                        else if (t == 1) exp = Nd4j.createFromArray(4L, 4, 4);
+                        else exp = Nd4j.scalar(12L);
                         name = "matchConditionCount";
                         break;
                     default:
                         throw new RuntimeException();
                 }
-
+                SDVariable preCast = reduce;
                 reduce = reduce.castTo(DataType.DOUBLE);
 
                 SDVariable loss;
@@ -894,7 +906,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                 }
 
                 TestCase tc = new TestCase(sd)
-                        .expected(reduce, exp)
+                        .expected(preCast, exp)
                         .gradientCheck(false)
                         .testName(name + " - " + (dim == null ? null : Arrays.toString(dim)));
 
@@ -1334,5 +1346,255 @@ public class ReductionOpValidation extends BaseOpValidation {
                 assertNull(err);
             }
         }
+    }
+    @Test
+    public void testSufficientStatisticsOp() {
+        INDArray data = Nd4j.createFromArray(new double[]{
+                5.5, 0.,  0.3, 5.5,1.5, 0.,  1.3, 6.5,8.6, 0.,   0., 0.4,2.5, 1.,  0.3, 4.5,1.5, 1.,
+                1.3, 1.5,3.5, 0.,  1.3, 2.5,2.6, 2.,   3., 1.4,4.5, 1.,  0.3, 0.5
+        }).reshape(2,2,2,4);
+        INDArray axes = Nd4j.linspace(DataType.LONG, 0, 3, 1);
+
+        OpTestCase op = new OpTestCase(new SufficientStatistics(data, axes));
+
+        INDArray expected1 = Nd4j.scalar(8.0);
+        INDArray expected2 = Nd4j.createFromArray(new double[]{
+                30.2, 5., 7.8, 22.8
+        });
+        INDArray expected3 = Nd4j.createFromArray(new double[]{
+                154.22,   7.,    14.34, 103.62
+        });
+
+        op.expectedOutput(0, expected1);
+        op.expectedOutput(1, expected2);
+        op.expectedOutput(2, expected3);
+
+        String err = OpValidation.validate(op);
+        assertNull(err);
+    }
+
+    @Test
+    public void testStandardDeviation() {
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+            SameDiff sameDiff = SameDiff.create();
+
+            INDArray in = Nd4j.linspace(1, 8, 8).reshape(2, 4);
+            SDVariable input = sameDiff.var(in);
+            INDArray expected = Nd4j.createFromArray(new double[]{
+                    2,         2,         2,         2
+            });
+
+            if(keepDims){
+                expected = expected.reshape(1,4);
+            }
+
+            SDVariable output = new StandardDeviation(sameDiff, input, false, keepDims, new int[]{0}).outputVariable();
+
+            TestCase tc = new TestCase(sameDiff)
+                    .gradientCheck(true)
+                    .expectedOutput(output.name(), expected);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testSquaredNorm() {
+
+        for (boolean keepDims : new boolean[]{false, true}) {
+            SameDiff sameDiff = SameDiff.create();
+
+            INDArray in = Nd4j.linspace(1, 4, 4);
+            SDVariable input = sameDiff.var(in);
+            INDArray expected = Nd4j.scalar(30.0000);
+            if(keepDims)
+                expected = expected.reshape(1);
+
+            SDVariable output = new SquaredNorm(sameDiff, input, keepDims, new int[]{0}).outputVariable();
+
+            TestCase tc = new TestCase(sameDiff)
+                    .gradientCheck(true)
+                    .expectedOutput(output.name(), expected);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
+
+    @Test
+    public void testShannonEntropy() {
+        OpValidationSuite.ignoreFailing();  //AB 2020/02/11 https://github.com/eclipse/deeplearning4j/issues/8695
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in = Nd4j.linspace(1, 4, 4).castTo(DataType.DOUBLE);
+        SDVariable input = sameDiff.var(in);
+        INDArray expected = Nd4j.scalar(-69.68162);
+
+        SDVariable output = new ShannonEntropy(sameDiff, input, new int[]{0}).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testEntropy() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in = Nd4j.linspace(1, 4, 4);
+        SDVariable input = sameDiff.var(in);
+        double expected = -10.2273;
+
+        SDVariable output = new Entropy(sameDiff, input, new int[]{0}).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), Nd4j.scalar(expected));
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testAMean() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        SDVariable input = sameDiff.var(in);
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                5.0000,    6.0000,    7.0000,    8.0000
+        });
+
+        SDVariable output = new AMean(sameDiff, input, new int[]{0}).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testMean() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        SDVariable input = sameDiff.var(in);
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                5.0000,    6.0000,    7.0000,    8.0000
+        });
+
+        SDVariable output = new Mean(sameDiff, input, false, new int[]{0}).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testNorm1() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        SDVariable input = sameDiff.var(in);
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                15.0000,   18.0000,   21.0000,   24.0000
+        });
+
+        SDVariable output = new Norm1(sameDiff, input, false, new int[]{0}).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testNorm2() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        SDVariable input = sameDiff.var(in);
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                10.3441,   11.8322,   13.3791,   14.9666
+        });
+
+        SDVariable output = new Norm2(sameDiff, input, false, new int[]{0}).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testNormMax() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        SDVariable input = sameDiff.var(in);
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                9.0000,   10.0000,   11.0000,   12.0000
+        });
+
+        SDVariable output = new NormMax(sameDiff, input, false, new int[]{0}).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testSoftmaxCrossEntropyWithLogitsLoss() {
+        OpValidationSuite.ignoreFailing();
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray labels = Nd4j.createFromArray(new double[]{
+                0,1,1,0,0,0,1,0,1,0,1,1,1,0,1,0,1,0,0,1,1,0,1,0
+        }).reshape(2,3,4);
+
+        INDArray logits = Nd4j.linspace(DataType.DOUBLE, 0.1, 0.1, 24).reshape(2,3,4);
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                0.26328, 1.46328, 1.72656, 0.     , 0.26328, 0.     , 1.46328, 0.26328, 1.72656, 0.     , 1.72656, 1.46328
+        }).reshape(3,4);
+
+        SDVariable sdLogits = sameDiff.var("logits", logits);
+        SDVariable sdLabels = sameDiff.var("labels", labels);
+        SDVariable loss = sameDiff.math().abs(sdLogits);
+
+
+        SDVariable output = new SoftmaxCrossEntropyWithLogitsLoss(sameDiff, sdLogits, sdLabels, 0).outputVariable();
+        sameDiff.setLossVariables(output);
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 }

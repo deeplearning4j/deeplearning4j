@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -39,23 +40,37 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @Slf4j
+@NoArgsConstructor
 public class ZerosLike extends DynamicCustomOp {
 
     protected DataType outputType;    //Allow customizing dtype for TF import
 
-    public ZerosLike() {
+    public ZerosLike(String name, SameDiff sameDiff, SDVariable input) {
+        this(name, sameDiff, input, false, input.dataType());
     }
 
-    public ZerosLike(String name, SameDiff sameDiff, SDVariable input) {
-        this(name, sameDiff, input, false);
+    public ZerosLike(String name, SameDiff sameDiff, SDVariable input, DataType dataType) {
+        this(name, sameDiff, input, false, dataType);
     }
 
     public ZerosLike(String name, SameDiff sameDiff, SDVariable input, boolean inPlace) {
+        this(name, sameDiff, input, inPlace, input.dataType());
+    }
+
+    public ZerosLike(String name, SameDiff sameDiff, SDVariable input, boolean inPlace, DataType dataType) {
         super(name, sameDiff, new SDVariable[]{input}, inPlace);
+        addDArgument(dataType);
     }
 
     public ZerosLike(INDArray in, INDArray out){
+        this(in, out, in.dataType());
+    }
+
+    public ZerosLike(INDArray in, INDArray out, DataType dataType) {
         super(null, in, out, null, null);
+        if (dataType != null) {
+            addDArgument(dataType);
+        }
     }
 
 

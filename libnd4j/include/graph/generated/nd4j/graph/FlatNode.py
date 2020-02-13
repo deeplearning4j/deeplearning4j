@@ -339,7 +339,29 @@ class FlatNode(object):
             return self._tab.VectorLen(o)
         return 0
 
-def FlatNodeStart(builder): builder.StartObject(22)
+    # FlatNode
+    def ExtraTypes(self, j):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(48))
+        if o != 0:
+            a = self._tab.Vector(o)
+            return self._tab.Get(flatbuffers.number_types.Int8Flags, a + flatbuffers.number_types.UOffsetTFlags.py_type(j * 1))
+        return 0
+
+    # FlatNode
+    def ExtraTypesAsNumpy(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(48))
+        if o != 0:
+            return self._tab.GetVectorAsNumpy(flatbuffers.number_types.Int8Flags, o)
+        return 0
+
+    # FlatNode
+    def ExtraTypesLength(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(48))
+        if o != 0:
+            return self._tab.VectorLen(o)
+        return 0
+
+def FlatNodeStart(builder): builder.StartObject(23)
 def FlatNodeAddId(builder, id): builder.PrependInt32Slot(0, id, 0)
 def FlatNodeAddName(builder, name): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(name), 0)
 def FlatNodeAddOpType(builder, opType): builder.PrependInt8Slot(2, opType, 0)
@@ -375,4 +397,6 @@ def FlatNodeAddVarControlDeps(builder, varControlDeps): builder.PrependUOffsetTR
 def FlatNodeStartVarControlDepsVector(builder, numElems): return builder.StartVector(4, numElems, 4)
 def FlatNodeAddControlDepFor(builder, controlDepFor): builder.PrependUOffsetTRelativeSlot(21, flatbuffers.number_types.UOffsetTFlags.py_type(controlDepFor), 0)
 def FlatNodeStartControlDepForVector(builder, numElems): return builder.StartVector(4, numElems, 4)
+def FlatNodeAddExtraTypes(builder, extraTypes): builder.PrependUOffsetTRelativeSlot(22, flatbuffers.number_types.UOffsetTFlags.py_type(extraTypes), 0)
+def FlatNodeStartExtraTypesVector(builder, numElems): return builder.StartVector(1, numElems, 1)
 def FlatNodeEnd(builder): return builder.EndObject()

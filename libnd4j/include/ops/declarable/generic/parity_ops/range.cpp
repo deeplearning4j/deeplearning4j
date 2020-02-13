@@ -130,7 +130,7 @@ DECLARE_SHAPE_FN(range) {
     const int numIArgs  = block.getIArguments()->size();    
 
     Nd4jLong steps = 0;
-    nd4j::DataType dataType = nd4j::DataType::INHERIT;
+    nd4j::DataType dataType = block.numD() ? D_ARG(0) : nd4j::DataType::INHERIT;
 
     if (numInArrs > 0) {
         auto isR = INPUT_VARIABLE(0)->isR();
@@ -159,7 +159,9 @@ DECLARE_SHAPE_FN(range) {
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
             steps = static_cast<Nd4jLong >((limit - start) / delta);
-            dataType = INPUT_VARIABLE(0)->dataType();
+
+            if (!block.numD())
+                dataType = INPUT_VARIABLE(0)->dataType();
 
             if(math::nd4j_abs<double>(start + steps * delta) < math::nd4j_abs<double >(limit))
                 ++steps;
@@ -187,7 +189,9 @@ DECLARE_SHAPE_FN(range) {
             REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
             steps = static_cast<Nd4jLong >((limit - start) / delta);
-            dataType = INPUT_VARIABLE(0)->dataType();
+
+            if (!block.numD())
+                dataType = INPUT_VARIABLE(0)->dataType();
 
             if(math::nd4j_abs<double>(start + steps * delta) < math::nd4j_abs<double >(limit))
                 ++steps;
@@ -214,10 +218,12 @@ DECLARE_SHAPE_FN(range) {
 
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
-        if (limit > DataTypeUtils::max<int>())
-            dataType = nd4j::DataType::INT64;
-        else
-            dataType = nd4j::DataType::INT32;
+        if (!block.numD()) {
+            if (limit > DataTypeUtils::max<int>())
+                dataType = nd4j::DataType::INT64;
+            else
+                dataType = nd4j::DataType::INT32;
+        }
 
         steps = (limit - start) / delta;
 
@@ -248,10 +254,13 @@ DECLARE_SHAPE_FN(range) {
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
         steps = static_cast<Nd4jLong >((limit - start) / delta);
-        if (Environment::getInstance()->precisionBoostAllowed())
-            dataType = nd4j::DataType::DOUBLE;
-        else
-            dataType = Environment::getInstance()->defaultFloatDataType();
+
+        if (!block.numD()) {
+            if (Environment::getInstance()->precisionBoostAllowed())
+                dataType = nd4j::DataType::DOUBLE;
+            else
+                dataType = Environment::getInstance()->defaultFloatDataType();
+        }
 
         if(math::nd4j_abs<double>(start + steps * delta) < math::nd4j_abs<double >(limit))
             ++steps;

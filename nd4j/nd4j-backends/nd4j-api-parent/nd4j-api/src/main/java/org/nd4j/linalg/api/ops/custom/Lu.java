@@ -64,6 +64,6 @@ public class Lu extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        return Arrays.asList(inputDataTypes.get(0), indexDataType);
+        return Arrays.asList(inputDataTypes.get(0), indexDataType == null ? DataType.INT32 : indexDataType);
     }
 }

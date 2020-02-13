@@ -171,7 +171,10 @@ namespace nd4j {
          * @param numStrings
          * @return
          */
-        static Nd4jLong stringBufferHeaderRequirements(Nd4jLong numStrings);
+        static FORCEINLINE Nd4jLong stringBufferHeaderRequirements(Nd4jLong numStrings) {
+            // we store +1 offset
+            return (numStrings + 1) * sizeof(Nd4jLong);
+        }
 
         /*
         * check whether arr1/arr2 is sub-array of arr2/arr1,

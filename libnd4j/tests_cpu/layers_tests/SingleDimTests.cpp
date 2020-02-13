@@ -68,7 +68,7 @@ TEST_F(SingleDimTests, Test_Concat_1) {
     auto exp = NDArrayFactory::create<float>('c', {6}, {1, 2, 3, 4, 5, 6});
 
     nd4j::ops::concat op;
-    auto result = op.execute({&x, &y}, {}, {0});
+    auto result = op.evaluate({&x, &y}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -102,7 +102,7 @@ TEST_F(SingleDimTests, Test_ExpandDims_1) {
     auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 3});
 
     nd4j::ops::expand_dims op;
-    auto result = op.execute({&x}, {}, {0});
+    auto result = op.evaluate({&x}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -120,7 +120,7 @@ TEST_F(SingleDimTests, Test_ExpandDims_2) {
     auto exp = NDArrayFactory::create<float>('c', {3, 1}, {1, 2, 3});
 
     nd4j::ops::expand_dims op;
-    auto result = op.execute({&x}, {}, {1});
+    auto result = op.evaluate({&x}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -140,7 +140,7 @@ TEST_F(SingleDimTests, Test_Squeeze_1) {
     auto exp = NDArrayFactory::create<float>(3.0f);
 
     nd4j::ops::squeeze op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.evaluate({&x}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -157,7 +157,7 @@ TEST_F(SingleDimTests, Test_Squeeze_2) {
     auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
 
     nd4j::ops::squeeze op;
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.evaluate({&x}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -173,7 +173,7 @@ TEST_F(SingleDimTests, Test_Reshape_1) {
     auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
 
     nd4j::ops::reshape op;
-    auto result = op.execute({&x}, {}, {-99, 3});
+    auto result = op.evaluate({&x}, {}, {-99, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -189,7 +189,7 @@ TEST_F(SingleDimTests, Test_Reshape_2) {
     auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 3});
 
     nd4j::ops::reshape op;
-    auto result = op.execute({&x}, {}, {-99, 1, 3});
+    auto result = op.evaluate({&x}, {}, {-99, 1, 3});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
@@ -206,7 +206,7 @@ TEST_F(SingleDimTests, Test_Permute_1) {
     auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
 
     nd4j::ops::permute op;
-    auto result = op.execute({&x}, {}, {0});
+    auto result = op.evaluate({&x}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);

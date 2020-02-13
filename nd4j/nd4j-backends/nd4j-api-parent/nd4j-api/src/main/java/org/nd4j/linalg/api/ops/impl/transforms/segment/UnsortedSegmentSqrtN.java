@@ -16,10 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.segment;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
@@ -31,17 +33,22 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@NoArgsConstructor
 public class UnsortedSegmentSqrtN extends DynamicCustomOp {
 
     private int numSegments;
+
+    public UnsortedSegmentSqrtN(INDArray data, INDArray segmentIds, int numSegments) {
+        addInputArgument(data, segmentIds);
+        addIArgument(numSegments);
+        this.numSegments = numSegments;
+    }
 
     public UnsortedSegmentSqrtN(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
         this.numSegments = numSegments;
         addIArgument(numSegments);
     }
-
-    public UnsortedSegmentSqrtN(){ }
 
     @Override
     public String opName(){
@@ -60,7 +67,8 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
+                "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
         List<DataType> out = new ArrayList<>();
         for( int i=0; i<numSegments; i++ ){
             out.add(inputDataTypes.get(0));

@@ -303,8 +303,8 @@
         <leptonica.version>1.79.0</leptonica.version>
         <hdf5.version>1.10.6</hdf5.version>
         <ale.version>0.6.1</ale.version>
-        <gym.version>0.15.4</gym.version>
-        <tensorflow.version>1.15.0</tensorflow.version>
+        <gym.version>0.15.5</gym.version>
+        <tensorflow.version>1.15.2</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
         <commons-compress.version>1.18</commons-compress.version>

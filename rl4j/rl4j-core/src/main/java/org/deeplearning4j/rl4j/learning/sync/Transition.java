@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.rl4j.learning.sync;
 
+import lombok.Data;
 import lombok.Value;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,7 +35,7 @@ import java.util.List;
  * @author Alexandre Boulanger
  *
  */
-@Value
+@Data
 public class Transition<A> {
 
     Observation observation;
@@ -43,12 +44,15 @@ public class Transition<A> {
     boolean isTerminal;
     INDArray nextObservation;
 
-    public Transition(Observation observation, A action, double reward, boolean isTerminal, Observation nextObservation) {
+    public Transition(Observation observation, A action, double reward, boolean isTerminal) {
         this.observation = observation;
         this.action = action;
         this.reward = reward;
         this.isTerminal = isTerminal;
+        this.nextObservation = null;
+    }
 
+    public void setNextObservation(Observation nextObservation) {
         // To conserve memory, only the most recent frame of the next observation is kept (if history is used).
         // The full nextObservation will be re-build from observation when needed.
         long[] nextObservationShape = nextObservation.getData().shape().clone();

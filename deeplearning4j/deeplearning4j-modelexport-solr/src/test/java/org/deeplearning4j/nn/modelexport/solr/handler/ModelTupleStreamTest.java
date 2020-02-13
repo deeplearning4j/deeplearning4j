@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelexport.solr.handler;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +58,18 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class ModelTupleStreamTest {
+
+  static {
+    /*
+    This is a hack around the backend-dependent nature of secure random implementations
+    though we can set the secure random algorithm in our pom.xml files (via maven surefire and test.solr.allowed.securerandom)
+    there isn't a mechanism that is completely platform independent.
+    By setting it there (for example, to NativePRNG) that makes it pass on some platforms like Linux but fails on some JVMs on Windows
+    For testing purposes, we don't need strict guarantees around RNG, hence we don't want to enforce the RNG algorithm
+     */
+    String algorithm = new SecureRandom().getAlgorithm();
+    System.setProperty("test.solr.allowed.securerandom", algorithm);
+  }
 
   protected List<float[]> floatsList(int numFloats) {
     final List<float[]> floatsList = new ArrayList<float[]>();

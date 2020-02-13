@@ -159,6 +159,11 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testWord2VecCBOW() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
         TokenizerFactory t = new DefaultTokenizerFactory();
@@ -188,6 +193,11 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testWord2VecMultiEpoch() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         SentenceIterator iter;
         if(isIntegrationTests()){
             iter = new BasicLineIterator(inputFile.getAbsolutePath());
@@ -220,6 +230,11 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void reproducibleResults_ForMultipleRuns() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         log.info("reproducibleResults_ForMultipleRuns");
         val shakespear = new ClassPathResource("big/rnj.txt");
         val basic = new ClassPathResource("big/rnj.txt");
@@ -274,6 +289,11 @@ public class Word2VecTests extends BaseDL4JTest {
     
     @Test
     public void testRunWord2Vec() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         // Strip white space before and after for each line
         /*val shakespear = new ClassPathResource("big/rnj.txt");
         SentenceIterator iter = new BasicLineIterator(shakespear.getFile());*/
@@ -363,6 +383,11 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testLoadingWordVectors() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         File modelFile = new File(pathToWriteto);
         if (!modelFile.exists()) {
             testRunWord2Vec();
@@ -396,6 +421,11 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testW2VnegativeOnRestore() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         // Strip white space before and after for each line
         SentenceIterator iter;
         if(isIntegrationTests()){
@@ -453,6 +483,11 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testUnknown1() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         // Strip white space before and after for each line
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
@@ -688,6 +723,10 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testWordVectorsPartiallyAbsentLabels() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
 
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
@@ -720,6 +759,10 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testWordVectorsAbsentLabels() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
 
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
@@ -745,6 +788,10 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testWordVectorsAbsentLabels_WithUnknown() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
 
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
         // Split on white spaces in the line to get words
@@ -814,6 +861,10 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void weightsNotUpdated_WhenLocked_CBOW() throws Exception {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
 
         SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
 
@@ -851,6 +902,11 @@ public class Word2VecTests extends BaseDL4JTest {
 
     @Test
     public void testWordsNearestSum() throws IOException {
+        String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+        if(!isIntegrationTests() && "CUDA".equalsIgnoreCase(backend)) {
+            skipUnlessIntegrationTests(); //AB 2020/02/06 Skip CUDA except for integration tests due to very slow test speed - > 5 minutes on Titan X
+        }
+
         log.info("Load & Vectorize Sentences....");
         SentenceIterator iter = new BasicLineIterator(inputFile);
         TokenizerFactory t = new DefaultTokenizerFactory();

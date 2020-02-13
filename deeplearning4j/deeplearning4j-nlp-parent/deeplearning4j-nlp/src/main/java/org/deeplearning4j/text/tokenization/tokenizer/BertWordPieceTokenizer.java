@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
  */
 @Slf4j
 public class BertWordPieceTokenizer implements Tokenizer {
-    public static final Pattern splitPattern = Pattern.compile("(\\p{javaWhitespace}|((?<=\\p{Punct})|(?=\\p{Punct})))+");
+    public static final Pattern splitPattern = Pattern.compile("\\p{javaWhitespace}+|((?<=\\p{Punct})+|(?=\\p{Punct}+))");
 
     private final List<String> tokens;
     private final TokenPreProcess preTokenizePreProcessor;

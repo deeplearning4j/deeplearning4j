@@ -24,6 +24,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -45,6 +46,7 @@ public class SequenceMask extends DynamicCustomOp {
     public SequenceMask(SameDiff sameDiff, SDVariable input, SDVariable maxLen, DataType dataType) {
         super(null, sameDiff, new SDVariable[] {input, maxLen}, false);
         this.dataType = dataType;
+        addDArgument(dataType);
     }
 
     public SequenceMask(SameDiff sameDiff, SDVariable input, int maxLen, DataType dataType) {
@@ -53,13 +55,23 @@ public class SequenceMask extends DynamicCustomOp {
         this.is_static_maxlen = true;
         addIArgument(maxLen);
         this.dataType = dataType;
+        addDArgument(dataType);
     }
 
     public SequenceMask(SameDiff sameDiff, SDVariable input, DataType dataType) {
         super(null, sameDiff, new SDVariable[] {input}, false);
         this.dataType = dataType;
+        addDArgument(dataType);
     }
-    
+
+    public SequenceMask(INDArray input, int maxLen, DataType dataType) {
+        addInputArgument(input);
+        addIArgument(maxLen);
+        //addIArgument(dataType.toInt());
+        addDArgument(dataType);
+        this.dataType = dataType;
+    }
+
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {

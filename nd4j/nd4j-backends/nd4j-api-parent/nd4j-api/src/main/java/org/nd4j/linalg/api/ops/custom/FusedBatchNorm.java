@@ -51,6 +51,14 @@ public class FusedBatchNorm extends DynamicCustomOp {
     public FusedBatchNorm(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable scale, @NonNull SDVariable offset,
                           @NonNull SDVariable dataFormat, @NonNull SDVariable isTraining) {
         super("", sameDiff, new SDVariable[]{x, scale, offset, dataFormat, isTraining});
+        this.outputDataType = x.dataType();
+    }
+
+    public FusedBatchNorm(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable scale, @NonNull SDVariable offset,
+                          int dataFormat, int isTraining) {
+        super("", sameDiff, new SDVariable[]{x, scale, offset});
+        addIArgument(dataFormat, isTraining);
+        this.outputDataType = x.dataType();
     }
 
     @Override
@@ -78,6 +86,8 @@ public class FusedBatchNorm extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        return Arrays.asList(outputDataType, DataType.FLOAT, DataType.FLOAT);   //Activations may be half, bfloat16, float32; mean/var is always float
+        return Arrays.asList(outputDataType == null ? DataType.FLOAT : outputDataType,
+                outputDataType == null ? DataType.FLOAT : outputDataType,
+                outputDataType == null ? DataType.FLOAT : outputDataType);
     }
 }

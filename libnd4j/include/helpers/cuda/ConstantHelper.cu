@@ -92,7 +92,7 @@ namespace nd4j {
     }
 
     void* ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace) {
-        _mutex.lock();
+        std::lock_guard<std::mutex> lock(_mutex);
 
         auto deviceId = getCurrentDevice();
         Nd4jPointer constantPtr = nullptr;
@@ -116,7 +116,6 @@ namespace nd4j {
             if (res != 0)
                 throw cuda_exception::build("cudaMemcpy failed", res);
 
-            _mutex.unlock();
             return ptr;
         } else {
             auto originalBytes = numBytes;
@@ -130,7 +129,6 @@ namespace nd4j {
             if (res != 0)
                 throw cuda_exception::build("cudaMemcpyToSymbol failed", res);
 
-            _mutex.unlock();
             return reinterpret_cast<int8_t *>(constantPtr) + constantOffset;
         }
     }
@@ -152,7 +150,7 @@ namespace nd4j {
         ConstantDataBuffer* result;
 
         // access to this holder instance is synchronous
-        holder->mutex()->lock();
+        std::lock_guard<std::mutex> lock(*holder->mutex());
 
         if (holder->hasBuffer(dataType)) {
              result = holder->getConstantDataBuffer(dataType);
@@ -175,8 +173,6 @@ namespace nd4j {
             holder->addBuffer(dataBuffer, dataType);
             result = holder->getConstantDataBuffer(dataType);
         }
-        // release holder lock
-        holder->mutex()->unlock();
 
         return result;
     }

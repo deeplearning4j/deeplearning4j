@@ -16,9 +16,15 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce.bp;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -26,7 +32,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Alex Black
  */
-
+@NoArgsConstructor
 public class DotBp extends BaseReductionBp {
 
     public DotBp(SameDiff sameDiff, SDVariable origInput1, SDVariable origInput2, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
@@ -37,10 +43,22 @@ public class DotBp extends BaseReductionBp {
         super(origInput1, origInput2, gradAtOutput, output, keepDims, dimensions);
     }
 
-    public DotBp(){}
+    public DotBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput,
+                 INDArray outputX, INDArray outputY, boolean keepDims, int... dimensions) {
+        super(origInput1, origInput2, gradAtOutput, outputX, outputY, keepDims, dimensions);
+    }
 
     @Override
     public String opName() {
         return "reduce_dot_bp";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatype for %s, got input %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "First input must be a floating point type, got %s", dataTypes.get(0));
+        Preconditions.checkState(dataTypes.get(1).isFPType(), "Second input (gradient at reduction output) must be a floating point type, got %s", dataTypes.get(1));
+        Preconditions.checkState(dataTypes.get(2).isFPType(), "Second input (gradient at reduction output) must be a floating point type, got %s", dataTypes.get(2));
+        return Arrays.asList(dataTypes.get(0), dataTypes.get(0));
     }
 }

@@ -41,13 +41,16 @@ namespace helpers {
     template <typename T>
     static void lowerTriangularSolve(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
         auto rows = leftInput->rows();
+        auto cols = rightInput->columns();
         //output->t<T>(0,0) = rightInput->t<T>(0,0) / leftInput->t<T>(0,0);
         for (auto r = 0; r < rows; r++) {
-            auto sum = rightInput->t<T>(r, 0);
-            for (auto c = 0; c < r; c++) {
-                sum -= leftInput->t<T>(r,c) * output->t<T>(c, 0);
+            for (auto j = 0; j < cols; j++) {
+                auto sum = rightInput->t<T>(r, j);
+                for (auto c = 0; c < r; c++) {
+                    sum -= leftInput->t<T>(r, c) * output->t<T>(c, j);
+                }
+                output->t<T>(r, j) = sum / leftInput->t<T>(r, r);
             }
-            output->t<T>(r, 0) = sum / leftInput->t<T>(r, r);
         }
     }
 
@@ -68,13 +71,15 @@ namespace helpers {
     template <typename T>
     static void upperTriangularSolve(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
         auto rows = leftInput->rows();
-
+        auto cols = rightInput->columns();
         for (auto r = rows; r > 0; r--) {
-            auto sum = rightInput->t<T>(r - 1, 0);
-            for (auto c = r; c < rows; c++) {
-                sum -= leftInput->t<T>(r - 1, c) * output->t<T>(c, 0);
+            for (auto j = 0; j < cols; j++) {
+                auto sum = rightInput->t<T>(r - 1, j);
+                for (auto c = r; c < rows; c++) {
+                    sum -= leftInput->t<T>(r - 1, c) * output->t<T>(c, j);
+                }
+                output->t<T>(r - 1, j) = sum / leftInput->t<T>(r - 1, r - 1);
             }
-            output->t<T>(r - 1, 0) = sum / leftInput->t<T>(r - 1, r - 1);
         }
     }
 
@@ -103,17 +108,20 @@ namespace helpers {
     static void adjointTriangularMatrix_(nd4j::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
         auto inputPart = input->allTensorsAlongDimension({-2, -1});
         auto outputPart = output->allTensorsAlongDimension({-2, -1});
+        auto cols = input->sizeAt(-1);
+        auto rows = input->sizeAt(-2);
+
         auto batchLoop = PRAGMA_THREADS_FOR {
             for (auto batch = start; batch < stop; batch += increment) {
                 if (!lower) {
-                    for (auto r = 0; r < input->rows(); r++) {
+                    for (auto r = 0; r < rows; r++) {
                         for (auto c = 0; c <= r; c++) {
                             outputPart[batch]->t<T>(r, c) = inputPart[batch]->t<T>(c, r);
                         }
                     }
                 } else {
-                    for (auto r = 0; r < input->rows(); r++) {
-                        for (auto c = r; c < input->columns(); c++) {
+                    for (auto r = 0; r < rows; r++) {
+                        for (auto c = r; c < cols; c++) {
                             outputPart[batch]->t<T>(r, c) = inputPart[batch]->t<T>(c, r);
                         }
                     }

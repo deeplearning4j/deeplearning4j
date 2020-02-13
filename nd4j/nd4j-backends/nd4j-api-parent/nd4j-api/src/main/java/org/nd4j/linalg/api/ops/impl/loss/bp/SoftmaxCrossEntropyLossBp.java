@@ -20,14 +20,18 @@ import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.loss.BaseLoss;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 
@@ -55,5 +59,13 @@ public class SoftmaxCrossEntropyLossBp extends BaseLossBp {
     @Override
     public String opName() {
         return "softmax_cross_entropy_loss_grad";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
+                "Expected 2 or 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
+
+        return Arrays.asList(inputDataTypes.get(0), inputDataTypes.get(1), inputDataTypes.get(2));    //Same as predictions
     }
 }

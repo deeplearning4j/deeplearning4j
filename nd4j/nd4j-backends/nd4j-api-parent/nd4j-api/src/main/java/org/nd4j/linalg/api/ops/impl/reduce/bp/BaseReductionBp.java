@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce.bp;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -30,7 +31,7 @@ import java.util.List;
 /**
  * @author Alex Black
  */
-
+@NoArgsConstructor
 public abstract class BaseReductionBp extends DynamicCustomOp {
 
     protected boolean keepDims;
@@ -96,7 +97,12 @@ public abstract class BaseReductionBp extends DynamicCustomOp {
         addArgs();
     }
 
-    public BaseReductionBp(){}
+    public BaseReductionBp(INDArray origInput1, INDArray origInput2, INDArray gradAtOutput, INDArray output1, INDArray output2, boolean keepDims, int... dimensions){
+        super(null, new INDArray[]{origInput1, origInput2, gradAtOutput}, new INDArray[]{output1, output2});
+        this.keepDims = keepDims;
+        this.dimensions = dimensions;
+        addArgs();
+    }
 
     protected void addArgs(){
         addTArgument(keepDims ? 1 : 0);

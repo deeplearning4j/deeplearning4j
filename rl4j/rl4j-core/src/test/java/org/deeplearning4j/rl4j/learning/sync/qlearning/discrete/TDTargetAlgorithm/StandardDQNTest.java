@@ -25,7 +25,7 @@ public class StandardDQNTest {
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
-                add(new Transition<Integer>(buildObservation(new double[]{1.1, 2.2}),
+                add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
                         0, 1.0, true, buildObservation(new double[]{11.0, 22.0})));
             }
         };
@@ -51,7 +51,7 @@ public class StandardDQNTest {
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
-                add(new Transition<Integer>(buildObservation(new double[]{1.1, 2.2}),
+                add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
                         0, 1.0, false, buildObservation(new double[]{11.0, 22.0})));
             }
         };
@@ -77,11 +77,11 @@ public class StandardDQNTest {
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
-                add(new Transition<Integer>(buildObservation(new double[]{1.1, 2.2}),
+                add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
                         0, 1.0, false, buildObservation(new double[]{11.0, 22.0})));
-                add(new Transition<Integer>(buildObservation(new double[]{3.3, 4.4}),
+                add(buildTransition(buildObservation(new double[]{3.3, 4.4}),
                         1, 2.0, false, buildObservation(new double[]{33.0, 44.0})));
-                add(new Transition<Integer>(buildObservation(new double[]{5.5, 6.6}),
+                add(buildTransition(buildObservation(new double[]{5.5, 6.6}),
                         0, 3.0, true, buildObservation(new double[]{55.0, 66.0})));
             }
         };
@@ -108,4 +108,10 @@ public class StandardDQNTest {
         return new Observation(new INDArray[]{Nd4j.create(data).reshape(1, 2)});
     }
 
+    private Transition<Integer> buildTransition(Observation observation, Integer action, double reward, boolean isTerminal, Observation nextObservation) {
+        Transition<Integer> result = new Transition<Integer>(observation, action, reward, isTerminal);
+        result.setNextObservation(nextObservation);
+
+        return result;
+    }
 }

@@ -18,13 +18,13 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import lombok.NonNull;
 import lombok.val;
-import org.bytedeco.javacpp.BooleanPointer;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.memory.Deallocatable;
+import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOpContext;
 import org.nd4j.linalg.api.ops.ExecutionMode;
@@ -42,14 +42,19 @@ import org.nd4j.nativeblas.OpaqueRandomGenerator;
  * CUDA wrapper for op Context
  * @author raver119@gmail.com
  */
-public class CudaOpContext extends BaseOpContext implements OpContext {
+public class CudaOpContext extends BaseOpContext implements OpContext, Deallocatable {
     // we might want to have configurable
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private OpaqueContext context = nativeOps.createGraphContext(1);
+    private final transient long id = Nd4j.getDeallocatorService().nextValue();
+
+    public CudaOpContext() {
+        Nd4j.getDeallocatorService().pickObject(this);
+    }
 
     @Override
     public void close() {
-        nativeOps.deleteGraphContext(context);
+        // no-op
     }
 
     @Override
@@ -74,6 +79,18 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
             super.setTArguments(arguments);
             nativeOps.setGraphContextTArguments(context, new DoublePointer(arguments), arguments.length);
         }
+    }
+
+    @Override
+    public void setDArguments(DataType... arguments) {
+        if (arguments.length > 0) {
+            super.setDArguments(arguments);
+            val args = new int[arguments.length];
+            for (int e = 0; e < arguments.length; e++)
+                args[e] = arguments[e].toInt();
+
+            nativeOps.setGraphContextDArguments(context, new IntPointer(args), arguments.length);
+        };
     }
 
     @Override
@@ -132,5 +149,26 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
     public void setExecutionMode(@NonNull ExecutionMode mode) {
         super.setExecutionMode(mode);
         nativeOps.ctxSetExecutionMode(context, mode.ordinal());
+    }
+
+    @Override
+    public void purge() {
+        super.purge();
+        nativeOps.ctxPurge(context);
+    }
+
+    @Override
+    public String getUniqueId() {
+        return new String("CTX_" + id);
+    }
+
+    @Override
+    public Deallocator deallocator() {
+        return new CudaOpContextDeallocator(this);
+    }
+
+    @Override
+    public int targetDevice() {
+        return 0;
     }
 }

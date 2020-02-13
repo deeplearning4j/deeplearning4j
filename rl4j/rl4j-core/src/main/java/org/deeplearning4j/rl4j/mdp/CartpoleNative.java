@@ -92,6 +92,7 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
         theta = 0.1 * rnd.nextDouble() - 0.05;
         thetaDot = 0.1 * rnd.nextDouble() - 0.05;
         stepsBeyondDone = null;
+        done = false;
 
         return new State(new double[] { x, xDot, theta, thetaDot });
     }
@@ -126,7 +127,7 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
                 break;
         }
 
-        boolean done =  x < -xThreshold || x > xThreshold
+        done |=  x < -xThreshold || x > xThreshold
                 || theta < -thetaThresholdRadians || theta > thetaThresholdRadians;
 
         double reward;

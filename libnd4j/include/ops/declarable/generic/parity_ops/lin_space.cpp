@@ -31,6 +31,11 @@ namespace ops {
         auto start = INPUT_VARIABLE(0);
         auto finish = INPUT_VARIABLE(1);
         auto numOfElements = INPUT_VARIABLE(2);
+
+        if (numOfElements->e<Nd4jLong>(0) == 1) {
+            output->assign(start);
+            return Status::OK();
+        }
     
         output->linspace(start->e<double>(0), (finish->e<double>(0) - start->e<double>(0)) / (numOfElements->e<Nd4jLong>(0) - 1.));
         return Status::OK();

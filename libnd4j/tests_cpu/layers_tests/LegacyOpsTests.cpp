@@ -62,7 +62,7 @@ TEST_F(LegacyOpsTests, TransformTests_2) {
     exp.assign(-1.0);
 
     nd4j::ops::LegacyTransformSameOp op(transform::Neg); // Neg
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.evaluate({&x}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
@@ -119,7 +119,7 @@ TEST_F(LegacyOpsTests,  PWT_Tests_2) {
     exp.assign(6.0);
 
     nd4j::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
-    auto result = op.execute({&x, &y}, {}, {});
+    auto result = op.evaluate({&x, &y}, {}, {});
 
     auto z = result->at(0);
 
@@ -152,7 +152,7 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
     auto y = NDArrayFactory::create<float>(5.0f);
 
     nd4j::ops::LegacyScalarOp op(scalar::Add, y);
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.evaluate({&x}, {}, {});
 
     auto z = result->at(0);
     ASSERT_TRUE(exp.equalsTo(z));
@@ -167,7 +167,7 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
     int opNum = reduce::Sum;
     nd4j::ops::LegacyReduceSameOp op(opNum);
 
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.evaluate({&x}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
@@ -186,7 +186,7 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
 
     nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
     auto axis = NDArrayFactory::create<Nd4jLong>('c', {1}, {1});
-    auto result = op.execute({&x, &axis}, {}, {});
+    auto result = op.evaluate({&x, &axis}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
@@ -208,7 +208,7 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 
 
     nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
-    auto result = op.execute({&x, &indices}, {}, {});
+    auto result = op.evaluate({&x, &indices}, {}, {});
     auto z = result->at(0);
     auto exp = x.reduceAlongDimension(reduce::Sum,{1});
 
@@ -228,7 +228,7 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
 
 
     nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
-    auto result = op.execute({&x, &indices}, {}, {}, {true});
+    auto result = op.evaluate({&x, &indices}, {}, {}, {true});
     auto z = result->at(0);
     auto exp = x.reduceAlongDimension(reduce::Sum, {1}, true);
     // indices.printShapeInfo("Indices shape");
@@ -247,7 +247,7 @@ TEST_F(LegacyOpsTests, ReduceTests_5) {
     int opNum = reduce::Mean;
     nd4j::ops::LegacyReduceFloatOp op(opNum);
 
-    ResultSet* result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
+    auto result = op.evaluate({&x});
 
     ASSERT_EQ(1, result->size());
 
@@ -266,7 +266,7 @@ TEST_F(LegacyOpsTests, ReduceTests_6) {
     auto axis = NDArrayFactory::create<int>('c', {1}, {1});
     nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
 
-    auto result = op.execute({&x, &axis}, {}, {});
+    auto result = op.evaluate({&x, &axis}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
@@ -288,7 +288,7 @@ TEST_F(LegacyOpsTests, ReduceTests_7) {
 
 
     nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
-    auto result = op.execute({&x, &indices}, {}, {});
+    auto result = op.evaluate({&x, &indices}, {}, {});
     auto z = result->at(0);
     auto exp = x.reduceAlongDimension(reduce::Mean,{1});
 
@@ -308,7 +308,7 @@ TEST_F(LegacyOpsTests, ReduceTests_8) {
 
 
     nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
-    auto result = op.execute({&x, &indices}, {}, {}, {true});
+    auto result = op.evaluate({&x, &indices}, {}, {}, {true});
     auto z = result->at(0);
     auto exp = x.reduceAlongDimension(reduce::Mean, {1}, true);
 
@@ -329,7 +329,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
 
     nd4j::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
 
-    auto result = op.execute({&x}, {}, {});
+    auto result = op.evaluate({&x}, {}, {});
 
     ASSERT_EQ(1, result->size());
 
@@ -349,7 +349,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     auto exp = NDArrayFactory::create<Nd4jLong>({4,4,4,4,4});
     nd4j::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
 
-    auto result = op.execute({&x, &indices}, {}, {});
+    auto result = op.evaluate({&x, &indices}, {}, {});
 
     ASSERT_EQ(1, result->size());
 

@@ -44,6 +44,11 @@ public class TestOpMapping extends BaseNd4jTest {
         return 'c';
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 60000L;
+    }
+
     @Test
     public void testOpMappingCoverage() throws Exception {
         Reflections reflections = new Reflections("org.nd4j");
