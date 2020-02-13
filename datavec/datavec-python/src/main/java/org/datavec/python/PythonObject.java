@@ -343,33 +343,45 @@ public class PythonObject {
         Py_DecRef(shape);
         Py_DecRef(strides);
         DataType dtype;
-        if (dtypeName.equals("float64")) {
-            dtype = DataType.DOUBLE;
-        } else if (dtypeName.equals("float32")) {
-            dtype = DataType.FLOAT;
-        } else if (dtypeName.equals("int8")){
-            dtype = DataType.INT8;
-        }else if (dtypeName.equals("int16")) {
-            dtype = DataType.SHORT;
-        } else if (dtypeName.equals("int32")) {
-            dtype = DataType.INT;
-        } else if (dtypeName.equals("int64")) {
-            dtype = DataType.LONG;
-        }
-        else if (dtypeName.equals("uint8")){
-            dtype = DataType.UINT8;
-        }
-        else if (dtypeName.equals("uint16")){
-            dtype = DataType.UINT16;
-        }
-        else if (dtypeName.equals("uint32")){
-            dtype = DataType.UINT32;
-        }
-        else if (dtypeName.equals("uint64")){
-            dtype = DataType.UINT64;
-        }
-        else {
-            throw new RuntimeException("Unsupported array type " + dtypeName + ".");
+        switch (dtypeName) {
+            case "float64":
+                dtype = DataType.DOUBLE;
+                break;
+            case "float32":
+                dtype = DataType.FLOAT;
+                break;
+            case "int8":
+                dtype = DataType.INT8;
+                break;
+            case "int16":
+                dtype = DataType.INT16;
+                break;
+            case "int32":
+                dtype = DataType.INT32;
+                break;
+            case "int64":
+                dtype = DataType.INT64;
+                break;
+            case "uint8":
+                dtype = DataType.UINT8;
+                break;
+            case "uint16":
+                dtype = DataType.UINT16;
+                break;
+            case "uint32":
+                dtype = DataType.UINT32;
+                break;
+            case "uint64":
+                dtype = DataType.UINT64;
+                break;
+            case "bool":
+                dtype = DataType.BOOL;
+                break;
+            case "float16":
+                dtype = DataType.FLOAT16;
+                break;
+            default:
+                throw new RuntimeException("Unsupported array type " + dtypeName + ".");
         }
         return new NumpyArray(address, jshape, jstrides, dtype);
 
