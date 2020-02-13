@@ -66,6 +66,8 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         addArgs();
     }
 
+    public DepthwiseConv2D(){ }
+
     public DepthwiseConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
         super(inputs, outputs);
 

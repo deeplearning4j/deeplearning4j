@@ -24,41 +24,32 @@ public class LSTMWeights extends RNNWeights {
      * Input to hidden and hidden to hidden are concatenated in dimension 0,
      * so the input to hidden weights are [:inSize, :] and the hidden to hidden weights are [inSize:, :].
      */
-    @NonNull
     private SDVariable weights;
 
     /**
      * Cell peephole (t-1) connections to input modulation gate, with a shape of [numUnits].
      */
-    @NonNull
     private SDVariable inputPeepholeWeights;
 
     /**
      * Cell peephole (t-1) connections to forget gate, with a shape of [numUnits].
      */
-    @NonNull
     private SDVariable forgetPeepholeWeights;
 
     /**
      * Cell peephole (t) connections to output gate, with a shape of [numUnits].
      */
-    @NonNull
     private SDVariable outputPeepholeWeights;
 
     /**
      * Input to hidden and hidden to hidden biases, with shape [1, 4*numUnits].
      */
-    @NonNull
     private SDVariable bias;
 
 
-    @NonNull
     private INDArray ndarrayWeights;
-    @NonNull
     private INDArray ndarrayInputPeepholeWeights;
-    @NonNull
     private INDArray ndarrayForgetPeepholeWeights;
-    @NonNull
     private INDArray ndarrayBias;
 
 

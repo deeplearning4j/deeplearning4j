@@ -41,6 +41,8 @@ public class Pooling3DDerivative extends Pooling3D {
         super(sameDiff, inputs, inputArrays, outputs, inPlace, pooling3DConfig, type);
     }
 
+    public Pooling3DDerivative(){ }
+
 
     @Override
     public String opName() {
