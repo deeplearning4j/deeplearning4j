@@ -263,18 +263,18 @@ namespace nd4j {
         void nd4j::graph::VariableSpace::putVariable(int id, Variable *variable) {
             // we don't want to add variables more then once
             if (_variables.count(id) > 0 || _temporary.count(id) > 0) {
-                // nd4j_verbose("Trying to update variable for node_%i\n", id);
-
                 auto local = id < 0 ? _variables.at(id) : _temporary.at(id);
 
                 if (!local->hasNDArray() && variable->hasNDArray()) {
-                    // nd4j_verbose("Saving variable for node_%i\n", id);
                     local->setNDArray(variable->getNDArray());
+
+                    // we're inheriting this from Variable
+                    local->markReadOnly(variable->isReadOnly());
+                    local->markRemovable(variable->isRemovable());
                 }
+
                 return;
             }
-
-            //nd4j_debug("Adding Variable to Space: id: %i; Array is null: %i;\n", id, variable->getNDArray() == nullptr);
 
             _varmap.lock();
 
@@ -312,6 +312,21 @@ namespace nd4j {
                 if (variable->isPlaceholder())
                     _placeholders.push_back(variable);
             }
+        }
+
+        void nd4j::graph::VariableSpace::putVariable(int id, int idx, NDArray &array) {
+            auto *var = new nd4j::graph::Variable(&array, "", id, idx);
+            var->markRemovable(false);
+            var->markReadOnly(true);
+
+            // let's see if this op needs
+            bool d = this->hasVariable(id, idx);
+
+            this->putVariable(id, var);
+
+            // if var for this nodeid already exists - we'll just delete variable
+            if (d)
+                delete var;
         }
 
         void nd4j::graph::VariableSpace::putVariable(int id, NDArray *array) {

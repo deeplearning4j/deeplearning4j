@@ -191,6 +191,9 @@ namespace nd4j {
             _current->putVariable(id, array);
         }
 
+        void nd4j::graph::VariableProxy::putVariable(int id, int idx, NDArray &array) {
+            _current->putVariable(id, idx, array);
+        }
         
         void VariableProxy::putVariable(int id, int idx, NDArray *array) {
             _current->putVariable(id, idx, array);

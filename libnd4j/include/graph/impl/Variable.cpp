@@ -60,8 +60,11 @@ namespace nd4j {
             result->_name = this->_name;
             result->_index = this->_index;
 
-            if (this->_ndarray != nullptr)
+            if (this->_ndarray != nullptr) {
                 result->_ndarray = new NDArray(this->_ndarray->dup(this->_ndarray->ordering()));
+                result->_readOnly = false;
+                result->_removable = true;
+            }
 
             if (this->_list != nullptr)
                 result->_list = this->_list->clone();

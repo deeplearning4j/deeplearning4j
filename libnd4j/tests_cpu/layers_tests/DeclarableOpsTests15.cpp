@@ -584,6 +584,11 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_1) {
 }
 
 TEST_F(DeclarableOpsTests15, test_check_numeric_2) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
+
     auto x = NDArrayFactory::create<float>('c', {3},{1.f, 2.f, std::numeric_limits<float>::infinity()});
     auto y = NDArrayFactory::string("should trigger");
     auto z = NDArrayFactory::create<float>('c', {3} );
@@ -598,6 +603,11 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_2) {
 }
 
 TEST_F(DeclarableOpsTests15, test_check_numeric_3) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
+
     auto x = NDArrayFactory::create<float>('c', {3},{1.f, 2.f, std::numeric_limits<float>::quiet_NaN()});
     auto y = NDArrayFactory::string("should trigger");
     auto z = NDArrayFactory::create<float>('c', {3} );
@@ -1530,6 +1540,10 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test10) {
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test11) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
 
     NDArray xB('c', { 3,2,1 }, { .4, 3, 5, .8, -9, -12 }, nd4j::DataType::FLOAT32);
     NDArray yB('c', { 1,2,3 }, { 3, -2, .4, -4, 10, .8 }, nd4j::DataType::FLOAT32);

@@ -26,11 +26,11 @@
 namespace nd4j {
     namespace ops {
         LegacyTransformStrictOp::LegacyTransformStrictOp() : LegacyOp::LegacyOp(1) {
-            // just a no-op
+            this->getOpDescriptor()->allowInplace(true);
         }
 
         LegacyTransformStrictOp::LegacyTransformStrictOp(int opNum) : LegacyOp::LegacyOp(1, opNum) {
-            // just a no-op
+            this->getOpDescriptor()->allowInplace(true);
         }
 
         LegacyOp* LegacyTransformStrictOp::clone() {

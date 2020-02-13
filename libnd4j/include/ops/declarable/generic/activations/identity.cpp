@@ -27,12 +27,10 @@ namespace nd4j {
     namespace ops {
         OP_IMPL(identity, 1, 1, true) {
             auto first = INPUT_VARIABLE(0);
-            auto z = this->getZ(block);
+            auto z = OUTPUT_VARIABLE(0);
 
-            // just for lulz
-            first->applyTransform(nd4j::transform::Identity, *z);
-
-            STORE_RESULT(*z);
+            if (!block.isInplace())
+                first->applyTransform(nd4j::transform::Identity, *z);
 
             return Status::OK();
         }
@@ -60,8 +58,8 @@ namespace nd4j {
         DECLARE_TYPES(identity_bp) {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
     }
 }

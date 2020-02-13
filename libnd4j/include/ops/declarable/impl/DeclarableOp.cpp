@@ -150,6 +150,22 @@ namespace nd4j {
             }
 
             if (ctx.isInplace()) {
+                if (Environment::getInstance()->isProfiling() && node != nullptr) {
+                    if (ctx.isFastPath()) {
+                        //
+                    } else {
+                        for (auto p: *ctx.inputs()) {
+                            auto var = ctx.variable(p);
+                            if (var->variableType() == VariableType::NDARRAY) {
+                                NDArray *array = var->getNDArray();
+
+                                node->addInputShape(array->shapeInfo());
+                                node->addOutputShape(array->shapeInfo());
+                            }
+                        }
+                    }
+                }
+
                 // do nothing, getZ result will do the trick
                 return static_cast<int>(ctx.width());
             } else {
@@ -192,6 +208,10 @@ namespace nd4j {
                     auto inputTime = std::chrono::duration_cast<std::chrono::nanoseconds>(inputEnd - inputStart).count();
                     node->setInputTime(inputTime);
 
+                    // saving output shapes in profile
+                    for (int e = 0; e < inSha.size(); e++)
+                        node->addInputShape(inSha.at(e));
+
                     shapeStart = std::chrono::system_clock::now();
                 }
 
@@ -203,6 +223,10 @@ namespace nd4j {
                     shapeEnd = std::chrono::system_clock::now();
                     auto prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(shapeEnd - shapeStart).count();
                     node->setShapeFunctionTime(prepTime);
+
+                    // saving output shapes in profile
+                    for (int e = 0; e < outSha->size(); e++)
+                        node->addOutputShape(outSha->at(e));
 
                     arrayStart = std::chrono::system_clock::now();
                 }
@@ -562,7 +586,7 @@ namespace nd4j {
                 block->setInnerTime(outerTime);
             }
 
-            if (Environment::getInstance()->isProfiling()) {
+            if (Environment::getInstance()->isProfiling() && !block->isFastPath()) {
                 auto fp = block->getVariableSpace()->flowPath();
                 if (fp != nullptr) {
                     auto p = fp->profile();

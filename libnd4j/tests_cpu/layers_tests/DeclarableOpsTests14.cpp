@@ -78,6 +78,11 @@ TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_1) {
 }
 
 TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
+
     auto x = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, std::numeric_limits<double>::infinity(), 5});
     auto y = NDArrayFactory::create<double>('c', {5}, {1, 2, 3, -std::numeric_limits<double>::infinity(), 5});
 
@@ -332,6 +337,10 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_max_1) {
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_reduce_sum_1) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
 
     auto e = NDArrayFactory::create<float>('c', {1, 0});
     nd4j::ops::reduce_sum sumOp;
@@ -343,6 +352,10 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_sum_1) {
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_reduce_mean_1) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
 
     auto e = NDArrayFactory::create<float>('c', {1, 0});
     nd4j::ops::reduce_mean sumOp;

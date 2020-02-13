@@ -21,6 +21,8 @@
 #include <graph/profiling/GraphProfile.h>
 #include <helpers/logger.h>
 #include <chrono>
+#include <templatemath.h>
+#include <algorithm>
 
 namespace nd4j {
     namespace graph {
@@ -184,9 +186,26 @@ namespace nd4j {
             if (_profiles.empty())
                 nd4j_printf("No nodes in graph\n","");
 
-            for (auto v: _profiles)
+            // printint out stuff
+            std::vector<NodeProfile*> sorted;
+            for (auto v: _profiles) {
                 v->printOut();
-            
+                sorted.emplace_back(v);
+            }
+
+            if (_profiles.size() > 1) {
+                // building hot spots
+                std::sort(sorted.begin(), sorted.end(), [](const NodeProfile *a, const NodeProfile *b) -> bool {
+                    return a->getExecutionTime() > b->getExecutionTime();
+                });
+
+                nd4j_printf("\nTop 30 reports by EXEC:\n", "");
+                auto limit = nd4j::math::nd4j_min<int>(30, sorted.size());
+                for (int e = 0; e < limit; e++) {
+                    sorted[e]->printOut();
+                }
+            }
+
             nd4j_printf("\nSpecial timers:\n", "");
             if (_timings.empty())
                 nd4j_printf("No special timers were set\n","");

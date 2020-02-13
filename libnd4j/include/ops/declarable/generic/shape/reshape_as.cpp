@@ -28,7 +28,7 @@ namespace nd4j {
 
 
     //////////////////////////////////////////////////////////////////////////
-    CUSTOM_OP_IMPL(reshapeas, 2, 1, true, 0, 0) {
+    CUSTOM_OP_IMPL(reshapeas, 2, 1, false, 0, 0) {
     
         auto x = INPUT_VARIABLE(0);
         auto y = INPUT_VARIABLE(1);

@@ -28,7 +28,7 @@ namespace nd4j {
 namespace ops {
 
     //////////////////////////////////////////////////////////////////////////
-    CUSTOM_OP_IMPL(transpose, 1, 1, true, 0, 0) {
+    CUSTOM_OP_IMPL(transpose, 1, 1, false, 0, 0) {
         auto x = INPUT_VARIABLE(0);
         if (block.width() == 1) {
             if (block.isInplace()) {
