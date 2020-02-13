@@ -708,30 +708,6 @@ TEST_F(DeclarableOpsTests12, multiUnique_2) {
     ASSERT_TRUE(nd4j::ops::helpers::multiUnique(arrayList));
 }
 
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, tensormmul_6) {
-
-    NDArray x('c', {1}, std::vector<double>{2}, nd4j::DataType::FLOAT32);
-    NDArray y('c', {2,1,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {2,2}, {2,4,6,8}, nd4j::DataType::FLOAT32);
-
-    nd4j::ops::tensormmul op;
-    auto results = op.evaluate({&x, &y}, {}, {1,0, 1,1});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto *result = results->at(0);
-    // exp.printShapeInfo();
-    // result->printShapeInfo();
-    // result->printIndexedBuffer();
-
-    ASSERT_TRUE(exp.isSameShape(result));
-    ASSERT_TRUE(exp.equalsTo(result));
-
-    delete results;
-
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, reduceMeanBp_4) {
 

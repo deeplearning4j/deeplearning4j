@@ -61,13 +61,13 @@ namespace nd4j {
             }
 
             auto source = inRank == 4?image->reshape(image->ordering(), {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2), image->sizeAt(3)}):image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
-            auto target = inRank == 4?output->reshape(output->ordering(), {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)}):output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)});
+            auto target = inRank == 4?output->reshape(output->ordering(), {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)}, false) : output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)}, false);
 
             return helpers::resizeAreaFunctor(block.launchContext(), &source, width, height, alignCorners, &target);
         }
 
         DECLARE_SHAPE_FN(resize_area) {
-            auto shapeList = SHAPELIST(); 
+            auto shapeList = SHAPELIST();
             auto in = inputShape->at(0);
 
             Nd4jLong* outputShape;
@@ -90,7 +90,7 @@ namespace nd4j {
             }
 
             REQUIRE_TRUE(inRank == 4 || inRank == 3, 0, "resize_area: Source tensor should have rank 4, but %i given.", inRank);
-            
+
             ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
             outputShape[0] = inRank;
             if (inRank == 4) {

@@ -36,14 +36,14 @@ namespace nd4j {
                     int _a = INT_ARG(e);
                     if (_a < 0)
                         _a += input->rankOf();
-                        
+
                     axis.emplace_back(_a);
                 }
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
                 for (Nd4jLong e = 0; e < a->lengthOf(); e++) {
                     int _a = a->e<int>(e);
-                    
+
                     if (_a < 0)
                         _a += input->rankOf();
 
@@ -71,7 +71,7 @@ namespace nd4j {
             }
 
             if (block.isInplace()) {
-                output->reshapei(input->ordering(), shape);
+                output->reshapei(input->ordering(), shape, false);
             } else {
                 auto tmp = input->reshape(input->ordering(), shape);
                 output->assign(tmp);
@@ -106,20 +106,20 @@ namespace nd4j {
                     int _a = INT_ARG(e);
                     if (_a < 0)
                         _a += rank;
-                        
+
                     axis.emplace_back(_a);
                 }
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
                 for (int e = 0; e < a->lengthOf(); e++) {
                     int _a = a->e<int>(e);
-                    
+
                     if (_a < 0)
                         _a += rank;
 
                     axis.emplace_back(_a);
                 }
-                
+
             }
 
             auto order = shape::order(in);

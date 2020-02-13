@@ -75,10 +75,23 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
     permutBt = axesB;
     permutBt.insert(permutBt.end(), list_B.begin(), list_B.end());
 
+    // if permut contains something like {0,1,2,..rank-1}, then there is no need to make permutation and we return empty vector in this case
+    uint i1, i2;
+    for(i1 = 0; i1 < aRank; ++i1)
+        if(permutAt[i1] != i1)
+            break;
+    if(i1 == aRank)
+        permutAt = {};
+    for(i2 = 0; i2 < bRank; ++i2)
+        if(permutBt[i2] != i2)
+            break;
+    if(i2 == bRank)
+        permutBt = {};
+
     Nd4jLong n2 = 1;
     for (int i = 0; i < axeAsize; i++)
         n2 *= aShapeInfo[axesA[i] + 1];
-    shapeAt = {-1, n2};
+    shapeAt = {shape::length(aShapeInfo) / n2, n2};
 
     std::vector<Nd4jLong> oldShapeA;
     oldShapeA.resize(list_A.size());
@@ -89,7 +102,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
     Nd4jLong n3 = 1;
     for (int i = 0; i < axeBsize; i++)
         n3 *= bShapeInfo[axesB[i] + 1];
-    shapeBt = {n3, -1};
+    shapeBt = {n3, shape::length(bShapeInfo) / n3};
 
     std::vector<Nd4jLong> oldShapeB;
     oldShapeB.resize(list_B.size());
@@ -306,10 +319,10 @@ std::vector<Nd4jLong> ShapeUtils::evalRepeatShape(int axis, const std::vector<in
     Nd4jLong* ShapeUtils::evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace) {
 
         if (!arr.nonNull())
-            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
+            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments: array is nullptr!");
 
         if (rank != arr.rankOf())
-            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
+            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
 
         auto shapeInfoLength = shape::shapeInfoLength(rank);
         // allocate memory for new array - shapeInfo

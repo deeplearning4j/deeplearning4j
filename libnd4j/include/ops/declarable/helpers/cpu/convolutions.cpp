@@ -432,7 +432,7 @@ namespace nd4j {
                 ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
             NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-            NDArray outputReshaped = output->reshape(output->ordering(), outReShape);
+            NDArray outputReshaped = output->reshape(output->ordering(), outReShape, false);
 
             helpers::im2col(*output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
             MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
@@ -505,7 +505,7 @@ namespace nd4j {
             if(gradB) {
                 NDArray* gradBR = gradB;
                 if(gradB->rankOf() == 2)
-                    gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
+                    gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}, false));
                 gradO->reduceAlongDimension(reduce::Sum, *gradBR, {0,indOoH,indOoH+1});                      // sum over bS, oH, oW
 
                 if(gradBR != gradB)

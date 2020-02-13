@@ -239,7 +239,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
     //----- calculation of gradO -----//
     if(gradB) {
         if(gradB->rankOf() == 2)
-            gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
+            gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}, false));
         gradO->reduceAlongDimension(reduce::Sum, *gradB, gradOaxesForDot);                          // sum over bS oD oH oW
         if(gradB != OUTPUT_VARIABLE(2))
             delete gradB;

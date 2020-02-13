@@ -68,7 +68,7 @@ namespace nd4j {
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
             const int subArrRank = (rank == dimsToExclude.size() || descriptor.areUnitiesinShape()) ? rank : rank - dimsToExclude.size();
 
-            auto sPtr = new Nd4jLong[shape::shapeInfoLength(subArrRank)];
+            auto sPtr = new Nd4jLong[shape::shapeInfoLength(subArrRank)];   // shape of sub-arrays (same for all for them)
             auto oPtr = new Nd4jLong[numOfSubArrs];
 
             if (numOfSubArrs > 0)

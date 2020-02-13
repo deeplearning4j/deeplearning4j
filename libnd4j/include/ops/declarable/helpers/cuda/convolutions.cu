@@ -322,7 +322,7 @@ static void depthwiseConv2d_(nd4j::graph::Context& block, const NDArray* input, 
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
     NDArray columns(input->ordering(), {bS, iC, kH, kW, oH, oW}, input->dataType(), input->getContext());
-    NDArray outputReshaped = output->reshape(output->ordering(), outReShape);
+    NDArray outputReshaped = output->reshape(output->ordering(), outReShape, false);
 
     helpers::im2col(*output->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
     MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
@@ -1228,7 +1228,7 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
         NDArray* gradBR = gradB;
         if(gradB->rankOf() == 2)
             gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
-        gradO->reduceAlongDimension(reduce::Sum, *gradBR, gradOaxesForDot);                          // sum over bS, oH, oW
+        gradO->reduceAlongDimension(reduce::Sum, *gradBR, gradOaxesForDot, false);                          // sum over bS, oH, oW
         if(gradBR != gradB)
             delete gradBR;
     }
@@ -1310,7 +1310,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
         NDArray* gradBR = gradB;
         if(gradB->rankOf() == 2)
             gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
-        gradO->reduceAlongDimension(reduce::Sum, *gradBR, {0,indOoH,indOoH+1});                      // sum over bS, oH, oW
+        gradO->reduceAlongDimension(reduce::Sum, *gradBR, {0,indOoH,indOoH+1}, false);                      // sum over bS, oH, oW
         if(gradBR != gradB)
             delete gradBR;
     }

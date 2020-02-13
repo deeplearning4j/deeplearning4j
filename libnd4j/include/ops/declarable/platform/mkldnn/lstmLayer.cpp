@@ -471,9 +471,9 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
     if(cI)
         cIR = new NDArray(cI->reshape(cI->ordering(), {1,dirDim,bS,nOut}));
     if(hL)
-        hLR = new NDArray(hL->reshape(hL->ordering(), {1,dirDim,bS,nOut}));
+        hLR = new NDArray(hL->reshape(hL->ordering(), {1,dirDim,bS,nOut}, false));
     if(cL)
-        cLR = new NDArray(cL->reshape(cL->ordering(), {1,dirDim,bS,nOut}));
+        cLR = new NDArray(cL->reshape(cL->ordering(), {1,dirDim,bS,nOut}, false));
 
     lstmLayerMKLDNN(xP, WxR, WrR, bR, hIR, cIR, params, hP, hLR, cLR);
 

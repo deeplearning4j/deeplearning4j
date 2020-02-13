@@ -79,7 +79,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     }
 
     auto inputReshaped   = input  ->reshape(input->ordering(),   reshapeForInput);
-    auto outputReshaped  = output ->reshape(output->ordering(),  reshapeForOutput);
+    auto outputReshaped  = output ->reshape(output->ordering(),  reshapeForOutput, false);
     auto weightsReshaped = weights->reshape(weights->ordering(), {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});   // [kW, iC, oC] -> [1, kW, iC, oC]
 
     nd4j::ops::conv2d conv2d;
@@ -216,10 +216,10 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     }
 
     auto inputReshaped   = input  ->reshape(input->ordering(),  reshapeForInput);
-    auto gradIReshaped   = gradI  ->reshape(gradI->ordering(),  reshapeForInput);
+    auto gradIReshaped   = gradI  ->reshape(gradI->ordering(),  reshapeForInput, false);
     auto gradOReshaped   = gradO  ->reshape(gradO->ordering(),  reshapeForGradO);
-    auto weightsReshaped = weights->reshape(weights->ordering(),{1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});    // [kW, iC, oC] -> [1, kW, iC, oC]
-    auto gradWReshaped   = gradW  ->reshape(gradW->ordering(),  {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});    // [kW, iC, oC] -> [1, kW, iC, oC]
+    auto weightsReshaped = weights->reshape(weights->ordering(),{1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});       // [kW, iC, oC] -> [1, kW, iC, oC]
+    auto gradWReshaped   = gradW  ->reshape(gradW->ordering(),  {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)}, false);// [kW, iC, oC] -> [1, kW, iC, oC]
 
     nd4j::ops::conv2d_bp conv2dBP;
     auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped, bias, &gradOReshaped}, {&gradIReshaped, &gradWReshaped, gradB}, {}, {1,kW,  1,sW,  0,pW,  1,dW,  paddingMode,  !isNCW}, {});

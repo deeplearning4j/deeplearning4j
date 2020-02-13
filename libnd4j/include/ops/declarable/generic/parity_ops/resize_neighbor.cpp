@@ -63,13 +63,13 @@ namespace nd4j {
             REQUIRE_TRUE(((alignCorners && height > 2) || (height > 0)) && ((alignCorners && width > 1) || (width > 0)), 0,  "resize_nearest_neighbor: Wrong input or output size to resize (width = %d, height = %d)", width, height);
 
             auto source = inRank == 4?*image:image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
-            auto target = inRank == 4?*output:output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)});
+            auto target = inRank == 4 ? *output : output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)}, false);
 
             return helpers::resizeNeighborFunctor(block.launchContext(), inRank==4?image:&source, width, height, alignCorners, halfPixelCenter, inRank == 4 ? output : &target);
         }
 
         DECLARE_SHAPE_FN(resize_nearest_neighbor) {
-            auto shapeList = SHAPELIST(); 
+            auto shapeList = SHAPELIST();
             auto in = inputShape->at(0);
             auto inRank = shape::rank(in);
             Nd4jLong* outputShape;
