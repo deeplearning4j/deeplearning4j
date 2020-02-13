@@ -54,13 +54,12 @@ public class AvgPooling2D extends DynamicCustomOp {
         MAX, AVG, PNORM,
     }
 
-    public AvgPooling2D(@NonNull INDArray input,@NonNull  Pooling2DConfig pooling2DConfig) {
-        super(new INDArray[]{input},null);
+    public AvgPooling2D(@NonNull INDArray input, @NonNull Pooling2DConfig pooling2DConfig) {
+        super(new INDArray[]{input}, null);
         config.setType(Pooling2D.Pooling2DType.AVG);
 
         this.config = pooling2DConfig;
         addArgs();
-
     }
 
 
@@ -73,7 +72,7 @@ public class AvgPooling2D extends DynamicCustomOp {
         addArgs();
     }
 
-    public AvgPooling2D(@NonNull INDArray input, INDArray output, @NonNull Pooling2DConfig config){
+    public AvgPooling2D(@NonNull INDArray input, INDArray output, @NonNull Pooling2DConfig config) {
         super(new INDArray[]{input}, wrapOrNull(output));
         config.setType(Pooling2D.Pooling2DType.AVG);
 

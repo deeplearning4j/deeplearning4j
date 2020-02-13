@@ -47,7 +47,7 @@ public class ExtractImagePatches extends DynamicCustomOp {
     public ExtractImagePatches(){ }
 
     public ExtractImagePatches(@NonNull SameDiff samediff, @NonNull SDVariable input, @NonNull int[] kSizes,
-                               @NonNull int[] strides, @NonNull int[] rates, boolean sameMode){
+                               @NonNull int[] strides, @NonNull int[] rates, boolean sameMode) {
         super(samediff, input);
         Preconditions.checkState(kSizes.length == 2, "Expected exactly 2 kernel sizes, got %s", kSizes);
         Preconditions.checkState(strides.length == 2, "Expected exactly 2 strides, got %s", strides);
@@ -60,7 +60,7 @@ public class ExtractImagePatches extends DynamicCustomOp {
     }
 
     public ExtractImagePatches(@NonNull INDArray input, @NonNull int[] kSizes,
-                               @NonNull int[] strides, @NonNull int[] rates, boolean sameMode){
+                               @NonNull int[] strides, @NonNull int[] rates, boolean sameMode) {
         super(new INDArray[]{input}, null);
         Preconditions.checkState(kSizes.length == 2, "Expected exactly 2 kernel sizes, got %s", kSizes);
         Preconditions.checkState(strides.length == 2, "Expected exactly 2 strides, got %s", strides);
@@ -72,10 +72,10 @@ public class ExtractImagePatches extends DynamicCustomOp {
         addArgs();
     }
 
-    public ExtractImagePatches(@NonNull INDArray input, @NonNull int kH, @NonNull int kW, @NonNull int sH, @NonNull int sW,@NonNull  int rH, @NonNull int rW, boolean sameMode) {
-        super(new INDArray[]{input},null);
-        int[] kSises = {kH,kW};
-        int[] strides = {sH,sW};
+    public ExtractImagePatches(@NonNull INDArray input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode) {
+        super(new INDArray[]{input}, null);
+        int[] kSises = {kH, kW};
+        int[] strides = {sH, sW};
         int[] rates = {rH, rW};
         this.kSizes = kSises;
         this.strides = strides;

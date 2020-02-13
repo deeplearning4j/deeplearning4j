@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import onnx.Onnx;
@@ -39,6 +40,7 @@ import java.util.Map;
  */
 @Slf4j
 @Getter
+@NoArgsConstructor
 public class AvgPooling3D extends Pooling3D {
 
     public AvgPooling3D(SameDiff sameDiff, SDVariable input, Pooling3DConfig config) {

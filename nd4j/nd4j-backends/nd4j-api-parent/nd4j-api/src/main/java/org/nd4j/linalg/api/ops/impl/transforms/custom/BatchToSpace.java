@@ -66,7 +66,7 @@ public class BatchToSpace extends DynamicCustomOp {
             addIArgument(crops[e][0], crops[e][1]);
     }
 
-    public BatchToSpace(@NonNull INDArray x,@NonNull int[] blocks, int[] croppingTop, int[] croppingBottom) {
+    public BatchToSpace(@NonNull INDArray x, @NonNull int[] blocks, @NonNull int[] croppingTop, @NonNull int[] croppingBottom) {
         super(null,x,null,null,null);
         this.blocks = blocks;
         this.crops = new int[][]{croppingTop,croppingBottom};

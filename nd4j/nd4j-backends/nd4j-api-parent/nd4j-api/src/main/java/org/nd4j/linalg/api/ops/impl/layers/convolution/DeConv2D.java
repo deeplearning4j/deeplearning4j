@@ -81,10 +81,6 @@ public class DeConv2D extends DynamicCustomOp {
         this(new INDArray[]{layerInput, weights, bias}, null, deConv2DConfig);
     }
 
-    public DeConv2D(@NonNull INDArray inputs,@NonNull DeConv2DConfig deConv2DConfig) {
-        this(new INDArray[]{inputs},null, deConv2DConfig);
-    }
-
 
     @Override
     public long[] iArgs() {

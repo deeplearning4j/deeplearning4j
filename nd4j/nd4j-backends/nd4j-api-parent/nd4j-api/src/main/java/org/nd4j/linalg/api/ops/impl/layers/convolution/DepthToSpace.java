@@ -60,7 +60,7 @@ public class DepthToSpace extends DynamicCustomOp {
         addIArgument(blockSize, isNHWC ? 1 : 0);
     }
 
-    public DepthToSpace(@NonNull INDArray in, INDArray out,@NonNull int blockSize,@NonNull String dataFormat) {
+    public DepthToSpace(@NonNull INDArray in, INDArray out, int blockSize,@NonNull String dataFormat) {
         super(null, in, out, null, null);
         this.blockSize = blockSize;
         this.dataFormat = dataFormat;
@@ -68,8 +68,8 @@ public class DepthToSpace extends DynamicCustomOp {
         addIArgument(blockSize, isNHWC ? 1 : 0);
     }
 
-    public DepthToSpace(@NonNull INDArray x, @NonNull int blockSize, @NonNull DataFormat dataFormat) {
-        this(x, null, blockSize,dataFormat.NHWC.toString());
+    public DepthToSpace(@NonNull INDArray x, int blockSize, @NonNull DataFormat dataFormat) {
+        this(x, null, blockSize,dataFormat.toString());
     }
 
 

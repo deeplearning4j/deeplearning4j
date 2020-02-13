@@ -54,22 +54,22 @@ public class DeConv3D extends DynamicCustomOp {
         addArgs();
     }
 
-    public DeConv3D(@NonNull INDArray[] inputs, INDArray[] outputs,@NonNull DeConv3DConfig config){
+    public DeConv3D(@NonNull INDArray[] inputs, INDArray[] outputs, @NonNull DeConv3DConfig config) {
         super(inputs, outputs);
 
         this.config = config;
         addArgs();
     }
 
-    public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights,@NonNull INDArray bias, INDArray output, @NonNull DeConv3DConfig config){
+    public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights, @NonNull INDArray bias, INDArray output, @NonNull DeConv3DConfig config) {
         this(new INDArray[]{input, weights, bias}, wrapOrNull(output), config);
     }
 
-    public DeConv3D(@NonNull INDArray input,@NonNull INDArray weights,@NonNull DeConv3DConfig deConv3DConfig) {
+    public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights, @NonNull DeConv3DConfig deConv3DConfig) {
         this(new INDArray[]{input, weights}, null, deConv3DConfig);
     }
 
-    public DeConv3D(@NonNull INDArray input,@NonNull INDArray weights,@NonNull INDArray bias,@NonNull DeConv3DConfig deConv3DConfig) {
+    public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights, @NonNull INDArray bias, @NonNull DeConv3DConfig deConv3DConfig) {
         this(new INDArray[]{input, weights, bias}, null, deConv3DConfig);
     }
 

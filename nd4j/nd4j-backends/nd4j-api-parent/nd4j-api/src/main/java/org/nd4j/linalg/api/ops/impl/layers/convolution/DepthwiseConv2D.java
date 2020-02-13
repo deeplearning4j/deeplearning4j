@@ -73,18 +73,16 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         addArgs();
     }
 
-    public DepthwiseConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config){
-        this(new INDArray[] {input, weights, bias}, wrapOrNull(output), config);
+    public DepthwiseConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config) {
+        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-
-
-    public DepthwiseConv2D(@NonNull INDArray layerInput,@NonNull INDArray depthWeights,@NonNull Conv2DConfig conv2DConfig) {
-        this(new INDArray[] {layerInput, depthWeights}, null, conv2DConfig);
+    public DepthwiseConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights, @NonNull Conv2DConfig conv2DConfig) {
+        this(new INDArray[]{layerInput, depthWeights}, null, conv2DConfig);
     }
 
-    public DepthwiseConv2D(@NonNull INDArray layerInput,@NonNull INDArray depthWeights, INDArray bias,@NonNull Conv2DConfig conv2DConfig) {
-        this(new INDArray[] {layerInput, depthWeights, bias}, null, conv2DConfig);
+    public DepthwiseConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights, INDArray bias, @NonNull Conv2DConfig conv2DConfig) {
+        this(wrapFilterNull(layerInput, depthWeights, bias), null, conv2DConfig);
     }
 
 

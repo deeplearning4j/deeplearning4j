@@ -58,10 +58,6 @@ public class SConv2D extends Conv2D {
 
     public SConv2D() {}
 
-    public SConv2D(@NonNull INDArray inputs,@NonNull Conv2DConfig conv2DConfig) {
-        super(inputs, conv2DConfig);
-    }
-
 
 
     @Override

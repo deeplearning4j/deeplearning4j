@@ -24,8 +24,8 @@ public class SRUWeights extends RNNWeights {
      */
     @NonNull
     private SDVariable weights;
-    @NonNull
 
+    @NonNull
     private  INDArray ndarrayWeights;
 
     /**
@@ -33,8 +33,8 @@ public class SRUWeights extends RNNWeights {
      */
     @NonNull
     private SDVariable bias;
-    @NonNull
 
+    @NonNull
     private  INDArray ndarrayBias;
 
 

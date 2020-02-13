@@ -65,10 +65,10 @@ public class LocalResponseNormalization extends DynamicCustomOp {
         addArgs();
     }
 
-    public LocalResponseNormalization(@NonNull INDArray input, @NonNull LocalResponseNormalizationConfig LocalResponseNormalizationConfig){
+    public LocalResponseNormalization(@NonNull INDArray input, @NonNull LocalResponseNormalizationConfig config){
         super(new INDArray[]{input}, null);
 
-        this.config = LocalResponseNormalizationConfig;
+        this.config = config;
         addArgs();
     }
 
