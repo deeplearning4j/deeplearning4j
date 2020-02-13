@@ -200,7 +200,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul.class,
             org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp.class,
             org.nd4j.linalg.api.ops.impl.reduce.floating.AMean.class,
-            org.nd4j.linalg.api.ops.impl.reduce.floating.Bias.class,
             org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy.class,
             org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy.class,
             org.nd4j.linalg.api.ops.impl.reduce.floating.Mean.class,

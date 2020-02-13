@@ -303,7 +303,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testBatchToSpace() {
-        OpValidationSuite.ignoreFailing();          //TODO: https://github.com/deeplearning4j/deeplearning4j/issues/6863
+        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/deeplearning4j/deeplearning4j/issues/6863
         Nd4j.getRandom().setSeed(1337);
 
         int miniBatch = 4;
@@ -314,7 +314,6 @@ public class TransformOpValidation extends BaseOpValidation {
         int[] cropShape = new int[]{M, 2};
 
         INDArray input = Nd4j.randn(inputShape).castTo(DataType.DOUBLE);
-        INDArray blocks = Nd4j.create(new float[]{2, 2}, blockShape).castTo(DataType.INT);
         INDArray crops = Nd4j.create(new float[]{0, 0, 0, 0}, cropShape).castTo(DataType.INT);
 
         SameDiff sd = SameDiff.create();
@@ -323,7 +322,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
         INDArray expOut = Nd4j.create(DataType.DOUBLE, 1, 2, 2, 1);
         DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space")
-                .addInputs(input, blocks, crops)
+                .addInputs(input, crops)
+                .addIntegerArguments(2)
                 .addOutputs(expOut).build();
         Nd4j.getExecutioner().exec(op);
 
@@ -340,7 +340,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testSpaceToBatch() {
-        OpValidationSuite.ignoreFailing();          //TODO: https://github.com/deeplearning4j/deeplearning4j/issues/6863
+        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/deeplearning4j/deeplearning4j/issues/6863
 
         Nd4j.getRandom().setSeed(7331);
 
@@ -352,7 +352,6 @@ public class TransformOpValidation extends BaseOpValidation {
         int[] paddingShape = new int[]{M, 2};
 
         INDArray input = Nd4j.randn(inputShape).castTo(DataType.DOUBLE);
-        INDArray blocks = Nd4j.create(new float[]{2, 2}, blockShape).castTo(DataType.INT);
         INDArray padding = Nd4j.create(new float[]{0, 0, 0, 0}, paddingShape).castTo(DataType.INT);
 
         SameDiff sd = SameDiff.create();
@@ -361,7 +360,8 @@ public class TransformOpValidation extends BaseOpValidation {
 
         INDArray expOut = Nd4j.create(DataType.DOUBLE, miniBatch, 1, 1, 1);
         DynamicCustomOp op = DynamicCustomOp.builder("space_to_batch")
-                .addInputs(input, blocks, padding)
+                .addIntegerArguments(2)
+                .addInputs(input, padding)
                 .addOutputs(expOut).build();
         Nd4j.getExecutioner().exec(op);
 

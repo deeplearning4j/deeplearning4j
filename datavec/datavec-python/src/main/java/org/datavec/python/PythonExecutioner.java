@@ -226,7 +226,7 @@ public class PythonExecutioner {
 
     private static void throwIfExecutionFailed() throws PythonException{
         PythonObject ex = getVariable(PYTHON_EXCEPTION_KEY);
-        if (ex != null && !ex.toString().isEmpty()){
+        if (ex != null && !ex.isNone() && !ex.toString().isEmpty()) {
             setVariable(PYTHON_EXCEPTION_KEY, new PythonObject(""));
             throw new PythonException(ex);
         }

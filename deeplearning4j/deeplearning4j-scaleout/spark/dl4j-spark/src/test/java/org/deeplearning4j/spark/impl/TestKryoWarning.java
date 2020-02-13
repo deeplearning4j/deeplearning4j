@@ -72,8 +72,9 @@ public class TestKryoWarning {
     @Ignore
     public void testKryoMessageMLNIncorrectConfig() {
         //Should print warning message
-        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest").set("spark.serializer",
-                        "org.apache.spark.serializer.KryoSerializer");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
+                .set("spark.driver.host", "localhost")
+                .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
 
         doTestMLN(sparkConf);
     }
@@ -83,6 +84,7 @@ public class TestKryoWarning {
     public void testKryoMessageMLNCorrectConfigKryo() {
         //Should NOT print warning message
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
+                        .set("spark.driver.host", "localhost")
                         .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                         .set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
 
@@ -93,7 +95,9 @@ public class TestKryoWarning {
     @Ignore
     public void testKryoMessageMLNCorrectConfigNoKryo() {
         //Should NOT print warning message
-        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]")
+                .set("spark.driver.host", "localhost")
+                .setAppName("sparktest");
 
         doTestMLN(sparkConf);
     }
@@ -104,8 +108,9 @@ public class TestKryoWarning {
     @Ignore
     public void testKryoMessageCGIncorrectConfig() {
         //Should print warning message
-        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest").set("spark.serializer",
-                        "org.apache.spark.serializer.KryoSerializer");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
+                .set("spark.driver.host", "localhost")
+                .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
 
         doTestCG(sparkConf);
     }
@@ -115,6 +120,7 @@ public class TestKryoWarning {
     public void testKryoMessageCGCorrectConfigKryo() {
         //Should NOT print warning message
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
+                        .set("spark.driver.host", "localhost")
                         .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
                         .set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
 
@@ -125,7 +131,9 @@ public class TestKryoWarning {
     @Ignore
     public void testKryoMessageCGCorrectConfigNoKryo() {
         //Should NOT print warning message
-        SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[*]")
+                .set("spark.driver.host", "localhost")
+                .setAppName("sparktest");
 
         doTestCG(sparkConf);
     }

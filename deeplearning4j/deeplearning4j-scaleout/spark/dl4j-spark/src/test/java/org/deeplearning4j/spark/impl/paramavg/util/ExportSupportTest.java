@@ -58,7 +58,7 @@ public class ExportSupportTest {
     }
 
     private void assertSupported(SparkConf conf) throws IOException {
-        JavaSparkContext sc = new JavaSparkContext(conf.setAppName("Test"));
+        JavaSparkContext sc = new JavaSparkContext(conf.setAppName("Test").set("spark.driver.host", "localhost"));
         try {
             assertTrue(ExportSupport.exportSupported(sc));
         } finally {

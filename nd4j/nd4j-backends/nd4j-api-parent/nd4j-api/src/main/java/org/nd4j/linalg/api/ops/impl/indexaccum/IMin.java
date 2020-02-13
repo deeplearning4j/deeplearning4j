@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
+import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -30,6 +31,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Data
 public class IMin extends BaseIndexAccumulation {
     public IMin(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);

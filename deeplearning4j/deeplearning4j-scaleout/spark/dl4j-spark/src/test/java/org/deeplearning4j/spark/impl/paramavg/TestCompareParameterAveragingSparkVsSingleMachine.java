@@ -138,6 +138,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
         SparkConf sparkConf = new SparkConf();
         sparkConf.setMaster("local[" + nWorkers + "]");
         sparkConf.setAppName("Test");
+        sparkConf.set("spark.driver.host", "localhost");
 
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
         return sc;

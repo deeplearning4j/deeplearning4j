@@ -532,3 +532,24 @@ TEST_F(DeclarableOpsTests14, repeat_5) {
 
     delete result;
 }
+/////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Test_scalar_broadcast_SpecialCaseTest) {
+
+    auto y = NDArray('c', { 3 }, nd4j::DataType::FLOAT32);
+    auto x = NDArray('c', { 5, 2, 1 }, nd4j::DataType::FLOAT32);
+
+    auto e = NDArray('c', { 5, 2, 3 }, { 2., 2., 2., 3., 3., 3., 4., 4., 4., 5., 5., 5., 6., 6., 6., 7., 7., 7., 8., 8., 8., 9., 9., 9., 10., 10., 10., 11., 11., 11. }, nd4j::DataType::FLOAT32);
+    
+    y.assign(1.0);
+    x.linspace(1.0);
+
+    nd4j::ops::add op;
+    auto result = op.evaluate({ &x, &y });
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto res = *result->at(0);
+
+    ASSERT_EQ(e, res);
+
+    delete result;
+}

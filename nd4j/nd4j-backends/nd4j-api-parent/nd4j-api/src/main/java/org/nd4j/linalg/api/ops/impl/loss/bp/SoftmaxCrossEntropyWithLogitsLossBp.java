@@ -19,8 +19,10 @@ package org.nd4j.linalg.api.ops.impl.loss.bp;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -34,8 +36,8 @@ public class SoftmaxCrossEntropyWithLogitsLossBp extends DynamicCustomOp {
 
     protected int classesDim;
 
-    public SoftmaxCrossEntropyWithLogitsLossBp(SameDiff sameDiff, SDVariable logits, SDVariable weights, SDVariable labels, int classesDim) {
-        super(null, sameDiff, new SDVariable[]{logits, weights, labels}, false);
+    public SoftmaxCrossEntropyWithLogitsLossBp(SameDiff sameDiff, SDVariable logits, SDVariable labels, int classesDim) {
+        super(null, sameDiff, new SDVariable[]{logits, labels}, false);
         this.classesDim = classesDim;
         addIArgument(classesDim);
     }
@@ -48,5 +50,10 @@ public class SoftmaxCrossEntropyWithLogitsLossBp extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
         throw new UnsupportedOperationException("Differentiation of " + getClass().getName() + " not supported");
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        return Arrays.asList(arg(0).dataType(), arg(1).dataType());
     }
 }

@@ -318,8 +318,8 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
 
   "num2Scalar" should "convert number to Scalar INDArray" in {
 
-    assert(1.toScalar.data() == List(1).toNDArray.data())
-    assert(2f.toScalar.data() == List(2).toNDArray.data())
-    assert(3d.toScalar.data() == List(3).toNDArray.data())
+    assert(1.toScalar.reshape(1) == List(1).toNDArray)
+    assert(2f.toScalar.reshape(1) == List(2f).toNDArray)
+    assert(3d.toScalar.reshape(1) == List(3d).toNDArray)
   }
 }

@@ -32,6 +32,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.*;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
+import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.StopGradient;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
@@ -513,7 +516,7 @@ public class MiscOpValidation extends BaseOpValidation {
     @Test
     public void testTrace(){
         //TODO need to work out how to handle shape_op for scalars...
-        OpValidationSuite.ignoreFailing();
+        //OpValidationSuite.ignoreFailing();
         Nd4j.getRandom().setSeed(12345);
         for( int[] inShape : new int[][]{{3,3}}){
 
@@ -546,12 +549,15 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr2);
         SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
-        assertArrayEquals(ArrayUtil.getTensorMmulShape(new long[]{2, 2, 2}, new long[]{2, 2, 2}, new int[][]{{0}, {1}}), result.getShape());
-        assertEquals(32, sameDiff.numElements());
+        assertArrayEquals(ArrayUtil.getTensorMmulShape(new long[]{2, 2, 2}, new long[]{2, 2, 2}, new int[][]{{0}, {1}}),
+                result.eval().shape());
+        assertEquals(16, sameDiff.numElements());
 
         SDVariable loss = sameDiff.standardDeviation(result, true);
+        sameDiff.addLossVariable(loss);
 
         String err = OpValidation.validate(new TestCase(sameDiff));
+        assertNull(err);
     }
 
     @Test
@@ -1781,5 +1787,339 @@ public class MiscOpValidation extends BaseOpValidation {
 
         assertEquals(exp, out);         //Values in x not in y
         assertEquals(exp, outIdx);      //Indices of the values in x not in y
+    }
+
+    @Test
+    public void testDivideNoNan() {
+        OpValidationSuite.ignoreFailing();  //TODO: implement DivideNoNan.doDiff()
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+
+        INDArray expected = Nd4j.ones(3,4);
+
+        SDVariable output = new DivideNoNan(sameDiff, input1, input2).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testDigamma() {
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                -0.5772157,0.42278433,0.9227843,1.2561177,1.5061177,1.7061176,1.8727844,2.0156415,2.1406415,2.2517526,2.3517525,2.4426618
+        }).reshape(3,4);
+
+        val tc = new OpTestCase(new Digamma(in1)).expectedOutput(0, expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testFlatten() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1, 27, 1).reshape(3,3,3);
+        SDVariable sdx = sameDiff.var(x);
+
+        INDArray expected = Nd4j.linspace(DataType.DOUBLE,1,27,1);
+
+        SDVariable output = new Flatten(sameDiff, 'c', sdx).outputVariable();
+        SDVariable loss = sameDiff.standardDeviation(sdx, true);
+        sameDiff.addLossVariable(loss);
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testFusedBatchNorm() {
+        OpValidationSuite.ignoreFailing();
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray x = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 2*2*3*4).reshape(2,2,3,4);
+        INDArray scale = Nd4j.create(DataType.DOUBLE, 4);
+        scale.assign(0.5);
+        INDArray offset = Nd4j.create(DataType.DOUBLE, 4);
+        offset.assign(2.0);
+
+        SDVariable input1 = sameDiff.var(x);
+        SDVariable input2 = sameDiff.var(scale);
+        SDVariable input3 = sameDiff.var(offset);
+
+        INDArray expectedY = Nd4j.createFromArray(new double[]{
+                985.5258,  985.5258,  985.5258,  985.5258,
+                659.7321,  659.7321,  659.7321,  659.7321,
+                399.0972,  399.0972,  399.0972,  399.0972,
+                203.6210,  203.6210,  203.6210,  203.6210,
+                73.3036,   73.3036,   73.3036,   73.3036,
+                8.1448,    8.1448,    8.1448,    8.1448,
+                8.1448,    8.1448,    8.1448,    8.1448,
+                73.3036,   73.3036,   73.3036,   73.3036,
+                203.6210,  203.6210,  203.6210,  203.6210,
+                399.0972,  399.0972,  399.0972,  399.0972,
+                659.7321,  659.7321,  659.7321,  659.7321,
+                985.5258,  985.5258,  985.5258,  985.5258}).reshape(x.shape());
+        INDArray expectedBatchMean = Nd4j.createFromArray(new double[]{23.,  24.,  25.,  26.});
+        INDArray expectedBatchVar = Nd4j.createFromArray(new double[]{208.00001526,  208.00001526,  208.00001526,  208.00001526});
+
+        SDVariable[] outputs = new FusedBatchNorm(sameDiff, input1, input2, input3, 0, 1).outputVariables();
+        SDVariable loss = sameDiff.standardDeviation(input1, true);
+        sameDiff.addLossVariable(loss);
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(outputs[0].name(), expectedY)
+                .expectedOutput(outputs[1].name(), expectedBatchMean)
+                .expectedOutput(outputs[2].name(), expectedBatchVar);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testIgamma() {
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                0.63212055,0.59399414,0.5768099,0.56652874,0.5595013,0.5542634,0.5501591,0.5463888,0.54329145,0.54048204,0.5378594,0.53233755
+        }).reshape(3,4);
+
+        val tc = new OpTestCase(new Igamma(in1, in2)).expectedOutput(0, expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testIgammaC() {
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                0.36787945,0.40600586,0.42319012,0.43347126,0.4404987,0.44573656,0.4498409,0.45361117,0.45670855,0.459518,0.46214062,0.46766248
+        }).reshape(3,4);
+
+        val tc = new OpTestCase(new Igammac(in1, in2)).expectedOutput(0, expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testLgamma() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1, 12, 1).reshape(3, 4);
+        SDVariable sdInput = sameDiff.var(in);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                0.0,0.0,0.6931472,1.7917595,3.1780539,4.787492,6.5792513,8.525162,10.604603,12.801827,15.104413,17.502308
+        }).reshape(3,4);
+
+        SDVariable output = new Lgamma(sameDiff, sdInput).outputVariable();
+
+        SDVariable loss = sameDiff.standardDeviation(sdInput, true);
+        sameDiff.addLossVariable(loss);
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testLu() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.createFromArray(new double[]{
+                1., 2., 3., 0., 2., 3., 0., 0., 7.
+        }).reshape(3,3);
+
+        SDVariable input1 = sameDiff.var(in1);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                1., 2., 3., 0., 2., 3., 0., 0., 7
+        }).reshape(3,3);
+
+        INDArray pexpected = Nd4j.createFromArray(new int[]{
+                0, 1, 2
+        });
+
+        sameDiff.loss.l2Loss(input1);
+        SDVariable[] output = new Lu(sameDiff, input1).outputVariables();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output[0].name(), expected)
+                .expectedOutput(output[1].name(), pexpected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testMatrixBandPart() {
+        OpValidationSuite.ignoreFailing();
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray input = Nd4j.createFromArray(new float[]{0.7788f,0.8012f,0.7244f,0.2309f,
+                0.7271f,0.1804f,0.5056f,0.8925f,
+                0.5461f,0.9234f,0.0856f,0.7938f}).reshape(3,4);
+
+        SDVariable sdInput = sameDiff.var(input);
+        SDVariable sdInput1 = sameDiff.constant(1);
+        SDVariable sdInput2 = sameDiff.constant(-1);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                0.7788f,    0.8012f,    0.7244f,    0.2309f,
+                0.7271f,    0.1804f,    0.5056f,    0.8925f,
+                0.f,    0.9234f,    0.0856f,    0.7938f
+        }).reshape(3,4);
+
+        sameDiff.loss.l2Loss(sdInput);
+        SDVariable output = new MatrixBandPart(sameDiff, sdInput, 1, -1).outputVariable();
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testPolygamma() {
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+        INDArray in2 = Nd4j.linspace(1, 12, 12).reshape(3, 4);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                1.644934,-0.4041138,0.1189394,-0.03750069,0.01226151,-0.0041002957,0.001392272,-4.780109E-4,1.6549716E-4,-5.7675967E-5,2.0206635E-5,-7.1101636E-6
+        }).reshape(3,4);
+
+        val tc = new OpTestCase(new Polygamma(in1, in2)).expectedOutput(0, expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testTriangularSolve() {
+
+        INDArray a = Nd4j.createFromArray(new float[]{
+                3.f,  0.f,  0.f,  0.f,
+                2.f,  1.f,  0.f,  0.f,
+                1.f,  0.f,  1.f,  0.f,
+                1.f,  1.f,  1.f,  1.f
+        }).reshape(4,4);
+
+        INDArray b = Nd4j.createFromArray(new float[]{
+                4.f, 2.f, 4.f, 2.f
+        }).reshape(4,1);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{
+                1.333333f,  2.0f, 4.0f, 2.0f
+        }).reshape(4,1);
+
+        val tc = new OpTestCase(new TriangularSolve(a, b, false, true)).expectedOutput(0, expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testBiasAdd() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray in1 = Nd4j.linspace(1, 12, 12);
+        INDArray in2 = Nd4j.linspace(1, 12, 12);
+
+        SDVariable input1 = sameDiff.var(in1);
+        SDVariable input2 = sameDiff.var(in2);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{
+                2.0000,    4.0000,    6.0000,    8.0000,   10.0000,   12.0000,   14.0000,   16.0000,   18.0000,   20.0000,   22.0000,   24.0000
+        });
+
+        SDVariable output = new BiasAdd(sameDiff, input1, input2, false).outputVariable();
+        SDVariable loss = sameDiff.standardDeviation(input1, true);
+        sameDiff.addLossVariable(loss);
+        SDVariable loss2 = sameDiff.standardDeviation(input2, true);
+        sameDiff.addLossVariable(loss2);
+
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(output.name(), expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testBiasAddGrad() {
+
+        SameDiff sameDiff = SameDiff.create();
+
+        INDArray x = Nd4j.linspace(DataType.FLOAT,1, 24, 24).reshape(2,2,2,3);
+        INDArray grad = Nd4j.linspace(DataType.FLOAT, 0.1, 0.1, 24).reshape(2,2,2,3);
+
+        INDArray bias = Nd4j.createFromArray(new float[]{-1.f, -2.f, -3.f});
+
+        INDArray expected = Nd4j.createFromArray(new float[]{9.2f, 10.f , 10.8f});
+
+        OpTestCase tc = new OpTestCase(new BiasAddGrad(x, bias, grad,false)).
+                expectedOutput(0, grad).
+                expectedOutput(1, expected);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testRoll() {
+
+        INDArray x = Nd4j.createFromArray(new double[]{    11.11, 11.12, 11.21, 11.22, 11.31, 11.32, 11.41, 11.42,     12.11, 12.12, 12.21, 12.22, 12.31, 12.32, 12.41, 12.42,
+                21.11, 21.12, 21.21, 21.22, 21.31, 21.32, 21.41, 21.42,     22.11, 22.12, 22.21, 22.22, 22.31, 22.32, 22.41, 22.42}).
+                reshape(2,2,4,2);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{    22.21, 22.22, 22.31, 22.32, 22.41, 22.42, 11.11, 11.12, 11.21, 11.22, 11.31, 11.32, 11.41, 11.42,
+                12.11, 12.12, 12.21, 12.22, 12.31, 12.32, 12.41, 12.42, 21.11, 21.12, 21.21, 21.22, 21.31, 21.32,
+                21.41, 21.42, 22.11, 22.12
+        }).reshape(x.shape());
+
+        int shift = 6;
+
+        val tc = new OpTestCase(new Roll(x,shift)).expectedOutput(0,expected);
+        String err = OpValidation.validate(tc);
+
+        assertNull(err);
     }
 }

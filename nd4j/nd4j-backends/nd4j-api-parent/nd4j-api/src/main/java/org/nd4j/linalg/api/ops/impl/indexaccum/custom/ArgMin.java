@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.indexaccum.custom;
 
+import lombok.Data;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -34,6 +35,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
+@Data
 public class ArgMin extends DynamicCustomOp {
 
     protected DataType outputType = DataType.LONG;

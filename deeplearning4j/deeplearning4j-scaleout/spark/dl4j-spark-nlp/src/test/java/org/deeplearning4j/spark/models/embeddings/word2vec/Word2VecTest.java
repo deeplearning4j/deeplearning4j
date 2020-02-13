@@ -56,7 +56,9 @@ public class Word2VecTest {
     @Test
     public void testConcepts() throws Exception {
         // These are all default values for word2vec
-        SparkConf sparkConf = new SparkConf().setMaster("local[8]").setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[8]")
+                .set("spark.driver.host", "localhost")
+                .setAppName("sparktest");
 
         // Set SparkContext
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
@@ -156,6 +158,7 @@ public class Word2VecTest {
     @Test
     public void testSparkW2VonBiggerCorpus() throws Exception {
         SparkConf sparkConf = new SparkConf().setMaster("local[8]").setAppName("sparktest")
+                .set("spark.driver.host", "localhost")
                         .set("spark.driver.maxResultSize", "4g").set("spark.driver.memory", "8g")
                         .set("spark.executor.memory", "8g");
 
