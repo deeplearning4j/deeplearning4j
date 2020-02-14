@@ -666,6 +666,26 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
         return result;
     }
 
+    std::string ShapeUtils::shapeInfoAsString(const Nd4jLong* shapeInfo) {
+
+        if(!shapeInfo)
+            throw std::runtime_error("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
+
+        std::string result;
+
+        int len = shape::shapeInfoLength(shapeInfo[0]);
+
+        result.append("[");
+        for (int e = 0; e < len; e++) {
+            result += flatbuffers::NumToString(shapeInfo[e]);
+            if (e < len - 1)
+                result.append(", ");
+        }
+        result.append("]");
+
+        return result;
+    }
+
 
     std::string ShapeUtils::shapeAsString(const int rank, const Nd4jLong* shapeInfo) {
         if(!shapeInfo)

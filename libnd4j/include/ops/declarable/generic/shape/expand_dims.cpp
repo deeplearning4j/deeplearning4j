@@ -47,11 +47,12 @@ namespace nd4j {
 
             shape.insert(shape.begin() + axis, 1);
 
-            auto tmp = input->reshape(input->ordering(), shape);
-            output->assign(tmp);
-
-            STORE_RESULT(output);
-
+            if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
+                output->dataBuffer()->copyBufferFrom(*input->dataBuffer().get(), output->lengthOf() * DataTypeUtils::sizeOfElement(output->dataType()), 0, input->bufferOffset());
+            } else {
+                auto tmp = input->reshape(input->ordering(), shape);
+                output->assign(tmp);
+            }
             return Status::OK();
         }
 

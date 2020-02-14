@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(squeeze, 1, 1, true, 0, -2) {
+        CUSTOM_OP_IMPL(squeeze, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
@@ -73,8 +73,12 @@ namespace nd4j {
             if (block.isInplace()) {
                 output->reshapei(input->ordering(), shape, false);
             } else {
-                auto tmp = input->reshape(input->ordering(), shape);
-                output->assign(tmp);
+                if (input->ews() == 1 && output->ews() == 1 && input->ordering() == output->ordering()) {
+                    output->dataBuffer()->copyBufferFrom(*input->dataBuffer().get(), output->lengthOf() * DataTypeUtils::sizeOfElement(output->dataType()), 0, input->bufferOffset());
+                } else {
+                    auto tmp = input->reshape(input->ordering(), shape);
+                    output->assign(tmp);
+                }
             }
 
             return Status::OK();
