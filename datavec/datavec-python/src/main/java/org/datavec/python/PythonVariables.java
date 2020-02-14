@@ -314,7 +314,7 @@ public class PythonVariables implements java.io.Serializable {
      * @param name  the field to add
      * @param value the value to add
      */
-    public void addNDArray(String name, org.nd4j.linalg.api.ndarray.INDArray value) {
+    public void addNDArray(String name, INDArray value) {
         vars.put(name, PythonType.TypeName.NDARRAY);
         ndVars.put(name, value);
     }

@@ -27,7 +27,6 @@ import org.json.JSONObject;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.nativeblas.NativeOpsHolder;
-
 import java.util.*;
 
 import static org.bytedeco.cpython.global.python.*;
@@ -87,20 +86,23 @@ public class PythonObject {
             case FLOAT:
                 numpyType = NPY_FLOAT;
                 break;
-            case UINT64:
-                numpyType = NPY_LONG;
+            case SHORT:
+                numpyType = NPY_SHORT;
                 break;
             case INT:
                 numpyType = NPY_INT;
                 break;
-            case SHORT:
-                numpyType = NPY_SHORT;
+            case LONG:
+                numpyType = NPY_INT64;
                 break;
             case UINT16:
                 numpyType = NPY_USHORT;
                 break;
             case UINT32:
                 numpyType = NPY_UINT;
+                break;
+            case UINT64:
+                numpyType = NPY_UINT64;
                 break;
             case BOOL:
                 numpyType = NPY_BOOL;
