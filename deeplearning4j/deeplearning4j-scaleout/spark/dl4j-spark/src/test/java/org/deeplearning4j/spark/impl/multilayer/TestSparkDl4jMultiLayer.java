@@ -31,8 +31,11 @@ import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -45,8 +48,24 @@ import static org.junit.Assert.assertTrue;
 @Slf4j
 public class TestSparkDl4jMultiLayer extends BaseSparkTest {
 
-    @Test(timeout = 120000L)
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
+    @Override
+    public DataType getDataType() {
+        return DataType.FLOAT;
+    }
+
+    @Override
+    public DataType getDefaultFPDataType() {
+        return DataType.FLOAT;
+    }
+
+    @Test
     public void testEvaluationSimple() throws Exception {
+        Nd4j.getRandom().setSeed(12345);
 
         for( int evalWorkers : new int[]{1, 4, 8}) {
             //Simple test to validate DL4J issue 4099 is fixed...
@@ -75,18 +94,18 @@ public class TestSparkDl4jMultiLayer extends BaseSparkTest {
             //----------------------------------
             //Create network configuration and conduct network training
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.FLOAT)
                     .seed(12345)
                     .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                     .activation(Activation.LEAKYRELU)
                     .weightInit(WeightInit.XAVIER)
-                    .updater(new Nesterovs(0.02, 0.9))
-                    .l2(1e-4)
+                    .updater(new Adam(1e-3))
+                    .l2(1e-5)
                     .list()
                     .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(500).build())
                     .layer(1, new DenseLayer.Builder().nIn(500).nOut(100).build())
                     .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                             .activation(Activation.SOFTMAX).nIn(100).nOut(10).build())
-
                     .build();
 
             //Configuration for Spark training: see https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-howto for explanation of these configuration options
