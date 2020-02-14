@@ -50,3 +50,14 @@ TEST_F(DeclarableOpsTests18, test_bitcast_1) {
 
     ASSERT_EQ(e, z);
 }
+
+TEST_F(DeclarableOpsTests18, test_tanh_1) {
+    auto x = NDArrayFactory::create<float>('c', {8}, {0.23f, -0.23f, 0.35f, -0.35f, 0.64f, -0.64f, 100000.f, -100000.f});
+    auto z = x.ulike();
+    auto e = NDArrayFactory::create<float>('c', {8}, {0.226028f, -0.226028f, 0.336376f, -0.336376f, 0.564900f, -0.564900f, 1.f, -1.f});
+
+    nd4j::ops::tanh op;
+    op.execute({&x}, {&z});
+
+    ASSERT_EQ(e, z);
+}

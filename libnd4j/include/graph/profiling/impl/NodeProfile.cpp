@@ -117,11 +117,11 @@ namespace nd4j {
         }
 
         void NodeProfile::addInputShape(Nd4jLong *shapeInfo) {
-            _inputShapes.emplace_back(ShapeUtils::shapeAsString(shapeInfo));
+            _inputShapes.emplace_back(ShapeUtils::shapeInfoAsString(shapeInfo));
         }
 
         void NodeProfile::addOutputShape(Nd4jLong *shapeInfo) {
-            _outputShapes.emplace_back(ShapeUtils::shapeAsString(shapeInfo));
+            _outputShapes.emplace_back(ShapeUtils::shapeInfoAsString(shapeInfo));
         }
 
         void NodeProfile::merge(NodeProfile *other) {
