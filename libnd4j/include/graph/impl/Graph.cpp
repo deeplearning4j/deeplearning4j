@@ -1088,7 +1088,22 @@ namespace nd4j {
                 if (e < node->input()->size() - 1)
                     nd4j_printf(", ", "");
             }
+
+            if (node->opType() == OpType_CUSTOM) {
+                auto ctx = node->protoContext();
+                if (ctx->getIArguments()->size() > 0) {
+                    printf("]; iArgs: [");
+
+                    for (int e = 0; e < ctx->getIArguments()->size(); e++) {
+                        printf("%i", ctx->getIArguments()->at(e));
+                        if (e < ctx->getIArguments()->size() - 1)
+                            nd4j_printf(", ", "");
+                    }
+                }
+            }
+
             nd4j_printf("]; \n", "");
+
 
 //            printf("\n");
             fflush(stdout);

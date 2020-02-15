@@ -170,6 +170,53 @@ TEST_F(PlaygroundTests, test_broadcast_1) {
 */
 
 /*
+TEST_F(PlaygroundTests, test_broadcast_1) {
+    int pool = 500;
+    std::vector<NDArray*> aX(pool);
+    std::vector<NDArray*> aY(pool);
+    std::vector<NDArray*> aZ(pool);
+
+    for (int e = 0; e < pool; e++) {
+        aX[e] = NDArrayFactory::create_<float>('c', {512, 3072});
+        aY[e] = NDArrayFactory::create_<float>('c', {768});
+        aZ[e] = NDArrayFactory::create_<float>('c', {512, 3072});
+
+        aX[e]->assign( (e+1) / 119);
+        aY[e]->assign( (e+3) / 119);
+    }
+
+
+
+    std::vector<Nd4jLong> values;
+
+    for (int e = 0; e < 1000; e++) {
+        auto x = aX[e < pool ? e : e % pool];
+        auto y = aY[e < pool ? e : e % pool];
+        auto z = aZ[e < pool ? e : e % pool];
+
+        auto timeStart = std::chrono::system_clock::now();
+
+        //x->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), *y, *z);
+        x->applyTransform(transform::Tanh, *z, nullptr);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+
+    for (int e = 0; e < pool; e++) {
+        delete aX[e];
+        delete aY[e];
+        delete aZ[e];
+    }
+}
+
+*/
+/*
 
 TEST_F(PlaygroundTests, test_s_0) {
     std::vector<std::vector<Nd4jLong>> shapes = {{32, 224, 224, 3}, {32, 56, 56, 64}, {32, 7, 7, 512}};
