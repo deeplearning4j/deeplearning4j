@@ -127,7 +127,7 @@ public class PythonObject {
         long[] shape = indArray.shape();
         nativePythonObject = PyArray_New(PyArray_Type(), shape.length, new SizeTPointer(shape),
                 numpyType, null,
-                (dataType == DataType.BFLOAT16 ? Nd4j.create(indArray.data().asFloat(), shape, DataType.FLOAT) : indArray)
+                (dataType == DataType.BFLOAT16 ? indArray.castTo(DataType.FLOAT) : indArray)
                         .data().addressPointer(),
                 0, NPY_ARRAY_CARRAY, null);
     }

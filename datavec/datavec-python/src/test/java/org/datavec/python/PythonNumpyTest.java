@@ -52,8 +52,9 @@ public class PythonNumpyTest {
         pythonJob.exec(inputs, outputs);
 
         INDArray output = outputs.getNDArrayValue("y");
+
         // As numpy doesn't support BFLOAT16 we'll convert it to FLOAT
-        assertEquals(dataType == DataType.BFLOAT16 ? Nd4j.create(input.data().asFloat(), input.shape(), DataType.FLOAT) : input,
+        assertEquals(dataType == DataType.BFLOAT16 ? input.castTo(DataType.FLOAT) : input,
                 output);
     }
 }
