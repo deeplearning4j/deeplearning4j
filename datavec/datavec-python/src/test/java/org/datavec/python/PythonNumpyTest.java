@@ -7,10 +7,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import javax.xml.crypto.Data;
-
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertArrayEquals;
 
 @RunWith(Parameterized.class)
 public class PythonNumpyTest {
@@ -50,7 +47,7 @@ public class PythonNumpyTest {
         PythonVariables outputs = new PythonVariables();
         outputs.addNDArray("y");
 
-        PythonJob pythonJob = new PythonJob("job_" + dataType.name(), "y = x", false);
+        PythonJob pythonJob = new PythonJob(String.format("job_%s", dataType.name()) + dataType.name(), "y = x", false);
 
         pythonJob.exec(inputs, outputs);
 
