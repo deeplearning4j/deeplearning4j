@@ -26,6 +26,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.*;
 
@@ -78,12 +79,15 @@ public class PythonObject {
 
     public PythonObject(NumpyArray npArray) {
         int numpyType;
+        INDArray indArray = npArray.getNd4jArray();
+        DataType dataType = indArray.dataType();
 
-        switch (npArray.getDtype()) {
+        switch (dataType) {
             case DOUBLE:
                 numpyType = NPY_DOUBLE;
                 break;
             case FLOAT:
+            case BFLOAT16:
                 numpyType = NPY_FLOAT;
                 break;
             case SHORT:
@@ -120,9 +124,12 @@ public class PythonObject {
                 throw new RuntimeException("Unsupported dtype: " + npArray.getDtype());
         }
 
-        long[] shape = npArray.getShape();
+        long[] shape = indArray.shape();
         nativePythonObject = PyArray_New(PyArray_Type(), shape.length, new SizeTPointer(shape),
-                numpyType, null, npArray.getNd4jArray().data().addressPointer(), 0, NPY_ARRAY_CARRAY, null);
+                numpyType, null,
+                (dataType == DataType.BFLOAT16 ? Nd4j.create(indArray.data().asFloat(), shape, DataType.FLOAT) : indArray)
+                        .data().addressPointer(),
+                0, NPY_ARRAY_CARRAY, null);
     }
 
     /*---primitve constructors---*/
