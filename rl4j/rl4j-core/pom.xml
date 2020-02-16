@@ -102,6 +102,13 @@
             <artifactId>gson</artifactId>
             <version>${gson.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-api</artifactId>
+            <version>${datavec.version}</version>
+        </dependency>
+
     </dependencies>
 
     <profiles>

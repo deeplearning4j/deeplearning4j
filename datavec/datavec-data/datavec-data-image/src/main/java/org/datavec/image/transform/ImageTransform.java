@@ -16,6 +16,7 @@
 
 package org.datavec.image.transform;
 
+import org.datavec.api.transform.Operation;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -29,15 +30,7 @@ import java.util.Random;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public interface ImageTransform {
-
-    /**
-     * Takes an image and returns a transformed image.
-     *
-     * @param image to transform, null == end of stream
-     * @return      transformed image
-     */
-    ImageWritable transform(ImageWritable image);
+public interface ImageTransform extends Operation<ImageWritable, ImageWritable>  {
 
     /**
      * Takes an image and returns a transformed image.
