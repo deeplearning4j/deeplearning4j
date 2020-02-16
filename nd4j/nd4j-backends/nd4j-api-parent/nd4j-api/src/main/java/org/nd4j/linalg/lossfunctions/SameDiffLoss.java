@@ -7,6 +7,8 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+
+import java.util.Collections;
 import java.util.Map;
 
 
@@ -30,7 +32,7 @@ public abstract class SameDiffLoss implements ILossFunction {
 
     /**
      * Compute the score (loss function value) for the given inputs.
-     *  @param labels       Label/expected preOutput
+     * @param labels       Label/expected preOutput
      * @param preOutput    Output of the model (neural network)
      * @param activationFn Activation function that should be applied to preOutput
      * @param mask         Mask array; may be null
@@ -68,12 +70,13 @@ public abstract class SameDiffLoss implements ILossFunction {
      */
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask){
 
-        Preconditions.checkArgument((labels.size(1) != preOutput.size(1)),"\"Labels array numColumns (size(1) = \" + labels.size(1) + \") does not match output layer\"\n" +
-                "                            + \" number of outputs (nOut = \" + preOutput.size(1) + \") \"");
+        Preconditions.checkArgument((labels.size(1) != preOutput.size(1)),"Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer\n" +
+                "number of outputs (nOut = " + preOutput.size(1) + ")");
 
 
         INDArray scoreArr;
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
+        sd.var("out",output);
         scoreArr = output.rsubi(labels).divi(labels);
         scoreArr.muli(100.0 / labels.size(1));
 
@@ -101,9 +104,7 @@ public abstract class SameDiffLoss implements ILossFunction {
 
 
 
-        SDVariable label = sd.var("label", labels.dup());
-        SDVariable output = sd.var("out", activationFn.getActivation(preOutput.dup(), true));
-        Map<String,INDArray> grads = sd.calculateGradients(null, "out");
+        Map<String,INDArray> grads = sd.calculateGradients(Collections.singletonMap("out", activationFn.getActivation(preOutput.dup(), true)));
 
         if (mask != null) {
             LossUtil.applyMask(grads.get("out"), mask);
