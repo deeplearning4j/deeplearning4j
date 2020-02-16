@@ -18,6 +18,7 @@
 package org.datavec.python;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.cpython.PyObject;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
@@ -26,8 +27,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
+
 import java.util.*;
 
 import static org.bytedeco.cpython.global.python.*;
@@ -39,6 +40,7 @@ import static org.bytedeco.numpy.global.numpy.*;
  * @author Fariz Rahman
  */
 
+@Slf4j
 public class PythonObject {
     private PyObject nativePythonObject;
 
@@ -125,10 +127,16 @@ public class PythonObject {
         }
 
         long[] shape = indArray.shape();
+        INDArray inputArray = indArray;
+        if(dataType == DataType.BFLOAT16) {
+            log.warn("\n\nThe given nd4j array \n\n{}\n\n is of BFLOAT16 datatype. " +
+                    "Casting a copy of it to FLOAT and creating the respective numpy array from it.\n", indArray);
+            inputArray = indArray.castTo(DataType.FLOAT);
+        }
+
         nativePythonObject = PyArray_New(PyArray_Type(), shape.length, new SizeTPointer(shape),
                 numpyType, null,
-                (dataType == DataType.BFLOAT16 ? indArray.castTo(DataType.FLOAT) : indArray)
-                        .data().addressPointer(),
+                inputArray.data().addressPointer(),
                 0, NPY_ARRAY_CARRAY, null);
     }
 
