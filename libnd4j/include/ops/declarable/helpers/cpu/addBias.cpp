@@ -374,6 +374,28 @@ namespace nd4j {
 
 			template <typename X, typename Y>
 			static void addBias_(const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
+			   /*
+			    if (input.rankOf() == 2 && bias.rankOf() == 1 && input.sizeAt(1) == bias.sizeAt(0) && input.ordering() == 'c') {
+			        int rows = input.sizeAt(0);
+			        int biasLen = bias.lengthOf();
+
+                    auto inB = input.bufferAsT<X>();
+                    auto bB = bias.bufferAsT<Y>();
+                    auto outB = output.bufferAsT<X>();
+
+			        for (int e = 0; e < rows; e++) {
+			            auto row = inB + (e * biasLen);
+                        auto out = outB + (e * biasLen);
+
+			            for (int t = 0; t < biasLen; t++) {
+			                out[t] = row[t] + bB[t];
+			            }
+			        }
+
+                    return;
+			    }
+			    */
+
 				Nd4jLong* x_shapeInfo = input.getShapeInfo();
 				Nd4jLong* z_shapeInfo = output.getShapeInfo();
 				X* x = input.bufferAsT<X>();

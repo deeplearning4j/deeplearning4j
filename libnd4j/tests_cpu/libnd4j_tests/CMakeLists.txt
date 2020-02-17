@@ -273,7 +273,7 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
     ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
     ../../blas/Environment.cpp ../../blas/Environment.h ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
-    ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES} ../../include/loops/cpu/compilation_units/TrueBroadcastHelper_1.cpp)
+    ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 
 target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})
 

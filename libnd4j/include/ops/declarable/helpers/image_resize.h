@@ -50,9 +50,6 @@ namespace helpers {
 
     int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
             ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output);
-
-    void cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const* images, NDArray const* boxes,
-            NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
 }
 }
 }
