@@ -25,11 +25,11 @@
 namespace nd4j {
     namespace ops {
         LegacyPairwiseTransformOp::LegacyPairwiseTransformOp() : LegacyOp::LegacyOp(2) {
-            // just a no-op
+            this->getOpDescriptor()->allowInplace(true);
         }
 
         LegacyPairwiseTransformOp::LegacyPairwiseTransformOp(int opNum) : LegacyOp::LegacyOp(2, opNum) {
-            // just a no-op
+            this->getOpDescriptor()->allowInplace(true);
         }
 
         LegacyOp* LegacyPairwiseTransformOp::clone() {

@@ -20,6 +20,7 @@
 
 #include <helpers/logger.h>
 #include <graph/profiling/NodeProfile.h>
+#include <helpers/ShapeUtils.h>
 
 namespace nd4j {
     namespace graph {
@@ -35,9 +36,23 @@ namespace nd4j {
             nd4j_printf("      Memory: ACT: %lld; TMP: %lld; OBJ: %lld; TTL: %lld;\n", _memoryActivations / _merges, _memoryTemporary / _merges, _memoryObjects / _merges, _memoryTotal / _merges);
             nd4j_printf("      Time: PREP: %lld ns; EXEC: %lld ns; TTL: %lld ns;\n", _preparationTime / _merges, _executionTime / _merges, _totalTime / _merges);
             nd4j_printf("      PREP: INPUT: %lld ns; SHAPE: %lld ns; ARRAY: %lld ns;\n", _inputTime / _merges, _shapeTime / _merges, _arrayTime / _merges);
+
+            std::string inputs;
+            std::string outputs;
+
+            int cnt = 0;
+            for (const auto &v: _inputShapes)
+                inputs += v + "    ";
+
+            for (const auto &v: _outputShapes)
+                outputs += v + "    ";
+
+
+            nd4j_printf("      Inputs: %s\n", inputs.c_str());
+            nd4j_printf("      Outputs: %s\n", outputs.c_str());
         };
 
-        Nd4jLong NodeProfile::getActivationsSize() {
+        Nd4jLong NodeProfile::getActivationsSize() const {
             return _memoryActivations;
         }
 
@@ -53,15 +68,15 @@ namespace nd4j {
             _inputTime = time;
         }
 
-        Nd4jLong NodeProfile::getTemporarySize() {
+        Nd4jLong NodeProfile::getTemporarySize()  const{
             return _memoryTemporary;
         }
             
-        Nd4jLong NodeProfile::getObjectsSize() {
+        Nd4jLong NodeProfile::getObjectsSize()  const{
             return _memoryObjects;
         }
 
-        Nd4jLong NodeProfile::getTotalSize() {
+        Nd4jLong NodeProfile::getTotalSize()  const{
             return _memoryTotal;
         }
 
@@ -97,6 +112,18 @@ namespace nd4j {
             _memoryTotal = bytes;
         }
 
+        Nd4jLong NodeProfile::getExecutionTime() const {
+            return _executionTime;
+        }
+
+        void NodeProfile::addInputShape(Nd4jLong *shapeInfo) {
+            _inputShapes.emplace_back(ShapeUtils::shapeInfoAsString(shapeInfo));
+        }
+
+        void NodeProfile::addOutputShape(Nd4jLong *shapeInfo) {
+            _outputShapes.emplace_back(ShapeUtils::shapeInfoAsString(shapeInfo));
+        }
+
         void NodeProfile::merge(NodeProfile *other) {
             _merges += other->_merges;
             _memoryObjects += other->_memoryObjects;
@@ -110,6 +137,9 @@ namespace nd4j {
             _shapeTime += other->_shapeTime;
             _arrayTime += other->_arrayTime;
             _inputTime += other->_inputTime;
+
+            _inputShapes = other->_inputShapes;
+            _outputShapes = other->_outputShapes;
         }
 
         std::string& NodeProfile::name() {
@@ -129,6 +159,9 @@ namespace nd4j {
             _shapeTime = other->_shapeTime;
             _arrayTime = other->_arrayTime;
             _inputTime = other->_inputTime;
+
+            _inputShapes = other->_inputShapes;
+            _outputShapes = other->_outputShapes;
         }
     }
 }

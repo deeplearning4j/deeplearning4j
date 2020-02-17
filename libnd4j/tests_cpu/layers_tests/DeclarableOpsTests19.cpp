@@ -67,3 +67,13 @@ TEST_F(DeclarableOpsTests19, test_conv1d_bp_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests19, test_squeeze_1) {
+    auto x = NDArrayFactory::create<double>('c', {3, 4, 1});
+    auto e = NDArrayFactory::create<double>('c', {3, 4});
+    int axis = 2;
+
+    nd4j::ops::squeeze op;
+    auto status = op.execute({&x}, {&e}, {axis});
+    ASSERT_EQ(Status::OK(), status);
+}

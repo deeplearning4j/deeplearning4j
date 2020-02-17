@@ -127,6 +127,32 @@ namespace nd4j {
 		template<typename T, typename Z>
         math_def inline Z nd4j_erfc(T num);
 
+        math_def inline int32_t floatToRawIntBits(float d) {
+            union {
+                float f;
+                int32_t i;
+            } tmp;
+            tmp.f = d;
+            return tmp.i;
+        }
+
+        math_def inline float intBitsToFloat(int32_t i) {
+            union {
+                float f;
+                int32_t i;
+            } tmp;
+            tmp.i = i;
+            return tmp.f;
+        }
+
+        math_def inline float mulsignf(float x, float y) {
+            return intBitsToFloat(floatToRawIntBits(x) ^ (floatToRawIntBits(y) & (1 << 31)));
+        }
+
+        math_def inline float copysignfk(float x, float y) {
+            return intBitsToFloat((floatToRawIntBits(x) & ~(1 << 31)) ^ (floatToRawIntBits(y) & (1 << 31)));
+        }
+
 		template<typename T, typename Z>
         math_def inline Z nd4j_sigmoid(T val) {
 			return (Z) 1.0f / ((Z) 1.0f + nd4j_exp<T, Z>(-val));
@@ -660,6 +686,11 @@ namespace nd4j {
 		 * @param val2
 		 * @return
 		 */
+        template <>
+        math_def inline float nd4j_pow(float val, float val2) {
+            return p_pow<float>(val, val2);
+        }
+
 		template <typename X, typename Y, typename Z>
         math_def inline Z nd4j_pow(X val, Y val2) {
             return p_pow<Z>(static_cast<Z>(val), static_cast<Z>(val2));
@@ -767,10 +798,23 @@ namespace nd4j {
         }
 
 
+        math_def inline float neu_tanh(float val, float sign) {
+            float e(M_E);
+            float av = sign * val;
+            auto p = nd4j::math::nd4j_pow<float, float, float>(e, -av * 2.f);
+            return (1 - p) / (1 + p);
+        }
+
+        template <>
+        math_def inline float nd4j_tanh(float val) {
+            float sign = copysignfk(1.0f, val);
+            return sign * neu_tanh(val, sign);
+        }
+
+
 		template <typename X, typename Z>
 		math_def inline Z nd4j_tanh(X val) {
             return val <= 0 ? neg_tanh(val) : pos_tanh(val);
-            //return p_tanh<Z>(static_cast<Z>(val));
 		}
 
         template <typename X, typename Z>

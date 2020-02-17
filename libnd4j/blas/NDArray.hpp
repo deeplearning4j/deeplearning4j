@@ -42,7 +42,7 @@ ND4J_EXPORT std::u32string NDArray::e(const Nd4jLong i) const;
 ////////////////////////////////////////////////////////////////////////
 // copy constructor
 NDArray::NDArray(const NDArray& other) {
-    
+
     _context = other._context;
     _offset  = 0;
 
@@ -308,7 +308,7 @@ NDArray::NDArray(const std::u16string& u16string, nd4j::DataType dtype, nd4j::La
     if (!unicode::isStringValidU16(u16string.data(), u16string.data() + u16string.size())) {
         throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
     }
-    
+
     // one word that is why used 1
     Nd4jLong headerLength = ShapeUtils::stringBufferHeaderRequirements(1);
 
@@ -435,11 +435,11 @@ NDArray::NDArray(const std::string& str, nd4j::DataType dtype, nd4j::LaunchConte
     _offset = 0;
 
     setShapeInfo(ShapeDescriptor::scalarDescriptor(dtype));
-    
+
     memcpy(bufferAsT<int8_t>(), &offsets[0], 2 * sizeof(Nd4jLong));
-    
+
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
-    
+
     if (dtype == DataType::UTF8) {
         memcpy(data, str.data(), str.size());
     }
@@ -456,13 +456,13 @@ NDArray::NDArray(const std::string& str, nd4j::DataType dtype, nd4j::LaunchConte
 /////////////////////////////////////////////////////////////////////////
 // constructors for vector of  strings
 NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const char*>& string, const nd4j::DataType dataType, nd4j::LaunchContext* context) {
-    
+
     if (!DataTypeUtils::isS(dataType))
         throw std::invalid_argument("NDArray::NDArray: invalid DataType, only string dataTypes have to be used");
 
     if (shape::prodLong(shape.data(), shape.size()) != string.size())
         throw std::invalid_argument("NDArray::NDArray: Number of strings should match length of array");
-        
+
     for (const auto& str : string) {
         if (!unicode::isStringValidU8(str, str + std::char_traits<char>::length(str)) ) {
             throw std::invalid_argument("NDArray::NDArray: invalid character in input string");
@@ -497,7 +497,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
     setAttached(context->getWorkspace() != nullptr);
 
     memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
-    
+
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
 
     auto func = PRAGMA_THREADS_FOR{
@@ -631,9 +631,9 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u16s
     setAttached(context->getWorkspace() != nullptr);
 
     memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
-    
+
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
-    
+
     auto func = PRAGMA_THREADS_FOR{
         for (auto e = start; e < stop; e += increment) {
              auto cdata = data + offsets[e];
@@ -699,7 +699,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
 
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
 
-    
+
     auto func = PRAGMA_THREADS_FOR{
         for (auto e = start; e < stop; e += increment) {
              auto cdata = data + offsets[e];
@@ -715,7 +715,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
         }
     };
     samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
-    
+
     tickWriteHost();
     syncToDevice();
 }
@@ -764,8 +764,8 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u32s
 
     memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
 
-    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength); 
-    
+    auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
+
     auto func = PRAGMA_THREADS_FOR{
         for (auto e = start; e < stop; e += increment) {
             auto cdata = data + offsets[e];
@@ -781,7 +781,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u32s
         }
     };
     samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
-    
+
     tickWriteHost();
     syncToDevice();
 }
@@ -831,7 +831,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
     memcpy(bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
 
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
-    
+
     auto func = PRAGMA_THREADS_FOR{
         for (auto e = start; e < stop; e += increment) {
             auto cdata = data + offsets[e];
@@ -847,7 +847,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
         }
     };
     samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
-    
+
     tickWriteHost();
     syncToDevice();
 }
@@ -887,8 +887,8 @@ bool NDArray::isC() const {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isS() const {
-    return (dataType() == DataType::UTF8 || 
-            dataType() == DataType::UTF16 || 
+    return (dataType() == DataType::UTF8 ||
+            dataType() == DataType::UTF16 ||
             dataType() == DataType::UTF32);
 }
 
@@ -1197,8 +1197,8 @@ void NDArray::assign(const NDArray& other, bool allowParallelism) {
             throw std::runtime_error("NDArray::assign: lengths of arrays are mismatched");
         }
 
-        // memcpy is allowed only for same order && same ews (being equal to 1)
-        if (ordering() == other.ordering() && dataType() == other.dataType() && ews() == 1 && other.ews() == 1)
+        // memcpy is allowed only for same order c && same ews (being equal to 1)
+        if (ordering() == other.ordering() && ordering() == 'c' && dataType() == other.dataType() && ews() == 1 && other.ews() == 1)
             copyBuffersContinuouslyFrom(other, other.lengthOf() * other.sizeOfT());
         else {
             NDArray::prepareSpecialUse({this}, {&other});
@@ -1569,20 +1569,25 @@ Nd4jLong NDArray::tensorsAlongDimension(const std::vector<int>& dimensions) cons
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::printShapeInfo(const char * msg) const {
-    //shape::printShapeInfo(_shapeInfo);
-    if (msg == nullptr)
-        shape::printShapeInfoLinear(_shapeInfo);
-    else {
-        int rank = shape::rank(_shapeInfo);
-        int lim = shape::shapeInfoLength(rank);
-        printf("%s: [", msg);
-        for (int i = 0; i < shape::shapeInfoLength(rank); i++) {
-            printf("%lld", (long long) _shapeInfo[i]);
-            if (i < lim - 1)
-                printf(", ");
-        }
-        printf("]\n");
+
+    int rank = shape::rank(_shapeInfo);
+    int lim = shape::shapeInfoLength(rank);
+
+    if(msg != nullptr)
+        printf("shapeInfo %s: [", msg);
+    else
+        printf("shapeInfo: [");
+
+    printf("%i,  ", rank);
+    for (int i = 1; i < shape::shapeInfoLength(rank) - 3; i++){
+        if(i == rank + 1)
+            printf("  ");
+        printf("%lld,", _shapeInfo[i]);
     }
+    printf("  %lld,", shape::type(_shapeInfo));
+    printf("%lld,", shape::elementWiseStride(_shapeInfo));
+    printf("%lld]\n", (Nd4jLong)shape::order(_shapeInfo));
+
     fflush(stdout);
 }
 
@@ -1624,7 +1629,7 @@ void NDArray::printBuffer(const char* msg, Nd4jLong limit, const bool sync) cons
             if (e < limit - 1)
                 printf(", ");
         }
-    } 
+    }
     else if (this->isS()) {
         // todo do we need this print offsets
         /*
@@ -1773,7 +1778,7 @@ void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
             printf("%s\n", this->e<bool>(0)?"true":"false");
         }
         else if (this->isS()) {
-            // todo do we need this 
+            // todo do we need this
             // printf("\"%lld\"\n", this->getOffset(e));
             printf("\"%s\"\n", this->e<std::string>(0).c_str());
         }
@@ -1855,19 +1860,19 @@ void NDArray::updateStrides(const char order) {
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
-bool NDArray::reshapei(const char order, const std::initializer_list<Nd4jLong>& shape) {
+bool NDArray::reshapei(const char order, const std::initializer_list<Nd4jLong>& shape, const bool copyToNewBuff) {
     std::vector<Nd4jLong> vShape(shape);
-    return reshapei(order, vShape);
+    return reshapei(order, vShape, copyToNewBuff);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::reshapei(const std::initializer_list<Nd4jLong>& shape) {
-    return reshapei('c', shape);
+bool NDArray::reshapei(const std::initializer_list<Nd4jLong>& shape, const bool copyToNewBuff) {
+    return reshapei(ordering(), shape, copyToNewBuff);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool NDArray::reshapei(const std::vector<Nd4jLong>& shape) {
-    return reshapei('c', shape);
+bool NDArray::reshapei(const std::vector<Nd4jLong>& shape, const bool copyToNewBuff) {
+    return reshapei(ordering(), shape, copyToNewBuff);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1918,18 +1923,18 @@ Nd4jLong NDArray::argMax(std::initializer_list<int> dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 // create new array with corresponding order and shape, new array will point to the same _buffer as this array
-NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) const & {
+NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape, const bool copyToNewBuff) const & {
 
     NDArray newArr(getDataBuffer(), ShapeDescriptor(getShapeInfo()), getContext(), getBufferOffset());
-    newArr.reshapei(order, shape);
+    newArr.reshapei(order, shape, copyToNewBuff);
 
     return newArr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape) && {
+NDArray NDArray::reshape(const char order, const std::vector<Nd4jLong>& shape, const bool copyToNewBuff) && {
 
-    this->reshapei(order, shape);
+    this->reshapei(order, shape, copyToNewBuff);
     return std::move(*this);
 }
 
@@ -1971,7 +1976,7 @@ bool NDArray::permutei(const std::initializer_list<int>& dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::permutei(const std::vector<int>& dimensions) {
-    return permutei(dimensions.data(), dimensions.size());
+    return permutei(dimensions.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1993,7 +1998,7 @@ bool NDArray::permutei(const std::vector<Nd4jLong>& dimensions) {
     for (int e = 0; e < dimensions.size(); e++)
         ivec[e] = dimensions[e];
 
-    return permutei(ivec.data(), ivec.size());
+    return permutei(ivec.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2029,9 +2034,8 @@ NDArray NDArray::permute(const Nd4jLong* dimensions, const int rank) && {
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::permute(const std::vector<int>& dimensions) const &{
-    auto data = dimensions.data();
-    auto size = dimensions.size();
-    return permute(data, size);
+
+    return permute(dimensions.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2043,7 +2047,8 @@ NDArray NDArray::permute(const std::vector<int>& dimensions) && {
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::permute(const std::vector<Nd4jLong>& dimensions) const & {
-    return permute(dimensions.data(), dimensions.size());
+
+    return permute(dimensions.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2106,12 +2111,12 @@ void NDArray::permute(const Nd4jLong *dimensions, const int rank, NDArray& targe
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::permute(const std::vector<int>& dimensions, NDArray& target) const {
-    permute(dimensions.data(), dimensions.size(), target);
+    permute(dimensions.data(), rankOf(), target);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::permute(const std::vector<Nd4jLong>& dimensions, NDArray& target) const {
-    permute(dimensions.data(), dimensions.size(), target);
+    permute(dimensions.data(), rankOf(), target);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2280,7 +2285,7 @@ template <typename T>
 NDArray NDArray::asT() const{
 
     auto result = isScalar() ? NDArray('c', {}, std::vector<double>{0.}, DataTypeUtils::fromT<T>(), this->getContext()) : NDArray(ordering(), getShapeAsVector(), DataTypeUtils::fromT<T>(), this->getContext());
-    
+
     NDArray::prepareSpecialUse({&result}, {this});
     NativeOpExecutioner::execTransformAny(getContext(), transform::AnyOps::Assign, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), result.getBuffer(), result.getShapeInfo(), result.getSpecialBuffer(), result.getSpecialShapeInfo(), nullptr, nullptr, nullptr);
     NDArray::registerSpecialUse({&result}, {this});
@@ -2298,15 +2303,15 @@ NDArray NDArray::asS() const {
 
     auto dtype = DataTypeUtils::fromT<T>();
 
-    if (!(DataTypeUtils::isS(dtype))) 
+    if (!(DataTypeUtils::isS(dtype)))
         throw std::invalid_argument("NDArray::asS: invalid DataType used");
-    
+
     if (dtype == dataType()) {
-        
+
         Nd4jLong offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
         const auto nInputoffsets = bufferAsT<Nd4jLong>();
         std::shared_ptr<DataBuffer> pBuffer = std::make_shared<DataBuffer>(offsetsLength + nInputoffsets[lengthOf()], dtype, getContext()->getWorkspace(), true);
-        
+
         NDArray res(pBuffer, ShapeDescriptor(dtype, ordering(), getShapeAsVector()), getContext());
         res.setAttached(getContext()->getWorkspace() != nullptr);
 
@@ -2319,7 +2324,7 @@ NDArray NDArray::asS() const {
         registerPrimaryUse({ &res }, { this });
         return res;
     }
- 
+
     Nd4jLong offsetsLength = ShapeUtils::stringBufferHeaderRequirements(lengthOf());
 
     std::vector<Nd4jLong> offsets(lengthOf() + 1);
@@ -2353,7 +2358,7 @@ NDArray NDArray::asS() const {
 
     NDArray res(pBuffer, ShapeDescriptor(dtype, ordering(), getShapeAsVector()), getContext());
     res.setAttached(getContext()->getWorkspace() != nullptr);
-    
+
     preparePrimaryUse({ &res }, { this });
 
     memcpy(res.bufferAsT<int8_t>(), offsets.data(), offsets.size() * sizeof(Nd4jLong));
@@ -2403,7 +2408,7 @@ BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT NDArray NDArray::asS, () const, LIBND
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArray::asT(DataType dtype) const {
-    
+
     if (isS() && !DataTypeUtils::isS(dtype))
         throw std::runtime_error("NDArray::asT: you can't use this method on String array with not string DataType!");
 
@@ -3221,7 +3226,7 @@ BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector, NDArray::asVectorT(), LI
 
 //////////////////////////////////////////////////////////////////////////
 // set new order and shape in case of suitable array length
-bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
+bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape, const bool copyToNewBuff) {
 
     // check firstly whether cshape is identical to shape of array, if yes then reshape is unnecessary
     if(order == ordering() && shape::shapeEquals(rankOf(), shapeOf(), cshape.size(), cshape.data()))
@@ -3293,19 +3298,15 @@ bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
     Nd4jLong *shapeInfoNew;
     ALLOCATE(shapeInfoNew, getContext()->getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
 
-    bool canReshape = shape::reshapeC(rankOf(), shapeInfo(), shape.size(), shape.data(), shapeInfoNew);
+    bool canReshape = shape::reshapeC(shapeInfo(), order, shape.size(), shape.data(), shapeInfoNew);
 
-    // we can do this only if there was no permute applied, or there are no weird strides
     if (canReshape) {
-        if(ordering() == 'c' && order == 'f')
-            throw std::invalid_argument("NDArray::reshapei(order, shape): in case of reshapeC it doesn't make sense to reshape from c order to f order !");
-
-        shape::setEws(shapeInfoNew, arrLength);
         setShapeInfo(shapeInfoNew);
     }
     else {
         NDArray temp(order, shape, dataType(), getContext());
-        this->applyTransform(transform::Assign, temp, nullptr);
+        if(copyToNewBuff)
+            this->applyTransform(transform::Assign, temp, nullptr);
         *this = std::move(temp);
     }
 
@@ -3463,7 +3464,7 @@ NDArray NDArray::dup(const char newOrder) const {
     if (isS()) {
         if (dataType() == DataType::UTF8) {
             std::vector<std::string> strings(lengthOf());
-            
+
             auto func = PRAGMA_THREADS_FOR{
                     for (auto i = start; i < stop; i += increment) {
                            strings[i] = std::move(this->e<std::string>(i));
@@ -3521,7 +3522,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
 
     if (isS()) {
         // string is special case, we'll compare them one by one, considering both arrays are guaranteed to have the same length
-        
+
         if (dataType() == DataType::UTF8) {
             for (int e = 0; e < this->lengthOf(); e++) {
                 auto s1 = this->e<std::string>(e);
@@ -3585,7 +3586,7 @@ std::string NDArray::e(const Nd4jLong i) const {
     if (i == lengthOf())
         throw std::runtime_error("Can't get std::string for index out of range");
 
-    
+
     if (this->dataType() == DataType::UTF16) {
         auto u16 = this->e<std::u16string>(i);
         std::string s;
@@ -4846,7 +4847,7 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
     auto shapeOf = shape::shapeOf(newShapeInfo);
     auto stridesOf = shape::stride(newShapeInfo);
 
-    Nd4jLong offset(0), subArrLen(1);
+    Nd4jLong offset = 0;
     int n(isStrided ? 3 : 2), first, last, stride;
 
     for (int d = rank - 1; d >= 0; --d) {
@@ -4863,29 +4864,31 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
             if(shapeOf[d] != 1)
                 stridesOf[d] *= stride;
         }
+    }
 
-        subArrLen *= shapeOf[d];
+    Nd4jLong *shapeInfoNoUnities = newShapeInfo;
+
+    if(!keepUnitiesInShape) {
+
+        std::vector<int> dimsWithUnities;
+
+        for (uint d = 0; d < rank; ++d)
+            if(idx[n*d] != idx[n*d+1] && shapeOf[d] == 1)
+                dimsWithUnities.push_back(d);
+
+        if(!dimsWithUnities.empty())
+            shapeInfoNoUnities = ShapeBuilders::copyShapeInfoWithoutUnites(newShapeInfo, dimsWithUnities.size(), dimsWithUnities.data(), getContext()->getWorkspace());
     }
 
     // check if there is possibility to set ews = 1
-    shape::setEws(newShapeInfo, subArrLen);
+    shape::checkStridesSetEwsAndOrder(shapeInfoNoUnities);
 
-    NDArray result(_buffer, ShapeDescriptor(newShapeInfo), getContext(), offset + getBufferOffset());
+    NDArray result(_buffer, ShapeDescriptor(shapeInfoNoUnities), getContext(), offset + getBufferOffset());
     result._isView = true;
 
-    if(!keepUnitiesInShape) {
-        const int coeff = isStrided ? 3 : 2;
-        std::vector<Nd4jLong> nonUnitDims;
-
-        for (int d = 0; d < rank; ++d)
-            if(!(idx[coeff*d] != idx[coeff*d+1] && newShapeInfo[d+1] == 1))
-                nonUnitDims.push_back(newShapeInfo[d+1]);
-
-        if(nonUnitDims.size() != rank)
-            result.reshapei(nonUnitDims);
-    }
-
     RELEASE(newShapeInfo, getContext()->getWorkspace());
+    if(newShapeInfo != shapeInfoNoUnities)
+        RELEASE(shapeInfoNoUnities, getContext()->getWorkspace());
 
     return result;
 }

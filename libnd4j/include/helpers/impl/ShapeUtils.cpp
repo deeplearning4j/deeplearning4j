@@ -75,10 +75,23 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
     permutBt = axesB;
     permutBt.insert(permutBt.end(), list_B.begin(), list_B.end());
 
+    // if permut contains something like {0,1,2,..rank-1}, then there is no need to make permutation and we return empty vector in this case
+    uint i1, i2;
+    for(i1 = 0; i1 < aRank; ++i1)
+        if(permutAt[i1] != i1)
+            break;
+    if(i1 == aRank)
+        permutAt = {};
+    for(i2 = 0; i2 < bRank; ++i2)
+        if(permutBt[i2] != i2)
+            break;
+    if(i2 == bRank)
+        permutBt = {};
+
     Nd4jLong n2 = 1;
     for (int i = 0; i < axeAsize; i++)
         n2 *= aShapeInfo[axesA[i] + 1];
-    shapeAt = {-1, n2};
+    shapeAt = {shape::length(aShapeInfo) / n2, n2};
 
     std::vector<Nd4jLong> oldShapeA;
     oldShapeA.resize(list_A.size());
@@ -89,7 +102,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
     Nd4jLong n3 = 1;
     for (int i = 0; i < axeBsize; i++)
         n3 *= bShapeInfo[axesB[i] + 1];
-    shapeBt = {n3, -1};
+    shapeBt = {n3, shape::length(bShapeInfo) / n3};
 
     std::vector<Nd4jLong> oldShapeB;
     oldShapeB.resize(list_B.size());
@@ -300,32 +313,37 @@ std::vector<Nd4jLong> ShapeUtils::evalRepeatShape(int axis, const std::vector<in
     return outShape;
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of permuted array
-    Nd4jLong* ShapeUtils::evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace) {
+Nd4jLong* ShapeUtils::evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace, const bool setContigStrides) {
 
-        if (!arr.nonNull())
-            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: either array is nullptr!");
+    if (!arr.nonNull())
+        throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments: array is nullptr!");
 
-        if (rank != arr.rankOf())
-            throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments in pn/termute method: rank is not suitable!");
+    if (rank != arr.rankOf())
+        throw std::runtime_error("ShapeUtils::evalPermShapeInfo static method: wrong arguments: rank is not suitable!");
 
-        auto shapeInfoLength = shape::shapeInfoLength(rank);
-        // allocate memory for new array - shapeInfo
+    auto shapeInfoLength = shape::shapeInfoLength(rank);
 
-        Nd4jLong *shapeInfoNew = nullptr;
-        ALLOCATE(shapeInfoNew, workspace, shapeInfoLength, Nd4jLong);
-        // copy arr _shapeInfo into new array
-        memcpy(shapeInfoNew, arr.getShapeInfo(), shape::shapeInfoByteLength(rank));
-        // perform buffer permutation
-        shape::doPermuteShapeInfo(shapeInfoNew, dimensions);
+    // allocate memory for new array - shapeInfo
+    Nd4jLong *shapeInfoNew = nullptr;
+    ALLOCATE(shapeInfoNew, workspace, shapeInfoLength, Nd4jLong);
 
-        ShapeDescriptor descriptor(shapeInfoNew);
-        RELEASE(shapeInfoNew, workspace);
-        return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
-    }
+    // copy arr _shapeInfo into new array
+    memcpy(shapeInfoNew, arr.getShapeInfo(), shape::shapeInfoByteLength(rank));
 
+    // perform buffer permutation
+    shape::doPermuteShapeInfo(shapeInfoNew, dimensions, arr.lengthOf());
+
+    if(setContigStrides)
+        shape::updateStrides(shapeInfoNew, arr.ordering());
+
+    ShapeDescriptor descriptor(shapeInfoNew);
+
+    RELEASE(shapeInfoNew, workspace);
+
+    return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+}
 
     //////////////////////////////////////////////////////////////////////////
     // evaluate shapeInfo of permuted array
@@ -337,14 +355,14 @@ std::vector<Nd4jLong> ShapeUtils::evalRepeatShape(int axis, const std::vector<in
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo of transposed array
-    Nd4jLong* ShapeUtils::evalTranspShapeInfo(const NDArray& arr, nd4j::memory::Workspace* workspace) {
+    Nd4jLong* ShapeUtils::evalTranspShapeInfo(const NDArray& arr, nd4j::memory::Workspace* workspace, const bool setContigStrides) {
 
         int rank = arr.rankOf();
         std::vector<int> dimensions(rank);
         for (int i = 0; i < rank; ++i)
             dimensions[i] = rank - 1 - i;
 
-        return evalPermShapeInfo(dimensions.data(), dimensions.size(), arr, workspace);
+        return evalPermShapeInfo(dimensions.data(), dimensions.size(), arr, workspace, setContigStrides);
     }
 
 //////////////////////////////////////////////////////////////////////////
@@ -646,6 +664,26 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
         for (int e = 0; e < shapeInfo[0]; e++) {
             result += flatbuffers::NumToString(shapeInfo[e+1]);
             if (e < shapeInfo[0] - 1)
+                result.append(", ");
+        }
+        result.append("]");
+
+        return result;
+    }
+
+    std::string ShapeUtils::shapeInfoAsString(const Nd4jLong* shapeInfo) {
+
+        if(!shapeInfo)
+            throw std::runtime_error("ShapeUtils::shapeAsString method: input shapeInfo must not be nullptr !");
+
+        std::string result;
+
+        int len = shape::shapeInfoLength(shapeInfo[0]);
+
+        result.append("[");
+        for (int e = 0; e < len; e++) {
+            result += flatbuffers::NumToString(shapeInfo[e]);
+            if (e < len - 1)
                 result.append(", ");
         }
         result.append("]");

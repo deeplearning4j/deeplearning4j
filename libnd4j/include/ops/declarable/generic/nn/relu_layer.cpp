@@ -31,22 +31,17 @@ namespace nd4j {
             REQUIRE_TRUE(w->isMatrix(), 0, "relu_layer: weights argument should be a 2D tensor, but got rank %i instead!", w->rankOf());
             REQUIRE_TRUE(b->isVector(), 0, "relu_layer: biases argument should be a 1D tensor, but got rank %i instead!", b->rankOf());
             REQUIRE_TRUE(b->lengthOf() == w->sizeAt(1), 0, "relu_layer: biases array length should match to columns of weights matrix, however got length = %i and columns = %i!", b->lengthOf(), w->sizeAt(1));
-            REQUIRE_TRUE(x->sizeAt(1) == w->sizeAt(0), 0, "relu_layer: number of x columns should match to row number of weights matrix, but got x_columns = %i and weights_rows = %i!",
-                x->sizeAt(1), w->sizeAt(0));
-
+            REQUIRE_TRUE(x->sizeAt(1) == w->sizeAt(0), 0, "relu_layer: number of x columns should match to row number of weights matrix, but got x_columns = %i and weights_rows = %i!", x->sizeAt(1), w->sizeAt(0));
 
             auto output = OUTPUT_VARIABLE(0);
-            //T bound = (T)0.f;
-            //nd4j_printf("Matrix x(%ix%i), Matrix w(%ix%i), b(1x%i)\n", x->sizeAt(0), x->sizeAt(1), w->sizeAt(0), w->sizeAt(1), b->lengthOf());
 
             nd4j::ops::xw_plus_b op;
-            std::unique_ptr<ResultSet> result(op.evaluate({x, w, b}));
-            REQUIRE_TRUE(Status::OK() == result->status(), 0, "relu_layer: xw_plus_b op failed on input data.");
+            auto status = op.execute({x, w, b}, {output});
+            REQUIRE_TRUE(Status::OK() == status, 0, "relu_layer: xw_plus_b op failed on input data.");
 
             auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-            auto xw = result->at(0);
-            xw->applyScalar(nd4j::scalar::RELU, scalar, *output);
+            output->applyScalar(nd4j::scalar::RELU, scalar, *output);
 
             return Status::OK();
         }

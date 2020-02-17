@@ -244,14 +244,14 @@ void spaceToBatch(nd4j::LaunchContext* context, const NDArray& input, NDArray& o
 
     // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW + padLeft + padRight)/blockSize, iC]
 
-    NDArray outputRearranged0 = output.reshape(output.ordering(), {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), output.sizeAt(3)});
+    NDArray outputRearranged0 = output.reshape(output.ordering(), {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), output.sizeAt(3)}, false);
     outputRearranged0.permutei({2, 3,0, 4,1, 5});
 
     if(input.lengthOf() == output.lengthOf()) {
         outputRearranged0.assign(input);
     }
     else {
-        NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, output.sizeAt(3)});
+        NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, output.sizeAt(3)}, false);
         BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatch_, (input, outputRearranged1, padBottom, padTop, padLeft, padRight), LIBND4J_TYPES);
 
         if(output.getBuffer() != outputRearranged1.getBuffer())
@@ -352,7 +352,7 @@ void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const ND
     for(int j = 1; j < rank; ++i, ++j)
         temp[i] = output.sizeAt(j);
 
-    NDArray outputRearranged0 = output.reshape(output.ordering(), temp);
+    NDArray outputRearranged0 = output.reshape(output.ordering(), temp, false);
 
     //*** construct permuting std::vector for permutation of output array ***//
 
@@ -382,7 +382,7 @@ void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const ND
         for(i = 1; i < rank; ++i)
             temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape.e<Nd4jLong>(i - 1) : output.sizeAt(i);
 
-        NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), temp);
+        NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), temp, false);
 
         BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchND_, (input, padding, outputRearranged1, numOfSpatialDims), LIBND4J_TYPES);
 

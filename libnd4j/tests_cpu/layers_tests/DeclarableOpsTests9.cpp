@@ -2043,34 +2043,6 @@ TEST_F(DeclarableOpsTests9, cumprod_test1) {
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1}, {1, 1},GradCheck::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
-
-    //************************************//
-/*    exclusive = 1; reverse = 0;
-
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
-    ASSERT_EQ(Status::OK(), result->status());
-    z = result->at(0);
-    ASSERT_TRUE(expTF.equalsTo(z));
-    delete result;
-*/
-    //************************************//
-/*    exclusive = 0; reverse = 1;
-
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
-    ASSERT_EQ(Status::OK(), result->status());
-    z = result->at(0);
-    ASSERT_TRUE(expFT.equalsTo(z));
-    delete result;
-*/
-    //************************************//
-/*    exclusive = 1; reverse = 1;
-
-    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse});
-    ASSERT_EQ(Status::OK(), result->status());
-    z = result->at(0);
-    ASSERT_TRUE(expTT.equalsTo(z));
-    delete result;
-*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2079,11 +2051,6 @@ TEST_F(DeclarableOpsTests9, cumprod_test2) {
     auto inputC = NDArrayFactory::create<double>('c', {2, 2});
     auto axis = NDArrayFactory::create<double>(1.);
 
-//    auto expFF = NDArrayFactory::create<double>('c', {3, 5}, {1.,   2.,   6.,    24.,   120., 6.,  42., 336.,  3024., 30240.,11., 132.,1716., 24024.,360360.});
-//    auto expTF = NDArrayFactory::create<double>('c', {3, 5}, {1, 1, 2, 6, 24,1, 6, 42, 336, 3024,1, 11, 132, 1716, 24024});
-
-//    auto expFT = NDArrayFactory::create<double>('c', {3, 5}, {120, 120, 60, 20, 5,30240, 5040, 720, 90, 10,360360, 32760, 2730, 210, 15});    //+++
-//    auto expTT = NDArrayFactory::create<double>('c', {3, 5}, {120, 60, 20, 5, 1,5040, 720, 90, 10, 1,32760, 2730, 210, 15, 1});
     auto gradO = NDArrayFactory::create<double>('c', {2, 2});
 
     int exclusive, reverse;

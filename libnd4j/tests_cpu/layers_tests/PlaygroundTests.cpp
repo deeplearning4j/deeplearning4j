@@ -65,6 +65,186 @@ TEST_F(PlaygroundTests, test_avx) {
     nd4j_printf("Optimal level: %i; Binary level: %i;\n", ::optimalLevel(), ::binaryLevel());
 }
 
+
+TEST_F(PlaygroundTests, test_biasAdd_1) {
+    auto x = NDArrayFactory::create<float>('c', {512, 3072});
+    auto y = NDArrayFactory::create<float>('c', {3072});
+
+    std::vector<Nd4jLong> values;
+
+    nd4j::ops::biasadd op;
+
+    for (int e = 0; e < 100; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        op.execute({&x, &y}, {&x});
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+}
+
+
+
+TEST_F(PlaygroundTests, test_bert_1) {
+    // this test will run ONLY if this model exists
+    if (nd4j::graph::getFileSize("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model.fb") < 0)
+        return;
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model.fb");
+
+    auto t = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext.numpy");
+    auto u = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext_1.numpy");
+    auto v = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_input_IteratorGetNext_4.numpy");
+    auto z = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model_output.numpy");
+
+    //graph->printOut();
+
+    graph->tagInplaceNodes();
+
+    graph->getVariableSpace()->putVariable(85,0, t);
+    graph->getVariableSpace()->putVariable(86,0, u);
+    graph->getVariableSpace()->putVariable(87,0, v);
+
+/*
+    // validating graph now
+    auto status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(198));
+
+    auto array = graph->getVariableSpace()->getVariable(198)->getNDArray();
+    ASSERT_EQ(z, *array);
+*/
+
+    nd4j::Environment::getInstance()->setProfiling(true);
+    auto profile = GraphProfilingHelper::profile(graph, 1);
+
+    profile->printOut();
+
+    nd4j::Environment::getInstance()->setProfiling(false);
+    delete profile;
+
+/*
+    std::vector<Nd4jLong> values;
+
+    for (int e = 0; e < 1; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        GraphExecutioner::execute(graph);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+*/
+    delete graph;
+}
+
+/*
+
+TEST_F(PlaygroundTests, test_broadcast_1) {
+    int pool = 1000;
+    std::vector<NDArray*> aX(pool);
+    std::vector<NDArray*> aY(pool);
+    std::vector<NDArray*> aZ(pool);
+
+    for (int e = 0; e < pool; e++) {
+        aX[e] = NDArrayFactory::create_<float>('c', {512, 3072});
+        aY[e] = NDArrayFactory::create_<float>('c', {3072});
+        aZ[e] = NDArrayFactory::create_<float>('c', {512, 3072});
+
+        aX[e]->assign(119 * (e+1));
+        aY[e]->assign(119 * (e+3));
+    }
+
+    std::vector<Nd4jLong> values;
+    Context ctx(1);
+
+    nd4j::ops::biasadd op;
+
+    for (int e = 0; e < 1000; e++) {
+        auto x = aX[e < pool ? e : e % pool];
+        auto y = aY[e < pool ? e : e % pool];
+        auto z = aZ[e < pool ? e : e % pool];
+
+        auto timeStart = std::chrono::system_clock::now();
+
+        //op.execute({x, y}, {z});
+        nd4j::ops::helpers::addBias(ctx, *x, *y, *z, false);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+
+    for (int e = 0; e < pool; e++) {
+        delete aX[e];
+        delete aY[e];
+        delete aZ[e];
+    }
+}
+
+
+/*
+TEST_F(PlaygroundTests, test_broadcast_1) {
+    int pool = 500;
+    std::vector<NDArray*> aX(pool);
+    std::vector<NDArray*> aY(pool);
+    std::vector<NDArray*> aZ(pool);
+
+    for (int e = 0; e < pool; e++) {
+        aX[e] = NDArrayFactory::create_<float>('c', {512, 3072});
+        aY[e] = NDArrayFactory::create_<float>('c', {768});
+        aZ[e] = NDArrayFactory::create_<float>('c', {512, 3072});
+
+        aX[e]->assign( (e+1) / 119);
+        aY[e]->assign( (e+3) / 119);
+    }
+
+
+
+    std::vector<Nd4jLong> values;
+
+    for (int e = 0; e < 1000; e++) {
+        auto x = aX[e < pool ? e : e % pool];
+        auto y = aY[e < pool ? e : e % pool];
+        auto z = aZ[e < pool ? e : e % pool];
+
+        auto timeStart = std::chrono::system_clock::now();
+
+        //x->applyTrueBroadcast(BroadcastOpsTuple::Multiply(), *y, *z);
+        x->applyTransform(transform::Tanh, *z, nullptr);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+
+    for (int e = 0; e < pool; e++) {
+        delete aX[e];
+        delete aY[e];
+        delete aZ[e];
+    }
+}
+
+*/
 /*
 
 TEST_F(PlaygroundTests, test_s_0) {

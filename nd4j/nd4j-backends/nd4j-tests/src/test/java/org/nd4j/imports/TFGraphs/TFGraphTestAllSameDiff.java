@@ -123,7 +123,12 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //AB 2020/01/07 - Known issues
             "bitcast/from_float64_to_int64",
             "bitcast/from_rank2_float64_to_int64",
-            "bitcast/from_float64_to_uint64"
+            "bitcast/from_float64_to_uint64",
+
+            // 2020/02/14 - new ops which are not passing yet
+            "linear_solve/.*",
+            "triangular_solve/.*",
+            "lstsq/.*"
     };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have

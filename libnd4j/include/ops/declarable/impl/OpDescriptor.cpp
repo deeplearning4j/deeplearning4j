@@ -50,6 +50,9 @@ namespace nd4j {
             _scalar = isScalar;
         }
 
+        void OpDescriptor::allowInplace(bool reallyAllow){
+            _allowsInplace = reallyAllow;
+        }
 
         bool OpDescriptor::operator==(const OpDescriptor& other) const {
             if (_hash == -1 && other._hash == -1)

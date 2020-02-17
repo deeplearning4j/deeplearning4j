@@ -89,7 +89,7 @@ namespace functions {
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 				int totalThreads = gridDim.x * blockDim.x;
 
-		        if(xEws > 0 && zEws > 0 && xOrder == zOrder) {
+		        if(xEws > 0 && zEws > 0 && xOrder == zOrder && xOrder == 'c') {
 
 					for (int i = tid; i < length; i += totalThreads)
 						z[i * zEws] = OpType::op(x[i * xEws], params);

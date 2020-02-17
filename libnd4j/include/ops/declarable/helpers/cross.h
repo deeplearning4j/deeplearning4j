@@ -59,7 +59,7 @@ void FORCEINLINE cross(nd4j::LaunchContext * context, NDArray *a, NDArray *b, ND
     void FORCEINLINE _crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
         auto a_ = a->reshape(a->ordering(), {-1, 3});
         auto b_ = b->reshape(b->ordering(), {-1, 3});
-        auto o_ = o->reshape(o->ordering(), {-1, 3});
+        auto o_ = o->reshape(o->ordering(), {-1, 3}, false);
 
         auto tadsA = a_.allTensorsAlongDimension({1});
         auto tadsB = b_.allTensorsAlongDimension({1});

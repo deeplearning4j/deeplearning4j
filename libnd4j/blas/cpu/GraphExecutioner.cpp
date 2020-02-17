@@ -179,7 +179,7 @@ namespace graph {
         nd4j_debug("Embedded graph execution finished. %i variable(s) migrated\n", cnt);
 
     } else if (node->hasCustomOp()) {
-        // if we have something to execute - lets just execute it.
+        // now, if we have something to execute - lets just execute it.
         auto status = node->getCustomOp()->execute(&context);
         if (status != ND4J_STATUS_OK)
             return status;
@@ -494,8 +494,10 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
         nd4j::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(h, m);
     }
 
-    if (tempFlow)
+    if (tempFlow) {
         delete flowPath;
+        __variableSpace->setFlowPath(nullptr);
+    }
 
     return Status::OK();
 }

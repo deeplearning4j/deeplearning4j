@@ -32,7 +32,7 @@ namespace nd4j {
             // graph->printOut();
 
             // warm up
-            for (int e = 0; e < 1000; e++) {
+            for (int e = 0; e < iterations; e++) {
                 FlowPath fp;
 
                 auto _vs = varSpace->clone();

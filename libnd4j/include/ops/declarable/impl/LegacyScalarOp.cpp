@@ -26,11 +26,11 @@
 namespace nd4j {
     namespace ops {
         LegacyScalarOp::LegacyScalarOp() : LegacyOp::LegacyOp(1) {
-            // no-op
+            this->getOpDescriptor()->allowInplace(true);
         }
 
         LegacyScalarOp::LegacyScalarOp(int opNum)  : LegacyOp::LegacyOp(1, opNum){
-            // no-op
+            this->getOpDescriptor()->allowInplace(true);
         }
 
         LegacyOp* LegacyScalarOp::clone() {
@@ -66,6 +66,7 @@ namespace nd4j {
 
                 NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
 
+                NDArray::registerSpecialUse({z}, {x, y});
             } else if (block.getTArguments()->size() > 0) {
                 auto y = NDArrayFactory::create(x->dataType(), T_ARG(0), block.launchContext());
 
@@ -78,10 +79,9 @@ namespace nd4j {
                 NDArray::prepareSpecialUse({z}, {x, _scalar});
 
                 NativeOpExecutioner::execScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(z->dataType()));
-            }
 
-            manager.synchronize();
-            STORE_RESULT(*z);
+                NDArray::registerSpecialUse({z}, {x, _scalar});
+            }
 
             return Status::OK();
         }

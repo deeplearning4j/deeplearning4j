@@ -105,8 +105,8 @@ public class RegressionTest100b6 extends BaseDL4JTest {
 
             assertEquals(dtype, net.getLayerWiseConfigurations().getDataType());
             assertEquals(dtype, net.params().dataType());
-            assertEquals("Test for dtype: " + dtypeName, outExp, outAct);
-        }
+            boolean eq = outExp.equalsWithEps(outAct, 0.01);
+            assertTrue(outExp + " vs " + outAct, eq);        }
     }
 
 
