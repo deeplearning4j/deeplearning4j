@@ -106,9 +106,9 @@ public abstract class SameDiffLoss implements ILossFunction {
         Map<String,INDArray> grads = sd.calculateGradients(null, "out");
 
         if (mask != null) {
-            LossUtil.applyMask(grads.get("out"), mask);
+            LossUtil.applyMask(sd.getVariable("out").eval(), mask);
         }
-        return grads.get("out");
+        return sd.getVariable("out").eval();
     }
 
     /**
