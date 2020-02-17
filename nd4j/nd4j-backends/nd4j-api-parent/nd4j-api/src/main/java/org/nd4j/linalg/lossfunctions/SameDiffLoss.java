@@ -1,3 +1,18 @@
+/*******************************************************************************
+ * Copyright (c) 2015-2020 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 package org.nd4j.linalg.lossfunctions;
 
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -14,14 +29,14 @@ import java.util.Map;
 
 public abstract class SameDiffLoss implements ILossFunction {
 
-    SameDiff sd = SameDiff.create();
+    protected SameDiff sd = SameDiff.create();
 
 
     protected SameDiffLoss() {
 
 
-        SDVariable layerInput =  sd.placeHolder("layerInput", DataType.FLOAT ,-1);
-        SDVariable labels = sd.placeHolder("labels", DataType.FLOAT ,-1);
+        SDVariable layerInput = sd.placeHolder("layerInput", DataType.FLOAT, -1);
+        SDVariable labels = sd.placeHolder("labels", DataType.FLOAT, -1);
         this.defineLoss(sd, layerInput, labels);
 
 
@@ -32,6 +47,7 @@ public abstract class SameDiffLoss implements ILossFunction {
 
     /**
      * Compute the score (loss function value) for the given inputs.
+     *
      * @param labels       Label/expected preOutput
      * @param preOutput    Output of the model (neural network)
      * @param activationFn Activation function that should be applied to preOutput
@@ -40,46 +56,38 @@ public abstract class SameDiffLoss implements ILossFunction {
      */
     public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
 
-            // The score overall consists of the
-            // sum of the negative log likelihoods for each
-            // of the individual labels.
-
+        // The score overall consists of the
+        // sum of the negative log likelihoods for each
+        // of the individual labels.
 
 
         INDArray scoreArr = computeScoreArray(labels, preOutput, activationFn, mask);
 
         double score = scoreArr.sumNumber().doubleValue();
-            if (average) {
-                score /= scoreArr.size(0);
-            }
-            return score;
+        if (average) {
+            score /= scoreArr.size(0);
         }
-
-
-
-
+        return score;
+    }
 
 
     /**
      * Compute the score (loss function value) for each example individually.
      * For input [numExamples,nOut] returns scores as a column vector: [numExamples,1]
+     *
      * @param labels       Labels/expected output
      * @param preOutput    Output of the model (neural network)
      * @param activationFn Activation function that should be applied to preOutput
      * @param mask         @return Loss function value for each example; column vector
      */
-    public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask){
+    public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
 
-        Preconditions.checkArgument((labels.size(1) != preOutput.size(1)),"Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer\n" +
-                "number of outputs (nOut = " + preOutput.size(1) + ")");
-
-
+        Preconditions.checkArgument((labels.size(1) != preOutput.size(1)), "Labels array numColumns (size(1) = %s) does not match output layer number of outputs (nOut = %s)", labels.size(1), preOutput.size(1));
         INDArray scoreArr;
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
-        sd.var("out",output);
+        sd.output(Collections.singletonMap("output", output));
         scoreArr = output.rsubi(labels).divi(labels);
         scoreArr.muli(100.0 / labels.size(1));
-
 
 
         if (mask != null) {
@@ -103,8 +111,7 @@ public abstract class SameDiffLoss implements ILossFunction {
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
 
 
-
-        Map<String,INDArray> grads = sd.calculateGradients(Collections.singletonMap("out", activationFn.getActivation(preOutput.dup(), true)));
+        Map<String, INDArray> grads = sd.calculateGradients(Collections.singletonMap("out", activationFn.getActivation(preOutput.dup(), true)));
 
         if (mask != null) {
             LossUtil.applyMask(grads.get("out"), mask);
@@ -125,8 +132,8 @@ public abstract class SameDiffLoss implements ILossFunction {
      */
 
 
-    public  Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn,
-                                                   INDArray mask, boolean average) {
+    public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn,
+                                                          INDArray mask, boolean average) {
 
         Pair<Double, INDArray> GradientAndScore = new Pair<>();
         GradientAndScore.setFirst(this.computeScore(labels, preOutput, activationFn, mask, average));
