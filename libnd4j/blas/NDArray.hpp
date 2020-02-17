@@ -1976,7 +1976,7 @@ bool NDArray::permutei(const std::initializer_list<int>& dimensions) {
 
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::permutei(const std::vector<int>& dimensions) {
-    return permutei(dimensions.data(), dimensions.size());
+    return permutei(dimensions.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1998,7 +1998,7 @@ bool NDArray::permutei(const std::vector<Nd4jLong>& dimensions) {
     for (int e = 0; e < dimensions.size(); e++)
         ivec[e] = dimensions[e];
 
-    return permutei(ivec.data(), ivec.size());
+    return permutei(ivec.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2034,9 +2034,8 @@ NDArray NDArray::permute(const Nd4jLong* dimensions, const int rank) && {
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::permute(const std::vector<int>& dimensions) const &{
-    auto data = dimensions.data();
-    auto size = dimensions.size();
-    return permute(data, size);
+
+    return permute(dimensions.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2048,7 +2047,8 @@ NDArray NDArray::permute(const std::vector<int>& dimensions) && {
 
 //////////////////////////////////////////////////////////////////////////
 NDArray NDArray::permute(const std::vector<Nd4jLong>& dimensions) const & {
-    return permute(dimensions.data(), dimensions.size());
+
+    return permute(dimensions.data(), rankOf());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2111,12 +2111,12 @@ void NDArray::permute(const Nd4jLong *dimensions, const int rank, NDArray& targe
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::permute(const std::vector<int>& dimensions, NDArray& target) const {
-    permute(dimensions.data(), dimensions.size(), target);
+    permute(dimensions.data(), rankOf(), target);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::permute(const std::vector<Nd4jLong>& dimensions, NDArray& target) const {
-    permute(dimensions.data(), dimensions.size(), target);
+    permute(dimensions.data(), rankOf(), target);
 }
 
 //////////////////////////////////////////////////////////////////////////

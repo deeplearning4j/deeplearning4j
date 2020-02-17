@@ -1883,36 +1883,6 @@ TEST_F(DeclarableOpsTests1, TestGemv1) {
 #endif
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Reshape1) {
-    const std::vector<Nd4jLong> xShape = {5,4,3};
-    const std::vector<Nd4jLong> yShape = {3,5,4};
-
-    auto x = NDArrayFactory::create_<float>('f', xShape);
-    auto y = NDArrayFactory::create_<float>('f', yShape);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-
-    auto block = new Context(1, variableSpace, true);
-    block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
-    arguments->push_back(-y->ordering());
-    arguments->push_back(3);
-    arguments->push_back(5);
-    arguments->push_back(4);
-
-    nd4j::ops::reshape reshape;
-
-    reshape.execute(block);
-
-    ASSERT_TRUE(x->isSameShape(y));
-
-    delete y;
-    delete block;
-    delete variableSpace;
-}
-
-//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Reshape2) {
     const std::vector<Nd4jLong> xShape = {5,4,3};
     const std::vector<Nd4jLong> yShape = {3,5,4};
@@ -2022,37 +1992,8 @@ TEST_F(DeclarableOpsTests1, Reshape7){
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Transpose1) {
-
     auto x = NDArrayFactory::create_<float>('c', {3,5,2});
-    auto exp = NDArrayFactory::create_<float>('f', {2,5,3});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-
-    auto block = new Context(1, variableSpace, true);  // in-place
-    block->fillInputs({-1});
-    nd4j::ops::transpose transpose;
-
-    Nd4jStatus status = transpose.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    // ASSERT_TRUE(x.isSameShapeStrict(exp));
-
-    for (int e = 0; e < x->rankOf() * 2 + 2; e++) {
-        ASSERT_EQ(x->getShapeInfo()[e], exp->getShapeInfo()[e]);
-    }
-//  ASSERT_EQ(x.getShapeInfo()[x.rankOf() * 2 + 2],-exp.getShapeInfo()[x.rankOf() * 2 + 2]);
-    ASSERT_EQ(x->getShapeInfo()[x->rankOf() * 2 + 3], exp->getShapeInfo()[x->rankOf() * 2 + 3]);
-
-    delete exp;
-    delete block;
-    delete variableSpace;
-
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Transpose2) {
-    auto x = NDArrayFactory::create_<float>('c', {3,5,2});
-    auto exp = NDArrayFactory::create_<float>('f', {2,5,3});
+    auto exp = NDArrayFactory::create_<float>('c', {2,5,3});
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -2066,57 +2007,23 @@ TEST_F(DeclarableOpsTests1, Transpose2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // ASSERT_TRUE(result->isSameShapeStrict(exp));
-    for (int e = 0; e < result->rankOf() * 2 + 2; e++) {
-        ASSERT_EQ(result->getShapeInfo()[e], exp->getShapeInfo()[e]);
-    }
-    //ASSERT_EQ(result->getShapeInfo()[x.rankOf() * 2 + 2],-exp.getShapeInfo()[x.rankOf() * 2 + 2]);
-    ASSERT_EQ(result->getShapeInfo()[x->rankOf() * 2 + 3], exp->getShapeInfo()[x->rankOf() * 2 + 3]);
+
+    ASSERT_TRUE(exp->isSameShape(result));
+    ASSERT_TRUE(exp->dataType() == result->dataType());
+    ASSERT_TRUE(exp->ordering() == result->ordering());
 
     delete exp;
     delete block;
     delete variableSpace;
 }
 
-
-//////////////////////////////////////////////////////////////////////
-// in-place
-TEST_F(DeclarableOpsTests1, Permute1) {
-
-    Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
-    const std::vector<int> perm = {2, 0, 1};
-    ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);
-    ArrayOptions::setDataType(shapeExp, nd4j::DataType::FLOAT32);
-
-    auto x = new NDArray(shapeX,true);
-    auto exp = new NDArray(shapeExp,true);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-
-    auto block = new Context(1, variableSpace, true);  // in-place
-    block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
-    *arguments = perm;      // set dimensions to be permuted
-
-    nd4j::ops::permute permute;
-    Nd4jStatus status = permute.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    ASSERT_TRUE(x->isSameShapeStrict(*exp));
-
-    delete exp;
-    delete block;
-    delete variableSpace;
-}
 
 //////////////////////////////////////////////////////////////////////
 // not-in-place
-TEST_F(DeclarableOpsTests1, Permute2) {
+TEST_F(DeclarableOpsTests1, Permute1) {
 
-    Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
+    Nd4jLong shapeX[]   = {3, 5,10,15,  150,15,1,  0,1,99};
+    Nd4jLong shapeExp[] = {3, 15,5,10,  50,10,1,  0,1,99};
     const std::vector<int> perm = {2, 0, 1};
 
     ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);

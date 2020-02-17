@@ -15,7 +15,8 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 29/10/17.
+// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
@@ -29,80 +30,52 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
 // here iArgs is int vector of ordered set of dimensions to be permuted
-        CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
-            auto x = INPUT_VARIABLE(0);
+CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
 
-            bool replace = false;
+    auto x = INPUT_VARIABLE(0);
+    auto z = OUTPUT_VARIABLE(0);
 
-            auto origArgs = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
-            std::vector<int> arguments({});
-            if(origArgs.size() > 0){
-                for (int e = 0; e < origArgs.size(); e++) {
-                    int ax = origArgs[e];
-                    if (ax < 0)
-                        ax += x->rankOf();
-
-                    arguments.emplace_back(ax);
-                }
-
-                replace = true;
-            } else {
-                for (int e = x->rankOf() - 1; e >= 0; e--)
-                    arguments.emplace_back(e);
-            }
-
-            // 0D edge case
-            if (x->rankOf() == 0) {
-                REQUIRE_TRUE(arguments.size() == 1, 0, "Permute: only one axis is allowed for scalar");
-                auto output = OUTPUT_VARIABLE(0);
-                if (!block.isInplace())
-                    output->assign(x);
-
-                return Status::OK();
-            }
-
-            if(block.isInplace()) {		// in-place
-                x->permutei(arguments);
-                STORE_RESULT(x);
-            } else {
-                auto output = OUTPUT_VARIABLE(0);
-                auto result = x->permute(arguments);
-                output->assign(result);
-                STORE_RESULT(output);
-            }
-
-            return Status::OK();
-        }
-
-        DECLARE_TYPES(permute) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
-                    ->setAllowedInputTypes(1, {ALL_INTS})
-                    ->setSameMode(true);
-        }
-
-        DECLARE_SHAPE_FN(permute) {
-            auto shapeList = SHAPELIST();
-            auto arguments = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
-
-            if (shape::rank(inputShape->at(0)) == 0) {
-                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
-            } else if (inputShape->size() == 1 && !arguments.empty()) {
-                shapeList->push_back(ShapeUtils::evalPermShapeInfo(arguments.data(), arguments.size(), *INPUT_VARIABLE(0), block.workspace()));
-            } else {
-                if(arguments.size() == 0){
-                    //Reverse dimensions
-                    int rank = shape::rank(inputShape->at(0));
-                    for (int e = rank - 1; e >= 0; e--)
-                        arguments.emplace_back(e);
-                }
-
-                shapeList->push_back(ShapeUtils::evalPermShapeInfo(arguments.data(), arguments.size(), *INPUT_VARIABLE(0), block.workspace()));
-            }
-    
-            return shapeList;
-        }
+    if (x->isEmpty()) {
+        REQUIRE_TRUE(z->isEmpty(), 0, "PERMUTE OP: when input is empty, output must also be empty");
+        return Status::OK();    //No op
     }
+
+    if (block.width() == 1 && block.getIArguments()->size() == 0) {
+        z->assign(x->transpose());
+        return Status::OK();
+    }
+
+    std::vector<int> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+
+    z->assign(x->permute(permutationVector));
+
+    return Status::OK();
+}
+
+//////////////////////////////////////////////////////////////////////////
+DECLARE_TYPES(permute) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+            ->setAllowedInputTypes(1, {ALL_INTS})
+            ->setSameMode(true);
+}
+
+//////////////////////////////////////////////////////////////////////////
+DECLARE_SHAPE_FN(permute) {
+
+    auto x = INPUT_VARIABLE(0);
+
+    if (block.width() == 1 && block.getIArguments()->size() == 0)
+        return SHAPELIST(ShapeUtils::evalTranspShapeInfo(*x, block.workspace(), true));
+
+    std::vector<int> permutationVector = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+
+    auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(permutationVector.data(), x->rankOf(), *x, block.workspace(), true);
+
+    return SHAPELIST(outputShapeInfo);
+}
+
+}
 }
 
 #endif
