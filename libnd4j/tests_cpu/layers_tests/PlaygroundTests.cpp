@@ -149,6 +149,16 @@ TEST_F(PlaygroundTests, test_bert_1) {
     delete graph;
 }
 
+TEST_F(PlaygroundTests, test_one_off_ops_1) {
+    auto x = NDArrayFactory::create<float>('c', {4, 128, 768});
+    auto y = NDArrayFactory::create<float>('c', {4, 128, 1});
+    auto z = x.ulike();
+
+    nd4j::ops::squaredsubtract op;
+    op.execute({&x, &y}, {&z});
+}
+
+
 /*
 
 TEST_F(PlaygroundTests, test_broadcast_1) {

@@ -40,6 +40,7 @@
 #endif
 
 #include <helpers/TAD.h>
+#include <helpers/LoopKind.h>
 
 #include "legacy_ops.h"
 
@@ -122,6 +123,7 @@ namespace functions {
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ,
+                             nd4j::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop);
 
@@ -149,6 +151,7 @@ namespace functions {
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ,
+                             nd4j::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop);
 

@@ -75,6 +75,7 @@ namespace functions {
                              Nd4jLong *xTadOffset,
                              Nd4jLong *zTadShapeInfo,
                              Nd4jLong *zTadOffset,
+                             nd4j::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop) {
             DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x,
@@ -88,7 +89,7 @@ namespace functions {
                                                xTadShapeInfo,
                                                xTadOffset,
                                                zTadShapeInfo,
-                                               zTadOffset, start, stop), BROADCAST_OPS);
+                                               zTadOffset, loopKind, start, stop), BROADCAST_OPS);
         }
 
         template <typename X, typename  Y, typename Z>
@@ -105,6 +106,7 @@ namespace functions {
                              Nd4jLong *xTadOffset,
                              Nd4jLong *zTadShapeInfo,
                              Nd4jLong *zTadOffset,
+                             nd4j::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop) {
 
@@ -142,7 +144,7 @@ namespace functions {
                 auto yEws = shape::elementWiseStride(yShapeInfo);
                 auto zEws = shape::elementWiseStride(zTadShapeInfo);
 
-                const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
+                const nd4j::LoopKind::Kind kindOfLoop = loopKind == nd4j::LoopKind::BROADCAST_SCALAR_X || loopKind == nd4j::LoopKind::BROADCAST_SCALAR_Y ? loopKind : nd4j::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
 
                 if (kindOfLoop == nd4j::LoopKind::EWS1) {
                     for (auto i = start; i < stop; i++) {
@@ -162,6 +164,34 @@ namespace functions {
                         PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++)
                             oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
+                    }
+                } else if(kindOfLoop == nd4j::LoopKind::BROADCAST_SCALAR_X){
+                    // this loop effectively turns broadcast into series of scalar ops
+                    auto loopLength = yShapeInfo[shape::rank(yShapeInfo)];
+
+                    for (auto i = start; i < stop; i++) {
+                        auto oY = y + (i * loopLength);
+                        auto oZ = z + (i * loopLength);
+
+                        const auto oX = x[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (unsigned int f = 0; f < loopLength; f++)
+                            oZ[f] = OpType::op(oX, oY[f]);
+                    }
+                } else if(kindOfLoop == nd4j::LoopKind::BROADCAST_SCALAR_Y){
+                    // this loop effectively turns broadcast into series of scalar ops
+                    auto loopLength = xShapeInfo[shape::rank(xShapeInfo)];
+
+                    for (auto i = start; i < stop; i++) {
+                        auto oX = x + (i * loopLength);
+                        auto oZ = z + (i * loopLength);
+
+                        const auto oY = y[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (unsigned int f = 0; f < loopLength; f++)
+                            oZ[f] = OpType::op(oX[f], oY);
                     }
                 }
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {

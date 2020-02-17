@@ -163,15 +163,32 @@ void NativeOpExecutioner::execBroadcast(nd4j::LaunchContext  *lc,
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
 
+    auto loopKind = nd4j::LoopKind::deduceKindOfLoopBroadcast(hXShapeInfo, hYShapeInfo, hZShapeInfo);
+
     auto func = PRAGMA_THREADS_FOR {
-        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, start, stop), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, loopKind, start, stop), LIBND4J_TYPES);
     };
 
-    auto xLen = shape::length(hXShapeInfo);
-    auto yLen = shape::length(hYShapeInfo);
-    auto numTads = xLen / yLen;
+    Nd4jLong numTads = 0;
+
+    switch (loopKind) {
+        case nd4j::LoopKind::BROADCAST_SCALAR_X: {
+                numTads = shape::length(hXShapeInfo);
+            }
+            break;
+        case nd4j::LoopKind::BROADCAST_SCALAR_Y: {
+                numTads = shape::length(hYShapeInfo);
+            }
+            break;
+        default: {
+            auto xLen = shape::length(hXShapeInfo);
+            auto yLen = shape::length(hYShapeInfo);
+            numTads = xLen / yLen;
+        }
+    }
 
     samediff::Threads::parallel_tad(func, 0, numTads);
+
 #endif
 }
 
