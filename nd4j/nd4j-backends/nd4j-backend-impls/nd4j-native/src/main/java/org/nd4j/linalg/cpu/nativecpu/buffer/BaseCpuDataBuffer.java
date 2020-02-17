@@ -951,4 +951,13 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         return this;
     }
 
+    @Override
+    public void syncToPrimary(){
+        ptrDataBuffer.syncToPrimary();
+    }
+
+    @Override
+    public void syncToSpecial(){
+        ptrDataBuffer.syncToSpecial();
+    }
 }

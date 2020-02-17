@@ -1945,4 +1945,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public boolean wasClosed() {
         return released;
     }
+
+    /**
+     * This method synchronizes device memory
+     */
+    public abstract void syncToPrimary();
+
+    /**
+     * This method synchronizes host memory
+     */
+    public abstract void syncToSpecial();
 }

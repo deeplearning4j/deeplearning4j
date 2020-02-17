@@ -1852,4 +1852,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     public int targetDevice() {
         return AtomicAllocator.getInstance().getAllocationPoint(this).getDeviceId();
     }
+
+    @Override
+    public void syncToPrimary(){
+        ptrDataBuffer.syncToPrimary();
+    }
+
+    @Override
+    public void syncToSpecial(){
+        ptrDataBuffer.syncToSpecial();
+    }
 }
