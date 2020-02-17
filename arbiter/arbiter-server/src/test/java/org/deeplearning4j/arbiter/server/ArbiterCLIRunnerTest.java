@@ -98,7 +98,8 @@ public class ArbiterCLIRunnerTest extends BaseDL4JTest {
         assertEquals(configuration,OptimizationConfiguration.fromJson(configuration.toJson()));
 
         FileUtils.writeStringToFile(new File(configPath),configuration.toJson());
-        System.out.println(configuration.toJson());
+//        System.out.println(configuration.toJson());
+        configuration.toJson();
 
         log.info("Starting test");
         cliRunner.runMain(

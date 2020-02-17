@@ -37,7 +37,7 @@ public class TestJsonYaml {
         String json = tm.toJson();
         String yaml = tm.toYaml();
 
-        System.out.println(json);
+//        System.out.println(json);
 
         TrainingMaster fromJson = ParameterAveragingTrainingMaster.fromJson(json);
         TrainingMaster fromYaml = ParameterAveragingTrainingMaster.fromYaml(yaml);

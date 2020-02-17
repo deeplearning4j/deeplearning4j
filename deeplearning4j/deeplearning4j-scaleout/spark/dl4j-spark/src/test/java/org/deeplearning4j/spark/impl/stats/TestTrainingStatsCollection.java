@@ -107,7 +107,7 @@ public class TestTrainingStatsCollection extends BaseSparkTest {
                 expectedStatNames.addAll(c);
             }
 
-            System.out.println(expectedStatNames);
+//            System.out.println(expectedStatNames);
 
 
             SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
@@ -119,7 +119,7 @@ public class TestTrainingStatsCollection extends BaseSparkTest {
             }
 
             String statsAsString = stats.statsAsString();
-            System.out.println(statsAsString);
+//            System.out.println(statsAsString);
             assertEquals(actualKeySet.size(), statsAsString.split("\n").length); //One line per stat
 
 

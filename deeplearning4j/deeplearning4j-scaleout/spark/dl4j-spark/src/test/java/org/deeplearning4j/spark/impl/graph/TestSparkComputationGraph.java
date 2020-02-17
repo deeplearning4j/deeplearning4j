@@ -115,7 +115,7 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         TrainingMaster tm = new ParameterAveragingTrainingMaster(true, numExecutors(), 1, 10, 1, 0);
 
         SparkComputationGraph scg = new SparkComputationGraph(sc, cg, tm);
-        scg.setListeners(Collections.singleton((TrainingListener) new ScoreIterationListener(1)));
+        scg.setListeners(Collections.singleton((TrainingListener) new ScoreIterationListener(5)));
 
         JavaRDD<MultiDataSet> rdd = sc.parallelize(list);
         scg.fitMultiDataSet(rdd);

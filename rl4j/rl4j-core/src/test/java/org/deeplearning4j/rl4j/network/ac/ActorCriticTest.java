@@ -100,8 +100,8 @@ public class ActorCriticTest {
                 double error2 = gradient2 - gradient.getDouble(1);
                 double relError1 = error1 / gradient.getDouble(0);
                 double relError2 = error2 / gradient.getDouble(1);
-                System.out.println(gradient.getDouble(0) + "  " + gradient1 + " " + relError1);
-                System.out.println(gradient.getDouble(1) + "  " + gradient2 + " " + relError2);
+//                System.out.println(gradient.getDouble(0) + "  " + gradient1 + " " + relError1);
+//                System.out.println(gradient.getDouble(1) + "  " + gradient2 + " " + relError2);
                 assertTrue(gradient.getDouble(0) < maxRelError || Math.abs(relError1) < maxRelError);
                 assertTrue(gradient.getDouble(1) < maxRelError || Math.abs(relError2) < maxRelError);
             }

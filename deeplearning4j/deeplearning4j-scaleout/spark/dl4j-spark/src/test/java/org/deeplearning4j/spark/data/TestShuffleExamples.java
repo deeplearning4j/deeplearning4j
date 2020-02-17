@@ -59,7 +59,7 @@ public class TestShuffleExamples extends BaseSparkTest {
         int totalExampleCount = 0;
         for (DataSet ds : shuffledList) {
             totalExampleCount += ds.getFeatures().length();
-            System.out.println(Arrays.toString(ds.getFeatures().data().asFloat()));
+//            System.out.println(Arrays.toString(ds.getFeatures().data().asFloat()));
 
             assertEquals(ds.getFeatures(), ds.getLabels());
         }

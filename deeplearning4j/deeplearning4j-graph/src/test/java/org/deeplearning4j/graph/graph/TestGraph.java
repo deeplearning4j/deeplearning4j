@@ -220,7 +220,7 @@ public class TestGraph extends BaseDL4JTest {
                 sum += transitionProb[i][j];
             for (int j = 0; j < transitionProb[i].length; j++)
                 transitionProb[i][j] /= sum;
-            System.out.println(Arrays.toString(transitionProb[i]));
+//            System.out.println(Arrays.toString(transitionProb[i]));
         }
 
         //Check that transition probs are essentially correct (within bounds of random variation)
