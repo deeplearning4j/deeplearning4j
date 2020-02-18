@@ -20,6 +20,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -230,6 +231,7 @@ public class TestPythonExecutioner {
         buff.putScalar(0, 97); // a
         buff.putScalar(1, 98); // b
         buff.putScalar(2, 99); // c
+        ((BaseDataBuffer)buff.data()).syncToPrimary();
 
 
         PythonVariables pyInputs = new PythonVariables();
@@ -251,6 +253,7 @@ public class TestPythonExecutioner {
           buff.putScalar(0, 97); // a
           buff.putScalar(1, 98); // b
           buff.putScalar(2, 99); // c
+          ((BaseDataBuffer)buff.data()).syncToPrimary();
 
 
           PythonVariables pyInputs = new PythonVariables();
@@ -270,6 +273,8 @@ public class TestPythonExecutioner {
         buff.putScalar(0, 97); // a
         buff.putScalar(1, 98); // b
         buff.putScalar(2, 99); // c
+        ((BaseDataBuffer)buff.data()).syncToPrimary();
+
         PythonVariables pyInputs = new PythonVariables();
         pyInputs.addBytes("buff", new BytePointer(buff.data().pointer()));
         String code = "buff[0]+=2\nbuff[2]-=2";
@@ -288,6 +293,7 @@ public class TestPythonExecutioner {
         buff.putScalar(0, 97); // a
         buff.putScalar(1, 98); // b
         buff.putScalar(2, 99); // c
+        ((BaseDataBuffer)buff.data()).syncToPrimary();
 
 
         PythonVariables pyInputs = new PythonVariables();

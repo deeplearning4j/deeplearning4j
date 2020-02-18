@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.SizeTPointer;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -132,6 +133,11 @@ public class PythonObject {
             log.warn("\n\nThe given nd4j array \n\n{}\n\n is of BFLOAT16 datatype. " +
                     "Casting a copy of it to FLOAT and creating the respective numpy array from it.\n", indArray);
             inputArray = indArray.castTo(DataType.FLOAT);
+        }
+
+        //Sync to host memory in the case of CUDA, before passing the host memory pointer to Python
+        if(inputArray.data() instanceof BaseDataBuffer){
+            ((BaseDataBuffer)inputArray.data()).syncToPrimary();
         }
 
         nativePythonObject = PyArray_New(PyArray_Type(), shape.length, new SizeTPointer(shape),
@@ -505,7 +511,11 @@ public class PythonObject {
             Python.setContext(tempContext);
             PythonExecutioner.setVariable("memview", this);
             PythonExecutioner.exec("import numpy as np\narr = np.array(memview)");
-            BytePointer ret = new BytePointer(PythonExecutioner.getVariable("arr").toNumpy().getNd4jArray().data().pointer());
+            INDArray arr = PythonExecutioner.getVariable("arr").toNumpy().getNd4jArray();
+            if(arr.data() instanceof BaseDataBuffer){
+                ((BaseDataBuffer)arr.data()).syncToPrimary();
+            }
+            BytePointer ret = new BytePointer(arr.data().pointer());
             Python.setContext(originalContext);
             Python.deleteContext(tempContext);
             return ret;

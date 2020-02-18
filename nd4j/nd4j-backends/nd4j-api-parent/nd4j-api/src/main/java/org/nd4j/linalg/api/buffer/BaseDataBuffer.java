@@ -1946,13 +1946,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
         return released;
     }
 
+
     /**
-     * This method synchronizes device memory
+     * This method synchronizes host memory
      */
     public abstract void syncToPrimary();
 
     /**
-     * This method synchronizes host memory
+     * This method synchronizes device memory
      */
     public abstract void syncToSpecial();
 }
