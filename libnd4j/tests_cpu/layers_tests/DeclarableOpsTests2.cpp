@@ -397,27 +397,6 @@ TEST_F(DeclarableOpsTests2, NLP_Cbow_Test_1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests2, YetAnotherMatmulTest_1) {
-    auto A = NDArrayFactory::create<float>('c', {3, 3});
-    auto B = NDArrayFactory::create<float>('c', {3, 1});
-    auto exp = NDArrayFactory::create<float>('c', {3, 1}, {14.00f,  32.00f,  50.00f});
-
-    A.linspace(1);
-    B.linspace(1);
-
-    nd4j::ops::matmul op;
-
-    auto result = op.evaluate({&A, &B}, {}, {});
-
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 1, 3, 1, 1, 1, 4});
     x.linspace(1);

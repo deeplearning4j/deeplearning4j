@@ -1341,40 +1341,6 @@ TEST_F(DeclarableOpsTests1, MultiplyScalarScalar1) {
     delete exp;
 }
 
-TEST_F(DeclarableOpsTests1, TestMatMul1) {
-    auto x = NDArrayFactory::create_<float>('c', {3, 5});
-    x->linspace(1);
-
-    auto y = NDArrayFactory::create_<float>('c', {5, 3});
-    y->linspace(1);
-
-    float _expB[]{135.0f, 310.0f, 485.0f, 150.0f, 350.0f, 550.0f, 165.0f, 390.0f, 615.0f};
-    Nd4jLong _expS[] {2, 3, 3, 1, 3, 0, 1, 102}; // expected shape
-    ArrayOptions::setDataType(_expS, nd4j::DataType::FLOAT32);
-    NDArray exp(_expB, _expS);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(-2, y);
-    variableSpace->putVariable(1, new Variable());
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2});
-
-    nd4j::ops::matmul op;
-
-    Nd4jStatus status = op.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(variableSpace->hasVariable(1));
-
-    auto result = variableSpace->getVariable(1)->getNDArray();
-
-    ASSERT_TRUE(result->equalsTo(&exp));
-
-    delete block;
-    delete variableSpace;
-}
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
 
