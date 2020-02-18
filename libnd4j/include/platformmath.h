@@ -327,6 +327,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_floor(bfloat16 value) {
+            return static_cast<bfloat16>(floorf((float)value));
+        }
+
+        template <>
         math_def FORCEINLINE double p_floor(double value) {
             return floor(value);
         }
@@ -353,6 +358,11 @@ namespace nd4j {
         }
 
         template <>
+        math_def FORCEINLINE bfloat16 p_ceil(bfloat16 value) {
+            return static_cast<bfloat16>(ceilf((float)value));
+        }
+
+        template <>
         math_def FORCEINLINE double p_ceil(double value) {
             return ceil(value);
         }
@@ -373,6 +383,12 @@ namespace nd4j {
         math_def FORCEINLINE float16 p_round(float16 val) {
             return static_cast<float16>(roundf((float) val));
         }
+
+        template <>
+        math_def FORCEINLINE bfloat16 p_round(bfloat16 value) {
+            return static_cast<bfloat16>(roundf((float)value));
+        }
+
 
         template <>
         math_def FORCEINLINE double p_round(double value) {
