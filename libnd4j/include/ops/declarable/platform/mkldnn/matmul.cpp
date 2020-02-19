@@ -279,7 +279,7 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
     const DataType zType = z->dataType();
 
 
-    return block.isUseMKLDNN() &&
+    return block.isUseMKLDNN() && x->rankOf() < 3 &&
           (
             (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
             (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||
