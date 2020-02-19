@@ -226,6 +226,7 @@
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
+        <dl4j-test-resources.classifier></dl4j-test-resources.classifier>
 
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>
@@ -561,6 +562,7 @@
                     <groupId>org.deeplearning4j</groupId>
                     <artifactId>dl4j-test-resources</artifactId>
                     <version>${dl4j-test-resources.version}</version>
+                    <classifier>${dl4j-test-resources.classifier}</classifier>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
@@ -854,7 +856,7 @@
                 <os.arch>arm</os.arch>
             </properties>
         </profile>
-        
+
         <!-- Integration Tests Profile. By default (when this profile is not enabled) unit tests are run only.
              Note also that some tests may run fewer/quicker cases for unit tests vs. integration tests
         -->
