@@ -117,7 +117,7 @@ static void betaIncForArray(nd4j::LaunchContext * context, const NDArray& a, con
 	int xLen = x.lengthOf();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
+        for (auto i = start; i < stop; i++)
             output.t<T>(i) = betaIncCore<T>(a.t<T>(i), b.t<T>(i), x.t<T>(i));
     };
 

@@ -35,7 +35,7 @@ namespace helpers {
         int inLen = input->lengthOf();
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment) {
+            for (auto e = start; e < stop; e++) {
                 float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
 
                 if (val < probValue)
@@ -130,7 +130,7 @@ namespace helpers {
         nd4j::graph::RandomGenerator nodeRng(3019L, seed);
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment) {
+            for (auto e = start; e < stop; e++) {
                 float randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
                 float xVal = input->e<float>(e);
                 output->p<float>(e, randVal >= probValue ? alpha * beta + alpha1 : alpha * xVal + alpha1);

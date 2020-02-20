@@ -94,7 +94,7 @@ void bgemm_(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, st
         int vaSize = vA.size();
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto p = start; p < stop; p += increment) {
+            for (auto p = start; p < stop; p++) {
                 auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
                 auto B = reinterpret_cast<T *>(vB.at(p)->buffer());
                 auto C = reinterpret_cast<T *>(vC.at(p)->buffer());

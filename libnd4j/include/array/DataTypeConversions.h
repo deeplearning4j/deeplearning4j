@@ -52,7 +52,7 @@ namespace nd4j {
                                 TypeCast::convertGeneric<T2, T>(nullptr, tmp, length, buffer);
 #else
                 auto func = PRAGMA_THREADS_FOR {
-                    for (auto e = start; e < stop; e += increment)
+                    for (auto e = start; e < stop; e++)
                         buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                 };
 
@@ -110,7 +110,7 @@ namespace nd4j {
                                 TypeCast::convertGeneric<float, T>(nullptr, tmp, length, buffer);
 #else
                             auto func = PRAGMA_THREADS_FOR {
-                                for (auto e = start; e < stop; e += increment)
+                                for (auto e = start; e < stop; e++)
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 
@@ -138,7 +138,7 @@ namespace nd4j {
 
 #else
                             auto func = PRAGMA_THREADS_FOR {
-                                for (auto e = start; e < stop; e += increment)
+                                for (auto e = start; e < stop; e++)
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 
@@ -164,7 +164,7 @@ namespace nd4j {
                                 TypeCast::convertGeneric<float16, T>(nullptr, tmp, length, buffer);
 #else
                             auto func = PRAGMA_THREADS_FOR {
-                                for (auto e = start; e < stop; e += increment)
+                                for (auto e = start; e < stop; e++)
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 

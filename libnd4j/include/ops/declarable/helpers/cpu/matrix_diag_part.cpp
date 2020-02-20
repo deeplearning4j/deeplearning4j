@@ -46,7 +46,7 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
     int lO = listOut.size();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
+        for (auto i = start; i < stop; i++)
             for (int j = 0; j < lastDimension; ++j)
                 listOut.at(i)->p(j, listDiag.at(i)->e<T>(j, j));
     };

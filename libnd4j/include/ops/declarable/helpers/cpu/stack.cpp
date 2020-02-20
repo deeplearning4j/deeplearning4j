@@ -37,7 +37,7 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray* outArr, c
 	    int inSize = inArrs.size();
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment)
+            for (auto i = start; i < stop; i++)
                 outArr->p<T>(i, inArrs[i]->t<T>(0));
         };
 
@@ -50,7 +50,7 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray* outArr, c
         int listSize = list.size();
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment)
+            for (auto i = start; i < stop; i++)
                 list.at(i)->assign(inArrs[i]);
         };
         samediff::Threads::parallel_tad(func, 0, listSize);

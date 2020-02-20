@@ -501,7 +501,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
 
     auto func = PRAGMA_THREADS_FOR{
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
                 auto cdata = data + offsets[e];
                 if (dataType == DataType::UTF16) {
                     unicode::utf8to16(string[e], cdata, std::char_traits<char>::length(string[e]));
@@ -568,7 +568,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::stri
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
 
     auto func = PRAGMA_THREADS_FOR{
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
              auto cdata = data + offsets[e];
              if (dataType == DataType::UTF16) {
                  unicode::utf8to16(string[e].data(), cdata, string[e].size());
@@ -635,7 +635,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u16s
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
 
     auto func = PRAGMA_THREADS_FOR{
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
              auto cdata = data + offsets[e];
              if (dtype == DataType::UTF16) {
                  memcpy(cdata, string[e].data(), string[e].size() * sizeof(uint16_t));
@@ -701,7 +701,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
 
 
     auto func = PRAGMA_THREADS_FOR{
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
              auto cdata = data + offsets[e];
              if (dtype == DataType::UTF16) {
                  memcpy(cdata, string[e], std::char_traits<char16_t>::length(string[e]) * sizeof(uint16_t));
@@ -767,7 +767,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u32s
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
 
     auto func = PRAGMA_THREADS_FOR{
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             auto cdata = data + offsets[e];
             if (dtype == DataType::UTF16) {
                 unicode::utf32to16(string[e].data(), cdata, string[e].size());
@@ -833,7 +833,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
     auto data = reinterpret_cast<int8_t*>(bufferAsT<int8_t>() + headerLength);
 
     auto func = PRAGMA_THREADS_FOR{
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             auto cdata = data + offsets[e];
             if (dtype == DataType::UTF16) {
                 unicode::utf32to16(string[e], cdata, std::char_traits<char32_t>::length(string[e]));
@@ -2367,7 +2367,7 @@ NDArray NDArray::asS() const {
     const auto inData = bufferAsT<int8_t>() + offsetsLength;
 
     auto func = PRAGMA_THREADS_FOR{
-        for (int e = start; e < stop; e += increment) {
+        for (int e = start; e < stop; e++) {
            auto cdata = outData + offsets[e];
            auto end = nInputoffsets[e + 1];
            auto idata = inData + nInputoffsets[e];
@@ -3466,7 +3466,7 @@ NDArray NDArray::dup(const char newOrder) const {
             std::vector<std::string> strings(lengthOf());
 
             auto func = PRAGMA_THREADS_FOR{
-                    for (auto i = start; i < stop; i += increment) {
+                    for (auto i = start; i < stop; i++) {
                            strings[i] = std::move(this->e<std::string>(i));
                     }
             };
@@ -3479,7 +3479,7 @@ NDArray NDArray::dup(const char newOrder) const {
             std::vector<std::u16string> strings(lengthOf());
 
             auto func = PRAGMA_THREADS_FOR{
-                    for (auto i = start; i < stop; i += increment) {
+                    for (auto i = start; i < stop; i++) {
                            strings[i] = std::move(this->e<std::u16string>(i));
                     }
             };
@@ -3491,7 +3491,7 @@ NDArray NDArray::dup(const char newOrder) const {
 
         std::vector<std::u32string> strings(lengthOf());
         auto func = PRAGMA_THREADS_FOR{
-               for (auto i = start; i < stop; i += increment) {
+               for (auto i = start; i < stop; i++) {
                       strings[i] = std::move(this->e<std::u32string>(i));
                }
         };

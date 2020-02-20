@@ -88,7 +88,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
 
     if (kindOfLoop == nd4j::LoopKind::EWS1) {
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], y[i], extraParamsLocal + 3 * thread_id), extraParamsLocal + 3 * thread_id);
             }
         };
@@ -98,7 +98,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     } else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                 intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[offset], y[offset], extraParamsLocal + 3 * thread_id), extraParamsLocal + 3 * thread_id);
             }
@@ -110,7 +110,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                 auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                 intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id), extraParamsLocal + 3 * thread_id);

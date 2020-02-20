@@ -69,7 +69,7 @@ namespace helpers {
         }
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment) {
+            for (auto e = start; e < stop; e++) {
                 values->p(e, static_cast<T>(valuesVector[e]));
                 if (counts != nullptr)
                     counts->p(e, countsMap[valuesVector[e]]);

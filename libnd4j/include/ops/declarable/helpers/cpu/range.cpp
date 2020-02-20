@@ -39,7 +39,7 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
     auto d = delta.e<T>(0);
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
+        for (auto i = start; i < stop; i++)
             buff[i] = s + i * d;
     };
     samediff::Threads::parallel_for(func, 0, len);

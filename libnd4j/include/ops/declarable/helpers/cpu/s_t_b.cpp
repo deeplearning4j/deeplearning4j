@@ -114,7 +114,7 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
     // loop through input array
     auto func = PRAGMA_THREADS_FOR {
         Nd4jLong coords[MAX_RANK];
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
 
             shape::index2coords(i, output.getShapeInfo(), coords);
 
@@ -300,7 +300,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
     // loop through output array
     auto func = PRAGMA_THREADS_FOR {
         Nd4jLong coords[MAX_RANK];
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             shape::index2coords(i, output.getShapeInfo(), coords);
 
             const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);

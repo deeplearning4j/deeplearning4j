@@ -73,7 +73,7 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
         auto func = PRAGMA_THREADS_FOR {
             intermediatery[thread_id] = OpType::startingIndexValue(x);
 
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 IndexValue<X> curr(x[i], i);
                 intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
             }
@@ -88,7 +88,7 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
         auto func = PRAGMA_THREADS_FOR {
             intermediatery[thread_id] = OpType::startingIndexValue(x);
 
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                 IndexValue<X> curr(x[offset], i);
                 intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);

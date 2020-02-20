@@ -141,7 +141,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
 
         Nd4jLong coords[MAX_RANK];
 
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
 
             shape::index2coords(i, input->getShapeInfo(), coords);
 

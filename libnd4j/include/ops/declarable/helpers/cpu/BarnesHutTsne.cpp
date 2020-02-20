@@ -153,7 +153,7 @@ namespace helpers {
         auto rowSize = sizeof(T) * colCount;
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto n = start; n < stop; n += increment) {
+            for (auto n = start; n < stop; n++) {
                 int s = rowP->e<int>(n);
                 int end = rowP->e<int>(n + 1);
                 int shift = n * colCount;

@@ -80,7 +80,7 @@ namespace nd4j {
                 int nLen = zArr.lengthOf() / yArr.sizeAt(-1);
 
                 auto func = PRAGMA_THREADS_FOR{
-                     for (uint32_t total = start; total < stop; total += increment) {
+                     for (uint32_t total = start; total < stop; total++) {
 
                         uint32_t i = total / zDim1;
                         uint32_t j = total % zDim1;

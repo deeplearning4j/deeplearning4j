@@ -49,7 +49,7 @@ namespace nd4j {
 
                 if (tadEws >= 1) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = 0; e < stop; e += increment) {
+                        for (auto e = 0; e < stop; e++) {
                             auto cO = output + tadPack.primaryOffsets()[e];
 
                             auto idx = static_cast<int>(indices[e]);
@@ -70,7 +70,7 @@ namespace nd4j {
                     samediff::Threads::parallel_tad(func, 0, numTads);
                 } else {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto cO = output + tadPack.primaryOffsets()[e];
 
                             auto idx = static_cast<int>(indices[e]);

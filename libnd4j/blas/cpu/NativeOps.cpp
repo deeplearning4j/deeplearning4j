@@ -1291,7 +1291,7 @@ void pullRowsGeneric(void *vx,
     _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto idx = start; idx < stop; idx += increment) {
+        for (auto idx = start; idx < stop; idx++) {
             auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
             auto zTadOffsetForBlock = zTadOffsets[idx];
 
@@ -1356,7 +1356,7 @@ void tearGeneric(void *vx,
     auto numTads = shape::length(hXShapeInfo) / tadLength;
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             auto hZ = reinterpret_cast<T *>(targets[i]);
             auto s = hX + tadOffsets[i];
 
@@ -1478,7 +1478,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
     auto dZ = reinterpret_cast<T **>(dz);
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto f = start; f < stop; f += increment) {
+        for (auto f = start; f < stop; f++) {
             auto hX = reinterpret_cast<T *>(dX[f]);
             //auto hZ = reinterpret_cast<T *>(dZ[f]);
 

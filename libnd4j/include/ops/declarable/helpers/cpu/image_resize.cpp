@@ -280,7 +280,7 @@ namespace helpers {
         int xsSize = xs.size();
         // Scale x interpolation weights to avoid a multiplication during iteration.
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 xs[i]._bottomIndex *= channels;
                 xs[i]._topIndex *= channels;
             }
@@ -906,7 +906,7 @@ namespace helpers {
         auto outputPtr = output->bufferAsT<float>(); // output is always float. TO DO: provide another float types also with  template <typename X, typename Z> declaration
 
         auto batchProcess = PRAGMA_THREADS_FOR {
-            for (auto batch = start; batch < stop; batch += increment) {
+            for (auto batch = start; batch < stop; batch++) {
                 for (auto y = 0; y < st.outHeight; ++y) {
                     const float inY = y * st.heightScale;
                     const float inY1 = (y + 1) * st.heightScale;
@@ -961,7 +961,7 @@ namespace helpers {
             if (Status::OK() == res) {
                 std::vector<CachedInterpolation> xCached(st.outWidth);
                 auto cachingProcedure = PRAGMA_THREADS_FOR {
-                    for (auto x = start; x < stop; x += increment) {
+                    for (auto x = start; x < stop; x++) {
                         auto &xCache = xCached[x];
                         const float inX = x * st.widthScale;
                         const float inX1 = (x + 1) * st.widthScale;

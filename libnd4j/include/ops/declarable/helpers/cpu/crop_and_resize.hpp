@@ -50,7 +50,7 @@ namespace nd4j {
                     T widthScale = (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : T(0);
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto y = start; y < stop; y += increment) {
+                        for (auto y = start; y < stop; y++) {
                             const float inY = (cropHeight > 1)
                                               ? y1 * (imageHeight - 1) + y * heightScale
                                               : 0.5 * (y1 + y2) * (imageHeight - 1);

@@ -39,7 +39,7 @@ void crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray
     int tads = tadsA.size();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             auto a_ = tadsA.at(e);
             auto b_ = tadsB.at(e);
             auto o_ = tadsO.at(e);

@@ -32,7 +32,7 @@ namespace helpers {
         int lLen = labels->lengthOf();
 
         auto func = PRAGMA_THREADS_FOR {
-            for (int j = start; j < stop; j += increment) {
+            for (int j = start; j < stop; j++) {
                 auto label = labels->e<Nd4jLong>(j);
                 auto pred = predictions->e<Nd4jLong>(j);
                 T value = (weights == nullptr ? (T) 1.0f : weights->e<T>(j));

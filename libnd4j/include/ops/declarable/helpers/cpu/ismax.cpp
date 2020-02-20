@@ -146,7 +146,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         int span = (tads / num_threads) + 8;
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto r = start; r < stop; r += increment) {
+            for (auto r = start; r < stop; r++) {
                     auto rX = const_cast<NDArray*>(input)->bufferAsT<X>() + tadOffsets[r];
                     auto rZ = output->bufferAsT<Z>() + zOfsets[r];
 

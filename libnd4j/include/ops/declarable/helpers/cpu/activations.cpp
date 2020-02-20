@@ -291,7 +291,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
             shape::calcOffsets(tadShapeInfo, offsets);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto inBuff = input.bufferAsT<T>() + tadOffsets[i];
                     auto outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
@@ -341,7 +341,7 @@ void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& a
     const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             // FIXME: double!
             double x = input.e<double>(i);
             if (x < 0.0) {
