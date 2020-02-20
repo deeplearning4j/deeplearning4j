@@ -31,81 +31,170 @@
 #include <helpers/Loops.h>
 
 namespace nd4j {
-
 /**
 * Concatneate multi array of the same shape together
 * along a particular dimension
 */
+// template <typename T>
+// void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+//         const uint numOfArrs = inArrs.size();
+
+//         int outDim;
+//         const bool isOutputVector = output.isCommonVector(outDim);
+
+//         if(isOutputVector || (axis == 0 && output.ordering() == 'c')) {
+
+//             bool allVectorsOrScalars = true;
+//             const uint outEws = isOutputVector ? output.stridesOf()[outDim] : output.ews();
+
+//             std::vector<int> nonUnityDim(numOfArrs);
+//             std::vector<Nd4jLong> zOffset(numOfArrs);
+
+//             for(int i = 0; i < numOfArrs; i++) {
+//                 allVectorsOrScalars &= (inArrs[i]->lengthOf() == 1 || inArrs[i]->isCommonVector(nonUnityDim[i]));
+//                 if(!allVectorsOrScalars)
+//                     break;
+//                 if(i == 0)  zOffset[0] = 0;
+//                 else        zOffset[i] = zOffset[i - 1] + outEws * inArrs[i - 1]->lengthOf();
+//             }
+
+//             if(allVectorsOrScalars) {
+
+//                 T* outBuff = output.bufferAsT<T>();
+
+//                 auto func = PRAGMA_THREADS_FOR {
+//                     for (auto r = start; r < stop; r += increment) {
+//                         const Nd4jLong arrLen = inArrs[r]->lengthOf();
+//                         const uint xEws = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
+
+//                         T *z = outBuff + zOffset[r];
+//                         T *x = inArrs[r]->bufferAsT<T>();
+
+//                         if (outEws == 1 && xEws == 1)
+//                             for (Nd4jLong e = 0; e < arrLen; e++)
+//                                 z[e] = x[e];
+//                         else
+//                             for (Nd4jLong e = 0; e < arrLen; e++)
+//                                 z[e * outEws] = x[e * xEws];
+//                     }
+//                 };
+
+//                 samediff::Threads::parallel_tad(func, 0, numOfArrs);
+//                 return;
+//             }
+//         }
+
+//         const int rank  = inArrs[0]->rankOf();
+//         const int rank2 = 2*rank;
+//         std::vector<std::vector<Nd4jLong>> indices(numOfArrs, std::vector<Nd4jLong>(rank2,0));
+
+//         // take into account indices for first array
+//         indices[0][2 * axis + 1] = inArrs[0]->sizeAt(axis);
+
+//         // loop through the rest of input arrays
+//         for(int i = 1; i < numOfArrs; ++i) {
+//             indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
+//             indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
+//         }
+
+//         auto func = PRAGMA_THREADS_FOR {
+//             for (auto i = start; i < stop; i += increment) {
+//                 auto temp = output(indices[i], true);
+//                 nd4j::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr, 0, 1);
+//             }
+//         };
+
+//         samediff::Threads::parallel_tad(func, 0, numOfArrs);
+// }
+
 template <typename T>
 void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
-        const uint numOfArrs = inArrs.size();
 
-        int outDim;
-        const bool isOutputVector = output.isCommonVector(outDim);
+    const int numOfInArrs = inArrs.size();
+    const auto sizeofT    = output.sizeOfT();
 
-        if(isOutputVector || (axis == 0 && output.ordering() == 'c')) {
+    T* zBuff = output.bufferAsT<T>();
 
-            bool allVectorsOrScalars = true;
-            const uint outEws = isOutputVector ? output.stridesOf()[outDim] : output.ews();
+    bool luckCase1 = ((axis == 0 && output.ordering() == 'c') || (axis == output.rankOf() - 1 && output.ordering() == 'f')) && output.ews() == 1;
 
-            std::vector<int> nonUnityDim(numOfArrs);
-            std::vector<Nd4jLong> zOffset(numOfArrs);
+    if(luckCase1) {
+        for (uint i = 0; i < numOfInArrs; ++i) {
+            luckCase1 &= inArrs[i]->ordering() == output.ordering() && inArrs[i]->ews() == 1;
+            if(!luckCase1)
+                break;
+        }
+    }
 
-            for(int i = 0; i < numOfArrs; i++) {
-                allVectorsOrScalars &= (inArrs[i]->lengthOf() == 1 || inArrs[i]->isCommonVector(nonUnityDim[i]));
-                if(!allVectorsOrScalars)
-                    break;
-                if(i == 0)  zOffset[0] = 0;
-                else        zOffset[i] = zOffset[i - 1] + outEws * inArrs[i - 1]->lengthOf();
-            }
+    if(luckCase1) {     // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6} order f
 
-            if(allVectorsOrScalars) {
+        T* z = zBuff;
+        for (uint i = 0; i < numOfInArrs; ++i) {
+            const auto memAmountToCopy = inArrs[i]->lengthOf();
+            memcpy(z, inArrs[i]->bufferAsT<T>(), memAmountToCopy * sizeofT);
+            z += memAmountToCopy;
+        }
+        return;
+    }
 
-                T* outBuff = output.bufferAsT<T>();
+    const bool isZcontin = output.strideAt(axis) == 1 && output.ordering() == 'c';
+    bool areInputsContin = true;
+    bool allSameOrder    = true;
 
-                auto func = PRAGMA_THREADS_FOR {
-                    for (auto r = start; r < stop; r++) {
-                        const Nd4jLong arrLen = inArrs[r]->lengthOf();
-                        const uint xEws = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
+    if(isZcontin) {
+        for (uint i = 0; i < numOfInArrs; ++i) {
+            areInputsContin &= inArrs[i]->strideAt(axis) == 1;
+            allSameOrder    &= inArrs[i]->ordering() == output.ordering();
+            if(!areInputsContin || !allSameOrder)
+                break;
+        }
+    }
 
-                        T *z = outBuff + zOffset[r];
-                        T *x = inArrs[r]->bufferAsT<T>();
+    const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
 
-                        if (outEws == 1 && xEws == 1)
-                            for (Nd4jLong e = 0; e < arrLen; e++)
-                                z[e] = x[e];
-                        else
-                            for (Nd4jLong e = 0; e < arrLen; e++)
-                                z[e * outEws] = x[e * xEws];
-                    }
-                };
+    if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
 
-                samediff::Threads::parallel_tad(func, 0, numOfArrs);
-                return;
+        const uint zDim       = output.sizeAt(axis);
+
+        for (uint i = 0; i < output.lengthOf() / zDim; ++i) {
+            T* z = zBuff + zDim * i;
+
+            for (uint j = 0; j < inArrs.size(); ++j) {
+                const auto xDim = inArrs[j]->sizeAt(axis);
+                const T* x = inArrs[j]->bufferAsT<T>() + xDim * i;
+                memcpy(z, x, xDim * sizeofT);
+                z += xDim;
             }
         }
 
-        const int rank  = inArrs[0]->rankOf();
-        const int rank2 = 2*rank;
-        std::vector<std::vector<Nd4jLong>> indices(numOfArrs, std::vector<Nd4jLong>(rank2,0));
+        return;
+    }
 
-        // take into account indices for first array
-        indices[0][2 * axis + 1] = inArrs[0]->sizeAt(axis);
+    // general case
+    auto func = PRAGMA_THREADS_FOR {
 
-        // loop through the rest of input arrays
-        for(int i = 1; i < numOfArrs; ++i) {
-            indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
-            indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
-        }
+        Nd4jLong coords[MAX_RANK];
 
-        auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i++) {
-                auto temp = output(indices[i], true);
-                nd4j::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr, 0, 1);
+        for (auto i = start; i < stop; i += increment) {
+
+            shape::index2coords(i, output.getShapeInfo(), coords);
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+
+            uint inArrIdx = 0;
+            uint xDim = inArrs[inArrIdx]->sizeAt(axis);
+
+            while (coords[axis] >= xDim) {
+                coords[axis] -= xDim;
+                xDim = inArrs[++inArrIdx]->sizeAt(axis);
             }
-        };
 
-        samediff::Threads::parallel_tad(func, 0, numOfArrs);
+            const T* x = inArrs[inArrIdx]->bufferAsT<T>();
+            const auto xOffset = shape::getOffset(inArrs[inArrIdx]->getShapeInfo(), coords);
+
+            zBuff[zOffset] = x[xOffset];
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, output.lengthOf());
 }
 
 /**
@@ -127,6 +216,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     for(int i = 0; i < numArrays; ++i)
         delete inputs[i];
 }
+
 
 /**
  * This kernel accumulates X arrays, and stores result into Z

@@ -42,8 +42,8 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
     std::vector<int> arrsToDelete;
     int index = 0;
     bool allOfSameType = true;
-    auto theFirstRank = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
-    auto theFirstDatatype = block.width() > 0 ? INPUT_VARIABLE(0)->dataType() : block.dataType();
+    auto rankOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->rankOf() : 0;
+    auto typeOfFirstArr = block.width() > 0 ? INPUT_VARIABLE(0)->dataType() : block.dataType();
 
     for(int i = 0; i < numOfInArrs; ++i) {
         auto input = INPUT_VARIABLE(i);
@@ -51,10 +51,10 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
 // TODO: follow two lines are in accordance to current tf.concat spec. Commented for compatibility with legacy
 //        REQUIRE_TRUE(currentRank > 0, 0, "Rank of input variable %i must be greater 0, but is %lld instead.", i, currentRank);
-//        REQUIRE_TRUE(theFirstRank == currentRank, 0, "Number of dimensions in concat should be equals, but for %i input variable %lld != %lld appears.", i, currentRank, theFirstRank);
+//        REQUIRE_TRUE(rankOfFirstArr == currentRank, 0, "Number of dimensions in concat should be equals, but for %i input variable %lld != %lld appears.", i, currentRank, rankOfFirstArr);
         if(!input->isEmpty()) {
 
-            allOfSameType &= (theFirstDatatype == input->dataType());
+            allOfSameType &= (typeOfFirstArr == input->dataType());
 
             if(input->rankOf() == 0) {
                 auto vec = new NDArray('c', {1}, input->dataType(), block.launchContext());

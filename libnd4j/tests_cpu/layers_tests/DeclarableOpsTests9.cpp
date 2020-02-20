@@ -300,6 +300,8 @@ TEST_F(DeclarableOpsTests9, concat_test3) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
 
+    output->printBuffer();
+
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -620,12 +622,12 @@ TEST_F(DeclarableOpsTests9, concat_test18) {
 
     // we crate bunch of arrays, filled with specific values
     for (int e = 0; e < 2000; e++) {
-        auto array = NDArrayFactory::create_<float>('c', {1, 300});
+        auto array = NDArrayFactory::create_<int>('c', {1, 300});
         array->assign(e);
         context.setInputArray(e, array, true);
     }
 
-    auto z = NDArrayFactory::create<float>('c', {2000, 300});
+    auto z = NDArrayFactory::create<int>('c', {2000, 300});
     context.setOutputArray(0, &z, false);
     context.setIArguments(&axis, 1);
 
@@ -633,8 +635,10 @@ TEST_F(DeclarableOpsTests9, concat_test18) {
     op.execute(&context);
 
     for (int e = 0; e < 2000; e++) {
+        auto exp = NDArrayFactory::create<int>('c', {300});
+        exp.assign(e);
         auto row = z.tensorAlongDimension(e, {1});
-        ASSERT_NEAR((float) e, row.e<float>(0), 1e-5f);
+        ASSERT_EQ(exp, row);
     }
 }
 

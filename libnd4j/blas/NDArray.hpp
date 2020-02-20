@@ -4866,7 +4866,7 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
         }
     }
 
-    Nd4jLong *shapeInfoNoUnities = newShapeInfo;
+    Nd4jLong *newShapeInfo2 = newShapeInfo;
 
     if(!keepUnitiesInShape) {
 
@@ -4877,18 +4877,18 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
                 dimsWithUnities.push_back(d);
 
         if(!dimsWithUnities.empty())
-            shapeInfoNoUnities = ShapeBuilders::copyShapeInfoWithoutUnites(newShapeInfo, dimsWithUnities.size(), dimsWithUnities.data(), getContext()->getWorkspace());
+            newShapeInfo2 = ShapeBuilders::copyShapeInfoWithoutUnites(newShapeInfo, dimsWithUnities.size(), dimsWithUnities.data(), getContext()->getWorkspace());
     }
 
     // check if there is possibility to set ews = 1
-    shape::checkStridesSetEwsAndOrder(shapeInfoNoUnities);
+    shape::checkStridesEwsAndOrder(newShapeInfo2);
 
-    NDArray result(_buffer, ShapeDescriptor(shapeInfoNoUnities), getContext(), offset + getBufferOffset());
+    NDArray result(_buffer, ShapeDescriptor(newShapeInfo2), getContext(), offset + getBufferOffset());
     result._isView = true;
 
     RELEASE(newShapeInfo, getContext()->getWorkspace());
-    if(newShapeInfo != shapeInfoNoUnities)
-        RELEASE(shapeInfoNoUnities, getContext()->getWorkspace());
+    if(newShapeInfo != newShapeInfo2)
+        RELEASE(newShapeInfo2, getContext()->getWorkspace());
 
     return result;
 }
