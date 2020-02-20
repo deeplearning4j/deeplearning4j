@@ -1,4 +1,4 @@
-package org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge;
+package org.deeplearning4j.rl4j.observation.transform.operation.historymerge;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;

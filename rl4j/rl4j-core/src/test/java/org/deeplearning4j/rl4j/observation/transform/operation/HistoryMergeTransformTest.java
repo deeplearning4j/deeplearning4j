@@ -1,20 +1,20 @@
 package org.deeplearning4j.rl4j.observation.transform.operation;
 
-import org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge.TemporalMergeAssembler;
-import org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge.TemporalMergeElementStore;
+import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.HistoryMergeAssembler;
+import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.HistoryMergeElementStore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 
-public class TemporalMergeTransformTest {
+public class HistoryMergeTransformTest {
 
     @Test
     public void when_firstDimensionIsNotBatch_expect_observationAddedAsIs() {
         // Arrange
         MockStore store = new MockStore(false);
-        TemporalMergeTransform sut = TemporalMergeTransform.builder()
+        HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .isFirstDimenstionBatch(false)
                 .elementStore(store)
                 .build();
@@ -32,7 +32,7 @@ public class TemporalMergeTransformTest {
     public void when_firstDimensionIsBatch_expect_observationAddedAsSliced() {
         // Arrange
         MockStore store = new MockStore(false);
-        TemporalMergeTransform sut = TemporalMergeTransform.builder()
+        HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .isFirstDimenstionBatch(true)
                 .elementStore(store)
                 .build();
@@ -50,7 +50,7 @@ public class TemporalMergeTransformTest {
     public void when_notReady_expect_resultIsNull() {
         // Arrange
         MockStore store = new MockStore(false);
-        TemporalMergeTransform sut = TemporalMergeTransform.builder()
+        HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .isFirstDimenstionBatch(true)
                 .elementStore(store)
                 .build();
@@ -67,7 +67,7 @@ public class TemporalMergeTransformTest {
     public void when_notShouldStoreCopy_expect_sameIsStored() {
         // Arrange
         MockStore store = new MockStore(false);
-        TemporalMergeTransform sut = TemporalMergeTransform.builder()
+        HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .shouldStoreCopy(false)
                 .elementStore(store)
                 .build();
@@ -84,7 +84,7 @@ public class TemporalMergeTransformTest {
     public void when_shouldStoreCopy_expect_copyIsStored() {
         // Arrange
         MockStore store = new MockStore(true);
-        TemporalMergeTransform sut = TemporalMergeTransform.builder()
+        HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .shouldStoreCopy(true)
                 .elementStore(store)
                 .build();
@@ -104,7 +104,7 @@ public class TemporalMergeTransformTest {
         // Arrange
         MockStore store = new MockStore(true);
         MockAssemble assemble = new MockAssemble();
-        TemporalMergeTransform sut = TemporalMergeTransform.builder()
+        HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .elementStore(store)
                 .assembler(assemble)
                 .build();
@@ -122,7 +122,7 @@ public class TemporalMergeTransformTest {
         assertEquals(3, result.shape()[1]);
     }
 
-    public static class MockStore implements TemporalMergeElementStore {
+    public static class MockStore implements HistoryMergeElementStore {
 
         private final boolean isReady;
         private INDArray addedObservation;
@@ -153,7 +153,7 @@ public class TemporalMergeTransformTest {
         }
     }
 
-    public static class MockAssemble implements TemporalMergeAssembler {
+    public static class MockAssemble implements HistoryMergeAssembler {
 
         private INDArray[] assembleElements;
 

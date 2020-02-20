@@ -14,19 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge;
+package org.deeplearning4j.rl4j.observation.transform.operation.historymerge;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * TemporalStackAssembler is used with the StackingTransform. This assembler will
+ * HistoryStackAssembler is used with the HistoryMergeTransform. This assembler will
  * stack along the dimension 0. For example if the store elements are of shape [ Height, Width ]
  * the output will be of shape [ Stacked, Height, Width ]
  *
  * @author Alexandre Boulanger
  */
-public class TemporalStackAssembler implements TemporalMergeAssembler {
+public class HistoryStackAssembler implements HistoryMergeAssembler {
 
     /**
      * Will return a new INDArray with one more dimension and with elements stacked along dimension 0.

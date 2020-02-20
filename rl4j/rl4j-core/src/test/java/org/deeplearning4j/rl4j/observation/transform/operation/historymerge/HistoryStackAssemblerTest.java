@@ -1,4 +1,4 @@
-package org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge;
+package org.deeplearning4j.rl4j.observation.transform.operation.historymerge;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -6,7 +6,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 
-public class TemporalStackAssemblerTest {
+public class HistoryStackAssemblerTest {
 
     @Test
     public void when_assembling2INDArrays_expect_stackedAsResult() {
@@ -15,7 +15,7 @@ public class TemporalStackAssemblerTest {
                 Nd4j.create(new double[] { 1.0, 2.0, 3.0 }),
                 Nd4j.create(new double[] { 10.0, 20.0, 30.0 }),
         };
-        TemporalStackAssembler sut = new TemporalStackAssembler();
+        HistoryStackAssembler sut = new HistoryStackAssembler();
 
         // Act
         INDArray result = sut.assemble(input);

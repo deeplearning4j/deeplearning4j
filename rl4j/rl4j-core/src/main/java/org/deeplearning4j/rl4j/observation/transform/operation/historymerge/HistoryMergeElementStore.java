@@ -13,17 +13,18 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge;
+package org.deeplearning4j.rl4j.observation.transform.operation.historymerge;
 
+import org.deeplearning4j.rl4j.observation.transform.operation.HistoryMergeTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * TemporalMergeElementStore is used with the {@link org.deeplearning4j.rl4j.observation.transform.operation.TemporalMergeTransform TemporalMergeTransform}. Used to supervise how data from the
- * TemporalMergeTransform is stored.
+ * HistoryMergeElementStore is used with the {@link HistoryMergeTransform HistoryMergeTransform}. Used to supervise how data from the
+ * HistoryMergeTransform is stored.
  *
  * @author Alexandre Boulanger
  */
-public interface TemporalMergeElementStore {
+public interface HistoryMergeElementStore {
     /**
      * Add an element into the store
      * @param observation
@@ -37,7 +38,7 @@ public interface TemporalMergeElementStore {
     INDArray[] get();
 
     /**
-     * Used to tell the TemporalMergeTransform that the store is ready. The TemporalMergeTransform will tell the {@link org.deeplearning4j.rl4j.observation.transform.TransformProcess TransformProcess}
+     * Used to tell the HistoryMergeTransform that the store is ready. The HistoryMergeTransform will tell the {@link org.deeplearning4j.rl4j.observation.transform.TransformProcess TransformProcess}
      * to skip the observation is the store is not ready.
      * @return true if the store is ready
      */

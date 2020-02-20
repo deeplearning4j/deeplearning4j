@@ -18,14 +18,14 @@ package org.deeplearning4j.rl4j.observation.transform.operation;
 import org.datavec.api.transform.Operation;
 import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.deeplearning4j.rl4j.observation.transform.ResettableOperation;
-import org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge.CircularFifoStore;
-import org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge.TemporalStackAssembler;
-import org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge.TemporalMergeAssembler;
-import org.deeplearning4j.rl4j.observation.transform.operation.temporalmerge.TemporalMergeElementStore;
+import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.CircularFifoStore;
+import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.HistoryMergeAssembler;
+import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.HistoryMergeElementStore;
+import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.HistoryStackAssembler;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * The TemporalMergeTransform will accumulate features from incoming INDArrays and will assemble its content
+ * The HistoryMergeTransform will accumulate features from incoming INDArrays and will assemble its content
  * into a new INDArray containing a single example.
  *
  * This is used in scenarios where motion in an important element.
@@ -33,24 +33,24 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * There is a special case:
  *    * When the store is not full (not ready), the data from the incoming INDArray is stored but null is returned (will be interpreted as a skipped observation)
  * <br>
- * The TemporalMergeTransform requires two sub components: <br>
- *    1) The {@link TemporalMergeElementStore TemporalMergeElementStore} that supervises what and how input INDArrays are kept. (ex.: Circular FIFO, trailing min/max/avg, etc...)
+ * The HistoryMergeTransform requires two sub components: <br>
+ *    1) The {@link HistoryMergeElementStore HistoryMergeElementStore} that supervises what and how input INDArrays are kept. (ex.: Circular FIFO, trailing min/max/avg, etc...)
  *       The default is a Circular FIFO.
- *    2) The {@link TemporalMergeAssembler TemporalMergeAssembler} that will assemble the store content into a resulting single INDArray. (ex.: stacked along a dimension, squashed into a single observation, etc...)
+ *    2) The {@link HistoryMergeAssembler HistoryMergeAssembler} that will assemble the store content into a resulting single INDArray. (ex.: stacked along a dimension, squashed into a single observation, etc...)
  *       The default is stacking along the dimension 0.
  *
  * @author Alexandre Boulanger
  */
-public class TemporalMergeTransform implements Operation<INDArray, INDArray>, ResettableOperation {
+public class HistoryMergeTransform implements Operation<INDArray, INDArray>, ResettableOperation {
 
-    private final TemporalMergeElementStore temporalMergeElementStore;
-    private final TemporalMergeAssembler temporalMergeAssembler;
+    private final HistoryMergeElementStore historyMergeElementStore;
+    private final HistoryMergeAssembler historyMergeAssembler;
     private final boolean shouldStoreCopy;
     private final boolean isFirstDimenstionBatch;
 
-    private TemporalMergeTransform(Builder builder) {
-        this.temporalMergeElementStore = builder.temporalMergeElementStore;
-        this.temporalMergeAssembler = builder.temporalMergeAssembler;
+    private HistoryMergeTransform(Builder builder) {
+        this.historyMergeElementStore = builder.historyMergeElementStore;
+        this.historyMergeAssembler = builder.historyMergeAssembler;
         this.shouldStoreCopy = builder.shouldStoreCopy;
         this.isFirstDimenstionBatch = builder.isFirstDimenstionBatch;
     }
@@ -69,19 +69,19 @@ public class TemporalMergeTransform implements Operation<INDArray, INDArray>, Re
             element = element.dup();
         }
 
-        temporalMergeElementStore.add(element);
-        if(!temporalMergeElementStore.isReady()) {
+        historyMergeElementStore.add(element);
+        if(!historyMergeElementStore.isReady()) {
             return null;
         }
 
-        INDArray result = temporalMergeAssembler.assemble(temporalMergeElementStore.get());
+        INDArray result = historyMergeAssembler.assemble(historyMergeElementStore.get());
 
         return INDArrayHelper.forceCorrectShape(result);
     }
 
     @Override
     public void reset() {
-        temporalMergeElementStore.reset();
+        historyMergeElementStore.reset();
     }
 
     public static Builder builder() {
@@ -89,29 +89,29 @@ public class TemporalMergeTransform implements Operation<INDArray, INDArray>, Re
     }
 
     public static class Builder {
-        private TemporalMergeElementStore temporalMergeElementStore;
-        private TemporalMergeAssembler temporalMergeAssembler;
+        private HistoryMergeElementStore historyMergeElementStore;
+        private HistoryMergeAssembler historyMergeAssembler;
         private boolean shouldStoreCopy = false;
         private boolean isFirstDimenstionBatch = false;
 
         /**
          * Default is {@link CircularFifoStore CircularFifoStore}
          */
-        public Builder elementStore(TemporalMergeElementStore store) {
-            this.temporalMergeElementStore = store;
+        public Builder elementStore(HistoryMergeElementStore store) {
+            this.historyMergeElementStore = store;
             return this;
         }
 
         /**
-         * Default is {@link TemporalStackAssembler TemporalStackAssembler}
+         * Default is {@link HistoryStackAssembler HistoryStackAssembler}
          */
-        public Builder assembler(TemporalMergeAssembler assembler) {
-            this.temporalMergeAssembler = assembler;
+        public Builder assembler(HistoryMergeAssembler assembler) {
+            this.historyMergeAssembler = assembler;
             return this;
         }
 
         /**
-         * If true, tell the TemporalMergeTransform to store copies of incoming INDArrays.
+         * If true, tell the HistoryMergeTransform to store copies of incoming INDArrays.
          * (To prevent later in-place changes to a stored INDArray from changing what has been stored)
          *
          * Default is false
@@ -122,8 +122,8 @@ public class TemporalMergeTransform implements Operation<INDArray, INDArray>, Re
         }
 
         /**
-         * If true, tell the TemporalMergeTransform that the first dimension of the input INDArray is the batch count.
-         * When this is the case, the TemporalMergeTransform will slice the input like this [batch, height, width] -> [height, width]
+         * If true, tell the HistoryMergeTransform that the first dimension of the input INDArray is the batch count.
+         * When this is the case, the HistoryMergeTransform will slice the input like this [batch, height, width] -> [height, width]
          *
          * Default is false
          */
@@ -132,16 +132,16 @@ public class TemporalMergeTransform implements Operation<INDArray, INDArray>, Re
             return this;
         }
 
-        public TemporalMergeTransform build() {
-            if(temporalMergeElementStore == null) {
-                temporalMergeElementStore = new CircularFifoStore();
+        public HistoryMergeTransform build() {
+            if(historyMergeElementStore == null) {
+                historyMergeElementStore = new CircularFifoStore();
             }
 
-            if(temporalMergeAssembler == null) {
-                temporalMergeAssembler = new TemporalStackAssembler();
+            if(historyMergeAssembler == null) {
+                historyMergeAssembler = new HistoryStackAssembler();
             }
 
-            return new TemporalMergeTransform(this);
+            return new HistoryMergeTransform(this);
         }
     }
 }
