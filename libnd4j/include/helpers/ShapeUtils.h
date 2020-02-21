@@ -180,6 +180,17 @@ namespace nd4j {
             return (numStrings + 1) * sizeof(Nd4jLong);
         }
 
+        /**
+         * This method selects strides based on dimentions required for broadcasting
+         * @param const pointer to input (Y) shape info for strides selection
+         * @param rank of input (X) to broadcasting
+         * @param dimentions size
+         * @param const pointer to dimentions for broadcasting
+         * @param pointer to output strides have to be pre allocated by 0
+         * @return
+         */
+        static void copyCertainStridesFromShapeInfo(const Nd4jLong* inShapeInfo, const int nRank, const int dimsSize, const int* dims, Nd4jLong* outStrides);
+
         /*
         * check whether arr1/arr2 is sub-array of arr2/arr1,
         * this method do not evaluate what array is sub-array, it returns true if arr1 is sub-array of arr2 or arr2 is sub-array of arr1

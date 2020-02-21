@@ -37,7 +37,7 @@ namespace nd4j {
 class ND4J_EXPORT LoopKind {
     
     public:
-        enum Kind {SMALLARR2DX, EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Y_EWSNONZERO, Z_EWSNONZERO, COMMON, BROADCAST_SCALAR_X, BROADCAST_SCALAR_Y};
+        enum Kind { SMALLARR2DX, EWS1, EWSNONZERO, RANK1, RANK2, RANK3, RANK4, RANK5, X_EWSNONZERO, Y_EWSNONZERO, Z_EWSNONZERO, COMMON, BROADCAST_SCALAR_X, BROADCAST_SCALAR_Y, BROADCAST_3D, BROADCAST_4D, BROADCAST_5D };
 
         static FORCEINLINE Kind deduceKindOfLoopXZ(const Nd4jLong* xShapeInfo, const Nd4jLong* zShapeInfo);
         static FORCEINLINE Kind deduceKindOfLoopXYZ(const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, const Nd4jLong* zShapeInfo);
@@ -95,6 +95,25 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const Nd4jLong* xShapeInfo, c
     auto xEws = shape::elementWiseStride(xShapeInfo);
     auto yEws = shape::elementWiseStride(yShapeInfo);
     auto zEws = shape::elementWiseStride(zShapeInfo);
+
+    bool bNDLoopsRanks = (xRank == zRank && yRank <= xRank && yRank >= 2);
+
+    int countUnityDimsInY = 0, countUnityDimsInX = 0;
+    for (int i = 0; i < xRank; i++) {
+        if (i < yRank)
+            countUnityDimsInY += (1 == shape::sizeAt(yShapeInfo, i)) ? 1 : 0;
+        countUnityDimsInX += (1 == shape::sizeAt(xShapeInfo, i)) ? 1 : 0;
+    }
+
+    bool bNotCommonVectorCase = (countUnityDimsInY != yRank - 1) && (countUnityDimsInX != xRank - 1);
+
+    if (3 == xRank && bNDLoopsRanks && bNotCommonVectorCase)
+        return nd4j::LoopKind::BROADCAST_3D;
+    if (4 == xRank && bNDLoopsRanks && bNotCommonVectorCase)
+        return nd4j::LoopKind::BROADCAST_4D;
+    if (5 == xRank && bNDLoopsRanks && bNotCommonVectorCase)
+        return nd4j::LoopKind::BROADCAST_5D;
+
 
     if (xRank == yRank && xRank == zRank && xOrder == 'c' && yOrder == 'c' && zOrder == 'c' && xEws == 1 && yEws == 1 && zEws == 1 && xRank >= 2) {
         // we validate that shapes are equal till the last dim

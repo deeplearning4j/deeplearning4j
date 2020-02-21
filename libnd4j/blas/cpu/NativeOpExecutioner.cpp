@@ -180,6 +180,18 @@ void NativeOpExecutioner::execBroadcast(nd4j::LaunchContext  *lc,
                 numTads = shape::length(hYShapeInfo);
             }
             break;
+        case nd4j::LoopKind::BROADCAST_3D: {
+            numTads = shape::sizeAt(hZShapeInfo, 0);
+            }
+            break;
+        case nd4j::LoopKind::BROADCAST_4D: {
+            numTads = shape::sizeAt(hZShapeInfo, 0) * shape::sizeAt(hZShapeInfo, 1);
+            }
+            break;
+        case nd4j::LoopKind::BROADCAST_5D: {
+            numTads = shape::sizeAt(hZShapeInfo, 0) * shape::sizeAt(hZShapeInfo, 1);
+            }
+            break;
         default: {
             auto xLen = shape::length(hXShapeInfo);
             auto yLen = shape::length(hYShapeInfo);

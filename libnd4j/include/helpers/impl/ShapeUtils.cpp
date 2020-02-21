@@ -1057,6 +1057,29 @@ std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const
     return numOfMinTads == 1 ? maxTadDims : std::vector<int>();
 }
 
+void ShapeUtils::copyCertainStridesFromShapeInfo(const Nd4jLong* inShapeInfo, const int nRank, const int dimsSize, const int* dims, Nd4jLong* outStrides) {
+
+    int yRank = shape::rank(inShapeInfo);
+    auto  yOrigStride = shape::stride(inShapeInfo);
+
+    if (yRank == nRank) {
+        for (int i = 0; i < yRank; ++i) {
+            // x[2,3,4] * y[2,1,4] = z[2,3,4]
+            outStrides[i] = (1 == shape::sizeAt(inShapeInfo, i)) ? 0 : yOrigStride[i];
+        }
+    }
+    else {
+
+        auto dimEx = nd4j::ShapeUtils::evalDimsToExclude(nRank, dimsSize, dims);
+
+        for (int i = 0, it = 0; i < nRank; ++i) {
+            auto nCount = std::count(dimEx.cbegin(), dimEx.cend(), i);
+            outStrides[i] = (0 == nCount) ? yOrigStride[it++] : 0;
+            if (it == yRank)
+                break;
+        }
+    }
+}
 ////////////////////////////////////////////////////////////////////////////////
 /*
 bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2, std::vector<int>& sameDims) {

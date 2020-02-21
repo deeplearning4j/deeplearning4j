@@ -25,6 +25,7 @@
 #include <LoopKind.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
+#include <helpers/ShapeUtils.h>
 
 using namespace simdOps;
 
@@ -144,7 +145,14 @@ namespace functions {
                 auto yEws = shape::elementWiseStride(yShapeInfo);
                 auto zEws = shape::elementWiseStride(zTadShapeInfo);
 
-                const nd4j::LoopKind::Kind kindOfLoop = loopKind == nd4j::LoopKind::BROADCAST_SCALAR_X || loopKind == nd4j::LoopKind::BROADCAST_SCALAR_Y ? loopKind : nd4j::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
+
+                const nd4j::LoopKind::Kind kindOfLoop =
+                    (loopKind == nd4j::LoopKind::BROADCAST_SCALAR_X ||
+                        loopKind == nd4j::LoopKind::BROADCAST_SCALAR_Y ||
+                        loopKind == nd4j::LoopKind::BROADCAST_3D ||
+                        loopKind == nd4j::LoopKind::BROADCAST_4D ||
+                        loopKind == nd4j::LoopKind::BROADCAST_5D)
+                    ? loopKind : nd4j::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
 
                 if (kindOfLoop == nd4j::LoopKind::EWS1) {
                     for (auto i = start; i < stop; i++) {
@@ -193,6 +201,103 @@ namespace functions {
                         for (unsigned int f = 0; f < loopLength; f++)
                             oZ[f] = OpType::op(oX[f], oY);
                     }
+                }
+                else if (kindOfLoop == nd4j::LoopKind::BROADCAST_3D) {
+
+                    int xRank = shape::rank(xShapeInfo);
+                    int yRank = shape::rank(yShapeInfo);
+
+                    auto  xStrides = shape::stride(xShapeInfo);
+                    auto  zStrides = shape::stride(zShapeInfo);
+
+                    Nd4jLong  yStrides[3] = { 0,0,0 };
+                    nd4j::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
+
+                    uint32_t nSize1 = shape::sizeAt(zShapeInfo, 1);
+                    uint32_t nSize2 = shape::sizeAt(zShapeInfo, 2);
+
+                    for (uint32_t index0 = start; index0 < stop; index0++) {
+
+                        PRAGMA_OMP_SIMD
+                            for (uint32_t index1 = 0; index1 < nSize1; index1++) {
+                                for (uint32_t index2 = 0; index2 < nSize2; index2++) {
+                                    auto rX = x + (xStrides[0] * index0 + xStrides[1] * index1 + xStrides[2] * index2);
+                                    auto rY = y + (yStrides[0] * index0 + yStrides[1] * index1 + yStrides[2] * index2);
+                                    auto rZ = z + (zStrides[0] * index0 + zStrides[1] * index1 + zStrides[2] * index2);
+                                    *rZ = OpType::op(*rX, *rY);
+                                }
+                            }
+
+                    }
+
+                }
+                else if (kindOfLoop == nd4j::LoopKind::BROADCAST_4D) {
+
+                    int xRank = shape::rank(xShapeInfo);
+                    int yRank = shape::rank(yShapeInfo);
+
+                    auto  xStrides = shape::stride(xShapeInfo);
+                    auto  zStrides = shape::stride(zShapeInfo);
+
+                    Nd4jLong  yStrides[4] = { 0,0,0,0 };
+                    nd4j::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
+
+                    uint32_t nSize1 = shape::sizeAt(zShapeInfo, 1);
+                    uint32_t nSize2 = shape::sizeAt(zShapeInfo, 2);
+                    uint32_t nSize3 = shape::sizeAt(zShapeInfo, 3);
+
+                    for (uint32_t i = start; i < stop; i++) {
+
+                        uint32_t index0 = i / nSize1;
+                        uint32_t index1 = i % nSize1;
+
+                        PRAGMA_OMP_SIMD
+                            for (uint32_t index2 = 0; index2 < nSize2; index2++) {
+                                for (uint32_t index3 = 0; index3 < nSize3; index3++) {
+                                    auto rX = x + (xStrides[0] * index0 + xStrides[1] * index1 + xStrides[2] * index2 + xStrides[3] * index3);
+                                    auto rY = y + (yStrides[0] * index0 + yStrides[1] * index1 + yStrides[2] * index2 + yStrides[3] * index3);
+                                    auto rZ = z + (zStrides[0] * index0 + zStrides[1] * index1 + zStrides[2] * index2 + zStrides[3] * index3);
+                                    *rZ = OpType::op(*rX, *rY);
+                                }
+                            }
+                    }
+
+                }
+                else if (kindOfLoop == nd4j::LoopKind::BROADCAST_5D) {
+
+                    int xRank = shape::rank(xShapeInfo);
+                    int yRank = shape::rank(yShapeInfo);
+
+                    auto  xStrides = shape::stride(xShapeInfo);
+                    auto  zStrides = shape::stride(zShapeInfo);
+
+                    Nd4jLong  yStrides[5] = { 0,0,0,0,0 };
+                    nd4j::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
+
+                    uint32_t nSize1 = shape::sizeAt(zShapeInfo, 1);
+                    uint32_t nSize2 = shape::sizeAt(zShapeInfo, 2);
+                    uint32_t nSize3 = shape::sizeAt(zShapeInfo, 3);
+                    uint32_t nSize4 = shape::sizeAt(zShapeInfo, 4);
+
+                    for (uint32_t i = start; i < stop; i++) {
+
+                        uint32_t index0 = i / nSize1;
+                        uint32_t index1 = i % nSize1;
+
+                        PRAGMA_OMP_SIMD
+                            for (uint32_t index2 = 0; index2 < nSize2; index2++) {
+                                for (uint32_t index3 = 0; index3 < nSize3; index3++) {
+                                    for (uint32_t index4 = 0; index4 < nSize4; index4++) {
+                                        auto rX = x + (xStrides[0] * index0 + xStrides[1] * index1 + xStrides[2] * index2 + xStrides[3] * index3 + xStrides[4] * index4);
+                                        auto rY = y + (yStrides[0] * index0 + yStrides[1] * index1 + yStrides[2] * index2 + yStrides[3] * index3 + yStrides[4] * index4);
+                                        auto rZ = z + (zStrides[0] * index0 + zStrides[1] * index1 + zStrides[2] * index2 + zStrides[3] * index3 + zStrides[4] * index4);
+
+                                        *rZ = OpType::op(*rX, *rY);
+                                    }
+                                }
+                            }
+                    }
+
                 }
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
                     uint tadShapeShapeInfoCast[MAX_RANK];
