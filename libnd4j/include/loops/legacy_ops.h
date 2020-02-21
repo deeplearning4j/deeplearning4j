@@ -186,7 +186,7 @@
         (1, SummaryStatsStandardDeviation)
 
 #define SCALAR_INT_OPS \
-        (0, ShiftLeft), \
+        (0, ShiftLeft) ,\
         (1, ShiftRight), \
         (2, CyclicShiftLeft), \
         (3, CyclicShiftRight), \

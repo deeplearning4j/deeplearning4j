@@ -201,15 +201,14 @@ namespace functions {
                 auto scalar = reinterpret_cast<X *>(vscalar)[0];
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-                if (xEws == 1 && zEws == 1) {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)
-                        z[i] = OpType::op(x[i], scalar, extraParams);
-                }
-                else {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i++)
-                        z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
+                if (scalar < (sizeof(X) * 8)) {
+                    if (xEws == 1 && zEws == 1) {
+                        for (auto i = start; i < stop; i++)
+                            z[i] = OpType::op(x[i], scalar, extraParams);
+                    } else {
+                        for (auto i = start; i < stop; i++)
+                            z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
+                    }
                 }
             }
 

@@ -722,7 +722,7 @@ namespace simdOps {
     public:
 
         op_def static X op(X d1, X d2) {
-            return d1 << d2 | d1 >> ((sizeof(X) * 8) - d2);
+            return nd4j::math::nd4j_rotl<X>(d1, d2);
         }
 
         op_def static X op(X d1, X d2, X *params) {
@@ -735,7 +735,7 @@ namespace simdOps {
     public:
 
         op_def static X op(X d1, X d2) {
-            return d1 >> d2 | d1 << ((sizeof(X) * 8) - d2);
+            return nd4j::math::nd4j_rotr<X>(d1, d2);
         }
 
         op_def static X op(X d1, X d2, X *params) {

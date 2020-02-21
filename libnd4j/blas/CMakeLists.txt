@@ -34,6 +34,11 @@ if (APPLE_BUILD)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAPPLE_BUILD=true -mmacosx-version-min=10.10")
 endif()
 
+if (ARM_BUILD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DARM_BUILD=true")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DARM_BUILD=true")
+endif()
+
 if (ANDROID_BUILD)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID_BUILD=true")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DANDROID_BUILD=true")

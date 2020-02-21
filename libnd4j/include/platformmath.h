@@ -80,6 +80,7 @@ union PAIR {
 #else
 #define math_def
 #include <types/float16.h>
+
 #endif
 
 
@@ -144,6 +145,12 @@ namespace nd4j {
 
         template <typename T>
         math_def FORCEINLINE T p_rint(T value);
+
+        template <typename T>
+        math_def FORCEINLINE T p_rotl(T value, T shift);
+
+        template <typename T>
+        math_def FORCEINLINE T p_rotr(T value, T shift);
 
         template <typename T>
         math_def FORCEINLINE T p_remainder(T val1, T val2);
@@ -750,6 +757,116 @@ namespace nd4j {
         template <>
         math_def FORCEINLINE double p_atanh(double value) {
             return atanh(value);
+        }
+
+/////////
+        template <typename T>
+        math_def FORCEINLINE T _rotate_left(T value, T shift);
+
+        template <typename T>
+        math_def FORCEINLINE T _rotate_right(T value, T shift);
+
+        template <>
+        math_def FORCEINLINE int8_t _rotate_left(int8_t value, int8_t shift) {
+            return value << shift | value >> (8 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE int8_t _rotate_right(int8_t value, int8_t shift) {
+            return value >> shift | value << (8 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE uint8_t _rotate_left(uint8_t value, uint8_t shift) {
+            return value << shift | value >> (8 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE uint8_t _rotate_right(uint8_t value, uint8_t shift) {
+            return value >> shift | value << (8 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE int16_t _rotate_left(int16_t value, int16_t shift) {
+            return value << shift | value >> (16 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE int16_t _rotate_right(int16_t value, int16_t shift) {
+            return value >> shift | value << (16 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE uint16_t _rotate_left(uint16_t value, uint16_t shift) {
+            return value << shift | value >> (16 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE uint16_t _rotate_right(uint16_t value, uint16_t shift) {
+            return value >> shift | value << (16 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE int _rotate_left(int value, int shift) {
+            return value << shift | value >> (32 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE int _rotate_right(int value, int shift) {
+            return value >> shift | value << (32 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE uint32_t _rotate_left(uint32_t value, uint32_t shift) {
+            return value << shift | value >> (32 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE uint32_t _rotate_right(uint32_t value, uint32_t shift) {
+            return value >> shift | value << (32 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE Nd4jLong _rotate_left(Nd4jLong value, Nd4jLong shift) {
+            return value << shift | value >> (64 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE Nd4jLong _rotate_right(Nd4jLong value, Nd4jLong shift) {
+            return value >> shift | value << (64 - shift);
+        }
+
+        template <>
+        math_def FORCEINLINE uint64_t _rotate_left(uint64_t value, uint64_t shift) {
+#ifdef ARM_BUILD
+            // TODO: eventually remove this once gcc fixes the bug
+            Nd4jLong val = _rotate_left<Nd4jLong>(*reinterpret_cast<Nd4jLong *>(&value), *reinterpret_cast<Nd4jLong *>(&shift));
+            return *reinterpret_cast<uint64_t *>(&val);
+#else
+            return value << shift | value >> (64 - shift);
+#endif
+        }
+
+        template <>
+        math_def FORCEINLINE uint64_t _rotate_right(uint64_t value, uint64_t shift) {
+#ifdef ARM_BUILD
+            // TODO: eventually remove this once gcc fixes the bug
+            Nd4jLong val = _rotate_right<Nd4jLong>(*reinterpret_cast<Nd4jLong *>(&value), *reinterpret_cast<Nd4jLong *>(&shift));
+            return *reinterpret_cast<uint64_t *>(&val);
+#else
+            return value >> shift | value << (64 - shift);
+#endif
+        }
+
+
+        template <typename T>
+        math_def FORCEINLINE T p_rotl(T value, T shift) {
+            return _rotate_left<T>(value, shift);
+        }
+
+        template <typename T>
+        math_def FORCEINLINE T p_rotr(T value, T shift) {
+            return _rotate_right<T>(value, shift);
         }
     }
 }

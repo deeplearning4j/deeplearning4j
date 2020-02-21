@@ -77,6 +77,12 @@ namespace nd4j {
 		template <typename T, typename Z>
         math_def inline Z nd4j_softplus(T val);
 
+		template <typename T>
+		math_def inline T nd4j_rotl(T val, T shift);
+
+        template <typename T>
+        math_def inline T nd4j_rotr(T val, T shift);
+
 //#ifndef __CUDACC__
         template<typename X, typename Y, typename Z>
         math_def inline Z nd4j_dot(X *x, Y *y, int length);
@@ -816,6 +822,16 @@ namespace nd4j {
 		math_def inline Z nd4j_tanh(X val) {
             return val <= 0 ? neg_tanh(val) : pos_tanh(val);
 		}
+
+        template <typename T>
+        math_def inline T nd4j_rotl(T val, T shift) {
+            return p_rotl<T>(val, shift);
+        }
+
+        template <typename T>
+        math_def inline T nd4j_rotr(T val, T shift) {
+            return p_rotr<T>(val, shift);
+        }
 
         template <typename X, typename Z>
         math_def inline Z nd4j_erf(X val) {
