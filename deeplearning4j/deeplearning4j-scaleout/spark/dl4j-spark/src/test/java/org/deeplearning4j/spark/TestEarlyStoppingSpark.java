@@ -66,7 +66,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
 
         JavaRDD<DataSet> irisData = getIris();
@@ -119,7 +119,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MSE).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
         JavaRDD<DataSet> irisData = getIris();
         EarlyStoppingModelSaver<MultiLayerNetwork> saver = new InMemoryModelSaver<>();
@@ -155,7 +155,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
         JavaRDD<DataSet> irisData = getIris();
 
@@ -198,7 +198,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
         JavaRDD<DataSet> irisData = getIris();
 
@@ -231,7 +231,7 @@ public class TestEarlyStoppingSpark extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
 
         JavaRDD<DataSet> irisData = getIris();

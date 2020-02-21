@@ -58,6 +58,7 @@ namespace nd4j {
             virtual void putVariable(int id, Variable *variable);
             virtual void putVariable(int id, NDArray *array);
             virtual void putVariable(int id, int idx, NDArray *array);
+            virtual void putVariable(int id, int idx, NDArray &array);
             virtual void putVariable(int id, int idx, Variable *array);
 
             virtual void replaceVariable(Variable *variable);

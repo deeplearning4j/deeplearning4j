@@ -169,7 +169,7 @@ namespace helpers {
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             meanV.p<T>(e, meanV.e<T>(e) + listOfTensors.at(i)->e<T>(e));
                         }
                     };
@@ -223,7 +223,7 @@ namespace helpers {
             for (int i = 0; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             sumT->p(e, sumT->e<T>(e) + listOfTensors.at(i)->e<T>(e));
                         }
                     };
@@ -272,7 +272,7 @@ namespace helpers {
             for (int i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i)  == idx) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             sumT->p(e, sumT->e<T>(e) * listOfTensors.at(i)->e<T>(e));
                         }
                     };
@@ -625,7 +625,7 @@ namespace helpers {
             Nd4jLong loop_size = input->lengthOf();
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto classNum = indices->e<Nd4jLong>(e);
                     if (nd4j::math::nd4j_abs(tempRes.e<T>(classNum) - input->e<T>(e)) <= T(1.e-6))
                         output->p(e, gradOut->e<T>(classNum));
@@ -645,7 +645,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors.at(i);
                     auto currentOut = listOfOutTensors.at(i);
@@ -675,7 +675,7 @@ namespace helpers {
         segmentMinFunctor(context, input, indices, &tempRes);
         if (input->isVector()) {
             auto func = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto classNum = indices->e<Nd4jLong>(e);
                     if (nd4j::math::nd4j_abs(tempRes.e<double>(classNum) - input->e<double>(e)) < 1.e-5)
                         output->p(e, gradOut->e<double>(classNum));
@@ -697,7 +697,7 @@ namespace helpers {
             int pos = 0;
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors.at(i);
                     auto currentOut = listOfOutTensors.at(i);
@@ -887,7 +887,7 @@ namespace helpers {
         if (input->isVector()) {
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto classNum = indices->e<Nd4jLong>(e);
                     if (nd4j::math::nd4j_abs(tempRes.t<T>(classNum) - input->t<T>(e)) < 1.e-6)
                         output->t<T>(e) = gradOut->t<T>(classNum);
@@ -1004,7 +1004,7 @@ namespace helpers {
         unsortedSegmentProdFunctor(context, input, indices, numOfClasses, &tempRes);
         if (input->isVector()) {
             auto func = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto classNum = indices->e<Nd4jLong>(e);
                     output->p<double>(e, gradOut->e<double>(classNum) * tempRes.e<double>(classNum) / input->e<double>(e));
                 }

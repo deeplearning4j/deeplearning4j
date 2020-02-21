@@ -34,7 +34,7 @@ namespace nd4j {
 
             // handle transpose in parallel
             auto func = PRAGMA_THREADS_FOR {
-                for (auto r = start; r < stop; r += increment) {
+                for (auto r = start; r < stop; r++) {
                     for (int c = 0; c < cols; c++) {
                         int zIdx = orderTarget == CblasRowMajor ? linearIndexC(rows, cols, r, c) : linearIndexF(rows, cols, r, c);
                         int xIdx = orderSource == CblasColMajor ? linearIndexF(rows, cols, r, c) : linearIndexC(rows, cols, r, c);
@@ -73,7 +73,7 @@ namespace nd4j {
                         C[r] = z;
                 } else {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto r = start; r < stop; r += increment)
+                        for (auto r = start; r < stop; r++)
                             C[r] = z;
                     };
                     samediff::Threads::parallel_for(func, 0, length);
@@ -130,7 +130,7 @@ namespace nd4j {
             auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(nd4j::blas::transpose<X>(CblasColMajor, CblasRowMajor, M, N, reinterpret_cast<void *>(x))) : x;
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto r = start; r < stop; r += increment) {
+                for (auto r = start; r < stop; r++) {
                     int aIdx = linearIndexC(M, N, r, 0);
                     auto aX = aT + aIdx;
 

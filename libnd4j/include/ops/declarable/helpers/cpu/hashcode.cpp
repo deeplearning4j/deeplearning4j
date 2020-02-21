@@ -42,7 +42,7 @@ namespace nd4j {
 
                 // we divide array into 32 element chunks, and store intermediate results once
                 auto func = PRAGMA_THREADS_FOR {
-                    for (auto b = 0; b < stop; b += increment) {
+                    for (auto b = 0; b < stop; b++) {
                         auto blockBuffer = buffer + b * numBlocks;
 
                         Nd4jLong r = 1;
@@ -64,7 +64,7 @@ namespace nd4j {
 
 
                     auto func2 = PRAGMA_THREADS_FOR {
-                        for (auto b = start; b < stop; b += increment) {
+                        for (auto b = start; b < stop; b++) {
                             auto blockBuffer = tempBuffer + b * numBlocks;
 
                             Nd4jLong r = 1;

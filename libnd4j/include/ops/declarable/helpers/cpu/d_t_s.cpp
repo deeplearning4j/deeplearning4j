@@ -46,7 +46,7 @@ namespace helpers {
         if (isNHWC) {
             const int total_count = batch_size * output_height * output_width * output_depth;
             auto func = PRAGMA_THREADS_FOR {
-                for (auto out_idx = start; out_idx < stop; out_idx += increment) {
+                for (auto out_idx = start; out_idx < stop; out_idx++) {
                     const int d = out_idx % output_depth;
                     const int out_idx2 = out_idx / output_depth;
                     const int w = out_idx2 % output_width;
@@ -70,7 +70,7 @@ namespace helpers {
             const int total_count = batch_size * input_depth_by_input_area;
 
             auto func = PRAGMA_THREADS_FOR {
-                for (int input_idx = start; input_idx < stop; input_idx += increment) {
+                for (int input_idx = start; input_idx < stop; input_idx++) {
                     const int n_bY_bX_oC_iY = input_idx / input_width;
                     const int iX = input_idx - n_bY_bX_oC_iY * input_width;
 

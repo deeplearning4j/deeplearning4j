@@ -43,8 +43,8 @@ public class HistoryProcessorTest {
         hp.add(a);
         INDArray[] h = hp.getHistory();
         assertEquals(4, h.length);
-        System.out.println(Arrays.toString(a.shape()));
-        System.out.println(Arrays.toString(h[0].shape()));
+//        System.out.println(Arrays.toString(a.shape()));
+//        System.out.println(Arrays.toString(h[0].shape()));
         assertEquals(           1, h[0].shape()[0]);
         assertEquals(a.shape()[0], h[0].shape()[1]);
         assertEquals(a.shape()[1], h[0].shape()[2]);

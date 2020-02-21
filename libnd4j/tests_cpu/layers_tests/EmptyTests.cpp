@@ -161,23 +161,6 @@ TEST_F(EmptyTests, Test_Reshape_1) {
     delete result;
 }
 
-TEST_F(EmptyTests, Test_Reshape_2) {
-    auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
-    auto exp = NDArrayFactory::create<float>(119.0f);
-    auto empty = NDArrayFactory::empty_<Nd4jLong>();
-
-    nd4j::ops::reshape op;
-    auto result = op.evaluate({&vector, empty}, {}, {}, {}, {}, true);
-
-    ASSERT_EQ(Status::OK(), result->status());
-
-    ASSERT_EQ(exp, *result->at(0));
-    ASSERT_EQ(exp, vector);
-
-    delete empty;
-    delete result;
-}
-
 TEST_F(EmptyTests, Test_Reshape_3) {
     auto x = NDArrayFactory::create<float>('c', {1, 0, 0, 2});
     auto y = NDArrayFactory::create<int>('c', {2}, {10, 0});

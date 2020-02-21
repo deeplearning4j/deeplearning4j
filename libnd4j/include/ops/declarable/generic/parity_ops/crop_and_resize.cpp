@@ -23,7 +23,8 @@
 
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/image_resize.h>
+#include <ops/declarable/helpers/crop_and_resize.h>
+
 namespace nd4j {
     namespace ops {
         CUSTOM_OP_IMPL(crop_and_resize, 4, 1, false, 0, 0) {

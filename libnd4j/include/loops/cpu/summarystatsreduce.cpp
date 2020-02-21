@@ -158,7 +158,7 @@ namespace functions {
             const bool canCast = tadEWS == 1 && tadOrder == 'c' ? false : nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto r = start; r < stop; r += increment) {
+                for (auto r = start; r < stop; r++) {
 
                     auto tadOffsetForBlock = tadPack.primaryOffsets()[r];
                     auto tx = x + tadOffsetForBlock;

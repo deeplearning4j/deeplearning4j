@@ -61,7 +61,7 @@ public class TestPCA extends BaseNd4jTest {
             assertEquals("Reconstructed matrix is very different from the original.", 0.0, Diff.getDouble(i), 1.0);
         }
     }
-    
+
     @Test
     public void testFactorSVDTransposed() {
         int m = 4;

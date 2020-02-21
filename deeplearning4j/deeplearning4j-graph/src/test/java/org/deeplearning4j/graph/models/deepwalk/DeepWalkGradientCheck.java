@@ -145,8 +145,8 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
 
                         if (relError > MAX_REL_ERROR && absErr > MIN_ABS_ERROR)
                             fail(msg);
-                        else
-                            System.out.println(msg);
+//                        else
+//                            System.out.println(msg);
                     }
                 }
 
@@ -333,10 +333,10 @@ public class DeepWalkGradientCheck extends BaseDL4JTest {
 
                     if (relError > MAX_REL_ERROR && absErr > MIN_ABS_ERROR)
                         fail(msg);
-                    else
-                        System.out.println(msg);
+//                    else
+//                        System.out.println(msg);
                 }
-                System.out.println();
+//                System.out.println();
             }
 
         }

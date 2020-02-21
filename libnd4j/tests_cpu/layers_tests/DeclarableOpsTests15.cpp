@@ -584,6 +584,11 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_1) {
 }
 
 TEST_F(DeclarableOpsTests15, test_check_numeric_2) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
+
     auto x = NDArrayFactory::create<float>('c', {3},{1.f, 2.f, std::numeric_limits<float>::infinity()});
     auto y = NDArrayFactory::string("should trigger");
     auto z = NDArrayFactory::create<float>('c', {3} );
@@ -598,6 +603,11 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_2) {
 }
 
 TEST_F(DeclarableOpsTests15, test_check_numeric_3) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
+
     auto x = NDArrayFactory::create<float>('c', {3},{1.f, 2.f, std::numeric_limits<float>::quiet_NaN()});
     auto y = NDArrayFactory::string("should trigger");
     auto z = NDArrayFactory::create<float>('c', {3} );
@@ -1530,6 +1540,10 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test10) {
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test11) {
+#ifdef FFAST_MATH
+    if (1 > 0)
+        return;
+#endif
 
     NDArray xB('c', { 3,2,1 }, { .4, 3, 5, .8, -9, -12 }, nd4j::DataType::FLOAT32);
     NDArray yB('c', { 1,2,3 }, { 3, -2, .4, -4, 10, .8 }, nd4j::DataType::FLOAT32);
@@ -1560,3 +1574,447 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test11) {
 
     delete resultsB;
 }
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP1) {
+
+    NDArray A('c', { 1, 2, 3 }, { 2.1, 2.2, 2.3, 2.4, 2.5, 2.6 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 1, 2, 4 }, { 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 3, 4 }, { .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.1 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdA('c', { 1, 2, 3 }, { 3.3,  8.5,  13.36, 3.7, 9.54, 15. }, nd4j::DataType::FLOAT32);
+    NDArray dLdB('c', { 1, 2, 4 }, { 3.38, 4.04, 4.7, 5.13, 3.83, 4.58, 5.33, 5.82 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,0,1, 2,0,1 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+    
+    ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP2) {
+
+    NDArray A('c', { 1, 2, 3 }, { 2,2,2, 2,2,2 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 1, 2, 3 }, { 3,3,3,3, 3,3 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 1 }, { 1 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+    
+    ASSERT_TRUE(B.isSameShape(*dLdAbp));
+    ASSERT_TRUE(B.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(A.isSameShape(*dLdBbp));
+    ASSERT_TRUE(A.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP3) {
+
+    NDArray A('c', { 3, 2, 2 }, { 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 4, 2, 2 }, { 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 3, 4 }, { .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2 }, nd4j::DataType::FLOAT32);
+
+    NDArray dA('c', { 3, 2, 2 }, { 3.9, 4., 4.1, 4.2, 9.82, 10.08, 10.34, 10.6, 15.74, 16.16, 16.58, 17. }, nd4j::DataType::FLOAT32);
+    NDArray dB('c', { 4, 2, 2 }, { 4.07, 4.22, 4.37, 4.52, 4.82, 5., 5.18, 5.36, 5.57, 5.78, 5.99, 6.2, 6.32, 6.56, 6.8,  7.04 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dB.equalsTo(*dLdBbp));
+
+     delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP4) {
+
+    NDArray A('c', { 3, 4, 1 }, { 0.4, 3, 5,  9, 23, 0.12,  8, 9, 0.1,  0, 124, 3 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 2, 4, 1 }, { 4, 13, .5,  19, 2.3, 1.2,  18, .9 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 3, 2 }, { 1.1, 1.2, 1.3, 1.4, 1.5, 1.6 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdA('c', { 3, 4, 1 }, { 7.16, 15.74, 22.15, 21.98, 8.42, 18.58, 25.85, 25.96, 9.68, 21.42, 29.55, 29.94 }, nd4j::DataType::FLOAT32);
+    NDArray dLdB('c', { 2, 4, 1 }, { 30.49, 3.456, 201.9, 26.1, 32.84 , 3.768, 215.6, 28.2 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP5) {
+
+    NDArray A('c', { 3, 4, 1, 1 }, { 0.4, 3, 5,  9, 23, 0.12,  8, 9, 0.1,  0, 124, 3 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 2, 4, 1, 1 }, { 4, 13, .5,  19, 2.3, 1.2,  18, .9 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 3, 1, 2, 1 }, { 1.1,1.2,1.3,1.4,1.5,1.6 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdA('c', { 3, 4, 1, 1 }, { 7.16, 15.74, 22.15, 21.98, 8.42, 18.58, 25.85, 25.96, 9.68, 21.42, 29.55, 29.94 }, nd4j::DataType::FLOAT32);
+    NDArray dLdB('c', { 2, 4, 1, 1 }, { 30.49, 3.456, 201.9,  26.1, 32.84,  3.768, 215.6, 28.2 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP6) {
+
+    NDArray A('c', { 2, 2, 2 }, { 2,2, 2,2, 2,2, 2,2 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 2, 2, 2 }, { 3,3, 3,3, 3,3, 3,3  }, nd4j::DataType::FLOAT32);
+
+    auto dLdC = NDArrayFactory::create<float>(1.f);
+
+    nd4j::ops::tensormmul_bp op_bp;
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 3,0,1,2, 3,0,1,2 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(B.isSameShape(*dLdAbp));
+    ASSERT_TRUE(B.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(A.isSameShape(*dLdBbp));
+    ASSERT_TRUE(A.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP7) {
+
+    NDArray A('c', { 3, 4, 1 }, { 0.4, 3, 5,  9, 23, 0.12,  8, 9, 0.1,  0, 124, 3 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 2, 4, 1 }, { 4, 13, .5,  19, 2.3, 1.2,  18, .9 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 3, 1, 2, 1 }, { 1.1, 1.2, 1.3, 1.4, 1.5, 1.6 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdA('c', { 3, 4, 1 }, { 7.16, 15.74, 22.15, 21.98, 8.42, 18.58, 25.85, 25.96, 9.68, 21.42, 29.55, 29.94 }, nd4j::DataType::FLOAT32);
+    NDArray dLdB('c', { 2, 4, 1 }, { 30.49, 3.456, 201.9,  26.1, 32.84,  3.768, 215.6, 28.2 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 1,1, 1,1 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP8) {
+
+    NDArray A('c', { 1, 1, 4, 3 }, { 0.4, 3, 5,  9, 23, 0.12,  8, 9, 0.1,  0, 124, 3 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 1, 1, 4, 2 }, { 4, 13, .5,  19, 2.3, 1.2,  18, .9 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 3, 2 }, { 1.1,1.2,1.3,1.4,1.5,1.6 }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdA('c', { 1, 1, 4, 3 }, { 20., 23.4,  26.8, 23.35, 27.25, 31.15, 3.97,  4.67,  5.37, 20.88, 24.66, 28.44 }, nd4j::DataType::FLOAT32);
+    NDArray dLdB('c', { 1, 1, 4, 2 }, { 11.84,   12.68,  39.98,  43.192, 20.65, 22.36, 165.7,   178.4 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 3,0,1,2, 3,0,1,2 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP9) {
+
+    NDArray A('c', { 3, 2, 2, 1 }, { 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 4, 2, 2 ,1 }, { 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 3, 1, 4, 1 }, { .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2 }, nd4j::DataType::FLOAT32);
+
+    NDArray dA('c', { 3, 2, 2, 1 }, { 3.9, 4., 4.1, 4.2, 9.82, 10.08, 10.34, 10.6, 15.74, 16.16, 16.58, 17. }, nd4j::DataType::FLOAT32);
+    NDArray dB('c', { 4, 2, 2, 1 }, { 4.07, 4.22, 4.37, 4.52, 4.82, 5., 5.18, 5.36, 5.57, 5.78, 5.99, 6.2, 6.32, 6.56, 6.8,  7.04 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP10) {
+
+    NDArray A('c', { 1, 2, 2, 3 }, { 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 1, 2, 2 ,4 }, { 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 1, 3, 1, 4 }, { .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2 }, nd4j::DataType::FLOAT32);
+
+
+    NDArray dA('c', { 1, 2, 2, 3 }, { 3.3, 8.5, 13.7, 3.7, 9.54, 15.38, 4.1, 10.58, 17.06, 4.5,  11.62, 18.74 }, nd4j::DataType::FLOAT32);
+    NDArray dB('c', { 1, 2, 2, 4 }, { 3.38, 4.04, 4.7, 5.36, 3.83, 4.58, 5.33, 6.08, 4.28, 5.12, 5.96, 6.8, 4.73, 5.66, 6.59, 7.52 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP11) {
+
+    NDArray A('c', { 2, 2, 3 }, { 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 2, 2 ,4 }, { 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 3, 4 }, { .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2 }, nd4j::DataType::FLOAT32);
+
+
+    NDArray dA('c', { 2, 2, 3 }, { 3.3, 8.5, 13.7, 3.7, 9.54, 15.38, 4.1, 10.58, 17.06, 4.5,  11.62, 18.74 }, nd4j::DataType::FLOAT32);
+    NDArray dB('c', { 2, 2, 4 }, { 3.38, 4.04, 4.7, 5.36, 3.83, 4.58, 5.33, 6.08, 4.28, 5.12, 5.96, 6.8, 4.73, 5.66, 6.59, 7.52 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,0,1, 2,0,1 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP12) {
+
+    NDArray A('c', { 2, 2, 3 }, { 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2 }, nd4j::DataType::FLOAT32);
+    NDArray B('c', { 2, 2 ,3 }, { 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2 }, nd4j::DataType::FLOAT32);
+    NDArray dLdC('c', { 2, 3, 2, 3 }, { .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2,
+                      1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2., 2.1, 2.2, 2.3, 2.4,
+                      2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2, 3.3, 3.4, 3.5, 3.6 }, nd4j::DataType::FLOAT32);
+
+    NDArray dA('c', { 2, 2, 3 }, { 7.66, 20.26, 32.86, 8.29, 21.97, 35.65, 45.46, 58.06, 70.66, 49.33, 63.01, 76.69 }, nd4j::DataType::FLOAT32);
+    NDArray dB('c', { 2, 2, 3 }, { 25.86, 27.36, 28.86, 28.74, 30.42, 32.1, 30.36, 31.86, 33.36, 33.78, 35.46, 37.14 }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 1,1, 1,1 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP13) {
+
+    NDArray A('c', { 3, 2, 2 }, { 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2 }, nd4j::DataType::DOUBLE);
+    NDArray B('c', { 3, 2, 2 }, { 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2 }, nd4j::DataType::DOUBLE);
+    NDArray dLdC('c', { 3, 2, 3, 2 }, { .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2,
+                      1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2., 2.1, 2.2, 2.3, 2.4,
+                      2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2, 3.3, 3.4, 3.5, 3.6 }, nd4j::DataType::DOUBLE);
+
+    NDArray dA('c', { 3, 2, 2 }, { 7.79, 20.57, 8.21, 21.71, 33.35, 46.13, 35.21, 48.71, 58.91, 71.69, 62.21, 75.71 }, nd4j::DataType::DOUBLE);
+    NDArray dB('c', { 3, 2, 2 }, { 26.49, 28.02, 28.41, 30.06, 29.55, 31.08, 31.71, 33.36, 32.61, 34.14, 35.01, 36.66 }, nd4j::DataType::DOUBLE);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 1,1, 1,1 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP14) {
+
+    NDArray A('c', { 2, 2, 2, 2 }, { 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3., 3.1, 3.2, 3.3, 3.4, 3.5, 3.6 }, nd4j::DataType::DOUBLE);
+
+    NDArray B('c', { 2, 2, 2, 2 }, { 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4., 4.1, 4.2, 4.3, 4.4, 4.5, 4.6 }, nd4j::DataType::DOUBLE);
+
+    NDArray dLdC('c', { 2, 2, 2, 2, 2, 2 }, { .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2,
+                      1.3, 1.4, 1.5, 1.6, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2,
+                      1.3, 1.4, 1.5, 1.6, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2,
+                      1.3, 1.4, 1.5, 1.6, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1, 1.1, 1.2,
+                      1.3, 1.4, 1.5, 1.6 }, nd4j::DataType::DOUBLE);
+
+    NDArray dA('c', { 2, 2, 2, 2 }, { 13.88, 37.24, 13.88, 37.24, 15.32, 41.24, 15.32, 41.24, 13.88, 37.24, 13.88, 37.24, 15.32, 41.24, 15.32, 41.24 }, nd4j::DataType::DOUBLE);
+    NDArray dB('c', { 2, 2, 2, 2 }, { 10.76, 12.88, 15., 17.12, 12.36, 14.8, 17.24, 19.68, 19.24, 21.36, 23.48, 25.6, 22.12, 24.56, 27., 29.44 }, nd4j::DataType::DOUBLE);
+
+    nd4j::ops::tensormmul_bp op_bp;
+
+    auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 1,1, 1,1 }, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+
+    auto* dLdAbp = resultsBP->at(0);
+    auto* dLdBbp = resultsBP->at(1);
+
+    ASSERT_TRUE(dA.isSameShape(*dLdAbp));
+    ASSERT_TRUE(dA.equalsTo(*dLdAbp));
+
+    ASSERT_TRUE(dB.isSameShape(*dLdBbp));
+    ASSERT_TRUE(dB.equalsTo(*dLdBbp));
+
+    delete resultsBP;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP15) {
+
+    NDArray A('c', { 2, 2, 3 }, { 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. }, nd4j::DataType::FLOAT32);
+    NDArray B('f', { 2, 2, 3 }, { 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. }, nd4j::DataType::FLOAT32);
+
+    NDArray dLdC('f', { 2, 2 }, { 23.0, 24.44, 2.0, 26. }, nd4j::DataType::FLOAT32);
+
+    NDArray dA('c', { 2, 2, 3 }, { 27., 127., 227., 77., 177., 277., 76.44, 278.20001, 479.96002, 177.32, 379.08001, 580.839966 }, nd4j::DataType::FLOAT32);
+    NDArray dB('f', { 2, 2, 3 }, { 194.08, 184., 336.4, 268., 241.52, 212., 383.839996, 296., 288.96002, 240., 431.27999, 324. }, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul_bp op;
+    auto results = op.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2,2,1,2 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto* dLdA = results->at(0);
+    auto* dLdB = results->at(1);
+
+    ASSERT_TRUE(dA.isSameShape(*dLdA));
+    ASSERT_TRUE(dA.equalsTo(*dLdA));
+
+    ASSERT_TRUE(dB.isSameShape(*dLdB));
+    ASSERT_TRUE(dB.equalsTo(*dLdB));
+
+    delete results;
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP16) {
+
+    NDArray A('f', { 2, 2, 3 }, { 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. }, nd4j::DataType::DOUBLE);
+    NDArray B('c', { 2, 2, 3 }, { 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. }, nd4j::DataType::DOUBLE);
+
+    NDArray dLdC('c', { 2, 2 }, nd4j::DataType::DOUBLE);
+
+    const OpArgsHolder argsHolderFF({ &A, &B }, {}, { 2,1,2, 2,1,2 });
+    const OpArgsHolder argsHolderBP({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 });
+
+    nd4j::ops::tensormmul op;
+    nd4j::ops::tensormmul_bp op_bp;
+
+    const bool isGradCorrect = GradCheck::checkGrad(op, op_bp, argsHolderFF, argsHolderBP, {1,0});
+    ASSERT_TRUE(isGradCorrect);
+}
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, TestTensorMmul_BP17) {
+
+    NDArray A('f', { 2, 2, 3 }, { 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. }, nd4j::DataType::DOUBLE);
+    NDArray B('f', { 2, 2, 3 }, { 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12. }, nd4j::DataType::DOUBLE);
+
+    NDArray dLdC('c', { 2, 2 }, nd4j::DataType::DOUBLE);
+
+    const OpArgsHolder argsHolderFF({ &A, &B }, {}, { 2,1,2, 2,1,2 });
+    const OpArgsHolder argsHolderBP({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 });
+
+    nd4j::ops::tensormmul op;
+    nd4j::ops::tensormmul_bp op_bp;
+
+    const bool isGradCorrect = GradCheck::checkGrad(op, op_bp, argsHolderFF, argsHolderBP, { 1,0 });
+    ASSERT_TRUE(isGradCorrect);
+}
+

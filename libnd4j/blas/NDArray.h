@@ -999,14 +999,14 @@ namespace nd4j {
         *  set new order and shape in case of suitable array length (in-place operation)
         *  order - order to set
         *  shape - shape to set
-        *
+        *  copyToNewBuff - if true then old buffer will be copied to new buffer if last one will be allocated after reshaping
         *  if there was permute applied before or there are weird strides, then new buffer is allocated for array
         */
-		bool reshapei(const char order, const std::initializer_list<Nd4jLong>& shape);
-		bool reshapei(const char order, const std::vector<Nd4jLong>& shape);
+		bool reshapei(const char order, const std::initializer_list<Nd4jLong>& shape, const bool copyToNewBuff = true);
+		bool reshapei(const char order, const std::vector<Nd4jLong>& shape, const bool copyToNewBuff = true);
 
-        bool reshapei(const std::initializer_list<Nd4jLong>& shape);
-		bool reshapei(const std::vector<Nd4jLong>& shape);
+        bool reshapei(const std::initializer_list<Nd4jLong>& shape, const bool copyToNewBuff = true);
+		bool reshapei(const std::vector<Nd4jLong>& shape, const bool copyToNewBuff = true);
 
         /**
         *  creates new array with corresponding order and shape, new array will point on _buffer of this array
@@ -1015,8 +1015,8 @@ namespace nd4j {
         *
         * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
-		NDArray reshape(const char order, const std::vector<Nd4jLong>& shape) const &;
-        NDArray reshape(const char order, const std::vector<Nd4jLong>& shape) &&;
+		NDArray reshape(const char order, const std::vector<Nd4jLong>& shape, const bool copyToNewBuff = true) const &;
+        NDArray reshape(const char order, const std::vector<Nd4jLong>& shape, const bool copyToNewBuff = true) &&;
 
         /**
         *  calculate strides and set given order
@@ -1493,7 +1493,7 @@ namespace nd4j {
          * @return
          */
         bool isS() const;
-        
+
         template <typename T>
         std::vector<T> asVectorT();
 

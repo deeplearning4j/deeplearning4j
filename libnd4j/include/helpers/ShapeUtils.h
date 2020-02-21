@@ -50,11 +50,13 @@ namespace nd4j {
     	static std::vector<Nd4jLong> evalRepeatShape(int axis, const std::vector<int>& repeats, const NDArray& arr);
 
         // evaluate shapeInfo of permuted array
-        static Nd4jLong* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace);
+        // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
+        static Nd4jLong* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace, const bool setContigStrides = false);
         static Nd4jLong* evalPermShapeInfo(const Nd4jLong* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace);
 
         // evaluate shapeInfo of transposed array
-        static Nd4jLong* evalTranspShapeInfo(const NDArray& arr, nd4j::memory::Workspace* workspace);
+        // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
+        static Nd4jLong* evalTranspShapeInfo(const NDArray& arr, nd4j::memory::Workspace* workspace, const bool setContigStrides = false);
 
         static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
 
@@ -96,6 +98,8 @@ namespace nd4j {
         static std::string shapeAsString(const Nd4jLong* shapeInfo);
         static std::string shapeAsString(const int rank, const Nd4jLong* shapeInfo);
         static std::string strideAsString(const NDArray* array);
+
+        static std::string shapeInfoAsString(const Nd4jLong* shapeInfo);
 
         static std::vector<Nd4jLong> shapeAsVector(const Nd4jLong* shapeInfo);
 
@@ -175,6 +179,17 @@ namespace nd4j {
             // we store +1 offset
             return (numStrings + 1) * sizeof(Nd4jLong);
         }
+
+        /**
+         * This method selects strides based on dimentions required for broadcasting
+         * @param const pointer to input (Y) shape info for strides selection
+         * @param rank of input (X) to broadcasting
+         * @param dimentions size
+         * @param const pointer to dimentions for broadcasting
+         * @param pointer to output strides have to be pre allocated by 0
+         * @return
+         */
+        static void copyCertainStridesFromShapeInfo(const Nd4jLong* inShapeInfo, const int nRank, const int dimsSize, const int* dims, Nd4jLong* outStrides);
 
         /*
         * check whether arr1/arr2 is sub-array of arr2/arr1,

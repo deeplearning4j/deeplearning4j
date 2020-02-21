@@ -389,7 +389,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         List<EventStats> workerFitStats = stats.getValue("ParameterAveragingWorkerFitTimesMs");
         for (EventStats e : workerFitStats) {
             ExampleCountEventStats eces = (ExampleCountEventStats) e;
-            System.out.println(eces.getTotalExampleCount());
+//            System.out.println(eces.getTotalExampleCount());
         }
 
         for (EventStats e : workerFitStats) {
@@ -457,7 +457,8 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         assertNotEquals(paramsBefore, paramsAfter);
 
         SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
-        System.out.println(stats.statsAsString());
+//        System.out.println(stats.statsAsString());
+        stats.statsAsString();
 
         sparkNet.getTrainingMaster().deleteTempFiles(sc);
     }
@@ -483,7 +484,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             i++;
         }
 
-        System.out.println("Saved to: " + tempDirF.getAbsolutePath());
+//        System.out.println("Saved to: " + tempDirF.getAbsolutePath());
 
 
 
@@ -527,7 +528,8 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
 
         //Expect
-        System.out.println(stats.statsAsString());
+//        System.out.println(stats.statsAsString());
+        stats.statsAsString();
         assertEquals(numSplits, stats.getValue("ParameterAveragingMasterRepartitionTimesMs").size());
 
         List<EventStats> list = stats.getValue("ParameterAveragingWorkerFitTimesMs");
@@ -566,8 +568,8 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
             i++;
         }
 
-        System.out.println("Saved to: " + tempDirF.getAbsolutePath());
-        System.out.println("Saved to: " + tempDirF2.getAbsolutePath());
+//        System.out.println("Saved to: " + tempDirF.getAbsolutePath());
+//        System.out.println("Saved to: " + tempDirF2.getAbsolutePath());
 
 
 
@@ -610,7 +612,8 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         assertNotEquals(paramsBefore, paramsAfter);
 
         SparkTrainingStats stats = sparkNet.getSparkTrainingStats();
-        System.out.println(stats.statsAsString());
+//        System.out.println(stats.statsAsString());
+        stats.statsAsString();
 
         //Same thing, buf for MultiDataSet objects:
         config = new Configuration();
@@ -631,7 +634,8 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         assertNotEquals(paramsBefore, paramsAfter);
 
         stats = sparkNet.getSparkTrainingStats();
-        System.out.println(stats.statsAsString());
+//        System.out.println(stats.statsAsString());
+        stats.statsAsString();
     }
 
 
@@ -730,13 +734,13 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .build();
 
         for (int avgFreq : new int[] {1, 5, 10}) {
-            System.out.println("--- Avg freq " + avgFreq + " ---");
+//            System.out.println("--- Avg freq " + avgFreq + " ---");
             SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf.clone(),
                             new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
                                             .batchSizePerWorker(batchSizePerExecutor).averagingFrequency(avgFreq)
                                             .repartionData(Repartition.Always).build());
 
-            sparkNet.setListeners(new ScoreIterationListener(1));
+            sparkNet.setListeners(new ScoreIterationListener(5));
 
 
 
@@ -778,13 +782,13 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
                         .setOutputs("1").build();
 
         for (int avgFreq : new int[] {1, 5, 10}) {
-            System.out.println("--- Avg freq " + avgFreq + " ---");
+//            System.out.println("--- Avg freq " + avgFreq + " ---");
             SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf.clone(),
                             new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
                                             .batchSizePerWorker(batchSizePerExecutor).averagingFrequency(avgFreq)
                                             .repartionData(Repartition.Always).build());
 
-            sparkNet.setListeners(new ScoreIterationListener(1));
+            sparkNet.setListeners(new ScoreIterationListener(5));
 
             JavaRDD<DataSet> rdd = sc.parallelize(list);
 

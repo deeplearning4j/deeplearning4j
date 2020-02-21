@@ -32,7 +32,7 @@ template <typename T>
 static void diGamma_(const NDArray& x, NDArray& z) {
 
 	auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
+        for (auto i = start; i < stop; i++)
             z.p(i, diGammaScalar<T>(x.e<T>(i)));
     };
 	samediff::Threads::parallel_for(func, 0, x.lengthOf());

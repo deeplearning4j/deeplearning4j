@@ -167,7 +167,7 @@ namespace randomOps {
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
                 auto func = PRAGMA_THREADS_FOR {
-                    for (uint64_t e = start; e < stop; e += increment) {
+                    for (auto e = start; e < stop; e++) {
                         T prob = rng->relativeT<T>(e);
                         T cumProb = (T) 0.0f;
                         for (Nd4jLong f = 0; f < yLength; f++) {
@@ -330,7 +330,7 @@ namespace randomOps {
             const T epsilon = static_cast<T>(1e-5);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (uint64_t e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto epm = e + middle;
 
                     // we need to get random values
@@ -440,7 +440,7 @@ namespace randomOps {
 
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
             auto func = PRAGMA_THREADS_FOR {
-                for (Nd4jLong e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
 
                     int success = 0;
                     for (int t = 1; t <= trials; t++) {
@@ -549,7 +549,7 @@ namespace randomOps {
             //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
             auto func = PRAGMA_THREADS_FOR {
-                for (uint64_t e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
 
                     int success = 0;
                     for (int t = 1; t <= trials; t++) {
@@ -690,7 +690,7 @@ namespace randomOps {
             const T epsilon = static_cast<T>(1e-5);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (uint64_t e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     if (z[e] > mean + ds || z[e] < mean - ds) {
                         z[e] = step(rng, mean, stddev, e, middle, z[e]);
 
@@ -818,7 +818,7 @@ namespace randomOps {
 
             auto func = PRAGMA_THREADS_FOR {
                 PRAGMA_OMP_SIMD
-                for (uint64_t e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto epm = e + middle;
 
                     // we need to get random values

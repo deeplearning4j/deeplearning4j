@@ -19,7 +19,7 @@
 // @author raver119@gmail.com
 //
 
-#include "../specials.hpp"
+#include "../specials_double.hpp"
 
 namespace nd4j {
     BUILD_DOUBLE_TEMPLATE(template class DoubleMethods, , LIBND4J_TYPES, LIBND4J_TYPES_9);

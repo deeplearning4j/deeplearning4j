@@ -22,7 +22,7 @@ void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third, const std::
     if (this->ordering() == second.ordering() && this->ordering() == third.ordering()  && this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1) && this->ews() == second.ews() && this->ews() == third.ews()) {
 
         auto loop = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment)
+            for (auto e = start; e < stop; e++)
                 z[e] = func(f[e], s[e], t[e]);
         };
 
@@ -31,7 +31,7 @@ void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third, const std::
         if (f == z) {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto tOffset = this->getOffset(e);
                     auto uOffset = second.getOffset(e);
                     auto vOffset = third.getOffset(e);
@@ -44,7 +44,7 @@ void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third, const std::
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto tOffset = this->getOffset(e);
                     auto uOffset = second.getOffset(e);
                     auto vOffset = third.getOffset(e);
@@ -93,7 +93,7 @@ void NDArray::applyPairwiseLambda(const NDArray& other, const std::function<T(T,
     if (this->ordering() == other.ordering() && this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1) && this->ews() == other.ews()) {
 
         auto loop = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment)
+            for (auto e = start; e < stop; e++)
                 z[e] = func(f[e], s[e]);
         };
 
@@ -102,7 +102,7 @@ void NDArray::applyPairwiseLambda(const NDArray& other, const std::function<T(T,
         if (f == z) {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto xOffset = this->getOffset(e);
                     auto yOffset = other.getOffset(e);
 
@@ -114,7 +114,7 @@ void NDArray::applyPairwiseLambda(const NDArray& other, const std::function<T(T,
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto xOffset = this->getOffset(e);
                     auto yOffset = other.getOffset(e);
                     auto zOffset = target.getOffset(e);
@@ -156,7 +156,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray& target) {
     if (this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1)) {
 
         auto loop = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment)
+            for (auto e = start; e < stop; e++)
                 z[e] = func(f[e]);
         };
 
@@ -165,7 +165,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray& target) {
         if (f == z) {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto xOffset = this->getOffset(e);
 
                     f[xOffset] = func(f[xOffset]);
@@ -176,7 +176,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray& target) {
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto xOffset = this->getOffset(e);
                     auto zOffset = target.getOffset(e);
 
@@ -217,7 +217,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
     if (this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1)) {
 
         auto loop = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment)
+            for (auto e = start; e < stop; e++)
                 z[e] = func(e, f[e]);
         };
 
@@ -226,7 +226,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
         if (f == z) {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto xOffset = this->getOffset(e);
 
                     f[xOffset] = func(e, f[xOffset]);
@@ -237,7 +237,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto xOffset = this->getOffset(e);
                     auto zOffset = target.getOffset(e);
 
@@ -283,7 +283,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray& other, const std::function<T(N
     if (this->ordering() == other.ordering() && this->ordering() == target.ordering() && (this->ews() == 1 && target.ews() == 1) && this->ews() == other.ews()) {
 
         auto loop = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment)
+            for (auto e = start; e < stop; e++)
                 z[e] = func((Nd4jLong) e, f[e], s[e]);
         };
 
@@ -292,7 +292,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray& other, const std::function<T(N
         if (f == z) {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto xOffset = this->getOffset(e);
                     auto yOffset = other.getOffset(e);
 
@@ -304,7 +304,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray& other, const std::function<T(N
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto xOffset = this->getOffset(e);
                     auto yOffset = other.getOffset(e);
                     auto zOffset = target.getOffset(e);

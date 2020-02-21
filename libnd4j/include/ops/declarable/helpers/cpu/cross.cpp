@@ -30,7 +30,7 @@ namespace helpers {
 void crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
     auto _a = a->reshape(a->ordering(), {-1, 3});
     auto _b = b->reshape(b->ordering(), {-1, 3});
-    auto _o = o->reshape(o->ordering(), {-1, 3});
+    auto _o = o->reshape(o->ordering(), {-1, 3}, false);
 
     auto tadsA = _a.allTensorsAlongDimension({1});
     auto tadsB = _b.allTensorsAlongDimension({1});
@@ -39,7 +39,7 @@ void crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray
     int tads = tadsA.size();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             auto a_ = tadsA.at(e);
             auto b_ = tadsB.at(e);
             auto o_ = tadsO.at(e);

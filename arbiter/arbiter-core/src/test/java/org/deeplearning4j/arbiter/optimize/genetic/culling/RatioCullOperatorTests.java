@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.culling;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.culling.RatioCullOperator;
@@ -24,7 +25,6 @@ import org.deeplearning4j.arbiter.optimize.generator.genetic.population.Populati
 import org.deeplearning4j.arbiter.optimize.genetic.TestPopulationInitializer;
 import org.junit.Assert;
 import org.junit.Test;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.List;
 
@@ -46,7 +46,7 @@ public class RatioCullOperatorTests extends BaseDL4JTest {
 
         @Override
         public void cullPopulation() {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Not implemented");
         }
 
         public double getCullRatio() {

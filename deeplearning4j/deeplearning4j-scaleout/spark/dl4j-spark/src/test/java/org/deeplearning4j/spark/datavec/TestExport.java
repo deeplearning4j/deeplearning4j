@@ -86,7 +86,7 @@ public class TestExport extends BaseSparkTest {
         for (File file : files) {
             if (!file.getPath().endsWith(".bin"))
                 continue;
-            System.out.println(file);
+//            System.out.println(file);
             DataSet ds = new DataSet();
             ds.load(file);
             assertEquals(minibatchSize, ds.numExamples());
@@ -144,7 +144,7 @@ public class TestExport extends BaseSparkTest {
         for (File file : files) {
             if (!file.getPath().endsWith(".bin"))
                 continue;
-            System.out.println(file);
+//            System.out.println(file);
             MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet();
             ds.load(file);
             assertEquals(minibatchSize, ds.getFeatures(0).size(0));

@@ -66,7 +66,7 @@ static void adjustSaturation_(const NDArray *input, const NDArray* factorScalarA
         const Nd4jLong zDimCstride = output->stridesOf()[dimC];
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 const T *xTad = x + packX.platformOffsets()[i];
                 T *zTad = z + packZ.platformOffsets()[i];
 

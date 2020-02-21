@@ -96,7 +96,7 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
         auto func = PRAGMA_THREADS_FOR {
             T *col, *im;
 
-            for (uint b = start; b < stop; b += increment) {
+            for (uint b = start; b < stop; b++) {
                 T *im0 = imBuff + b * imStride0;
                 T *col4 = colBuff + b * colStride0;
                 for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {

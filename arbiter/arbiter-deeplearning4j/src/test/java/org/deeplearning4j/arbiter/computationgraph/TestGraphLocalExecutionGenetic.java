@@ -165,7 +165,7 @@ public class TestGraphLocalExecutionGenetic extends BaseDL4JTest {
             List<ResultReference> results = runner.getResults();
             assertTrue(results.size() > 0);
 
-            System.out.println("----- COMPLETE - " + results.size() + " results -----");
+//            System.out.println("----- COMPLETE - " + results.size() + " results -----");
         }
     }
 

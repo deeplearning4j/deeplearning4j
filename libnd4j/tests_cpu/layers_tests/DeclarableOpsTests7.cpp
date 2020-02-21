@@ -5019,20 +5019,6 @@ TEST_F(DeclarableOpsTests7, Test_Reduce_Prod_7) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests7, Test_Matmul_Once_Again) {
-    auto x = NDArrayFactory::create<double>('c', {1, 2}, {2.0f, 2.0f});
-    auto y = NDArrayFactory::create<double>('c', {2, 1}, {2.0f, 2.0f});
-    auto exp = NDArrayFactory::create<double>('c', {1, 1}, {8.0f});
-
-    nd4j::ops::matmul op;
-    auto result = op.evaluate({&x, &y}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    ASSERT_EQ(exp, *result->at(0));
-
-    delete result;
-}
-
 TYPED_TEST(TypedDeclarableOpsTests7, Test_Pnorm_Once_Again) {
     auto input = NDArrayFactory::create<TypeParam>('c', {1, 1, 5, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f});
     auto exp = NDArrayFactory::create<TypeParam>('c', {1, 1, 5, 5}, {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 16.0f, 17.0f, 18.0f, 19.0f, 20.0f, 21.0f, 22.0f, 23.0f, 24.0f, 25.0f});

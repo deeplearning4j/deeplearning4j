@@ -84,6 +84,8 @@ namespace nd4j{
             DECLARE_PLATFORM(depthwise_conv2d, ENGINE_CPU);
 
             DECLARE_PLATFORM(depthwise_conv2d_bp, ENGINE_CPU);
+
+            DECLARE_PLATFORM(matmul, ENGINE_CPU);
         }
     }
 

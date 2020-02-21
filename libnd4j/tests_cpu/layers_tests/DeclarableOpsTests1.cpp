@@ -321,6 +321,280 @@ TEST_F(DeclarableOpsTests1, TestTensorDot4) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot5) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('c', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {2,4,2,4}, {44,110,160, 66,132, 38, 88,154, 68,170,224,102,204, 82,136,238, 92,230,288,138,276,126,184,322, 116,290,352,174,348,170,232,406, 76,190,160,114,228,182,152,266, 100,250,224,150,300,226,200,350, 124,310,288,186,372,270,248,434, 148,370,352,222,444,314,296,518});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {1,1,1,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot6) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('f', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {2,4,2,4}, {22, 66,110,154, 44, 88,132,176, 34,102,170,238, 68,136,204,272, 46,138,230,322, 92,184,276,368, 58,174,290,406,116,232,348,464, 38,114,190,266, 76,152,228,304, 50,150,250,350,100,200,300,400, 62,186,310,434,124,248,372,496, 74,222,370,518,148,296,444,592});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {1,1,1,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot7) {
+
+    auto x = NDArrayFactory::create<double>('f', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('c', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {2,4,2,4}, {76,166,112,106,196, 62,136,226, 60,174,208, 98,212,230,136,250, 76,214,336,122,260,174,168,306, 124,286,240,178,340,150,232,394, 100,226,176,142,268,106,184,310, 84,234,272,134,284,274,184,334, 100,274,400,158,332,218,216,390, 148,346,304,214,412,194,280,478});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {1,1,1,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot8) {
+
+    auto x = NDArrayFactory::create<double>('f', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('f', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {2,4,2,4}, {30, 90,150,210, 60,120,180,240, 38,114,190,266, 76,152,228,304, 46,138,230,322, 92,184,276,368, 54,162,270,378,108,216,324,432, 42,126,210,294, 84,168,252,336, 50,150,250,350,100,200,300,400, 58,174,290,406,116,232,348,464, 66,198,330,462,132,264,396,528});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {1,1,1,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot9) {
+
+    // NDArray z('f',{2,2,3}, nd4j::DataType::DOUBLE);
+    // z.linspace(1);
+    // z.printShapeInfo();
+    // z.printIndexedBuffer();
+    // z.reshapei('c', {4,3});
+    // z.printShapeInfo();
+    // z.printIndexedBuffer();
+
+    auto x = NDArrayFactory::create<double>('f', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('f', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {3,4,4,3}, {14, 14, 14, 30, 30, 30, 46, 46, 46, 62, 62, 62, 86, 86, 86,198,198,198,310,310,310,422,422,422, 62, 62, 62,142,142,142,222,222,222,302,302,302, 38, 38, 38, 86, 86, 86,134,134,134,182,182,182, 38, 38, 38, 86, 86, 86,134,134,134,182,182,182, 14, 14, 14, 30, 30, 30, 46, 46, 46, 62, 62, 62, 86, 86, 86,198,198,198,310,310,310,422,422,422, 62, 62, 62,142,142,142,222,222,222,302,302,302, 62, 62, 62,142,142,142,222,222,222,302,302,302, 38, 38, 38, 86, 86, 86,134,134,134,182,182,182, 14, 14, 14, 30, 30, 30, 46, 46, 46, 62, 62, 62, 86, 86, 86,198,198,198,310,310,310,422,422,422});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {1,0,1,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot10) {
+
+    auto x = NDArrayFactory::create<double>('f', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('f', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {4,4}, {114,258,402,546, 138,314,490,666, 162,370,578,786, 186,426,666,906});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {2,0,1, 2,0,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot11) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('f', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {4,4}, {98,218,338,458, 134,302,470,638, 170,386,602,818, 206,470,734,998});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {2,0,1, 2,0,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot12) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('c', {2,4,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {4,4}, {272,292,312,332, 368,396,424,452, 464,500,536,572, 560,604,648,692});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {2,0,1, 2,0,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot13) {
+
+    auto x = NDArrayFactory::create<double>('c', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('c', {4,2,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {3,3}, {640,560,640, 576,624,576, 640,560,640});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {2,0,2, 2,1,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot14) {
+
+    auto x = NDArrayFactory::create<double>('f', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('c', {4,2,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {3,3}, {648,600,520, 648,536,648, 520,600,648});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {2,0,2, 2,1,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot15) {
+
+    auto x = NDArrayFactory::create<double>('f', {2,3,4}, {1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15, 1,3,5,7,9,11,13,15});
+    auto y = NDArrayFactory::create<double>('f', {4,2,3}, {2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16, 2,4,6,8,10,12,14,16});
+    auto expected = NDArrayFactory::create<double>('c', {3,3}, {624,624,624, 656,656,656, 624,624,624});
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {2,0,2, 2,1,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot16) {
+
+    NDArray x('c', {1}, std::vector<double>{2}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {2,1,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {2,2}, {2,4,6,8}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul op;
+    auto results = op.evaluate({&x, &y}, {}, {1,0, 1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *result = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, TestTensorDot17) {
+
+    NDArray x('f', {16,16}, nd4j::DataType::FLOAT32);
+    NDArray y('f', {1000,16}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {16,1000}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::tensormmul op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {1,1, 1,1}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, DivergentCheck1) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation("switch");
@@ -1067,40 +1341,6 @@ TEST_F(DeclarableOpsTests1, MultiplyScalarScalar1) {
     delete exp;
 }
 
-TEST_F(DeclarableOpsTests1, TestMatMul1) {
-    auto x = NDArrayFactory::create_<float>('c', {3, 5});
-    x->linspace(1);
-
-    auto y = NDArrayFactory::create_<float>('c', {5, 3});
-    y->linspace(1);
-
-    float _expB[]{135.0f, 310.0f, 485.0f, 150.0f, 350.0f, 550.0f, 165.0f, 390.0f, 615.0f};
-    Nd4jLong _expS[] {2, 3, 3, 1, 3, 0, 1, 102}; // expected shape
-    ArrayOptions::setDataType(_expS, nd4j::DataType::FLOAT32);
-    NDArray exp(_expB, _expS);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(-2, y);
-    variableSpace->putVariable(1, new Variable());
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2});
-
-    nd4j::ops::matmul op;
-
-    Nd4jStatus status = op.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    ASSERT_TRUE(variableSpace->hasVariable(1));
-
-    auto result = variableSpace->getVariable(1)->getNDArray();
-
-    ASSERT_TRUE(result->equalsTo(&exp));
-
-    delete block;
-    delete variableSpace;
-}
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestSoftMax_bp_1) {
 
@@ -1609,36 +1849,6 @@ TEST_F(DeclarableOpsTests1, TestGemv1) {
 #endif
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Reshape1) {
-    const std::vector<Nd4jLong> xShape = {5,4,3};
-    const std::vector<Nd4jLong> yShape = {3,5,4};
-
-    auto x = NDArrayFactory::create_<float>('f', xShape);
-    auto y = NDArrayFactory::create_<float>('f', yShape);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-
-    auto block = new Context(1, variableSpace, true);
-    block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
-    arguments->push_back(-y->ordering());
-    arguments->push_back(3);
-    arguments->push_back(5);
-    arguments->push_back(4);
-
-    nd4j::ops::reshape reshape;
-
-    reshape.execute(block);
-
-    ASSERT_TRUE(x->isSameShape(y));
-
-    delete y;
-    delete block;
-    delete variableSpace;
-}
-
-//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Reshape2) {
     const std::vector<Nd4jLong> xShape = {5,4,3};
     const std::vector<Nd4jLong> yShape = {3,5,4};
@@ -1748,37 +1958,8 @@ TEST_F(DeclarableOpsTests1, Reshape7){
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Transpose1) {
-
     auto x = NDArrayFactory::create_<float>('c', {3,5,2});
-    auto exp = NDArrayFactory::create_<float>('f', {2,5,3});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-
-    auto block = new Context(1, variableSpace, true);  // in-place
-    block->fillInputs({-1});
-    nd4j::ops::transpose transpose;
-
-    Nd4jStatus status = transpose.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    // ASSERT_TRUE(x.isSameShapeStrict(exp));
-
-    for (int e = 0; e < x->rankOf() * 2 + 2; e++) {
-        ASSERT_EQ(x->getShapeInfo()[e], exp->getShapeInfo()[e]);
-    }
-//  ASSERT_EQ(x.getShapeInfo()[x.rankOf() * 2 + 2],-exp.getShapeInfo()[x.rankOf() * 2 + 2]);
-    ASSERT_EQ(x->getShapeInfo()[x->rankOf() * 2 + 3], exp->getShapeInfo()[x->rankOf() * 2 + 3]);
-
-    delete exp;
-    delete block;
-    delete variableSpace;
-
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Transpose2) {
-    auto x = NDArrayFactory::create_<float>('c', {3,5,2});
-    auto exp = NDArrayFactory::create_<float>('f', {2,5,3});
+    auto exp = NDArrayFactory::create_<float>('c', {2,5,3});
 
     auto variableSpace = new VariableSpace();
     variableSpace->putVariable(-1, x);
@@ -1792,57 +1973,23 @@ TEST_F(DeclarableOpsTests1, Transpose2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // ASSERT_TRUE(result->isSameShapeStrict(exp));
-    for (int e = 0; e < result->rankOf() * 2 + 2; e++) {
-        ASSERT_EQ(result->getShapeInfo()[e], exp->getShapeInfo()[e]);
-    }
-    //ASSERT_EQ(result->getShapeInfo()[x.rankOf() * 2 + 2],-exp.getShapeInfo()[x.rankOf() * 2 + 2]);
-    ASSERT_EQ(result->getShapeInfo()[x->rankOf() * 2 + 3], exp->getShapeInfo()[x->rankOf() * 2 + 3]);
+
+    ASSERT_TRUE(exp->isSameShape(result));
+    ASSERT_TRUE(exp->dataType() == result->dataType());
+    ASSERT_TRUE(exp->ordering() == result->ordering());
 
     delete exp;
     delete block;
     delete variableSpace;
 }
 
-
-//////////////////////////////////////////////////////////////////////
-// in-place
-TEST_F(DeclarableOpsTests1, Permute1) {
-
-    Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
-    const std::vector<int> perm = {2, 0, 1};
-    ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);
-    ArrayOptions::setDataType(shapeExp, nd4j::DataType::FLOAT32);
-
-    auto x = new NDArray(shapeX,true);
-    auto exp = new NDArray(shapeExp,true);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-
-    auto block = new Context(1, variableSpace, true);  // in-place
-    block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
-    *arguments = perm;      // set dimensions to be permuted
-
-    nd4j::ops::permute permute;
-    Nd4jStatus status = permute.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    ASSERT_TRUE(x->isSameShapeStrict(*exp));
-
-    delete exp;
-    delete block;
-    delete variableSpace;
-}
 
 //////////////////////////////////////////////////////////////////////
 // not-in-place
-TEST_F(DeclarableOpsTests1, Permute2) {
+TEST_F(DeclarableOpsTests1, Permute1) {
 
-    Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
-    Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
+    Nd4jLong shapeX[]   = {3, 5,10,15,  150,15,1,  0,1,99};
+    Nd4jLong shapeExp[] = {3, 15,5,10,  50,10,1,  0,1,99};
     const std::vector<int> perm = {2, 0, 1};
 
     ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);

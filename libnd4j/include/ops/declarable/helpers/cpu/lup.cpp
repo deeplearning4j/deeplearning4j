@@ -45,7 +45,7 @@ namespace helpers {
             auto n = shape::sizeAt(matrixShape, -1);
 
             auto loop = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     Nd4jLong theFirstPos[] = {theFirst, i};
                     Nd4jLong theSecondPos[] = {theSecond, i};
                     auto theFirstIndex = shape::getOffset(matrixShape, theFirstPos, 0);
@@ -203,7 +203,7 @@ namespace helpers {
         auto result = -1;
         //auto loop = PRAGMA_THREADS_FOR {
             auto start = column, stop = rowNum, increment = 1;
-            for (auto rowCounter = start; rowCounter < stop; rowCounter += increment) {
+            for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
                 Nd4jLong xPos[] = {rowCounter, column};
                 auto xIndex = shape::getOffset(compoundShape, xPos, 0);
                 if (nd4j::math::nd4j_abs(compoundBuffer[xIndex]) > maxValue) {
@@ -221,7 +221,7 @@ namespace helpers {
         Nd4jLong xDiag[] = {currentRow, currentRow};
         auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
         auto loop = PRAGMA_THREADS_FOR {
-            for (int j = start; j < stop; j += increment) {
+            for (auto j = start; j < stop; j++) {
                 Nd4jLong xRow[] = {j, currentRow};
                 auto rowIndex = shape::getOffset(compoundShape, xRow, 0);
                 compoundBuf[rowIndex] /= compoundBuf[diagIndex]; //output->t<T>(i, i);
@@ -310,7 +310,7 @@ namespace helpers {
             permutations = permutationVectors->allTensorsAlongDimension({-1});
 
         auto loop = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 luNN_<T, I>(context, outputs.at(i), permutationVectors?permutations.at(i):nullptr, n);
             }
         };

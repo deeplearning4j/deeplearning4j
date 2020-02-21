@@ -191,6 +191,70 @@ void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArr
         BUILD_SINGLE_SELECTOR(xType, logSoftMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
     }
 
+    template <typename T>
+    void softmax_loop(T *input, T *output, Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen);
+
+    template <>
+    FORCEINLINE void softmax_loop(float *input, float *output, Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i++) {
+                auto inBuff = input + offsets[i];
+                auto outBuff = output + offsets[i];
+
+                float max = -DataTypeUtils::max<float>();
+                float sum = 0.f;
+
+                #pragma omp simd reduction(max:max)
+                for (uint j = 0; j < tadLen; ++j)
+                    max = nd4j::math::nd4j_max<float>(max, inBuff[j]);
+
+                #pragma omp simd reduction(+:sum)
+                for (uint j = 0; j < tadLen; ++j) {
+                    float temp = nd4j::math::nd4j_exp<float, float>(inBuff[j] - max);
+                    outBuff[j] = temp;
+                    sum += temp;
+                }
+
+                #pragma omp simd
+                for (uint j = 0; j < tadLen; ++j)
+                    outBuff[j] /= sum;
+            }
+        };
+
+        samediff::Threads::parallel_tad(func,0, numOfSubArrs);
+    }
+
+
+    template <typename T>
+    FORCEINLINE void softmax_loop(T *input, T *output, Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i++) {
+                auto inBuff = input + offsets[i];
+                auto outBuff = output + offsets[i];
+
+                T max = -DataTypeUtils::max<T>();
+                T sum(0.f);
+
+                #pragma omp simd reduction(maxT:max)
+                for (uint j = 0; j < tadLen; ++j)
+                    max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
+
+                #pragma omp simd reduction(sumT:sum)
+                for (uint j = 0; j < tadLen; ++j) {
+                    T temp = nd4j::math::nd4j_exp<T, T>(inBuff[j] - max);
+                    outBuff[j] = temp;
+                    sum += temp;
+                }
+
+                #pragma omp simd
+                for (uint j = 0; j < tadLen; ++j)
+                    outBuff[j] /= sum;
+            }
+        };
+
+        samediff::Threads::parallel_tad(func,0, numOfSubArrs);
+    }
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
@@ -213,31 +277,10 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
         const uint tadLen       = shape::length(tadShapeInfo);
 
         if(shape::elementWiseStride(tadShapeInfo) == 1){
+            T *inBuff = input.bufferAsT<T>();
+            T *outBuff = output.bufferAsT<T>();
 
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
-
-                    T *inBuff = input.bufferAsT<T>() + tadOffsets[i];
-                    T *outBuff = output.bufferAsT<T>() + tadOffsets[i];
-
-                    T max = -DataTypeUtils::max<T>();
-                    T sum = 0;
-
-                    for (uint j = 0; j < tadLen; ++j)
-                        max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
-
-                    for (uint j = 0; j < tadLen; ++j) {
-                        T temp = nd4j::math::nd4j_exp<T, T>(inBuff[j] - max);
-                        outBuff[j] = temp;
-                        sum += temp;
-                    }
-
-                    for (uint j = 0; j < tadLen; ++j)
-                        outBuff[j] /= sum;
-                }
-            };
-
-            samediff::Threads::parallel_tad(func,0, numOfSubArrs);
+            softmax_loop(inBuff, outBuff, tadOffsets, numOfSubArrs, tadLen);
         }
         else {
 
@@ -248,7 +291,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
             shape::calcOffsets(tadShapeInfo, offsets);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto inBuff = input.bufferAsT<T>() + tadOffsets[i];
                     auto outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
@@ -298,7 +341,7 @@ void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& a
     const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             // FIXME: double!
             double x = input.e<double>(i);
             if (x < 0.0) {

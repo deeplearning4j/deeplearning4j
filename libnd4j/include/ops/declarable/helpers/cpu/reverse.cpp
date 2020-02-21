@@ -54,7 +54,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
             if (inArr == outArr) {
                 if (inEWS == 1) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto idx = sLength - e;
                             swap(inArr, e, idx);
                         }
@@ -63,7 +63,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 }
                 else if (inEWS > 1) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto idx1 = (sLength - e) * inEWS;
                             Nd4jLong idx2 = e * inEWS;
                             swap(inArr, idx1, idx2);
@@ -75,7 +75,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 else {
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
                             auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer);
                             swap(outArr, inOffset, outOffset);
@@ -93,14 +93,14 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 if (inEWS == 1 && outEWS == 1 && inOrder == outOrder) {
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (Nd4jLong e = start; e < stop; e += increment)
+                        for (Nd4jLong e = start; e < stop; e++)
                             outArr[sLength - e] = inArr[e];
                     };
                     samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
                         auto f2 = PRAGMA_THREADS_FOR {
-                            for (auto e = start; e < stop; e += increment)
+                            for (auto e = start; e < stop; e++)
                                 outArr[e] = inArr[e];
                         };
                         samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
@@ -109,14 +109,14 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 else if (inEWS >= 1 && outEWS >= 1 && inOrder == outOrder) {
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment)
+                        for (auto e = start; e < stop; e++)
                             outArr[(sLength - e) * outEWS] = inArr[e * inEWS];
                     };
                     samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
                         auto f2 = PRAGMA_THREADS_FOR {
-                            for (auto e = start; e < stop; e += increment)
+                            for (auto e = start; e < stop; e++)
                                 outArr[e * outEWS] = inArr[e * inEWS];
                         };
                         samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
@@ -125,7 +125,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 else {
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
                             auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer);
                             outArr[outOffset] = inArr[inOffset];
@@ -136,7 +136,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                     if(inLength != numOfElemsToReverse) {
 
                         auto f2 = PRAGMA_THREADS_FOR {
-                            for (auto e = start; e < stop; e += increment) {
+                            for (auto e = start; e < stop; e++) {
                                 auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
                                 auto outOffset = shape::getIndexOffset(e, outShapeBuffer);
                                 outArr[outOffset] = inArr[inOffset];

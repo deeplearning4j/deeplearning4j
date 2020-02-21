@@ -90,7 +90,7 @@ namespace helpers {
         auto outputPart = output->allTensorsAlongDimension({-2, -1});
 
         auto batchLoop = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 if (lower) {
                     lowerTriangularSolve<T>(context, leftPart[i], rightPart[i], adjoint, outputPart[i]);
                 } else {
@@ -112,7 +112,7 @@ namespace helpers {
         auto rows = input->sizeAt(-2);
 
         auto batchLoop = PRAGMA_THREADS_FOR {
-            for (auto batch = start; batch < stop; batch += increment) {
+            for (auto batch = start; batch < stop; batch++) {
                 if (!lower) {
                     for (auto r = 0; r < rows; r++) {
                         for (auto c = 0; c <= r; c++) {

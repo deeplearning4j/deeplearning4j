@@ -123,7 +123,7 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
     val expectedSlice = expectedArray.slice(0)
     val actualSlice = expectedArray(0, ->)
 
-    Console.println(expectedSlice)
+//    Console.println(expectedSlice)
 
     assert(actualSlice == expectedSlice)
   }

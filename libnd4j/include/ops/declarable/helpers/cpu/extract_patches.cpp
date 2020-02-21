@@ -50,7 +50,7 @@ namespace helpers {
             colCast = 0;
 
        auto func = PRAGMA_THREADS_FOR {
-           for (auto batch = 0; batch < stop; batch += increment) {
+           for (auto batch = 0; batch < stop; batch++) {
                auto patch = listOfMatricies.at(batch);
                auto outMatrix = listOfOutputs.at(batch);
 

@@ -179,6 +179,7 @@ TEST_F(BroadcastableOpsTests, Test_Minimum_1) {
     auto z = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
+
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;

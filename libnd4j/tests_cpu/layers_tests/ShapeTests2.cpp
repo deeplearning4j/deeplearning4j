@@ -43,7 +43,7 @@ public:
     Nd4jLong shape[3] = {3,4,5};
     Nd4jLong *shapeBuffer;
     ThreeDTest() {
-        shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 3, shape);        
+        shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 3, shape);
     }
     ~ThreeDTest() {
         delete[] shapeBuffer;
@@ -196,11 +196,11 @@ public:
     int dimensionLength = 2;
     int dimension[2] = {2,3};
     Nd4jLong tadAssertionC[10] = {3,4,4,1,4,1,16,16384,1,99};
-    Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,1,16384,1,102};
+    Nd4jLong tadCAssertionF[10] = {3,4,4,1,1,4,16,16384,1,102};
 };
 
 
-TEST_F(LeadingOnes,OnesTest) {        
+TEST_F(LeadingOnes,OnesTest) {
 
     shape::TAD *cTad = new shape::TAD;
     cTad->init(shapeBufferC,dimension,dimensionLength);
@@ -222,7 +222,7 @@ TEST_F(LeadingOnes,OnesTest) {
 
 class NormalThreeFourFive : public testing::Test {
 public:
-    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, 0, 102};
+    Nd4jLong assertionBuffer[8] = {2, 3, 4, 20, 5, 16384, 5, 99};
     Nd4jLong inputShapeBuffer[10] = {3,3,4,5,20,5,1,16384,1,99};
     int dimensionLength = 2;
     int dimension[2] = {0,1};
@@ -243,7 +243,7 @@ class DimensionWarning : public testing::Test {
 public:
     int dimensionLength = 2;
     int dimensions[2] = {0,1};
-    Nd4jLong shape[3] = {1,5,1};    
+    Nd4jLong shape[3] = {1,5,1};
     Nd4jLong *shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 3, shape);
 
     ~DimensionWarning() {
@@ -324,7 +324,7 @@ public:
     int dimensionFour = 0;
     int dimensionLength = 1;
     FourDTest() {
-        threeDShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'f', 3, threeDShape);        
+        threeDShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'f', 3, threeDShape);
         fourDShapeBuffer  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'f', 4, fourDShape);
     }
     ~FourDTest() {
@@ -491,7 +491,7 @@ TEST_F(LabelTest,LabelTad) {
     delete tad;
 }
 
-TEST_F(ExpectedValuesTest,TadTest) {    
+TEST_F(ExpectedValuesTest,TadTest) {
     auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 4, mainShape);
     shape::TAD *tad = new shape::TAD;
     tad->init(shapeBuffer,testDimensions,3);
@@ -528,7 +528,7 @@ TEST_F(ThreeDTest,TensorAlongDimensionTest) {
 }
 
 
-TEST_F(NumTadTests,TadTest) {    
+TEST_F(NumTadTests,TadTest) {
     auto shape = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 3, this->shape);
     shape::TAD *tad = new shape::TAD;
     tad->init(shape,&dimension,1);
@@ -539,7 +539,7 @@ TEST_F(NumTadTests,TadTest) {
 }
 
 TEST_F(TADStall,TestStall) {
-    auto shapeInfo = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 4, shape);    
+    auto shapeInfo = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 4, shape);
     shape::TAD *tad = new shape::TAD;
     tad->init(0,shapeInfo,this->dimensions,3);
     tad->createTadOnlyShapeInfo();
@@ -564,7 +564,7 @@ TEST_F(PermuteTest,PermuteShapeBufferTest) {
     Nd4jLong shapeToPermute[4] = {5,3,2,6};
     Nd4jLong permutedOrder[4] = {6,2,3,5};
     auto shapeBufferOriginal  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 4, shapeToPermute);
-    auto assertionShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 4, shapeToPermute);    
+    auto assertionShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 4, shapeToPermute);
     shape::permuteShapeBufferInPlace(shapeBufferOriginal,normalOrder,shapeBufferOriginal);
     EXPECT_TRUE(arrsEquals(4,assertionShapeBuffer,shapeBufferOriginal));
 
@@ -585,9 +585,9 @@ TEST_F(ElementWiseStrideTest,ElementWiseStrideTest) {
 
 TEST_F(SliceVectorTest,RowColumnVectorTest) {
     Nd4jLong rowVectorShape[2] = {1,5};
-    auto rowVectorShapeInfo  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, rowVectorShape);    
+    auto rowVectorShapeInfo  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, rowVectorShape);
     Nd4jLong colVectorShape[2] = {5,1};
-    auto colVectorShapeInfo  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, colVectorShape);    
+    auto colVectorShapeInfo  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, colVectorShape);
     Nd4jLong *sliceRow = shape::sliceOfShapeBuffer(0,rowVectorShapeInfo);
     EXPECT_TRUE(arrsEquals(2,rowVectorShapeInfo,sliceRow));
     Nd4jLong *scalarSliceInfo = shape::createScalarShapeInfo();
@@ -608,7 +608,7 @@ TEST_F(SliceTensorTest,TestSlice) {
     Nd4jLong shape[3] = {3,3,2};
     auto shapeBuffer  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 3, shape);
     Nd4jLong sliceShape[2] = {3,2};
-    auto sliceShapeBuffer  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, sliceShape);    
+    auto sliceShapeBuffer  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, sliceShape);
     Nd4jLong *testSlice = shape::sliceOfShapeBuffer(0,shapeBuffer);
     EXPECT_TRUE(arrsEquals(2,sliceShapeBuffer,testSlice));
     delete[] testSlice;
@@ -619,9 +619,9 @@ TEST_F(SliceTensorTest,TestSlice) {
 
 TEST_F(SliceMatrixTest,TestSlice) {
     Nd4jLong shape[2] = {3,2};
-    auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, shape);    
+    auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, shape);
     Nd4jLong sliceShape[2] = {1,2};
-    auto sliceShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, sliceShape);    
+    auto sliceShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, sliceShape);
     Nd4jLong *testSlice = shape::sliceOfShapeBuffer(0,shapeBuffer);
     EXPECT_TRUE(arrsEquals(2,sliceShapeBuffer,testSlice));
     delete[] testSlice;
@@ -664,13 +664,13 @@ TEST_F(TensorTwoFromFourDDimTest,TadTwoFromFourDimTest) {
     //Along dimension 1,2: expect matrix with shape [cols,dim2]
     //Along dimension 1,3: expect matrix with shape [cols,dim3]
     //Along dimension 2,3: expect matrix with shape [dim2,dim3]
-    auto baseShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 4, shape);    
+    auto baseShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 4, shape);
     for(int i = 0; i <  3; i++) {
         int *dimArr = dims[i];
         Nd4jLong *expectedShape = expectedShapes[i];
         shape::TAD *tad = new shape::TAD;
         tad->init(baseShapeBuffer,dimArr,dimensionLength);
-        auto expectedShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', dimensionLength, expectedShape);        
+        auto expectedShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', dimensionLength, expectedShape);
         tad->createTadOnlyShapeInfo();
         Nd4jLong *testShapeBuffer = tad->tadOnlyShapeInfo;
         EXPECT_TRUE(arrsEquals(shape::rank(expectedShapeBuffer),expectedShape,shape::shapeOf(testShapeBuffer)));
@@ -687,14 +687,14 @@ TEST_F(TensorTwoDimTest,TadTwoDimTest) {
     //Along dimension 0,1: expect matrix with shape [rows,cols]
     //Along dimension 0,2: expect matrix with shape [rows,dim2]
     //Along dimension 1,2: expect matrix with shape [cols,dim2]
-    auto baseShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 3, shape);    
+    auto baseShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 3, shape);
 
     for(int i = 0; i <  3; i++) {
         int *dimArr = dims[i];
         Nd4jLong *expectedShape = expectedShapes[i];
         shape::TAD *tad = new shape::TAD;
         tad->init(baseShapeBuffer,dimArr,dimensionLength);
-        auto expectedShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', dimensionLength, expectedShape);        
+        auto expectedShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', dimensionLength, expectedShape);
         tad->createTadOnlyShapeInfo();
         Nd4jLong *testShapeBuffer = tad->tadOnlyShapeInfo;
         Nd4jLong *expectedStride = expectedStrides[i];
@@ -715,7 +715,7 @@ TEST_F(TensorTwoDimTest,TadTwoDimTest) {
 
 TEST_F(TensorOneDimTest,TadDimensionsForTensor) {
     Nd4jLong shape[3] = {rows,cols,dim2};
-    auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', rank, shape);    
+    auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', rank, shape);
 
     for(int i = 0; i < rank; i++) {
         //Along dimension 0: expect row vector with length 'dims[i]'
@@ -737,14 +737,14 @@ TEST_F(TensorOneDimTest,TadDimensionsForTensor) {
 
 TEST_F(MatrixTest,TadDimensionsForMatrix) {
     Nd4jLong shape[2] = {rows,cols};
-    auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', rank, shape);    
+    auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', rank, shape);
 
     shape::TAD *dimZero = new shape::TAD;
     dimZero->init(shapeBuffer,&dims[0],1);
     shape::TAD *dimOne = new shape::TAD;
     dimOne->init(shapeBuffer,&dims[1],1);
     //Along dimension 0: expect row vector with length 'rows'
-    Nd4jLong rowVectorShape[2] = {1,rows};    
+    Nd4jLong rowVectorShape[2] = {1,rows};
     auto expectedDimZeroShape = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, rowVectorShape);
     dimZero->createTadOnlyShapeInfo();
     Nd4jLong *testDimZero = dimZero->tadOnlyShapeInfo;
@@ -753,7 +753,7 @@ TEST_F(MatrixTest,TadDimensionsForMatrix) {
 
     delete[] expectedDimZeroShape;
     //Along dimension 1: expect row vector with length 'cols'
-    Nd4jLong rowVectorColShape[2] {1,cols};    
+    Nd4jLong rowVectorColShape[2] {1,cols};
     auto expectedDimOneShape = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, rowVectorColShape);
     dimOne->createTadOnlyShapeInfo();
     Nd4jLong *testDimOneShape = dimOne->tadOnlyShapeInfo;
@@ -767,12 +767,12 @@ TEST_F(MatrixTest,TadDimensionsForMatrix) {
 }
 
 TEST_F(VectorTest,VectorTadShape) {
-    Nd4jLong rowVector[2] = {2,2};    
+    Nd4jLong rowVector[2] = {2,2};
     auto rowBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, rowVector);
     int rowDimension = 1;
 
     Nd4jLong columnVector[2] = {2,2};
-    auto colShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, columnVector);   
+    auto colShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, columnVector);
     int colDimension = 0;
 
 
@@ -811,7 +811,7 @@ TEST_F(VectorTest,LinspaceCombinationTest) {
     int len = rows * cols;
     double *linspaced = linspace<double>(1,rows * cols,len);
     Nd4jLong shape[2] = {rows,cols};
-    auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, shape);    
+    auto shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, shape);
 
     delete[] shapeBuffer;
     delete[] linspaced;

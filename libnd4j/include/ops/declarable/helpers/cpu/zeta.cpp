@@ -64,7 +64,7 @@ static void zeta_(nd4j::LaunchContext * context, const NDArray& x, const NDArray
 	int xLen = x.lengthOf();
 
 	auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
+        for (auto i = start; i < stop; i++)
             z.p(i, zetaScalar<T>(x.e<T>(i), q.e<T>(i)));
     };
 

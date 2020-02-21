@@ -62,7 +62,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
     if(inTadEws == 1 && outTadEws == 1) {
         
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i += increment) {
+            for (uint i = start; i < stop; i++) {
                 const T *x = inBuff + inTadOffsets[i];
                 T *y = outBuff + outTadOffsets[i];
 
@@ -179,7 +179,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     if(inTadEws == 1 && gradITadEws == 1) {
         
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i += increment) {
+            for (uint i = start; i < stop; i++) {
                 const X *x = inBuff + inTadOffsets[i];
                       Y *y = gradIBuff + gradITadOffsets[i];
 
@@ -247,7 +247,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     else {
 
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i += increment) {
+            for (uint i = start; i < stop; i++) {
                 const X *x = inBuff + inTadOffsets[i];
                       Y *y = gradIBuff + gradITadOffsets[i];
 

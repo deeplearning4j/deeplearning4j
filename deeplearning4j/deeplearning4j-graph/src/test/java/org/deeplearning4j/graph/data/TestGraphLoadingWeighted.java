@@ -71,7 +71,7 @@ public class TestGraphLoadingWeighted extends BaseDL4JTest {
             }
         }
 
-        System.out.println(graph);
+//        System.out.println(graph);
     }
 
 

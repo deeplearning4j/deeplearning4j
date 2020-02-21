@@ -98,7 +98,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
     auto func = PRAGMA_THREADS_FOR {
         Nd4jLong coords[MAX_RANK];
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             shape::index2coords(i, target.getShapeInfo(), coords);
             const auto zOffset = shape::getOffset(target.getShapeInfo(), coords);
 
@@ -152,7 +152,7 @@ static void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
     auto y = reinterpret_cast<T *>(yBuffer);
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             auto temp = x[i];
             x[i] = y[i];
             y[i] = temp;
@@ -266,7 +266,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     if(result.ordering() == 'c') {           //  ews == 1 always here
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,(result.getBuffer(), i, this->getBuffer(), yOffset), LIBND4J_TYPES);
             }
@@ -277,7 +277,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     else {
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto xOffset = result.getOffset(i);
                 auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
                 BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,(result.getBuffer(), xOffset, this->getBuffer(), yOffset), LIBND4J_TYPES);
@@ -377,7 +377,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
     // loop through input array
     auto func = PRAGMA_THREADS_FOR {
         Nd4jLong coords[MAX_RANK];
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             shape::index2coords(i, output.getShapeInfo(), coords);
 
             const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);

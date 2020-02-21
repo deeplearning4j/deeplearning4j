@@ -809,26 +809,6 @@ TEST_F(DeclarableOpsTests4, Test_Reshape_Again) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests4, Test_Gemv_Transpose_1) {
-    auto x = NDArrayFactory::create<double>('c', {4, 3});
-    auto y = NDArrayFactory::create<double>('c', {4, 1});
-    auto exp = NDArrayFactory::create<double>('c',{ 3, 1}, {70, 80, 90});
-
-    x.linspace(1);
-    y.linspace(1);
-
-    nd4j::ops::matmul op;
-    auto result = op.evaluate({&x, &y}, {}, {1, 0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests4, Test_Split_1) {
     auto x = NDArrayFactory::create<double>('c', {5, 30});
     auto sizes = NDArrayFactory::create<int>('c', {1, 3}, {4, 15, 11});
@@ -1155,57 +1135,6 @@ TEST_F(DeclarableOpsTests4, Test_Cross_3) {
     auto exp = NDArrayFactory::create<double>('c', {3, 3}, { -1,   2,  -1, -11,  22, -11, -11,  40, -27});
 
     nd4j::ops::cross op;
-    auto result = op.evaluate({&a, &b});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests4, Test_Matmul_YATS_1) {
-    auto a = NDArrayFactory::create<double>('c', {3, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    auto b = NDArrayFactory::create<double>('c', {4}, {1, 2, 3, 4});
-    auto exp = NDArrayFactory::create<double>('c', {3}, {30, 70, 110});
-
-    nd4j::ops::matmul op;
-    auto result = op.evaluate({&a, &b});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests4, Test_Matmul_YATS_2) {
-    auto a = NDArrayFactory::create<double>('c', {4}, {1, 2, 3, 4});
-    auto b = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    auto exp = NDArrayFactory::create<double>('c', {3}, {70, 80, 90});
-
-    nd4j::ops::matmul op;
-    auto result = op.evaluate({&a, &b});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests4, Test_Matmul_YATS_3) {
-    auto a = NDArrayFactory::create<double>('c', {1, 4}, {1, 2, 3, 4});
-    auto b = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    auto exp = NDArrayFactory::create<double>('c', {1, 3}, {70, 80, 90});
-
-    nd4j::ops::matmul op;
     auto result = op.evaluate({&a, &b});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.shape.concat;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class ConcatTestsC extends BaseNd4jTest {
 
@@ -309,7 +311,11 @@ public class ConcatTestsC extends BaseNd4jTest {
         for (int e = 0; e < 20000; e++)
             list.add(Nd4j.create(DataType.INT, 1, 300).assign(e));
 
+        val timeStart = System.nanoTime();
         val result = Nd4j.concat(0, list.toArray(new INDArray[list.size()]));
+        val timeEnd = System.nanoTime();
+
+        log.info("Time: {} us", (timeEnd - timeStart) / 1000);
 
         for (int e = 0; e < 20000; e++)
             assertEquals((float) e, result.getRow(e).meanNumber().floatValue(), 1e-5f);

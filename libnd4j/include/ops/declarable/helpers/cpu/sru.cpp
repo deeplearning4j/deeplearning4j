@@ -143,7 +143,7 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
     T* pCt   = ct->bufferAsT<T>();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto col = start; col < stop; col += increment) {
+        for (auto col = start; col < stop; col++) {
             const auto colNum = col % d2;
             bool flip = colNum >= K;
             T maskVal = mask ? *(pMask + col) : T(1);
@@ -236,7 +236,7 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
     T* pGradInit  = gradC0->bufferAsT<T>();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto col = start; col < stop; col += increment) {
+        for (auto col = start; col < stop; col++) {
             T gbF = 0.f;
             T gbR = 0.f;
             const auto colNum = col % d2;

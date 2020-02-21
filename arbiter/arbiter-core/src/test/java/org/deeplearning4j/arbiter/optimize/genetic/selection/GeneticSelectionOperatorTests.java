@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.selection;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.ChromosomeFactory;
@@ -33,7 +34,6 @@ import org.deeplearning4j.arbiter.optimize.genetic.TestPopulationInitializer;
 import org.deeplearning4j.arbiter.optimize.genetic.TestRandomGenerator;
 import org.junit.Assert;
 import org.junit.Test;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -55,7 +55,7 @@ public class GeneticSelectionOperatorTests extends BaseDL4JTest {
 
         @Override
         public void cullPopulation() {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Not implemented");
         }
 
         @Override

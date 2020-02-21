@@ -1326,7 +1326,7 @@ namespace helpers {
 //      crops - output (4D tensor - [batch, outWidth, outHeight, pixels])
 //
     template <typename T, typename Z, typename I>
-    static void cropAndResizeFunctor_(nd4j::LaunchContext* context, NDArray const *images, NDArray const *boxes, NDArray const *indices,
+    void cropAndResizeFunctor_(nd4j::LaunchContext* context, NDArray const *images, NDArray const *boxes, NDArray const *indices,
                                       NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
         const int batchSize = images->sizeAt(0);
         const int imageHeight = images->sizeAt(1);

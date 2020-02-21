@@ -49,7 +49,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
         case nd4j::LoopKind::EWS1: {
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -70,7 +70,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
         case nd4j::LoopKind::EWSNONZERO: {
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -91,7 +91,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
         case nd4j::LoopKind::RANK1: {
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -114,7 +114,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             shape::updateStrides(2, tadShape, newStride, 'c');
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -141,7 +141,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             shape::updateStrides(3, tadShape, newStride, 'c');
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -170,7 +170,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             shape::updateStrides(4, tadShape, newStride, 'c');
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -201,7 +201,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             shape::updateStrides(5, tadShape, newStride, 'c');
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -234,7 +234,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -258,7 +258,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
@@ -284,7 +284,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 

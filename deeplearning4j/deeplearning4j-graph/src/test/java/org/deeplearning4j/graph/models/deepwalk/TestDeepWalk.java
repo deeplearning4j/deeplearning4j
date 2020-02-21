@@ -67,7 +67,7 @@ public class TestDeepWalk extends BaseDL4JTest {
         for (int i = 0; i < 7; i++) {
             INDArray vector = deepWalk.getVertexVector(i);
             assertArrayEquals(new long[] {vectorSize}, vector.shape());
-            System.out.println(Arrays.toString(vector.dup().data().asFloat()));
+//            System.out.println(Arrays.toString(vector.dup().data().asFloat()));
         }
 
         GraphWalkIterator<String> iter = new RandomWalkIterator<>(graph, 8);
@@ -77,11 +77,11 @@ public class TestDeepWalk extends BaseDL4JTest {
         for (int t = 0; t < 5; t++) {
             iter.reset();
             deepWalk.fit(iter);
-            System.out.println("--------------------");
+//            System.out.println("--------------------");
             for (int i = 0; i < 7; i++) {
                 INDArray vector = deepWalk.getVertexVector(i);
                 assertArrayEquals(new long[] {vectorSize}, vector.shape());
-                System.out.println(Arrays.toString(vector.dup().data().asFloat()));
+//                System.out.println(Arrays.toString(vector.dup().data().asFloat()));
             }
         }
     }
@@ -160,7 +160,7 @@ public class TestDeepWalk extends BaseDL4JTest {
                 continue;
 
             double sim = deepWalk.similarity(i, nearestTo);
-            System.out.println(i + "\t" + nearestTo + "\t" + sim);
+//            System.out.println(i + "\t" + nearestTo + "\t" + sim);
             assertTrue(sim <= minSimNearest);
         }
     }
@@ -211,7 +211,7 @@ public class TestDeepWalk extends BaseDL4JTest {
         Graph<String, String> graph = GraphLoader
                         .loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 13, ",");
 
-        System.out.println(graph);
+//        System.out.println(graph);
 
         Nd4j.getRandom().setSeed(12345);
 
@@ -229,11 +229,13 @@ public class TestDeepWalk extends BaseDL4JTest {
 
         //Calculate similarity(0,i)
         for (int i = 0; i < nVertices; i++) {
-            System.out.println(deepWalk.similarity(0, i));
+//            System.out.println(deepWalk.similarity(0, i));
+            deepWalk.similarity(0, i);
         }
 
         for (int i = 0; i < nVertices; i++)
-            System.out.println(deepWalk.getVertexVector(i));
+//            System.out.println(deepWalk.getVertexVector(i));
+            deepWalk.getVertexVector(i);
     }
 
     @Test(timeout = 60000L)

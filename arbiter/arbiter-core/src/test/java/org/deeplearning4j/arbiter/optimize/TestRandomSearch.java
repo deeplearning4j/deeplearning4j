@@ -54,7 +54,7 @@ public class TestRandomSearch extends BaseDL4JTest {
         runner.execute();
 
 
-        System.out.println("----- Complete -----");
+//        System.out.println("----- Complete -----");
     }
 
 

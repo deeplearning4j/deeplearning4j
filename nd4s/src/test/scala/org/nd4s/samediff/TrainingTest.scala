@@ -28,7 +28,7 @@ class TrainingTest extends FlatSpec with Matchers {
       val unused3 = unused1.div(unused2)
       val loss1 = add.std("l1", true)
       val loss2 = mmul.mean("l2")
-      Console.println(sd.summary)
+//      Console.println(sd.summary)
       if (i == 0) {
         sd.setLossVariables("l1", "l2")
         sd.createGradFunction()

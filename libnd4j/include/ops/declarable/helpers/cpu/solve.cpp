@@ -40,7 +40,7 @@ namespace helpers {
         output->assign(input);
 
         auto batchLoop = PRAGMA_THREADS_FOR {
-            for (auto batch = start; batch < stop; batch += increment) {
+            for (auto batch = start; batch < stop; batch++) {
                 for (auto r = 0; r < rows; r++) {
                     for (auto c = 0; c < r; c++) {
                         math::nd4j_swap(outputPart[batch]->t<T>(r, c) , outputPart[batch]->t<T>(c, r));

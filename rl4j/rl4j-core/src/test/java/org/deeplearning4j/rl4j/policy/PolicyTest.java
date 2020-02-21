@@ -158,7 +158,7 @@ public class PolicyTest {
         for (int i = 0; i < 100; i++) {
             count[policy.nextAction(input)]++;
         }
-        System.out.println(count[0] + " " + count[1] + " " + count[2] + " " + count[3]);
+//        System.out.println(count[0] + " " + count[1] + " " + count[2] + " " + count[3]);
         assertTrue(count[0] < 20);
         assertTrue(count[1] < 30);
         assertTrue(count[2] < 40);

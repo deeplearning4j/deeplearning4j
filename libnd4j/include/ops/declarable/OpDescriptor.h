@@ -147,6 +147,9 @@ namespace nd4j {
             // returns TRUE if this op allows in-place execution
             bool allowsInplace();
 
+            // this method allows you to enable/disable inplace call for a given op
+            void allowInplace(bool reallyAllow);
+
             // this method returns opNum (applicable for legacy XYZ ops only)
             int getOpNum();
 

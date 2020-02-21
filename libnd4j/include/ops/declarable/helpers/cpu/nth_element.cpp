@@ -55,7 +55,7 @@ namespace helpers {
             Nd4jLong oL = output->lengthOf();
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto row = rows.at(e);
                     output->p(e, row->e<T>(n));
                 }

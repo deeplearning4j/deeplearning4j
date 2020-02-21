@@ -364,7 +364,7 @@ namespace nd4j {
                     auto func = PRAGMA_THREADS_FOR {
                         T sneu1e[600];
 
-                        for (auto t = start; t < stop; t += increment) {
+                        for (auto t = start; t < stop; t++) {
                             T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
                             memset(neu1e, 0, vectorLength * sizeof(T));
 
@@ -457,7 +457,7 @@ namespace nd4j {
                     T sneu1[600];
                     T sneu1e[600];
 
-                    for (int e = start; e < stop; e += increment) {
+                    for (int e = start; e < stop; e++) {
                         T *neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                         T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
 

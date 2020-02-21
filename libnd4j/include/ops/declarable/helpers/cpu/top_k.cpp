@@ -150,7 +150,7 @@ namespace helpers {
             result->assign(0);
             if (status == ND4J_STATUS_OK) {
                 auto func = PRAGMA_THREADS_FOR {
-                    for (auto e = start; e < stop; e += increment) {
+                    for (auto e = start; e < stop; e++) {
                         bool found = false;
                         for (int j = 0; j < k; j++) {
                             if (target->e<Nd4jLong>(e) == indices->e<Nd4jLong>(e * k + j)) {

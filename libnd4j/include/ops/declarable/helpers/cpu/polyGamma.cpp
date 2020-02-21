@@ -70,7 +70,7 @@ template <typename T>
 static void polyGamma_(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {
 
 	auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
         	const T order = n.e<T>(i);
         	if(order != static_cast<int>(order))						// if order has fractional part then do not perform calculations and return NAN
         		output.p(i, std::numeric_limits<T>::quiet_NaN());

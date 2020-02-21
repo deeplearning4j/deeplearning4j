@@ -26,15 +26,15 @@
 namespace nd4j {
     namespace ops {
         #if NOT_EXCLUDED(OP_permute)
-        DECLARE_CUSTOM_OP(permute, 1, 1, true, 0, -2);   
+        DECLARE_CUSTOM_OP(permute, 1, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_reshapeas)
-        DECLARE_CUSTOM_OP(reshapeas, 2, 1, true, 0, 0);      
+        DECLARE_CUSTOM_OP(reshapeas, 2, 1, false, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_transpose)
-        DECLARE_CUSTOM_OP(transpose, 1, 1, true, 0, 0);
+        DECLARE_CUSTOM_OP(transpose, 1, 1, false, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_shape_of)
@@ -46,7 +46,7 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_squeeze)
-        DECLARE_CUSTOM_OP(squeeze, 1, 1, true, 0, -2);
+        DECLARE_CUSTOM_OP(squeeze, 1, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_expand_dims)
@@ -54,11 +54,11 @@ namespace nd4j {
         #endif
 
         #if NOT_EXCLUDED(OP_reshape)
-        DECLARE_CUSTOM_OP(reshape, 1, 1, true, 0, -2);
+        DECLARE_CUSTOM_OP(reshape, 1, 1, false, 0, -2);
         #endif
 
         #if NOT_EXCLUDED(OP_size_at)
-        DECLARE_CUSTOM_OP(size_at, 1, 1, true, 0, 1);
+        DECLARE_CUSTOM_OP(size_at, 1, 1, false, 0, 1);
         #endif
 
         /**
@@ -80,8 +80,8 @@ namespace nd4j {
          * @tparam T
          */
         #if NOT_EXCLUDED(OP_tile_to_shape)
-        DECLARE_CUSTOM_OP(tile_to_shape, 1, 1, true, 0, -1);
-        DECLARE_CUSTOM_OP(tile_to_shape_bp, 2, 1, true, 0, -1);
+        DECLARE_CUSTOM_OP(tile_to_shape, 1, 1, false, 0, -1);
+        DECLARE_CUSTOM_OP(tile_to_shape_bp, 2, 1, false, 0, -1);
         #endif
 
         /**

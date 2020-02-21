@@ -39,7 +39,7 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
         'c' == output.ordering() && 1 == output.ews()){
 
         auto func = PRAGMA_THREADS_FOR{
-             for (auto i = start; i < stop; i += increment) {
+             for (auto i = start; i < stop; i++) {
                  const auto xStep = i*3;
                  z[i] = 0.2989f*x[xStep] + 0.5870f*x[xStep + 1] + 0.1140f*x[xStep + 2];
              }
@@ -52,7 +52,7 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
     auto func = PRAGMA_THREADS_FOR{
 
          Nd4jLong coords[MAX_RANK];
-         for (auto i = start; i < stop; i += increment) {
+         for (auto i = start; i < stop; i++) {
              shape::index2coords(i, output.getShapeInfo(), coords);
              const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
              const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);
@@ -99,7 +99,7 @@ FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, con
     const Nd4jLong zDimCstride = output.stridesOf()[dimC];
 
     auto func = PRAGMA_THREADS_FOR{
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             const T* xTad = x + packX.platformOffsets()[i];
             T* zTad = z + packZ.platformOffsets()[i];
             op(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
@@ -157,7 +157,7 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
         const Nd4jLong zDimCstride = output->stridesOf()[dimC];
 
         auto func = PRAGMA_THREADS_FOR{
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 const T* xTad = x + packX.platformOffsets()[i];
                 T* zTad = z + packZ.platformOffsets()[i];
                 op(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
@@ -207,7 +207,7 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
         const Nd4jLong zDimCstride = output->stridesOf()[dimC];
 
         auto func = PRAGMA_THREADS_FOR{
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 const T* xTad = x + packX.platformOffsets()[i];
                 T* zTad = z + packZ.platformOffsets()[i];
                 //simple M*v //tr.T*v

@@ -62,7 +62,7 @@ namespace nd4j {
                     unsigned int outSize = outputList.size();
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto i = start; i < stop; i += increment) {
+                        for (auto i = start; i < stop; i++) {
                             outputs[i].first = outputList[i];
                             outputs[i].second = 0;
                             for (int e = 0; e < indices->lengthOf(); ++e)
@@ -168,7 +168,7 @@ namespace nd4j {
                     unsigned int gradsSize = inputGradientList.size();
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto i = start; i < stop; i += increment) {
+                        for (auto i = start; i < stop; i++) {
                             outputs[i].first = inputGradientList[i];
                             outputs[i].second = 0;
                             for (int e = 0; e < indices->lengthOf(); ++e)

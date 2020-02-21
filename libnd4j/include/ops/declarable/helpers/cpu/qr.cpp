@@ -113,7 +113,7 @@ namespace helpers {
         ResultSet listOutR(outputR->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
         ResultSet listInput(input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim}));
         auto batching = PRAGMA_THREADS_FOR {
-            for (auto batch = start; batch < stop; batch += increment) {
+            for (auto batch = start; batch < stop; batch++) {
                 //qr here
                 qrSingle<T>(listInput.at(batch), listOutQ.at(batch), listOutR.at(batch), fullMatricies);
             }

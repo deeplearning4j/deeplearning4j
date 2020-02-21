@@ -104,7 +104,7 @@ public class SparkWord2VecTest extends BaseDL4JTest {
         public void call(ExportContainer<VocabWord> v) throws Exception {
             assertNotNull(v.getElement());
             assertNotNull(v.getArray());
-            System.out.println(v.getElement() + " - " + v.getArray());
+//            System.out.println(v.getElement() + " - " + v.getArray());
         }
     }
 }
