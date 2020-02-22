@@ -297,7 +297,7 @@
         <numpy.version>1.18.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
-        <openblas.version>0.3.7</openblas.version>
+        <openblas.version>0.3.8</openblas.version>
         <mkl.version>2020.0</mkl.version>
         <opencv.version>4.2.0</opencv.version>
         <ffmpeg.version>4.2.2</ffmpeg.version>
