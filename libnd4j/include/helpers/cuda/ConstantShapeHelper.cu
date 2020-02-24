@@ -32,7 +32,7 @@ namespace nd4j {
 
         _cache.resize(numDevices);
         for (int e = 0; e < numDevices; e++) {
-            std::map<ShapeDescriptor, ConstantDataBuffer> cache;
+            MAP_IMPL<ShapeDescriptor, ConstantDataBuffer> cache;
             _cache[e] = cache;
         }
     }

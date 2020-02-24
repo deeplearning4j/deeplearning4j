@@ -51,7 +51,7 @@ namespace nd4j {
             Nd4jLong lastStep = 0L;
 
             std::vector<Nd4jLong *> shapes;
-            std::map<std::pair<int,int>, Nd4jLong*> shapesMap;
+            MAP_IMPL<std::pair<int,int>, Nd4jLong*> shapesMap;
 
             int cntFD = 0;
 
@@ -249,11 +249,11 @@ namespace nd4j {
             return res;
         }
 
-        std::map<int, Node *> * Graph::getMapped() {
+        MAP_IMPL<int, Node *> * Graph::getMapped() {
             return _mapped;
         }
 
-        std::map<int, std::vector<Node *> *>* Graph::getOnion() {
+        MAP_IMPL<int, std::vector<Node *> *>* Graph::getOnion() {
             return _onion;
         }
 
@@ -518,7 +518,7 @@ namespace nd4j {
                 return ND4J_STATUS_OK;
             }
 
-            typename std::map<int, Node *>::iterator fit;
+            typename MAP_IMPL<int, Node *>::iterator fit;
             int cnts = 0;
             for ( fit = _unmapped.begin(); fit != _unmapped.end(); fit++ ) {
                 int tK = fit->first;
@@ -535,7 +535,7 @@ namespace nd4j {
                 std::vector<int> queue;
 
                 // first pass for unmapped nodes, we try to build tale here
-                typename std::map<int, Node *>::iterator it;
+                typename MAP_IMPL<int, Node *>::iterator it;
                 int cntf = 0;
                 nd4j_debug("-----------\n","");
                 for ( it = _unmapped.begin(); it != _unmapped.end(); it++ ) {
@@ -866,8 +866,8 @@ namespace nd4j {
         }
 
         Graph::Graph(const FlatGraph *flatGraph, VariableSpace *variableSpace) {
-            this->_onion = new std::map<int, std::vector<Node *> *>();
-            this->_mapped = new std::map<int, Node *> ();
+            this->_onion = new MAP_IMPL<int, std::vector<Node *> *>();
+            this->_mapped = new MAP_IMPL<int, Node *> ();
             this->_nodes = new std::vector<int>();
             this->_variableSpace = variableSpace == nullptr ? new VariableSpace() : variableSpace;
             bool trusted = flatGraph != nullptr;

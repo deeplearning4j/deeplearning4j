@@ -26,6 +26,7 @@
 #include <dll.h>
 #include <vector>
 #include <unordered_map>
+#include <map>
 #include <graph/Scope.h>
 #include <Status.h>
 #include <graph/VariableSpace.h>
@@ -43,7 +44,7 @@ namespace graph {
         Nd4jLong _id = 0;
 
         // map of scopes. Scope id is used as key, since it's referred in calls later anyway
-        std::map<int, Scope *> _scopes;
+        MAP_IMPL<int, Scope *> _scopes;
 
         // this variable space holds temp references
         VariableSpace _variableSpace;

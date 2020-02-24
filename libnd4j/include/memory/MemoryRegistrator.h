@@ -22,6 +22,8 @@
 #define LIBND4J_MEMORYREGISTRATOR_H
 
 #include "Workspace.h"
+#include <op_boilerplate.h>
+#include <unordered_map>
 #include <map>
 #include <mutex>
 #include <dll.h>
@@ -32,7 +34,7 @@ namespace nd4j {
         protected:
             static MemoryRegistrator* _INSTANCE;
             Workspace* _workspace;
-            std::map<Nd4jLong, Nd4jLong> _footprint;
+            MAP_IMPL<Nd4jLong, Nd4jLong> _footprint;
             std::mutex _lock;
 
             MemoryRegistrator();

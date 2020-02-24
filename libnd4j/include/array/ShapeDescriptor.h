@@ -85,9 +85,19 @@ class ND4J_EXPORT ShapeDescriptor {
         static ShapeDescriptor scalarDescriptor(const DataType type);
         static ShapeDescriptor vectorDescriptor(const Nd4jLong length, const DataType type);
     };
-
-
 }
+
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+    template<>
+    class ND4J_EXPORT hash<nd4j::ShapeDescriptor> {
+    public:
+        size_t operator()(const nd4j::ShapeDescriptor &k) const;
+    };
+}
+
+#endif
 
 
 #endif //DEV_TESTS_SHAPEDESCRIPTOR_H

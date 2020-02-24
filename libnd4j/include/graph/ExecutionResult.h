@@ -24,6 +24,7 @@
 #include <vector>
 #include <initializer_list>
 #include <unordered_map>
+#include <map>
 #include <string>
 #include <flatbuffers/flatbuffers.h>
 #include <graph/Variable.h>
@@ -33,8 +34,8 @@ namespace nd4j {
         class ExecutionResult {
         private:
             std::vector<Variable *> _variables;
-            std::map<std::string, Variable *> _stringIdMap;
-            std::map<std::pair<int, int>, Variable *> _pairIdMap;
+            MAP_IMPL<std::string, Variable *> _stringIdMap;
+            MAP_IMPL<std::pair<int, int>, Variable *> _pairIdMap;
 
             // this flag is used to optionally release variables
             bool _releasable = false;

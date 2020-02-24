@@ -20,6 +20,16 @@
 
 #include <graph/Stash.h>
 
+
+namespace std {
+    size_t hash<nd4j::graph::KeyPair>::operator()(const nd4j::graph::KeyPair& k) const {
+        using std::hash;
+        auto res = std::hash<std::string>()(k.name());
+        res ^= std::hash<int>()(k.key()) + 0x9e3779b9 + (res << 6) + (res >> 2);
+        return res;
+    }
+}
+
 namespace nd4j {
     namespace graph {
         nd4j::graph::KeyPair::KeyPair(int node, const char * name) {

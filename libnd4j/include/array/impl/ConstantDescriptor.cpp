@@ -75,3 +75,25 @@ namespace nd4j {
         return isInteger() ? _integerValues.size() : isFloat() ? _floatValues.size() : 0L;
     }
 }
+
+namespace std {
+    size_t hash<nd4j::ConstantDescriptor>::operator()(const nd4j::ConstantDescriptor &k) const {
+        using std::hash;
+        // Compute individual hash values for first,
+        // second and third and combine them using XOR
+        // and bit shifting:
+        size_t hashVal = 0;
+        size_t i = 0;
+        if (k.isInteger()) {
+            for (auto v: k.integerValues()) {
+                hashVal ^= std::hash<Nd4jLong>()(v) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+            }
+        }
+        else {
+            for (auto v: k.floatValues()) {
+                hashVal ^= std::hash<double>()(v) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+            }
+        }
+        return hashVal;
+    }
+}

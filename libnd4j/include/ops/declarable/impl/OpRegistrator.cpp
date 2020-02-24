@@ -130,7 +130,7 @@ namespace nd4j {
             _locker.lock();
 
             if (!isInit) {
-                for (std::map<std::string, nd4j::ops::DeclarableOp*>::iterator it=_declarablesD.begin(); it!=_declarablesD.end(); ++it) {
+                for (MAP_IMPL<std::string, nd4j::ops::DeclarableOp*>::iterator it=_declarablesD.begin(); it!=_declarablesD.end(); ++it) {
                     std::string op = it->first + ":"
                                      + local_to_string(it->second->getOpDescriptor()->getHash()) + ":"
                                      + local_to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":"
@@ -258,6 +258,22 @@ namespace nd4j {
         }
 
         nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
+    }
+}
+
+namespace std {
+    size_t hash<std::pair<Nd4jLong, samediff::Engine>>::operator()(const std::pair<Nd4jLong, samediff::Engine>& k) const {
+        using std::hash;
+        auto res = std::hash<Nd4jLong>()(k.first);
+        res ^= std::hash<int>()((int) k.second)  + 0x9e3779b9 + (res << 6) + (res >> 2);
+        return res;
+    }
+
+    size_t hash<std::pair<std::string, samediff::Engine>>::operator()(const std::pair<std::string, samediff::Engine>& k) const {
+        using std::hash;
+        auto res = std::hash<std::string>()(k.first);
+        res ^= std::hash<int>()((int) k.second)  + 0x9e3779b9 + (res << 6) + (res >> 2);
+        return res;
     }
 }
 

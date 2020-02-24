@@ -53,9 +53,22 @@ namespace nd4j {
 
         std::vector<int>& axis();
         ShapeDescriptor& originalShape();
+        ShapeDescriptor const& originalShapeConst() const;
         bool areUnitiesinShape() const;
     };
 }
+
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+    template<>
+    class ND4J_EXPORT hash<nd4j::TadDescriptor> {
+    public:
+        size_t operator()(const nd4j::TadDescriptor &k) const;
+    };
+}
+
+#endif
 
 
 #endif //DEV_TESTS_TADDESCRIPTOR_H

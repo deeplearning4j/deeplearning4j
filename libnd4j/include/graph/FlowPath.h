@@ -21,6 +21,8 @@
 #ifndef LIBND4J_FLOWPATH_H
 #define LIBND4J_FLOWPATH_H
 
+#include <op_boilerplate.h>
+#include <unordered_map>
 #include <map>
 #include <pointercast.h>
 #include <graph/NodeState.h>
@@ -32,8 +34,8 @@ namespace nd4j {
     namespace graph {
         class ND4J_EXPORT FlowPath {
         private:
-            std::map<int, NodeState> _states;
-            std::map<Nd4jLong, FrameState> _frames;
+            MAP_IMPL<int, NodeState> _states;
+            MAP_IMPL<Nd4jLong, FrameState> _frames;
 
             void ensureNode(int nodeId);
             void ensureFrame(int nodeId);

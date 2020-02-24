@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/unique.h>
 #include <Status.h>
 #include <execution/Threads.h>
+#include <graph/Variable.h>
 
 namespace nd4j {
 namespace ops {
@@ -48,13 +49,12 @@ namespace helpers {
 
     BUILD_SINGLE_TEMPLATE(template Nd4jLong uniqueCount_, (NDArray* input), LIBND4J_TYPES);
 
-
     template <typename T>
     static Nd4jStatus uniqueFunctor_(NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
     
         std::vector<T> valuesVector;
-        std::map<T, int> indicesMap;
-        std::map<T, int> countsMap;
+        MAP_IMPL<T, int> indicesMap;
+        MAP_IMPL<T, int> countsMap;
 
         for (int e = 0; e < input->lengthOf(); e++) {
             T v = input->e<T>(e);

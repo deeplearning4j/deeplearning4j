@@ -38,7 +38,7 @@ namespace nd4j {
         static ConstantHelper* _INSTANCE;
         ConstantHelper();
 
-        std::vector<std::map<ConstantDescriptor, ConstantHolder*>> _cache;
+        std::vector<MAP_IMPL<ConstantDescriptor, ConstantHolder*>> _cache;
 
         // tracking of per-device constant memory buffers (CUDA only atm)
         std::vector<Nd4jPointer> _devicePointers;

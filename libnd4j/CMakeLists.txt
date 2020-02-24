@@ -71,8 +71,7 @@ if(NOT CUDA_BLAS)
 
     # there's a chance, we have no BLAS provided externally
     if ("${OPENBLAS_PATH}" STREQUAL "")
-        #we don't want static OpenBLAS on Apple
-        set(BLA_STATIC ON)
+        #we don't want OpenBLAS on Apple
         if (NOT APPLE)
             set(BLA_VENDOR "OpenBLAS")
         endif()
@@ -80,22 +79,7 @@ if(NOT CUDA_BLAS)
         # look around for system blas instead
         find_package(BLAS REQUIRED)
         if (BLAS_FOUND)
-            message("Original library: ${BLAS_LIBRARIES}")
-            # workaround for for cmake being unable to find static blas library
-            SET(_TMP_B "")
-            if (APPLE)
-                string(REGEX REPLACE "\\.dylib$" ".lib" _TMP_B "${BLAS_LIBRARIES}")
-            elseif (WIN32)
-                string(REGEX REPLACE "\\.dll" ".lib" _TMP_B "${BLAS_LIBRARIES}")
-            else()
-                string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${BLAS_LIBRARIES}")
-            endif()
-            set(BLAS_LIBRARIES "${_TMP_B}")
-
             message("Found external BLAS implementation: ${BLAS_LIBRARIES} ")
-            add_definitions(-D__EXTERNAL_BLAS__=true)
-        elseif(WIN32)
-            message("BLAS not found, using downloaded OpenBLAS instead")
             add_definitions(-D__EXTERNAL_BLAS__=true)
         endif()
     else()

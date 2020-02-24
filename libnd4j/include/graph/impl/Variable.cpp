@@ -341,3 +341,20 @@ namespace nd4j {
         }
     }
 }
+
+namespace std {
+
+    size_t hash<std::pair<int, int>>::operator()(const std::pair<int,int>& k) const {
+        auto v = std::hash<int>()(k.first);
+        v ^= std::hash<int>()(k.second) + 0x9e3779b9 + (v << 6) + (v >> 2);
+        return v;
+    }
+
+    size_t hash<bfloat16>::operator()(const bfloat16& k) const {
+        return std::hash<float>()((float)k);
+    }
+
+    size_t hash<float16>::operator()(const float16& k) const {
+        return std::hash<float>()((float)k);
+    }
+}

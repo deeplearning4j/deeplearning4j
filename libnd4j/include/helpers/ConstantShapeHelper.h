@@ -38,7 +38,7 @@ namespace nd4j {
         static ConstantShapeHelper *_INSTANCE;
 
         std::mutex _mutex;
-        std::vector<std::map<ShapeDescriptor, ConstantDataBuffer>> _cache;
+        std::vector<MAP_IMPL<ShapeDescriptor, ConstantDataBuffer>> _cache;
 
 
         ConstantShapeHelper();

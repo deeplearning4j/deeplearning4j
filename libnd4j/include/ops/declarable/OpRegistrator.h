@@ -33,6 +33,26 @@
 #include <cstdlib>
 #include <csignal>
 
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+
+    template <>
+    class hash<std::pair<Nd4jLong, samediff::Engine>> {
+    public:
+        size_t operator()(const std::pair<Nd4jLong, samediff::Engine>& k) const;
+    };
+
+    template <>
+    class hash<std::pair<std::string, samediff::Engine>> {
+    public:
+        size_t operator()(const std::pair<std::string, samediff::Engine>& k) const;
+    };
+};
+
+#endif
+
+
 namespace nd4j {
     namespace ops {
         /**
@@ -59,16 +79,16 @@ namespace nd4j {
 #endif
             };
 
-            std::map<Nd4jLong, std::string> _msvc;
+            MAP_IMPL<Nd4jLong, std::string> _msvc;
 
             // pointers to our operations
-            std::map<Nd4jLong, nd4j::ops::DeclarableOp*> _declarablesLD;
-            std::map<std::string, nd4j::ops::DeclarableOp*> _declarablesD;
+            MAP_IMPL<Nd4jLong, nd4j::ops::DeclarableOp*> _declarablesLD;
+            MAP_IMPL<std::string, nd4j::ops::DeclarableOp*> _declarablesD;
             std::vector<nd4j::ops::DeclarableOp *> _uniqueD;
 
             // pointers to platform-specific helpers
-            std::map<std::pair<Nd4jLong, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> _helpersLH;
-            std::map<std::pair<std::string, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> _helpersH;
+            MAP_IMPL<std::pair<Nd4jLong, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> _helpersLH;
+            MAP_IMPL<std::pair<std::string, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> _helpersH;
             std::vector<nd4j::ops::platforms::PlatformHelper*> _uniqueH;
 
             std::mutex _locker;

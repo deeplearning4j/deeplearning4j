@@ -71,17 +71,17 @@ TEST_F(StashTests, BasicTests_2) {
     auto cappa = NDArrayFactory::create_<float>('c',{5, 5});
     cappa->assign(3.0);
 
-    stash.storeArray(1, "alpha1", alpha);
-    stash.storeArray(1, "alpha2", beta);
-    stash.storeArray(1, "alpha3", cappa);
+    stash.storeArray(1, "alpha", alpha);
+    stash.storeArray(1, "beta", beta);
+    stash.storeArray(1, "cappa", cappa);
 
-    ASSERT_FALSE(stash.checkStash(2, "alpha1"));
-    ASSERT_FALSE(stash.checkStash(2, "alpha2"));
-    ASSERT_FALSE(stash.checkStash(2, "alpha3"));
+    ASSERT_FALSE(stash.checkStash(2, "alpha"));
+    ASSERT_FALSE(stash.checkStash(2, "beta"));
+    ASSERT_FALSE(stash.checkStash(2, "cappa"));
 
-    ASSERT_TRUE(alpha == stash.extractArray(1, "alpha1"));
-    ASSERT_TRUE(beta == stash.extractArray(1, "alpha2"));
-    ASSERT_TRUE(cappa == stash.extractArray(1, "alpha3"));
+    ASSERT_TRUE(alpha == stash.extractArray(1, "alpha"));
+    ASSERT_TRUE(beta == stash.extractArray(1, "beta"));
+    ASSERT_TRUE(cappa == stash.extractArray(1, "cappa"));
 
 }
 

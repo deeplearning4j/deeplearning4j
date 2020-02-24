@@ -70,7 +70,7 @@ namespace nd4j {
                 throw cuda_exception::build("cudaSetDevice failed", res);
              auto constant = getConstantSpace();
 
-            std::map<ConstantDescriptor, ConstantHolder*> devCache;
+            MAP_IMPL<ConstantDescriptor, ConstantHolder*> devCache;
 
             _devicePointers[e] = constant;
             _deviceOffsets[e] = 0;

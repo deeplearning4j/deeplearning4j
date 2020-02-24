@@ -350,7 +350,7 @@ namespace helpers {
 
         // if input is a vector: (as if in doc sample)
         //int idx = static_cast<int>((*indices)(0.));
-        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        MAP_IMPL<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
 
@@ -400,7 +400,7 @@ namespace helpers {
     static void unsortedSegmentMinFunctor_(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         // if input is a vector: (as if in doc sample)
         //int idx = static_cast<int>((*indices)(0.));
-        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        MAP_IMPL<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
 
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
@@ -452,7 +452,7 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void unsortedSegmentMinFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
     void unsortedSegmentMeanFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
-        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        MAP_IMPL<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
 
@@ -494,7 +494,7 @@ namespace helpers {
     }
 
     void unsortedSegmentSumFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
-        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        MAP_IMPL<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
 
@@ -534,7 +534,7 @@ namespace helpers {
 
     template <typename T>
     void unsortedSegmentProdFunctor_(NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
-        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        MAP_IMPL<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
 
@@ -575,7 +575,7 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void unsortedSegmentProdFunctor_, (NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES);
 
     void unsortedSegmentSqrtNFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
-        std::map<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
+        MAP_IMPL<Nd4jLong, std::vector<Nd4jLong>> idxs;//(indices->lengthOf());
         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
             idxs[indices->e<Nd4jLong>(e)].push_back(e);
 
@@ -719,7 +719,7 @@ namespace helpers {
     // segmen mean
     int segmentMeanFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         int numClasses = output->sizeAt(0);
-        std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
+        MAP_IMPL<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
         for (Nd4jLong count = 0; count < numClasses; ++count) {
             classCount[count] = 0;
@@ -931,7 +931,7 @@ namespace helpers {
 
     int unsortedSegmentMeanFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
 
-        std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
+        MAP_IMPL<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {
             classCount[count] = 0;
@@ -1040,7 +1040,7 @@ namespace helpers {
 
 //    template <typename T>
     int unsortedSegmentSqrtNFunctorBP(nd4j::LaunchContext * context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        std::map<Nd4jLong, Nd4jLong> classCount;//(numClasses);
+            MAP_IMPL<Nd4jLong, Nd4jLong> classCount;//(numClasses);
 
         for (Nd4jLong count = 0; count < numOfClasses; ++count) {
             classCount[count] = 0;

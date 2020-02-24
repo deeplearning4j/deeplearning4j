@@ -29,6 +29,31 @@
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
 
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+
+    template <>
+    class ND4J_EXPORT hash<std::pair<int, int>> {
+    public:
+        size_t operator()(const std::pair<int,int>& k) const;
+    };
+
+    template <>
+    class ND4J_EXPORT hash<bfloat16> {
+    public:
+        size_t operator()(const bfloat16& k) const;
+    };
+
+    template <>
+    class ND4J_EXPORT hash<float16> {
+    public:
+        size_t operator()(const float16& k) const;
+    };
+};
+
+#endif
+
 namespace nd4j {
     namespace graph {
         class ND4J_EXPORT Variable {

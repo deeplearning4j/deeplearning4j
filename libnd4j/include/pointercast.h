@@ -60,5 +60,28 @@ typedef int Nd4jStatus;
 #define ND4J_STATUS_MAYBE   119
 
 
+#ifdef _MSC_VER
+
+#include <map>
+#define MAP_IMPL std::map
+
+#elif __clang__
+
+#include <unordered_map>
+#define MAP_IMPL std::unordered_map
+
+#elif __GNUC__
+
+#include <unordered_map>
+#define MAP_IMPL std::unordered_map
+
+#else
+
+#include <unordered_map>
+#define MAP_IMPL std::unordered_map
+
+#endif
+
+
 
 #endif //NATIVEOPERATIONS_POINTERCAST_H

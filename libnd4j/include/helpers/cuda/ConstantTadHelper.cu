@@ -31,7 +31,7 @@ namespace nd4j {
         auto numDevices = AffinityManager::numberOfDevices();
 
         for (int e = 0; e < numDevices; e++) {
-            std::map<TadDescriptor, TadPack> pack;
+            MAP_IMPL<TadDescriptor, TadPack> pack;
             _cache.emplace_back(pack);
         }
     }

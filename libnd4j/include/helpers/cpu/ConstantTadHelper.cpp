@@ -24,10 +24,11 @@
 
 #ifndef __CUDABLAS__
 
+
 namespace nd4j {
 
     ConstantTadHelper::ConstantTadHelper() {
-        std::map<TadDescriptor, TadPack> pack;
+        MAP_IMPL<TadDescriptor, TadPack> pack;
         _cache.emplace_back(pack);
     }
 

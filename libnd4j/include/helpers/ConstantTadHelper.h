@@ -38,7 +38,7 @@ namespace nd4j {
         static ConstantTadHelper *_INSTANCE;
 
         std::mutex _mutex;
-        std::vector<std::map<TadDescriptor, TadPack>> _cache;
+        std::vector<MAP_IMPL<TadDescriptor, TadPack>> _cache;
 
         ConstantTadHelper();
     public:

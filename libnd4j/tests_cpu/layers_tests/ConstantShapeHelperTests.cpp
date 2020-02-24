@@ -104,6 +104,25 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
     delete []ptr;
 }
 
+TEST_F(ConstantShapeHelperTests, stress_test_1) {
+
+    for (auto x = 0; x < 1000; x++) {
+        auto ptr = ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', {5, x + 10, x + 1});
+        ShapeDescriptor descriptor(ptr);
+        ConstantShapeHelper::getInstance()->createShapeInfo(descriptor);
+        delete [] ptr;
+    }
+    ShapeDescriptor aShape(nd4j::DataType::FLOAT32, 'c',  {(Nd4jLong)5, (Nd4jLong)382, (Nd4jLong)373});
+//    nd4j_printf("%d\n", ConstantShapeHelper::getInstance()->cachedEntriesForDevice(0));
+
+    auto timeStart = std::chrono::system_clock::now();
+    ASSERT_TRUE(ConstantShapeHelper::getInstance()->checkBufferExistenceForShapeInfo(aShape));
+    auto timeEnd = std::chrono::system_clock::now();
+
+    auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
+    nd4j_printf("Total time (us) %lld\n", outerTime);
+}
+
 TEST_F(ConstantShapeHelperTests, basic_test_3) {
     auto array = NDArrayFactory::create_<float>('c', {128});
 

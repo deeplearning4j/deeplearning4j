@@ -44,7 +44,7 @@ namespace nd4j {
         nd4j::DataType _dtype;
 
         // stored chunks
-        std::map<int, nd4j::NDArray*> _chunks;
+        MAP_IMPL<int, nd4j::NDArray*> _chunks;
 
         // just a counter, for stored elements
         std::atomic<int> _elements;

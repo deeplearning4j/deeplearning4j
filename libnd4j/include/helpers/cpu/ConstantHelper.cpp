@@ -29,12 +29,13 @@
 #include <cstring>
 
 namespace nd4j {
+
     ConstantHelper::ConstantHelper() {
         int numDevices = getNumberOfDevices();
         _cache.resize(numDevices);
         _counters.resize(numDevices);
         for (int e = 0; e < numDevices; e++) {
-            std::map<ConstantDescriptor, ConstantHolder*> map;
+            MAP_IMPL<ConstantDescriptor, ConstantHolder*> map;
 
             _cache[e] = map;
             _counters[e] = 0L;

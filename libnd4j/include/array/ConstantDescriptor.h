@@ -59,5 +59,17 @@ namespace nd4j {
     };
 }
 
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+    template<>
+    class ND4J_EXPORT hash<nd4j::ConstantDescriptor> {
+    public:
+        size_t operator()(const nd4j::ConstantDescriptor &k) const;
+    };
+}
+
+#endif
+
 
 #endif //DEV_TESTS_CONSTANTDESCRIPTOR_H

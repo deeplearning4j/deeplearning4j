@@ -23,9 +23,11 @@
 
 //#include <graph/Block.h>
 #include <NDArray.h>
-#include <unordered_map>
+#include <map>
+#include <vector>
 #include <string>
 #include <atomic>
+#include <functional>
 #include <pointercast.h>
 
 namespace nd4j {
@@ -34,11 +36,34 @@ namespace nd4j {
             int _node;
             std::string _name;
         public:
-            KeyPair(int node = 0, const char * name = nullptr);
+            KeyPair(int node = 0, const char *name = nullptr);
 
-            bool operator<(const KeyPair& other) const;
+            bool operator<(const KeyPair &other) const;
+
+            bool operator==(const KeyPair &other) const {
+                return _node == other._node;
+            }
+
+            int key() const { return _node; }
+            std::string name() const { return _name; }
         };
+    }
+}
 
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+    template <>
+    class ND4J_EXPORT hash<nd4j::graph::KeyPair> {
+    public:
+        size_t operator()(const nd4j::graph::KeyPair& k) const;
+    };
+};
+
+#endif
+
+namespace nd4j {
+    namespace graph {
         class ND4J_EXPORT Stash {
         protected:
             std::map<nd4j::graph::KeyPair, nd4j::NDArray*> _stash;
@@ -60,6 +85,7 @@ namespace nd4j {
             void clear();
         };
     }
+
 }
 
 

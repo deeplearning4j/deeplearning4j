@@ -29,7 +29,7 @@ namespace nd4j {
     ConstantShapeHelper::ConstantShapeHelper() {
         _cache.resize(32);
         for (int e = 0; e < 32; e++) {
-            std::map<ShapeDescriptor, ConstantDataBuffer> cache;
+            MAP_IMPL<ShapeDescriptor, ConstantDataBuffer> cache;
             _cache[e] = cache;
         }
     }

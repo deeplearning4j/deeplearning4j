@@ -65,11 +65,30 @@ namespace nd4j {
         return _axis;
     }
 
-    ShapeDescriptor& TadDescriptor::originalShape() {
+    ShapeDescriptor& TadDescriptor::originalShape(){
+        return _originalShape;
+    }
+
+    ShapeDescriptor const& TadDescriptor::originalShapeConst() const{
         return _originalShape;
     }
 
     bool TadDescriptor::areUnitiesinShape() const {
         return _unitiesInShape;
+    }
+}
+
+namespace std {
+    size_t hash<nd4j::TadDescriptor>::operator()(const nd4j::TadDescriptor &k) const {
+        // Compute individual hash values for first,
+        // second and third and combine them using XOR
+        // and bit shifting:
+        auto res = std::hash<int>()((int)k.areUnitiesinShape());
+        res ^= std::hash<nd4j::ShapeDescriptor>()(k.originalShapeConst())  + 0x9e3779b9 + (res << 6) + (res >> 2);
+        auto axes = const_cast<nd4j::TadDescriptor&>(k).axis();
+        for (auto a: axes) {
+            res ^= std::hash<int>()(a) + 0x9e3779b9 + (res << 6) + (res >> 2);
+        }
+        return res;
     }
 }

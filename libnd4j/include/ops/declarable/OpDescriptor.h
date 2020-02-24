@@ -23,7 +23,6 @@
 
 #include <string>
 #include <vector>
-#include <map>
 #include <initializer_list>
 #include <helpers/helper_hash.h>
 #include <ops/InputType.h>
@@ -84,8 +83,8 @@ namespace nd4j {
             std::vector<nd4j::DataType> _allowedOuts;
 
             // optional per-input configuration
-            std::map<int, std::vector<nd4j::DataType>> _outputTypes;
-            std::map<int, std::vector<nd4j::DataType>> _inputTypes;
+            MAP_IMPL<int, std::vector<nd4j::DataType>> _outputTypes;
+            MAP_IMPL<int, std::vector<nd4j::DataType>> _inputTypes;
 
 
             // field for ops that allow data type override at runtime

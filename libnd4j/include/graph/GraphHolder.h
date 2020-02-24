@@ -21,6 +21,7 @@
 #include <helpers/logger.h>
 #include <pointercast.h>
 #include <unordered_map>
+#include <map>
 #include <graph/Graph.h>
 #include <helpers/SimpleReadWriteLock.h>
 #include <exceptions/unknown_graph_exception.h>
@@ -30,9 +31,9 @@ namespace nd4j {
         class ND4J_EXPORT GraphHolder {
         private:
             static GraphHolder *_INSTANCE;
-            std::map<Nd4jLong, Graph *> _graphF;
+            MAP_IMPL<Nd4jLong, Graph *> _graphF;
 
-            std::map<Nd4jLong, SimpleReadWriteLock> _locks;
+            MAP_IMPL<Nd4jLong, SimpleReadWriteLock> _locks;
 
             GraphHolder() = default;
             ~GraphHolder() = default;
