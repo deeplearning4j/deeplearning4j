@@ -23,6 +23,7 @@ import org.bytedeco.cpython.PyObject;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.SizeTPointer;
+import org.bytedeco.numpy.PyArrayObject;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
@@ -315,30 +316,56 @@ public class PythonObject {
         return toInt() != 0;
     }
 
-    public NumpyArray toNumpy() {
-        PyObject arrInterface = PyObject_GetAttrString(nativePythonObject, "__array_interface__"); // borrowed reference; DO NOT Py_DecRef() !
-        PyObject data = PyDict_GetItemString(arrInterface, "data");
-        PyObject pyAddress = PyTuple_GetItem(data, 0);
-        long address = PyLong_AsLong(pyAddress);
-        PyObject pyDtype = PyObject_GetAttrString(nativePythonObject, "dtype");
-        PyObject pyDtypeName = PyObject_GetAttrString(pyDtype, "name");
-        String dtypeName = pyObjectToString(pyDtypeName);
-        Py_DecRef(pyDtype);
-        Py_DecRef(pyDtypeName);
-        PyObject shape = PyObject_GetAttrString(nativePythonObject, "shape");
-        PyObject strides = PyObject_GetAttrString(nativePythonObject, "strides");
-        int ndim = (int) PyObject_Size(shape);
-        long[] jshape = new long[ndim];
-        long[] jstrides = new long[ndim];
-        for (int i = 0; i < ndim; i++) {
-            jshape[i] = PyLong_AsLong(PyTuple_GetItem(shape, i));
-            jstrides[i] = PyLong_AsLong(PyTuple_GetItem(strides, i));
-        }
-        Py_DecRef(shape);
-        Py_DecRef(strides);
-        DataType dtype = DataType.fromNumpy(dtypeName);
+    public NumpyArray toNumpy() throws PythonException{
 
-        return new NumpyArray(address, jshape, jstrides, dtype);
+        PyObject  pyObject = PyArray_EnsureArray(nativePythonObject);
+        Pointer objPtr = new Pointer(pyObject);
+        PyArrayObject npArr = new PyArrayObject(objPtr);
+
+        Pointer ptr = PyArray_DATA(npArr);
+        SizeTPointer shapePtr = PyArray_SHAPE(npArr);
+        long[] shape = new long[PyArray_NDIM(npArr)];
+        shapePtr.get(shape, 0, shape.length);
+        SizeTPointer stridesPtr = PyArray_STRIDES(npArr);
+        long[] strides = new long[shape.length];
+        stridesPtr.get(strides, 0, strides.length);
+        int npdtype = PyArray_TYPE(npArr);
+
+        DataType dtype;
+        switch (npdtype){
+            case NPY_DOUBLE:
+                dtype = DataType.DOUBLE; break;
+            case NPY_FLOAT:
+                dtype = DataType.FLOAT; break;
+            case NPY_SHORT:
+                dtype = DataType.SHORT; break;
+            case NPY_INT:
+                dtype = DataType.INT; break;
+            case NPY_LONG:
+                dtype = DataType.LONG; break;
+            case NPY_UINT:
+                dtype = DataType.UINT32; break;
+            case NPY_BYTE:
+                dtype = DataType.BYTE; break;
+            case NPY_UBYTE:
+                dtype = DataType.UBYTE; break;
+            case NPY_BOOL:
+                dtype = DataType.BOOL; break;
+            case NPY_HALF:
+                dtype = DataType.HALF; break;
+            case NPY_LONGLONG:
+                dtype = DataType.INT64; break;
+            case NPY_USHORT:
+                dtype = DataType.UINT16; break;
+            case NPY_ULONG:
+                dtype = DataType.UINT64; break;
+            case NPY_ULONGLONG:
+                dtype = DataType.UINT64; break;
+                default:
+                    throw new PythonException("Unsupported array data type: " + npdtype);
+        }
+
+        return new NumpyArray(ptr.address(), shape, strides, dtype);
 
     }
 
