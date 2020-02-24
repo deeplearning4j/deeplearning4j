@@ -45,9 +45,9 @@ namespace nd4j {
             // stash is NOT cloned
             nd4j::graph::Stash _stash;
 
-            std::map<std::pair<int, int>, Variable*> _paired;
-            std::map<std::string, Variable*> _symbolic;
-            std::map<int, Variable*> _variables;
+            MAP_IMPL<std::pair<int, int>, Variable*> _paired;
+            MAP_IMPL<std::string, Variable*> _symbolic;
+            MAP_IMPL<int, Variable*> _variables;
             std::vector<Variable*> _external;
             std::vector<Variable*> _internal;
 
@@ -61,7 +61,7 @@ namespace nd4j {
 
             std::mutex _varmap;
 
-            std::map<int, nd4j::graph::Variable*> _temporary;
+            MAP_IMPL<int, nd4j::graph::Variable*> _temporary;
 
             std::vector<nd4j::graph::Variable*> *_handles;
 
