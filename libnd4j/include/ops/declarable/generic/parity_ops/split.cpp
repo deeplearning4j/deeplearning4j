@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_split)
 
 #include <ops/declarable/headers/parity_ops.h>
+#include<ops/declarable/helpers/transforms.h>
 #include <array>
 
 namespace nd4j {
@@ -65,29 +66,12 @@ namespace ops {
 
         REQUIRE_TRUE(input->sizeAt(axis) % num_splits == 0, 0, "Split: num_splits has wrong value, remainder of division should be 0, but it's %i", input->sizeAt(axis) % num_splits);
 
-        int pos = 0;
-        int split = input->sizeAt(axis) / num_splits;
-        std::vector<Nd4jLong> indices(2 * input->rankOf());
-        
+        std::vector<NDArray*> outArrs(num_splits);
         for (int e = 0; e < num_splits; e++) {
-            
-            auto out = OUTPUT_VARIABLE(e);
-            
-            for (int d = 0; d < input->rankOf(); d++) {
-                if (d == axis) {
-                    indices[2*d]     = pos;
-                    indices[2*d + 1] = pos + split; 
-                }
-                else 
-                    indices[2*d] = indices[2*d + 1] = 0;
-            }
-
-            auto sub = (*input)(indices, true);
-            
-            out->assign(sub);
-
-            pos += split;
+            outArrs[e] = OUTPUT_VARIABLE(e);
         }
+
+        helpers::split(block.launchContext(), *input, outArrs, axis);
 
         return Status::OK();
     }
