@@ -261,12 +261,12 @@ namespace nd4j {
         }
 
         Variable* Context::variable(std::pair<int,int>& p) {
-            if (!_variableSpace->hasVariable(p)) {
+            try {
+                return _variableSpace->getVariable(p);
+            } catch (std::exception &e) {
                 nd4j_printf("Node %i; Non-existent variable requested: [%i:%i]\n", this->_nodeId, p.first, p.second);
                 throw std::runtime_error("Bad variable");
             }
-
-            return _variableSpace->getVariable(p);
         }
 
         void Context::pushNDArrayToVariableSpace(int nodeId, int index, NDArray *array, bool removable) {

@@ -132,23 +132,13 @@ namespace nd4j {
         }
 
         nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(std::pair<int, int>& pair) {
-//            if (pair.first == 0)
-//                throw "0 requested";
-
-            //nd4j_debug("Requested variable: [%i:%i]\n", pair.first, pair.second);
-
             if (pair.first < 0)
                 return getVariable(pair.first);
-            else if (_paired.count(pair) > 0)
+            else
                 return _paired.at(pair);
-            else {
-                if (hasVariable(pair.first) && pair.second == 0)
-                    return getVariable(pair.first);
-            }
 
             nd4j_printf("Unknown variable requested: [%i,%i]\n", pair.first, pair.second);
-
-            return nullptr;
+            throw std::runtime_error("Unknown variable requested");
         }
 
         bool nd4j::graph::VariableSpace::hasVariable(int id) {
@@ -335,18 +325,10 @@ namespace nd4j {
         }
 
         nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(int id) {
-//            _varmap.lock();
-
             if (id < 0) {
-                auto  v = _variables.at(id);
-   //             _varmap.unlock();
-
-                return v;
+                return _variables.at(id);
             } else {
-                auto v = _temporary.at(id);
-    //            _varmap.unlock();
-
-                return v;
+                return _temporary.at(id);
             }
         }
 

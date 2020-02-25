@@ -26,10 +26,13 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(stop_gradient, 1, 1, true) {
-            auto x = INPUT_VARIABLE(0);
-            auto out = OUTPUT_VARIABLE(0);
-            // just for lulz
-            x->applyTransform(transform::Identity, *out);
+            if (!block.isInplace()) {
+                auto x = INPUT_VARIABLE(0);
+                auto out = OUTPUT_VARIABLE(0);
+
+                // we hope for memcpy here
+                out->assign(x);
+            }
 
             return Status::OK();
         }
