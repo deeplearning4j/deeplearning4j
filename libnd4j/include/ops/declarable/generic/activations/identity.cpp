@@ -26,9 +26,10 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(identity, 1, 1, true) {
+            auto z = OUTPUT_VARIABLE(0);
+
             if (!block.isInplace()) {
                 auto first = INPUT_VARIABLE(0);
-                auto z = OUTPUT_VARIABLE(0);
 
                 // we hope for memcpy here
                 z->assign(first);
