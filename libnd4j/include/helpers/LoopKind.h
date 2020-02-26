@@ -107,12 +107,22 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const Nd4jLong* xShapeInfo, c
 
     bool bNotCommonVectorCase = (countUnityDimsInY != yRank - 1) && (countUnityDimsInX != xRank - 1);
 
-    if (3 == xRank && bNDLoopsRanks && bNotCommonVectorCase)
-        return nd4j::LoopKind::BROADCAST_3D;
-    if (4 == xRank && bNDLoopsRanks && bNotCommonVectorCase)
-        return nd4j::LoopKind::BROADCAST_4D;
-    if (5 == xRank && bNDLoopsRanks && bNotCommonVectorCase)
-        return nd4j::LoopKind::BROADCAST_5D;
+
+    if (bNDLoopsRanks && bNotCommonVectorCase) {
+        // case x[3,4,5] * y[1,4,5] = z[3,4,5] or reverse x[1,4,5] + y[3,4,5] = z[3,4,5]
+        if (nd4j::LoopKind::EWS1 == deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo)
+            && (1 == shape::sizeAt(yShapeInfo, 0) || 1 == shape::sizeAt(xShapeInfo, 0))) {
+            return EWS1;
+        }
+
+        if (3 == xRank)
+            return nd4j::LoopKind::BROADCAST_3D;
+        if (4 == xRank)
+            return nd4j::LoopKind::BROADCAST_4D;
+        if (5 == xRank)
+            return nd4j::LoopKind::BROADCAST_5D;
+
+    }
 
 
     if (xRank == yRank && xRank == zRank && xOrder == 'c' && yOrder == 'c' && zOrder == 'c' && xEws == 1 && yEws == 1 && zEws == 1 && xRank >= 2) {

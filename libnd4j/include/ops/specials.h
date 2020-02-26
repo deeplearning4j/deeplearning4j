@@ -68,7 +68,6 @@ namespace nd4j {
         static void decodeBitmapGeneric(void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
         static Nd4jLong encodeBitmapGeneric(void *dx, Nd4jLong *zShapeInfo, Nd4jLong N, int *dz, float threshold);
 
-        static void splitCpuGeneric(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis);
     };
 
     template <typename X, typename Y>
