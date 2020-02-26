@@ -29,7 +29,7 @@ namespace helpers {
             //////////////////////////////////////////////////////////////////////////
             template <typename T>
             static void split_(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis) {
-                int numSplits = outArrs.size();
+                uint numSplits = outArrs.size();
 
                 const auto sizeofT = input.sizeOfT();
 
@@ -73,9 +73,9 @@ namespace helpers {
 
                 if (luckCase2) {
 
-                    const uint xDim = input.sizeAt(axis);
+                    const auto xDim = input.sizeAt(axis);
 
-                    for (uint i = 0; i < input.lengthOf() / xDim; ++i) {
+                    for (Nd4jLong i = 0; i < input.lengthOf() / xDim; ++i) {
 
                         T* x = xBuff + xDim * i;
 

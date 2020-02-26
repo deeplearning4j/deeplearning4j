@@ -66,7 +66,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
         Nd4jLong* zOffsets = xzSameOffset ? xOffsets : new Nd4jLong[steps];
         Nd4jLong* auxBuff = new Nd4jLong[2 * input->rankOf()];
 
-        for (int j = 0; j < lenSmall; ++j) {
+        for (Nd4jLong j = 0; j < lenSmall; ++j) {
 
             const bool isOwner = (j < info._numThreads) ? thread_id == j : thread_id == (j % info._numThreads);
 
@@ -96,7 +96,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
                 shape::outerArrayOffsets(zOffsets, j, output->getShapeInfo(), mean->getShapeInfo(), auxBuff, dimsToExclude.data());
 
             PRAGMA_OMP_SIMD
-            for (uint i = 0; i < steps; ++i)
+            for (Nd4jLong i = 0; i < steps; ++i)
                 z[zOffsets[i]] = (x[xOffsets[i]] - meanVal) * sigmaInvGam + betaVal;
         }
 

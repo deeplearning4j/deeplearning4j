@@ -50,12 +50,12 @@ namespace nd4j {
                 1 == zArr.ews() && 'c' == zArr.ordering());
 
             if (bSpecialCase && yArr.isColumnVector() && 1 == xArr.sizeAt(-1) ) {
-                auto yLen = (uint32_t)yArr.lengthOf();
+                auto yLen = yArr.lengthOf();
                 auto func = PRAGMA_THREADS_FOR{
-                   for (uint32_t i = start; i < stop; i++) {
+                   for (auto i = start; i < stop; i++) {
                        auto rZ = z + (i * yLen);
                        auto v = x[i];
-                       for (uint32_t j = 0; j < yLen; j++) {
+                       for (Nd4jLong j = 0; j < yLen; j++) {
                             rZ[j] = OpType::op(v, y[j]);
                        }
                    }
@@ -74,13 +74,13 @@ namespace nd4j {
 
             if (bSpecialCase && bSpecialCase2) {
 
-                int zDim1 = zArr.sizeAt(-2);
-                int zDim2 = zArr.sizeAt(-1);
+                uint32_t zDim1 = zArr.sizeAt(-2);
+                uint32_t zDim2 = zArr.sizeAt(-1);
 
-                int nLen = zArr.lengthOf() / yArr.sizeAt(-1);
+                uint32_t nLen = zArr.lengthOf() / yArr.sizeAt(-1);
 
                 auto func = PRAGMA_THREADS_FOR{
-                     for (uint32_t total = start; total < stop; total++) {
+                     for (auto total = start; total < stop; total++) {
 
                         uint32_t i = total / zDim1;
                         uint32_t j = total % zDim1;
@@ -127,7 +127,7 @@ namespace nd4j {
                                   yCoords[iy--] = 0;
                               }
                           }
-                        }
+                    }
 
                         const auto xOffset = shape::getOffset(xShapeInfo, xCoords.data());
                         const auto yOffset = shape::getOffset(yShapeInfo, yCoords.data());

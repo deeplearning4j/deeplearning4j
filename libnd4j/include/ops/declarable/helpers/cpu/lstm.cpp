@@ -124,7 +124,7 @@ static void fusedTanh(NDArray *z, NDArray *i, NDArray *c, const NDArray *cLast, 
     auto h_ = h->bufferAsT<T>();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (uint e = start; e < stop; e++) {
+        for (auto e = start; e < stop; e++) {
             c_[e] = z_[e] * i_[e] + (f_[e] * cLast_[e]);
             h_[e] = nd4j::math::nd4j_tanh<T, T>(c_[e]);
         }

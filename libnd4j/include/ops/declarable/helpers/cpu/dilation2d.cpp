@@ -55,8 +55,8 @@ static void dilation2d_(NDArray *input, NDArray *weights, NDArray *output, const
 
     auto func = PRAGMA_THREADS_FOR_2D {
 
-        for (uint b = start_x; b < stop_x; b += inc_x) {
-            for (uint oh = start_y; oh < stop_y; oh += inc_y) {
+        for (auto b = start_x; b < stop_x; b += inc_x) {
+            for (auto oh = start_y; oh < stop_y; oh += inc_y) {
                 for (uint ow = 0; ow < oW; ++ow) {
                     for (uint c = 0; c < iC; ++c) {
 
@@ -70,7 +70,7 @@ static void dilation2d_(NDArray *input, NDArray *weights, NDArray *output, const
                                 const int iw = ow * sW - pW + kw * dW;
                                 if (iw < 0 || iw >= iW) continue;
 
-                                uint xCoords[4] = {b,  (uint)ih, (uint)iw, c};
+                                uint xCoords[4] = { static_cast<uint>(b),  static_cast<uint>(ih), static_cast<uint>(iw), c};
                                 uint yCoords[3] = {kh, kw, c};
 
                                 const X val = x[shape::getOffset(xShapeInfo, xCoords)] + y[shape::getOffset(yShapeInfo, yCoords)];
@@ -79,7 +79,7 @@ static void dilation2d_(NDArray *input, NDArray *weights, NDArray *output, const
                             }
                         }
 
-                        uint zCoords[4] = {b,  oh, ow, c};
+                        uint zCoords[4] = { static_cast<uint>(b),  static_cast<uint>(oh), ow, c};
                         z[shape::getOffset(zShapeInfo, zCoords)] = static_cast<Z>(max);
                     }
                 }

@@ -63,7 +63,7 @@ namespace helpers {
             std::vector<Nd4jLong> dims(reduceShape->lengthOf());
 
             bool fit = true;
-            for( int i = 0; i < dims.size(); i++ ) {
+            for(auto i = 0; i < dims.size(); i++ ) {
                 if (fit) {
                     dims[i] = reduceShape->e<Nd4jLong>(i);
                     for (int e = 0; e < input->rankOf(); ++e)

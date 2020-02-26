@@ -110,7 +110,7 @@ namespace helpers {
             }
             else {
                 std::vector<int> dims(source->rankOf() - axe - 1);
-                for (int i = 0; i < dims.size(); ++i)
+                for (size_t i = 0; i < dims.size(); ++i)
                     dims[i] = axe + 1 + i;
 
                 ResultSet listOfTensors = source->allTensorsAlongDimension({dims});

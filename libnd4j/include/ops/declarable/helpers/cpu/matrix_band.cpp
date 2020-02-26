@@ -32,7 +32,7 @@ namespace helpers {
         Nd4jLong preLastDim = input->rankOf() - 2;
         ResultSet listOut = output->allTensorsAlongDimension({(int)preLastDim, (int)lastDim});
         ResultSet listDiag = input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim});
-        for (Nd4jLong e = 0; e < listOut.size(); ++e) {
+        for (Nd4jLong e = 0; e < static_cast<Nd4jLong>(listOut.size()); ++e) {
             NDArray* inputMatrix = listDiag.at(e);
             NDArray* outputMatrix = listOut.at(e);
             if (outputMatrix != inputMatrix) // if not inplace

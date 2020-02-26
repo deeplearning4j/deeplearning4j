@@ -64,8 +64,8 @@ static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArra
     if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
         auto func = PRAGMA_THREADS_FOR_2D {
-            for (int b = start_x; b < stop_x; b++) {
-                for (int c = start_y; c < stop_y; c++) {
+            for (auto b = start_x; b < stop_x; b++) {
+                for (auto c = start_y; c < stop_y; c++) {
                     for (int kRow = 0; kRow < kH; ++kRow) {
                         for (int kCol = 0; kCol < kW; ++kCol) {
                             for (int colH = 0; colH < oH; ++colH) {
@@ -98,8 +98,8 @@ static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArra
             T *col, *im;
             int imRow, imCol;
 
-            for (int b = start_x; b < stop_x; b += inc_x) {
-                for (int colH = start_y; colH < stop_y; colH += inc_y) {
+            for (auto b = start_x; b < stop_x; b += inc_x) {
+                for (auto colH = start_y; colH < stop_y; colH += inc_y) {
                     for (int colW = 0; colW < oW; ++colW) {
                         for (int c = 0; c < iC; ++c) {
                             for (int kRow = 0; kRow < kH; ++kRow) {

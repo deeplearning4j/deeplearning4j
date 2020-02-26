@@ -39,7 +39,7 @@ namespace helpers {
 //        }
 // ----------------------------------------------------------------------------------------------- //
         std::vector<int> dimsToExclude(input->rankOf() - 1);
-        for (int d = 0; d < dimsToExclude.size(); ++d)
+        for (size_t d = 0; d < dimsToExclude.size(); ++d)
             dimsToExclude[d] = d;
 
         const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
@@ -72,7 +72,7 @@ namespace helpers {
                     NDArray topValues = NDArrayFactory::create<T>('c', {k});
                     NDArray sortedVals = NDArrayFactory::create<T>('c', {k});
                     NDArray topIndices = NDArrayFactory::create<Nd4jLong>('c', {k});
-                    for (Nd4jLong pos = 0; pos < k; ++pos) {
+                    for (uint pos = 0; pos < k; ++pos) {
                         topIndices.t<Nd4jLong>(pos) = pos;
                         topValues.t<T>(pos) = trial.t<T>(pos);
                     }
@@ -80,7 +80,7 @@ namespace helpers {
                     sortedVals.assign(topValues);// = NDArrayFactory::create<T>('c', {k});
                     //std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
                     SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
-                    for (int i = k; i < width; ++i) {
+                    for (Nd4jLong i = static_cast<Nd4jLong>(k); i < width; ++i) {
                         T val = trial.e<T>(i);
                         T minTopVal = sortedVals.t<T>(0);
                         if (minTopVal < val) { // value should be inserted to top k
@@ -104,15 +104,15 @@ namespace helpers {
                     if (needSort) {
                         SpecialMethods<T>::sortGeneric(topValues.buffer(), topValues.shapeInfo(), true);
 
-                        for (int j = 0; j < width; j++)
-                            for (int pos = 0; pos < k; ++pos)
+                        for (Nd4jLong j = 0; j < width; j++)
+                            for (uint pos = 0; pos < k; ++pos)
                                 if (topValues.t<T>(pos) == trial.t<T>(j))
                                     topIndices.t<Nd4jLong>(pos) = j;
                     }
                     else { // else sort by indices
                         std::map<Nd4jLong, T> sortValsMap;
                         //std::vector<std::pair<int, T>> data(topValues.lengthOf());
-                        for (size_t e = 0; e < topValues.lengthOf(); ++e) {
+                        for (Nd4jLong e = 0; e < topValues.lengthOf(); ++e) {
                             sortValsMap[topIndices.t<Nd4jLong>(e)] = topValues.t<T>(e);
                         }
 
@@ -152,7 +152,7 @@ namespace helpers {
                 auto func = PRAGMA_THREADS_FOR {
                     for (auto e = start; e < stop; e++) {
                         bool found = false;
-                        for (int j = 0; j < k; j++) {
+                        for (uint j = 0; j < k; j++) {
                             if (target->e<Nd4jLong>(e) == indices->e<Nd4jLong>(e * k + j)) {
                                 found = true;
                                 break;

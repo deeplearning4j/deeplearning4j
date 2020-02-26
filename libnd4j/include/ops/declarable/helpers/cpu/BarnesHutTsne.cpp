@@ -30,7 +30,7 @@ namespace helpers {
         int* pRowCounts = reinterpret_cast<int*>(rowCounts.buffer());
         int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
         int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
-        for (int n = 0; n < N; n++) {
+        for (Nd4jLong n = 0; n < N; n++) {
             int begin = pRows[n];//->e<int>(n);
             int end = pRows[n + 1];//rowP->e<int>(n + 1);
             for (int i = begin; i < end; i++) {
@@ -72,7 +72,7 @@ namespace helpers {
         int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
         int* symRowP = reinterpret_cast<int*>(outputRows->buffer());
         symRowP[0] = 0;
-        for (int n = 0; n < N; n++)
+        for (Nd4jLong n = 0; n < N; n++)
             symRowP[n + 1] = symRowP[n] + rowCounts->e<int>(n);
 //        outputRows->printBuffer("output rows");
 
@@ -86,7 +86,7 @@ namespace helpers {
         std::vector<int> offset(N);// = NDArrayFactory::create<int>('c', {N});
 
 //PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(guided) shared(offset))
-        for (int n = 0; n < N; n++) {
+        for (Nd4jLong n = 0; n < N; n++) {
             int begin = pRows[n];
             int bound = pRows[n + 1];
 

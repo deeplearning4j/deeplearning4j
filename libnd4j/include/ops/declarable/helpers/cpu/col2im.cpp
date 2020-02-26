@@ -65,8 +65,8 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
             T *col, *im;
             int imRow, imCol;
 
-            for (uint b = start_x; b < stop_x; b += inc_x) {
-                for (uint c = start_y; c < stop_y; c += inc_y) {
+            for (auto b = start_x; b < stop_x; b += inc_x) {
+                for (auto c = start_y; c < stop_y; c += inc_y) {
                     for (int kRow = 0; kRow < kH; ++kRow) {
                         for (int kCol = 0; kCol < kW; ++kCol) {
                             for (int colH = 0; colH < oH; ++colH) {
@@ -96,7 +96,7 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
         auto func = PRAGMA_THREADS_FOR {
             T *col, *im;
 
-            for (uint b = start; b < stop; b++) {
+            for (auto b = start; b < stop; b++) {
                 T *im0 = imBuff + b * imStride0;
                 T *col4 = colBuff + b * colStride0;
                 for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {

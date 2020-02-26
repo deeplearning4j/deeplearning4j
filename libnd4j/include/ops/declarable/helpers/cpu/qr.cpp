@@ -43,8 +43,8 @@ namespace helpers {
         T const* vBuf = v.getDataBuffer()->primaryAsT<T>();
         T* resBuf = res.dataBuffer()->primaryAsT<T>();
         auto interloop = PRAGMA_THREADS_FOR_2D {
-            for (int i = start_x; i < n; i += inc_x)
-                for (int j = start_y; j < n; j += inc_y)
+            for (auto i = start_x; i < n; i += inc_x)
+                for (auto j = start_y; j < n; j += inc_y)
                     resBuf[i * n + j] = -2 * vBuf[i] * vBuf[j] + (i == j ? T(1) : T(0));
         };
 
@@ -63,7 +63,7 @@ namespace helpers {
         NDArray z = *matrix;
         NDArray e('c', {M}, DataTypeUtils::fromT<T>()); // two internal buffers and scalar for squared norm
 
-        for (auto k = 0; k < N && k < M - 1; k++) { // loop for columns, but not further then row number
+        for (Nd4jLong k = 0; k < N && k < M - 1; k++) { // loop for columns, but not further then row number
             e.nullify();
             z = matrixMinor<T>(z, k); // minor computing for current column with given matrix z (initally is a input matrix)
 //            z.printIndexedBuffer("Minor!!!");
@@ -87,7 +87,7 @@ namespace helpers {
         }
         resQ.assign(q[0]); //
 //        MmulHelper::matmul(&q[0], matrix, &resR, false, false);
-        for (int i = 1; i < N && i < M - 1; i++) {
+        for (Nd4jLong i = 1; i < N && i < M - 1; i++) {
             auto tempResQ = resQ;
             MmulHelper::matmul(&q[i], &resQ, &tempResQ, false, false); // use mmulMxM?
             resQ = std::move(tempResQ);

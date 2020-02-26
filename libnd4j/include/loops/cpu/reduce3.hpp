@@ -53,7 +53,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
             return;
         const auto startingVal = OpType::startingValue(x);
 
-        for (uint i = 0; i < length; i++)
+        for (Nd4jLong i = 0; i < length; i++)
             z[i] = startingVal;
 
         return;

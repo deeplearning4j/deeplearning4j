@@ -50,7 +50,7 @@ namespace helpers {
             width = lastDim;
         }
 
-        for (int i = 0; i < input->lengthOf(); i += lastDim) {
+        for (Nd4jLong i = 0; i < input->lengthOf(); i += lastDim) {
             for (Nd4jLong k = startPos; k < width && pos < output->lengthOf(); k++) {
                 output->p(pos++, input->e<T>(i + k));
             }

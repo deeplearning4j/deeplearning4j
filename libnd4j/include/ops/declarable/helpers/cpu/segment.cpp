@@ -87,7 +87,7 @@ namespace helpers {
         if (input->isVector()) {
             T val = input->e<T>(0);
 
-            for (int e = 1; e < indices->lengthOf(); e++) {
+            for (Nd4jLong e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<Nd4jLong>(e)) {
                    // min
                    val = nd4j::math::nd4j_min<T>(val, input->t<T>(e));
@@ -115,7 +115,7 @@ namespace helpers {
             for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<Nd4jLong>(i) == idx) {
 
-                    for (int e = 0; e < minT->lengthOf(); e++) {
+                    for (Nd4jLong e = 0; e < minT->lengthOf(); e++) {
                        minT->p(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors.at(i)->e<T>(e)));
                     }
                 }
@@ -138,7 +138,7 @@ namespace helpers {
             T val = T(0.f);
             int count = 0;
 
-            for (int e = 0; e < indices->lengthOf(); e++) {
+            for (Nd4jLong e = 0; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // mean
                    val += input->e<T>(e);
@@ -166,7 +166,7 @@ namespace helpers {
             auto meanV = meanT->dup();
             meanV.assign(listOfTensors.at(0));
 
-            for (int i = 1; i < indices->lengthOf(); i++) {
+            for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e++) {
@@ -198,7 +198,7 @@ namespace helpers {
         if (input->isVector()) {
             T val = T(0.f);
             int count = 0;
-            for (int e = 0; e < indices->lengthOf(); e++) {
+            for (Nd4jLong e = 0; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // sum
                    val += input->t<T>(e);
@@ -220,7 +220,7 @@ namespace helpers {
             std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
             auto sumT = listOfOutTensors.at(idx);
 
-            for (int i = 0; i < indices->lengthOf(); i++) {
+            for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i) == idx) {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e++) {
@@ -248,7 +248,7 @@ namespace helpers {
             T val = input->e<T>(0);
             int count = 0;
 
-            for (int e = 1; e < indices->lengthOf(); e++) {
+            for (Nd4jLong e = 1; e < indices->lengthOf(); e++) {
                 if (idx == indices->e<int>(e)) {
                    // sum
                    val *= input->e<T>(e);
@@ -269,7 +269,7 @@ namespace helpers {
             int numOfClasses = output->sizeAt(0); // number of classes
             auto sumT = listOfOutTensors.at(idx);
             sumT->assign(listOfTensors.at(0));
-            for (int i = 1; i < indices->lengthOf(); i++) {
+            for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
                 if (indices->e<int>(i)  == idx) {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e++) {
@@ -313,7 +313,7 @@ namespace helpers {
 
     bool segmentIndicesValidate(nd4j::LaunchContext * context, NDArray* indices, NDArray& expected, NDArray& output) {
         auto val = indices->e(0);
-        for (int e = 1; e < indices->lengthOf(); e++) {
+        for (Nd4jLong e = 1; e < indices->lengthOf(); e++) {
             output = indices->e(e);
             if (val.e<Nd4jLong>(0) > output.e<Nd4jLong>(0))
                 return false;
@@ -362,7 +362,7 @@ namespace helpers {
 
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 T val = input->e<T>(fi->second.at(0));
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (Nd4jLong idx = 1; idx < static_cast<Nd4jLong>(fi->second.size()); ++idx) {
                     val = nd4j::math::nd4j_max(val, input->e<T>(fi->second.at(idx)));
                 }
                 output->p(fi->first, val);
@@ -380,7 +380,7 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors.at(fi->first);
                 outputT->assign(listOfTensors.at(fi->second.at(0)));
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (Nd4jLong idx = 1; idx < static_cast<Nd4jLong>(fi->second.size()); ++idx) {
                     auto maxT = listOfTensors.at(fi->second.at(idx));
                     for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
                         T val = nd4j::math::nd4j_max(maxT->e<T>(e), outputT->e<T>(e));
@@ -432,7 +432,7 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors.at(fi->first);
                 outputT->assign(listOfTensors.at(fi->second.at(0)));
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     auto minT = listOfTensors.at(fi->second.at(idx));
 
                     for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
@@ -560,7 +560,7 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors.at(fi->first);
                 outputT->assign(listOfTensors.at(fi->second.at(0)));
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     auto current = listOfTensors.at(fi->second.at(idx));
 
                     *outputT *= *current;
@@ -584,7 +584,7 @@ namespace helpers {
         if (input->isVector()) { // 1D case
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 double sumValue = input->e<double>(fi->second.at(0));
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     sumValue += input->e<double>(fi->second.at(idx));
                 }
                 output->p(fi->first, sumValue / nd4j::math::nd4j_sqrt<Nd4jLong, double>(fi->second.size()));
@@ -599,7 +599,7 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors.at(fi->first);
                 outputT->assign(listOfTensors.at(fi->second.at(0)));
-                for (Nd4jLong idx = 1; idx < fi->second.size(); ++idx) {
+                for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     auto current = listOfTensors.at(fi->second.at(idx));
                     *outputT += *current;
                 }
@@ -651,7 +651,7 @@ namespace helpers {
                     auto currentOut = listOfOutTensors.at(i);
                     auto currentGradOut = listOfGradOuts.at(classNum);
 
-                    for (uint64_t e = 0; e < current->lengthOf(); e++) {
+                    for (Nd4jLong e = 0; e < current->lengthOf(); e++) {
                         if (nd4j::math::nd4j_abs(listOfBPTensors.at(classNum)->e<T>(e) - current->e<T>(e)) <= T(1.e-6))
                             currentOut->p(e, currentGradOut->e<T>(e));
                     }
@@ -703,7 +703,7 @@ namespace helpers {
                     auto currentOut = listOfOutTensors.at(i);
                     auto currentGradOut = listOfGradOuts.at(classNum);
 
-                    for (int e = 0; e < current->lengthOf(); e++) {
+                    for (Nd4jLong e = 0; e < current->lengthOf(); e++) {
                         if (nd4j::math::nd4j_abs(listOfBPTensors.at(classNum)->e<double>(e) - current->e<double>(e)) <
                             1.e-5)
                             currentOut->p(e, currentGradOut->e<double>(e));
@@ -746,13 +746,13 @@ namespace helpers {
 
             int pos = 0;
             //auto func = [&](uint64_t thread_id, uint64_t start, uint64_t stop, uint64_t increment) -> void {
-                for (auto i = 0; i < indices->lengthOf(); i++) {
+                for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors.at(i);
                     auto currentOut = listOfOutTensors.at(i);
                     auto currentGradOut = listOfGradOuts.at(classNum);
 
-                    for (int e = 0; e < current->lengthOf(); e++) {
+                    for (Nd4jLong e = 0; e < current->lengthOf(); e++) {
                         currentOut->p(e, currentGradOut->e<double>(e) / classCount.at(classNum));
                     }
                 }
@@ -781,7 +781,7 @@ namespace helpers {
             ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
-                for (auto i = 0; i < indices->lengthOf(); i++) {
+                for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors.at(i);
                     auto currentOut = listOfOutTensors.at(i);
@@ -817,7 +817,7 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             //auto func = PRAGMA_THREADS_FOR {
-                for (auto i = 0; i < indices->lengthOf(); i++) {
+                for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors.at(i);
                     auto currentOut = listOfOutTensors.at(i);
@@ -860,7 +860,7 @@ namespace helpers {
             ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
             ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-            for (int i = 0; i < indices->lengthOf(); i++) {
+            for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors.at(i);
                 NDArray* currentOut = listOfOutTensors.at(i);
@@ -905,13 +905,13 @@ namespace helpers {
             ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
-                for (auto i = 0; i < indices->lengthOf(); i++) {
+                for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors.at(i);
                     auto currentOut = listOfOutTensors.at(i);
                     auto currentGradOut = listOfGradOuts.at(classNum);
 
-                    for (int e = 0; e < current->lengthOf(); e++) {
+                    for (Nd4jLong e = 0; e < current->lengthOf(); e++) {
                         if (nd4j::math::nd4j_abs(listOfBPTensors.at(classNum)->t<T>(e) - current->t<T>(e)) < 1.e-6)
                             currentOut->t<T>(e) = currentGradOut->t<T>(e);
                     }
@@ -955,7 +955,7 @@ namespace helpers {
             ResultSet listOfTensors = input->allTensorsAlongDimension(restDims);
             ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
-            for (int i = 0; i < indices->lengthOf(); i++) {
+            for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                 Nd4jLong classNum = indices->e<Nd4jLong>(i);
                 NDArray* current = listOfTensors.at(i);
                 NDArray* currentOut = listOfOutTensors.at(i);
@@ -984,7 +984,7 @@ namespace helpers {
             ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
-                for (auto i = 0; i < indices->lengthOf(); i++) {
+                for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto currentOut = listOfOutTensors.at(i);
                     auto currentGradOut = listOfGradOuts.at(classNum);
@@ -1021,7 +1021,7 @@ namespace helpers {
             ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
-                for (auto i = 0; i < indices->lengthOf(); i++) {
+                for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors.at(i);
                     auto currentOut = listOfOutTensors.at(i);
@@ -1053,7 +1053,7 @@ namespace helpers {
         // if input is a vector: (as if in doc sample)
         if (input->isVector()) {
             //auto func = PRAGMA_THREADS_FOR {
-                for (auto e = 0; e < indices->lengthOf(); e++) {
+                for (Nd4jLong e = 0; e < indices->lengthOf(); e++) {
                     auto classNum = indices->e<Nd4jLong>(e);
                     output->p(e, gradOut->e<double>(classNum) / nd4j::math::nd4j_sqrt<double, double>(classCount[classNum]));
                 }
@@ -1069,7 +1069,7 @@ namespace helpers {
             ResultSet listOfOutTensors  =output->allTensorsAlongDimension(restDims);
 
             //auto func = PRAGMA_THREADS_FOR {
-                for (auto i = 0; i < indices->lengthOf(); i++) {
+                for (Nd4jLong i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors.at(i);
                     auto currentOut = listOfOutTensors.at(i);

@@ -45,7 +45,7 @@ namespace nd4j {
                     auto xShapeInfo = inputs[e]->shapeInfo();
                     auto xLength = inputs[e]->lengthOf();
 
-                    for (uint i = 0; i < xLength; i++)
+                    for (Nd4jLong i = 0; i < xLength; i++)
                         z[i] = xBuffer[getIndexOffsetOrdered(i, xShapeInfo, order)];
                 }
             }

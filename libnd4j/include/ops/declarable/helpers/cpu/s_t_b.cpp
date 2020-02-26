@@ -55,9 +55,9 @@ static void batchToSpace_(const NDArray& input, NDArray& output, const uint crop
 
     // loop through output array
     auto func = PRAGMA_THREADS_FOR_3D {
-        for (uint b = start_x; b < stop_x; b += inc_x) {
-            for (uint h = start_y; h < stop_y; h += inc_y) {
-                for (uint w = start_z; w < stop_z; w += inc_z) {
+        for (auto b = start_x; b < stop_x; b += inc_x) {
+            for (auto h = start_y; h < stop_y; h += inc_y) {
+                for (auto w = start_z; w < stop_z; w += inc_z) {
                     for (uint c = 0; c < iC; ++c) {
                         const Nd4jLong xOffset = b * xShapeInfo[5] + h * xShapeInfo[6] + w * xShapeInfo[7] + c * xShapeInfo[8];
                         const Nd4jLong zOffset = b * zShapeInfo[5] + (h - cropBottom) * zShapeInfo[6] + (w - cropLeft) * zShapeInfo[7] + c * zShapeInfo[8];
@@ -146,11 +146,11 @@ void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const ND
 
     std::vector<Nd4jLong> temp(numOfSpatialDims + rank);
 
-    int i;
+    uint i;
     for(i = 0; i < numOfSpatialDims; ++i)
         temp[i] = blockShape.e<Nd4jLong>(i);
     temp[i++] = output.sizeAt(0);
-    for(int j = 1; j < rank; ++i, ++j)
+    for(uint j = 1; j < rank; ++i, ++j)
         temp[i] = input.sizeAt(j);
 
     NDArray inputRearranged0 = input.reshape(input.ordering(), temp);
@@ -163,7 +163,7 @@ void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const ND
         temp[2*i - 1] = numOfSpatialDims + i;
         temp[2*i]     = i - 1;
     }
-    for(i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i)
+    for(i = 2 * numOfSpatialDims + 1; i < static_cast<uint>(temp.size()); ++i)
         temp[i] = i;
 
     inputRearranged0.permutei(temp);
@@ -216,8 +216,8 @@ static void spaceToBatch_(const NDArray& input, NDArray& output, const uint padB
 
     // loop through output array
     auto func = PRAGMA_THREADS_FOR_2D {
-        for (uint b = start_x; b < stop_x; b += inc_x) {
-            for (uint h = start_y; h < stop_y; h += inc_y) {
+        for (auto b = start_x; b < stop_x; b += inc_x) {
+            for (auto h = start_y; h < stop_y; h += inc_y) {
                 for (uint w = 0; w < oW; ++w) {
                     for (uint c = 0; c < iC; ++c) {
 

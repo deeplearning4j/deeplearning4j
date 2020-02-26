@@ -378,7 +378,7 @@ namespace nd4j {
                                 int irow = 0;
                                 auto cShift = t * idxShift;
 
-                                for (int e = 0; e < hsRounds; e++) {
+                                for (Nd4jLong e = 0; e < hsRounds; e++) {
                                     irow = bIndices[e + cShift];
                                     if (irow < 0 || irow >= vocabSize)
                                         continue;
@@ -457,7 +457,7 @@ namespace nd4j {
                     T sneu1[600];
                     T sneu1e[600];
 
-                    for (int e = start; e < stop; e++) {
+                    for (auto e = start; e < stop; e++) {
                         T *neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                         T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
 
@@ -500,7 +500,7 @@ namespace nd4j {
 
                         // hierarchic softmax step
                         if (!indices.isEmpty()) {
-                            for (int i = 0; i < numIndices; i++) {
+                            for (Nd4jLong i = 0; i < numIndices; i++) {
                                 const int cIndex = bIndices[(e * numIndices) + i];
                                 const int cCode = bCodes[(e * numIndices) + i];
 

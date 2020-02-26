@@ -41,8 +41,8 @@ namespace helpers {
 
         auto batchLoop = PRAGMA_THREADS_FOR {
             for (auto batch = start; batch < stop; batch++) {
-                for (auto r = 0; r < rows; r++) {
-                    for (auto c = 0; c < r; c++) {
+                for (Nd4jLong r = 0; r < rows; r++) {
+                    for (Nd4jLong c = 0; c < r; c++) {
                         math::nd4j_swap(outputPart[batch]->t<T>(r, c) , outputPart[batch]->t<T>(c, r));
                     }
                 }
@@ -66,7 +66,7 @@ namespace helpers {
         auto permutationsPart = permutations.allTensorsAlongDimension({-1});
 
         for (auto batch = 0; batch < permutationsPart.size(); ++batch) {
-            for (auto row = 0; row < PPart[batch]->rows(); ++row) {
+            for (Nd4jLong row = 0; row < PPart[batch]->rows(); ++row) {
                 PPart[batch]->t<T>(row, permutationsPart[batch]->t<int>(row)) = T(1.f);
             }
         }
@@ -77,7 +77,7 @@ namespace helpers {
         MmulHelper::matmul(&P, rightInput, &rightPermuted, 0, 0);
         ResultSet leftLowerPart = leftLower.allTensorsAlongDimension({-2, -1});
         for (auto i = 0; i < leftLowerPart.size(); i++) {
-            for (auto r = 0; r < leftLowerPart[i]->rows(); r++)
+            for (Nd4jLong r = 0; r < leftLowerPart[i]->rows(); r++)
                 leftLowerPart[i]->t<T>(r,r) = (T)1.f;
         }
         // stage 2: triangularSolveFunctor for Lower with given b

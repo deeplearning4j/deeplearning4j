@@ -26,7 +26,7 @@ namespace nd4j {
         namespace helpers {
             template <typename T>
             static void hashCode_(LaunchContext *context, NDArray &array, NDArray &result) {
-                auto blockSize = 32;
+                Nd4jLong blockSize = 32;
                 auto length = array.lengthOf();
                 int numBlocks = length / blockSize + ((length % blockSize == 0) ? 0 : 1);
                 auto tempA = NDArrayFactory::create<Nd4jLong>('c', {numBlocks}, context);
@@ -42,11 +42,11 @@ namespace nd4j {
 
                 // we divide array into 32 element chunks, and store intermediate results once
                 auto func = PRAGMA_THREADS_FOR {
-                    for (auto b = 0; b < stop; b++) {
+                    for (auto b = start; b < stop; b++) {
                         auto blockBuffer = buffer + b * numBlocks;
 
                         Nd4jLong r = 1;
-                        for (int e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
+                        for (Nd4jLong e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
                             auto v = longBytes<T>(blockBuffer[e]);
                             r = 31 * r + v;
                         }
@@ -68,7 +68,7 @@ namespace nd4j {
                             auto blockBuffer = tempBuffer + b * numBlocks;
 
                             Nd4jLong r = 1;
-                            for (int e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
+                            for (Nd4jLong e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
                                 auto v = longBytes<T>(blockBuffer[e]);
                                 r = 31 * r + v;
                             }
@@ -103,4 +103,3 @@ namespace nd4j {
         }
     }
 }
-

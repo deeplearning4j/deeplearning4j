@@ -93,7 +93,7 @@ namespace functions {
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = start; i < stop; i++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
@@ -111,7 +111,7 @@ namespace functions {
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = start; i < stop; i++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                         z[offset] = OpClass::op(x[offset], y[yOffset], i, length, rng, extraArguments);
@@ -129,7 +129,7 @@ namespace functions {
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = start; i < stop; i++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto offset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                         z[offset] = OpClass::op(x[xOffset], y[offset], i, length, rng, extraArguments);
@@ -149,7 +149,7 @@ namespace functions {
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = start; i < stop; i++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
@@ -197,7 +197,7 @@ namespace functions {
                 else{
                     auto func = PRAGMA_THREADS_FOR {
                         PRAGMA_OMP_SIMD
-                        for (uint64_t i = start; i < stop; i++)  {
+                        for (auto i = start; i < stop; i++)  {
                             auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                             z[offset] = OpClass::op(x[offset], i, length, rng, extraArguments);
                         }
@@ -213,7 +213,7 @@ namespace functions {
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = start; i < stop; i++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpClass::op(x[xOffset], i, length, rng, extraArguments);
@@ -255,7 +255,7 @@ namespace functions {
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = start; i < stop; i++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto offset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[offset] = OpClass::op(i, length, rng, extraArguments);
                     }

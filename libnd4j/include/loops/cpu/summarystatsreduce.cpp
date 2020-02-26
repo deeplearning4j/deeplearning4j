@@ -91,7 +91,7 @@ namespace functions {
             uint xShapeInfoCast[MAX_RANK];
             const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
 
-            for (uint64_t i = 0; i < length; i++) {
+            for (Nd4jLong i = 0; i < length; i++) {
                 auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCast);
 
                 SummaryStatsData<X> curr;
@@ -116,7 +116,7 @@ namespace functions {
             auto x = reinterpret_cast<X *>(vx);
             auto z = reinterpret_cast<Z *>(vz);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
-            int resultLength = shape::length(zShapeInfo);
+            auto resultLength = shape::length(zShapeInfo);
 
             if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
                if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
@@ -124,7 +124,7 @@ namespace functions {
                 SummaryStatsData<X> comp;
                 comp.initWithValue(x[0]);
 
-                for (uint i = 0; i < resultLength; i++)
+                for (Nd4jLong i = 0; i < resultLength; i++)
                     z[i] = OpType::getValue(biasCorrected, comp);
                 return;
             }
@@ -166,14 +166,14 @@ namespace functions {
                     comp.initWithValue(tx[0]);
 
                     if (tadEWS == 1 && tadOrder == 'c') {
-                        for (int i = 1; i < tadLength; i++) {
+                        for (Nd4jLong i = 1; i < tadLength; i++) {
                             SummaryStatsData <X> indexVal2;
                             indexVal2.initWithValue(tx[i]);
 
                             comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
                         }
                     } else {
-                        for (int i = 1; i < tadLength; i++) {
+                        for (Nd4jLong i = 1; i < tadLength; i++) {
                             auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, canCast);
 
                             SummaryStatsData <X> indexVal2;

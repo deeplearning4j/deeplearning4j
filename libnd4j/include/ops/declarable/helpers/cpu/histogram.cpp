@@ -49,7 +49,7 @@ namespace nd4j {
                     }
 
                     PRAGMA_OMP_SIMD
-                    for (int x = 0; x < numBins; x++) {
+                    for (Nd4jLong x = 0; x < numBins; x++) {
                         result[x] += bins[x];
                     }
 

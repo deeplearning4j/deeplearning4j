@@ -43,10 +43,10 @@ namespace helpers {
         auto rows = leftInput->rows();
         auto cols = rightInput->columns();
         //output->t<T>(0,0) = rightInput->t<T>(0,0) / leftInput->t<T>(0,0);
-        for (auto r = 0; r < rows; r++) {
-            for (auto j = 0; j < cols; j++) {
+        for (Nd4jLong r = 0; r < rows; r++) {
+            for (Nd4jLong j = 0; j < cols; j++) {
                 auto sum = rightInput->t<T>(r, j);
-                for (auto c = 0; c < r; c++) {
+                for (Nd4jLong c = 0; c < r; c++) {
                     sum -= leftInput->t<T>(r, c) * output->t<T>(c, j);
                 }
                 output->t<T>(r, j) = sum / leftInput->t<T>(r, r);
@@ -72,10 +72,10 @@ namespace helpers {
     static void upperTriangularSolve(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
         auto rows = leftInput->rows();
         auto cols = rightInput->columns();
-        for (auto r = rows; r > 0; r--) {
-            for (auto j = 0; j < cols; j++) {
+        for (Nd4jLong r = rows; r > 0; r--) {
+            for (Nd4jLong j = 0; j < cols; j++) {
                 auto sum = rightInput->t<T>(r - 1, j);
-                for (auto c = r; c < rows; c++) {
+                for (Nd4jLong c = r; c < rows; c++) {
                     sum -= leftInput->t<T>(r - 1, c) * output->t<T>(c, j);
                 }
                 output->t<T>(r - 1, j) = sum / leftInput->t<T>(r - 1, r - 1);
@@ -114,14 +114,14 @@ namespace helpers {
         auto batchLoop = PRAGMA_THREADS_FOR {
             for (auto batch = start; batch < stop; batch++) {
                 if (!lower) {
-                    for (auto r = 0; r < rows; r++) {
-                        for (auto c = 0; c <= r; c++) {
+                    for (Nd4jLong r = 0; r < rows; r++) {
+                        for (Nd4jLong c = 0; c <= r; c++) {
                             outputPart[batch]->t<T>(r, c) = inputPart[batch]->t<T>(c, r);
                         }
                     }
                 } else {
-                    for (auto r = 0; r < rows; r++) {
-                        for (auto c = r; c < cols; c++) {
+                    for (Nd4jLong r = 0; r < rows; r++) {
+                        for (Nd4jLong c = r; c < cols; c++) {
                             outputPart[batch]->t<T>(r, c) = inputPart[batch]->t<T>(c, r);
                         }
                     }

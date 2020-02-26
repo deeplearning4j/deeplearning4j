@@ -68,7 +68,7 @@ namespace nd4j {
                     if (shape::elementWiseStride(xShapeInfo) == 1 && shape::elementWiseStride(zShapeInfo) == 1 &&
                         shape::order(xShapeInfo) == 'c' && shape::order(zShapeInfo) == 'c') {
 
-                        for (int e = 0; e < length; e++) {
+                        for (Nd4jLong e = 0; e < length; e++) {
                             sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[e]) : simdOps::Multiply<T, T, T>::op(sum, x[e]);
 
                             if (!exclusive)
@@ -81,7 +81,7 @@ namespace nd4j {
                     }
                     else {
 
-                        for (int e = 0; e < length; e++) {
+                        for (Nd4jLong e = 0; e < length; e++) {
 
                             auto xOffset = shape::getIndexOffset(e, xShapeInfo);
                             auto zOffset = shape::getIndexOffset(e, zShapeInfo);

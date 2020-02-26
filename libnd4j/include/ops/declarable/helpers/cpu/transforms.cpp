@@ -597,7 +597,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
                 zCoordStart[yRank - 1] = coordToRestore;
 
             // construct coordinates for x
-            for (uint j = 0; j < yLastDim; ++j)
+            for (int j = 0; j < yLastDim; ++j)
                 xCoordStart[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
 
             const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoordStart);
@@ -628,7 +628,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
     if (indices != nullptr) {
 
-        for(int i = 0; i < indices->lengthOf(); ++i)
+        for(Nd4jLong i = 0; i < indices->lengthOf(); ++i)
             if(indices->e<Nd4jLong>(i) >= input->sizeAt(axis))
                 throw std::runtime_error("helpers::gather function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
 
@@ -733,7 +733,7 @@ void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updat
     // increasing counter to skip numIndices
     e++;
     std::vector<int> indices;
-    for (; e < intArgs->size(); e++)
+    for (; e < static_cast<Nd4jLong>(intArgs->size()); e++)
         indices.push_back((*intArgs)[e]);
 
     auto func = PRAGMA_THREADS_FOR {
@@ -813,7 +813,7 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
             T max = -DataTypeUtils::max<T>();
             Nd4jLong idx = 0;
 
-            for (int i = 0; i < numArgs; i++) {
+            for (Nd4jLong i = 0; i < numArgs; i++) {
                 T v = inArrs[i]->e<T>(e);
                 if (v > max) {
                     max = v;
@@ -841,7 +841,7 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     auto func = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e++) {
             T max = -DataTypeUtils::max<T>();
-            for (int i = 0; i < numArgs; i++) {
+            for (Nd4jLong i = 0; i < numArgs; i++) {
                 T v = inArrs[i]->e<T>(e);
                 if (v > max)
                     max = v;
@@ -867,7 +867,7 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     auto func = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e++) {
             T sum = 0.;
-            for (int i = 0; i < numArgs; i++) {
+            for (Nd4jLong i = 0; i < numArgs; i++) {
                 T v = inArrs[i]->e<T>(e);
                 sum += v;
             }
@@ -893,7 +893,7 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     auto func = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e++) {
             T sum = (T) 0.f;
-            for (int i = 0; i < numArgs; i++)
+            for (Nd4jLong i = 0; i < numArgs; i++)
                 sum += inArrs[i]->e<T>(e);
 
             output.p(e, sum);
@@ -1242,7 +1242,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
         memset(gradIBuff, 0, gradILen * sizeof(T));
     else {
         //PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int i = 0; i < gradILen * gradIEWS; i += gradIEWS)
+        for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gradIBuff[i] = static_cast<T>(0.f);
     }
 

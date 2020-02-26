@@ -146,17 +146,17 @@ void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArr
         auto length = shape::length(inShapeInfo);
 
         if (inEWS == 1) {
-            for (int i = 0; i < length; i++)
+            for (Nd4jLong i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, inBuff[i]);
 
             PRAGMA_OMP_SIMD_SUM(sum)
-            for (int i = 0; i < length; i++) {
+            for (Nd4jLong i = 0; i < length; i++) {
                 outBuff[i] = nd4j::math::nd4j_exp<T,T>(inBuff[i] - max);
                 sum += outBuff[i];
             }
 
             PRAGMA_OMP_SIMD
-            for (int i = 0; i < length; i++) {
+            for (Nd4jLong i = 0; i < length; i++) {
                 outBuff[i] /= sum;
                 outBuff[i] = nd4j::math::nd4j_log<T,T>(outBuff[i]);
             }
@@ -164,17 +164,17 @@ void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArr
         else if (inEWS > 1) {
 
             PRAGMA_OMP_SIMD_MAX(max)
-            for (int i = 0; i < length; i++)
+            for (Nd4jLong i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, inBuff[i * inEWS]);
 
             PRAGMA_OMP_SIMD_SUM(sum)
-            for (int i = 0; i < length; i++) {
+            for (Nd4jLong i = 0; i < length; i++) {
                 outBuff[i * inEWS] = nd4j::math::nd4j_exp<T,T>(inBuff[i * inEWS] - max);
                 sum += outBuff[i * inEWS];
             }
 
             PRAGMA_OMP_SIMD
-            for (int i = 0; i < length; i++) {
+            for (Nd4jLong i = 0; i < length; i++) {
                 outBuff[i * inEWS] /= sum;
                 outBuff[i * inEWS] = nd4j::math::nd4j_log<T, T>(outBuff[i * inEWS]);
             }

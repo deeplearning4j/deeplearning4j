@@ -443,7 +443,7 @@ namespace nd4j {
 					const X* bias_new;
 					X* bias_extra = nullptr;
 					size_t total_num = 1;
-					for (size_t i = 0; i < rank; i++) {
+					for (Nd4jLong i = 0; i < rank; i++) {
 						total_num *= bases[i];
 					}
 					Nd4jLong inc;
@@ -574,7 +574,7 @@ namespace nd4j {
 					for (size_t i = 0; i < 2; i++) {
 						numNC *= bases[i];
 					}
-					for (size_t i = 2; i < rank; i++) {
+					for (Nd4jLong i = 2; i < rank; i++) {
 						numHW *= bases[i];
 					}
 					Nd4jLong total_num = numNC * numHW;

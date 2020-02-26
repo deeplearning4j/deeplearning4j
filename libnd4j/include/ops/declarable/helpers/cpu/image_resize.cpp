@@ -219,16 +219,16 @@ namespace helpers {
         auto func = PRAGMA_THREADS_FOR {
             for (auto batch = start; batch < stop; ++batch) {
                 auto pInput = pInputBuf + batch * inBatchNumValues;
-                for (auto y = 0; y < outHeight; ++y) {
+                for (Nd4jLong y = 0; y < outHeight; ++y) {
                     auto pOutput = pOutputBuf + (batch * outHeight + y) * outRowSize;
                     const T* ysInputLowerPtr = pInput + ys[y]._bottomIndex * inRowSize;
                     const T* ysInputUpperPtr = pInput + ys[y]._topIndex * inRowSize;
                     double yVal = ys[y]._interpolarValue;
-                    for (auto x = 0; x < outWidth; ++x) {
+                    for (Nd4jLong x = 0; x < outWidth; ++x) {
                         auto xsBottom = xsPtr[x]._bottomIndex;
                         auto xsTop = xsPtr[x]._topIndex;
                         auto xVal = xsPtr[x]._interpolarValue;
-                        for (auto c = 0; c < channels; ++c) {
+                        for (Nd4jLong c = 0; c < channels; ++c) {
                             double topLeft(ysInputLowerPtr[xsBottom + c]);
                             double topRight(ysInputLowerPtr[xsTop + c]);
                             double bottomLeft(ysInputUpperPtr[xsBottom + c]);
@@ -310,14 +310,14 @@ namespace helpers {
                     if (halfPixelCenter) {
                         inY = nd4j::math::nd4j_max(0LL, inY);
                     }
-                    for (auto x = 0; x < outWidth; ++x) {
+                    for (Nd4jLong x = 0; x < outWidth; ++x) {
                         auto posX = alignCorners ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(scaler(x, st.widthScale))) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(scaler(x, st.widthScale)));
                         Nd4jLong inX = nd4j::math::nd4j_min(posX,inWidth - 1);
                         if (halfPixelCenter) {
                             inX = nd4j::math::nd4j_max(0LL, inX);
                         }
                         // copy pixel over all channels
-                        for (auto e = 0; e < channels; e++)
+                        for (Nd4jLong e = 0; e < channels; e++)
                             output->t<T>(b, y, x, e) = images->t<T>(b, inY, inX, e);
                     }
                 }
@@ -613,7 +613,7 @@ namespace helpers {
             for (auto b = start; b < stop; ++b) {
                 auto pInput = inputPtr + b * inBatchWidth;
 
-                for (auto y = 0; y < outHeight; ++y) {
+                for (Nd4jLong y = 0; y < outHeight; ++y) {
                     auto pOutput = &pOutputY[(b * outHeight + y) * outWidth * numChannels];
 
                     WeightsAndIndices yWai;
@@ -635,7 +635,7 @@ namespace helpers {
                         F cached_value_0[4] = {0};
                         F cached_value_1[4] = {0};
                         F cached_value_2[4] = {0};
-                        for (auto x = 0; x < resizerState.outWidth; ++x) {
+                        for (Nd4jLong x = 0; x < resizerState.outWidth; ++x) {
                             const WeightsAndIndices &xWai = xWais[x];
                             // Shift values in cached_value_* to fill first '_advance' values.
                             switch (xWai._advance) {
@@ -712,7 +712,7 @@ namespace helpers {
                                             xWai._weight2, xWai._weight3);
                         }
                     } else {
-                        for (auto x = 0; x < resizerState.outWidth; ++x) {
+                        for (Nd4jLong x = 0; x < resizerState.outWidth; ++x) {
                             const WeightsAndIndices &xWai = xWais[x];
                             // Shift values in cachedValue to fill first '_advance' values.
                             switch (xWai._advance) {
@@ -828,7 +828,7 @@ namespace helpers {
         float sum_0 = 0;
         float sum_1 = 0;
         float sum_2 = 0;
-        for (int i = 0; i < yPtrs.size(); ++i) {
+        for (size_t i = 0; i < yPtrs.size(); ++i) {
             const T* ptr = yPtrs[i].yPtr;
             float scaleX = xCache.startScale;
             Nd4jLong offset = 3 * boundIfNeeded(xCache.start, st.inWidth);
@@ -879,7 +879,7 @@ namespace helpers {
             const auto numChannels = st.channels;
             for (Nd4jLong c = 0; c < numChannels; ++c) {
                 float sum = 0;
-                for (int i = 0; i < yPtrs.size(); ++i) {
+                for (size_t i = 0; i < yPtrs.size(); ++i) {
                     T const* ptr = yPtrs[i].yPtr;
                     float scaleX = xCache.startScale;
                     float sumY = static_cast<float>(ptr[numChannels * boundIfNeeded(xCache.start, st.inWidth) + c]) * scaleX;

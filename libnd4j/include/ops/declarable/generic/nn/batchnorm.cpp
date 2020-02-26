@@ -61,7 +61,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     else
         axes.push_back(inRank-1);               // default dimension to reduce along is last dimension
 
-    const int numOfAxes = axes.size();
+    const uint numOfAxes = axes.size();
     REQUIRE_TRUE(numOfAxes <= inRank, 0, "BATCHNORM op: too big number of input axes to normalize over, expected number should be less or equal to rank of input array, but got %i and %i correspondingly !", numOfAxes, inRank);
 
     // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
         REQUIRE_TRUE(beta->isSameShape(expShape), 0, "BATCHNORM op: wrong shape of beta array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(beta).c_str());
 
     // types of all input arrays should be the same
-    for(int i = 1; i < block.width(); ++i)
+    for(unsigned long i = 1; i < block.width(); ++i)
         REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM op: types of all input arrays should be the same !");
 
     nd4j_debug("MKL-DNN is not used for batchnorm!\n", 0);
@@ -167,7 +167,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     else
         axes.push_back(inRank-1);               // default dimension to reduce along is last dimension
 
-    const int numOfAxes = axes.size();
+    const uint numOfAxes = axes.size();
     REQUIRE_TRUE(numOfAxes <= inRank, 0, "BATCHNORM_BP op: too big number of input axes to normalize over, expected number should be less or equal to rank of input array, but got %i and %i correspondingly !", numOfAxes, inRank);
 
     // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
@@ -191,7 +191,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     REQUIRE_TRUE(input->isSameShape(dLdO), 0, "BATCHNORM_BP op: wrong shape of output gradients array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(dLdO).c_str());
 
     // types of all input arrays should be the same (except dLdO)
-    for(int i = 1; i < block.width() - 2; ++i)
+    for(unsigned long i = 1; i < block.width() - 2; ++i)
         REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM_BP op: types of arrays (input, mean, variance, gamma, beta) should be the same !");
 
     // ***** calculations ***** //

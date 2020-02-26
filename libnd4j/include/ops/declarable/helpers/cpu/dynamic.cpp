@@ -53,7 +53,7 @@ namespace nd4j {
                         outputs[i].second = 0;
 
                         //PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold())
-                        for (int e = 0; e < indices->lengthOf(); ++e)
+                        for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
                             if ((*indices).e<Nd4jLong>(e) == i)
                                 listOutForCurrent.at(outputs[i].second++)->assign(listOfTensors.at(e));
                     }
@@ -65,7 +65,7 @@ namespace nd4j {
                         for (auto i = start; i < stop; i++) {
                             outputs[i].first = outputList[i];
                             outputs[i].second = 0;
-                            for (int e = 0; e < indices->lengthOf(); ++e)
+                            for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
                                 if (indices->e<Nd4jLong>(e) == i)
                                     outputs[i].first->p(outputs[i].second++, input->e<T>(e));
                         }
@@ -83,7 +83,7 @@ namespace nd4j {
                     for (int e = 0; e < numOfData; e++) {
                         auto data = inputs[e];
                         auto index = indices[e];
-                        for (int i = 0; i < index->lengthOf(); i++) {
+                        for (Nd4jLong i = 0; i < index->lengthOf(); i++) {
                             Nd4jLong pos = index->e<Nd4jLong>(i);
                             if (pos < 0) {
                                 nd4j_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
@@ -100,7 +100,7 @@ namespace nd4j {
                 }
                 else {
                     std::vector<int> restDims(output->rankOf() - 1);
-                    for (int i = restDims.size(); i > 0;  i--)
+                    for (auto i = restDims.size(); i > 0;  i--)
                         restDims[restDims.size() - i] = output->rankOf() - i;
 
                     ResultSet listOfOutTensors = output->allTensorsAlongDimension(restDims);
@@ -109,12 +109,12 @@ namespace nd4j {
                         auto data = inputs[e];
                         auto index = indices[e];
                         std::vector<int> sourceDims(data->rankOf() - index->rankOf());
-                        for (int i = sourceDims.size(); i > 0;  i--)
+                        for (auto i = sourceDims.size(); i > 0;  i--)
                             sourceDims[sourceDims.size() - i] = data->rankOf() - i;
 
                         ResultSet listOfTensors = data->allTensorsAlongDimension(sourceDims)    ;
 
-                        for (int i = 0; i < index->lengthOf(); i++) {
+                        for (Nd4jLong i = 0; i < index->lengthOf(); i++) {
                             auto pos = index->e<Nd4jLong>(i);
                             if (pos < 0) {
                                 nd4j_printf("dynamic_stitch: Index value should be non-negative. But %i was given", pos);
@@ -146,7 +146,7 @@ namespace nd4j {
 
                     ResultSet listOfTensors = outputList[0]->allTensorsAlongDimension(sourceDims);
 
-                    for (unsigned int i = 0; i < inputGradientList.size(); i++) {
+                    for (auto i = 0; i < inputGradientList.size(); i++) {
                         outputs[i].first = inputGradientList[i];
                         if (outputs[i].first->rankOf() < 1) continue; // skip empty gradient outs
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
@@ -158,7 +158,7 @@ namespace nd4j {
 
                         outputs[i].second = 0;
 
-                        for (int e = 0; e < indices->lengthOf(); ++e)
+                        for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
                             if (indices->e<Nd4jLong>(e) == i)
                                 listOfTensors.at(e)->assign(listOutForCurrent.at(outputs[i].second++));
                     }
@@ -171,7 +171,7 @@ namespace nd4j {
                         for (auto i = start; i < stop; i++) {
                             outputs[i].first = inputGradientList[i];
                             outputs[i].second = 0;
-                            for (int e = 0; e < indices->lengthOf(); ++e)
+                            for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
                                 if (indices->e<Nd4jLong>(e) == i)
                                     output->p<T>(e, outputs[i].first->e<T>(outputs[i].second++));
                         }

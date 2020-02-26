@@ -57,7 +57,7 @@ namespace functions {
                     return;
                 const auto startingVal = OpType::startingValue(x);
 
-                for (uint i = 0; i < length; i++)
+                for (Nd4jLong i = 0; i < length; i++)
                     z[i] = startingVal;
                 return;
             }
@@ -111,7 +111,7 @@ namespace functions {
                     uint xShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    for (auto i = 0; i < length; i++)
+                    for (Nd4jLong i = 0; i < length; i++)
                         startingValue = OpType::update(startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
 
                     return OpType::postProcess(startingValue, length, extraParams);
@@ -182,7 +182,7 @@ namespace functions {
                         return;
                     const auto startingVal = OpType::startingValue(x);
 
-                    for (uint i = 0; i < zLength; i++)
+                    for (Nd4jLong i = 0; i < zLength; i++)
                         z[i] = startingVal;
                     return;
                 }

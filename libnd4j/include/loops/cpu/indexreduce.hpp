@@ -124,7 +124,7 @@ void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
             return;
         const auto indexValue = OpType::startingIndexValue(x);
 
-        for (uint i = 0; i < zLen; i++)
+        for (Nd4jLong i = 0; i < zLen; i++)
             z[i] = (Z) indexValue.index;
 
         return;

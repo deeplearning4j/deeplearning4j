@@ -62,7 +62,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
     if(inTadEws == 1 && outTadEws == 1) {
         
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i++) {
+            for (auto i = start; i < stop; i++) {
                 const T *x = inBuff + inTadOffsets[i];
                 T *y = outBuff + outTadOffsets[i];
 
@@ -70,7 +70,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
 
                 // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
                 // we store each squared sum in corresponding element of y array
-                for (uint j = 0; j < tadLen; ++j) {
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
                     const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
                     const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
@@ -100,7 +100,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
     }
     else {
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = 0; i < numOfTads; ++i) {
+            for (Nd4jLong i = 0; i < numOfTads; ++i) {
                 const T *x = inBuff + inTadOffsets[i];
                 T *y = outBuff + outTadOffsets[i];
 
@@ -108,7 +108,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
 
                 // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
                 // we store each squared sum in corresponding element of y array
-                for (uint j = 0; j < tadLen; ++j) {
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
                     const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
                     const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
@@ -179,13 +179,13 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     if(inTadEws == 1 && gradITadEws == 1) {
         
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i++) {
+            for (auto i = start; i < stop; i++) {
                 const X *x = inBuff + inTadOffsets[i];
                       Y *y = gradIBuff + gradITadOffsets[i];
 
                 // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
                 // we store each squared sum in corresponding element of y array
-                for (uint j = 0; j < tadLen; ++j) {
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
                     const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
                     const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
@@ -208,7 +208,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
 
                 Y prev = 0;
                 // second loop calculates derivatives using information gained in first loop above
-                for (uint j = 0; j < tadLen; ++j) {
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
                     const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
                     const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
@@ -247,13 +247,13 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     else {
 
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i++) {
+            for (auto i = start; i < stop; i++) {
                 const X *x = inBuff + inTadOffsets[i];
                       Y *y = gradIBuff + gradITadOffsets[i];
 
                 // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
                 // we store each squared sum in corresponding element of y array
-                for (uint j = 0; j < tadLen; ++j) {
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
                     const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
                     const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
@@ -280,7 +280,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
 
                 Y prev = 0;
                 // second loop calculates derivatives using information gained in first loop above
-                for (uint j = 0; j < tadLen; ++j) {
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
                     const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
                     const uint end = nd4j::math::nd4j_min<int>(last, tadLen);

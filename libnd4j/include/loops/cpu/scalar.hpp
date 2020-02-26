@@ -73,7 +73,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             auto oX = x + xTadOffsets[r];
 
             PRAGMA_OMP_SIMD
-            for (unsigned int f = 0; f < tadLength; f++)
+            for (int f = 0; f < tadLength; f++)
                 oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
         };
     }
@@ -83,7 +83,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             auto oX = x + xTadOffsets[r];
 
             PRAGMA_OMP_SIMD
-            for (unsigned int f = 0; f < tadLength; f++)
+            for (int f = 0; f < tadLength; f++)
                 oZ[f * zTadEws] = OpType::op(oX[f * xTadEws], scalars[r], extraParams);
         };
     }
