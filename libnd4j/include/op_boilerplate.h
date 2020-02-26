@@ -1229,7 +1229,7 @@
 
 /// graph definitions
 #define REQUIRE_OK(A)  if (nd4j::ops::resultHelper( (A), #A, __FILE__, __LINE__ ) != 0) return ND4J_STATUS_VALIDATION;
-#define REQUIRE_TRUE(...) if (nd4j::ops::conditionHelper(__FILE__, __LINE__, __VA_ARGS__) != 0) throw std::invalid_argument("Op validation failed");
+#define REQUIRE_TRUE(COND, ...) if (!(COND)) { if (nd4j::ops::conditionHelper(__FILE__, __LINE__, COND, __VA_ARGS__) != 0) throw std::invalid_argument("Op validation failed");};
 
 #define DECLARE_ENTRY(NAME, ...)           template struct ND4J_EXPORT __registratorFloat<NAME<float>>; \
                                       template struct ND4J_EXPORT __registratorHalf<NAME<float16>>; \

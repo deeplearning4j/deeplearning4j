@@ -41,9 +41,10 @@ namespace nd4j {
 
             REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf()+1, 0, "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1, axis);
 
-            std::vector<Nd4jLong> shape;
+            std::vector<Nd4jLong> shape(input->rankOf());
+
             for(int e = 0; e < input->rankOf(); e++)
-                shape.emplace_back(input->sizeAt(e));
+                shape[input->sizeAt(e)];
 
             shape.insert(shape.begin() + axis, 1);
 

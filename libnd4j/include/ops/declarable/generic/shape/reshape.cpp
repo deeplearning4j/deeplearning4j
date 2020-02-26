@@ -122,12 +122,17 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
             nd4j_printv("Reshape: new shape", shapeNew);
         }
 
-        if (s->isEmpty()) {
+        if (s->isScalar()) {
             // just a scalar
             z->assign(x);
         } else {
-            auto xr = x->reshape(order, shapeNew);
-            z->assign(xr);
+            // in some cases we might go away with simple memcpy call instead of assign call
+            if (x->ordering() == 'c' && z->ordering() == x->ordering() && shape::reshapeC(x->shapeInfo(), z->shapeInfo())) {
+                z->dataBuffer()->copyBufferFrom(*x->dataBuffer().get(), z->lengthOf() * DataTypeUtils::sizeOfElement(z->dataType()), 0, x->bufferOffset());
+            } else {
+                auto xr = x->reshape(order, shapeNew);
+                z->assign(xr);
+            }
         }
 
         return Status::OK();
