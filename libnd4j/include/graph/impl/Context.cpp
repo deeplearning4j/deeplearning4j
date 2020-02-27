@@ -136,7 +136,19 @@ namespace nd4j {
         }
 
         bool Context::isFastPath() {
-            return !(_fastpath_in.empty() && _fastpath_out.empty());
+            auto ie = _fastpath_in.empty();
+            auto io = _fastpath_out.empty();
+            // two options here.
+            // either both IN/OUT are filled
+            auto b1 = (!ie && !io);
+
+            // or at least something is filled, and FastPath is NOT forbidden
+            auto b2 = (!ie || !io) && !_forbidFastPath;
+            return b1 || b2;
+        }
+
+        void Context::forbidFastPath(bool reallyForbid) {
+            _forbidFastPath = reallyForbid;
         }
 
         VariableSpace *Context::getVariableSpace() {

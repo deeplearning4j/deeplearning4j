@@ -69,6 +69,9 @@ namespace nd4j {
 
             // in some cases we might be able to skip shape function for validation purposes
             bool _shapeFunctionOverride = false;
+
+            // special flag used during conversion from Graph exec to FastPath exec
+            bool _forbidFastPath = false;
         public:
             Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
@@ -176,10 +179,16 @@ namespace nd4j {
 
             // methods used in java interop
             /**
-             * This method checks, if Context uses fastpath variable access
+             * This method checks if Context uses fastpath variable access
              * @return
              */
             bool isFastPath();
+
+            /**
+             * Method allows to forbid FastPath execution
+             * @param reallyForbid
+             */
+            void forbidFastPath(bool reallyForbid);
 
 #ifndef __JAVACPP_HACK__
             std::vector<NDArray*>& fastpath_in();

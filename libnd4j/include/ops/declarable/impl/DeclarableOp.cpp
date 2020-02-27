@@ -142,6 +142,8 @@ namespace nd4j {
             NodeProfile *node = nullptr;
             std::chrono::time_point<std::chrono::system_clock> inputEnd, inputStart, shapeStart, shapeEnd, arrayStart, arrayEnd;
 
+            auto fp = ctx.isFastPath();
+
             if (Environment::getInstance()->isProfiling()) {
                 if (ctx.getVariableSpace() != nullptr && ctx.getVariableSpace()->flowPath() != nullptr) {
                     prof = ctx.getVariableSpace()->flowPath()->profile();
@@ -170,20 +172,22 @@ namespace nd4j {
                 return static_cast<int>(ctx.width());
             } else {
                 // if op is not inplace - we should pre-allocate arrays
-
                 ShapeList inSha;
                 int results = 0;
+
+                bool canUseFastPath = true;
 
                 if (Environment::getInstance()->isProfiling() && node != nullptr)
                     inputStart = std::chrono::system_clock::now();
 
                 int cntIn = 0;
                 // we build list of input shapes
-                if (ctx.isFastPath()) {
+                if (fp) {
                     for (const auto p:ctx.fastpath_in()) {
                         inSha.push_back(p == nullptr ? nullptr : p->getShapeInfo());
                     }
                 } else {
+                    int arrCnt = 0;
                     for (auto p: *ctx.inputs()) {
                         auto var = ctx.variable(p);
                         if (var->variableType() == VariableType::NDARRAY) {
@@ -192,13 +196,19 @@ namespace nd4j {
                                 throw unresolved_input_exception::build("Variable wasn't resolved prior shape calculation", p);
 
                             inSha.push_back(array->getShapeInfo());
+
+                            // we're also filling ctx with arrays
+                            if (canUseFastPath)
+                                ctx.setInputArray(arrCnt++, array);
+                        } else {
+                            canUseFastPath = false;
                         }
                         cntIn++;
                     }
                 }
 
                 // if we override shape function, we'll return size of fastPath
-                if (ctx.isFastPath() && ctx.shapeFunctionOverride()) {
+                if (fp && ctx.shapeFunctionOverride()) {
                     return (int) ctx.fastpath_out().size();
                 }
 
@@ -232,8 +242,9 @@ namespace nd4j {
                 }
 
                 int cnt = 0;
+
                 for (auto out: *outSha->asVector()) {
-                    if (!ctx.isFastPath()) {
+                    if (!fp) {
                         // we need to check, if Z is really needed
                         std::pair<int, int> pair(ctx.nodeId(), cnt++);
 
@@ -244,10 +255,16 @@ namespace nd4j {
                             auto outArr = new NDArray(out, true, ctx.launchContext());
 
                             ctx.pushNDArrayToVariableSpace(pair, outArr);
+
+                            if (canUseFastPath)
+                                ctx.setOutputArray(pair.second, outArr);
                         } else {
                             // validate/compare shapes here. existent vs provided in outSha
                             auto var = ctx.variable(pair);
                             auto shape = var->getNDArray()->shapeInfo();
+
+                            if (canUseFastPath)
+                                ctx.setOutputArray(pair.second, var->getNDArray());
 
                             if (!shape::equalsSoft(out, shape) || shape::isEmpty(out) != shape::isEmpty(shape)) {
                                 auto eShape = ShapeUtils::shapeAsString(out);
@@ -289,20 +306,13 @@ namespace nd4j {
                                 nd4j_printf("Expected vs provided shape mismatch %s vs %s at index %i\n", eShape.c_str(), aShape.c_str(), idx);
                                 throw std::runtime_error("Expected vs provided shape mismatch");
                             }
-
-                            /*
-                             * FIXME: we want to uncomment this eventually, and check data types equality
-                            //checking out data type equality
-                            if (ArrayOptions::dataType(out) != array->dataType()) {
-                                std::string msg = "Provided array [" + StringUtils::valueToString<int>(idx) + "] has unexpected data type";
-                                throw nd4j::datatype_exception::build(msg, ArrayOptions::dataType(out), array->dataType());
-                            }
-                             */
                         }
                     }
                 }
 
-                //outSha->destroy();
+                if (!canUseFastPath)
+                    ctx.forbidFastPath(true);
+
                 delete outSha;
 
                 // saving arrayTime
