@@ -596,7 +596,7 @@ namespace nd4j {
                 block->setInnerTime(outerTime);
             }
 
-            if (Environment::getInstance()->isProfiling() && !block->isFastPath()) {
+            if (Environment::getInstance()->isProfiling() && block->getVariableSpace() != nullptr) {
                 auto fp = block->getVariableSpace()->flowPath();
                 if (fp != nullptr) {
                     auto p = fp->profile();
