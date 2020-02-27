@@ -16,6 +16,7 @@
 package org.deeplearning4j.rl4j.helper;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * INDArray helper methods used by RL4J
@@ -31,16 +32,8 @@ public class INDArrayHelper {
      * @return The source INDArray with the correct shape
      */
     public static INDArray forceCorrectShape(INDArray source) {
-        long[] shape = source.shape();
-
-        if (shape[0] == 1) {
-            return source;
-        }
-
-        long[] newShape = new long[shape.length + 1];
-        newShape[0] = 1;
-        System.arraycopy(shape, 0, newShape, 1, shape.length);
-
-        return source.reshape(newShape);
+        return source.shape()[0] == 1
+                ? source
+                : Nd4j.expandDims(source, 0);
     }
 }
