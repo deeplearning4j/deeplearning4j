@@ -68,7 +68,7 @@ namespace nd4j {
         private:
             std::mutex _registrator;
             bool _registered = false;
-
+            std::string _name;
         protected:
             OpDescriptor *_descriptor;
             NDArray *_scalar = nullptr;

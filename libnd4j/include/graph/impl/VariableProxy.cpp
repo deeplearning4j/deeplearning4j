@@ -172,8 +172,8 @@ namespace nd4j {
         }
 
         
-        void VariableProxy::putVariable(std::pair<int,int>& pair, NDArray *array) {
-            _current->putVariable(pair, array);
+        Variable* VariableProxy::putVariable(std::pair<int,int>& pair, NDArray *array) {
+            return _current->putVariable(pair, array);
         }
 
         
@@ -195,8 +195,8 @@ namespace nd4j {
             _current->putVariable(id, idx, array);
         }
         
-        void VariableProxy::putVariable(int id, int idx, NDArray *array) {
-            _current->putVariable(id, idx, array);
+        Variable* VariableProxy::putVariable(int id, int idx, NDArray *array) {
+            return _current->putVariable(id, idx, array);
         }
 
         

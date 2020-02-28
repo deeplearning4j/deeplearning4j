@@ -95,11 +95,11 @@ namespace nd4j {
 
             virtual std::vector<Variable*> getVariables();
 
-            virtual void putVariable(std::pair<int,int>& pair, NDArray *array);
+            virtual Variable* putVariable(std::pair<int,int>& pair, NDArray *array);
             virtual void putVariable(std::pair<int,int>& pair, Variable *variable);
             virtual void putVariable(int id, Variable *variable);
             virtual void putVariable(int id, NDArray *array);
-            virtual void putVariable(int id, int idx, NDArray *array);
+            virtual Variable* putVariable(int id, int idx, NDArray *array);
             virtual void putVariable(int id, int idx, NDArray &array);
             virtual void putVariable(int id, int idx, Variable *array);
 

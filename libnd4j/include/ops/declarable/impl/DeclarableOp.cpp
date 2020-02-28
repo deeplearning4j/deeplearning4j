@@ -53,22 +53,27 @@ namespace nd4j {
 
         DeclarableOp::DeclarableOp(const char *name, bool isLogical) {
             _descriptor = new OpDescriptor(name, isLogical);
+            _name = name;
         }
 
         DeclarableOp::DeclarableOp(const char *name, int numInputs, bool scalar) {
             _descriptor = new OpDescriptor(numInputs, name, scalar);
+            _name = name;
         }
 
         DeclarableOp::DeclarableOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace) {
             _descriptor = new OpDescriptor(numInputs, numOutputs, opName, allowsInplace);
+            _name = opName;
         }
 
         DeclarableOp::DeclarableOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, bool divergent) {
             _descriptor = new OpDescriptor(numInputs, numOutputs, opName, allowsInplace, divergent);
+            _name = opName;
         }
 
         DeclarableOp::DeclarableOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) {
             _descriptor = new OpDescriptor(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs);
+            _name = opName;
         }
 
         DeclarableOp::~DeclarableOp() {
@@ -141,6 +146,7 @@ namespace nd4j {
             GraphProfile *prof = nullptr;
             NodeProfile *node = nullptr;
             std::chrono::time_point<std::chrono::system_clock> inputEnd, inputStart, shapeStart, shapeEnd, arrayStart, arrayEnd;
+            bool canUseFastPath = true;
 
             auto fp = ctx.isFastPath();
 
@@ -153,7 +159,7 @@ namespace nd4j {
 
             if (ctx.isInplace()) {
                 if (Environment::getInstance()->isProfiling() && node != nullptr) {
-                    if (ctx.isFastPath()) {
+                    if (fp) {
                         //
                     } else {
                         for (auto p: *ctx.inputs()) {
@@ -168,14 +174,50 @@ namespace nd4j {
                     }
                 }
 
+                // if that's not fp, we can still propagate inputs and outputs
+                if (!fp) {
+                    int cnt = 0;
+                    auto id = ctx.nodeId();
+                    auto vs = ctx.getVariableSpace();
+                    for (auto p: *ctx.inputs()) {
+                        auto var = ctx.variable(p);
+                        if (var->variableType() == VariableType::NDARRAY) {
+                            NDArray *array = var->getNDArray();
+                            ctx.setInputArray(cnt, array);
+                            ctx.setOutputArray(cnt, array);
+
+
+                            // in case of this override we might need to update outputs in the Graph VariableSpace as well
+                            if (vs != nullptr) {
+                                if (vs->hasVariable(id, cnt)) {
+                                    auto v2 = vs->getVariable(id, cnt);
+                                    if (!v2->hasNDArray()) {
+                                        v2->setNDArray(array);
+                                        v2->markRemovable(false);
+
+                                    }
+                                } else {
+                                    auto v2 = vs->putVariable(id, cnt, array);
+                                    v2->markRemovable(false);
+                                }
+                            }
+
+                            cnt++;
+                        } else {
+                            canUseFastPath = false;
+                        }
+                    }
+                }
+
+                if (!canUseFastPath)
+                    ctx.forbidFastPath(true);
+
                 // do nothing, getZ result will do the trick
                 return static_cast<int>(ctx.width());
             } else {
                 // if op is not inplace - we should pre-allocate arrays
                 ShapeList inSha;
                 int results = 0;
-
-                bool canUseFastPath = true;
 
                 if (Environment::getInstance()->isProfiling() && node != nullptr)
                     inputStart = std::chrono::system_clock::now();
@@ -1007,21 +1049,26 @@ namespace nd4j {
             if (status != ND4J_STATUS_OK)
                 return arrayList;
 
-
-            for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
-                std::pair<int,int> pair(1, e);
-                if (variableSpace.hasVariable(pair)) {
-                    auto var = variableSpace.getVariable(pair);
-                    auto arr = var->getNDArray();
-                    if (!arr->isAttached()) {
-                        var->markRemovable(false);
-                        arr->setContext(nd4j::LaunchContext ::defaultContext());
-                        arrayList->push_back(arr);
-                    } else {
-                        arrayList->push_back(arr->detach());
-                    }
-                } else
-                    break;
+            if (!isInplace) {
+                for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
+                    std::pair<int, int> pair(1, e);
+                    if (variableSpace.hasVariable(pair)) {
+                        auto var = variableSpace.getVariable(pair);
+                        auto arr = var->getNDArray();
+                        if (!arr->isAttached()) {
+                            var->markRemovable(false);
+                            arr->setContext(nd4j::LaunchContext::defaultContext());
+                            arrayList->push_back(arr);
+                        } else {
+                            arrayList->push_back(arr->detach());
+                        }
+                    } else
+                        break;
+                }
+            } else {
+                for (auto v:inputs) {
+                    arrayList->push_back(v);
+                }
             }
 
             return arrayList;

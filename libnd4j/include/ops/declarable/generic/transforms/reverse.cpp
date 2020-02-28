@@ -46,7 +46,8 @@ namespace ops  {
             axis = *block.getIArguments();
 
         if(axis.empty()) {      // do not perform reversion
-            output->assign(input);
+            if (!block.isInplace())
+                output->assign(input);
         }
         else {
             // check the consistency of input dimensions to reverse along

@@ -200,14 +200,15 @@ namespace nd4j {
             return externalMemory() + internalMemory();
         }
 
-        void nd4j::graph::VariableSpace::putVariable(std::pair<int,int>& pair, NDArray *array) {
+        Variable* nd4j::graph::VariableSpace::putVariable(std::pair<int,int>& pair, NDArray *array) {
             auto variable = new Variable(array, nullptr, pair.first, pair.second);
             this->putVariable(pair, variable);
+            return variable;
         }
 
-        void nd4j::graph::VariableSpace::putVariable(int node, int idx, NDArray *array) {
+        Variable* nd4j::graph::VariableSpace::putVariable(int node, int idx, NDArray *array) {
             std::pair<int, int> pair(node, idx);
-            this->putVariable(pair, array);
+            return this->putVariable(pair, array);
         }
 
         void nd4j::graph::VariableSpace::putVariable(int node, int idx, Variable *variable) {

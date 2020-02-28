@@ -140,7 +140,7 @@ namespace nd4j {
             auto io = _fastpath_out.empty();
             // two options here.
             // either both IN/OUT are filled
-            auto b1 = (!ie && !io);
+            auto b1 = (!ie && !io) || (!ie && _isInplace);
 
             // or at least something is filled, and FastPath is NOT forbidden
             auto b2 = (!ie || !io) && !_forbidFastPath;
