@@ -78,7 +78,7 @@ static  void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC,
 
             T3 val = A[aOffset] * B[bOffset];                       // first iteration
 
-            for (uint j = 1; j < K; ++j) {                          // rest iterations
+            for (int j = 1; j < K; ++j) {                          // rest iterations
                 aOffset += shape::stride(aShapeInfo)[aKaxis];
                 bOffset += shape::stride(bShapeInfo)[bKaxis];
                 val = val + A[aOffset] * B[bOffset];
@@ -131,7 +131,7 @@ static  void usualGemv(const NDArray* vA, const NDArray* vX, NDArray* vY, const 
 
             T3 val = A[aOffset] * X[xOffset];                       // first iteration
 
-            for (uint j = 1; j < N; ++j) {                          // rest iterations
+            for (int j = 1; j < N; ++j) {                          // rest iterations
                 aOffset += aNstride;
                 xOffset += incx;
                 val = val + A[aOffset] * X[xOffset];
@@ -163,7 +163,7 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
 
     T3 sum = 0;
     PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(length > Environment::getInstance()->elementwiseThreshold()) schedule(guided) reduction(OMP_SUMT:sum))
-    for(int i = 0; i < length; ++i)
+    for(Nd4jLong i = 0; i < length; ++i)
             sum += X[i * incx] * Y[i * incy];
 
     if(betaPersent)
@@ -462,7 +462,7 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB,  NDArray* vC,
 
             T3 val = A[aOffset] * B[bOffset];                       // first iteration
 
-            for (uint j = 1; j < K; ++j) {                          // rest iterations
+            for (int j = 1; j < K; ++j) {                          // rest iterations
                 aOffset += shape::stride(aShapeInfo)[aKaxis];
                 bOffset += shape::stride(bShapeInfo)[bKaxis];
                 val = val + A[aOffset] * B[bOffset];

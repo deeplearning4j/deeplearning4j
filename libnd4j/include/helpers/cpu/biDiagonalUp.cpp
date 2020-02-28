@@ -58,7 +58,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 
 		T _x, _y;
 
-		for(int i = 0; i < cols-1; ++i ) {
+		for(Nd4jLong i = 0; i < cols-1; ++i ) {
 
 			// evaluate Householder matrix nullifying columns
 			column = new NDArray(_HHmatrix({i,rows,  i,i+1}, true));

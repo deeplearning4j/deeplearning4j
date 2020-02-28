@@ -1300,16 +1300,16 @@ void pullRowsGeneric(void *vx,
 
             if (xEWS == 1 && zEWS == 1) {
                 PRAGMA_OMP_SIMD
-                for (int i = 0; i < tadLength; i++) {
+                for (Nd4jLong i = 0; i < tadLength; i++) {
                     rZ[i] = rX[i];
                 }
             } else if (xEWS >= 1 && zEWS >= 1) {
                 PRAGMA_OMP_SIMD
-                for (int i = 0; i < tadLength; i++) {
+                for (Nd4jLong i = 0; i < tadLength; i++) {
                     rZ[i * zEWS] = rX[i * xEWS];
                 }
             } else {
-                for (int i = 0; i < tadLength; i++) {
+                for (Nd4jLong i = 0; i < tadLength; i++) {
                     auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
                     auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
                     hZ[zOffset] = hX[xOffset];

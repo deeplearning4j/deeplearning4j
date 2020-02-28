@@ -1702,7 +1702,7 @@ bool NDArray::isSameShape(const std::vector<Nd4jLong>& shape) const{
     if (this->rankOf() != (int) shape.size())
         return false;
     for (int e = 0; e < this->rankOf(); e++) {
-        if (this->shapeOf()[e] != shape.at(e) && shape.at(e) != -1)
+        if (this->shapeOf()[e] != shape[e] && shape[e] != -1)
             return false;
     }
     return true;

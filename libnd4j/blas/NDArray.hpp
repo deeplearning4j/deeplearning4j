@@ -980,7 +980,7 @@ std::string NDArray::asString(Nd4jLong limit) {
 template<typename T>
 std::vector<T> NDArray::getBufferAsVector() {
     std::vector<T> vector(lengthOf());
-    for (int e = 0; e < lengthOf(); e++)
+    for (Nd4jLong e = 0; e < lengthOf(); e++)
         vector[e] = this->e<T>(e);
     return vector;
 }
@@ -2128,12 +2128,12 @@ bool NDArray::isIdentityMatrix() {
 	   throw std::runtime_error("isIdentityMatrix method: matrix must be square and have rank = 2 !");
 
 	const double eps = 1e-5f;
-	for(int i=0; i<rows(); ++i)
+	for(Nd4jLong i=0; i<rows(); ++i)
 	   if(nd4j::math::nd4j_abs(e<double>(i,i) - 1.f) > eps)
 		  return false;
 
-	for(int i=0; i<rows(); ++i) {
-        for(int j=0; j<columns(); ++j) {
+	for(Nd4jLong i=0; i<rows(); ++i) {
+        for(Nd4jLong j=0; j<columns(); ++j) {
             if (i == j)
                 continue;
             if(nd4j::math::nd4j_abs(e<double>(i,j)) > eps)
@@ -2335,7 +2335,7 @@ NDArray NDArray::asS() const {
     Nd4jLong dataLength = 0;
 
     auto data = bufferAsT<int8_t>() + offsetsLength;
-    for (int e = 0; e < lengthOf(); e++) {
+    for (Nd4jLong e = 0; e < lengthOf(); e++) {
         offsets[e] = dataLength;
         start = nInputoffsets[e];
         stop = nInputoffsets[e + 1];
@@ -3524,7 +3524,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
         // string is special case, we'll compare them one by one, considering both arrays are guaranteed to have the same length
 
         if (dataType() == DataType::UTF8) {
-            for (int e = 0; e < this->lengthOf(); e++) {
+            for (Nd4jLong e = 0; e < this->lengthOf(); e++) {
                 auto s1 = this->e<std::string>(e);
                 auto s2 = other->e<std::string>(e);
 
@@ -3533,7 +3533,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
             }
         }
         else if (dataType() == DataType::UTF16) {
-            for (int e = 0; e < this->lengthOf(); e++) {
+            for (Nd4jLong e = 0; e < this->lengthOf(); e++) {
                 auto s1 = this->e<std::u16string>(e);
                 auto s2 = other->e<std::u16string>(e);
 
@@ -3542,7 +3542,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
             }
         }
         else {
-            for (int e = 0; e < this->lengthOf(); e++) {
+            for (Nd4jLong e = 0; e < this->lengthOf(); e++) {
                 auto s1 = this->e<std::u32string>(e);
                 auto s2 = other->e<std::u32string>(e);
 
@@ -4801,7 +4801,7 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) 
     auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_shapeInfo, const_cast<int*>(dimensions.data()), dimensions.size());
     auto numTads = pack.numberOfTads();
 
-    for (int idx = 0; idx < numTads; idx++ ) {
+    for (Nd4jLong idx = 0; idx < numTads; idx++ ) {
         auto array = new NDArray(_buffer, ShapeDescriptor(pack.primaryShapeInfo()), getContext(), pack.primaryOffsets()[idx] + getBufferOffset());
         array->_isView = true;
         result.push_back(array);
@@ -4872,7 +4872,7 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
 
         std::vector<int> dimsWithUnities;
 
-        for (uint d = 0; d < rank; ++d)
+        for (int d = 0; d < rank; ++d)
             if(idx[n*d] != idx[n*d+1] && shapeOf[d] == 1)
                 dimsWithUnities.push_back(d);
 

@@ -53,7 +53,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++) {
+                    for (Nd4jLong j = 0; j < tadLen; j++) {
                         functions::indexreduce::IndexValue<X> comp(tad[j], j);
                         indexValue = OpType::update(indexValue, comp, extraParams);
                     }
@@ -74,7 +74,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++) {
+                    for (Nd4jLong j = 0; j < tadLen; j++) {
                         functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
                         indexValue = OpType::update(indexValue, comp, extraParams);
                     }
@@ -95,7 +95,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint i0 = 0; i0 < tadLen; ++i0) {
+                    for (Nd4jLong i0 = 0; i0 < tadLen; ++i0) {
                         functions::indexreduce::IndexValue<X> comp(tad[i0 * tadStride[0]], i0);
                         indexValue = OpType::update(indexValue, comp, extraParams);
                     }
@@ -118,8 +118,8 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                    for (Nd4jLong i0 = 0; i0 < tadShape[0]; ++i0) {
+                        for (Nd4jLong i1 = 0; i1 < tadShape[1]; ++i1) {
                             const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1];
                             const auto tadIndex = i0 * newStride[0] + i1;
                             functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
@@ -145,9 +145,9 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                    for (Nd4jLong i0 = 0; i0 < tadShape[0]; ++i0) {
+                        for (Nd4jLong i1 = 0; i1 < tadShape[1]; ++i1) {
+                            for (Nd4jLong i2 = 0; i2 < tadShape[2]; ++i2) {
                                 const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2];
                                 const auto tadIndex = i0 * newStride[0] + i1 * newStride[1] + i2;
                                 functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
@@ -174,10 +174,10 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                                for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
+                    for (Nd4jLong i0 = 0; i0 < tadShape[0]; ++i0) {
+                        for (Nd4jLong i1 = 0; i1 < tadShape[1]; ++i1) {
+                            for (Nd4jLong i2 = 0; i2 < tadShape[2]; ++i2) {
+                                for (Nd4jLong i3 = 0; i3 < tadShape[3]; ++i3) {
                                     const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2] + i3 * tadStride[3];
                                     const auto tadIndex = i0 * newStride[0] + i1 * newStride[1] + i2 * newStride[2] + i3;
                                     functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
@@ -205,11 +205,11 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                                for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
-                                    for (uint i4 = 0; i4 < tadShape[4]; ++i4) {
+                    for (Nd4jLong i0 = 0; i0 < tadShape[0]; ++i0) {
+                        for (Nd4jLong i1 = 0; i1 < tadShape[1]; ++i1) {
+                            for (Nd4jLong i2 = 0; i2 < tadShape[2]; ++i2) {
+                                for (Nd4jLong i3 = 0; i3 < tadShape[3]; ++i3) {
+                                    for (Nd4jLong i4 = 0; i4 < tadShape[4]; ++i4) {
                                         const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2] + i3 * tadStride[3] + i4 * tadStride[4];
                                         const auto tadIndex = i0 * newStride[0] + i1 * newStride[1] + i2 * newStride[2] + i3 * newStride[3] + i4;
                                         functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
@@ -238,7 +238,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++) {
+                    for (Nd4jLong j = 0; j < tadLen; j++) {
                         functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
                         indexValue = OpType::update(indexValue, comp, extraParams);
                     }
@@ -262,7 +262,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++) {
+                    for (Nd4jLong j = 0; j < tadLen; j++) {
                         auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
                         functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
                         indexValue = OpType::update(indexValue, comp, extraParams);
@@ -288,7 +288,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     auto tad = const_cast<X *>(x) + tadOffsets[i];
                     auto indexValue = OpType::startingIndexValue(tad);
 
-                    for (uint j = 0; j < tadLen; j++) {
+                    for (Nd4jLong j = 0; j < tadLen; j++) {
                         auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
                         functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
                         indexValue = OpType::update(indexValue, comp, extraParams);

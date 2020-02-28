@@ -232,13 +232,13 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
             if(!h) {    // seqLen and h are absent
 
                 lstmLayerCell(xSet->at(0), Wx, Wr, b, h0, c0, Wp, params, ht, ct); // first time step
-                for (int t = 1; t < sL; ++t)
+                for (Nd4jLong t = 1; t < sL; ++t)
                     lstmLayerCell(xSet->at(t), Wx, Wr, b, ht, ct, Wp, params, ht, ct); // rest time steps
             }
             else {      // seqLen is absent and h is present
 
                 lstmLayerCell(xSet->at(0), Wx, Wr, b, h0, c0, Wp, params, hSet->at(0), ct); // first time step
-                for (int t = 1; t < sL; ++t)
+                for (Nd4jLong t = 1; t < sL; ++t)
                     lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t - 1), ct, Wp, params, hSet->at(t), ct); // rest time steps
 
                 if(hL)
@@ -249,7 +249,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
             if(!h) {    // seqLen is present and h is absent
 
-                for (int e = 0; e < bS; ++e) {
+                for (Nd4jLong e = 0; e < bS; ++e) {
 
                     const int limit = seqLen->e<int>(e);
 
@@ -272,7 +272,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
             }
             else { // seqLen and h are present
 
-                for (int e = 0; e < bS; ++e) {
+                for (Nd4jLong e = 0; e < bS; ++e) {
 
                     int limit = seqLen->e<int>(e);
 
@@ -312,13 +312,13 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
             if(!h) {    // seqLen and h are absent
 
                 lstmLayerCell(xSet->at(sL - 1), Wx, Wr, b, h0, c0, Wp, params, ht, ct); // first time step
-                for (int t = sL - 2; t >= 0; --t)
+                for (Nd4jLong t = sL - 2; t >= 0; --t)
                     lstmLayerCell(xSet->at(t), Wx, Wr, b, ht, ct, Wp, params, ht, ct); // rest time steps
             }
             else {  // seqLen is absent and h is present
 
                 lstmLayerCell(xSet->at(sL - 1), Wx, Wr, b, h0, c0, Wp, params, hSet->at(sL - 1), ct); // first time step
-                for (int t = sL - 2; t >= 0; --t)
+                for (Nd4jLong t = sL - 2; t >= 0; --t)
                     lstmLayerCell(xSet->at(t), Wx, Wr, b, hSet->at(t + 1), ct, Wp, params, hSet->at(t), ct); // rest time steps
 
                 if(hL)
@@ -329,7 +329,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
             if(!h) {    // h is absent and seqLen is present
 
-                for (int e = 0; e < bS; ++e) {
+                for (Nd4jLong e = 0; e < bS; ++e) {
 
                     const int limit = seqLen->e<int>(e);
 
@@ -344,7 +344,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                     auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, sL - 1, e);
                     lstmLayerCell(xSet->at(ind), Wx, Wr, b, h0Set->at(e), c0Set->at(e), Wp, params, htSet->at(e), ctSet->at(e)); // first time step
 
-                    for (int t = sL - 2; t >= sL - limit; --t) {
+                    for (Nd4jLong t = sL - 2; t >= sL - limit; --t) {
                         ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
                         lstmLayerCell(xSet->at(ind), Wx, Wr, b, htSet->at(e), ctSet->at(e), Wp, params, htSet->at(e), ctSet->at(e)); // rest time steps
                     }
@@ -352,7 +352,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
             }
             else {  // seqLen and h are present
 
-                for (int e = 0; e < bS; ++e) {
+                for (Nd4jLong e = 0; e < bS; ++e) {
 
                     int limit = seqLen->e<int>(e);
 
@@ -371,7 +371,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                     auto indPrev = getBatchTimeTotalIndex(dataFormat, sL, bS, sL - 1, e);
                     lstmLayerCell(xSet->at(indPrev), Wx, Wr, b, h0Set->at(e), c0Set->at(e), Wp, params, hSet->at(indPrev), ctSet->at(e)); // first time step
 
-                    for (int t = sL - 2; t >= sL - limit; --t) {
+                    for (Nd4jLong t = sL - 2; t >= sL - limit; --t) {
                         auto indCurr = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
                         lstmLayerCell(xSet->at(indCurr), Wx, Wr, b, hSet->at(indPrev), ctSet->at(e), Wp, params, hSet->at(indCurr), ctSet->at(e)); // rest time steps
                         indPrev = indCurr;
@@ -388,7 +388,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
             if(!h) {    // h is absent and seqLen is present
 
-                for (int e = 0; e < bS; ++e) {
+                for (Nd4jLong e = 0; e < bS; ++e) {
 
                     const int limit = seqLen->e<int>(e);
 
@@ -411,7 +411,7 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
             }
             else {  // seqLen and h are present
 
-                for (int e = 0; e < bS; ++e) {
+                for (Nd4jLong e = 0; e < bS; ++e) {
 
                     int limit = seqLen->e<int>(e);
 

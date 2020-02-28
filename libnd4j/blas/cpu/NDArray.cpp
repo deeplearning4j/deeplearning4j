@@ -308,7 +308,7 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
     // fill newBuff, loop through all elements of newBuff
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
     const int ews = target.ews();
-    const int targetLen = target.lengthOf();
+    const auto targetLen = target.lengthOf();
     if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 //#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i=0;  i<targetLen; ++i) {
@@ -372,7 +372,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
 
     const int rank    = input.rankOf();    // xRank = zRank
     const int zLen    = output.lengthOf(); // xLen <= zLen
-    const int repSize = repeats.size();
+    const uint repSize = repeats.size();
 
     // loop through input array
     auto func = PRAGMA_THREADS_FOR {

@@ -30,7 +30,7 @@ namespace nd4j {
                 int cnt = 0;
 
                 Nd4jLong idx[MAX_RANK];
-                for (int e = 0; e < condition.lengthOf(); e++) {
+                for (Nd4jLong e = 0; e < condition.lengthOf(); e++) {
                     shape::index2coords(e, condition.getShapeInfo(), idx);
 
                     auto offset = shape::getOffset(condition.getShapeInfo(), idx);
