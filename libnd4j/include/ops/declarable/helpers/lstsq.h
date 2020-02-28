@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,10 +15,10 @@
  ******************************************************************************/
 
 //
-//  @author George A. Shulinok <sgazeos@gmail.com>
+//  @author GS <sgazeos@gmail.com>
 //
-#ifndef __QR__H_HELPERS__
-#define __QR__H_HELPERS__
+#ifndef __LST_SQ_SOLVE__H_HELPERS__
+#define __LST_SQ_SOLVE__H_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
 
@@ -26,9 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void qr(nd4j::LaunchContext * context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies);
-
-
+    int leastSquaresSolveFunctor(nd4j::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput, double const l2Regularizer, bool const fast, NDArray* output);
 }
 }
 }

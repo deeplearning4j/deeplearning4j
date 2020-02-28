@@ -1740,14 +1740,36 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testLstsq() {
+        INDArray a = Nd4j.createFromArray(new float[]{
+                1.f,  2.f,  3.f,
+                4.f,  5.f,  6.f,
+                11.f,  8.f, 21.f
+        }).reshape(3,3);
+
+        INDArray b = Nd4j.createFromArray(new float[]{   1.f, 2.f, 3.f   }).reshape(3,1);
+
+        val op = new Lstsq(a,b);
+        INDArray[] ret = Nd4j.exec(op);
+
+        DynamicCustomOp matmul = DynamicCustomOp.builder("matmul")
+                .addInputs(a, ret[0])
+                .build();
+        INDArray[] matres = Nd4j.exec(matmul);
+        for (int i = 0; i < 3; ++i) {
+            assertEquals(b.getFloat(i, 0), matres[0].getFloat(i, 0), 1e-4);
+        }
+    }
+
+    @Test
     public void testSequenceMask() {
         INDArray arr = Nd4j.createFromArray(new int[]{1, 3, 2});
         // Test with static max len
         int maxlen = 2;
         INDArray expected = Nd4j.createFromArray(new int[]{
-                1,0,0,
-                1,1,1,
-                1,1,0
+                1, 0, 0,
+                1, 1, 1,
+                1, 1, 0
         }).reshape(3, 3);
 
         INDArray[] ret = Nd4j.exec(new SequenceMask(arr, maxlen, DataType.INT32));

@@ -32,6 +32,8 @@ namespace helpers {
     int logAbsDeterminant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
 
     int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
+    int upperInverseFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* output);
+    int lowerInverseFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* output);
 
     bool checkCholeskyInput(nd4j::LaunchContext * context, NDArray const* input);
     int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace = false);

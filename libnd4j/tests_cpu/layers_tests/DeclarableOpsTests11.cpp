@@ -24,6 +24,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 #include <GradCheck.h>
+#include <helpers/MmulHelper.h>
 
 using namespace nd4j;
 
@@ -1918,8 +1919,8 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_6) {
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
     auto z = res->at(0);
 
-    z->printBuffer("4_6 Solve 3x3");
-    exp.printBuffer("4_6 Expec 3x3");
+//    z->printBuffer("4_6 Solve 3x3");
+//    exp.printBuffer("4_6 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
     delete res;
@@ -1955,8 +1956,8 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_7) {
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
     auto z = res->at(0);
 
-    z->printBuffer("4_7 Solve 3x3");
-    exp.printBuffer("4_7 Expec 3x3");
+//    z->printBuffer("4_7 Solve 3x3");
+//    exp.printBuffer("4_7 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
     delete res;
@@ -1989,12 +1990,127 @@ TEST_F(DeclarableOpsTests11, Solve_Test_5) {
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
     auto z = res->at(0);
 
-    z->printBuffer("4 Solve 4x4");
-    exp.printBuffer("4 Expec 4x4");
+//    z->printBuffer("4 Solve 4x4");
+//    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
     delete res;
 }
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, SolveLS_Test_1) {
+
+    auto a = NDArrayFactory::create<double>('c', {2,2, 2}, {
+            1.f,    2.f,    3.f, 4.f,
+            5.f,    6.f,    7.f, 8.f
+    });
+
+    auto b = NDArrayFactory::create<double>('c', {2, 2, 1}, {
+            3.f,    7.f,    11.f, 15.f
+    });
+
+    auto exp = NDArrayFactory::create<double>('c', {2, 2, 1}, {
+            0.8311695f,           1.0909086f,           0.9205573f,            1.0630057f
+    });
+
+    nd4j::ops::lstsq op;
+
+    auto res = op.evaluate({&a, &b}, {0.5}, {}, {true});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("LS Solve 2x2");
+//    exp.printIndexedBuffer("LS Expec 2x2");
+
+    ASSERT_TRUE(exp.equalsTo(z, 1.e-4));
+    delete res;
+}
+
+TEST_F(DeclarableOpsTests11, SolveLS_Test_2) {
+
+    auto a = NDArrayFactory::create<float>('c', {2,2, 2}, {
+            1.f,    2.f,    3.f, 4.f,
+            5.f,    6.f,    7.f, 8.f
+    });
+
+    auto b = NDArrayFactory::create<float>('c', {2, 2, 1}, {
+            3.f,    7.f,    11.f, 15.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {2, 2, 1}, {
+            0.8311695f,           1.0909086f,           0.9205573f,            1.0630057f
+    });
+
+    nd4j::ops::lstsq op;
+
+    auto res = op.evaluate({&a, &b}, {0.5}, {}, {true});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("2LS Solve 2x2");
+//    exp.printIndexedBuffer("2LS Expec 2x2");
+
+    ASSERT_TRUE(exp.equalsTo(z, 1.e-4));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Cholesky_Test_2x2x2) {
+
+    auto a = NDArrayFactory::create<float>('c', {2,2, 2}, {
+            10.f,  14.f,
+            14.f,  20.f,
+
+            74.f,  86.f,
+            86.f, 100.f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {
+            3.1622777f, 0.f,  4.427189f,  0.6324552f,
+            8.602325f,  0.f,  9.997296f, 0.23252854f
+    });
+
+    nd4j::ops::cholesky op;
+
+    auto res = op.evaluate({&a});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+    z->printIndexedBuffer("L matrix is");
+    exp.printIndexedBuffer("L expected is");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+    delete res;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests11, Cholesky_Test_2x2x2_2) {
+
+    auto a = NDArrayFactory::create<float>('c', {2,2, 2}, {
+            10.5f,  14.f,
+            14.f,  20.5f,
+
+            74.5f,  86.f,
+            86.f, 100.5f
+    });
+
+    auto exp = NDArrayFactory::create<float>('c', {2, 2, 2}, {
+            3.2403703f, 0.f,            4.3204937f, 1.3540066f,
+             8.631338f, 0.f,             9.963693f, 1.1067207f
+    });
+
+    nd4j::ops::cholesky op;
+
+    auto res = op.evaluate({&a});
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    auto z = res->at(0);
+
+//    z->printIndexedBuffer("L matrix is");
+//    exp.printIndexedBuffer("L expected is");
+    MmulHelper::matmul(z, z, &exp, false, true);
+    ASSERT_TRUE(exp.equalsTo(a));
+    delete res;
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
 

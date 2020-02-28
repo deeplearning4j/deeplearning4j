@@ -35,18 +35,19 @@ public class TriangularSolve extends DynamicCustomOp {
     }
 
     @Override
-    public String opName() {
-        return "triangular_solve";
-    }
-
-    @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(attributesForNode.containsKey("adjoint")){
-            addBArgument(attributesForNode.get("adjoint").getB());
-        }
         if(attributesForNode.containsKey("lower")){
             addBArgument(attributesForNode.get("lower").getB());
         }
+
+        if(attributesForNode.containsKey("adjoint")){
+            addBArgument(attributesForNode.get("adjoint").getB());
+        }
+    }
+
+    @Override
+    public String opName() {
+        return "triangular_solve";
     }
 
     @Override

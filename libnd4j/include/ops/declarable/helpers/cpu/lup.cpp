@@ -65,24 +65,30 @@ namespace helpers {
     template <typename T>
     static void invertLowerMatrix_(NDArray* inputMatrix, NDArray* invertedMatrix) {
         int n = inputMatrix->rows();
-        invertedMatrix->assign(0.f);
-
-       // PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
-        for (int i = 0; i < n; i++)
-            invertedMatrix->p(i, i, 1.0f);
+        invertedMatrix->setIdentity();
 
         if (inputMatrix->isIdentityMatrix()) return;
 
-        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
-        for (int i = 1; i < n; i++)
-            invertedMatrix->t<T>(i, i - 1) = -inputMatrix->t<T>(i, i - 1);
+        auto invertDiagonals = PRAGMA_THREADS_FOR {
+            for (int i = start; i < stop; i += increment)
+                invertedMatrix->t<T>(i, i) /= inputMatrix->t<T>(i, i);
+        };
 
-        //PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int i = 2; i < n; i++) {
-            for (int j = i - 2; j > -1; --j)
+        auto invertSubDiagonals = PRAGMA_THREADS_FOR {
+            for (int i = start; i < stop; i += increment)
+                invertedMatrix->t<T>(i, i - 1) -= (inputMatrix->t<T>(i, i - 1) * invertedMatrix->t<T>(i - 1, i - 1) / inputMatrix->t<T>(i, i));
+        };
+
+        samediff::Threads::parallel_for(invertDiagonals, 0, n, 1);
+        samediff::Threads::parallel_for(invertSubDiagonals, 1, n, 1);
+
+//        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (int i = 1; i < n; i++) {
+            for (int j = 0; j < i - 1 ; j++)
                 for (int k = 0; k < i; k++)
-                    invertedMatrix->t<T>(i, j) -= (invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k));
+                    invertedMatrix->t<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
         }
+
     }
 
     BUILD_SINGLE_TEMPLATE(template void invertLowerMatrix_, (NDArray* inputMatrix, NDArray* invertedMatrix);, FLOAT_TYPES);
@@ -100,18 +106,25 @@ namespace helpers {
             return;
         }
 
-        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
-        for (int i = 0; i < n; i++)
-            invertedMatrix->t<T>(i, i) /= inputMatrix->t<T>(i, i);
+        auto invertDiagonals = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment)
+                invertedMatrix->t<T>(i, i) /= inputMatrix->t<T>(i, i);
+        };
 
         //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
-        for (int i = 0; i < n - 1; i++)
-            invertedMatrix->t<T>(i, i + 1) -= (inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) / inputMatrix->t<T>(i, i));
+        auto invertUpDiagonals = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment)
+                invertedMatrix->t<T>(i, i + 1) -= (inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) /
+                                                   inputMatrix->t<T>(i, i));
+        };
+
+        samediff::Threads::parallel_for(invertDiagonals, 0, n, 1);
+        samediff::Threads::parallel_for(invertUpDiagonals, 0, n - 1, 1);
 
 //        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int i = n - 2; i > - 1; i--) {
-            for (int j = i + 2; j < n; j++)
-                for (int k = i; k < n; k++)
+        for (auto i = n - 2; i >= 0; i--) {
+            for (auto j = i + 2; j < n; j++)
+                for (auto k = i; k < n; k++)
                     invertedMatrix->t<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
         }
     }
@@ -420,8 +433,79 @@ template <typename T>
         return Status::OK();
     }
 
+    template <typename T>
+    static int lowerInverse_(LaunchContext *context, NDArray* input, NDArray* output) {
+
+        auto n = input->sizeAt(-1);
+        auto n2 = n * n;
+        auto totalCount = output->lengthOf() / n2;
+
+        output->assign(0.f); // fill up output tensor with zeros
+        auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context); //, block.getWorkspace());
+        auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context); //, block.getWorkspace());
+        auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
+        auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
+        auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
+
+//        auto batchLoop = PRAGMA_THREADS_FOR {
+        for (int e = 0; e < totalCount; e++) {
+            if (e)
+                matrix.assign(0.f);
+
+            for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
+                matrix.p(row++, input->e<T>(k));
+            }
+            T det = T(1.f);
+            for (auto i = 0; i < n; i++) {
+                det *= matrix. template t<T>(i, i);
+            }
+
+            // FIXME: and how this is going to work on float16?
+            if (nd4j::math::nd4j_abs<T>(det) < T(0.000001)) {
+                nd4j_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
+                matrix.printIndexedBuffer("Wrong matrix");
+                return ND4J_STATUS_VALIDATION;
+            }
+            lowerMatrix.nullify();
+            invertLowerMatrix(&matrix, &lowerMatrix);
+
+            for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
+                output->t<T>(k) = lowerMatrix.template t<T>(row++);
+            }
+        }
+
+        return Status::OK();
+    }
+
+    template <typename T>
+    static int upperInverse_(LaunchContext *context, NDArray* input, NDArray* output) {
+
+        auto n = input->sizeAt(-1);
+        auto n2 = n * n;
+
+        output->nullify(); // fill up output tensor with zeros
+//        auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context); //, block.getWorkspace());
+//        auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
+//        auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
+        auto inputPart = input->allTensorsAlongDimension({-2, -1});
+        auto outputPart = output->allTensorsAlongDimension({-2, -1});
+        auto totalCount = outputPart.size(); //lengthOf() / n2;
+        for (int e = 0; e < totalCount; e++) {
+            invertUpperMatrix(inputPart.at(e), outputPart.at(e));
+        }
+        return Status::OK();
+    }
+
     int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (context, input, output), FLOAT_TYPES);
+    }
+
+    int lowerInverseFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return lowerInverse_, (context, input, output), FLOAT_TYPES);
+    }
+
+    int upperInverseFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), return upperInverse_, (context, input, output), FLOAT_TYPES);
     }
 
     template <typename T>

@@ -310,7 +310,7 @@ namespace nd4j {
          * This method returns new uninitialized array with the same shape & data type
          * @return
          */
-        NDArray ulike();
+        NDArray ulike() const;
 
 
         /**
