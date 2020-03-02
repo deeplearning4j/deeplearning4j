@@ -20,9 +20,9 @@
 #include <ops/declarable/helpers/qr.h>
 #include <helpers/MmulHelper.h>
 #include <execution/Threads.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -123,7 +123,7 @@ namespace helpers {
 
     }
 
-    void qr(nd4j::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+    void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
         BUILD_SINGLE_SELECTOR(input->dataType(), qr_, (input, outputQ, outputR, fullMatricies), FLOAT_TYPES);
     }
 

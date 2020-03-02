@@ -18,7 +18,7 @@
 // Created by agibsonccc on 1/17/17.
 //
 #include "testinclude.h"
-#include <reduce3.h>
+#include <loops/reduce3.h>
 
 class EqualsTest : public testing::Test {
 public:
@@ -35,7 +35,7 @@ public:
 #ifndef __CUDABLAS__
 
 TEST_F(EqualsTest,Eps) {
-    auto val = nd4j::NDArrayFactory::create(0.0f);
+    auto val = sd::NDArrayFactory::create(0.0f);
     functions::reduce3::Reduce3<float, float>::execScalar(opNum,
                                                                data,
                                                                firstShapeBuffer,

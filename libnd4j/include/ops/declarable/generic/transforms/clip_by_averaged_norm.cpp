@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_clipbyavgnorm)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CONFIGURABLE_OP_IMPL(clipbyavgnorm, 1, 1, true, 1, 0) {
@@ -42,7 +42,7 @@ CONFIGURABLE_OP_IMPL(clipbyavgnorm, 1, 1, true, 1, 0) {
 
     DECLARE_TYPES(clipbyavgnorm) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

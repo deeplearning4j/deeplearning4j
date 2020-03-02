@@ -19,13 +19,13 @@
 // @author Alex Black
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_gruCell)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/gru.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
 
 DECLARE_TYPES(gruCell) {
     getOpDescriptor()
-        ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+        ->setAllowedInputTypes(0, sd::DataType::ANY)
         ->setAllowedInputTypes(1, {ALL_FLOATS})
         ->setAllowedInputTypes(2, {ALL_FLOATS})
         ->setAllowedInputTypes(3, {ALL_FLOATS})
@@ -177,7 +177,7 @@ CUSTOM_OP_IMPL(gruCell_bp, 10, 6, false, 0, 0) {
 
 DECLARE_TYPES(gruCell_bp) {
     getOpDescriptor()
-        ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+        ->setAllowedInputTypes(0, sd::DataType::ANY)
         ->setAllowedInputTypes(1, {ALL_FLOATS})
         ->setAllowedInputTypes(2, {ALL_FLOATS})
         ->setAllowedInputTypes(3, {ALL_FLOATS})

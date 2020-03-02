@@ -24,7 +24,7 @@ class ServerCompletionQueue;
 class ServerContext;
 }  // namespace grpc
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 class GraphInferenceServer final {
@@ -366,7 +366,7 @@ class GraphInferenceServer final {
 };
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 
 #endif  // GRPC_graph__INCLUDED

@@ -19,13 +19,13 @@
 // @author Yurii Shyrma
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_deconv2d)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(deconv2d_tf, 3, 1, false, 0, 9) {
 
         DECLARE_TYPES(deconv2d_tf) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 

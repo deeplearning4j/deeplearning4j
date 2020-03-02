@@ -17,13 +17,13 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 07.06.2018
 //
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_mirror_pad)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 

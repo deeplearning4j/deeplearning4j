@@ -17,18 +17,18 @@
 
 #ifndef REDUCE_SAME_H
 #define REDUCE_SAME_H
-#include <dll.h>
+#include <system/dll.h>
 //#include <string>
 #include <stdio.h>
 #include <helpers/shape.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <templatemath.h>
-#include <nd4jmalloc.h>
-#include <pairwise_util.h>
+#include <math/templatemath.h>
+#include <system/nd4jmalloc.h>
+#include <system/pairwise_util.h>
 #include <ops/ops.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 #pragma once
 #ifdef __CUDACC__

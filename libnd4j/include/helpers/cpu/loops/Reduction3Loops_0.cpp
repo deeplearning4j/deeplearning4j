@@ -18,13 +18,13 @@
 // @author raver119@gmail.com
 //
 
-#include <Loops.h>
-#include <pointercast.h>
+#include <helpers/Loops.h>
+#include <system/pointercast.h>
 #include <types/types.h>
 
 using namespace simdOps;
 
-namespace nd4j {
+namespace sd {
 
     template<typename X, typename Z>
     template <typename OpType>

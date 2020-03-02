@@ -22,7 +22,7 @@
 #define LIBND4J_TESTINCLUDE_H
 #include "testlayers.h"
 #include <string>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 //https://stackoverflow.com/questions/228005/alternative-to-itoa-for-converting-integer-to-string-c
 FORCEINLINE std::string int_array_to_string(Nd4jLong int_array[], Nd4jLong size_of_array) {

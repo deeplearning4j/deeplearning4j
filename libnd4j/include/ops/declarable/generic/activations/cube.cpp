@@ -19,19 +19,19 @@
 //
 
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cube)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(cube, 1, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->applyTransform(nd4j::transform::Cube, *output);
+            input->applyTransform(sd::transform::Cube, *output);
             STORE_RESULT(output);
 
             return Status::OK();

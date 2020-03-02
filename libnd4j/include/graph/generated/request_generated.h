@@ -11,7 +11,7 @@
 #include "utils_generated.h"
 #include "variable_generated.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct FlatInferenceRequest;
@@ -84,44 +84,44 @@ inline flatbuffers::Offset<FlatInferenceRequest> CreateFlatInferenceRequestDirec
     int64_t id = 0,
     const std::vector<flatbuffers::Offset<FlatVariable>> *variables = nullptr,
     flatbuffers::Offset<FlatConfiguration> configuration = 0) {
-  return nd4j::graph::CreateFlatInferenceRequest(
+  return sd::graph::CreateFlatInferenceRequest(
       _fbb,
       id,
       variables ? _fbb.CreateVector<flatbuffers::Offset<FlatVariable>>(*variables) : 0,
       configuration);
 }
 
-inline const nd4j::graph::FlatInferenceRequest *GetFlatInferenceRequest(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatInferenceRequest>(buf);
+inline const sd::graph::FlatInferenceRequest *GetFlatInferenceRequest(const void *buf) {
+  return flatbuffers::GetRoot<sd::graph::FlatInferenceRequest>(buf);
 }
 
-inline const nd4j::graph::FlatInferenceRequest *GetSizePrefixedFlatInferenceRequest(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatInferenceRequest>(buf);
+inline const sd::graph::FlatInferenceRequest *GetSizePrefixedFlatInferenceRequest(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatInferenceRequest>(buf);
 }
 
 inline bool VerifyFlatInferenceRequestBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatInferenceRequest>(nullptr);
+  return verifier.VerifyBuffer<sd::graph::FlatInferenceRequest>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatInferenceRequestBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatInferenceRequest>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatInferenceRequest>(nullptr);
 }
 
 inline void FinishFlatInferenceRequestBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatInferenceRequest> root) {
+    flatbuffers::Offset<sd::graph::FlatInferenceRequest> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatInferenceRequestBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatInferenceRequest> root) {
+    flatbuffers::Offset<sd::graph::FlatInferenceRequest> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_REQUEST_ND4J_GRAPH_H_

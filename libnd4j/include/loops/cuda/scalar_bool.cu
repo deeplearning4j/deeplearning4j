@@ -20,7 +20,7 @@
 //
 
 #include "../scalar_bool.h"
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/types.h>
 
 #include "../legacy_ops.h"
@@ -193,7 +193,7 @@ _CUDA_H void ScalarBoolTransform<X, Z>::intermediateAlongDimension(dim3& launchD
                                                                 Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
     scalarAlongDimension<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
-    nd4j::DebugHelper::checkErrorCode(stream, "scalarAlongDim(...) failed");
+    sd::DebugHelper::checkErrorCode(stream, "scalarAlongDim(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -206,7 +206,7 @@ void _CUDA_H ScalarBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cuda
                                                             void *vextraParams, int *allocPointer){
 
     scalarSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
-    nd4j::DebugHelper::checkErrorCode(stream, "scalarSimpleShaped(...) failed");
+    sd::DebugHelper::checkErrorCode(stream, "scalarSimpleShaped(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -218,7 +218,7 @@ void ScalarBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t 
                                                 void* vscalar,
                                                 void *vextraParams) {
 
-    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance()->isDebugAndVerbose())
         printf("H14 opNum:[%i]\n", opNum);
 
     DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalar, vextraParams, nullptr), SCALAR_BOOL_OPS);

@@ -19,48 +19,48 @@
 //
 #include <ops/BroadcastOpsTuple.h>
 
-namespace nd4j {
-    BroadcastOpsTuple BroadcastOpsTuple::custom(nd4j::scalar::Ops scalar, nd4j::pairwise::Ops pairwise, nd4j::broadcast::Ops broadcast) {
+namespace sd {
+    BroadcastOpsTuple BroadcastOpsTuple::custom(sd::scalar::Ops scalar, sd::pairwise::Ops pairwise, sd::broadcast::Ops broadcast) {
         BroadcastOpsTuple t(scalar, pairwise, broadcast);
         return t;
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Add() {
-        return custom(nd4j::scalar::Add, nd4j::pairwise::Add, nd4j::broadcast::Add);
+        return custom(sd::scalar::Add, sd::pairwise::Add, sd::broadcast::Add);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Assign() {
-        return custom(nd4j::scalar::CopyPws, nd4j::pairwise::CopyPws, nd4j::broadcast::CopyPws);
+        return custom(sd::scalar::CopyPws, sd::pairwise::CopyPws, sd::broadcast::CopyPws);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Divide() {
-        return custom(nd4j::scalar::Divide, nd4j::pairwise::Divide, nd4j::broadcast::Divide);
+        return custom(sd::scalar::Divide, sd::pairwise::Divide, sd::broadcast::Divide);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::DivideNoNan() {
-        return custom(nd4j::scalar::DivideNoNan, nd4j::pairwise::DivideNoNan, nd4j::broadcast::DivideNoNan);
+        return custom(sd::scalar::DivideNoNan, sd::pairwise::DivideNoNan, sd::broadcast::DivideNoNan);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Multiply() {
-        return custom(nd4j::scalar::Multiply, nd4j::pairwise::Multiply, nd4j::broadcast::Multiply);
+        return custom(sd::scalar::Multiply, sd::pairwise::Multiply, sd::broadcast::Multiply);
     }
 
     BroadcastOpsTuple BroadcastOpsTuple::Subtract() {
-        return custom(nd4j::scalar::Subtract, nd4j::pairwise::Subtract, nd4j::broadcast::Subtract);
+        return custom(sd::scalar::Subtract, sd::pairwise::Subtract, sd::broadcast::Subtract);
     }
     BroadcastOpsTuple BroadcastOpsTuple::IGamma() {
-        return custom(nd4j::scalar::IGamma, nd4j::pairwise::IGamma, nd4j::broadcast::IGamma);
+        return custom(sd::scalar::IGamma, sd::pairwise::IGamma, sd::broadcast::IGamma);
     }
     BroadcastOpsTuple BroadcastOpsTuple::IGammac() {
-        return custom(nd4j::scalar::IGammac, nd4j::pairwise::IGammac, nd4j::broadcast::IGammac);
+        return custom(sd::scalar::IGammac, sd::pairwise::IGammac, sd::broadcast::IGammac);
     }
 
 
     BroadcastOpsTuple BroadcastOpsTuple::Pow() {
-        return custom(nd4j::scalar::Pow, nd4j::pairwise::Pow, nd4j::broadcast::Pow);
+        return custom(sd::scalar::Pow, sd::pairwise::Pow, sd::broadcast::Pow);
     }
     BroadcastOpsTuple BroadcastOpsTuple::PowDerivative() {
-        return custom(nd4j::scalar::PowDerivative, nd4j::pairwise::PowDerivative, nd4j::broadcast::PowDerivative);
+        return custom(sd::scalar::PowDerivative, sd::pairwise::PowDerivative, sd::broadcast::PowDerivative);
     }
 
 }

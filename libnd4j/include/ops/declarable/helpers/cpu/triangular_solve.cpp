@@ -17,12 +17,12 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 #include <execution/Threads.h>
 #include "../triangular_solve.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
     /*
@@ -39,7 +39,7 @@ namespace helpers {
      *
      * */
     template <typename T>
-    static void lowerTriangularSolve(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
+    static void lowerTriangularSolve(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
         auto rows = leftInput->rows();
         auto cols = rightInput->columns();
         //output->t<T>(0,0) = rightInput->t<T>(0,0) / leftInput->t<T>(0,0);
@@ -69,7 +69,7 @@ namespace helpers {
      * */
 
     template <typename T>
-    static void upperTriangularSolve(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
+    static void upperTriangularSolve(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
         auto rows = leftInput->rows();
         auto cols = rightInput->columns();
         for (Nd4jLong r = rows; r > 0; r--) {
@@ -84,7 +84,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static int triangularSolveFunctor_(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {
+    static int triangularSolveFunctor_(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {
         auto leftPart = leftInput->allTensorsAlongDimension({-2, -1});
         auto rightPart = rightInput->allTensorsAlongDimension({-2, -1});
         auto outputPart = output->allTensorsAlongDimension({-2, -1});
@@ -105,7 +105,7 @@ namespace helpers {
 
     }
     template <typename T>
-    static void adjointTriangularMatrix_(nd4j::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
+    static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
         auto inputPart = input->allTensorsAlongDimension({-2, -1});
         auto outputPart = output->allTensorsAlongDimension({-2, -1});
         auto cols = input->sizeAt(-1);
@@ -131,11 +131,11 @@ namespace helpers {
         samediff::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
     }
 
-    int triangularSolveFunctor(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {
+    int triangularSolveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {
         BUILD_SINGLE_SELECTOR(leftInput->dataType(), return triangularSolveFunctor_, (context, leftInput, rightInput, lower, adjoint, output), FLOAT_NATIVE);
     }
 
-    void adjointMatrix(nd4j::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
+    void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), adjointTriangularMatrix_, (context, input, lower, output), FLOAT_NATIVE);
     }
 }

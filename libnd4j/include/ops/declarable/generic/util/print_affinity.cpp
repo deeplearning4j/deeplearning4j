@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_print_affinity)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/print_variable.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(print_affinity, 1, 1, true, 0, 0) {
             // TODO: make this op compatible with ArrayList etc
@@ -38,9 +38,9 @@ namespace nd4j {
 
         DECLARE_TYPES(print_affinity) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, sd::DataType::ANY)
                     ->setAllowedInputTypes(1, {ALL_STRINGS})
-                    ->setAllowedOutputTypes(0, nd4j::DataType::INT32);
+                    ->setAllowedOutputTypes(0, sd::DataType::INT32);
         }
 
         DECLARE_SHAPE_FN(print_affinity) {

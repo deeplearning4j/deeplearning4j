@@ -22,7 +22,7 @@
 #include <stdexcept>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         ResultWrapper::ResultWrapper(Nd4jLong size, Nd4jPointer ptr) {
             if (size <= 0)

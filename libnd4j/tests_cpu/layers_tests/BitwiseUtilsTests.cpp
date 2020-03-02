@@ -20,12 +20,12 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
-#include <NativeOps.h>
+#include <array/NDArray.h>
+#include <legacy/NativeOps.h>
 #include <helpers/BitwiseUtils.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class BitwiseUtilsTests : public testing::Test {
 public:

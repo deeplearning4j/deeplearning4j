@@ -20,9 +20,9 @@
 
 
 #include <ops/declarable/CustomOperations.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
          * This operation is, basically IF statement

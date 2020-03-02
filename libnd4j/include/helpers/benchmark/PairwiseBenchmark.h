@@ -23,9 +23,9 @@
 #ifndef DEV_TESTS_PAIRWISEBENCHMARK_H
 #define DEV_TESTS_PAIRWISEBENCHMARK_H
 
-using namespace nd4j::graph;
+using namespace sd::graph;
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT PairwiseBenchmark : public OpBenchmark {
     public:
         PairwiseBenchmark() : OpBenchmark() {

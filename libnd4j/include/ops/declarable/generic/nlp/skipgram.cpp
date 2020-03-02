@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_skipgram)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/sg_cb.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(skipgram, 12, 12, true, 0, 0) {
             auto target = INPUT_VARIABLE(0);
@@ -60,26 +60,26 @@ namespace nd4j {
             REQUIRE_TRUE(syn0->dataType() == expTable->dataType(), 0, "SkipGram: expTable must have the same data type as syn0 table");
 
 
-            nd4j::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices, *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers);
+            sd::ops::helpers::skipgram(*syn0, *syn1, *syn1neg, *expTable, *negTable, *target, *ngStarter, nsRounds, *indices, *codes, *alpha, *randomValue, *inferenceVector, isPreciseMode, numWorkers);
 
             return Status::OK();
         }
 
         DECLARE_TYPES(skipgram) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::INT32)
-                    ->setAllowedInputTypes(1, nd4j::DataType::INT32)
-                    ->setAllowedInputTypes(2, nd4j::DataType::INT32)
-                    ->setAllowedInputTypes(3, nd4j::DataType::INT8)
+                    ->setAllowedInputTypes(0, sd::DataType::INT32)
+                    ->setAllowedInputTypes(1, sd::DataType::INT32)
+                    ->setAllowedInputTypes(2, sd::DataType::INT32)
+                    ->setAllowedInputTypes(3, sd::DataType::INT8)
                     ->setAllowedInputTypes(4, {ALL_FLOATS})
                     ->setAllowedInputTypes(5, {ALL_FLOATS})
                     ->setAllowedInputTypes(6, {ALL_FLOATS})
                     ->setAllowedInputTypes(7, {ALL_FLOATS})
                     ->setAllowedInputTypes(8, {ALL_FLOATS})
                     ->setAllowedInputTypes(9, {ALL_FLOATS})
-                    ->setAllowedInputTypes(10, nd4j::DataType::INT64)
+                    ->setAllowedInputTypes(10, sd::DataType::INT64)
                     ->setAllowedInputTypes(11, {ALL_FLOATS})
-                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                    ->setAllowedOutputTypes(sd::DataType::ANY);
         }
 
         /*

@@ -18,14 +18,14 @@
 //  @author Yurii Shyrma, created on 05.12.2017
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sruCell)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/sru.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
 
         DECLARE_TYPES(sruCell) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 

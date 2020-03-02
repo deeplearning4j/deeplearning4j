@@ -24,7 +24,7 @@
 #include <initializer_list>
 #include "NDIndex.h"
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT IndicesList {
     protected:
         std::vector<NDIndex *> _indices;

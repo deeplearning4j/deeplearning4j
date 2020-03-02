@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/transforms.h>
 #include <helpers/Loops.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -118,7 +118,7 @@ namespace helpers {
                 samediff::Threads::parallel_for(func, 0, input.lengthOf());
             }
 
-            void split(nd4j::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
+            void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {
                 BUILD_SINGLE_SELECTOR(input.dataType(), split_, (input, outArrs, axis), LIBND4J_TYPES);
             }
       }

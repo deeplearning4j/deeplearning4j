@@ -21,11 +21,11 @@
 //
 
 #include<ops/declarable/helpers/sru.h>
-#include <NDArrayFactory.h>
-#include <PointersManager.h>
-#include <MmulHelper.h>
+#include <array/NDArrayFactory.h>
+#include <helpers/PointersManager.h>
+#include <helpers/MmulHelper.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -45,7 +45,7 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-void sruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
+void sruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
 
     // x   input [bS x inSize], bS - batch size, inSize - number of features
     // c0  previous cell state c  [bS x inSize], that is at previous time step t-1
@@ -76,7 +76,7 @@ void sruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0,
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
+void sruTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
 
     // x   input [bS x inSize x time]
     // c0  initial cell state  (at time step = 0) [bS x inSize],
@@ -189,12 +189,12 @@ __global__ static void sruBICuda(const void* vx,    const Nd4jLong* xShapeInfo,
     for (uint t = 0; t < time; ++t) {
 
         // evaluate sigmoids
-        T ft = (1.f)/(1.f + nd4j::math::nd4j_exp<T, T>(-(wi[wiOffset1] + bF)));
-        T rt = (1.f)/(1.f + nd4j::math::nd4j_exp<T, T>(-(wi[wiOffset2] + bR)));
+        T ft = (1.f)/(1.f + sd::math::nd4j_exp<T, T>(-(wi[wiOffset1] + bF)));
+        T rt = (1.f)/(1.f + sd::math::nd4j_exp<T, T>(-(wi[wiOffset2] + bR)));
 
         c0Val = (c0Val - wi[wiOffset0]) * ft + wi[wiOffset0];
         ct[ctOffset] = c0Val;
-        T val  = nd4j::math::nd4j_tanh<T, T>(c0Val);
+        T val  = sd::math::nd4j_tanh<T, T>(c0Val);
         T xVal = x[xOffset];
         ht[htOffset] = (val * maskVal - xVal) * rt + xVal;
 
@@ -232,7 +232,7 @@ static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 }
 
 //////////////////////////////////////////////////////////////////////////
-void sruBI(nd4j::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {
+void sruBI(sd::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {
 
     //  x = x * mask
     if(mask)
@@ -408,10 +408,10 @@ __global__ static void sruBIBPCuda(const void* vx,       const Nd4jLong* xShapeI
     for (uint t = 0; t < time; ++t) {
 
         // evaluate sigmoids
-        T ft = (1.f)/(1.f + nd4j::math::nd4j_exp<T, T>(-(wi[wiOffset1] + bF)));
-        T rt = (1.f)/(1.f + nd4j::math::nd4j_exp<T, T>(-(wi[wiOffset2] + bR)));
+        T ft = (1.f)/(1.f + sd::math::nd4j_exp<T, T>(-(wi[wiOffset1] + bF)));
+        T rt = (1.f)/(1.f + sd::math::nd4j_exp<T, T>(-(wi[wiOffset2] + bR)));
 
-        T val = nd4j::math::nd4j_tanh<T,T>(ct[ctOffset]);
+        T val = sd::math::nd4j_tanh<T,T>(ct[ctOffset]);
 
         T prevVal;
         if(t < time-1)
@@ -491,7 +491,7 @@ static void sruBIBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 BUILD_SINGLE_TEMPLATE(template void sruBIBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vwi, const Nd4jLong* wiShapeInfo, const void* vb, const Nd4jLong* bShapeInfo, const void* vc0, const Nd4jLong* c0ShapeInfo, const void* vmask, const Nd4jLong* maskShapeInfo, const void* vct, const Nd4jLong* ctShapeInfo, const void* vgradHt, const Nd4jLong* gradHtShapeInfo, const void* vgradCt, const Nd4jLong* gradCtShapeInfo, void* vgradI, const Nd4jLong* gradIShapeInfo, void* vgradWi, const Nd4jLong* gradWiShapeInfo, void* vgradB, const Nd4jLong* gradBShapeInfo, void* vgradC0, const Nd4jLong* gradC0ShapeInfo), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void sruBIBP(nd4j::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct,
+void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct,
                                           const NDArray* gradCt, const NDArray* gradHt, const NDArray* mask,
                                           NDArray* gradI, NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
 

@@ -23,7 +23,7 @@
 
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         #if NOT_EXCLUDED(OP_softmax)
@@ -175,7 +175,7 @@ namespace nd4j {
          * applies layer normalization to input
          * y = g * standardize(x) + b
          *
-         * see nd4j::ops::standardize
+         * see sd::ops::standardize
          *
          */
         #if NOT_EXCLUDED(OP_layer_norm)

@@ -22,18 +22,18 @@
 #include <vector>
 #include <thread>
 #include <helpers/logger.h>
-#include <templatemath.h>
-#include <shape.h>
+#include <math/templatemath.h>
+#include <helpers/shape.h>
 
 
 namespace samediff {
 
     int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
         // let's see how many threads we actually need first
-        auto optimalThreads = nd4j::math::nd4j_max<uint64_t>(1, numberOfElements / 1024);
+        auto optimalThreads = sd::math::nd4j_max<uint64_t>(1, numberOfElements / 1024);
 
         // now return the smallest value
-        return nd4j::math::nd4j_min<int>(optimalThreads, maxThreads);
+        return sd::math::nd4j_min<int>(optimalThreads, maxThreads);
     }
 
     Span3::Span3(int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_t stopY, int64_t incY, int64_t startZ, int64_t stopZ, int64_t incZ) {
@@ -264,7 +264,7 @@ namespace samediff {
     int ThreadsHelper::numberOfThreads2d(int maxThreads, uint64_t iters_x, uint64_t iters_y) {
         // in some cases there's nothing to think about, part 1
         if (iters_x < maxThreads && iters_y < maxThreads)
-            return nd4j::math::nd4j_max<int>(iters_x, iters_y);
+            return sd::math::nd4j_max<int>(iters_x, iters_y);
 
         auto remX = iters_x % maxThreads;
         auto remY = iters_y % maxThreads;

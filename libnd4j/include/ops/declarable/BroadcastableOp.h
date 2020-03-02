@@ -26,7 +26,7 @@
 #include "DeclarableOp.h"
 #include "DeclarableCustomOp.h"
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         class ND4J_EXPORT BroadcastableOp : public DeclarableCustomOp{
         protected:
@@ -34,7 +34,7 @@ namespace nd4j {
         public:
             BroadcastableOp(const char *name, int numTArgs, int numIArgs);
 
-            ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context& block) override;
+            ShapeList *calculateOutputShape(ShapeList *inputShape, sd::graph::Context& block) override;
         };
     }
 }

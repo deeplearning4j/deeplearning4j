@@ -20,7 +20,7 @@
 
 #include "../TrueBroadcastHelper.hpp"
 
-namespace nd4j {
+namespace sd {
     namespace helpers {
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastBoolHelper, , LIBND4J_TYPES, BOOL_TYPES);
     }

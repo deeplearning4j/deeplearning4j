@@ -21,14 +21,14 @@
 #ifndef DEV_TESTS_EXTRAARGUMENTS_H
 #define DEV_TESTS_EXTRAARGUMENTS_H
 
-#include <dll.h>
+#include <system/dll.h>
 #include <initializer_list>
 #include <vector>
 #include <array/DataType.h>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <stdlib.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT ExtraArguments {
     private:
         std::vector<double> _fpArgs;
@@ -54,7 +54,7 @@ namespace nd4j {
         template <typename T>
         void* argumentsAsT(Nd4jLong offset = 0);
 
-        void* argumentsAsT(nd4j::DataType dataType, Nd4jLong offset = 0);
+        void* argumentsAsT(sd::DataType dataType, Nd4jLong offset = 0);
 
         size_t length();
     };

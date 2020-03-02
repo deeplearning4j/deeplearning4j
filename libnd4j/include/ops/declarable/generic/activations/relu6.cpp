@@ -18,13 +18,13 @@
 // @author Yurii Shyrma, created on 16.02.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_relu6)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -33,7 +33,7 @@ CONFIGURABLE_OP_IMPL(relu6, 1, 1, true, 1, 0) {
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    input->applyScalar(nd4j::scalar::RELU6, T_ARG(0), *output);
+    input->applyScalar(sd::scalar::RELU6, T_ARG(0), *output);
 
     return Status::OK();
 }

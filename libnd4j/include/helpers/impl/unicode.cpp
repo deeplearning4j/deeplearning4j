@@ -18,9 +18,9 @@
 // @author Oleg Semeniv <oleg.semeniv@gmail.com>
 //
 
-#include <unicode.h>
+#include <helpers/unicode.h>
 
-namespace nd4j {
+namespace sd {
 namespace unicode {
 
     constexpr uint32_t ONEBYTEBOUND = 0x00000080;

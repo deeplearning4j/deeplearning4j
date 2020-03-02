@@ -20,14 +20,14 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <ConstantShapeHelper.h>
-#include <ShapeDescriptor.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <array/ShapeDescriptor.h>
 #include <array/ConstantDataBuffer.h>
 #include <helpers/PointersManager.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::ops;
+using namespace sd::graph;
 
 class ConstantShapeHelperTests : public testing::Test {
 public:
@@ -76,7 +76,7 @@ TEST_F(ConstantTadHelperTests, test_cachedAmount_1) {
 }
 
 TEST_F(ConstantShapeHelperTests, basic_test_1) {
-    auto ptr = ShapeBuilders::createShapeInfo(nd4j::DataType::BFLOAT16, 'f', {5, 10, 15});
+    auto ptr = ShapeBuilders::createShapeInfo(sd::DataType::BFLOAT16, 'f', {5, 10, 15});
     ShapeDescriptor descriptor(ptr);
     ShapeDescriptor descriptor2(ptr);
 
@@ -85,7 +85,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
     ASSERT_EQ(1, descriptor.ews());
     ASSERT_EQ(3, descriptor.rank());
     ASSERT_EQ('f', descriptor.order());
-    ASSERT_EQ(nd4j::DataType::BFLOAT16, descriptor.dataType());
+    ASSERT_EQ(sd::DataType::BFLOAT16, descriptor.dataType());
     ASSERT_FALSE(descriptor.isEmpty());
 
     ASSERT_FALSE(ConstantShapeHelper::getInstance()->checkBufferExistenceForShapeInfo(descriptor));
@@ -107,12 +107,12 @@ TEST_F(ConstantShapeHelperTests, basic_test_1) {
 TEST_F(ConstantShapeHelperTests, stress_test_1) {
 
     for (auto x = 0; x < 1000; x++) {
-        auto ptr = ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', {5, x + 10, x + 1});
+        auto ptr = ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', {5, x + 10, x + 1});
         ShapeDescriptor descriptor(ptr);
         ConstantShapeHelper::getInstance()->createShapeInfo(descriptor);
         delete [] ptr;
     }
-    ShapeDescriptor aShape(nd4j::DataType::FLOAT32, 'c',  {(Nd4jLong)5, (Nd4jLong)382, (Nd4jLong)373});
+    ShapeDescriptor aShape(sd::DataType::FLOAT32, 'c',  {(Nd4jLong)5, (Nd4jLong)382, (Nd4jLong)373});
 //    nd4j_printf("%d\n", ConstantShapeHelper::getInstance()->cachedEntriesForDevice(0));
 
     auto timeStart = std::chrono::system_clock::now();
@@ -145,7 +145,7 @@ TEST_F(ConstantShapeHelperTests, basic_test_4) {
 
 #ifdef __CUDABLAS__
     ASSERT_TRUE(dup->specialShapeInfo() != nullptr);
-    PointersManager manager(nd4j::LaunchContext ::defaultContext(), "test");
+    PointersManager manager(sd::LaunchContext ::defaultContext(), "test");
     // manager.printDevContentOnDev<Nd4jLong>(dup->specialShapeInfo(), shape::shapeInfoLength(2), 0);
 #endif
 
@@ -169,8 +169,8 @@ TEST_F(ConstantShapeHelperTests, basic_test_5) {
 }
 
 TEST_F(ConstantShapeHelperTests, basic_test_6) {
-    ShapeDescriptor descriptorA(nd4j::DataType::INT32, 'c', {});
-    ShapeDescriptor descriptorB(nd4j::DataType::FLOAT32, 'c', {10, 10});
+    ShapeDescriptor descriptorA(sd::DataType::INT32, 'c', {});
+    ShapeDescriptor descriptorB(sd::DataType::FLOAT32, 'c', {10, 10});
 
     // ASSERT_FALSE(descriptorA < descriptorB);
     // ASSERT_TRUE(descriptorB < descriptorA);
@@ -195,14 +195,14 @@ TEST_F(ConstantHelperTests, basic_test_1) {
 
     ConstantDescriptor descriptor({1, 2, 3});
 
-    ConstantDataBuffer* fBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::FLOAT32);
+    ConstantDataBuffer* fBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, sd::DataType::FLOAT32);
     auto fPtr = fBuffer->primaryAsT<float>();
 
     ASSERT_NEAR(1.f, fPtr[0], 1e-5);
     ASSERT_NEAR(2.f, fPtr[1], 1e-5);
     ASSERT_NEAR(3.f, fPtr[2], 1e-5);
 
-    auto iBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::INT32);
+    auto iBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, sd::DataType::INT32);
     auto iPtr = iBuffer->primaryAsT<int>();
 
     ASSERT_EQ(1, iPtr[0]);
@@ -215,14 +215,14 @@ TEST_F(ConstantHelperTests, basic_test_2) {
     double array[] = {1., 2., 3.};
     ConstantDescriptor descriptor(array, 3);
 
-    ConstantDataBuffer* fBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::FLOAT32);
+    ConstantDataBuffer* fBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, sd::DataType::FLOAT32);
     auto fPtr = fBuffer->primaryAsT<float>();
 
     ASSERT_NEAR(1.f, fPtr[0], 1e-5);
     ASSERT_NEAR(2.f, fPtr[1], 1e-5);
     ASSERT_NEAR(3.f, fPtr[2], 1e-5);
 
-    auto iBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, nd4j::DataType::INT32);
+    auto iBuffer = ConstantHelper::getInstance()->constantBuffer(descriptor, sd::DataType::INT32);
     auto iPtr = iBuffer->primaryAsT<int>();
 
     ASSERT_EQ(1, iPtr[0]);

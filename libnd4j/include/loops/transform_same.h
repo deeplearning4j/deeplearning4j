@@ -25,14 +25,14 @@
 #ifndef TRANSFORM_SAME_H_
 #define TRANSFORM_SAME_H_
 #include <vector>
-#include <templatemath.h>
+#include <math/templatemath.h>
 #include <ops/ops.h>
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <OmpLaunchHelper.h>
-#include <dll.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <system/dll.h>
 
 //#include <loops/reduce.h>
 //#include <loops/scalar.h>

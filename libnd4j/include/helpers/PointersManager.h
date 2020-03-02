@@ -26,21 +26,21 @@
 #include <string>
 #include <execution/LaunchContext.h>
 
-#include <types.h>
+#include <types/types.h>
 
-namespace nd4j {
+namespace sd {
 
 class ND4J_EXPORT PointersManager {
 
     private:
 
-        nd4j::LaunchContext  *_context;
+        sd::LaunchContext  *_context;
         std::vector<void*> _pOnGlobMem;
         std::string _funcName;
 
     public:
 
-        PointersManager(const nd4j::LaunchContext* context, const std::string& funcName = "");
+        PointersManager(const sd::LaunchContext* context, const std::string& funcName = "");
 
         ~PointersManager();
 

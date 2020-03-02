@@ -22,13 +22,13 @@
 #define LIBND4J_STACK_H
 
 #include <ops/declarable/helpers/helpers.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
-void stack(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim);
+void stack(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim);
 
 
 }

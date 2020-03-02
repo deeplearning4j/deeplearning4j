@@ -23,7 +23,7 @@
 #include<ops/declarable/helpers/reverse.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -88,7 +88,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
     auto seqLen = maxTimeStep;    
     if(seqLen == nullptr) {
 //        seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, x->dataType(), block.launchContext());	  // [bS]
-    	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, nd4j::DataType::INT64, block.launchContext());	  // [bS]
+    	seqLen = new NDArray(x->ordering(), {x->sizeAt(1)}, sd::DataType::INT64, block.launchContext());	  // [bS]
         *seqLen = x->sizeAt(0);                                 			                  // set each element of seqLen to be equal to time
     }    
     
@@ -123,7 +123,7 @@ CUSTOM_OP_IMPL(static_bidirectional_rnn, 7, 3, false, 0, 0) {
 
         DECLARE_TYPES(static_bidirectional_rnn) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 

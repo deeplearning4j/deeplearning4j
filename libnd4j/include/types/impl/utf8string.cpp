@@ -21,7 +21,7 @@
 #include <types/utf8string.h>
 #include <cstring>
 
-namespace nd4j {
+namespace sd {
     utf8string::~utf8string() {
         if (_allocated)
             delete[] _buffer;

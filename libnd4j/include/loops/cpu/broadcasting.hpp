@@ -18,11 +18,11 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/broadcasting.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
-#include <LoopKind.h>
+#include <helpers/LoopKind.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 #include <helpers/ShapeUtils.h>
@@ -76,7 +76,7 @@ namespace functions {
                              Nd4jLong *xTadOffset,
                              Nd4jLong *zTadShapeInfo,
                              Nd4jLong *zTadOffset,
-                             nd4j::LoopKind::Kind loopKind,
+                             sd::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop) {
             DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x,
@@ -107,7 +107,7 @@ namespace functions {
                              Nd4jLong *xTadOffset,
                              Nd4jLong *zTadShapeInfo,
                              Nd4jLong *zTadOffset,
-                             nd4j::LoopKind::Kind loopKind,
+                             sd::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop) {
 
@@ -123,7 +123,7 @@ namespace functions {
                 auto tadOffsets = xTadOffset;
 
                 if (xTadShapeInfo == nullptr || tadOffsets == nullptr) {
-                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
                     xTadShapeShapeInfo = tadPack.primaryShapeInfo();
                     tadOffsets = tadPack.primaryOffsets();
@@ -146,15 +146,15 @@ namespace functions {
                 auto zEws = shape::elementWiseStride(zTadShapeInfo);
 
 
-                const nd4j::LoopKind::Kind kindOfLoop =
-                    (loopKind == nd4j::LoopKind::BROADCAST_SCALAR_X ||
-                        loopKind == nd4j::LoopKind::BROADCAST_SCALAR_Y ||
-                        loopKind == nd4j::LoopKind::BROADCAST_3D ||
-                        loopKind == nd4j::LoopKind::BROADCAST_4D ||
-                        loopKind == nd4j::LoopKind::BROADCAST_5D)
-                    ? loopKind : nd4j::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
+                const sd::LoopKind::Kind kindOfLoop =
+                    (loopKind == sd::LoopKind::BROADCAST_SCALAR_X ||
+                        loopKind == sd::LoopKind::BROADCAST_SCALAR_Y ||
+                        loopKind == sd::LoopKind::BROADCAST_3D ||
+                        loopKind == sd::LoopKind::BROADCAST_4D ||
+                        loopKind == sd::LoopKind::BROADCAST_5D)
+                    ? loopKind : sd::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
 
-                if (kindOfLoop == nd4j::LoopKind::EWS1) {
+                if (kindOfLoop == sd::LoopKind::EWS1) {
                     for (auto i = start; i < stop; i++) {
                         auto oX = x + tadOffsets[i];
                         auto oZ = z + zTadOffset[i];
@@ -164,7 +164,7 @@ namespace functions {
                             oZ[f] = OpType::op(oX[f], y[f]);
                     }
                 }
-                else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO){
+                else if(kindOfLoop == sd::LoopKind::EWSNONZERO){
                     for (auto i = start; i < stop; i++) {
                         auto oX = x + tadOffsets[i];
                         auto oZ = z + zTadOffset[i];
@@ -173,7 +173,7 @@ namespace functions {
                         for (unsigned int f = 0; f < tadLength; f++)
                             oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
                     }
-                } else if(kindOfLoop == nd4j::LoopKind::BROADCAST_SCALAR_X){
+                } else if(kindOfLoop == sd::LoopKind::BROADCAST_SCALAR_X){
                     // this loop effectively turns broadcast into series of scalar ops
                     auto loopLength = yShapeInfo[shape::rank(yShapeInfo)];
 
@@ -187,7 +187,7 @@ namespace functions {
                         for (Nd4jLong f = 0; f < loopLength; f++)
                             oZ[f] = OpType::op(oX, oY[f]);
                     }
-                } else if(kindOfLoop == nd4j::LoopKind::BROADCAST_SCALAR_Y){
+                } else if(kindOfLoop == sd::LoopKind::BROADCAST_SCALAR_Y){
                     // this loop effectively turns broadcast into series of scalar ops
                     auto loopLength = xShapeInfo[shape::rank(xShapeInfo)];
 
@@ -202,7 +202,7 @@ namespace functions {
                             oZ[f] = OpType::op(oX[f], oY);
                     }
                 }
-                else if (kindOfLoop == nd4j::LoopKind::BROADCAST_3D) {
+                else if (kindOfLoop == sd::LoopKind::BROADCAST_3D) {
 
                     int xRank = shape::rank(xShapeInfo);
                     int yRank = shape::rank(yShapeInfo);
@@ -211,7 +211,7 @@ namespace functions {
                     auto  zStrides = shape::stride(zShapeInfo);
 
                     Nd4jLong  yStrides[3] = { 0,0,0 };
-                    nd4j::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
+                    sd::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
 
                     uint64_t nSize1 = shape::sizeAt(zShapeInfo, 1);
                     uint64_t nSize2 = shape::sizeAt(zShapeInfo, 2);
@@ -231,7 +231,7 @@ namespace functions {
                     }
 
                 }
-                else if (kindOfLoop == nd4j::LoopKind::BROADCAST_4D) {
+                else if (kindOfLoop == sd::LoopKind::BROADCAST_4D) {
 
                     int xRank = shape::rank(xShapeInfo);
                     int yRank = shape::rank(yShapeInfo);
@@ -240,7 +240,7 @@ namespace functions {
                     auto  zStrides = shape::stride(zShapeInfo);
 
                     Nd4jLong  yStrides[4] = { 0,0,0,0 };
-                    nd4j::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
+                    sd::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
 
                     uint64_t nSize1 = shape::sizeAt(zShapeInfo, 1);
                     uint64_t nSize2 = shape::sizeAt(zShapeInfo, 2);
@@ -263,7 +263,7 @@ namespace functions {
                     }
 
                 }
-                else if (kindOfLoop == nd4j::LoopKind::BROADCAST_5D) {
+                else if (kindOfLoop == sd::LoopKind::BROADCAST_5D) {
 
                     int xRank = shape::rank(xShapeInfo);
                     int yRank = shape::rank(yShapeInfo);
@@ -272,7 +272,7 @@ namespace functions {
                     auto  zStrides = shape::stride(zShapeInfo);
 
                     Nd4jLong  yStrides[5] = { 0,0,0,0,0 };
-                    nd4j::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
+                    sd::ShapeUtils::copyCertainStridesFromShapeInfo(yShapeInfo, xRank, dimensionLength, dimension, yStrides);
 
                     uint32_t nSize1 = shape::sizeAt(zShapeInfo, 1);
                     uint32_t nSize2 = shape::sizeAt(zShapeInfo, 2);
@@ -301,7 +301,7 @@ namespace functions {
                 }
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
                     uint tadShapeShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
 
                     for (auto i = start; i < stop; i++) {
                         auto oX = x + tadOffsets[i];
@@ -317,8 +317,8 @@ namespace functions {
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo)) {
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     uint tadShapeInfoZCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
-                    bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
 
                     for (auto i = start; i < stop; i++) {
@@ -336,8 +336,8 @@ namespace functions {
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     uint yShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
-                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
                     for (auto i = start; i < stop; i++) {
                         auto oZ = z + zTadOffset[i];
@@ -354,8 +354,8 @@ namespace functions {
                 else if(shape::haveSameShapeAndStrides(yShapeInfo, zTadShapeInfo)) {
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     uint yShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
-                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
                     for (auto i = start; i < stop; i++) {
                         auto oZ = z + zTadOffset[i];
@@ -373,9 +373,9 @@ namespace functions {
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     uint tadShapeInfoZCast[MAX_RANK];
                     uint yShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
-                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-                    bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
                     for (auto i = start; i < stop; i++) {
                         auto oZ = z + zTadOffset[i];
@@ -423,7 +423,7 @@ namespace functions {
             auto tadOffsets = yTadOffset;
 
             if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
-                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
+                auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
                 yTadShapeShapeInfo = tadPack.primaryShapeInfo();
                 tadOffsets = tadPack.primaryOffsets();
@@ -442,16 +442,16 @@ namespace functions {
             auto lenX = shape::length(xShapeInfo);
 
             int tadsPerThread = tads / TAD_THRESHOLD;
-            int threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-            threads = nd4j::math::nd4j_min<int>(threads, nd4j::Environment::getInstance()->maxThreads());
+            int threads = sd::math::nd4j_max<int>(1, tadsPerThread);
+            threads = sd::math::nd4j_min<int>(threads, sd::Environment::getInstance()->maxThreads());
 
             auto yEws = shape::elementWiseStride(yTadShapeShapeInfo);
             auto xEws = shape::elementWiseStride(xShapeInfo);
             auto zEws = shape::elementWiseStride(zTadShapeInfo);
 
-            const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
+            const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
 
-            if(kindOfLoop == nd4j::LoopKind::EWS1) {
+            if(kindOfLoop == sd::LoopKind::EWS1) {
                 for (auto i = start; i < stop; i++) {
                     auto oY = y + tadOffsets[i];
                     auto oZ = z + zTadOffset[i];
@@ -461,7 +461,7 @@ namespace functions {
                         oZ[f] = OpType::op(x[f], oY[f]);
                 }
             }
-            else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
+            else if(kindOfLoop == sd::LoopKind::EWSNONZERO) {
                 for (auto i = start; i < stop; i++) {
                     auto oY = y + tadOffsets[i];
                     auto oZ = z + zTadOffset[i];
@@ -473,7 +473,7 @@ namespace functions {
             }
             else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) && shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
                 uint tadShapeShapeInfoCast[MAX_RANK];
-                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+                bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
                 for (auto i = start; i < stop; i++) {
                     auto oY = x + tadOffsets[i];
@@ -489,8 +489,8 @@ namespace functions {
             else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo)) {
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint tadShapeInfoZCast[MAX_RANK];
-                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
-                bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
+                bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+                bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
                 for (auto i = start; i < stop; i++) {
                     auto oZ = z + zTadOffset[i];
@@ -507,8 +507,8 @@ namespace functions {
             else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint xShapeInfoCast[MAX_RANK];
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+                bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
                 for (auto i = start; i < stop; i++) {
                     auto oZ = z + zTadOffset[i];
@@ -525,8 +525,8 @@ namespace functions {
             else if(shape::haveSameShapeAndStrides(xShapeInfo, zTadShapeInfo)) {
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint xShapeInfoCast[MAX_RANK];
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+                bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
                 for (auto i = start; i < stop; i++) {
                     auto oZ = z + zTadOffset[i];
@@ -544,9 +544,9 @@ namespace functions {
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 uint tadShapeInfoZCast[MAX_RANK];
                 uint xShapeInfoCast[MAX_RANK];
-                bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
-                bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
+                bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+                bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
                 for (auto i = start; i < stop; i++) {
                     auto oZ = z + zTadOffset[i];

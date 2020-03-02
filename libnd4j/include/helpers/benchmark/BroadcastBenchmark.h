@@ -23,7 +23,7 @@
 #ifndef DEV_TESTS_BROADCASTBENCHMARK_H
 #define DEV_TESTS_BROADCASTBENCHMARK_H
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT BroadcastBenchmark : public OpBenchmark {
     public:
         BroadcastBenchmark() : OpBenchmark() {

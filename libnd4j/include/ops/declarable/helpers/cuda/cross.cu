@@ -20,10 +20,10 @@
 
 
 #include <ops/declarable/helpers/cross.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
@@ -102,7 +102,7 @@ __host__ static void crossCudaLauncher(const int blocksPerGrid, const int thread
 BUILD_SINGLE_TEMPLATE(template void crossCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo), NUMERIC_TYPES);
 
 
-void crossBatched(nd4j::LaunchContext* context, NDArray *x, NDArray *y, NDArray *z) {
+void crossBatched(sd::LaunchContext* context, NDArray *x, NDArray *y, NDArray *z) {
 
 	const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (x->lengthOf() / x->sizeAt(-1) + threadsPerBlock - 1) / threadsPerBlock;

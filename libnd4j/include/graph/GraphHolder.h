@@ -19,14 +19,14 @@
 //
 
 #include <helpers/logger.h>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <unordered_map>
 #include <map>
 #include <graph/Graph.h>
 #include <helpers/SimpleReadWriteLock.h>
 #include <exceptions/unknown_graph_exception.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT GraphHolder {
         private:

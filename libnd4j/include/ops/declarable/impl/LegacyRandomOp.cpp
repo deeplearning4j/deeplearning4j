@@ -20,12 +20,12 @@
 
 #include <ops/declarable/LegacyRandomOp.h>
 #include <helpers/RandomLauncher.h>
-#include <NativeOpExecutioner.h>
-#include <NDArrayFactory.h>
-#include <Status.h>
+#include <legacy/NativeOpExecutioner.h>
+#include <array/NDArrayFactory.h>
+#include <graph/Status.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyRandomOp::LegacyRandomOp() : LegacyOp::LegacyOp(1) {
             // just a no-op
@@ -61,7 +61,7 @@ namespace nd4j {
                 (12, randomOps::AlphaDropOut)
             */
             switch(opNum) {
-                case nd4j::random::UniformDistribution: {
+                case sd::random::UniformDistribution: {
                     // uniform distribution
                     T from, to;
                     if (block.width() > 2) {
@@ -87,7 +87,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case nd4j::random::DropOut: {
+                case sd::random::DropOut: {
                         auto z = OUTPUT_VARIABLE(0);
 
                         T prob;
@@ -108,13 +108,13 @@ namespace nd4j {
                         RandomLauncher::applyDropOut(block.launchContext(), block.randomGenerator(), z, prob);
                     }
                     break;
-                case nd4j::random::DropOutInverted: {
+                case sd::random::DropOutInverted: {
                         auto z = OUTPUT_VARIABLE(0);
-                        nd4j::ops::dropout op;
+                        sd::ops::dropout op;
                         return op.execute(&block);
                     }
                     break;
-                case nd4j::random::GaussianDistribution: {
+                case sd::random::GaussianDistribution: {
                     // gaussian distribution
                     T mean, stdev;
                     if (block.width() > 2) {
@@ -146,7 +146,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case nd4j::random::BernoulliDistribution: {
+                case sd::random::BernoulliDistribution: {
                     // bernoulli distribution
                     T prob;
                     if (block.width() > 1) {
@@ -174,7 +174,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case nd4j::random::BinomialDistributionEx: {
+                case sd::random::BinomialDistributionEx: {
                     // BinomialEx distribution
                     T prob;
                     int trials;
@@ -207,7 +207,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case nd4j::random::LogNormalDistribution: {
+                case sd::random::LogNormalDistribution: {
                     // lognorm distribution
                     T mean, stdev;
                     if (block.width() > 2) {
@@ -239,7 +239,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case nd4j::random::TruncatedNormalDistribution: {
+                case sd::random::TruncatedNormalDistribution: {
                     // truncated norm distribution
                     T mean, stdev;
                     if (block.width() > 2) {
@@ -271,7 +271,7 @@ namespace nd4j {
                     //OVERWRITE_RESULT(z);
                 }
                     break;
-                case nd4j::random::AlphaDropOut: {
+                case sd::random::AlphaDropOut: {
                     auto z = OUTPUT_VARIABLE(0);
 
                     T prob, a, b, pa;
@@ -304,7 +304,7 @@ namespace nd4j {
                     RandomLauncher::applyAlphaDropOut(block.launchContext(), block.randomGenerator(), z, prob, a, b, pa);
                 }
                     break;
-                case nd4j::random::Linspace: {
+                case sd::random::Linspace: {
                         auto z = OUTPUT_VARIABLE(0);
                         auto start = INPUT_VARIABLE(0);
                         auto finish = INPUT_VARIABLE(1);
@@ -334,7 +334,7 @@ namespace nd4j {
         * But these ops already have CustomOp implementations.
         *
         */
-        ShapeList *LegacyRandomOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyRandomOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
             auto xType = ArrayOptions::dataType(inShape);
             Nd4jLong *newShape;
@@ -357,14 +357,14 @@ namespace nd4j {
             return DeclarableOp::execute(block);
         }
 
-        nd4j::ResultSet*  LegacyRandomOp::execute(nd4j::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
+        sd::ResultSet*  LegacyRandomOp::execute(sd::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
             std::vector<NDArray*> ins(inputs);
             std::vector<double> tas(tArgs);
             std::vector<int> ias(iArgs);
             return this->execute(rng, ins, tas, ias, isInplace);
         }
 
-        nd4j::ResultSet*  LegacyRandomOp::execute(nd4j::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace) {
+        sd::ResultSet*  LegacyRandomOp::execute(sd::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace) {
             VariableSpace variableSpace;
             auto arrayList = new ResultSet();
             //ResultSet arrayList;

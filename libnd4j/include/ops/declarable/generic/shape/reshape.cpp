@@ -18,12 +18,12 @@
 // Created by raver119 on 29/10/17.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reshape)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
@@ -145,7 +145,7 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
 
 DECLARE_TYPES(reshape) {
     getOpDescriptor()
-            ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+            ->setAllowedInputTypes(0, sd::DataType::ANY)
             ->setAllowedInputTypes(1, {ALL_INTS})
             ->setSameMode(true);
 }

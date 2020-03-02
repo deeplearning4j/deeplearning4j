@@ -29,7 +29,7 @@
 #include <graph/generated/node_generated.h>
 #include <array/DataType.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         /**
@@ -52,7 +52,7 @@ namespace nd4j {
             int _numOutputs = 1;
 
             // enum for ops. deprecated. will be removed
-            nd4j::graph::OpClass _opClass;
+            sd::graph::OpClass _opClass;
 
             // special flag for divergent ops - ops that CAN and WILL modify graph behavior. Literally: IF, CASE.
             bool _divergent = false;
@@ -79,18 +79,18 @@ namespace nd4j {
 
 
             bool _sameMode = false;
-            std::vector<nd4j::DataType> _allowedIns;
-            std::vector<nd4j::DataType> _allowedOuts;
+            std::vector<sd::DataType> _allowedIns;
+            std::vector<sd::DataType> _allowedOuts;
 
             // optional per-input configuration
-            MAP_IMPL<int, std::vector<nd4j::DataType>> _outputTypes;
-            MAP_IMPL<int, std::vector<nd4j::DataType>> _inputTypes;
+            MAP_IMPL<int, std::vector<sd::DataType>> _outputTypes;
+            MAP_IMPL<int, std::vector<sd::DataType>> _inputTypes;
 
 
             // field for ops that allow data type override at runtime
             bool _dtypeOverride = false;
 
-            bool checkDataTypesMatch(nd4j::DataType needle, std::vector<nd4j::DataType> &haystack) const;
+            bool checkDataTypesMatch(sd::DataType needle, std::vector<sd::DataType> &haystack) const;
         public:
             // default constructor
             OpDescriptor(int numInputs, int numOutputs, std::string opName, bool allowsInplace);
@@ -162,23 +162,23 @@ namespace nd4j {
 
 
             OpDescriptor* setInputType(InputType type);
-            OpDescriptor* setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtype);
-            OpDescriptor* setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtype);
-            OpDescriptor* setAllowedInputTypes(int index, const std::vector<nd4j::DataType> &dtype);
-            OpDescriptor* setAllowedOutputTypes(int index, const std::vector<nd4j::DataType> &dtype);
-            OpDescriptor* setAllowedInputTypes(int index,  nd4j::DataType dtype);
-            OpDescriptor* setAllowedOutputTypes(int index, nd4j::DataType dtype);
-            OpDescriptor* setAllowedInputTypes(nd4j::DataType dtype);
-            OpDescriptor* setAllowedOutputTypes(nd4j::DataType dtype);
+            OpDescriptor* setAllowedInputTypes(const std::initializer_list<sd::DataType> &dtype);
+            OpDescriptor* setAllowedOutputTypes(const std::initializer_list<sd::DataType> &dtype);
+            OpDescriptor* setAllowedInputTypes(int index, const std::vector<sd::DataType> &dtype);
+            OpDescriptor* setAllowedOutputTypes(int index, const std::vector<sd::DataType> &dtype);
+            OpDescriptor* setAllowedInputTypes(int index,  sd::DataType dtype);
+            OpDescriptor* setAllowedOutputTypes(int index, sd::DataType dtype);
+            OpDescriptor* setAllowedInputTypes(sd::DataType dtype);
+            OpDescriptor* setAllowedOutputTypes(sd::DataType dtype);
             OpDescriptor* allowOverride(bool reallyAllow);
             OpDescriptor* setSameMode(bool reallySame);
-            OpDescriptor* setInputType(int idx, nd4j::DataType dtype);
-            OpDescriptor* setOutputType(int idx, nd4j::DataType dtype);
+            OpDescriptor* setInputType(int idx, sd::DataType dtype);
+            OpDescriptor* setOutputType(int idx, sd::DataType dtype);
 
-            std::vector<nd4j::DataType> getOutputTypesForOutput(int index);
+            std::vector<sd::DataType> getOutputTypesForOutput(int index);
 
-            bool checkInputMatch(int index, nd4j::DataType dataType);
-            bool checkOutputMatch(int index, nd4j::DataType dataType);
+            bool checkInputMatch(int index, sd::DataType dataType);
+            bool checkOutputMatch(int index, sd::DataType dataType);
             bool isSameMode();
 
             bool isInherit(int index);

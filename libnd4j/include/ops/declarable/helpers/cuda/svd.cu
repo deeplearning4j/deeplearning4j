@@ -18,15 +18,15 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <svd.h>
+#include <helpers/svd.h>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ShapeUtils.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ShapeUtils.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -100,7 +100,7 @@ static void inverseColumnSignCudaLauncher(const int blocksPerGrid, const int thr
 BUILD_SINGLE_TEMPLATE(template void inverseColumnSignCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, void* vu, const Nd4jLong* uShapeInfo, void* vv, const Nd4jLong* vShapeInfo), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-static void svdQR(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* VT, const bool fullUV, const bool calcUV) {
+static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* VT, const bool fullUV, const bool calcUV) {
 
     // since cusa api cusolverDnDgesvd/cusolverDnSgesvd have following constrain on input matrix A: A_rows >= A_columns && A_order = 'f'
     // we make this function to have deal with 2 valid cases only:
@@ -266,7 +266,7 @@ static void svdQR(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, ND
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV, const bool calcUV) {
+static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV, const bool calcUV) {
 
     // A [m, n]
     // S [n]
@@ -455,7 +455,7 @@ static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, N
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void svdBatched(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV, const bool calcUV) {
+static void svdBatched(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV, const bool calcUV) {
 
     // A [..., m, n]
     // S [..., n]
@@ -628,7 +628,7 @@ static void svdBatched(nd4j::LaunchContext* context, const NDArray* A, NDArray* 
 }
 
 ////////////////////////////////////////////////////////////////////
-void svd(nd4j::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
+void svd(sd::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
 
     NDArray* S = outArrs[0];
     NDArray* U = outArrs[1];

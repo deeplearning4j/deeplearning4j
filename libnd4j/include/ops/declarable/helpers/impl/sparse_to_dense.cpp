@@ -23,7 +23,7 @@
 #include <helpers/StringUtils.h>
 #include <helpers/ShapeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename I>

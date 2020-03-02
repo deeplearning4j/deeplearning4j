@@ -18,14 +18,14 @@
 //  @author sgazeos@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_top_k)
 
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/top_k.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(top_k, 1, 2, false, 0, -1) {
             auto x = INPUT_VARIABLE(0);
@@ -76,7 +76,7 @@ namespace nd4j {
                 aShape[shapeRank] = k;
 
                 shape::updateStrides(aShape, shape::order(in));
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(aShape, (e == 0?ArrayOptions::dataType(in):nd4j::DataType::INT64))));
+                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(aShape, (e == 0?ArrayOptions::dataType(in):sd::DataType::INT64))));
 
                 RELEASE(aShape, block.getWorkspace());
             }
@@ -85,8 +85,8 @@ namespace nd4j {
 
         DECLARE_TYPES(top_k) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
+                    ->setAllowedOutputTypes(0, sd::DataType::ANY)
                     ->setAllowedOutputTypes(1, {ALL_INDICES});
         }
     }

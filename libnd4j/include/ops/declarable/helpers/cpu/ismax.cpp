@@ -25,7 +25,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
@@ -125,8 +125,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         //moving all dimensions (in sorted order)
         //to the back.
         //permuted version of the input shape info for setting up the tad problem
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
-        auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+        auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+        auto tadPackZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
 
 
         auto tadShapeShapeInfo = tadPack.primaryShapeInfo();
@@ -137,8 +137,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         int tads = tadPack.numberOfTads();
 
         int tadsPerThread = tads / TAD_THRESHOLD;
-        int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-        num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+        int num_threads = sd::math::nd4j_max<int>(1, tadsPerThread);
+        num_threads = sd::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
         auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
         auto zEWS = shape::elementWiseStride(tadPackZ.primaryShapeInfo());
@@ -200,7 +200,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
 }
 
 
-void ismax(nd4j::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
+void ismax(sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
     BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), ismax_, (input, output, dimensions), LIBND4J_TYPES, LIBND4J_TYPES);
 }
 

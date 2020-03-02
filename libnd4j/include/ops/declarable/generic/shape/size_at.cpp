@@ -18,12 +18,12 @@
 // Created by raver119 on 12.02.18.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_size_at)
 
 #include <ops/declarable/headers/shape.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(size_at, 1, 1, false, 0, 1) {
             auto input = INPUT_VARIABLE(0);
@@ -42,12 +42,12 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(size_at) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(sd::DataType::INT64));
         }
 
         DECLARE_TYPES(size_at) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes(DataType::INT64)
                     ->allowOverride(true);
         }

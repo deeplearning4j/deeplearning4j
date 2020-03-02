@@ -18,13 +18,13 @@
 // @author raver119@gmail.com
 //
 
-#include <Context.h>
+#include <graph/Context.h>
 #include <helpers/ShapeUtils.h>
 #include <graph/Context.h>
 #include <array/InteropDataBuffer.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Context::Context(ContextPrototype* prototype, VariableSpace* variableSpace) {
             _variableSpace = variableSpace;
@@ -61,16 +61,16 @@ namespace nd4j {
             if (variableSpace != nullptr && variableSpace->launchContext()->getWorkspace() != nullptr)
                     this->_workspace = variableSpace->launchContext()->getWorkspace();
         }
-        nd4j::DataType Context::dataType(int index) {
+        sd::DataType Context::dataType(int index) {
 
             return _dataType;
         }
 
-        nd4j::DataType Context::dataType() {
+        sd::DataType Context::dataType() {
             return dataType(0);
         }
 
-        void Context::setDataType(int index, nd4j::DataType type) {
+        void Context::setDataType(int index, sd::DataType type) {
             if (this->_dataTypes.size() > (size_t)index)
                 _dataTypes[index] = type;
             _dataType = type;
@@ -115,7 +115,7 @@ namespace nd4j {
             return this->_workspace != nullptr;
         }
 
-        void Context::attachWorkspace(nd4j::memory::Workspace* workspace) {
+        void Context::attachWorkspace(sd::memory::Workspace* workspace) {
             this->_workspace = workspace;
         }
 
@@ -155,19 +155,19 @@ namespace nd4j {
             return _variableSpace;
         }
 
-        nd4j::memory::Workspace* Context::getWorkspace() {
+        sd::memory::Workspace* Context::getWorkspace() {
             return _workspace;
         }
 
-        nd4j::memory::Workspace* Context::workspace() {
+        sd::memory::Workspace* Context::workspace() {
             return _workspace;
         }
 
-        nd4j::random::RandomBuffer* Context::getRNG() {
+        sd::random::RandomBuffer* Context::getRNG() {
             return _rng;
         }
 
-        void Context::setRNG(nd4j::random::RandomBuffer* rng) {
+        void Context::setRNG(sd::random::RandomBuffer* rng) {
             _rng = rng;
         }
 
@@ -209,19 +209,19 @@ namespace nd4j {
                 _variableSpace->flowPath()->markBranch(this->nodeId(), branch);
         }
 
-        Nd4jLong nd4j::graph::Context::getOuterTime(){
+        Nd4jLong sd::graph::Context::getOuterTime(){
             return this->_executionTime.first;
         }
 
-        Nd4jLong nd4j::graph::Context::getInnerTime(){
+        Nd4jLong sd::graph::Context::getInnerTime(){
             return this->_executionTime.second;
         }
 
-        void nd4j::graph::Context::setOuterTime(Nd4jLong time){
+        void sd::graph::Context::setOuterTime(Nd4jLong time){
             this->_executionTime.first = time;
         }
 
-        void nd4j::graph::Context::setInnerTime(Nd4jLong time){
+        void sd::graph::Context::setInnerTime(Nd4jLong time){
             this->_executionTime.second = time;
         }
 
@@ -370,15 +370,15 @@ namespace nd4j {
             return getVariable(idx)->getNDArray();
         }
 
-        nd4j::memory::Workspace *Context::fWorkspace() {
+        sd::memory::Workspace *Context::fWorkspace() {
             return workspace();
         }
 
-        nd4j::memory::Workspace *Context::tWorkspace() {
+        sd::memory::Workspace *Context::tWorkspace() {
             return nullptr;
         }
 
-        nd4j::memory::Workspace *Context::oWorkspace() {
+        sd::memory::Workspace *Context::oWorkspace() {
             return nullptr;
         }
 
@@ -451,7 +451,7 @@ namespace nd4j {
 
             NDArray *array;
             if (dataBuffer != nullptr)
-                array = new NDArray(dataBuffer->dataBuffer(), reinterpret_cast<Nd4jLong *>(shapeInfo), nd4j::LaunchContext::defaultContext(), dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(reinterpret_cast<Nd4jLong *>(shapeInfo))));
+                array = new NDArray(dataBuffer->dataBuffer(), reinterpret_cast<Nd4jLong *>(shapeInfo), sd::LaunchContext::defaultContext(), dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(reinterpret_cast<Nd4jLong *>(shapeInfo))));
             else
                 array = new NDArray(nullptr, nullptr, reinterpret_cast<Nd4jLong *>(shapeInfo));
 
@@ -470,7 +470,7 @@ namespace nd4j {
 
             NDArray *array;
             if (dataBuffer != nullptr)
-                array = new NDArray(dataBuffer->dataBuffer(), reinterpret_cast<Nd4jLong *>(shapeInfo), nd4j::LaunchContext::defaultContext(), dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(reinterpret_cast<Nd4jLong *>(shapeInfo))));
+                array = new NDArray(dataBuffer->dataBuffer(), reinterpret_cast<Nd4jLong *>(shapeInfo), sd::LaunchContext::defaultContext(), dataBuffer->offset() / DataTypeUtils::sizeOf(ArrayOptions::dataType(reinterpret_cast<Nd4jLong *>(shapeInfo))));
             else
                 array = new NDArray(nullptr, nullptr, reinterpret_cast<Nd4jLong *>(shapeInfo));
 
@@ -564,13 +564,13 @@ namespace nd4j {
             return _execMode == samediff::ExecutionMode::MODE_INFERENCE;
         }
 
-        void Context::setDArguments(nd4j::DataType *arguments, int numberOfArguments) {
+        void Context::setDArguments(sd::DataType *arguments, int numberOfArguments) {
             _dArgs.clear();
             for (int e = 0; e < numberOfArguments; e++)
                 _dArgs.emplace_back(arguments[e]);
         }
 
-        void Context::setDArguments(const std::vector<nd4j::DataType> &dArgs) {
+        void Context::setDArguments(const std::vector<sd::DataType> &dArgs) {
             _dArgs.clear();
             for (auto d:dArgs)
                 _dArgs.emplace_back(d);

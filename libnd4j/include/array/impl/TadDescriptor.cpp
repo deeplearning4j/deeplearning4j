@@ -22,7 +22,7 @@
 #include <algorithm>
 #include "../TadDescriptor.h"
 
-namespace nd4j {
+namespace sd {
     TadDescriptor::TadDescriptor(const TadDescriptor &other) {
         _originalShape = other._originalShape;
         _axis = other._axis;
@@ -79,13 +79,13 @@ namespace nd4j {
 }
 
 namespace std {
-    size_t hash<nd4j::TadDescriptor>::operator()(const nd4j::TadDescriptor &k) const {
+    size_t hash<sd::TadDescriptor>::operator()(const sd::TadDescriptor &k) const {
         // Compute individual hash values for first,
         // second and third and combine them using XOR
         // and bit shifting:
         auto res = std::hash<int>()((int)k.areUnitiesinShape());
-        res ^= std::hash<nd4j::ShapeDescriptor>()(k.originalShapeConst())  + 0x9e3779b9 + (res << 6) + (res >> 2);
-        auto axes = const_cast<nd4j::TadDescriptor&>(k).axis();
+        res ^= std::hash<sd::ShapeDescriptor>()(k.originalShapeConst())  + 0x9e3779b9 + (res << 6) + (res >> 2);
+        auto axes = const_cast<sd::TadDescriptor&>(k).axis();
         for (auto a: axes) {
             res ^= std::hash<int>()(a) + 0x9e3779b9 + (res << 6) + (res >> 2);
         }

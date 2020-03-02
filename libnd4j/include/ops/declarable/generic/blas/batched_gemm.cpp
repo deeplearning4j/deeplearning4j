@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_batched_gemm)
 
 #include <ops/declarable/headers/blas.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
@@ -85,7 +85,7 @@ CUSTOM_OP_IMPL(batched_gemm, -1, -1, false, 0, 9) {
 
     REQUIRE_TRUE(vA.size() == vB.size() && vA.size() == vC.size() && vA.size() == batchSize, 0, "BatchedGemm: mismatched numbers of A, B, C for unknown reason");
 
-    nd4j::ops::helpers::bgemm(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
+    sd::ops::helpers::bgemm(vA, vB, vC, alpha, beta, transA, transB, M, N, K, ldA, ldB, ldC);
 
     return Status::OK();
 };

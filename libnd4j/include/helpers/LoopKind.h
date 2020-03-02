@@ -23,15 +23,15 @@
 
 
 // #include <pointercast.h>
-#include <shape.h>
-// #include <OmpLaunchHelper.h>
-// #include <DataTypeUtils.h>
+#include <helpers/shape.h>
+// #include <helpers/OmpLaunchHelper.h>
+// #include <array/DataTypeUtils.h>
 // #include <ops.h>
 // #include <indexreduce.h>
 // #include <helpers/ConstantTadHelper.h>
 // #include <openmp_pragmas.h>
 
-namespace nd4j {
+namespace sd {
 
 
 class ND4J_EXPORT LoopKind {
@@ -110,17 +110,17 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const Nd4jLong* xShapeInfo, c
 
     if (bNDLoopsRanks && bNotCommonVectorCase) {
         // case x[3,4,5] * y[1,4,5] = z[3,4,5] or reverse x[1,4,5] + y[3,4,5] = z[3,4,5]
-        if (nd4j::LoopKind::EWS1 == deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo)
+        if (sd::LoopKind::EWS1 == deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo)
             && (1 == shape::sizeAt(yShapeInfo, 0) || 1 == shape::sizeAt(xShapeInfo, 0))) {
             return EWS1;
         }
 
         if (3 == xRank)
-            return nd4j::LoopKind::BROADCAST_3D;
+            return sd::LoopKind::BROADCAST_3D;
         if (4 == xRank)
-            return nd4j::LoopKind::BROADCAST_4D;
+            return sd::LoopKind::BROADCAST_4D;
         if (5 == xRank)
-            return nd4j::LoopKind::BROADCAST_5D;
+            return sd::LoopKind::BROADCAST_5D;
 
     }
 
@@ -136,12 +136,12 @@ LoopKind::Kind LoopKind::deduceKindOfLoopBroadcast(const Nd4jLong* xShapeInfo, c
         auto detect = xShapeInfo[xRank] == 1 ? -1 : (yShapeInfo[xRank] == 1) ? 1 : 0;
 
         if (detect == 1)
-            return nd4j::LoopKind::BROADCAST_SCALAR_Y;
+            return sd::LoopKind::BROADCAST_SCALAR_Y;
         else if (detect == -1)
-            return nd4j::LoopKind::BROADCAST_SCALAR_X;
+            return sd::LoopKind::BROADCAST_SCALAR_X;
         }
 
-    return nd4j::LoopKind::COMMON;
+    return sd::LoopKind::COMMON;
 }
 
 //////////////////////////////////////////////////////////////////////////////

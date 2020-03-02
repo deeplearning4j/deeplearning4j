@@ -21,7 +21,7 @@
 #include <exceptions/graph_exception.h>
 #include <helpers/StringUtils.h>
 
-namespace nd4j {
+namespace sd {
     graph_exception::graph_exception(std::string message, Nd4jLong graphId) : std::runtime_error(message) {
         this->_message = message;
             this->_graphId = graphId;

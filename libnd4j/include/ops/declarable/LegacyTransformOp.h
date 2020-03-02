@@ -24,7 +24,7 @@
 
 //#include <ops/declarable/LegacyOp.h>
 #ifdef ONLY_SAME_TRANSFORM
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
         *   This class provides wrapper for Transform operations (i.e. Pow or OneMinus)
@@ -36,7 +36,7 @@ namespace nd4j {
             LegacyTransformOp();
             LegacyTransformOp(int opNum);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context &block);
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context &block);
             virtual LegacyOp* clone();
         };
     }

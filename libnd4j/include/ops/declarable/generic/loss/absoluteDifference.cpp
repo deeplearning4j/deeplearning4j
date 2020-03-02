@@ -18,11 +18,11 @@
 // Created by Yurii Shyrma on 20.11.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_absolute_difference_loss)
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
 
@@ -51,7 +51,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
 	if(!weights->isScalar() && !weights->isSameShape(predictions))
 		weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
 
-	NDArray E = (*predictions - *labels).transform(nd4j::transform::Abs);
+	NDArray E = (*predictions - *labels).transform(sd::transform::Abs);
  	E *= *weightsBroad;
 
 	switch (reductionMode) {
@@ -101,7 +101,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss, 3, 1, false, 0, 1) {
 }
 
 DECLARE_TYPES(absolute_difference_loss) {
-	getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+	getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(absolute_difference_loss) {
@@ -169,10 +169,10 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 	NDArray E = *predictions - *labels;
 
 	// dE_i/dp_i = sign(p_i - y_i)
-	E.applyTransform(nd4j::transform::Sign, *dLdp);	// dE/dp
+	E.applyTransform(sd::transform::Sign, *dLdp);	// dE/dp
 	// dE_i/dy_i = -sign(p_i - y_i)
 
-	E.applyTransform(nd4j::transform::Abs, E);
+	E.applyTransform(sd::transform::Abs, E);
 
 	switch (reductionMode) {
 
@@ -261,7 +261,7 @@ CUSTOM_OP_IMPL(absolute_difference_loss_grad, 3, 3, false, 0, 1) {
 
 DECLARE_TYPES(absolute_difference_loss_grad) {
 
-	getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+	getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 DECLARE_SHAPE_FN(absolute_difference_loss_grad) {

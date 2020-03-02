@@ -19,25 +19,25 @@
 //
 #ifndef __LUP_H_HELPERS__
 #define __LUP_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    int lup(nd4j::LaunchContext* context, NDArray* input, NDArray* lu, NDArray* permutation);
-    void lu(nd4j::LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation);
-    int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
-    int logAbsDeterminant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
+    int lup(sd::LaunchContext* context, NDArray* input, NDArray* lu, NDArray* permutation);
+    void lu(sd::LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation);
+    int determinant(sd::LaunchContext * context, NDArray* input, NDArray* output);
+    int logAbsDeterminant(sd::LaunchContext * context, NDArray* input, NDArray* output);
 
-    int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
-    int upperInverseFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* output);
-    int lowerInverseFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* output);
+    int inverse(sd::LaunchContext * context, NDArray* input, NDArray* output);
+    int upperInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
+    int lowerInverseFunctor(sd::LaunchContext* context, NDArray* input, NDArray* output);
 
-    bool checkCholeskyInput(nd4j::LaunchContext * context, NDArray const* input);
-    int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace = false);
-    int logdetFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
+    bool checkCholeskyInput(sd::LaunchContext * context, NDArray const* input);
+    int cholesky(sd::LaunchContext * context, NDArray* input, NDArray* output, bool inplace = false);
+    int logdetFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output);
 }
 }
 }

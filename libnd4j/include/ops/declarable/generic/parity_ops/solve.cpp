@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> at 01/22/2020
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_solve)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/solve.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(solve, 2, 1, false, 0, 0) {
             auto a = INPUT_VARIABLE(0);

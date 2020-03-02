@@ -18,14 +18,14 @@
 // @author Shyrma Yurii (iuriish@yahoo.com), created on 23.01.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_gather_nd)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/scatter.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 

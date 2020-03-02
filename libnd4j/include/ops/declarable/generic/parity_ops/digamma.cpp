@@ -19,13 +19,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_digamma)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/gammaMathFunc.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CONFIGURABLE_OP_IMPL(digamma, 1, 1, false, 0, 0) {

@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/flatten.h>
 #include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
@@ -44,7 +44,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            void flatten_(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+            void flatten_(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 PointersManager pm(context, "flatten");
 
                 std::vector<void*> hdBuffers(inputs.size());
@@ -72,7 +72,7 @@ namespace nd4j {
                 pm.synchronize();
             }
 
-            void flatten(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+            void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 // FIXME: we want NDArrayFactory::prepareSpecialUse here eventually
                 for (auto v:inputs)
                     v->syncToDevice();

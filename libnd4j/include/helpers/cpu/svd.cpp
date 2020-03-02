@@ -18,14 +18,14 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 03.01.2018
 //
 
-#include <svd.h>
-#include <jacobiSVD.h>
-#include <biDiagonalUp.h>
+#include <helpers/svd.h>
+#include <helpers/jacobiSVD.h>
+#include <helpers/biDiagonalUp.h>
 #include <array/ResultSet.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

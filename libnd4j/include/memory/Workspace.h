@@ -27,13 +27,13 @@
 #include <atomic>
 #include <vector>
 #include <mutex>
-#include <dll.h>
-#include <pointercast.h>
+#include <system/dll.h>
+#include <system/pointercast.h>
 #include <types/float16.h>
 #include <memory/ExternalWorkspace.h>
 #include <memory/MemoryType.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
 
         class ND4J_EXPORT Workspace {

@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/hashcode.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>

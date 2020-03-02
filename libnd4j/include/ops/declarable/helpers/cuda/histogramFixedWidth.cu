@@ -19,10 +19,10 @@
 //
 
 #include <ops/declarable/helpers/histogramFixedWidth.h>
-#include <cuda_exception.h>
-#include <PointersManager.h>
+#include <exceptions/cuda_exception.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -66,7 +66,7 @@ __global__ static void histogramFixedWidthCuda( const void* vx, const Nd4jLong* 
         else
             zIndex = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
 
-        nd4j::math::atomics::nd4j_atomicAdd<Z>(&z[shape::getIndexOffset(zIndex, zShapeInfo)], 1);
+        sd::math::atomics::nd4j_atomicAdd<Z>(&z[shape::getIndexOffset(zIndex, zShapeInfo)], 1);
     }
 }
 
@@ -81,7 +81,7 @@ __host__ static void histogramFixedWidthCudaLauncher(const cudaStream_t *stream,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void histogramFixedWidth(nd4j::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
+void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
 
     // firstly initialize output with zeros
     output.nullify();
@@ -137,13 +137,13 @@ void histogramFixedWidth(nd4j::LaunchContext* context, const NDArray& input, con
 //                 currInd = 0;
 //             else if(value >= lastButOneEdge)
 //                 currInd = outputLength - 1;
-//             nd4j::math::atomics::nd4j_atomicAdd(&z[currInd], 1LL);
+//             sd::math::atomics::nd4j_atomicAdd(&z[currInd], 1LL);
 //         }
 //     }
 
 
 //     template <typename T>
-//     void histogramFixedWidth_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
+//     void histogramFixedWidth_(sd::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
 //         const int nbins = output.lengthOf();
 //         auto stream = context->getCudaStream();
 //         // firstly initialize output with zeros
@@ -191,10 +191,10 @@ void histogramFixedWidth(nd4j::LaunchContext* context, const NDArray& input, con
 // //        }
 //     }
 
-//     void histogramFixedWidth(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
+//     void histogramFixedWidth(sd::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
 //         BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidth_, (context, input, range, output), LIBND4J_TYPES);
 //     }
-//     BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
+//     BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (sd::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
 
 }
 }

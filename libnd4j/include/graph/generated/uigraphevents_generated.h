@@ -8,7 +8,7 @@
 
 #include "array_generated.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct UIEvent;
@@ -336,7 +336,7 @@ inline flatbuffers::Offset<FrameIteration> CreateFrameIterationDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *frame = nullptr,
     uint16_t iteration = 0) {
-  return nd4j::graph::CreateFrameIteration(
+  return sd::graph::CreateFrameIteration(
       _fbb,
       frame ? _fbb.CreateString(frame) : 0,
       iteration);
@@ -397,7 +397,7 @@ inline flatbuffers::Offset<UIAddName> CreateUIAddNameDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     int32_t nameIdx = 0,
     const char *name = nullptr) {
-  return nd4j::graph::CreateUIAddName(
+  return sd::graph::CreateUIAddName(
       _fbb,
       nameIdx,
       name ? _fbb.CreateString(name) : 0);
@@ -448,7 +448,7 @@ inline flatbuffers::Offset<FlatArrayList> CreateFlatArrayList(
 inline flatbuffers::Offset<FlatArrayList> CreateFlatArrayListDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<flatbuffers::Offset<FlatArray>> *list = nullptr) {
-  return nd4j::graph::CreateFlatArrayList(
+  return sd::graph::CreateFlatArrayList(
       _fbb,
       list ? _fbb.CreateVector<flatbuffers::Offset<FlatArray>>(*list) : 0);
 }
@@ -544,7 +544,7 @@ inline flatbuffers::Offset<UIHistogram> CreateUIHistogramDirect(
     flatbuffers::Offset<FlatArray> binranges = 0,
     flatbuffers::Offset<FlatArray> y = 0,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *binlabels = nullptr) {
-  return nd4j::graph::CreateUIHistogram(
+  return sd::graph::CreateUIHistogram(
       _fbb,
       type,
       numbins,
@@ -740,13 +740,13 @@ inline flatbuffers::Offset<UIHardwareState> CreateUIHardwareStateDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int64_t> *gpuMemory = nullptr,
     int64_t hostMemory = 0) {
-  return nd4j::graph::CreateUIHardwareState(
+  return sd::graph::CreateUIHardwareState(
       _fbb,
       gpuMemory ? _fbb.CreateVector<int64_t>(*gpuMemory) : 0,
       hostMemory);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_UIGRAPHEVENTS_ND4J_GRAPH_H_

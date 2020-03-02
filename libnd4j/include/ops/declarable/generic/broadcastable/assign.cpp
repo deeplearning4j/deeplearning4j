@@ -18,13 +18,13 @@
 // Created by raver119 on 24.11.17.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_assign)
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(assign, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -33,7 +33,7 @@ namespace nd4j {
 
             BROADCAST_CHECK_EMPTY(x,y,z);
 
-            auto tZ = BroadcastHelper::broadcastApply(nd4j::BroadcastOpsTuple::Assign(), x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Assign(), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z) {
@@ -71,14 +71,14 @@ namespace nd4j {
             if (x->isSameShape(y)) {
                 gradY->assign(epsNext);
             } else if (y->isScalar()) {
-                auto sum = epsNext->reduceNumber(nd4j::reduce::Sum);
+                auto sum = epsNext->reduceNumber(sd::reduce::Sum);
                 gradY->assign(sum);
             } else {
                 // broadcastable
                 auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisY.size() > 0) {
-                    auto sum = epsNext->reduceAlongDimension(nd4j::reduce::Sum, axisY);
+                    auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisY);
                     gradY->assign(sum);
                 } else
                     gradY->assign(epsNext);

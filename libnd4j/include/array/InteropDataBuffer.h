@@ -18,7 +18,7 @@
 // @author raver119@gmail.com
 //
 
-#include <dll.h>
+#include <system/dll.h>
 #include <array/DataBuffer.h>
 #include <array/DataType.h>
 #include <memory>
@@ -26,7 +26,7 @@
 #ifndef LIBND4J_INTEROPDATABUFFER_H
 #define LIBND4J_INTEROPDATABUFFER_H
 
-namespace nd4j {
+namespace sd {
     /**
      * This class is a wrapper for DataBuffer, suitable for sharing DataBuffer between front-end and back-end languages
      */
@@ -37,7 +37,7 @@ namespace nd4j {
     public:
         InteropDataBuffer(InteropDataBuffer &dataBuffer, uint64_t length, uint64_t offset);
         InteropDataBuffer(std::shared_ptr<DataBuffer> databuffer);
-        InteropDataBuffer(size_t elements, nd4j::DataType dtype, bool allocateBoth);
+        InteropDataBuffer(size_t elements, sd::DataType dtype, bool allocateBoth);
         ~InteropDataBuffer() = default;
 
 #ifndef __JAVACPP_HACK__

@@ -19,12 +19,12 @@
 //
 
 #include <ops/declarable/helpers/image_suppression.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <algorithm>
 #include <numeric>
 #include <queue>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -46,26 +46,26 @@ namespace helpers {
         std::vector<int> selectedIndices(output->lengthOf(), 0);
         auto needToSuppressWithThreshold = [] (NDArray& boxes, int previousIndex, int nextIndex, T threshold) -> bool {
             if (previousIndex < 0 || nextIndex < 0) return true;
-            T minYPrev = nd4j::math::nd4j_min(boxes.t<T>(previousIndex, 0), boxes.t<T>(previousIndex, 2));
-            T minXPrev = nd4j::math::nd4j_min(boxes.t<T>(previousIndex, 1), boxes.t<T>(previousIndex, 3));
-            T maxYPrev = nd4j::math::nd4j_max(boxes.t<T>(previousIndex, 0), boxes.t<T>(previousIndex, 2));
-            T maxXPrev = nd4j::math::nd4j_max(boxes.t<T>(previousIndex, 1), boxes.t<T>(previousIndex, 3));
-            T minYNext = nd4j::math::nd4j_min(boxes.t<T>(nextIndex, 0), boxes.t<T>(nextIndex, 2));
-            T minXNext = nd4j::math::nd4j_min(boxes.t<T>(nextIndex, 1), boxes.t<T>(nextIndex, 3));
-            T maxYNext = nd4j::math::nd4j_max(boxes.t<T>(nextIndex, 0), boxes.t<T>(nextIndex, 2));
-            T maxXNext = nd4j::math::nd4j_max(boxes.t<T>(nextIndex, 1), boxes.t<T>(nextIndex, 3));
+            T minYPrev = sd::math::nd4j_min(boxes.t<T>(previousIndex, 0), boxes.t<T>(previousIndex, 2));
+            T minXPrev = sd::math::nd4j_min(boxes.t<T>(previousIndex, 1), boxes.t<T>(previousIndex, 3));
+            T maxYPrev = sd::math::nd4j_max(boxes.t<T>(previousIndex, 0), boxes.t<T>(previousIndex, 2));
+            T maxXPrev = sd::math::nd4j_max(boxes.t<T>(previousIndex, 1), boxes.t<T>(previousIndex, 3));
+            T minYNext = sd::math::nd4j_min(boxes.t<T>(nextIndex, 0), boxes.t<T>(nextIndex, 2));
+            T minXNext = sd::math::nd4j_min(boxes.t<T>(nextIndex, 1), boxes.t<T>(nextIndex, 3));
+            T maxYNext = sd::math::nd4j_max(boxes.t<T>(nextIndex, 0), boxes.t<T>(nextIndex, 2));
+            T maxXNext = sd::math::nd4j_max(boxes.t<T>(nextIndex, 1), boxes.t<T>(nextIndex, 3));
             T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
             T areaNext = (maxYNext - minYNext) * (maxXNext - minXNext);
 
             if (areaNext <= T(0.f) || areaPrev <= T(0.f)) return false;
 
-            T minIntersectionY = nd4j::math::nd4j_max(minYPrev, minYNext);
-            T minIntersectionX = nd4j::math::nd4j_max(minXPrev, minXNext);
-            T maxIntersectionY = nd4j::math::nd4j_min(maxYPrev, maxYNext);
-            T maxIntersectionX = nd4j::math::nd4j_min(maxXPrev, maxXNext);
+            T minIntersectionY = sd::math::nd4j_max(minYPrev, minYNext);
+            T minIntersectionX = sd::math::nd4j_max(minXPrev, minXNext);
+            T maxIntersectionY = sd::math::nd4j_min(maxYPrev, maxYNext);
+            T maxIntersectionX = sd::math::nd4j_min(maxXPrev, maxXNext);
             T intersectionArea =
-                    nd4j::math::nd4j_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
-                            nd4j::math::nd4j_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
+                    sd::math::nd4j_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
+                            sd::math::nd4j_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
             T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
             return intersectionValue > threshold;
 
@@ -140,7 +140,7 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T, typename I>
     static Nd4jLong
-    nonMaxSuppressionGeneric_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int outputSize,
+    nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int outputSize,
             float overlapThreshold, float scoreThreshold, NDArray* output,  SimiliratyFunc f) {
 
         auto numBoxes = boxes->sizeAt(0);
@@ -232,24 +232,24 @@ namespace helpers {
     }
 
     Nd4jLong
-    nonMaxSuppressionGeneric(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
+    nonMaxSuppressionGeneric(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                               double overlapThreshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr?DataType::INT32:output->dataType(), return nonMaxSuppressionGeneric_, (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyOverlaps), FLOAT_TYPES, INTEGER_TYPES);
         return 0;
     }
 
     Nd4jLong
-    nonMaxSuppressionV3(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
+    nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                              double overlapThreshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr?DataType::INT32:output->dataType(), return nonMaxSuppressionGeneric_, (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyV3), FLOAT_TYPES, INTEGER_TYPES);
         return 0;
     }
 
-    BUILD_DOUBLE_TEMPLATE(template Nd4jLong nonMaxSuppressionGeneric_, (nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
+    BUILD_DOUBLE_TEMPLATE(template Nd4jLong nonMaxSuppressionGeneric_, (sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
             float overlapThreshold, float scoreThreshold, NDArray* output, SimiliratyFunc similiratyFunc), FLOAT_TYPES, INTEGER_TYPES);
 
     void
-    nonMaxSuppression(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize,
+    nonMaxSuppression(sd::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize,
             double overlapThreshold, double scoreThreshold, NDArray* output) {
         BUILD_SINGLE_SELECTOR(boxes->dataType(), nonMaxSuppressionV2_, (boxes, scales, maxSize,
                 overlapThreshold, scoreThreshold, output), NUMERIC_TYPES);

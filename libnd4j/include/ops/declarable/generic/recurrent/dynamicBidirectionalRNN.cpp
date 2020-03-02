@@ -20,7 +20,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -83,7 +83,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
 
 
     // forward steps
-    nd4j::ops::dynamic_rnn dynamicRnn;
+    sd::ops::dynamic_rnn dynamicRnn;
     auto resultsFW = dynamicRnn.evaluate({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, {timeMajor});
     hFW->assign(resultsFW->at(0));                              // [time x bS x numUnitsFW] or [bS x time x numUnitsFW]
     hFWFinal->assign(resultsFW->at(1));
@@ -91,12 +91,12 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     auto seqLen = maxTimeStep;
     if(seqLen == nullptr) {
         // FIXME: which datatype should be used here?
-    	seqLen = new NDArray(x->ordering(), {bS}, nd4j::DataType::INT64, block.launchContext());
+    	seqLen = new NDArray(x->ordering(), {bS}, sd::DataType::INT64, block.launchContext());
     	seqLen->assign(time);                                        // set each element of seqLen to be equal to time
     }
 
     // reverse x     
-    nd4j::ops::reverse_sequence reverse;
+    sd::ops::reverse_sequence reverse;
     auto resultsIn = timeMajor ? reverse.evaluate({x, seqLen}, {0, 1}) : reverse.evaluate({x, seqLen}, {1, 0});
     REQUIRE_TRUE (resultsIn->status() == ND4J_STATUS_OK, 0, "dynamic_bidirectional_rnn: there is a problem with reverse on the sequence.");
     auto revInput = resultsIn->at(0);
@@ -123,7 +123,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
 
         DECLARE_TYPES(dynamic_bidirectional_rnn) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 

@@ -20,20 +20,20 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <atomic>
 #include <stdio.h>
 #include <stdlib.h>
 #include "../Workspace.h"
 #include <helpers/logger.h>
-#include <templatemath.h>
+#include <math/templatemath.h>
 #include <cstring>
-#include <cuda_exception.h>
+#include <exceptions/cuda_exception.h>
 
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         Workspace::Workspace(ExternalWorkspace *external) {
             if (external->sizeHost() > 0) {
@@ -162,7 +162,7 @@ namespace nd4j {
 
 
         void* Workspace::allocateBytes(Nd4jLong numBytes) {
-            return allocateBytes(nd4j::memory::MemoryType::HOST, numBytes);
+            return allocateBytes(sd::memory::MemoryType::HOST, numBytes);
         }
 
         Nd4jLong Workspace::getAllocatedSize() {
@@ -183,7 +183,7 @@ namespace nd4j {
             return _spillsSize.load();
         }
 
-        void* Workspace::allocateBytes(nd4j::memory::MemoryType type, Nd4jLong numBytes) {
+        void* Workspace::allocateBytes(sd::memory::MemoryType type, Nd4jLong numBytes) {
             switch (type) {
                 case HOST: {
                         if (numBytes < 1)
@@ -270,7 +270,7 @@ namespace nd4j {
 
         Workspace* Workspace::clone() {
             // for clone we take whatever is higher: current allocated size, or allocated size of current loop
-            return new Workspace(nd4j::math::nd4j_max<Nd4jLong >(this->getCurrentSize(), this->_cycleAllocations.load()));
+            return new Workspace(sd::math::nd4j_max<Nd4jLong >(this->getCurrentSize(), this->_cycleAllocations.load()));
         }
 
         Nd4jLong Workspace::getAllocatedSecondarySize() {

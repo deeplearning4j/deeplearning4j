@@ -25,7 +25,7 @@
 #include <array/ResultSet.h>
 #include <numeric>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
@@ -78,7 +78,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void meshgrid_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
+    static void meshgrid_(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
         const int rank = inArrs.size();
         int inIndices[MAX_RANK];
         std::iota(inIndices, inIndices + rank, 0);
@@ -134,7 +134,7 @@ namespace helpers {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void meshgrid(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
+    void meshgrid(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
 
         BUILD_SINGLE_SELECTOR(inArrs.at(0)->dataType(), meshgrid_, (context, inArrs, outArrs, swapFirst2Dims), NUMERIC_TYPES);
 

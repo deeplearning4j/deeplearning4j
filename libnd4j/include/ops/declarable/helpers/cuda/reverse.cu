@@ -21,12 +21,12 @@
 #include <ops/declarable/helpers/reverse.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
-#include <TAD.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/TAD.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -141,13 +141,13 @@ namespace helpers {
     }
 
     template<typename T>
-    static void reverseTad(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, Nd4jLong *inputTadShape, Nd4jLong *inputTadOffsets, Nd4jLong *outputTadShape, Nd4jLong *outputTadOffsets, uint64_t tadLength) {
+    static void reverseTad(sd::LaunchContext * context, const NDArray* input, NDArray* output, Nd4jLong *inputTadShape, Nd4jLong *inputTadOffsets, Nd4jLong *outputTadShape, Nd4jLong *outputTadOffsets, uint64_t tadLength) {
         auto stream = context->getCudaStream();
         reverseTadKernel<T><<<256, 512, 8192, *stream>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), inputTadShape, inputTadOffsets, outputTadShape, outputTadOffsets, input->lengthOf(), tadLength, input->lengthOf() / tadLength);
     }
 
     template<typename T>
-    static void reverseArray(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, Nd4jLong numOfElemsToReverse) {
+    static void reverseArray(sd::LaunchContext * context, const NDArray* input, NDArray* output, Nd4jLong numOfElemsToReverse) {
         auto stream = context->getCudaStream();
         Nd4jLong numOfReverse = numOfElemsToReverse;
         if (numOfElemsToReverse == 0)
@@ -159,7 +159,7 @@ namespace helpers {
 
     ///////////////////////////////////////////////////////////////////
     template <typename T>
-    static void reverseSequence_(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
+    static void reverseSequence_(sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
         int posOfNonUnityDim = -1;
         seqLengths->syncToHost();
         auto stream = context->getCudaStream();
@@ -198,7 +198,7 @@ namespace helpers {
         }
     }
 
-    void reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
+    void reverseSequence(sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
         NDArray::prepareSpecialUse({output}, {input, seqLengths});
 
         // if op isn't inplace - copy original data into output array
@@ -210,12 +210,12 @@ namespace helpers {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void reverse(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
+    void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
         // we need to reverse axis only if that's new op
         std::vector<int> dimensions = isBackProp ? ShapeUtils::evalDimsToExclude(input->rankOf(), *intArgs) : *intArgs;
         std::vector<int> axis = ShapeUtils::evalDimsToExclude(input->rankOf(), dimensions);
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
 
 
 
@@ -230,7 +230,7 @@ namespace helpers {
         NDArray::registerSpecialUse({output}, {input});
     }
 
-BUILD_SINGLE_TEMPLATE(template void reverseArray, (nd4j::LaunchContext * context, const NDArray *inArr, NDArray *outArr, Nd4jLong numOfElemsToReverse), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void reverseArray, (sd::LaunchContext * context, const NDArray *inArr, NDArray *outArr, Nd4jLong numOfElemsToReverse), LIBND4J_TYPES);
 
 }
 }

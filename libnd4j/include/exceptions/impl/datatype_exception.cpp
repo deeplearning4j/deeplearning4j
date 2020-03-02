@@ -21,19 +21,19 @@
 #include <array/DataTypeUtils.h>
 #include <exceptions/datatype_exception.h>
 
-namespace nd4j {
+namespace sd {
     datatype_exception::datatype_exception(std::string message) : std::runtime_error(message){
         //
     }
 
-    datatype_exception datatype_exception::build(std::string message, nd4j::DataType expected, nd4j::DataType actual) {
+    datatype_exception datatype_exception::build(std::string message, sd::DataType expected, sd::DataType actual) {
         auto exp = DataTypeUtils::asString(expected);
         auto act = DataTypeUtils::asString(actual);
         message += "; Expected: [" + exp + "]; Actual: [" + act + "]";
         return datatype_exception(message);
     }
 
-    datatype_exception datatype_exception::build(std::string message, nd4j::DataType expected, nd4j::DataType actualX, nd4j::DataType actualY) {
+    datatype_exception datatype_exception::build(std::string message, sd::DataType expected, sd::DataType actualX, sd::DataType actualY) {
         auto exp = DataTypeUtils::asString(expected);
         auto actX = DataTypeUtils::asString(actualX);
         auto actY = DataTypeUtils::asString(actualY);
@@ -41,7 +41,7 @@ namespace nd4j {
         return datatype_exception(message);
     }
 
-    datatype_exception datatype_exception::build(std::string message, nd4j::DataType actual) {
+    datatype_exception datatype_exception::build(std::string message, sd::DataType actual) {
         auto act = DataTypeUtils::asString(actual);
         message += "; Actual: [" + act + "]";
         return datatype_exception(message);

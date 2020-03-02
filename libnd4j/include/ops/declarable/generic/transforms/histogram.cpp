@@ -18,14 +18,14 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_histogram)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/histogram.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(histogram, 1, 1, false, 0, 1) {
             auto input = INPUT_VARIABLE(0);
@@ -43,7 +43,7 @@ namespace nd4j {
         DECLARE_SHAPE_FN(histogram) {
             auto numBins = INT_ARG(0);
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(numBins, nd4j::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(numBins, sd::DataType::INT64));
         }
 
 

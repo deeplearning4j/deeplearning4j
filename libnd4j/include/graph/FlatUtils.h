@@ -22,12 +22,12 @@
 #define LIBND4J_FLATUTILS_H
 
 #include <utility>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/generated/array_generated.h>
 #include <graph/generated/node_generated.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT FlatUtils {
         public:
@@ -35,7 +35,7 @@ namespace nd4j {
 
             static std::pair<Nd4jLong, Nd4jLong> fromLongPair(LongPair* pair);
 
-            static NDArray* fromFlatArray(const nd4j::graph::FlatArray* flatArray);
+            static NDArray* fromFlatArray(const sd::graph::FlatArray* flatArray);
 
             static flatbuffers::Offset<FlatArray> toFlatArray(flatbuffers::FlatBufferBuilder &builder, NDArray &array);
         };

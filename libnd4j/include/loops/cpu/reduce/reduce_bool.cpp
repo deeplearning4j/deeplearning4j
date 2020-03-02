@@ -20,10 +20,10 @@
 //
 
 #include <types/types.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/reduce_bool.h>
 #include <loops/legacy_ops.h>
-#include <OmpLaunchHelper.h>
+#include <helpers/OmpLaunchHelper.h>
 #include <helpers/Loops.h>
 #include <helpers/ConstantTadHelper.h>
 
@@ -50,8 +50,8 @@ namespace functions {
                 return;
             }
 
-            if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
-                if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+            if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
+                if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
                     return;
                 const auto startingVal = OpType::startingValue(x);
 
@@ -66,7 +66,7 @@ namespace functions {
             else {
                 auto startingValue = OpType::startingValue(x);
                 uint xShapeInfoCast[MAX_RANK];
-                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
                 for (Nd4jLong i = 0; i < length; i++)
                     startingValue = OpType::update(startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
@@ -92,7 +92,7 @@ namespace functions {
                 else {
                     auto startingValue = OpType::startingValue(x);
                     uint xShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
                     for (Nd4jLong i = 0; i < length; i++)
                         startingValue = OpType::update(startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
@@ -151,8 +151,8 @@ namespace functions {
 
                 auto resultLength = shape::length(zShapeInfo);
 
-                if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
-                    if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+                if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
+                    if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
                         return;
                     const auto startingVal = OpType::startingValue(x);
 
@@ -178,15 +178,15 @@ namespace functions {
                     if (dimensionLength < 1)
                         return;
 
-                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
                     tadOnlyShapeInfo = tadPack.primaryShapeInfo();
                     tadOffsets = tadPack.primaryOffsets();
                 }
 
 #ifdef INLINE_LOOPS
-                nd4j::ReductionLoops<X,Z,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
+                sd::ReductionLoops<X,Z,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
 #else
-                nd4j::ReductionBoolLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
+                sd::ReductionBoolLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
 #endif
             }
 
@@ -208,7 +208,7 @@ namespace functions {
         Z _CUDA_H ReduceBoolFunction<X, Z>::execScalar(void *vx, Nd4jLong xEws, Nd4jLong length, void *vextraParams) {
                 auto x = reinterpret_cast<X *>(vx);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
-                int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
+                int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
                 Z intermediate[64];
 
                 PRAGMA_OMP_SIMD

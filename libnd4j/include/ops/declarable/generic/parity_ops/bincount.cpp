@@ -18,19 +18,19 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_bincount)
 
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/weights.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         DECLARE_TYPES(bincount) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::INT32)
-                    ->setAllowedInputTypes(1, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, sd::DataType::INT32)
+                    ->setAllowedInputTypes(1, sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
         }
 
@@ -45,9 +45,9 @@ namespace nd4j {
             maxLength = values->e<int>(maxIndex)  + 1;
 
             if (block.numI() > 0) {
-                minLength = nd4j::math::nd4j_max(INT_ARG(0), 0);
+                minLength = sd::math::nd4j_max(INT_ARG(0), 0);
                 if (block.numI() == 2)
-                    maxLength = nd4j::math::nd4j_min(maxLength, INT_ARG(1));
+                    maxLength = sd::math::nd4j_min(maxLength, INT_ARG(1));
             }
 
             if (block.width() == 2) { // the second argument is weights
@@ -69,8 +69,8 @@ namespace nd4j {
                 REQUIRE_TRUE(values->isSameShape(weights), 0, "bincount: the input and weights shapes should be equals");
 
             }
-            minLength = nd4j::math::nd4j_max(minLength, 0);
-            maxLength = nd4j::math::nd4j_min(maxLength, values->e<int>(maxIndex) + 1);
+            minLength = sd::math::nd4j_max(minLength, 0);
+            maxLength = sd::math::nd4j_min(maxLength, values->e<int>(maxIndex) + 1);
 
             auto result = OUTPUT_VARIABLE(0);
             result->assign(0.0f);
@@ -83,32 +83,32 @@ namespace nd4j {
         DECLARE_SHAPE_FN(bincount) {
             auto shapeList = SHAPELIST(); 
             auto in = INPUT_VARIABLE(0);
-            nd4j::DataType dtype = DataType::INT32;
+            sd::DataType dtype = DataType::INT32;
             if (block.width() > 1)
                 dtype = ArrayOptions::dataType(inputShape->at(1));
             else if (block.numI() > 2)
-                dtype = (nd4j::DataType)INT_ARG(2);
+                dtype = (sd::DataType)INT_ARG(2);
 
             int maxIndex = in->argMax();
             int maxLength = in->e<int>(maxIndex)  + 1;
             int outLength = maxLength;
             if (block.numI() > 0)
-                outLength = nd4j::math::nd4j_max(maxLength, INT_ARG(0));
+                outLength = sd::math::nd4j_max(maxLength, INT_ARG(0));
 
             if (block.numI() > 1) 
-                outLength = nd4j::math::nd4j_min(outLength, INT_ARG(1));
+                outLength = sd::math::nd4j_min(outLength, INT_ARG(1));
 
             if (block.width() == 3) { // the second argument is min and the third is max
                 auto min= INPUT_VARIABLE(1)->e<int>(0);
                 auto max = INPUT_VARIABLE(2)->e<int>(0);
-                outLength = nd4j::math::nd4j_max(maxLength, min);
-                outLength = nd4j::math::nd4j_min(outLength, max);
+                outLength = sd::math::nd4j_max(maxLength, min);
+                outLength = sd::math::nd4j_min(outLength, max);
             }
             else if (block.width() > 3) {
                 auto min= INPUT_VARIABLE(2);
                 auto max = INPUT_VARIABLE(3);
-                outLength = nd4j::math::nd4j_max(maxLength, min->e<int>(0));
-                outLength = nd4j::math::nd4j_min(outLength, max->e<int>(0));
+                outLength = sd::math::nd4j_max(maxLength, min->e<int>(0));
+                outLength = sd::math::nd4j_min(outLength, max->e<int>(0));
             }
 
             auto newshape = ConstantShapeHelper::getInstance()->vectorShapeInfo(outLength, dtype);

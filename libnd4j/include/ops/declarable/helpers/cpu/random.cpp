@@ -22,12 +22,12 @@
 //#include <vector>
 #include <memory>
 //#include <graph/Context.h>
-#include <ShapeUtils.h>
+#include <helpers/ShapeUtils.h>
 #include <helpers/RandomLauncher.h>
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -186,7 +186,7 @@ namespace helpers {
                         auto nClassesPerSample = nSampleIndexInBatch * numOfClassX;
                         for (Nd4jLong nClass = 0; nClass < numOfClassX; nClass += 1) {
                             auto nIndex = nSamplesPerBatch + nClassesPerSample + nClass;
-                            auto unifornLog = nd4j::math::nd4j_log<Tx, Tx>(-nd4j::math::nd4j_log<Tx, Tx>(rng.relativeT<Tx>(nIndex, minVal, maxVal)));
+                            auto unifornLog = sd::math::nd4j_log<Tx, Tx>(-sd::math::nd4j_log<Tx, Tx>(rng.relativeT<Tx>(nIndex, minVal, maxVal)));
                             Tx tValue = (xTad[nClass * xDimAstride] - unifornLog);
                             if (tValue > Max) {
                                 Max = tValue;

@@ -17,18 +17,18 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-#include <op_boilerplate.h>
-#include <NDArray.h>
-#include <MmulHelper.h>
-#include <ShapeUtils.h>
-#include <ConstantTadHelper.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
+#include <helpers/MmulHelper.h>
+#include <helpers/ShapeUtils.h>
+#include <helpers/ConstantTadHelper.h>
 
-#include "../triangular_solve.h"
-#include "../lup.h"
-#include "../qr.h"
-#include "../lstsq.h"
+#include <ops/declarable/helpers/triangular_solve.h>
+#include <ops/declarable/helpers/lup.h>
+#include <ops/declarable/helpers/qr.h>
+#include <ops/declarable/helpers/lstsq.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -47,7 +47,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void fillRegularizer(nd4j::LaunchContext* context, NDArray& ioMatrix, double const value) {
+    static void fillRegularizer(sd::LaunchContext* context, NDArray& ioMatrix, double const value) {
         auto lastDimsTads = ConstantTadHelper::getInstance()->tadForDimensions(ioMatrix.shapeInfo(), {-2, -1});
         auto stream = context->getCudaStream();
         auto rows = ioMatrix.sizeAt(-2);
@@ -57,7 +57,7 @@ namespace helpers {
     }
 
     template <typename T>
-    int leastSquaresSolveFunctor_(nd4j::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput, double const l2Regularizer, bool const fast, NDArray* output) {
+    int leastSquaresSolveFunctor_(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput, double const l2Regularizer, bool const fast, NDArray* output) {
         if (fast) { // Cholesky decomposition approach
             // Equation for solve A^T * Ax = A^T * b, so
             // 1. Computing A2:
@@ -106,7 +106,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    int leastSquaresSolveFunctor(nd4j::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput, double const l2Regularizer, bool const fast, NDArray* output) {
+    int leastSquaresSolveFunctor(sd::LaunchContext* context, NDArray const* leftInput, NDArray const* rightInput, double const l2Regularizer, bool const fast, NDArray* output) {
         BUILD_SINGLE_SELECTOR(leftInput->dataType(), return leastSquaresSolveFunctor_, (context, leftInput, rightInput, l2Regularizer, fast, output), FLOAT_TYPES);
     }
 

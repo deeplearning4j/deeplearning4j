@@ -18,12 +18,12 @@
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_draw_bounding_boxes)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/image_draw_bounding_boxes.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(draw_bounding_boxes, 3, 1, true) {
 

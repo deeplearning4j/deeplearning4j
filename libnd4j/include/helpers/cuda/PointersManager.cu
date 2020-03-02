@@ -19,17 +19,17 @@
 // @author raver119@gmail.com
 //
 
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 #include <exceptions/cuda_exception.h>
-#include <StringUtils.h>
-#include <logger.h>
+#include <helpers/StringUtils.h>
+#include <helpers/logger.h>
 #include <memory/Workspace.h>
 
-namespace nd4j {
+namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
-PointersManager::PointersManager(const nd4j::LaunchContext* context, const std::string& funcName)  {
-        _context  = const_cast<nd4j::LaunchContext*>(context);
+PointersManager::PointersManager(const sd::LaunchContext* context, const std::string& funcName)  {
+        _context  = const_cast<sd::LaunchContext*>(context);
         _funcName = funcName;
 }
 
@@ -42,7 +42,7 @@ void* PointersManager::replicatePointer(const void* src, const size_t numberOfBy
         if (cudaResult != 0)
             throw cuda_exception::build(_funcName + ": cannot allocate global memory on device!", cudaResult);
     } else {
-	    dst = _context->getWorkspace()->allocateBytes(nd4j::memory::MemoryType::DEVICE, numberOfBytes);
+	    dst = _context->getWorkspace()->allocateBytes(sd::memory::MemoryType::DEVICE, numberOfBytes);
 	}
 
     if (_context != nullptr)
@@ -84,8 +84,8 @@ static __global__ void printDevContentOnDev_(const void* pDev, const Nd4jLong le
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
 void PointersManager::printDevContentOnDevFromHost(const void* pDev, const Nd4jLong len, const int tid) {
-    printDevContentOnDev_<T><<<512, 512, 1024, *nd4j::LaunchContext ::defaultContext()->getCudaStream()>>>(pDev, len, tid);
-    auto res = cudaStreamSynchronize(*nd4j::LaunchContext ::defaultContext()->getCudaStream());
+    printDevContentOnDev_<T><<<512, 512, 1024, *sd::LaunchContext ::defaultContext()->getCudaStream()>>>(pDev, len, tid);
+    auto res = cudaStreamSynchronize(*sd::LaunchContext ::defaultContext()->getCudaStream());
     if (res != 0)
         throw std::runtime_error("PointersManager::printDevContentOnDevFromHost: cudaStreamSynchronize failed!");
 }

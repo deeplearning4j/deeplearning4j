@@ -36,20 +36,20 @@
 #define ND4J_FLOAT24 119 // not supported after all. might want to add support later.
 
 #include <ops/ops.h>
-#include <templatemath.h>
+#include <math/templatemath.h>
 #include <types/float16.h>
 #include <types/float8.h>
 #include <types/uint8.h>
 #include <types/int8.h>
 #include <types/int16.h>
 #include <types/uint16.h>
-#include <Environment.h>
+#include <system/Environment.h>
 
 #define NUM_BANKS 32
 #define LOG_NUM_BANKS 4
 
 
-namespace nd4j {
+namespace sd {
 
     typedef union {
         float f_;
@@ -121,7 +121,7 @@ namespace nd4j {
         //basically, for phase One we want do calculation: how many eligible values we have, and which blocks will be holding data
         Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-        int pass = tid < N && nd4j::math::nd4j_abs<T>(x[tid]) >= static_cast<T>(threshold) ? 1 : 0;
+        int pass = tid < N && sd::math::nd4j_abs<T>(x[tid]) >= static_cast<T>(threshold) ? 1 : 0;
         int bp=__syncthreads_count(pass);
 
         if (threadIdx.x == 0) {
@@ -168,7 +168,7 @@ namespace nd4j {
 
         if (tid < N) {
             T value = x[tid];
-            int pred = nd4j::math::nd4j_abs<T>(value) >= static_cast<T>(threshold) ? 1 : 0;
+            int pred = sd::math::nd4j_abs<T>(value) >= static_cast<T>(threshold) ? 1 : 0;
             int w_i = threadIdx.x/warpSize; //warp index
             int w_l = tid % warpSize;//thread index within a warp
             unsigned int t_m = INT_MAX >> (warpSize-w_l-1); //thread mask (ERROR IN THE PAPER minus one is required)
@@ -231,7 +231,7 @@ namespace nd4j {
 
         for (int e = tid; e < limit; e += blockDim.x * gridDim.x) {
             int el = x[e+4];
-            int ael = nd4j::math::nd4j_abs<int>(el) - 1;
+            int ael = sd::math::nd4j_abs<int>(el) - 1;
 
             // TODO: investigate, if += would work better here, as in "decoded accumulation"
             z[ael] += el > 0 ? threshold : -threshold;
@@ -267,7 +267,7 @@ namespace nd4j {
         for (Nd4jLong i = tid; i < loopLimit; i += blockDim.x * gridDim.x) {
             // all threads in block reading stuff
             T val = i < N ? dx[i] : off;
-            T abs = nd4j::math::nd4j_abs<T>(val);
+            T abs = sd::math::nd4j_abs<T>(val);
 
             int byteId = i / 16 + 4;
             int bitId = i % 16;

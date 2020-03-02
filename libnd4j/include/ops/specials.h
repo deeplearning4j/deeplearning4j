@@ -27,10 +27,10 @@
 #define TAD_THRESHOLD 2
 #endif
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <vector>
 
-namespace nd4j {
+namespace sd {
     class NDArray;
 
     //FIXME: get rid of this redefinition

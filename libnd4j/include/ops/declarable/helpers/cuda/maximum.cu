@@ -18,12 +18,12 @@
 //  @author sgazeos@gmail.com
 //
 
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 #include <helpers/ShapeUtils.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -94,7 +94,7 @@ namespace nd4j {
                 }
             }
 
-            void maximumBPFunctor(nd4j::LaunchContext * context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
+            void maximumBPFunctor(sd::LaunchContext * context, NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY) {
                 NDArray::prepareSpecialUse({gradX, gradY}, {x, y, epsNext});
 
                 BUILD_SINGLE_SELECTOR(x->dataType(), maximumBPFunctor_, (x, y, epsNext, gradX, gradY), NUMERIC_TYPES);

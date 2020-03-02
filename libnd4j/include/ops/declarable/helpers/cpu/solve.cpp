@@ -17,9 +17,9 @@
 //
 //  @author GS <sgazeos@gmail.com>
 //
-#include <op_boilerplate.h>
-#include <NDArray.h>
-#include <NDArrayFactory.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
 #include <helpers/MmulHelper.h>
 
@@ -27,13 +27,13 @@
 #include "../lup.h"
 #include "../solve.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
 // --------------------------------------------------------------------------------------------------------------------------------------- //
     template <typename T>
-    static void adjointMatrix_(nd4j::LaunchContext* context, NDArray const* input, NDArray* output) {
+    static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
         auto inputPart = input->allTensorsAlongDimension({-2, -1});
         auto outputPart = output->allTensorsAlongDimension({-2, -1});
         auto rows = input->sizeAt(-2);
@@ -53,7 +53,7 @@ namespace helpers {
 
 // --------------------------------------------------------------------------------------------------------------------------------------- //
     template <typename T>
-    static int solveFunctor_(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool const adjoint, NDArray* output) {
+    static int solveFunctor_(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool const adjoint, NDArray* output) {
 
         // stage 1: LU decomposition batched
         auto leftOutput = leftInput->ulike();
@@ -89,11 +89,11 @@ namespace helpers {
     }
 
 // --------------------------------------------------------------------------------------------------------------------------------------- //
-    int solveFunctor(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool const adjoint, NDArray* output) {
+    int solveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool const adjoint, NDArray* output) {
         BUILD_SINGLE_SELECTOR(leftInput->dataType(), return solveFunctor_, (context, leftInput, rightInput, adjoint, output), FLOAT_TYPES);
     }
 // --------------------------------------------------------------------------------------------------------------------------------------- //
-    void adjointMatrix(nd4j::LaunchContext* context, NDArray const* input, NDArray* output) {
+    void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), adjointMatrix_, (context, input, output), FLOAT_TYPES);
     }
 // --------------------------------------------------------------------------------------------------------------------------------------- //

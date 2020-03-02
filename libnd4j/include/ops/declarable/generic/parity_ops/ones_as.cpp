@@ -18,12 +18,12 @@
 // Created by raver119 on 01.11.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_ones_as)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(ones_as, 1, 1, false, 0, 0) {
             auto output = OUTPUT_VARIABLE(0);
@@ -36,7 +36,7 @@ namespace nd4j {
         DECLARE_SHAPE_FN(ones_as) {
             auto in = inputShape->at(0);
             auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
-            auto shape = nd4j::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, in);
+            auto shape = sd::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, in);
 
             nd4j_printf("numD: %i; dtype: %s\n", block.numD(), DataTypeUtils::asString(dtype).c_str());
 
@@ -45,8 +45,8 @@ namespace nd4j {
 
         DECLARE_TYPES(ones_as) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
+                    ->setAllowedOutputTypes(sd::DataType::ANY)
                     ->setSameMode(false);
         }
     }

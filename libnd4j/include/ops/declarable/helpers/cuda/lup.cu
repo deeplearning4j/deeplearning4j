@@ -19,17 +19,17 @@
 //
 
 #include <ops/declarable/helpers/top_k.h>
-#include <MmulHelper.h>
-#include <NDArrayFactory.h>
-#include <Status.h>
-#include <ConstantTadHelper.h>
-#include <ShapeUtils.h>
+#include <helpers/MmulHelper.h>
+#include <array/NDArrayFactory.h>
+#include <graph/Status.h>
+#include <helpers/ConstantTadHelper.h>
+#include <helpers/ShapeUtils.h>
 //#include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
 #include <cusolverDn.h>
-#include <cuda_exception.h>
+#include <exceptions/cuda_exception.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -401,7 +401,7 @@ namespace helpers {
                     }
                 }
                 else {
-                    NDArray permutVector('c', {n}, nd4j::DataType::INT32, context);
+                    NDArray permutVector('c', {n}, sd::DataType::INT32, context);
                     int* permutationBuf = permutVector.dataBuffer()->specialAsT<int>();
                     status = cusolverDnDgetrf(
                             cusolverH,
@@ -548,14 +548,14 @@ namespace helpers {
         auto rowNum = shape::sizeAt(compoundShape, 0);
         Nd4jLong xInitial[] = {column, column};
         auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
-        auto maxValue = T(0); //nd4j::math::nd4j_abs(compoundBuffer[xInitialIndex]);
+        auto maxValue = T(0); //sd::math::nd4j_abs(compoundBuffer[xInitialIndex]);
         auto result = -1LL;
 
         for (auto rowCounter = column; rowCounter < rowNum; rowCounter++) {
             Nd4jLong xPos[] = {rowCounter, column};
             auto xIndex = shape::getOffset(compoundShape, xPos, 0);
-            if (nd4j::math::nd4j_abs(compoundBuffer[xIndex]) > maxValue) {
-                maxValue = nd4j::math::nd4j_max(maxValue, nd4j::math::nd4j_abs(compoundBuffer[xIndex]));
+            if (sd::math::nd4j_abs(compoundBuffer[xIndex]) > maxValue) {
+                maxValue = sd::math::nd4j_max(maxValue, sd::math::nd4j_abs(compoundBuffer[xIndex]));
                 result = rowCounter;
             }
         }
@@ -603,7 +603,7 @@ namespace helpers {
 
         output->assign(input); // fill up output tensor with zeros
 //        output->tickWriteDevice();
-        permutationVectors->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), iota, *permutationVectors, true, nullptr);
+        permutationVectors->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), iota, *permutationVectors, true, nullptr);
 //        permutationVectors->tickWriteDevice();
         auto tads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-2, -1});
         auto permutaionTads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-1});
@@ -621,7 +621,7 @@ namespace helpers {
     }
 // ------------------------------------------------------------------------------------------------------------------ //
     template<typename T>
-    static int determinant_(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
+    static int determinant_(sd::LaunchContext *context, NDArray *input, NDArray *output) {
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
         std::vector<int> dims();
@@ -659,7 +659,7 @@ namespace helpers {
         return Status::OK();
     }
 
-        int determinant(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
+        int determinant(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             NDArray::prepareSpecialUse({output}, {input});
             BUILD_SINGLE_SELECTOR(input->dataType(), return determinant_, (context, input, output), FLOAT_NATIVE);
             NDArray::registerSpecialUse({output}, {input});
@@ -708,7 +708,7 @@ namespace helpers {
             return ND4J_STATUS_OK;
         }
 
-        int logAbsDeterminant(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
+        int logAbsDeterminant(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             NDArray::prepareSpecialUse({output}, {input});
             BUILD_SINGLE_SELECTOR(input->dataType(), return logAbsDeterminant_, (context, input, output), FLOAT_NATIVE);
             NDArray::registerSpecialUse({output}, {input});
@@ -747,7 +747,7 @@ namespace helpers {
         }
 
         template<typename T>
-        static int inverse_(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
+        static int inverse_(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             auto n = input->sizeAt(-1);
             auto n2 = n * n;
             auto dtype = DataTypeUtils::fromT<T>(); //input->dataType();
@@ -758,10 +758,10 @@ namespace helpers {
             NDArray lower = NDArrayFactory::create('c', {n, n}, dtype, context);
             NDArray compound = NDArrayFactory::create('c', {n, n}, dtype, context);
             NDArray permutation = NDArrayFactory::create('c', {n, n}, dtype, context);
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),
                                                                                   {input->rankOf() - 2,
                                                                                    input->rankOf() - 1});
-            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(),
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(),
                                                                                   {output->rankOf() - 2,
                                                                                    output->rankOf() - 1});
             auto stream = context->getCudaStream();
@@ -787,7 +787,7 @@ namespace helpers {
 //                compound.printIndexedBuffer("Lower Inverted");
 //                matrix.tickWriteDevice();
 //                compound.tickWriteDevice();
-                nd4j::MmulHelper::mmul(&matrix, &compound, &upper, 1.0, 0.0);
+                sd::MmulHelper::mmul(&matrix, &compound, &upper, 1.0, 0.0);
                 upper.tickWriteDevice();
 //                upper.printIndexedBuffer("Full inverted");
                 returnMatrix<T> <<<1, n2, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), i * n2, n);
@@ -795,13 +795,13 @@ namespace helpers {
             return Status::OK();
         }
 
-        int inverse(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
+        int inverse(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             NDArray::prepareSpecialUse({output}, {input});
             BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (context, input, output), FLOAT_NATIVE);
             NDArray::registerSpecialUse({output}, {input});
         }
 
-        bool checkCholeskyInput(nd4j::LaunchContext *context, NDArray const *input) {
+        bool checkCholeskyInput(sd::LaunchContext *context, NDArray const *input) {
             return true;
         }
 
@@ -848,7 +848,7 @@ namespace helpers {
                 throw cuda_exception::build("helpers::cholesky_: Cannot create solver handle", status);
             }
             F **dArrayBatch = nullptr;
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
                                                                                   {tempOutput.rankOf() - 2,
                                                                                    tempOutput.rankOf() - 1});
             const Nd4jLong batchSize = packX.numberOfTads();
@@ -933,12 +933,12 @@ namespace helpers {
             return Status::OK();
         }
 
-        int cholesky(nd4j::LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
+        int cholesky(sd::LaunchContext *context, NDArray *input, NDArray *output, bool inplace) {
 //        BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (context, input, output, inplace), FLOAT_TYPES);
             return cholesky_(context, input, output, inplace);
         }
 //    BUILD_SINGLE_TEMPLATE(template int cholesky_, (LaunchContext* context, NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
-        BUILD_SINGLE_TEMPLATE(template int inverse_, (nd4j::LaunchContext * context, NDArray * input, NDArray * output),
+        BUILD_SINGLE_TEMPLATE(template int inverse_, (sd::LaunchContext * context, NDArray * input, NDArray * output),
                               FLOAT_NATIVE);
 
         template<typename T>
@@ -968,7 +968,7 @@ namespace helpers {
         }
 
         template<typename T>
-        int logdetFunctor_(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
+        int logdetFunctor_(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             NDArray::prepareSpecialUse({output}, {input});
             auto n2 = input->sizeAt(-1) * input->sizeAt(-2);
             auto stream = context->getCudaStream();
@@ -979,7 +979,7 @@ namespace helpers {
             auto outputBuf = output->dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(output->specialBuffer()); // + e * n2; // + e * n2;
             auto inputBuf = tempOutput.dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(tempOutput.specialBuffer());
             output->nullify();
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
                                                                                   {tempOutput.rankOf() - 2,
                                                                                    tempOutput.rankOf() - 1});
             logDetKernel<T> <<<128, 512, 256, *stream>>>(inputBuf, tempOutput.specialShapeInfo(),
@@ -990,7 +990,7 @@ namespace helpers {
             return Status::OK();
         }
 
-        int logdetFunctor(nd4j::LaunchContext *context, NDArray *input, NDArray *output) {
+        int logdetFunctor(sd::LaunchContext *context, NDArray *input, NDArray *output) {
             BUILD_SINGLE_SELECTOR(output->dataType(), return logdetFunctor_, (context, input, output), FLOAT_NATIVE);
         }
 
@@ -1003,7 +1003,7 @@ namespace helpers {
         }
 
 //        BUILD_SINGLE_TEMPLATE(template int logdetFunctor_,
-//                              (nd4j::LaunchContext * context, NDArray * input, NDArray * output), FLOAT_NATIVE);
+//                              (sd::LaunchContext * context, NDArray * input, NDArray * output), FLOAT_NATIVE);
     }
 }
 }

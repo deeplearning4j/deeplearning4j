@@ -18,11 +18,11 @@
 // @author raver119@gmail.com
 //
 
-#include <exceptions/unresolved_output_exception.h>
-#include <StringUtils.h>
+#include <graph/exceptions/unresolved_output_exception.h>
+#include <helpers/StringUtils.h>
 #include <utility>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         unresolved_output_exception::unresolved_output_exception(std::string message) : std::runtime_error(message) {
             //

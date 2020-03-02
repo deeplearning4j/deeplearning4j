@@ -19,15 +19,15 @@
 //
 #ifndef __DIAG_H_HELPERS__
 #define __DIAG_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    void diagFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output);
-    void diagPartFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output);
+    void diagFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output);
+    void diagPartFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output);
 
 }
 }

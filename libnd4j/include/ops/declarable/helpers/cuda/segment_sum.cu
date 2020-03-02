@@ -20,14 +20,14 @@
 
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
@@ -70,7 +70,7 @@ namespace helpers {
 
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
             auto xIndex = shape::getIndexOffset(e, inputShape);
-            nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
+            sd::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
         }
     }
     // -------------------------------------------------------------------------------------------------------------- //
@@ -112,7 +112,7 @@ namespace helpers {
                 auto xIndex = shape::getIndexOffset(e, inputShape);
                 auto yIndex = shape::getIndexOffset(e, indicesShape);
                 if (y[yIndex] == segment && e != starts[segment]) {
-                    nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
+                    sd::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
                 }
             }
     }
@@ -143,7 +143,7 @@ namespace helpers {
                 for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                     auto xIndex = shape::getIndexOffset(e, inputTads);
                     auto zIndex = shape::getIndexOffset(e, outputTads);
-                    nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
+                    sd::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
                 }
             }
             else {
@@ -151,7 +151,7 @@ namespace helpers {
                     auto xIndex = shape::getIndexOffset(e, inputTads);
                     auto zIndex = shape::getIndexOffset(e, outputTads);
                     if (lengths[indices[idx]])
-                        nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
+                        sd::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex]);
                 }
             }
         }
@@ -159,7 +159,7 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T, typename I>
-    static void segmentSumFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
+    static void segmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
         auto stream = context->getCudaStream();
         Nd4jLong numClasses = indices->e<Nd4jLong>(indices->lengthOf() - 1) + 1;
         NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses});
@@ -178,8 +178,8 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
             Nd4jLong* inputTads = packX.specialShapeInfo();
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -189,7 +189,7 @@ namespace helpers {
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    void segmentSumFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
+    void segmentSumFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices});
         output->nullify();
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentSumFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
@@ -198,13 +198,13 @@ namespace helpers {
 
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    static void unsortedSegmentSumFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    static void unsortedSegmentSumFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         auto stream = context->getCudaStream();
 //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
         NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
         NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
 //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-//        classes.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &row, &classes);
+//        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &row, &classes);
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);
         dim3 dims(numOfClasses, indices->lengthOf(), (numOfClasses + 1) * 64);
@@ -219,8 +219,8 @@ namespace helpers {
         else {
             output->assign(0);
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
             Nd4jLong* inputTads = packX.specialShapeInfo();
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -231,7 +231,7 @@ namespace helpers {
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    void unsortedSegmentSumFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentSumFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices});
         output->nullify();
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSumFunctor_, (context, input, indices, numOfClasses, output),
@@ -315,7 +315,7 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    int segmentSumFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentSumFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         if (input->isVector()) {
@@ -327,9 +327,9 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
             Nd4jLong* inputTads = packX.specialShapeInfo();
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -348,7 +348,7 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
 
-    int segmentSumFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+    int segmentSumFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentSumFunctorBP_, (context, input,
                 indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
@@ -356,7 +356,7 @@ namespace helpers {
     }
 
     template <typename T, typename I>
-    static int unsortedSegmentSumFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    static int unsortedSegmentSumFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         if (input->isVector()) {
@@ -368,9 +368,9 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
             Nd4jLong* inputTads = packX.specialShapeInfo();
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -388,7 +388,7 @@ namespace helpers {
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    int unsortedSegmentSumFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentSumFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSumFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({output}, {input, indices, gradOut});

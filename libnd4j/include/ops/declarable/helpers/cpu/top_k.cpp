@@ -20,10 +20,10 @@
 
 #include <ops/declarable/helpers/top_k.h>
 #include <ops/declarable/headers/parity_ops.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -138,7 +138,7 @@ namespace helpers {
 // ----------------------------------------------------------------------------------------------- //
 
     template <typename T>
-    static int inTopKFunctor_(nd4j::LaunchContext* context, const NDArray* input, const NDArray* target, NDArray* result, const uint k) {
+    static int inTopKFunctor_(sd::LaunchContext* context, const NDArray* input, const NDArray* target, NDArray* result, const uint k) {
 
             std::vector<Nd4jLong> shapeI(input->rankOf());
             for (int i = 0; i < input->rankOf() - 1; i++)
@@ -169,16 +169,16 @@ namespace helpers {
 
     }
 
-        int topKFunctor(nd4j::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
+        int topKFunctor(sd::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
             BUILD_SINGLE_SELECTOR(input->dataType(), return topKFunctor_, (input, values, indices, k, needSort), NUMERIC_TYPES);
         }
 
-        int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* input, const NDArray* target, NDArray* result, const uint k) {
+        int inTopKFunctor(sd::LaunchContext * context, const NDArray* input, const NDArray* target, NDArray* result, const uint k) {
             BUILD_SINGLE_SELECTOR(input->dataType(), return inTopKFunctor_, (context, input, target, result, k), NUMERIC_TYPES);
         }
 
         BUILD_SINGLE_TEMPLATE(template int topKFunctor_, (const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort), NUMERIC_TYPES);
-        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (nd4j::LaunchContext * context, const NDArray* input, const NDArray* target, NDArray* result, const uint k), NUMERIC_TYPES);
+        BUILD_SINGLE_TEMPLATE(template int inTopKFunctor_, (sd::LaunchContext * context, const NDArray* input, const NDArray* target, NDArray* result, const uint k), NUMERIC_TYPES);
 }
 }
 }

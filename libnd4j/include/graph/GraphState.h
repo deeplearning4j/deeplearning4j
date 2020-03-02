@@ -21,21 +21,21 @@
 #ifndef LIBND4J_GRAPHSTATE_H
 #define LIBND4J_GRAPHSTATE_H
 
-#include <pointercast.h>
-#include <op_boilerplate.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/dll.h>
 #include <vector>
 #include <unordered_map>
 #include <map>
 #include <graph/Scope.h>
-#include <Status.h>
+#include <graph/Status.h>
 #include <graph/VariableSpace.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <types/pair.h>
 #include <graph/ArgumentsList.h>
 #include <graph/Graph.h>
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
     class ND4J_EXPORT GraphState {
@@ -94,7 +94,7 @@ namespace graph {
          * @param op
          * @return
          */
-        Nd4jStatus attachOpToScope(int scopeId, int nodeId, nd4j::ops::DeclarableOp *op, ArgumentsList inputs);
+        Nd4jStatus attachOpToScope(int scopeId, int nodeId, sd::ops::DeclarableOp *op, ArgumentsList inputs);
 
         /**
          * This method returns pointer to the scope with given id

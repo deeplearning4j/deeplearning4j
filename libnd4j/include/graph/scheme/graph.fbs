@@ -22,7 +22,7 @@ include "result.fbs";
 include "request.fbs";
 include "array.fbs";
 
-namespace nd4j.graph;
+namespace sd.graph;
 
 table UpdaterState {
 	paramName:string;					//Name of the parameter the updater state is for

@@ -23,7 +23,7 @@
 #include <helpers/TAD.h>
 #include <ops/declarable/helpers/prefix.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
@@ -116,11 +116,11 @@ namespace nd4j {
                     prefix_<T>(op, x->getBuffer(), x->getShapeInfo(), z->buffer(), z->shapeInfo(), exclusive, reverse);
             };
 
-            void prefix(nd4j::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+            void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
                 BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, exclusive, reverse), LIBND4J_TYPES);
             }
 
-            void prefix(nd4j::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse) {
+            void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse) {
                 BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, dims, exclusive, reverse), LIBND4J_TYPES);
             }
 

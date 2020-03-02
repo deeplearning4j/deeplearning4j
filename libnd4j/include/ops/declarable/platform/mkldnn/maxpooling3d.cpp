@@ -21,7 +21,7 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 #include <helpers/MKLDNNStream.h>
 #include "mkldnnUtils.h"
@@ -29,7 +29,7 @@
 
 using namespace dnnl;
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -76,7 +76,7 @@ PLATFORM_CHECK(maxpool3dnew, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output});
+    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -125,7 +125,7 @@ PLATFORM_CHECK(maxpool3dnew_bp, ENGINE_CPU) {
     auto input = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    return block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output});
+    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, output});
 }
 
 }

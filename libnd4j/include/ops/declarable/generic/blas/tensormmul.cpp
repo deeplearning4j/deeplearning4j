@@ -18,16 +18,16 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_tensormmul)
 
 #include <numeric>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 ////////////////////////////////////////////////////////////////////////
@@ -78,7 +78,7 @@ DECLARE_SHAPE_FN(tensormmul) {
     // evaluate shapes
     std::vector<int> permutAt, permutBt;
     std::vector<Nd4jLong> shapeAt, shapeBt;
-    auto outShape = nd4j::ShapeUtils::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
+    auto outShape = sd::ShapeUtils::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
 
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(aShapeInfo), 'c', outShape)));
 }

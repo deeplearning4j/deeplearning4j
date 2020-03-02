@@ -19,9 +19,9 @@
 //
 
 #include <ops/declarable/helpers/histogram.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Z>
@@ -54,7 +54,7 @@ namespace nd4j {
                     int idx = int((dx[e] - *min_val) / binSize);
                     idx = math::nd4j_max(idx, 0); //atomicMax(&idx, 0);//atomicMax(&idx, 0);
                     idx = math::nd4j_min(idx, int(numBins - 1)); //atomicMin(&idx, int(numBins - 1));
-                    nd4j::math::atomics::nd4j_atomicAdd<Z>(&bins[idx], (Z)1);
+                    sd::math::atomics::nd4j_atomicAdd<Z>(&bins[idx], (Z)1);
                 }
                 __syncthreads();
                 // at this point all bins in shared memory are calculated, so we aggregate them now via threadfence trick
@@ -108,9 +108,9 @@ namespace nd4j {
             }
 
             template <typename X, typename Z>
-            static void histogram_(nd4j::LaunchContext *context, void *xBuffer, Nd4jLong *xShapeInfo, Nd4jLong *dxShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, Nd4jLong numBins, void* min_val, void* max_val) {
+            static void histogram_(sd::LaunchContext *context, void *xBuffer, Nd4jLong *xShapeInfo, Nd4jLong *dxShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, Nd4jLong numBins, void* min_val, void* max_val) {
                 int numThreads = 256;
-                int numBlocks = nd4j::math::nd4j_max<int>(256, nd4j::math::nd4j_min<int>(1, shape::length(xShapeInfo) / numThreads));
+                int numBlocks = sd::math::nd4j_max<int>(256, sd::math::nd4j_min<int>(1, shape::length(xShapeInfo) / numThreads));
                 int workspaceSize = numBlocks * numBins;
                 auto tmp = NDArrayFactory::create<Z>('c', {workspaceSize});
 
@@ -119,7 +119,7 @@ namespace nd4j {
                 cudaStreamSynchronize(*context->getCudaStream());
             }
 
-            void histogramHelper(nd4j::LaunchContext *context, NDArray &input, NDArray &output) {
+            void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output) {
                 Nd4jLong numBins = output.lengthOf();
                 NDArray::registerSpecialUse({&output}, {&input});
 

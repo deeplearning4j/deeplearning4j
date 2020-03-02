@@ -20,14 +20,14 @@
 
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
@@ -51,7 +51,7 @@ namespace helpers {
             if (lengths[segment] == 0) continue;
             auto xIndex = shape::getIndexOffset(idx, inputShape);
 
-            nd4j::math::atomics::nd4j_atomicAdd(&output[zIndex],  input[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]));
+            sd::math::atomics::nd4j_atomicAdd(&output[zIndex],  input[xIndex] / sd::math::nd4j_sqrt<int, T>(lengths[segment]));
         }
     }
     // -------------------------------------------------------------------------------------------------------------- //
@@ -77,19 +77,19 @@ namespace helpers {
             for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                 auto xIndex = shape::getIndexOffset(e, inputTads);
                 auto zIndex = shape::getIndexOffset(e, outputTads);
-                nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]));
+                sd::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex] / sd::math::nd4j_sqrt<int, T>(lengths[segment]));
             }
         }
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    static void unsortedSegmentSqrtNFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    static void unsortedSegmentSqrtNFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         auto stream = context->getCudaStream();
 //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
         NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
         NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
 //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-//        classes.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &row, &classes);
+//        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &row, &classes);
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);
 //        dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
@@ -108,8 +108,8 @@ namespace helpers {
         else {
             output->nullify();
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
             Nd4jLong* inputTads = packX.specialShapeInfo();
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -121,7 +121,7 @@ namespace helpers {
         }
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    void unsortedSegmentSqrtNFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+    void unsortedSegmentSqrtNFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSqrtNFunctor_, (context, input, indices, numOfClasses, output),
                               FLOAT_TYPES, INDEXING_TYPES);
@@ -203,7 +203,7 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T, typename I>
-    static int unsortedSegmentSqrtNFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    static int unsortedSegmentSqrtNFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         auto numClasses = indices->e<int>(indices->lengthOf() - 1) + 1;
@@ -226,10 +226,10 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-//            auto packGradIn = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
-            auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+//            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
             Nd4jLong* inputTads = packX.specialShapeInfo();
             Nd4jLong* inputTadOffsets = packX.specialOffsets();
             Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -247,7 +247,7 @@ namespace helpers {
         return Status::OK();
     }
     // -------------------------------------------------------------------------------------------------------------- //
-    int unsortedSegmentSqrtNFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+    int unsortedSegmentSqrtNFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSqrtNFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({output}, {input, indices, gradOut});

@@ -24,11 +24,11 @@
 #include <array/DataType.h>
 #include <unordered_map>
 #include <vector>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <array/ConstantDataBuffer.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT ConstantDescriptor {
     private:
         std::vector<Nd4jLong> _integerValues;
@@ -63,9 +63,9 @@ namespace nd4j {
 
 namespace std {
     template<>
-    class ND4J_EXPORT hash<nd4j::ConstantDescriptor> {
+    class ND4J_EXPORT hash<sd::ConstantDescriptor> {
     public:
-        size_t operator()(const nd4j::ConstantDescriptor &k) const;
+        size_t operator()(const sd::ConstantDescriptor &k) const;
     };
 }
 

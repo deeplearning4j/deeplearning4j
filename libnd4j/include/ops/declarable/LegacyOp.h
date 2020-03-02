@@ -22,9 +22,9 @@
 #define LIBND4J_LEGACYOP_H
 
 #include <ops/declarable/DeclarableOp.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         /**
@@ -48,7 +48,7 @@ namespace nd4j {
             ~LegacyOp() = default;
 
             // All Op classes provide own specific implementation for this method
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override = 0;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override = 0;
             virtual LegacyOp* clone() = 0;
         };
     }

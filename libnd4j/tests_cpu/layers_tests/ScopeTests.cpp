@@ -19,12 +19,12 @@
 //
 
 #include "testlayers.h"
-#include <Graph.h>
-#include <Node.h>
+#include <graph/Graph.h>
+#include <graph/Node.h>
 #include <ops/declarable/CustomOperations.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class ScopeTests : public testing::Test {
 public:
@@ -40,7 +40,7 @@ TEST_F(ScopeTests, BasicTests_1) {
     auto variableSpace = graph.getVariableSpace();
     variableSpace->putVariable(-1, x);
 
-    nd4j::ops::Scope opScope;
+    sd::ops::Scope opScope;
 
     auto scopeBody = new Node(OpType_LOGIC, 10, 1);
     scopeBody->setName("scopeBody");
@@ -86,7 +86,7 @@ TEST_F(ScopeTests, RealTests_1) {
     //
     auto scopeCondition = new Node(OpType_LOGIC, logic::Scope, 3);
     scopeCondition->setName("scopeCondition");
-    nd4j::ops::Scope opScope;
+    sd::ops::Scope opScope;
     scopeCondition->setCustomOp(&opScope);
 
     // this is scope of the body, it'll be executed multiple times
@@ -102,7 +102,7 @@ TEST_F(ScopeTests, RealTests_1) {
     scopedA0->setScopeInfo(3, "scopeCondition");
 
     // this op compares LT A0 result with variable `scalar` which is 10;
-    nd4j::ops::lt_scalar op;
+    sd::ops::lt_scalar op;
     auto scopedA1 = new Node(&op, 5, {4, -3});
     scopedA1->setScopeInfo(3, "scopeCondition");
 
@@ -115,13 +115,13 @@ TEST_F(ScopeTests, RealTests_1) {
     scopedB0->setScopeInfo(10, "scopeBody");
 
     auto nodeReturn = new Node(OpType_LOGIC, logic::Return, 7, {6}, {12});
-    nd4j::ops::Return opReturn;
+    sd::ops::Return opReturn;
     nodeReturn->setCustomOp(&opReturn);
     nodeReturn->setScopeInfo(10, "scopeBody");
 
     // WHILE operations takes 2 scopes - :0 is condition scope, and :1 is loop body scope
     auto nodeWhile = new Node(OpType_LOGIC, logic::While, 12, {-2, 3, 10});
-    nd4j::ops::While opWhile;
+    sd::ops::While opWhile;
     nodeWhile->setCustomOp(&opWhile);
 
     // adding root nodes first, nothing unusual expected here

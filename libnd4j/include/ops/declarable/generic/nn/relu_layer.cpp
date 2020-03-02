@@ -20,7 +20,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(relu_layer, 3, 1, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -35,13 +35,13 @@ namespace nd4j {
 
             auto output = OUTPUT_VARIABLE(0);
 
-            nd4j::ops::xw_plus_b op;
+            sd::ops::xw_plus_b op;
             auto status = op.execute({x, w, b}, {output});
             REQUIRE_TRUE(Status::OK() == status, 0, "relu_layer: xw_plus_b op failed on input data.");
 
             auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-            output->applyScalar(nd4j::scalar::RELU, scalar, *output);
+            output->applyScalar(sd::scalar::RELU, scalar, *output);
 
             return Status::OK();
         }
@@ -56,7 +56,7 @@ namespace nd4j {
 
         DECLARE_TYPES(relu_layer) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
 //                  ->setAllowedInputTypes(1, {ALL_FLOATS})
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }

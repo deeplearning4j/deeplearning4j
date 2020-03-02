@@ -19,14 +19,14 @@
 // @author Yurii Shyrma, changed on 20.03.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sconv2d)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <memory>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -95,7 +95,7 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
 
     DECLARE_TYPES(sconv2d) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
@@ -186,7 +186,7 @@ DECLARE_SHAPE_FN(sconv2d) {
 
     DECLARE_TYPES(sconv2d_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
@@ -265,7 +265,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 
     // if (iC == 1) {
     //     nd4j_debug(" SCONV2D_BP OP: for input_channels=1 this op is equivalent to standard conv2d_bp \n","");
-    //     nd4j::ops::conv2d_bp op;
+    //     sd::ops::conv2d_bp op;
     //     return op.execute(&block);
     // }
 

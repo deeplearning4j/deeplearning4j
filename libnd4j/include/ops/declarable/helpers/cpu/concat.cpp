@@ -22,16 +22,16 @@
 #include <ops/declarable/helpers/transforms.h>
 #include <ops/specials.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             //////////////////////////////////////////////////////////////////////////
             template<typename T>
             static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
-                nd4j::SpecialMethods<T>::concatCpuGeneric(inArrs, output, axis);
+                sd::SpecialMethods<T>::concatCpuGeneric(inArrs, output, axis);
             }
 
-            void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+            void concat(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
                 BUILD_SINGLE_SELECTOR(output.dataType(), concat_,(inArrs, output, axis), LIBND4J_TYPES);
             }
 

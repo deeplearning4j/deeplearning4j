@@ -23,17 +23,17 @@
 #define LIBND4J_GAMMAMATHFUNC_H
 
 #include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include "array/NDArray.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
     // calculate the digamma function for each element for array
-    void diGamma(nd4j::LaunchContext* context, const NDArray& x, NDArray& z);
+    void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z);
 
 	// calculate the polygamma function
-    void polyGamma(nd4j::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& z);
+    void polyGamma(sd::LaunchContext* context, const NDArray& n, const NDArray& x, NDArray& z);
 
     // calculate the digamma function for one element
 	// implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma = (-1)^{n+1} * n! * zeta(n+1, x)
@@ -47,7 +47,7 @@ namespace helpers {
 			if(x == xInt)	// integer
 				return DataTypeUtils::infOrMax<T>();
 			else
-				return diGammaScalar<T>(1 - x) - M_PI / nd4j::math::nd4j_tan<T,T>(M_PI * x); // use reflection formula psi(1-x) = psi(x) + pi*cot(pi*x)
+				return diGammaScalar<T>(1 - x) - M_PI / sd::math::nd4j_tan<T,T>(M_PI * x); // use reflection formula psi(1-x) = psi(x) + pi*cot(pi*x)
 		}
 
 		// positive integer
@@ -61,7 +61,7 @@ namespace helpers {
 
 		// positive half-integer
 		if(x - xInt == 0.5 && xInt <= 20) {		// psi(n+0.5) = -Euler_Mascheroni_const - 2*ln(2) + sum_from_k=1_to_n( 2/(2*k-1) )	, for n = 1,2,3,...inf, we use this formula only for n <= 20 to avoid time consuming sum calculation for bigger n
-			T result = -0.577215664901532 - 2 * nd4j::math::nd4j_log<T,T>(2);
+			T result = -0.577215664901532 - 2 * sd::math::nd4j_log<T,T>(2);
 			for (uint i = 1; i <= xInt; ++i) {
 				result += static_cast<T>(2) / (2*i - 1);
 			}
@@ -78,7 +78,7 @@ namespace helpers {
 		// psi(x) = log(x) - 1/(2*x) - 1/(12*x^2) + 1/(120*x^4) - 1/(252*x^6) + 1/(240*x^8) - 5/(660*x^10) + 691/(32760*x^12) - 1/(12*x^14) + ...
 
 		if(x >= (sizeof(T) > 4 ? 1.e16 : 1.e8))		// if x is too big take into account only log(x)
-			return nd4j::math::nd4j_log<T,T>(x);
+			return sd::math::nd4j_log<T,T>(x);
 
 		// coefficients used in truncated asymptotic expansion formula
 		const T coeffs[7] = {-(T)1/12, (T)1/120, -(T)1/252, (T)1/240, -(T)5/660, (T)691/32760, -(T)1/12};
@@ -89,7 +89,7 @@ namespace helpers {
 
 		for (int i = 6; i >= 0; --i)
 			result = (result + coeffs[i]) * x2Inv;
-		return result + nd4j::math::nd4j_log<T,T>(x) - static_cast<T>(0.5) / x;
+		return result + sd::math::nd4j_log<T,T>(x) - static_cast<T>(0.5) / x;
 	}
 
 }

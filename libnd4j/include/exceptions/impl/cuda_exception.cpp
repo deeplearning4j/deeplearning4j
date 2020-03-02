@@ -19,9 +19,9 @@
 //
 
 #include <exceptions/cuda_exception.h>
-#include <StringUtils.h>
+#include <helpers/StringUtils.h>
 
-namespace nd4j {
+namespace sd {
     cuda_exception::cuda_exception(std::string message) : std::runtime_error(message){
         //
     }

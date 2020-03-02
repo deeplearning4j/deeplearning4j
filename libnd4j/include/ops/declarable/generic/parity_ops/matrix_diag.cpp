@@ -22,7 +22,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matrixSetDiag.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(matrix_diag, 1, 1, false, 0, 0) {
@@ -60,7 +60,7 @@ DECLARE_SHAPE_FN(matrix_diag) {
 
 DECLARE_TYPES(matrix_diag) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setSameMode(true);
 }
 }

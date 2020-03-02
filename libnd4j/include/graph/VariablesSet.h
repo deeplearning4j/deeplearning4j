@@ -23,16 +23,16 @@
 
 #include <iterator>
 #include <vector>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <graph/Variable.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT VariablesSet {
         protected:
-            std::vector<nd4j::graph::Variable*> _holder;
+            std::vector<sd::graph::Variable*> _holder;
             Nd4jStatus _status;
         public:
             VariablesSet(Nd4jStatus status = ND4J_STATUS_OK);

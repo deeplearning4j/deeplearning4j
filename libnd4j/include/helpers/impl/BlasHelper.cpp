@@ -19,7 +19,7 @@
 //
 
 #include <helpers/BlasHelper.h>
-namespace nd4j {
+namespace sd {
     BlasHelper* BlasHelper::getInstance() {
         if (_instance == 0)
             _instance = new BlasHelper();
@@ -130,7 +130,7 @@ namespace nd4j {
         return false;
     }
 
-    bool BlasHelper::hasGEMV(const nd4j::DataType dtype)  {
+    bool BlasHelper::hasGEMV(const sd::DataType dtype)  {
         if(dtype == DataType::FLOAT32) {
             #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
@@ -206,7 +206,7 @@ namespace nd4j {
         return false;
     }
 
-    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) {
+    bool BlasHelper:: hasGEMM(const sd::DataType dtype) {
         if(dtype == DataType::FLOAT32) {
             #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;

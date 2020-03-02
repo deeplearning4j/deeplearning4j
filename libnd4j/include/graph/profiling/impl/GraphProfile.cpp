@@ -21,10 +21,10 @@
 #include <graph/profiling/GraphProfile.h>
 #include <helpers/logger.h>
 #include <chrono>
-#include <templatemath.h>
+#include <math/templatemath.h>
 #include <algorithm>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         GraphProfile::GraphProfile() {
             updateLast();
@@ -200,7 +200,7 @@ namespace nd4j {
                 });
 
                 nd4j_printf("\nTop 30 reports by EXEC:\n", "");
-                auto limit = nd4j::math::nd4j_min<int>(30, sorted.size());
+                auto limit = sd::math::nd4j_min<int>(30, sorted.size());
                 for (int e = 0; e < limit; e++) {
                     sorted[e]->printOut();
                 }

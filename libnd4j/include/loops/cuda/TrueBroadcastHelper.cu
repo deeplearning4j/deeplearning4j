@@ -19,18 +19,18 @@
 //
 
 // #include <exceptions/cuda_exception.h>
-#include <TrueBroadcastHelper.h>
-#include <PointersManager.h>
+#include <loops/TrueBroadcastHelper.h>
+#include <helpers/PointersManager.h>
 #include <execution/LaunchContext.h>
-#include <specials.h>
-#include <logger.h>
+#include <ops/specials.h>
+#include <helpers/logger.h>
 #include <ops/ops.h>
 // #include <cuda_runtime.h>
 // #include <cuda.h>
 
 using namespace simdOps;
 
-namespace nd4j    {
+namespace sd    {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////
@@ -100,7 +100,7 @@ void TrueBroadcastHelper<X,Y,Z>::execLauncher(dim3 launchDims, cudaStream_t *str
 
 //////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
-void TrueBroadcastHelper<X,Y,Z>::exec(const nd4j::broadcast::Ops opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
+void TrueBroadcastHelper<X,Y,Z>::exec(const sd::broadcast::Ops opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
     dim3 launchDims;
 
@@ -186,7 +186,7 @@ void TrueBroadcastBoolHelper<X,Z>::execLauncher(dim3 launchDims, cudaStream_t *s
 
 //////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-void TrueBroadcastBoolHelper<X,Y>::exec(const nd4j::broadcast::BoolOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
+void TrueBroadcastBoolHelper<X,Y>::exec(const sd::broadcast::BoolOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
     dim3 launchDims;
 
@@ -272,7 +272,7 @@ void TrueBroadcastIntHelper<X>::execLauncher(dim3 launchDims, cudaStream_t *stre
 
 //////////////////////////////////////////////////////////////////////////
 template<typename X>
-void TrueBroadcastIntHelper<X>::exec(const nd4j::broadcast::IntOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
+void TrueBroadcastIntHelper<X>::exec(const sd::broadcast::IntOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
     dim3 launchDims;
 

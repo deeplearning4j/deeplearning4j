@@ -21,10 +21,10 @@
 #ifndef LIBND4J_LOGICENTER_H
 #define LIBND4J_LOGICENTER_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/Graph.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class LogicEnter {
         public:

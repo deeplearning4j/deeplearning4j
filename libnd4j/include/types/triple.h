@@ -22,9 +22,9 @@
 #define LIBND4J_TRIPLE_H
 
 
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT Triple {
     protected:
         int _first = 0;

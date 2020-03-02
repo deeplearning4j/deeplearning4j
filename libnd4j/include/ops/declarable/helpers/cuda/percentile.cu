@@ -20,12 +20,12 @@
 //
 
 #include <ops/declarable/helpers/percentile.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/DebugHelper.h>
-#include "ResultSet.h"
+#include <array/ResultSet.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -84,7 +84,7 @@ namespace helpers {
 
 
     template <typename T>
-    static void _percentile(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axis, const float q, const int interpolation) {
+    static void _percentile(sd::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axis, const float q, const int interpolation) {
         const int inputRank = input.rankOf();
 
         if(axis.empty())
@@ -116,10 +116,10 @@ namespace helpers {
 
         percentileKernel<T><<<256, 512, 1024, *context->getCudaStream()>>>(tempArray.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), packX.numberOfTads(), tadLength, output.specialBuffer(), output.specialShapeInfo(), output.lengthOf(), position);
 
-        nd4j::DebugHelper::checkErrorCode(context->getCudaStream(), "percentile");
+        sd::DebugHelper::checkErrorCode(context->getCudaStream(), "percentile");
     }
 
-    void percentile(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
+    void percentile(sd::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
         NDArray::prepareSpecialUse({&output}, {&input});
 
         BUILD_SINGLE_SELECTOR(input.dataType(), _percentile, (context, input, output, axises, q, interpolation), LIBND4J_TYPES);
@@ -127,7 +127,7 @@ namespace helpers {
         NDArray::registerSpecialUse({&output}, {&input});
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _percentile, (nd4j::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _percentile, (sd::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation), LIBND4J_TYPES);
 
 }
 }

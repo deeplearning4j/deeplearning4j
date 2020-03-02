@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> at 12/20/2019
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/qr.h>
 
 #if NOT_EXCLUDED(OP_qr)
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(qr, 1, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);

@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/toggle_bits.h>
 #include <helpers/BitwiseUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template<typename T>
@@ -33,7 +33,7 @@ namespace nd4j {
                 in.applyLambda<T>(lambda, out);
             }
 
-            void __toggle_bits(nd4j::LaunchContext * context, NDArray& in, NDArray& out) {
+            void __toggle_bits(sd::LaunchContext * context, NDArray& in, NDArray& out) {
                 BUILD_SINGLE_SELECTOR(in.dataType(), toggle_bits__, (in, out), INTEGER_TYPES);
             }
         }

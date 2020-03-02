@@ -27,7 +27,7 @@
 #define ptr_def inline
 #endif
 
-namespace nd4j {
+namespace sd {
 
     /**
      * This class is a simple wrapper to represent batch arguments as single surface of parameters.

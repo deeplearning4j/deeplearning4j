@@ -18,14 +18,14 @@
 //  @author GS <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dynamic_partition)
 
 #include <ops/declarable/CustomOperations.h>
 #include <array>
 #include <ops/declarable/helpers/dynamic.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(dynamic_partition, 2, 1, false, 0, 1) {
         auto input = INPUT_VARIABLE(0);
@@ -86,13 +86,13 @@ namespace ops {
 
     DECLARE_TYPES(dynamic_partition) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
     }
 
     DECLARE_TYPES(dynamic_partition_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
     }
 

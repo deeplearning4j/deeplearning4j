@@ -23,10 +23,10 @@
 #include <array/DataTypeConversions.h>
 #include <array/DataTypeUtils.h>
 #include <array/ByteOrderUtils.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         std::pair<int, int> FlatUtils::fromIntPair(IntPair *pair) {
             return std::pair<int, int>(pair->first(), pair->second());
@@ -36,7 +36,7 @@ namespace nd4j {
             return std::pair<Nd4jLong, Nd4jLong>(pair->first(), pair->second());
         }
 
-        NDArray* FlatUtils::fromFlatArray(const nd4j::graph::FlatArray *flatArray) {
+        NDArray* FlatUtils::fromFlatArray(const sd::graph::FlatArray *flatArray) {
             auto rank = static_cast<int>(flatArray->shape()->Get(0));
             auto newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
             memcpy(newShape, flatArray->shape()->data(), shape::shapeInfoByteLength(rank));
@@ -52,7 +52,7 @@ namespace nd4j {
             // TODO fix UTF16 and UTF32
             if (dtype == UTF8) {
                 bool isBe = BitwiseUtils::isBE();
-                bool canKeep = (isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_BE) || (!isBe && flatArray->byteOrder() == nd4j::graph::ByteOrder_LE);
+                bool canKeep = (isBe && flatArray->byteOrder() == sd::graph::ByteOrder_BE) || (!isBe && flatArray->byteOrder() == sd::graph::ByteOrder_LE);
                 
                 std::vector<std::string> substrings(length);
                 std::vector<Nd4jLong> shapeVector(rank);
@@ -96,7 +96,7 @@ namespace nd4j {
 
             BUILD_SINGLE_SELECTOR(dtype, DataTypeConversions, ::convertType(newBuffer, (void *)flatArray->buffer()->data(), dtype, ByteOrderUtils::fromFlatByteOrder(flatArray->byteOrder()),  length), LIBND4J_TYPES);
 
-            auto array = new NDArray(newBuffer, newShape, nd4j::LaunchContext::defaultContext(), true);
+            auto array = new NDArray(newBuffer, newShape, sd::LaunchContext::defaultContext(), true);
 
             delete[] newShape;
             return array;
@@ -108,9 +108,9 @@ namespace nd4j {
             auto fBuffer = builder.CreateVector(byteVector);
             auto fShape = builder.CreateVector(array.getShapeInfoAsFlatVector());
 
-            auto bo = static_cast<nd4j::graph::ByteOrder>(BitwiseUtils::asByteOrder());
+            auto bo = static_cast<sd::graph::ByteOrder>(BitwiseUtils::asByteOrder());
 
-            return CreateFlatArray(builder, fShape, fBuffer, static_cast<nd4j::graph::DType>(array.dataType()), bo);
+            return CreateFlatArray(builder, fShape, fBuffer, static_cast<sd::graph::DType>(array.dataType()), bo);
         }
     }
 }

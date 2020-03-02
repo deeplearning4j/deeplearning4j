@@ -21,9 +21,9 @@
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::ops;
+using namespace sd::graph;
 
 class ContextTests : public testing::Test {
 public:
@@ -327,7 +327,7 @@ TEST_F(ContextTests, test_short_context_2) {
 
     ASSERT_EQ(2, ctx.width());
 
-    nd4j::ops::add op;
+    sd::ops::add op;
     op.execute(&ctx);
 
     ASSERT_EQ(exp, z);
@@ -345,7 +345,7 @@ TEST_F(ContextTests, test_short_context_3) {
 
     ASSERT_EQ(2, ctx.width());
 
-    nd4j::ops::add op;
+    sd::ops::add op;
     op.execute(&ctx);
 
     ASSERT_EQ(1, ctx.fastpath_out().size());

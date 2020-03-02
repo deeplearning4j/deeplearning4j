@@ -18,13 +18,13 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cast)
 
 #include <array/DataTypeUtils.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(cast, 1, 1, false, 0, 1) {
             auto input = INPUT_VARIABLE(0);
@@ -54,8 +54,8 @@ namespace nd4j {
 
         DECLARE_TYPES(cast) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                    ->setAllowedInputTypes(sd::DataType::ANY)
+                    ->setAllowedOutputTypes(sd::DataType::ANY);
         }
     }
 }

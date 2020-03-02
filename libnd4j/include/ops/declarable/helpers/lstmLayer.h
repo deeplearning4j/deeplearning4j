@@ -24,7 +24,7 @@
 #include <ops/declarable/helpers/helpers.h>
 #include <ops/declarable/helpers/activations.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 

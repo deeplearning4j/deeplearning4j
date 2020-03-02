@@ -18,13 +18,13 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_Assert)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(Assert, 1, 1, false) {
             auto x = INPUT_VARIABLE(0);

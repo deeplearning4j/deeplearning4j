@@ -20,15 +20,15 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
 
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
 
-    void adjustHue(nd4j::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC);
+    void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC);
 
 
 
@@ -39,8 +39,8 @@ FORCEINLINE _CUDA_HD void rgbToHsv(const T& r, const T& g, const T& b, T& h, T& 
     // h values are in range [0, 360)
     // s and v values are in range [0, 1]
 
-    const T max = nd4j::math::nd4j_max<T>(r, nd4j::math::nd4j_max<T>(g, b));
-    const T min = nd4j::math::nd4j_min<T>(r, nd4j::math::nd4j_min<T>(g, b));
+    const T max = sd::math::nd4j_max<T>(r, sd::math::nd4j_max<T>(g, b));
+    const T min = sd::math::nd4j_min<T>(r, sd::math::nd4j_min<T>(g, b));
     const T c  = max - min;
     const T _p6 = (T)1 / (T)6;
     // calculate h

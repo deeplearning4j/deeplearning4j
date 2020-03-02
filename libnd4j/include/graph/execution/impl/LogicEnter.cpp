@@ -19,10 +19,10 @@
 //
 
 #include <graph/execution/LogicEnter.h>
-#include <Status.h>
+#include <graph/Status.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicEnter::processNode(Graph *graph, Node *node) {
             // this op replicates input variable into the frame. basically happens once for single loop.
@@ -68,7 +68,7 @@ namespace nd4j {
                 }
             }
 
-            return nd4j::Status::OK();
+            return sd::Status::OK();
         }
     }
 }

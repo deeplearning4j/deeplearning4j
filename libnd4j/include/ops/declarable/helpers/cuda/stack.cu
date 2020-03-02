@@ -21,12 +21,12 @@
 #include <ops/declarable/helpers/stack.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
-#include <cuda_exception.h>
-#include <TAD.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <exceptions/cuda_exception.h>
+#include <helpers/TAD.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -57,7 +57,7 @@ namespace helpers {
 
 	///////////////////////////////////////////////////////////////////
 	template <typename T>
-	static void stack_(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
+	static void stack_(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
 
 		const bool scalarCase = inArrs[0]->isScalar();
 
@@ -87,7 +87,7 @@ namespace helpers {
         }
         else {
         	std::vector<int> axis = ShapeUtils::evalDimsToExclude(outArr->rankOf(), {dim});
-        	auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(outArr->getShapeInfo(), axis);
+        	auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(outArr->getShapeInfo(), axis);
 			stackKernel<T><<<blocksPerGrid, threadsPerBlock, 1024, *context->getCudaStream()>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), inArrs[0]->lengthOf(), outArr->specialBuffer(), nullptr, packZ.specialShapeInfo(), packZ.specialOffsets());
         }
         manager.synchronize();
@@ -99,11 +99,11 @@ namespace helpers {
             NDArray::registerSpecialUse({}, {v});
 	}
 
-	void stack(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
+	void stack(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
 		BUILD_SINGLE_SELECTOR(outArr->dataType(), stack_, (context, inArrs, outArr, dim), LIBND4J_TYPES);
 	}
 
-	BUILD_SINGLE_TEMPLATE(template void stack_ , (nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
+	BUILD_SINGLE_TEMPLATE(template void stack_ , (sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
 
 }
 }

@@ -21,12 +21,12 @@
 #ifndef LIBND4J_INTERVALS_H
 #define LIBND4J_INTERVALS_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <vector>
 #include <initializer_list>
-#include <dll.h>
+#include <system/dll.h>
 
-namespace  nd4j {
+namespace sd {
 
     class ND4J_EXPORT Intervals {
     

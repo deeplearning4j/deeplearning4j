@@ -18,14 +18,14 @@
 // @author Shyrma Yurii (iuriish@yahoo.com), created on 06.11.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_pad)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 #include <numeric>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -77,7 +77,7 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
 DECLARE_TYPES(pad) {
     getOpDescriptor()
-    	->setAllowedInputTypes(0, nd4j::DataType::ANY)
+    	->setAllowedInputTypes(0, sd::DataType::ANY)
     	->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}) // INT32 with TF
 //    	->setAllowedInputTypes(1, {DataType::INT32, DataType::INT64}) // INT32 with TF, but used also INT64 due long shapes
     	->setSameMode(true);

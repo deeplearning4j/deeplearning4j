@@ -24,7 +24,7 @@
 
 using namespace simdOps;
 
-namespace nd4j {
+namespace sd {
     namespace helpers {
 
         ////////////////////////////////////////////////////////////////////////
@@ -141,7 +141,7 @@ namespace nd4j {
         }
 
         template <typename X, typename  Y, typename Z>
-        void TrueBroadcastHelper<X, Y, Z>::exec(const nd4j::broadcast::Ops opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
+        void TrueBroadcastHelper<X, Y, Z>::exec(const sd::broadcast::Ops opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
             DISPATCH_BY_OPNUM_TTT(exec, PARAMS(xArr, yArr, zArr), BROADCAST_OPS);
         }
 
@@ -204,7 +204,7 @@ namespace nd4j {
         }
 
         template <typename X, typename  Y>
-        void TrueBroadcastBoolHelper<X, Y>::exec(const nd4j::broadcast::BoolOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
+        void TrueBroadcastBoolHelper<X, Y>::exec(const sd::broadcast::BoolOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
             DISPATCH_BY_OPNUM_TT(exec, PARAMS(xArr, yArr, zArr), BROADCAST_BOOL_OPS);
         }
 
@@ -267,7 +267,7 @@ namespace nd4j {
         }
 
         template <typename X>
-        void TrueBroadcastIntHelper<X>::exec(const nd4j::broadcast::IntOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
+        void TrueBroadcastIntHelper<X>::exec(const sd::broadcast::IntOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
             DISPATCH_BY_OPNUM_T(exec, PARAMS(xArr, yArr, zArr), BROADCAST_INT_OPS);
         }
 

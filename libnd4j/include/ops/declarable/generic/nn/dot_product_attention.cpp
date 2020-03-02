@@ -18,14 +18,14 @@
 // @author Paul Dubs
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dot_product_attention)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverse.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
     CUSTOM_OP_IMPL(dot_product_attention, 3, -1, false, 0, 2) {
@@ -67,7 +67,7 @@ namespace ops  {
                 "dot_product_attention: Keys and Values must have the same timestep length. "
                 "But got keys = %i, values = %i", keys->sizeAt(-1), values->sizeAt(-1));
 
-        nd4j::ops::matmul mmul;
+        sd::ops::matmul mmul;
         mmul.execute({keys, queries}, {weights}, {}, {1}, {});
         if(normalization) {
             *weights /= sqrt((double)keys->sizeAt(-2));
@@ -90,7 +90,7 @@ namespace ops  {
             *weights += (reshapedMask - 1) * 1e9;
         }
 
-        nd4j::ops::softmax softmax;
+        sd::ops::softmax softmax;
         softmax.execute({weights}, std::vector<NDArray*>{weights}, {}, {-2}, {}, {}, true);
 
         mmul.execute({values, weights}, {output}, {}, {}, {});
@@ -113,8 +113,8 @@ namespace ops  {
         auto keys_shape = inputShape->at(1);
         auto values_shape = inputShape->at(2);
 
-        auto weights_shape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false));
-        auto output_shape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false));
+        auto weights_shape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false));
+        auto output_shape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false));
 
         if(INT_ARG(1)){
             return SHAPELIST(output_shape, weights_shape);
@@ -166,7 +166,7 @@ namespace ops  {
 
         auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
 
-        nd4j::ops::matmul mmul;
+        sd::ops::matmul mmul;
         NDArray preSoftmax('c', weightShape, values->dataType(), block.launchContext());
         mmul.execute({keys, queries}, {&preSoftmax},{}, {1}, {});
         
@@ -184,15 +184,15 @@ namespace ops  {
         }
 
         NDArray weights('c', weightShape, values->dataType(), block.launchContext());
-        nd4j::ops::softmax softmax;
+        sd::ops::softmax softmax;
         softmax.execute({&preSoftmax}, {&weights},{}, {-2}, {});
 
-        nd4j::ops::matmul_bp mmul_bp;
+        sd::ops::matmul_bp mmul_bp;
         NDArray dLdw(weights.getShapeInfo(), block.workspace());
         mmul_bp.execute({values, &weights, eps}, std::vector<NDArray*>{dLdv, &dLdw}, {}, {}, {});
 
         NDArray dLds(preSoftmax.shapeInfo(), block.workspace());
-        nd4j::ops::softmax_bp softmax_bp;
+        sd::ops::softmax_bp softmax_bp;
         softmax_bp.execute({&preSoftmax, &dLdw}, {&dLds}, {}, {-2}, {});
 
         if(normalization)

@@ -20,11 +20,11 @@
 
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <type_conversions.h>
+#include <array/NDArray.h>
+#include <loops/type_conversions.h>
 
 
-using namespace nd4j;
+using namespace sd;
 
 class QuantizationTests : public testing::Test {
 

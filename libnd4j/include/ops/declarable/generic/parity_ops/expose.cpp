@@ -20,7 +20,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(expose, -1, -1, true, 0, 0) {
 
@@ -49,7 +49,7 @@ namespace nd4j {
 
         DECLARE_TYPES(expose) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
 

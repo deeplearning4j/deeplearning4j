@@ -18,10 +18,10 @@
 //  @author raver119@gmail.com
 //
 
-#include <dll.h>
+#include <system/dll.h>
 #include <graph/VariableProxy.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         
         VariableProxy::VariableProxy(VariableSpace* ref) {
@@ -110,7 +110,7 @@ namespace nd4j {
         }
 
         
-        nd4j::graph::Variable *VariableProxy::getVariable(int id) {
+        sd::graph::Variable *VariableProxy::getVariable(int id) {
             if (_current->hasVariable(id))
                 return _current->getVariable(id);
             
@@ -122,7 +122,7 @@ namespace nd4j {
         }
 
         
-        nd4j::graph::Variable *VariableProxy::getVariable(int id, int idx) {
+        sd::graph::Variable *VariableProxy::getVariable(int id, int idx) {
             if (_current->hasVariable(id, idx))
                 return _current->getVariable(id, idx);
             
@@ -134,7 +134,7 @@ namespace nd4j {
         }
 
         
-        nd4j::graph::Variable *VariableProxy::getVariable(std::pair<int,int>& pair) {
+        sd::graph::Variable *VariableProxy::getVariable(std::pair<int,int>& pair) {
             if (_current->hasVariable(pair))
                 return _current->getVariable(pair);
             
@@ -146,7 +146,7 @@ namespace nd4j {
         }
 
         
-        nd4j::graph::Variable *VariableProxy::getVariable(std::string *symbol) {
+        sd::graph::Variable *VariableProxy::getVariable(std::string *symbol) {
             if (_current->hasVariable(symbol))
                 return _current->getVariable(symbol);
             
@@ -191,7 +191,7 @@ namespace nd4j {
             _current->putVariable(id, array);
         }
 
-        void nd4j::graph::VariableProxy::putVariable(int id, int idx, NDArray &array) {
+        void sd::graph::VariableProxy::putVariable(int id, int idx, NDArray &array) {
             _current->putVariable(id, idx, array);
         }
         
@@ -205,12 +205,12 @@ namespace nd4j {
         }
 
         
-        void VariableProxy::trackList(nd4j::NDArrayList* list) {
+        void VariableProxy::trackList(sd::NDArrayList* list) {
             _current->trackList(list);
         }
 
         
-        nd4j::graph::Stash* VariableProxy::getStash() {
+        sd::graph::Stash* VariableProxy::getStash() {
             return _current->getStash();
         }
 
@@ -260,7 +260,7 @@ namespace nd4j {
         }
 
         
-        nd4j::graph::VariableSpace* VariableProxy::clone() {
+        sd::graph::VariableSpace* VariableProxy::clone() {
             auto clone = new VariableProxy(_backed);
 
             delete clone->_current;
@@ -279,7 +279,7 @@ namespace nd4j {
         }  
 
         
-        nd4j::memory::Workspace * nd4j::graph::VariableProxy::workspace() {
+        sd::memory::Workspace * sd::graph::VariableProxy::workspace() {
             return _workspace;
         }
     }

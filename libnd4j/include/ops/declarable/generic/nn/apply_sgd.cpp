@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_apply_sgd)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/gradient.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(apply_sgd, 2, 1, true, -2, 0) {
             auto parameters = INPUT_VARIABLE(0);

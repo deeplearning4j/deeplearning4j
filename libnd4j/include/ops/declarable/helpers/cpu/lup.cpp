@@ -19,13 +19,13 @@
 //
 
 #include <ops/declarable/helpers/top_k.h>
-#include <MmulHelper.h>
-#include <NDArrayFactory.h>
-#include <Status.h>
+#include <helpers/MmulHelper.h>
+#include <array/NDArrayFactory.h>
+#include <graph/Status.h>
 #include <execution/Threads.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -156,8 +156,8 @@ namespace helpers {
             pivot = -1;
             //PRAGMA_OMP_PARALLEL_FOR //_ARGS(firstprivate(pivot,pivotValue))
             for(int rowCounter = i; rowCounter < rowNum; rowCounter++ ) {
-                if (nd4j::math::nd4j_abs(compoundMatrix.t<T>(rowCounter, i)) > pivotValue) {
-                    pivotValue = nd4j::math::nd4j_abs(compoundMatrix.t<T>(rowCounter, i));
+                if (sd::math::nd4j_abs(compoundMatrix.t<T>(rowCounter, i)) > pivotValue) {
+                    pivotValue = sd::math::nd4j_abs(compoundMatrix.t<T>(rowCounter, i));
                     pivot = rowCounter;
                 }
             }
@@ -212,15 +212,15 @@ namespace helpers {
         auto rowNum = shape::sizeAt(compoundShape, 0);
         Nd4jLong xInitial[] = {column, column};
         auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
-        auto maxValue = T(0); //nd4j::math::nd4j_abs(compoundBuffer[xInitialIndex]);
+        auto maxValue = T(0); //sd::math::nd4j_abs(compoundBuffer[xInitialIndex]);
         auto result = -1;
         //auto loop = PRAGMA_THREADS_FOR {
             auto start = column, stop = rowNum, increment = 1;
             for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
                 Nd4jLong xPos[] = {rowCounter, column};
                 auto xIndex = shape::getOffset(compoundShape, xPos, 0);
-                if (nd4j::math::nd4j_abs(compoundBuffer[xIndex]) > maxValue) {
-                    maxValue = nd4j::math::nd4j_max(maxValue, nd4j::math::nd4j_abs(compoundBuffer[xIndex]));
+                if (sd::math::nd4j_abs(compoundBuffer[xIndex]) > maxValue) {
+                    maxValue = sd::math::nd4j_max(maxValue, sd::math::nd4j_abs(compoundBuffer[xIndex]));
                     result = rowCounter;
                 }
             }
@@ -353,7 +353,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+    int determinant(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return determinant_, (context, input, output), FLOAT_TYPES);
     }
 
@@ -370,13 +370,13 @@ template <typename T>
             }
 	    NDArray det = lup_<T, int>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr);
 	    if (det.e<T>(0) != 0.f)
-             	output->p(e, nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_abs(det.t<T>(0))));
+             	output->p(e, sd::math::nd4j_log<T,T>(sd::math::nd4j_abs(det.t<T>(0))));
         }
 
         return ND4J_STATUS_OK;
     }
 
-    int logAbsDeterminant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+    int logAbsDeterminant(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return logAbsDeterminant_, (context, input, output), FLOAT_TYPES);
     }
 
@@ -404,7 +404,7 @@ template <typename T>
             T det = lup_<T, int>(context, &matrix, &compound, &permutation).template e<T>(0);
 
             // FIXME: and how this is going to work on float16?
-            if (nd4j::math::nd4j_abs<T>(det) < T(0.000001)) {
+            if (sd::math::nd4j_abs<T>(det) < T(0.000001)) {
                 nd4j_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
                 matrix.printIndexedBuffer("Wrong matrix");
                 return ND4J_STATUS_VALIDATION;
@@ -423,8 +423,8 @@ template <typename T>
 
             invertLowerMatrix(&lowerMatrix, &upperMatrix);
 
-            nd4j::MmulHelper::mmul(&matrix, &upperMatrix, &compound, 1.0, 0.0);
-            nd4j::MmulHelper::mmul(&compound, &permutation, &matrix, 1.0, 0.0);
+            sd::MmulHelper::mmul(&matrix, &upperMatrix, &compound, 1.0, 0.0);
+            sd::MmulHelper::mmul(&compound, &permutation, &matrix, 1.0, 0.0);
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 output->t<T>(k) = matrix.template t<T>(row++);
             }
@@ -461,7 +461,7 @@ template <typename T>
             }
 
             // FIXME: and how this is going to work on float16?
-            if (nd4j::math::nd4j_abs<T>(det) < T(0.000001)) {
+            if (sd::math::nd4j_abs<T>(det) < T(0.000001)) {
                 nd4j_printf("matrix_inverse: The matrix %i has no inverse due determinant is %lf. Quiting...\n", e, det);
                 matrix.printIndexedBuffer("Wrong matrix");
                 return ND4J_STATUS_VALIDATION;
@@ -496,20 +496,20 @@ template <typename T>
         return Status::OK();
     }
 
-    int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+    int inverse(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (context, input, output), FLOAT_TYPES);
     }
 
-    int lowerInverseFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+    int lowerInverseFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return lowerInverse_, (context, input, output), FLOAT_TYPES);
     }
 
-    int upperInverseFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+    int upperInverseFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return upperInverse_, (context, input, output), FLOAT_TYPES);
     }
 
     template <typename T>
-    static bool checkCholeskyInput_(nd4j::LaunchContext * context, NDArray const* input) {
+    static bool checkCholeskyInput_(sd::LaunchContext * context, NDArray const* input) {
         //std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType())); //, block.getWorkspace());
         ResultSet lastMatrixList = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf()-1});
         for (size_t i = 0; i < lastMatrixList.size(); i++) {
@@ -517,7 +517,7 @@ template <typename T>
             // check for symmetric
             for (Nd4jLong r = 0; r < thisMatrix->rows(); r++)
                 for (Nd4jLong c = 0; c < thisMatrix->columns(); c++)
-                    if (nd4j::math::nd4j_abs(thisMatrix->e<T>(r, c) - lastMatrixList.at(i)->e<T>(c,r)) > DataTypeUtils::min<T>()) return false;
+                    if (sd::math::nd4j_abs(thisMatrix->e<T>(r, c) - lastMatrixList.at(i)->e<T>(c,r)) > DataTypeUtils::min<T>()) return false;
 
             NDArray output = NDArrayFactory::create<T>(0., context);
             if (ND4J_STATUS_OK != determinant(context, thisMatrix, &output)) return false;
@@ -533,7 +533,7 @@ template <typename T>
         return true;
     }
 
-    bool checkCholeskyInput(nd4j::LaunchContext * context, NDArray const* input) {
+    bool checkCholeskyInput(sd::LaunchContext * context, NDArray const* input) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return checkCholeskyInput_, (context, input), FLOAT_TYPES);
     }
 
@@ -568,7 +568,7 @@ template <typename T>
                 T diagonalSum = 0;
                 for (Nd4jLong k = 0; k < col;  ++k)
                     diagonalSum += lowerMatrix->e<T>(col, k) * lowerMatrix->e<T>(col, k);
-                lowerMatrix->p(col, col, nd4j::math::nd4j_sqrt<T, T>(matrix->e<T>(col, col) - diagonalSum));
+                lowerMatrix->p(col, col, sd::math::nd4j_sqrt<T, T>(matrix->e<T>(col, col) - diagonalSum));
                 //nd4j_printf("%i: ", col);
                 //lowerMatrix->printIndexedBuffer("Lower matrix");
             }
@@ -580,7 +580,7 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
+    int cholesky(sd::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (context, input, output, inplace), FLOAT_TYPES);
     }
 
@@ -597,16 +597,16 @@ template <typename T>
 
         for (Nd4jLong e = 0; e < totalCount; e++) {
             for (size_t i = 0; i < n; ++i)
-                output->t<T>(e) += nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_pow<T,T,T>(matricies.at(e)->t<T>(i, i), T(2)));
+                output->t<T>(e) += sd::math::nd4j_log<T,T>(sd::math::nd4j_pow<T,T,T>(matricies.at(e)->t<T>(i, i), T(2)));
         }
         return ND4J_STATUS_OK;
     }
 
-    int logdetFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+    int logdetFunctor(sd::LaunchContext * context, NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return logdetFunctor_, (context, input, output), FLOAT_TYPES);
     }
 
-    int lup(nd4j::LaunchContext * context, NDArray* input, NDArray* compound, NDArray* permutation) {
+    int lup(sd::LaunchContext * context, NDArray* input, NDArray* compound, NDArray* permutation) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), permutation->dataType(), lup_, (context, input, compound, permutation), FLOAT_NATIVE, INDEXING_TYPES);
         return Status::OK();
     }

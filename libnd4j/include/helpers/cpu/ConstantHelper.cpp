@@ -21,14 +21,14 @@
 
 #ifndef __CUDABLAS__
 
-#include <ConstantHelper.h>
+#include <helpers/ConstantHelper.h>
 #include <execution/AffinityManager.h>
 #include <types/types.h>
 #include <loops/type_conversions.h>
-#include <type_boilerplate.h>
+#include <system/type_boilerplate.h>
 #include <cstring>
 
-namespace nd4j {
+namespace sd {
 
     ConstantHelper::ConstantHelper() {
         int numDevices = getNumberOfDevices();
@@ -44,7 +44,7 @@ namespace nd4j {
 
     ConstantHelper* ConstantHelper::getInstance() {
         if (!_INSTANCE)
-            _INSTANCE = new nd4j::ConstantHelper();
+            _INSTANCE = new sd::ConstantHelper();
 
         return _INSTANCE;
     }
@@ -70,7 +70,7 @@ namespace nd4j {
         return AffinityManager::numberOfDevices();
     }
 
-    ConstantDataBuffer* ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, nd4j::DataType dataType) {
+    ConstantDataBuffer* ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, sd::DataType dataType) {
         const auto deviceId = getCurrentDevice();
 
         // we're locking away cache modification
@@ -100,9 +100,9 @@ namespace nd4j {
 
             // create buffer with this dtype
             if (descriptor.isFloat()) {
-                BUILD_DOUBLE_SELECTOR(nd4j::DataType::DOUBLE, dataType, nd4j::TypeCast::convertGeneric, (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff), (nd4j::DataType::DOUBLE, double), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(sd::DataType::DOUBLE, dataType, sd::TypeCast::convertGeneric, (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff), (sd::DataType::DOUBLE, double), LIBND4J_TYPES);
             } else if (descriptor.isInteger()) {
-                BUILD_DOUBLE_SELECTOR(nd4j::DataType::INT64, dataType, nd4j::TypeCast::convertGeneric, (nullptr, const_cast<Nd4jLong *>(descriptor.integerValues().data()), descriptor.length(), cbuff), (nd4j::DataType::INT64, Nd4jLong), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::TypeCast::convertGeneric, (nullptr, const_cast<Nd4jLong *>(descriptor.integerValues().data()), descriptor.length(), cbuff), (sd::DataType::INT64, Nd4jLong), LIBND4J_TYPES);
             }
 
             ConstantDataBuffer dataBuffer(cbuff, nullptr, descriptor.length(), DataTypeUtils::sizeOf(dataType));
@@ -123,7 +123,7 @@ namespace nd4j {
             return _counters[deviceId];
     }
 
-    nd4j::ConstantHelper* nd4j::ConstantHelper::_INSTANCE = 0;
+    sd::ConstantHelper* sd::ConstantHelper::_INSTANCE = 0;
 }
 
 #endif

@@ -20,7 +20,7 @@
 
 #include <graph/NodeState.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         NodeState::NodeState(int id) {
             _id = id;

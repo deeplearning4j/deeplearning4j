@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_clipbyvalue)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(clipbyvalue, 1, 1, true, 2, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -45,7 +45,7 @@ namespace nd4j {
 
         DECLARE_TYPES(clipbyvalue) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

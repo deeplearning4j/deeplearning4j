@@ -21,13 +21,13 @@
 #include <helpers/OpTracker.h>
 #include <sstream>
 #include <helpers/logger.h>
-#include <NativeOps.h>
+#include <legacy/NativeOps.h>
 
 
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd::ops;
+using namespace sd::graph;
 
-namespace nd4j {
+namespace sd {
     
     OpTracker* OpTracker::getInstance() {
         if (_INSTANCE == 0)
@@ -36,7 +36,7 @@ namespace nd4j {
         return _INSTANCE;
     }
 
-    void OpTracker::storeOperation(nd4j::graph::OpType opType, const OpDescriptor& descriptor) {
+    void OpTracker::storeOperation(sd::graph::OpType opType, const OpDescriptor& descriptor) {
         // check out CPU features
         if (!::isMinimalRequirementsMet()) {
 
@@ -75,7 +75,7 @@ namespace nd4j {
             _map[opType].emplace_back(descriptor);
     }
 
-    void OpTracker::storeOperation(nd4j::graph::OpType opType, const char* opName, const Nd4jLong opNum) {
+    void OpTracker::storeOperation(sd::graph::OpType opType, const char* opName, const Nd4jLong opNum) {
         OpDescriptor descriptor(0, opName, false);
         descriptor.setOpNum((int) opNum);
         descriptor.setHash(-1);
@@ -119,5 +119,5 @@ namespace nd4j {
         return _export.c_str();
     }
 
-    nd4j::OpTracker* nd4j::OpTracker::_INSTANCE = 0;
+    sd::OpTracker* sd::OpTracker::_INSTANCE = 0;
 }

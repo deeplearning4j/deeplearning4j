@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/helpers.h>
 #include <ops/declarable/helpers/hamming.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Z>
@@ -52,7 +52,7 @@ namespace nd4j {
                 __syncthreads();
 
                 // now we accumulate values
-                auto numItems = nd4j::math::nd4j_min<Nd4jLong>(blockDim.x, length);
+                auto numItems = sd::math::nd4j_min<Nd4jLong>(blockDim.x, length);
                 auto floorPow2 = numItems;
                 if (floorPow2 & (floorPow2 - 1)) {
 
@@ -77,7 +77,7 @@ namespace nd4j {
                 // FIXME: do we really want atomicAdd on global memory here
                 // and store them to output
                 if (threadIdx.x == 0 && shared[0] > 0)
-                    nd4j::math::atomics::nd4j_atomicAdd<Z>(&z[0], static_cast<Z>(shared[threadIdx.x]));
+                    sd::math::atomics::nd4j_atomicAdd<Z>(&z[0], static_cast<Z>(shared[threadIdx.x]));
             }
 
             template <typename X, typename Z>

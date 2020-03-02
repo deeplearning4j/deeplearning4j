@@ -22,10 +22,10 @@
 #define LIBND4J_INT8_H
 
 #include <stdint.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 
-namespace nd4j {
+namespace sd {
 
     float _CUDA_HD FORCEINLINE cpu_int82float(int8_t data);
     int8_t _CUDA_HD FORCEINLINE cpu_float2int8(float data);

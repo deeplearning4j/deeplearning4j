@@ -22,8 +22,8 @@
 #include "testlayers.h"
 #include <ops/declarable/headers/shape.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class ShapeTests : public testing::Test {
 public:
@@ -292,7 +292,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_1) {
     auto e = x.permute({1, 0});
     e.streamline('c');
 
-    nd4j::ops::transpose op;
+    sd::ops::transpose op;
     auto result = op.execute({&x, &y}, {&z}, {}, {}, {});
 
     ASSERT_EQ(Status::OK(), result);
@@ -306,7 +306,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_2) {
 
     auto exp = x.transpose();
 
-    nd4j::ops::transpose op;
+    sd::ops::transpose op;
     auto result = op.evaluate({&x});
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -326,7 +326,7 @@ TEST_F(ShapeTests, Tests_Transpose_119_3) {
 
     auto exp = x.transpose();
 
-    nd4j::ops::transpose op;
+    sd::ops::transpose op;
     auto result = op.execute({&x}, {&z}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 

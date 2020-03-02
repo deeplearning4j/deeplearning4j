@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_split)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include<ops/declarable/helpers/transforms.h>
 #include <array>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(split, 1, -1, false, 0, 1) {
         NDArray *input = nullptr;
@@ -85,7 +85,7 @@ namespace ops {
     DECLARE_SHAPE_FN(split) {
         int num_splits = INT_ARG(0);
         Nd4jLong *input = nullptr;
-        nd4j::DataType dataType;
+        sd::DataType dataType;
 
         // axis is 0 by default
         int axis = 0;

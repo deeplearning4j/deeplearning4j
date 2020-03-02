@@ -18,14 +18,14 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 02.11.2017
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reverse)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverse.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
     CONFIGURABLE_OP_IMPL(reverse, 1, 1, true, 0, -2) {
@@ -93,7 +93,7 @@ namespace ops  {
 
     DECLARE_TYPES(reverse_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

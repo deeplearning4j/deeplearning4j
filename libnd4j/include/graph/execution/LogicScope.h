@@ -21,11 +21,11 @@
 #ifndef LIBND4J_LOGICSCOPE_H
 #define LIBND4J_LOGICSCOPE_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         /**
          * This class is responsible for execution logic of Scope logical abstraction

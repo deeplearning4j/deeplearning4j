@@ -19,13 +19,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), changed on 14.05.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_avgpool2d)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
@@ -83,7 +83,7 @@ DECLARE_SYN(avgpool, avgpool2d);
 
     DECLARE_TYPES(avgpool2d) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
@@ -138,7 +138,7 @@ DECLARE_SHAPE_FN(avgpool2d) {
 
     DECLARE_TYPES(avgpool2d_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

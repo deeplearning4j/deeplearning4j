@@ -21,7 +21,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -37,7 +37,7 @@ namespace nd4j {
     template<typename T>
     __host__ void convertToHalfGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong n, half *dz) {
         execConvertToHalf<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, n, dz);
-        nd4j::DebugHelper::checkErrorCode(stream, "convertToHalfs(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "convertToHalfs(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT convertToHalfGeneric, (dim3 & launchDims, cudaStream_t * stream, void * dx, Nd4jLong n, half * dz), LIBND4J_TYPES);

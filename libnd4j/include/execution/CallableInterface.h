@@ -21,7 +21,7 @@
 #ifndef SAMEDIFF_CALLABLEINTERFACE_H
 #define SAMEDIFF_CALLABLEINTERFACE_H
 
-#include <openmp_pragmas.h>
+#include <system/openmp_pragmas.h>
 #include <cstdint>
 #include <functional>
 #include <atomic>

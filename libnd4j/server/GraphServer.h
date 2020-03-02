@@ -20,13 +20,13 @@
 
 
 #include <grpc++/grpc++.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <graph/Graph.h>
 #include <ops/declarable/CustomOperations.h>
 
 #include <graph/generated/graph.grpc.fb.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class GraphInferenceServerImpl final : public GraphInferenceServer::Service {
         private:

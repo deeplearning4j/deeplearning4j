@@ -35,7 +35,7 @@
 //#include <sys/types.h>
 //#include <sys/wait.h>
 #endif
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 bool GraphUtils::filterOperations(GraphUtils::OpList& ops) {
@@ -69,7 +69,7 @@ std::string GraphUtils::makeCommandLine(GraphUtils::OpList& ops) {
     std::string res;
 
     if (!ops.empty()) {
-        res += std::string(" -g \"-DLIBND4J_OPS_LIST='");
+        res += std::string(" -g \"-DSD_OPS_LIST='");
         //res += *(ops[0].getOpName());
         for (int i = 0; i < ops.size(); i++) {
             res += std::string("-DOP_");

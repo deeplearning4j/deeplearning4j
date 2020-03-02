@@ -21,10 +21,10 @@
 #ifndef LIBND4J_DEBUGHELPER_H
 #define LIBND4J_DEBUGHELPER_H
 
-#include <pointercast.h>
-#include <op_boilerplate.h>
-#include <Environment.h>
-#include <StringUtils.h>
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/Environment.h>
+#include <helpers/StringUtils.h>
 #include <string>
 
 
@@ -35,8 +35,8 @@
 #include <cuda_runtime_api.h>
 
 #endif
-#include <DebugInfo.h>
-namespace nd4j {
+#include <helpers/DebugInfo.h>
+namespace sd {
     class NDArray;
     class ND4J_EXPORT DebugHelper {
     public:

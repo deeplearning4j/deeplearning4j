@@ -22,7 +22,7 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 #include <helpers/MKLDNNStream.h>
 #include "mkldnnUtils.h"
@@ -30,7 +30,7 @@
 
 using namespace dnnl;
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -327,7 +327,7 @@ static void conv2dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
 
 /*
 //////////////////////////////////////////////////////////////////////
-static void conv2dMKLDNN(nd4j::graph::Context &block, const NDArray *input, const NDArray *weights,
+static void conv2dMKLDNN(sd::graph::Context &block, const NDArray *input, const NDArray *weights,
                           const NDArray *bias, NDArray *output, const int kH, const int kW, const int sH,
                           const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode,
                           const int isNCHW) {
@@ -404,7 +404,7 @@ static void conv2dMKLDNN(nd4j::graph::Context &block, const NDArray *input, cons
 }
 
 //////////////////////////////////////////////////////////////////////
-static void conv2dBpMKLDNN(nd4j::graph::Context &block,
+static void conv2dBpMKLDNN(sd::graph::Context &block,
                             const NDArray *input, const NDArray *weights, const NDArray *bias, const NDArray *gradO,
                             NDArray *gradI, NDArray *gradW, NDArray *gradB,
                             const int kH, const int kW, const int sH,const int sW, int pH, int pW, const int dH, const int dW,
@@ -577,8 +577,8 @@ PLATFORM_CHECK(conv2d, ENGINE_CPU) {
     auto weights = INPUT_VARIABLE(1);
 
     // conv2d is only available for float32 dtype
-    return block.isUseMKLDNN() && input->dataType() == nd4j::DataType::FLOAT32 &&
-           weights->dataType() == nd4j::DataType::FLOAT32;
+    return block.isUseMKLDNN() && input->dataType() == sd::DataType::FLOAT32 &&
+           weights->dataType() == sd::DataType::FLOAT32;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -639,7 +639,7 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CPU) {
 
 
     return block.isUseMKLDNN() &&
-           nd4j::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB});
+           sd::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB});
 }
 
 

@@ -19,12 +19,12 @@
 //
 
 
-#include<ops/declarable/helpers/batchnorm.h>
+#include <ops/declarable/helpers/batchnorm.h>
 #include <helpers/ShapeUtils.h>
-#include <OmpLaunchHelper.h>
+#include <helpers/OmpLaunchHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
@@ -77,7 +77,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
             const auto varOffset  = paramSameOffset ? meanOffset : shape::getIndexOffset(j, variance->getShapeInfo());
 
             const auto meanVal = m[meanOffset];
-            auto sigmaInvGam   = static_cast<T>(1) / nd4j::math::nd4j_sqrt<T, T>(v[varOffset] + epsilon);
+            auto sigmaInvGam   = static_cast<T>(1) / sd::math::nd4j_sqrt<T, T>(v[varOffset] + epsilon);
 
             if(g != nullptr) {
                 const auto gammaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, gamma->getShapeInfo());
@@ -162,7 +162,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
             const auto meanOffset     = shape::getOffset(mean->getShapeInfo(), coords);
             const auto varianceOffset = paramSameOffset ? meanOffset : shape::getOffset(variance->getShapeInfo(), coords);
 
-            T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(v[varianceOffset] + epsilon);
+            T sigmaInvGam = 1. / sd::math::nd4j_sqrt<T, T>(v[varianceOffset] + epsilon);
 
             if(g != nullptr) {
                 const auto gammaOffset = paramSameOffset ? meanOffset : shape::getOffset(gamma->getShapeInfo(), coords);

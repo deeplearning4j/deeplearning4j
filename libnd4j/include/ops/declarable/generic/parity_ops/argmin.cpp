@@ -18,18 +18,18 @@
 // Created by raver119 on 01.11.2017.
 // Modified by GS <sgazeos@gmail.com> 4/5/2018.
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_argmin)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         DECLARE_TYPES(argmin) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INTS});
         }
 
@@ -77,7 +77,7 @@ namespace nd4j {
             }
 
             // special case - output is scalar
-            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == nd4j::DataTypeUtils::max<int>())) {
+            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == sd::DataTypeUtils::max<int>())) {
                 return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::INT64));
             }
 

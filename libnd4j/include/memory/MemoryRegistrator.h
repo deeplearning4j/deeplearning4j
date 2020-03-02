@@ -22,13 +22,13 @@
 #define LIBND4J_MEMORYREGISTRATOR_H
 
 #include "Workspace.h"
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <unordered_map>
 #include <map>
 #include <mutex>
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         class ND4J_EXPORT MemoryRegistrator {
         protected:

@@ -20,7 +20,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // kernel to swap two NDArrays vals as linear sequences
@@ -47,7 +47,7 @@ namespace nd4j {
 
             auto xOffset = shape::getIndexOffset(i * xEws, theFirstShape);
             auto yOffset = shape::getIndexOffset(i * yEws, theSecondShape);
-            nd4j::math::nd4j_swap(output[xOffset], input[yOffset]);
+            sd::math::nd4j_swap(output[xOffset], input[yOffset]);
         }
     }
 

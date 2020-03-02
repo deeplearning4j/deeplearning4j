@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_testreduction)
 
 #include <ops/declarable/headers/tests.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         REDUCTION_OP_IMPL(testreduction, 1, 1, false, 0, -1) {
             auto z = OUTPUT_VARIABLE(0);
@@ -34,7 +34,7 @@ namespace nd4j {
 
         DECLARE_TYPES(testreduction) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

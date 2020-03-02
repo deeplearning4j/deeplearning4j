@@ -19,13 +19,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_range)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/range.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 CUSTOM_OP_IMPL(range, -2, 1, false, -2, -2) {
@@ -130,7 +130,7 @@ DECLARE_SHAPE_FN(range) {
     const int numIArgs  = block.getIArguments()->size();    
 
     Nd4jLong steps = 0;
-    nd4j::DataType dataType = block.numD() ? D_ARG(0) : nd4j::DataType::INHERIT;
+    sd::DataType dataType = block.numD() ? D_ARG(0) : sd::DataType::INHERIT;
 
     if (numInArrs > 0) {
         auto isR = INPUT_VARIABLE(0)->isR();
@@ -213,16 +213,16 @@ DECLARE_SHAPE_FN(range) {
 
         if (limit == start){
             //Return [0] to match TF
-            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, nd4j::DataType::INT32));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, sd::DataType::INT32));
         }
 
         REQUIRE_TRUE(delta != 0, 0, "CUSTOM RANGE OP: delta should not be equal to zero !");
 
         if (!block.numD()) {
             if (limit > DataTypeUtils::max<int>())
-                dataType = nd4j::DataType::INT64;
+                dataType = sd::DataType::INT64;
             else
-                dataType = nd4j::DataType::INT32;
+                dataType = sd::DataType::INT32;
         }
 
         steps = (limit - start) / delta;
@@ -257,7 +257,7 @@ DECLARE_SHAPE_FN(range) {
 
         if (!block.numD()) {
             if (Environment::getInstance()->precisionBoostAllowed())
-                dataType = nd4j::DataType::DOUBLE;
+                dataType = sd::DataType::DOUBLE;
             else
                 dataType = Environment::getInstance()->defaultFloatDataType();
         }
@@ -276,7 +276,7 @@ DECLARE_SHAPE_FN(range) {
 
     DECLARE_TYPES(range) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
     }
 }

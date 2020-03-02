@@ -24,7 +24,7 @@
 
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
          * This operation returns index of max element in a given NDArray (optionally: along given dimension(s))

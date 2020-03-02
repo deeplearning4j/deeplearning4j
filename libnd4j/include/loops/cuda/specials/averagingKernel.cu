@@ -21,7 +21,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -97,7 +97,7 @@ namespace nd4j {
                            bool propagate) {
 
         execAveragingKernel<T><<< launchDims.x, launchDims.y, launchDims.z, *stream>>>(vdx, vdz, n, length, propagate);
-        nd4j::DebugHelper::checkErrorCode(stream, "averaging(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "averaging(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT averagingKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vdx, void * vdz, int n, Nd4jLong length, bool propagate), LIBND4J_TYPES);

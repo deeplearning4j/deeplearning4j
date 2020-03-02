@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/axis.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

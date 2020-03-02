@@ -21,7 +21,7 @@
 
 #include <ops/declarable/helpers/range.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -38,11 +38,11 @@ namespace helpers {
     //////////////////////////////////////////////////////////////////////////
     // be careful: outVector must have c-order and ews = 1 !!!
     template <typename T>
-    static void _range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+    static void _range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         global_range<T><<<512, 512, 2048, *context->getCudaStream()>>>(outVector.getSpecialBuffer(), outVector.lengthOf(), start.e<T>(0), delta.e<T>(0));
     }
 
-    void range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+    void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         NDArray::prepareSpecialUse({&outVector}, {&start, &delta});
         BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (context, start, delta, outVector), LIBND4J_TYPES);
         NDArray::registerSpecialUse({&outVector}, {&start, &delta});

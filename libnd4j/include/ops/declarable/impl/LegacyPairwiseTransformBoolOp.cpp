@@ -22,7 +22,7 @@
 #include <ops/declarable/LegacyPairwiseTransformBoolOp.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyPairwiseTransformBoolOp::LegacyPairwiseTransformBoolOp() : LegacyOp::LegacyOp(2) {
             // just a no-op
@@ -68,7 +68,7 @@ namespace nd4j {
         /**
         *   Output shape of PWT operations always the same as input[0] shape, no exclusions.
         */
-        ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
             return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }

@@ -21,17 +21,17 @@
 #ifndef LIBND4J_OPS_HELPERS_H
 #define LIBND4J_OPS_HELPERS_H
 
-#include <pointercast.h>
-#include <op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
 #include <execution/LaunchContext.h>
 #include <types/float16.h>
 #include <types/types.h>
 #include <helpers/shape.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <vector>
 #include <array>
-#include <Status.h>
-#include <NDArrayFactory.h>
+#include <graph/Status.h>
+#include <array/NDArrayFactory.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -42,7 +42,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <DebugHelper.h>
+#include <helpers/DebugHelper.h>
 
 #endif // CUDACC
 

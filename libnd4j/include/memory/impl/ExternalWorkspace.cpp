@@ -20,7 +20,7 @@
 
 #include <memory/ExternalWorkspace.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         ExternalWorkspace::ExternalWorkspace(Nd4jPointer ptrH, Nd4jLong sizeH, Nd4jPointer ptrD, Nd4jLong sizeD) {
             _ptrH = ptrH;

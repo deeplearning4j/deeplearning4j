@@ -18,11 +18,11 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 16.07.2018
 //
 
-#include <GradCheck.h>
-#include <NDArrayFactory.h>
+#include <helpers/GradCheck.h>
+#include <array/NDArrayFactory.h>
 
 
-namespace nd4j {
+namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray*>& gradArrs) {
@@ -62,7 +62,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 	// back prop pass
 	ResultSet* outArrsBP = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
 
-	NDArray tmpScalar(nd4j::DataType::DOUBLE, inArrsFF[0]->getContext()); // scalar = 0
+	NDArray tmpScalar(sd::DataType::DOUBLE, inArrsFF[0]->getContext()); // scalar = 0
 
 	for(int i = 0; i < numInArrsFF; ++i) {							// loop through input array
 

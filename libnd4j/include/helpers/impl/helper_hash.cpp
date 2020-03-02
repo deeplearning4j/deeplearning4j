@@ -21,7 +21,7 @@
 #include <helpers/helper_hash.h>
 #include <helpers/logger.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         HashHelper* HashHelper::getInstance() {
@@ -65,7 +65,7 @@ namespace nd4j {
             return h;
         }
 
-        nd4j::ops::HashHelper* nd4j::ops::HashHelper::_INSTANCE = 0;
+        sd::ops::HashHelper* sd::ops::HashHelper::_INSTANCE = 0;
     }
 }
 

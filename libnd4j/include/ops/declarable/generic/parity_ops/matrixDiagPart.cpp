@@ -22,7 +22,7 @@
 #include <ops/declarable/helpers/matrix_diag_part.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(matrix_diag_part, 1, 1, false, 0, 0) {
             auto input  = INPUT_VARIABLE(0);
@@ -43,7 +43,7 @@ namespace nd4j {
             REQUIRE_TRUE(inRank >= 2, 0, "CUSTOM_OP matrix_diag_part: input array must have rank >= 2, but %i given!", inRank);
 
             int outRank = inRank - 1;
-            int lastDimension = nd4j::math::nd4j_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
+            int lastDimension = sd::math::nd4j_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
             if(outRank == 1) {
                 //output shape is a vector with size min(sizeAt(0), sizeAt(1))
                 outShapeInfo = ConstantShapeHelper::getInstance()->vectorShapeInfo(lastDimension, ArrayOptions::dataType(in));
@@ -63,7 +63,7 @@ namespace nd4j {
 
         DECLARE_TYPES(matrix_diag_part) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
 }

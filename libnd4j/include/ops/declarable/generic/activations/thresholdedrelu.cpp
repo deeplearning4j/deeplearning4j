@@ -19,13 +19,13 @@
 //
 
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_thresholdedrelu)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <ops/declarable/helpers/activations.h>
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 

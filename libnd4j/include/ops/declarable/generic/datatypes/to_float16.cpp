@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_to_float16)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(to_float16, 1, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -39,8 +39,8 @@ namespace nd4j {
 
         DECLARE_TYPES(to_float16) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(nd4j::DataType::HALF);
+                    ->setAllowedInputTypes(sd::DataType::ANY)
+                    ->setAllowedOutputTypes(sd::DataType::HALF);
         }
 
         DECLARE_SHAPE_FN(to_float16) {

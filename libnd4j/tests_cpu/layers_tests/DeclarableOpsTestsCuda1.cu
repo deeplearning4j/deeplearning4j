@@ -21,13 +21,13 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/ops.h>
-#include <GradCheck.h>
+#include <helpers/GradCheck.h>
 #include <chrono>
 
 
-using namespace nd4j;
+using namespace sd;
 
 
 class DeclarableOpsTestsCuda1 : public testing::Test {
@@ -48,7 +48,7 @@ TEST_F(DeclarableOpsTestsCuda1, Test_CHOOSE_SCALAR_LARGE) {
     auto precursor = NDArrayFactory::create<double>(inputData,'c',{1,149});
     NDArray x(nullptr, precursor.specialBuffer(), precursor.shapeInfo());
 
-    nd4j::ops::choose op;
+    sd::ops::choose op;
     //greater than test
     auto result = op.evaluate({&x}, {0.0},{3});
     ASSERT_EQ(Status::OK(), result->status());
@@ -67,7 +67,7 @@ TEST_F(DeclarableOpsTestsCuda1, Test_Reverse_TAD_1) {
     auto z = x.like();
     x.linspace(1.0f);
 
-    nd4j::ops::reverse op;
+    sd::ops::reverse op;
     auto timeStart = std::chrono::system_clock::now();
     auto status = op.execute({&x}, {&z}, {}, {1}, {});
     auto timeEnd = std::chrono::system_clock::now();

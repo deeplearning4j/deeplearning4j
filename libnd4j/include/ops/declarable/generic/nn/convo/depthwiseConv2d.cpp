@@ -18,15 +18,15 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_depthwise_conv2d)
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
-#include <declarable/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(depthwise_conv2d, 2, 1, false, 0, 9) {
@@ -69,7 +69,7 @@ CUSTOM_OP_IMPL(depthwise_conv2d, 2, 1, false, 0, 9) {
 
     DECLARE_TYPES(depthwise_conv2d) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 DECLARE_SHAPE_FN(depthwise_conv2d) {
@@ -140,7 +140,7 @@ DECLARE_SHAPE_FN(depthwise_conv2d) {
 
     DECLARE_TYPES(depthwise_conv2d_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

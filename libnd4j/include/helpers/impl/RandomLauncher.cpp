@@ -19,16 +19,16 @@
 //
 
 #include <types/float16.h>
-#include <dll.h>
+#include <system/dll.h>
 #include <helpers/RandomLauncher.h>
 #include <graph/RandomGenerator.h>
 //#include <ops/declarable/CustomOperations.h>
 #include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
     // FIXME: implement this
 
-    void RandomLauncher::applyDropOut(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z) {
+    void RandomLauncher::applyDropOut(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z) {
         if (z == nullptr)
             z = array;
 
@@ -39,7 +39,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::applyInvertedDropOut(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z) {
+    void RandomLauncher::applyInvertedDropOut(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray *array, double retainProb, NDArray* z) {
         if (z == nullptr)
             z = array;
 
@@ -50,7 +50,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::applyAlphaDropOut(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray *array, double retainProb, double alpha, double beta, double alphaPrime, NDArray* z) {
+    void RandomLauncher::applyAlphaDropOut(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray *array, double retainProb, double alpha, double beta, double alphaPrime, NDArray* z) {
         if (z == nullptr)
             z = array;
 
@@ -61,7 +61,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::fillBernoulli(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray* array, double prob) {
+    void RandomLauncher::fillBernoulli(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray* array, double prob) {
         ExtraArguments arguments({prob});
         PointersManager pm(context, "fillBernoulli");
 
@@ -69,7 +69,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::fillUniform(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray* array, double from, double to) {
+    void RandomLauncher::fillUniform(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray* array, double from, double to) {
         ExtraArguments arguments({from, to});
         PointersManager pm(context, "fillUniform");
 
@@ -77,7 +77,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::fillGaussian(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
+    void RandomLauncher::fillGaussian(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
         ExtraArguments arguments({mean, stdev});
         PointersManager pm(context, "fillGaussian");
 
@@ -85,7 +85,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::fillExponential(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray* array, double lambda) {
+    void RandomLauncher::fillExponential(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray* array, double lambda) {
         ExtraArguments arguments({lambda});
         PointersManager pm(context, "fillExponential");
 
@@ -93,7 +93,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::fillLogNormal(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
+    void RandomLauncher::fillLogNormal(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
         ExtraArguments arguments({mean, stdev});
         PointersManager pm(context, "fillLogNormal");
 
@@ -101,7 +101,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::fillTruncatedNormal(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
+    void RandomLauncher::fillTruncatedNormal(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray* array, double mean, double stdev) {
         ExtraArguments arguments({mean, stdev});
         PointersManager pm(context, "fillTruncatedNormal");
 
@@ -109,7 +109,7 @@ namespace nd4j {
         pm.synchronize();
     }
 
-    void RandomLauncher::fillBinomial(nd4j::LaunchContext *context, nd4j::graph::RandomGenerator& rng, NDArray* array, int trials, double prob) {
+    void RandomLauncher::fillBinomial(sd::LaunchContext *context, sd::graph::RandomGenerator& rng, NDArray* array, int trials, double prob) {
         ExtraArguments arguments({(double) trials, prob});
         PointersManager pm(context, "fillBinomial");
 

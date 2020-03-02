@@ -20,7 +20,7 @@
 
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -233,13 +233,13 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void barnes_edge_forces_, (const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output), FLOAT_TYPES);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// gains - run a function T((x + 2.) * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps));
+// gains - run a function T((x + 2.) * sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps));
 // for all members in input and put all in output
 //
     template <typename T>
     void barnes_gains_(NDArray* input, NDArray* gradX, NDArray* epsilon, NDArray* output) {
         auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
-            T res = nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps) ? x + T(.2) : x * T(.8);
+            T res = sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps) ? x + T(.2) : x * T(.8);
             if(res < .01) res = .01;
             return res;
         };

@@ -29,7 +29,7 @@
 #include "Stash.h"
 #include <memory/Workspace.h>
 
-namespace nd4j{
+namespace sd{
     namespace graph {
         class ND4J_EXPORT SessionLocalStorage {
         protected:

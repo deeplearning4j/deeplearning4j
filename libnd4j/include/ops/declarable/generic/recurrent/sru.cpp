@@ -20,15 +20,15 @@
 //@author Yurii Shyrma
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sru)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/sru.h>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
@@ -87,7 +87,7 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
 
         DECLARE_TYPES(sru) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
@@ -304,7 +304,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
         DECLARE_TYPES(sru_bp) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
@@ -372,7 +372,7 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
         DECLARE_TYPES(sru_bi) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
@@ -422,7 +422,7 @@ DECLARE_SHAPE_FN(sru_bi) {
 
         DECLARE_TYPES(sru_bi_bp) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 
@@ -679,7 +679,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //         DECLARE_TYPES(sru_logic) {
 //             getOpDescriptor()
-//                     ->setAllowedInputTypes(nd4j::DataType::ANY)
+//                     ->setAllowedInputTypes(sd::DataType::ANY)
 //                     ->setAllowedOutputTypes({ALL_FLOATS});
 //         }
 
@@ -781,7 +781,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //         DECLARE_TYPES(sru_old) {
 //             getOpDescriptor()
-//                     ->setAllowedInputTypes(nd4j::DataType::ANY)
+//                     ->setAllowedInputTypes(sd::DataType::ANY)
 //                     ->setAllowedOutputTypes({ALL_FLOATS});
 //         }
 
@@ -952,7 +952,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //         DECLARE_TYPES(sru_bp_logic) {
 //             getOpDescriptor()
-//                     ->setAllowedInputTypes(nd4j::DataType::ANY)
+//                     ->setAllowedInputTypes(sd::DataType::ANY)
 //                     ->setAllowedOutputTypes({ALL_FLOATS});
 //         }
 

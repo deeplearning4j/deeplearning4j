@@ -22,12 +22,12 @@
 #include <array/DataTypeUtils.h>
 #include <types/float16.h>
 
-namespace nd4j {
+namespace sd {
     DataType DataTypeUtils::fromInt(int val) {
         return (DataType) val;
     }
 
-    DataType DataTypeUtils::fromFlatDataType(nd4j::graph::DType dtype) {
+    DataType DataTypeUtils::fromFlatDataType(sd::graph::DType dtype) {
         return (DataType) dtype;
     }
 

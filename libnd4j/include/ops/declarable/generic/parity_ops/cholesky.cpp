@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> at 11/12/2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cholesky)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lup.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(cholesky, 1, 1, true) {
             NDArray* input = INPUT_VARIABLE(0);
@@ -36,7 +36,7 @@ namespace nd4j {
         }
         DECLARE_TYPES(cholesky) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 

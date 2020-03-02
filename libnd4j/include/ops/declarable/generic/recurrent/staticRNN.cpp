@@ -21,7 +21,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/rnn.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -73,7 +73,7 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
 
 DECLARE_TYPES(static_rnn) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

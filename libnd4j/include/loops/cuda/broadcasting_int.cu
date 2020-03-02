@@ -18,16 +18,16 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/broadcasting_int.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
-#include <Environment.h>
+#include <system/Environment.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <string>
 #include <stdexcept>
-#include <StringUtils.h>
+#include <helpers/StringUtils.h>
 
 using namespace simdOps;
 

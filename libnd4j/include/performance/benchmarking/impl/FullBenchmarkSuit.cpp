@@ -78,7 +78,7 @@
     int limit3 = 1;
 #endif
 
-namespace nd4j {
+namespace sd {
 
     static std::string layerNormBenchmark() {
         std::string output;
@@ -126,7 +126,7 @@ namespace nd4j {
             return ctx;
         };
 
-        nd4j::ops::layer_norm layerNorm;
+        sd::ops::layer_norm layerNorm;
         DeclarableBenchmark benchmark(layerNorm, "layer norm");
         output += helper.runOperationSuit(&benchmark, generator, batch, "Layer Norm");
 
@@ -141,7 +141,7 @@ namespace nd4j {
         BoolParameters ncdhw("ncdhw");  //1 = ndhwc
         ParametersBatch batch({&ncdhw});
 
-        nd4j::ops::maxpool3dnew maxpool3Dnew;
+        sd::ops::maxpool3dnew maxpool3Dnew;
         DeclarableBenchmark benchmark(maxpool3Dnew, "maxPool3d");
 
 #ifdef _RELEASE
@@ -207,7 +207,7 @@ namespace nd4j {
         BoolParameters ncdhw("ncdhw");  //1 = ndhwc
         ParametersBatch batch({&ncdhw});
 
-        nd4j::ops::conv3dnew conv3Dnew;
+        sd::ops::conv3dnew conv3Dnew;
         DeclarableBenchmark benchmark(conv3Dnew, "conv3d");
 
 #ifdef _RELEASE
@@ -284,7 +284,7 @@ namespace nd4j {
 #endif
 
         ParametersBatch batch({&format, &mb, &nInOut});
-        nd4j::ops::lstmBlock lstmBlock;
+        sd::ops::lstmBlock lstmBlock;
         DeclarableBenchmark benchmark(lstmBlock, "lstm");
 
         int seqLength = 32;
@@ -414,7 +414,7 @@ namespace nd4j {
             return ctx;
         };
 
-        nd4j::ops::batchnorm batchnorm;
+        sd::ops::batchnorm batchnorm;
         DeclarableBenchmark benchmark(batchnorm, "batchnorm");
         output += helper.runOperationSuit(&benchmark, generator, batch, "Batch Normalization");
 
@@ -471,11 +471,11 @@ namespace nd4j {
             return ctx;
         };
 
-        nd4j::ops::avgpool2d avgpool2d;
+        sd::ops::avgpool2d avgpool2d;
         DeclarableBenchmark benchmark1(avgpool2d, "avgpool");
         output += helper.runOperationSuit(&benchmark1, generator, batch, "Average Pooling 2d Operation");
 
-        nd4j::ops::maxpool2d maxpool2d;
+        sd::ops::maxpool2d maxpool2d;
         DeclarableBenchmark benchmark2(maxpool2d, "maxpool");
         output += helper.runOperationSuit(&benchmark2, generator, batch, "Max Pooling 2d Operation");
         return output;
@@ -497,7 +497,7 @@ namespace nd4j {
         PredefinedParameters hw("hw", {8});
 #endif
         ParametersBatch batch({&nhwc, &k, &c, &hw});
-        nd4j::ops::conv2d conv2d;
+        sd::ops::conv2d conv2d;
         DeclarableBenchmark benchmark(conv2d, "conv2d");
 
         auto generator = PARAMETRIC_D() {
@@ -573,27 +573,27 @@ namespace nd4j {
             return ctx;
         };
 
-        nd4j::ops::LegacyRandomOp unif(random::UniformDistribution);
+        sd::ops::LegacyRandomOp unif(random::UniformDistribution);
         DeclarableBenchmark dbU(unif, "uniform");
         output += helper.runOperationSuit(&dbU, gen01, batch, "Uniform Distribution");
 
-        nd4j::ops::LegacyRandomOp gaussian(random::GaussianDistribution);
+        sd::ops::LegacyRandomOp gaussian(random::GaussianDistribution);
         DeclarableBenchmark dbG(gaussian, "gaussian");
         output += helper.runOperationSuit(&dbG, gen01, batch, "Gaussian Distribution");
 
-        nd4j::ops::LegacyRandomOp trunc(random::TruncatedNormalDistribution);
+        sd::ops::LegacyRandomOp trunc(random::TruncatedNormalDistribution);
         DeclarableBenchmark dbTU(unif, "trunc.norm");
         output += helper.runOperationSuit(&dbTU, gen01, batch, "Truncated Normal Distribution");
 
-        nd4j::ops::LegacyRandomOp ln(random::LogNormalDistribution);
+        sd::ops::LegacyRandomOp ln(random::LogNormalDistribution);
         DeclarableBenchmark dbLN(ln, "uniform");
         output += helper.runOperationSuit(&dbLN, gen01, batch, "Log Normal Distribution");
 
-        nd4j::ops::LegacyRandomOp bernoulli(random::BernoulliDistribution);
+        sd::ops::LegacyRandomOp bernoulli(random::BernoulliDistribution);
         DeclarableBenchmark dbB(bernoulli, "bernoulli");
         output += helper.runOperationSuit(&dbB, gen05, batch, "Bernoulli Distribution");
 
-        nd4j::ops::LegacyRandomOp dropout(random::BernoulliDistribution);
+        sd::ops::LegacyRandomOp dropout(random::BernoulliDistribution);
         DeclarableBenchmark dbD(dropout, "dropout");
         output += helper.runOperationSuit(&dbD, gen05, batch, "Dropout");
 
@@ -764,7 +764,7 @@ namespace nd4j {
             return ctx;
         };
 
-        nd4j::ops::matmul mmul;
+        sd::ops::matmul mmul;
         DeclarableBenchmark benchmark(mmul, "mmul (batch)");
         output += helper.runOperationSuit(&benchmark, generator, b, "MMul (batch)");
 
@@ -822,7 +822,7 @@ namespace nd4j {
         ParametersBatch batch({&length});
 
         //Gather 1D tests - 1d ref, 1d indices, 1d updates -> 1d output
-        nd4j::ops::scatter_upd scatter_update1;
+        sd::ops::scatter_upd scatter_update1;
         DeclarableBenchmark sa1d(scatter_update1, "scatter_update1d");
         auto generator = PARAMETRIC_D() {
             auto ctx = new Context(1);
@@ -856,7 +856,7 @@ namespace nd4j {
         IntPowerParameters rows("rows", 2, 8, gatherOpPowLimit2, 4);      //2^10 to 2^16 in steps of 2: 2^10, ..., 2^20
         PredefinedParameters cols("cols", {32});
         ParametersBatch batch2({&rows, &cols});
-        nd4j::ops::scatter_upd scatter_update2;
+        sd::ops::scatter_upd scatter_update2;
         DeclarableBenchmark sa2d(scatter_update2, "scatter_update2d");
         auto generator2 = PARAMETRIC_D() {
             auto ctx = new Context(1);
@@ -891,7 +891,7 @@ namespace nd4j {
         IntPowerParameters sz0("sz0", 2, 8, gatherOpPowLimit3, 4);
         PredefinedParameters sz1("sz1", {32});
         ParametersBatch batch3({&sz0, &sz1});
-        nd4j::ops::scatter_upd scatter_update3;
+        sd::ops::scatter_upd scatter_update3;
         DeclarableBenchmark sa3d(scatter_update3, "scatter3d");
         auto generator3 = PARAMETRIC_D() {
             auto ctx = new Context(1);
@@ -932,7 +932,7 @@ namespace nd4j {
         ParametersBatch batch({&length});
 
         //Gather 1D tests - 1d input, 1d indices -> 1d output
-        nd4j::ops::gather gather1;
+        sd::ops::gather gather1;
         DeclarableBenchmark gather1d(gather1, "gather1d");
         auto generator = PARAMETRIC_D() {
             auto ctx = new Context(1);
@@ -962,7 +962,7 @@ namespace nd4j {
         IntPowerParameters rows("rows", 2, 8, gatherOpPowLimit2, 4);      //2^10 to 2^20 in steps of 2: 2^10, ..., 2^20
         PredefinedParameters cols("cols", {32});
         ParametersBatch batch2({&rows, &cols});
-        nd4j::ops::gather gather2;
+        sd::ops::gather gather2;
         DeclarableBenchmark gather2d(gather2, "gather2d");
         auto generator2 = PARAMETRIC_D() {
             auto ctx = new Context(1);
@@ -994,7 +994,7 @@ namespace nd4j {
         IntPowerParameters sz0("sz0", 2, 8, gatherOpPowLimit3, 4);      //2^8 to 2^16 in steps of 4
         PredefinedParameters sz1("sz1", {32});
         ParametersBatch batch3({&sz0, &sz1});
-        nd4j::ops::gather gather3;
+        sd::ops::gather gather3;
         DeclarableBenchmark gather3d(gather3, "gather3d");
         auto generator3 = PARAMETRIC_D() {
             auto ctx = new Context(1);
@@ -1166,7 +1166,7 @@ namespace nd4j {
             name += "Broadcast Matrix Add (Custom) - Rank";
             name += std::to_string(rank);
 
-            nd4j::ops::add op;
+            sd::ops::add op;
             DeclarableBenchmark benchmark(op, "add");
             output += helper.runOperationSuit(&benchmark, generator, b, name.c_str());
         }
@@ -1207,7 +1207,7 @@ namespace nd4j {
         };
 
         std::string s("add");
-        nd4j::ops::add op;
+        sd::ops::add op;
         DeclarableBenchmark benchmark(op, "add");
         output += helper.runOperationSuit(&benchmark, generator, batch, "Broadcast (Custom) Add - 2d");
         return output;
@@ -1432,7 +1432,7 @@ namespace nd4j {
             return ctx;
         };
 
-        nd4j::ops::argmax opArgmax;
+        sd::ops::argmax opArgmax;
         DeclarableBenchmark dbArgmax(opArgmax, "stridedArgmax");
         output += helper.runOperationSuit(&dbArgmax, generator3, batch, "Strided Argmax");
         return output;
@@ -1508,7 +1508,7 @@ namespace nd4j {
             std::string s5("Argmax Along Dimension - ");
             s5 += std::to_string(length[i]);
 
-            nd4j::ops::argmax opArgmax;
+            sd::ops::argmax opArgmax;
             DeclarableBenchmark dbArgmax(opArgmax, "Argmax");
             output += helper.runOperationSuit(&dbArgmax, generator3, batch, s5.c_str());
         }
@@ -1537,7 +1537,7 @@ namespace nd4j {
         output += helper.runOperationSuit(&rbSum, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator), batch, "Sum - Full Array Reduction");
 
         //Index reduction
-        nd4j::ops::argmax opArgmax;
+        sd::ops::argmax opArgmax;
         DeclarableBenchmark dbArgmax(opArgmax, "Argmax");
         auto generator3 = PARAMETRIC_D(){
             auto ctx = new Context(1);
@@ -1640,7 +1640,7 @@ namespace nd4j {
         output += helper.runOperationSuit(&erf, generator, batch, "Error Function (Erf)");
 
         ParametersBatch batch2({&length});
-        nd4j::ops::polygamma op1;
+        sd::ops::polygamma op1;
         DeclarableBenchmark pg(op1, "polygamma");
         auto generator2 = PARAMETRIC_D() {
             auto ctx = new Context(1);
@@ -1657,7 +1657,7 @@ namespace nd4j {
 
         IntPowerParameters lengthBetaInc("length", 2, 10, heavyPowLimit, 4);      //2^10 to 2^22 in steps of 4
         ParametersBatch batch3({&lengthBetaInc});
-        nd4j::ops::betainc op2;
+        sd::ops::betainc op2;
         DeclarableBenchmark binc(op2, "betainc");
         auto generator3 = PARAMETRIC_D() {
             auto ctx = new Context(1);

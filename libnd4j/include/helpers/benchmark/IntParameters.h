@@ -27,7 +27,7 @@
 #include "Parameters.h"
 #include "ParametersSpace.h"
 
-namespace nd4j {
+namespace sd {
     class IntParameters : public ParametersSpace {
     protected:
         int _start;

@@ -22,7 +22,7 @@
 #include <ops/declarable/helpers/hamming.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -47,7 +47,7 @@ namespace nd4j {
 
                 Nd4jLong distance = 0;
                 auto lengthOf = x.lengthOf();
-                int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+                int maxThreads = sd::math::nd4j_min<int>(256, omp_get_max_threads());
                 Nd4jLong intermediate[256];
 
                 // nullify temp values

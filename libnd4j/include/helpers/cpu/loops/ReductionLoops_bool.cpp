@@ -22,7 +22,7 @@
 
 using namespace simdOps;
 
-namespace nd4j {
+namespace sd {
 
     template<typename X, typename Z>
     template <typename OpType>

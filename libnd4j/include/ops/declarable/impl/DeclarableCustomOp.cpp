@@ -21,9 +21,9 @@
 #include <ops/declarable/DeclarableCustomOp.h>
 #include <ops/declarable/DeclarableOp.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
-        DeclarableCustomOp::DeclarableCustomOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
+        DeclarableCustomOp::DeclarableCustomOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : sd::ops::DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
             //
         }
     }

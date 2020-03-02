@@ -18,13 +18,13 @@
 // Created by sgazeos@gmail.com on 26.01.2018.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_moments)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(moments, 1, 2, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
@@ -82,7 +82,7 @@ namespace nd4j {
 
         DECLARE_TYPES(moments) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

@@ -23,15 +23,15 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 #include <helpers/MKLDNNStream.h>
 #include "mkldnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -369,7 +369,7 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
 
     // x - mean
     NDArray xMinusMean(x); // empty array with same shape as x
-    const_cast<NDArray*>(x)->applyBroadcast(nd4j::broadcast::Subtract, axes, *mean, xMinusMean);
+    const_cast<NDArray*>(x)->applyBroadcast(sd::broadcast::Subtract, axes, *mean, xMinusMean);
 
     // stdInv
     NDArray stdInv = *variance + epsilon;
@@ -377,30 +377,30 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     stdInv.applyTransform(transform::Sqrt, stdInv);                                 // 1 / (variance + epsilon)^0.5
 
     // dfdm / N
-    auto dfdm = dLdO->reduceAlongDimension(nd4j::reduce::Sum, excludedAxes);
+    auto dfdm = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes);
     dfdm *= stdInv;
     dfdm *= -Ninv;
 
     // dvdm / 2
     NDArray dvdm(mean);                 // empty array with same shape as mean
-    xMinusMean.reduceAlongDimension(nd4j::reduce::Sum, dvdm, excludedAxes);
+    xMinusMean.reduceAlongDimension(sd::reduce::Sum, dvdm, excludedAxes);
     dvdm *= -Ninv;
 
     // (2/N)*dfdv
     NDArray dfdv(variance);                 // empty array with same shape as variance
-    (xMinusMean * *dLdO).reduceAlongDimension(nd4j::reduce::Sum, dfdv, excludedAxes);
+    (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, dfdv, excludedAxes);
     dfdv *= stdInv*stdInv*stdInv;
     dfdv *= -Ninv;
 
     // dvdm/2  + (x - m)
-    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, dvdm, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Add, axes, dvdm, xMinusMean);
     // dfdv * (dvdm/2  + (x - m))
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, dfdv, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Multiply, axes, dfdv, xMinusMean);
     // add dfdm / N
-    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, dfdm, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Add, axes, dfdm, xMinusMean);
     // * gamma
     auto gamma = (*weights)({0,1, 0,0});
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, gamma, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Multiply, axes, gamma, xMinusMean);
 
     *dLdI += xMinusMean;
 }
@@ -644,7 +644,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 //         axes.push_back(input->rankOf() - 1);
 
 //     return block.isUseMKLDNN() &&
-//            nd4j::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) &&
+//            sd::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) &&
 //            axes.size() == 1;
 // }
 

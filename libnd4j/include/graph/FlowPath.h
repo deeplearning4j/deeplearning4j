@@ -21,16 +21,16 @@
 #ifndef LIBND4J_FLOWPATH_H
 #define LIBND4J_FLOWPATH_H
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <unordered_map>
 #include <map>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/NodeState.h>
 #include <graph/FrameState.h>
 #include <graph/profiling/GraphProfile.h>
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT FlowPath {
         private:

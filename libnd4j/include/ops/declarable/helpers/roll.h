@@ -21,12 +21,12 @@
 #include <ops/declarable/helpers/helpers.h>
 #ifndef __HELPERS__ROLL__H__
 #define __HELPERS__ROLL__H__
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
-    void rollFunctorLinear(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace = false);
+    void rollFunctorLinear(sd::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace = false);
 
-    void rollFunctorFull(nd4j::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace = false);
+    void rollFunctorFull(sd::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace = false);
 }
 }
 }

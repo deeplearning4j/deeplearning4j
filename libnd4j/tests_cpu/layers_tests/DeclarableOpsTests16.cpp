@@ -21,13 +21,13 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/ops.h>
-#include <GradCheck.h>
+#include <helpers/GradCheck.h>
 #include <array>
 
 
-using namespace nd4j;
+using namespace sd;
 
 
 class DeclarableOpsTests16 : public testing::Test {
@@ -45,7 +45,7 @@ TEST_F(DeclarableOpsTests16, scatter_upd_1) {
     auto w = NDArrayFactory::create<float>(3.0f);
     auto e = NDArrayFactory::create<float>('c', { 3 }, { 3.f, 1.f, 1.f });
 
-    nd4j::ops::scatter_upd op;
+    sd::ops::scatter_upd op;
     auto result = op.evaluate({ &x, &y, &w });
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -58,14 +58,14 @@ TEST_F(DeclarableOpsTests16, scatter_upd_1) {
 
 TEST_F(DeclarableOpsTests16, scatter_upd_2) {
 
-    NDArray x('c', { 10, 3 }, nd4j::DataType::FLOAT32);
-    NDArray indices('c', { 2 }, { 2,5 }, nd4j::DataType::INT32);
-    NDArray updates('c', { 2, 3 }, { 100,101,102,  200,201,202 }, nd4j::DataType::FLOAT32);
-    NDArray e('c', { 10, 3 }, { 1,2,3, 4,5,6, 100,101,102, 10,11,12, 13,14,15, 200,201,202, 19,20,21, 22,23,24, 25,26,27, 28,29,30 }, nd4j::DataType::FLOAT32);
+    NDArray x('c', { 10, 3 }, sd::DataType::FLOAT32);
+    NDArray indices('c', { 2 }, { 2,5 }, sd::DataType::INT32);
+    NDArray updates('c', { 2, 3 }, { 100,101,102,  200,201,202 }, sd::DataType::FLOAT32);
+    NDArray e('c', { 10, 3 }, { 1,2,3, 4,5,6, 100,101,102, 10,11,12, 13,14,15, 200,201,202, 19,20,21, 22,23,24, 25,26,27, 28,29,30 }, sd::DataType::FLOAT32);
 
     x.linspace(1);
 
-    nd4j::ops::scatter_upd op;
+    sd::ops::scatter_upd op;
     auto result = op.evaluate({ &x, &indices, &updates });
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -78,12 +78,12 @@ TEST_F(DeclarableOpsTests16, scatter_upd_2) {
 
 TEST_F(DeclarableOpsTests16, scatter_upd_3) {
 
-    NDArray x('c', { 10, 3 }, nd4j::DataType::FLOAT32);
-    NDArray indices('c', { 2 }, { 20,5 }, nd4j::DataType::INT32);
-    NDArray updates('c', { 2, 3 }, { 100,101,102,  200,201,202 }, nd4j::DataType::FLOAT32);
-    NDArray output('c', { 10, 3 }, nd4j::DataType::FLOAT32);
+    NDArray x('c', { 10, 3 }, sd::DataType::FLOAT32);
+    NDArray indices('c', { 2 }, { 20,5 }, sd::DataType::INT32);
+    NDArray updates('c', { 2, 3 }, { 100,101,102,  200,201,202 }, sd::DataType::FLOAT32);
+    NDArray output('c', { 10, 3 }, sd::DataType::FLOAT32);
 
-    nd4j::ops::scatter_upd op;
+    sd::ops::scatter_upd op;
     ASSERT_ANY_THROW(op.execute({ &x, &indices, &updates }, { &output }, {}, {}, { true, true }));
 }
 
@@ -92,7 +92,7 @@ TEST_F(DeclarableOpsTests16, test_size_dtype_1) {
     auto z = NDArrayFactory::create<float>(0.0f);
     auto e = NDArrayFactory::create<float>(3.0f);
 
-    nd4j::ops::size op;
+    sd::ops::size op;
     auto status = op.execute({ &x }, { &z }, {}, {}, {});
     ASSERT_EQ(Status::OK(), status);
 
@@ -102,7 +102,7 @@ TEST_F(DeclarableOpsTests16, test_size_dtype_1) {
 TEST_F(DeclarableOpsTests16, test_empty_noop_1) {
     auto z = NDArrayFactory::empty<Nd4jLong>();
 
-    nd4j::ops::noop op;
+    sd::ops::noop op;
     auto status = op.execute({}, { &z }, {}, {}, {});
     ASSERT_EQ(Status::OK(), status);
 }
@@ -113,7 +113,7 @@ TEST_F(DeclarableOpsTests16, test_empty_noop_2) {
     Context ctx(1);
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
-    nd4j::ops::noop op;
+    sd::ops::noop op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(Status::OK(), status);
@@ -123,7 +123,7 @@ TEST_F(DeclarableOpsTests16, test_svd_1) {
     auto x = NDArrayFactory::create<float>('c', { 3, 3 }, { 0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f,0.50563407f, 0.89252293f, 0.5461209f });
     auto z = NDArrayFactory::create<float>('c', { 3 });
 
-    nd4j::ops::svd op;
+    sd::ops::svd op;
     auto status = op.execute({ &x }, { &z }, {}, { 0, 0, 16 }, {});
 
     ASSERT_EQ(Status::OK(), status);
@@ -134,7 +134,7 @@ TEST_F(DeclarableOpsTests16, test_hamming_distance_1) {
     auto y = NDArrayFactory::create<Nd4jLong>({ 8723, 8723, 8723 });
     auto e = NDArrayFactory::create<Nd4jLong>(18);
 
-    nd4j::ops::bits_hamming_distance op;
+    sd::ops::bits_hamming_distance op;
     auto result = op.evaluate({ &x, &y });
     ASSERT_EQ(Status::OK(), result->status());
 
@@ -156,7 +156,7 @@ TEST_F(DeclarableOpsTests16, test_knn_mindistance_1) {
     low.linspace(1.0);
     high.linspace(1.0);
 
-    nd4j::ops::knn_mindistance op;
+    sd::ops::knn_mindistance op;
     auto result = op.execute({ &input, &low, &high }, { &output }, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 }
@@ -165,7 +165,7 @@ TEST_F(DeclarableOpsTests16, test_empty_cast_1) {
     auto x = NDArrayFactory::create<bool>('c', { 1, 0, 2 });
     auto e = NDArrayFactory::create<Nd4jLong>('c', { 1, 0, 2 });
 
-    nd4j::ops::cast op;
+    sd::ops::cast op;
     auto result = op.evaluate({&x},  {10});
     ASSERT_EQ(Status::OK(), result->status());
     ASSERT_EQ(e, *result->at(0));
@@ -174,7 +174,7 @@ TEST_F(DeclarableOpsTests16, test_empty_cast_1) {
 }
 
 TEST_F(DeclarableOpsTests16, test_range_1) {
-    nd4j::ops::range op;
+    sd::ops::range op;
     auto z = NDArrayFactory::create<float>('c', { 200 });
 
     Context ctx(1);
@@ -186,7 +186,7 @@ TEST_F(DeclarableOpsTests16, test_range_1) {
 }
 
 TEST_F(DeclarableOpsTests16, test_range_2) {
-    nd4j::ops::range op;
+    sd::ops::range op;
     auto z = NDArrayFactory::create<float>('c', { 200 });
 
     double tArgs[] = { -1.0, 1.0, 0.01 };
@@ -226,7 +226,7 @@ TEST_F(DeclarableOpsTests16, test_reverse_1) {
                 listE.at(e)->assign(rowReversed);
             }
 
-            nd4j::ops::reverse op;
+            sd::ops::reverse op;
             Nd4jLong axis = 1;
             auto status = op.execute({ &array }, { &reversed }, {}, { axis }, {});
             ASSERT_EQ(Status::OK(), status);
@@ -283,7 +283,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_1) {
     ctx.setInputArray(0, &rgbs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::rgb_to_hsv op;
+    sd::ops::rgb_to_hsv op;
     auto status = op.execute(&ctx);
 #if 0
     //visual check
@@ -337,7 +337,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_2) {
     ctx.setInputArray(0, &rgbs);
     ctx.setOutputArray(0, &actual);
     ctx.setIArguments({ 1 });
-    nd4j::ops::rgb_to_hsv op;
+    sd::ops::rgb_to_hsv op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -364,7 +364,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_3) {
     ctx.setInputArray(0, &rgbs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::rgb_to_hsv op;
+    sd::ops::rgb_to_hsv op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -391,7 +391,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_4) {
     ctx.setInputArray(0, &rgbs);
     ctx.setOutputArray(0, &actual);
     ctx.setIArguments({ 0 });
-    nd4j::ops::rgb_to_hsv op;
+    sd::ops::rgb_to_hsv op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -413,7 +413,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_5) {
     ctx.setInputArray(0, &rgbs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::rgb_to_hsv op;
+    sd::ops::rgb_to_hsv op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -449,7 +449,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_6) {
     Context ctx(1);
     ctx.setInputArray(0, &subArrRgbs);
     ctx.setOutputArray(0, &actual);
-    nd4j::ops::rgb_to_hsv op;
+    sd::ops::rgb_to_hsv op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -495,7 +495,7 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_1) {
     ctx.setInputArray(0, &hsvs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::hsv_to_rgb op;
+    sd::ops::hsv_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -538,7 +538,7 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_2) {
     ctx.setInputArray(0, &hsvs);
     ctx.setOutputArray(0, &actual);
     ctx.setIArguments({ 1 });
-    nd4j::ops::hsv_to_rgb op;
+    sd::ops::hsv_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -563,7 +563,7 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_3) {
     ctx.setInputArray(0, &hsvs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::hsv_to_rgb op;
+    sd::ops::hsv_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -589,7 +589,7 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_4) {
     ctx.setInputArray(0, &hsvs);
     ctx.setOutputArray(0, &actual);
     ctx.setIArguments({ 0 });
-    nd4j::ops::hsv_to_rgb op;
+    sd::ops::hsv_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -612,7 +612,7 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_5) {
     ctx.setInputArray(0, &hsvs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::hsv_to_rgb op;
+    sd::ops::hsv_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -648,7 +648,7 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_6) {
     Context ctx(1);
     ctx.setInputArray(0, &subArrHsvs);
     ctx.setOutputArray(0, &actual);
-    nd4j::ops::hsv_to_rgb op;
+    sd::ops::hsv_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -709,7 +709,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_1) {
     ctx.setInputArray(0, &rgb);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::rgb_to_yiq op;
+    sd::ops::rgb_to_yiq op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -759,7 +759,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_2) {
     ctx.setInputArray(0, &rgb);
     ctx.setOutputArray(0, &actual);
     ctx.setIArguments({ 1 });
-    nd4j::ops::rgb_to_yiq op;
+    sd::ops::rgb_to_yiq op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -790,7 +790,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_3) {
     ctx.setInputArray(0, &rgb);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::rgb_to_yiq op;
+    sd::ops::rgb_to_yiq op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -821,7 +821,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_4) {
     ctx.setInputArray(0, &rgb);
     ctx.setOutputArray(0, &actual);
     ctx.setIArguments({ 0 });
-    nd4j::ops::rgb_to_yiq op;
+    sd::ops::rgb_to_yiq op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -845,7 +845,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_5) {
     ctx.setInputArray(0, &rgbs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::rgb_to_yiq op;
+    sd::ops::rgb_to_yiq op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -883,7 +883,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_6) {
     Context ctx(1);
     ctx.setInputArray(0, &subArrRgbs);
     ctx.setOutputArray(0, &actual);
-    nd4j::ops::rgb_to_yiq op;
+    sd::ops::rgb_to_yiq op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -929,7 +929,7 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_1) {
     ctx.setInputArray(0, &yiqs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::yiq_to_rgb op;
+    sd::ops::yiq_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -975,7 +975,7 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_2) {
     ctx.setInputArray(0, &yiqs);
     ctx.setOutputArray(0, &actual);
     ctx.setIArguments({ 1 });
-    nd4j::ops::yiq_to_rgb op;
+    sd::ops::yiq_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -1002,7 +1002,7 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_3) {
     ctx.setInputArray(0, &yiqs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::yiq_to_rgb op;
+    sd::ops::yiq_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -1029,7 +1029,7 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_4) {
     ctx.setInputArray(0, &yiqs);
     ctx.setOutputArray(0, &actual);
     ctx.setIArguments({ 0 });
-    nd4j::ops::yiq_to_rgb op;
+    sd::ops::yiq_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -1053,7 +1053,7 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_5) {
     ctx.setInputArray(0, &yiqs);
     ctx.setOutputArray(0, &actual);
 
-    nd4j::ops::yiq_to_rgb op;
+    sd::ops::yiq_to_rgb op;
     auto status = op.execute(&ctx);
 #if 0
     actual.printBuffer("actual");
@@ -1091,7 +1091,7 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_6) {
     Context ctx(1);
     ctx.setInputArray(0, &subArrYiqs);
     ctx.setOutputArray(0, &actual);
-    nd4j::ops::yiq_to_rgb op;
+    sd::ops::yiq_to_rgb op;
     auto status = op.execute(&ctx);
 
     ASSERT_EQ(ND4J_STATUS_OK, status);

@@ -17,8 +17,8 @@
 
 
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
 #include <helpers/TAD.h>
 #include <loops/grid_strided.legacy>
 #include <types/float16.h>

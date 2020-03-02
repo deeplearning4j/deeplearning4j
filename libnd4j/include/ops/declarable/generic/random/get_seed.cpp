@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_get_seed)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(get_seed, -2, 1, false, 0, 0) {
 //            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be defined in Graph");
@@ -42,7 +42,7 @@ namespace nd4j {
 
         DECLARE_TYPES(get_seed) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes(DataType::INT64);
         }
     }

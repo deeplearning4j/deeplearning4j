@@ -19,15 +19,15 @@
 //
 
 #include <graph/execution/LogicScope.h>
-#include <Status.h>
+#include <graph/Status.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicScope::processNode(Graph *graph, Node *node) {
             // this op is basically no-op
             // we just know it exists
-            return nd4j::Status::OK();
+            return sd::Status::OK();
         }
     }
 }

@@ -21,7 +21,7 @@
 #ifndef ND4J_SPACE_TYPE_H
 #define ND4J_SPACE_TYPE_H
 
-namespace nd4j {
+namespace sd {
     enum SpaceType {
         CONTINUOUS = 1,
         COMPLEX = 2,

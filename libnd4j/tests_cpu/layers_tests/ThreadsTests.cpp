@@ -26,9 +26,9 @@
 #include <execution/ThreadPool.h>
 
 using namespace samediff;
-using namespace nd4j;
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::ops;
+using namespace sd::graph;
 
 class ThreadsTests : public testing::Test {
 public:

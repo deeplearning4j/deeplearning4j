@@ -20,11 +20,11 @@
 #ifndef LIBND4J_CONSTANTDATABUFFER_H
 #define LIBND4J_CONSTANTDATABUFFER_H
 
-#include <dll.h>
-#include <pointercast.h>
+#include <system/dll.h>
+#include <system/pointercast.h>
 
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT ConstantDataBuffer {
     private:
         Nd4jPointer _primaryBuffer = nullptr;

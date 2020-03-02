@@ -34,9 +34,9 @@
 // #include <ops/declarable/helpers/legacy_helpers.h>
 // #include <array/NDArrayList.h>
 // #include <iterator>
-// #include <MmulHelper.h>
+// #include <helpers/MmulHelper.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 

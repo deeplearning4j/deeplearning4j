@@ -18,13 +18,13 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_unstack)
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
             auto input = INPUT_VARIABLE(0);
@@ -105,7 +105,7 @@ namespace nd4j {
                 return result;
             }
 
-            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
+            auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
             auto numTads = tadPack.numberOfTads();
 
             std::vector<Nd4jLong> shape(shape::rank(tadPack.primaryShapeInfo()));

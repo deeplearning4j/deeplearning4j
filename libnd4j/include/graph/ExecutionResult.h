@@ -29,7 +29,7 @@
 #include <flatbuffers/flatbuffers.h>
 #include <graph/Variable.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ExecutionResult {
         private:

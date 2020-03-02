@@ -22,12 +22,12 @@
 #define LIBND4J_CUDALAUNCHHELPER_H
 
 
-#include <pointercast.h>
-#include <dll.h>
-#include <op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
+#include <system/op_boilerplate.h>
 #include <types/triple.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT CudaLaunchHelper {
     public:
         static Triple getFlatLaunchParams(Nd4jLong length, int SM, int CORES, int SHARED_MEMORY);

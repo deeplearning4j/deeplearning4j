@@ -22,10 +22,10 @@
 #include <ops/declarable/helpers/adjust_saturation.h>
 #include <ops/declarable/helpers/adjust_hue.h>
 #include <helpers/ConstantTadHelper.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -81,10 +81,10 @@ static _CUDA_H void adjustSaturationCudaLauncher(const int blocksPerGrid, const 
 }
 
 ////////////////////////////////////////////////////////////////////////
-void adjustSaturation(nd4j::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
+void adjustSaturation(sd::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -117,7 +117,7 @@ static void _CUDA_G adjustSaturationSingleNHWCKernel(void *xBuffer, Nd4jLong *xS
         T h, s, v;
         // Convert the RGB color to Hue/V-range.
         helpers::rgb_to_hsv(i[0], i[1], i[2], &h, &s, &v);
-        s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
+        s = sd::math::nd4j_min<T>((T) 1.0f, sd::math::nd4j_max<T>((T) 0.0f, s * delta));
 
         // Convert the hue and v-range back into RGB.
         helpers::hsv_to_rgb(h, s, v, o, o + 1, o + 2);
@@ -150,22 +150,22 @@ static void _CUDA_G adjustSaturationSingleNCHWKernel(void *xBuffer, Nd4jLong *xT
         T h, s, v;
         // Convert the RGB color to Hue/V-range.
         helpers::rgb_to_hsv(_ri[0], _gi[0], _bi[0], &h, &s, &v);
-        s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
+        s = sd::math::nd4j_min<T>((T) 1.0f, sd::math::nd4j_max<T>((T) 0.0f, s * delta));
         // Convert the hue and v-range back into RGB.
         helpers::hsv_to_rgb(h, s, v, _ro, _go, _bo);
     }
 }
 
 template <typename T>
-static void _adjust_saturation_single(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
+static void _adjust_saturation_single(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
     // numChannels is always 3
     auto tuples = array->lengthOf() / 3;
 
     if (isNHWC) {
         adjustSaturationSingleNHWCKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(), array->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), tuples, delta);
     } else {
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {1, 2});
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {1, 2});
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {1, 2});
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {1, 2});
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 
@@ -174,7 +174,7 @@ static void _adjust_saturation_single(nd4j::LaunchContext * context, NDArray *ar
 }
 
 template <typename T>
-static void _adjust_saturation_batch(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
+static void _adjust_saturation_batch(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
     auto xType = array->dataType();
 
     // numChannels is always 3
@@ -185,8 +185,8 @@ static void _adjust_saturation_batch(nd4j::LaunchContext * context, NDArray *arr
         BUILD_SINGLE_SELECTOR(xType, _adjust_saturation_single, (context, array, output, delta, isNHWC);, FLOAT_TYPES);
     } else {
         // TODO: check this one
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {0, 2, 3});
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {0, 2, 3});
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {0, 2, 3});
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {0, 2, 3});
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 
@@ -194,7 +194,7 @@ static void _adjust_saturation_batch(nd4j::LaunchContext * context, NDArray *arr
     }
 }
 
-void adjust_saturation(nd4j::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+void adjust_saturation(sd::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
     auto xType = array->dataType();
 
     float d = delta->e<float>(0);

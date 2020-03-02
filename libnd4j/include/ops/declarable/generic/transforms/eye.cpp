@@ -17,13 +17,13 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 22.01.2018
 //
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_eye)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 
@@ -44,7 +44,7 @@ namespace ops {
 
         std::vector<int> params;
 
-        nd4j::DataType dtype = block.getTArguments()->empty() ? nd4j::DataType::FLOAT32 : nd4j::DataTypeUtils::fromInt(T_ARG(0));
+        sd::DataType dtype = block.getTArguments()->empty() ? sd::DataType::FLOAT32 : sd::DataTypeUtils::fromInt(T_ARG(0));
 
         if(block.width() == 0) {
             params = *block.getIArguments();

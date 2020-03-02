@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_noop)
 
 #include <ops/declarable/headers/tests.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(noop, -2, -2, true) {
             // Fastest op ever.
@@ -32,7 +32,7 @@ namespace nd4j {
 
         DECLARE_TYPES(noop) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

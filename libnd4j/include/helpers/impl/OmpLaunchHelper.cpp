@@ -19,14 +19,14 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <OmpLaunchHelper.h>
-#include <Environment.h>
-#include <templatemath.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <system/Environment.h>
+#include <math/templatemath.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 
-namespace nd4j {
+namespace sd {
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,11 +43,11 @@ OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads) {
             else if(desiredNumThreads < 1) 
                 desiredNumThreads = 1;
             else
-                desiredNumThreads = nd4j::math::nd4j_min<int>(omp_get_max_threads(), desiredNumThreads);
+                desiredNumThreads = sd::math::nd4j_min<int>(omp_get_max_threads(), desiredNumThreads);
         #else
-            desiredNumThreads = nd4j::Environment::getInstance()->maxThreads();
+            desiredNumThreads = sd::Environment::getInstance()->maxThreads();
         #endif
-        _numThreads = nd4j::math::nd4j_min<int>(N / maxItersPerThread, desiredNumThreads);        
+        _numThreads = sd::math::nd4j_min<int>(N / maxItersPerThread, desiredNumThreads);
     }
 
     _itersPerThread = N / _numThreads;
@@ -75,7 +75,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         #ifdef _OPENMP
             return betterThreads(N, omp_get_max_threads());
         #else
-            return betterThreads(N, nd4j::Environment::getInstance()->maxThreads());;
+            return betterThreads(N, sd::Environment::getInstance()->maxThreads());;
         #endif
     }
 
@@ -84,7 +84,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         if (N < t)
             return 1;
         else {
-            return static_cast<int>(nd4j::math::nd4j_min<Nd4jLong>(N / t, maxThreads));
+            return static_cast<int>(sd::math::nd4j_min<Nd4jLong>(N / t, maxThreads));
         }
     }
 
@@ -92,7 +92,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
 #ifdef _OPENMP
         auto maxThreads = omp_get_max_threads();
 #else
-        auto maxThreads = nd4j::Environment::getInstance()->maxThreads();
+        auto maxThreads = sd::Environment::getInstance()->maxThreads();
 #endif
 
         // if there's only 1 thread allowed - nothing to do here
@@ -106,6 +106,6 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
             return 1;
 
         // by default we're spawning as many threads we can, but not more than number of TADs
-        return nd4j::math::nd4j_min<int>(numTads, maxThreads);
+        return sd::math::nd4j_min<int>(numTads, maxThreads);
     }
 }

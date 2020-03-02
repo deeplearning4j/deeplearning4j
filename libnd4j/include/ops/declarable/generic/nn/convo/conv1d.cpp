@@ -19,14 +19,14 @@
 //  @author Yurii Shyrma
 
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_conv1d)
 
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -82,7 +82,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     auto outputReshaped  = output ->reshape(output->ordering(),  reshapeForOutput, false);
     auto weightsReshaped = weights->reshape(weights->ordering(), {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});   // [kW, iC, oC] -> [1, kW, iC, oC]
 
-    nd4j::ops::conv2d conv2d;
+    sd::ops::conv2d conv2d;
     const Nd4jStatus status = conv2d.execute({&inputReshaped, &weightsReshaped, bias}, {&outputReshaped}, {}, {1,kW,  1,sW,  0,pW,  1,dW,  paddingMode,  !isNCW}, {});
     if (status != ND4J_STATUS_OK)
         return status;
@@ -221,7 +221,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     auto weightsReshaped = weights->reshape(weights->ordering(),{1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});       // [kW, iC, oC] -> [1, kW, iC, oC]
     auto gradWReshaped   = gradW  ->reshape(gradW->ordering(),  {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)}, false);// [kW, iC, oC] -> [1, kW, iC, oC]
 
-    nd4j::ops::conv2d_bp conv2dBP;
+    sd::ops::conv2d_bp conv2dBP;
     auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped, bias, &gradOReshaped}, {&gradIReshaped, &gradWReshaped, gradB}, {}, {1,kW,  1,sW,  0,pW,  1,dW,  paddingMode,  !isNCW}, {});
     if (status != ND4J_STATUS_OK)
         return status;

@@ -22,7 +22,7 @@
 #include <array/DataTypeUtils.h>
 #include <execution/Threads.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -90,7 +90,7 @@ static void dilation2d_(NDArray *input, NDArray *weights, NDArray *output, const
     samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
 }
 
-void dilation2d(nd4j::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
+void dilation2d(sd::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
     BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), dilation2d_, (input, weights, output, sH, sW, pH, pW, dH, dW), FLOAT_TYPES);
 }
 

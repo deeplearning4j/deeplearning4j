@@ -19,13 +19,13 @@
 //
 
 #include "../ConstantTadHelper.h"
-#include <TAD.h>
-#include <ShapeUtils.h>
+#include <helpers/TAD.h>
+#include <helpers/ShapeUtils.h>
 
 #ifndef __CUDABLAS__
 
 
-namespace nd4j {
+namespace sd {
 
     ConstantTadHelper::ConstantTadHelper() {
         MAP_IMPL<TadDescriptor, TadPack> pack;
@@ -113,7 +113,7 @@ namespace nd4j {
         }
     }
 
-    nd4j::ConstantTadHelper* nd4j::ConstantTadHelper::_INSTANCE = 0;
+    sd::ConstantTadHelper* sd::ConstantTadHelper::_INSTANCE = 0;
 }
 
 #endif

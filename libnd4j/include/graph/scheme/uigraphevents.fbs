@@ -16,7 +16,7 @@
 
 include "array.fbs";	//For FlatArray
 
-namespace nd4j.graph;
+namespace sd.graph;
 
 /*
 An "Event" is any value that may occur multiple times (score vs. iteration, or accuracy for example)

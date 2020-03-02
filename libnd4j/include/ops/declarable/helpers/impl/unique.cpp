@@ -19,11 +19,11 @@
 //
 
 #include <ops/declarable/helpers/unique.h>
-#include <Status.h>
+#include <graph/Status.h>
 #include <execution/Threads.h>
 #include <graph/Variable.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -43,7 +43,7 @@ namespace helpers {
         return count;
     }
 
-    Nd4jLong uniqueCount(nd4j::LaunchContext * context, NDArray* input) {
+    Nd4jLong uniqueCount(sd::LaunchContext * context, NDArray* input) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return uniqueCount_, (input), LIBND4J_TYPES);
     }
 
@@ -86,7 +86,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    Nd4jStatus uniqueFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
+    Nd4jStatus uniqueFunctor(sd::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts) {
         input->syncToHost();
         values->syncToHost();
         indices->syncToHost();

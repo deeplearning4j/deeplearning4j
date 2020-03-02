@@ -19,15 +19,15 @@
 // @author Yurii Shyrma, created on 05.02.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_conv3dnew)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/addBias.h>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
@@ -92,7 +92,7 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
 
    DECLARE_TYPES(conv3dnew) {
         getOpDescriptor()
-                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0, sd::DataType::ANY)
                 ->setAllowedInputTypes(1, {ALL_FLOATS})
                 ->setAllowedInputTypes(2, {ALL_FLOATS})
                 ->setAllowedOutputTypes({ALL_FLOATS});
@@ -259,7 +259,7 @@ CUSTOM_OP_IMPL(conv3dnew_bp, 3, 2, false, 0, 13) {
 
    DECLARE_TYPES(conv3dnew_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0, sd::DataType::ANY)
                 ->setAllowedInputTypes(1, {ALL_FLOATS})
                 ->setAllowedInputTypes(2, {ALL_FLOATS})
                 ->setAllowedInputTypes(3, {ALL_FLOATS})

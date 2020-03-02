@@ -18,11 +18,11 @@
 //  @author raver119@gmail.com
 //
 
-#include "../ShapeDescriptor.h"
-#include <shape.h>
-#include <ShapeBuilders.h>
+#include <array/ShapeDescriptor.h>
+#include <helpers/shape.h>
+#include <helpers/ShapeBuilders.h>
 
-namespace nd4j {
+namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 // equal to operator
@@ -226,7 +226,7 @@ namespace nd4j {
             _strides.emplace_back(shapeInfo[e + 1 + _rank]);
     }
 
-    ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, const nd4j::DataType dtypeOverride)
+    ShapeDescriptor::ShapeDescriptor(const Nd4jLong *shapeInfo, const sd::DataType dtypeOverride)
             : ShapeDescriptor::ShapeDescriptor(shapeInfo, false) {
         _dataType = dtypeOverride;
     }
@@ -356,14 +356,14 @@ namespace nd4j {
 }
 
 namespace std {
-    size_t hash<nd4j::ShapeDescriptor>::operator()(const nd4j::ShapeDescriptor &k) const {
+    size_t hash<sd::ShapeDescriptor>::operator()(const sd::ShapeDescriptor &k) const {
         auto res = std::hash<Nd4jLong>()(k.arrLength());
         res ^= std::hash<char>()(k.order()) + 0x9e3779b9 + (res << 6) + (res >> 2);
         res ^= k.dataType() + 0x9e3779b9 + (res << 6) + (res >> 2);
         res ^= std::hash<int>()(k.rank()) + 0x9e3779b9 + (res << 6) + (res >> 2);
         res ^= std::hash<Nd4jLong>()(k.ews()) + 0x9e3779b9 + (res << 6) + (res >> 2);
-        auto shapes = const_cast<nd4j::ShapeDescriptor&>(k).shape();
-        auto strides = const_cast<nd4j::ShapeDescriptor&>(k).strides();
+        auto shapes = const_cast<sd::ShapeDescriptor&>(k).shape();
+        auto strides = const_cast<sd::ShapeDescriptor&>(k).strides();
         for (auto s: shapes) {
             res ^= std::hash<Nd4jLong>()(s) + 0x9e3779b9 + (res << 6) + (res >> 2);
         }

@@ -24,8 +24,8 @@
 
 #include <ops.h>
 #include <types/types.h>
-#include <op_boilerplate.h>
-#include <shape.h>
+#include <system/op_boilerplate.h>
+#include <helpers/shape.h>
 
 using namespace simdOps;
 

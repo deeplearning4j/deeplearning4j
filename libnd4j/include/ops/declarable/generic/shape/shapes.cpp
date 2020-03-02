@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_shapes_of)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(shapes_of, -1, -1, false, 0, 0) {
             for (int e = 0; e < block.width(); e++) {
@@ -43,7 +43,7 @@ namespace nd4j {
 
             for (int e = 0; e < inputShape->size(); e++) {
                 auto inShape = inputShape->at(e);
-                shapeList->push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::rank(inShape), nd4j::DataType::INT64));
+                shapeList->push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::rank(inShape), sd::DataType::INT64));
             }
 
             return shapeList;
@@ -51,7 +51,7 @@ namespace nd4j {
 
         DECLARE_TYPES(shapes_of) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INTS});
         }
     }

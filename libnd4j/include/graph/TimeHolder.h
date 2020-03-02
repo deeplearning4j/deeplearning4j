@@ -22,10 +22,10 @@
 #define LIBND4J_TIMEHOLDER_H
 
 #include <map>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT TimeHolder {
         private:

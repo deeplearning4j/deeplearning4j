@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.12.2017
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_diag)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/diag.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 ////////////////////////////////////////////////////////////////////////// 
@@ -48,7 +48,7 @@ DECLARE_SYN(MatrixDiag, diag);
 
         DECLARE_TYPES(diag) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
 

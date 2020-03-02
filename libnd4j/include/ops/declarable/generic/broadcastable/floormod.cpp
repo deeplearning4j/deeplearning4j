@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //  modified by sgazeos@gmail.com with backprop implementation.
 //
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_floormod)
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(floormod, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -65,7 +65,7 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
             gradX->assign(epsNext);
-            nd4j::ops::floormod op;
+            sd::ops::floormod op;
             std::unique_ptr<ResultSet> tmpResult(op.evaluate({x, y}));
 
             if (gradY->rankOf() == gradX->rankOf())

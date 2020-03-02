@@ -19,9 +19,9 @@
 //
 
 #include "../scalar_bool.h"
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <LoopKind.h>
+#include <helpers/LoopKind.h>
 #include <execution/Threads.h>
 
 #include "../legacy_ops.h"
@@ -59,16 +59,16 @@ namespace functions {
             const int tadLength  = shape::tadLength(xShapeInfo, dimension, dimensionLength);
             const int numTads    = shape::length(xShapeInfo) / tadLength;
 
-            nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xTadShapeInfo, zTadShapeInfo);
+            sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xTadShapeInfo, zTadShapeInfo);
 
-            if (kindOfLoop != nd4j::LoopKind::EWS1 && kindOfLoop != nd4j::LoopKind::EWSNONZERO) {
+            if (kindOfLoop != sd::LoopKind::EWS1 && kindOfLoop != sd::LoopKind::EWSNONZERO) {
                 printf("ScalarBoolTransform<X, Z>::transform: super-bad loop visited. Shouldn't ever happen\n");
                 return;
             }
 
-            int num_threads = nd4j::math::nd4j_min<int>(numTads, nd4j::Environment::getInstance()->maxThreads());
+            int num_threads = sd::math::nd4j_min<int>(numTads, sd::Environment::getInstance()->maxThreads());
 
-            if (kindOfLoop == nd4j::LoopKind::EWS1) {
+            if (kindOfLoop == sd::LoopKind::EWS1) {
                 for (auto r = start; r < stop; r++) {
                     auto oZ = z + zTadOffsets[r];
                     auto oX = x + xTadOffsets[r];
@@ -152,15 +152,15 @@ namespace functions {
             auto zEws = shape::elementWiseStride(zShapeInfo);
             auto len = shape::length(xShapeInfo);
 
-            nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
+            sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
-            if (kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
+            if (kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) {
                 transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len, start, stop);
                 return;
             }
 
             uint xShapeInfoCast[MAX_RANK];
-            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
+            const bool canCastX = sd::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
 
             if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
                 PRAGMA_OMP_SIMD
@@ -171,7 +171,7 @@ namespace functions {
             }
             else {
                 uint zShapeInfoCast[MAX_RANK];
-                const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
+                const bool canCastZ = sd::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
 
                 PRAGMA_OMP_SIMD
                 for (auto i = start; i < stop; i++) {

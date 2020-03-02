@@ -25,7 +25,7 @@
 
 #include <ops/declarable/LegacyOp.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
         *   This class provides wrapper for Transform operations (i.e. Pow or OneMinus)
@@ -37,7 +37,7 @@ namespace nd4j {
             LegacyTransformBoolOp();
             LegacyTransformBoolOp(int opNum);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context &block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context &block) override;
             LegacyOp* clone() override;
         };
     }

@@ -20,7 +20,7 @@
 
 #include <graph/VariablesSet.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus VariablesSet::status() {
             return _status;

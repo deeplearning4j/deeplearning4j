@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_lstmLayer)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/lstmLayer.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -304,7 +304,7 @@ CUSTOM_OP_IMPL(lstmLayer, 3, 1, false, 1, 5) {
 
 DECLARE_TYPES(lstmLayer) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -332,7 +332,7 @@ DECLARE_SHAPE_FN(lstmLayer) {
     if(x->isR())
         type = x->dataType();
     else
-        type = nd4j::DataType::FLOAT32;
+        type = sd::DataType::FLOAT32;
 
     std::vector<Nd4jLong*> shapes;
 

@@ -22,10 +22,10 @@
 #define LIBND4J_OPARGSHOLDER_H
 
 
-#include <NDArray.h>
-#include <dll.h>
+#include <array/NDArray.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
 
 class ND4J_EXPORT OpArgsHolder {
 

@@ -26,14 +26,14 @@ using namespace simdOps;
 //////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
+void sd::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                            Z* z, Nd4jLong* zShapeInfo,
                            Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
                            X* extraParams) {
 
-    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
-    if(kindOfLoop == nd4j::LoopKind::SMALLARR2DX)
-        kindOfLoop = nd4j::LoopKind::EWSNONZERO;
+    sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
+    if(kindOfLoop == sd::LoopKind::SMALLARR2DX)
+        kindOfLoop = sd::LoopKind::EWSNONZERO;
 
     const Nd4jLong zLen   = shape::length(zShapeInfo);
     const Nd4jLong tadLen = shape::length(tadShapeInfo);
@@ -46,7 +46,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
 
     switch (kindOfLoop) {
         //*********************************************//
-        case nd4j::LoopKind::EWS1: {
+        case sd::LoopKind::EWS1: {
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i++) {
@@ -67,7 +67,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case nd4j::LoopKind::EWSNONZERO: {
+        case sd::LoopKind::EWSNONZERO: {
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i++) {
@@ -88,7 +88,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case nd4j::LoopKind::RANK1: {
+        case sd::LoopKind::RANK1: {
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i++) {
@@ -109,7 +109,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case nd4j::LoopKind::RANK2: {
+        case sd::LoopKind::RANK2: {
             Nd4jLong newStride[2];
             shape::updateStrides(2, tadShape, newStride, 'c');
 
@@ -136,7 +136,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case nd4j::LoopKind::RANK3: {
+        case sd::LoopKind::RANK3: {
             Nd4jLong newStride[3];
             shape::updateStrides(3, tadShape, newStride, 'c');
 
@@ -165,7 +165,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case nd4j::LoopKind::RANK4: {
+        case sd::LoopKind::RANK4: {
             Nd4jLong newStride[4];
             shape::updateStrides(4, tadShape, newStride, 'c');
 
@@ -196,7 +196,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case nd4j::LoopKind::RANK5: {
+        case sd::LoopKind::RANK5: {
             Nd4jLong newStride[5];
             shape::updateStrides(5, tadShape, newStride, 'c');
 
@@ -229,9 +229,9 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case nd4j::LoopKind::X_EWSNONZERO: {
+        case sd::LoopKind::X_EWSNONZERO: {
             uint castZShapeInfo[MAX_RANK];
-            const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
+            const bool canCastZ   = sd::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i++) {
@@ -253,9 +253,9 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             break;
 
             //*********************************************//
-        case nd4j::LoopKind::Z_EWSNONZERO: {
+        case sd::LoopKind::Z_EWSNONZERO: {
             uint castTadShapeInfo[MAX_RANK];
-            const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
+            const bool canCastTad = sd::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i++) {
@@ -280,8 +280,8 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
         default: {
             uint castTadShapeInfo[MAX_RANK];
             uint castZShapeInfo[MAX_RANK];
-            const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
-            const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
+            const bool canCastTad = sd::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
+            const bool canCastZ   = sd::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i++) {
@@ -305,7 +305,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
 }
 
 template <typename X, typename Y>
-void nd4j::IndexReductionLoops<X, Y>::wrapIndexReduce(const int opNum, void* vx, Nd4jLong* xShapeInfo, void* vz, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams) {
+void sd::IndexReductionLoops<X, Y>::wrapIndexReduce(const int opNum, void* vx, Nd4jLong* xShapeInfo, void* vz, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams) {
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Y *>(vz);
     auto extraParams = reinterpret_cast<X *>(vextraParams);

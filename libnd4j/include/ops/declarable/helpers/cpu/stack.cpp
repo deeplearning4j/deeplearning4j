@@ -24,7 +24,7 @@
 #include <execution/Threads.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -57,7 +57,7 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray* outArr, c
 	}
 }
 
-	void stack(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
+	void stack(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
 		BUILD_SINGLE_SELECTOR(outArr->dataType(), stack_, (inArrs, outArr, dim), LIBND4J_TYPES);
 	}
 

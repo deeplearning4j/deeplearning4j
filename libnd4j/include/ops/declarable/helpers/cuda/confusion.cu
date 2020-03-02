@@ -19,12 +19,12 @@
 //
 
 #include <ops/declarable/helpers/confusion.h>
-#include <cuda_exception.h>
-#include <TAD.h>
-#include <PointersManager.h>
+#include <exceptions/cuda_exception.h>
+#include <helpers/TAD.h>
+#include <helpers/PointersManager.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -65,20 +65,20 @@ namespace helpers {
     }
 
     template <typename X, typename Z>
-    void _confusionFunctor(nd4j::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    void _confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto stream = context->getCudaStream();
 
-        auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), 1);
+        auto pack = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), 1);
 
         PointersManager manager(context, "helpers::confusion");
 
-        Nd4jLong* labelsLongBuffer = labels->dataType() == nd4j::DataType::INT64?(Nd4jLong*)labels->specialBuffer():nullptr;
-        Nd4jLong* predictionLongBuffer = predictions->dataType() == nd4j::DataType::INT64?(Nd4jLong*)predictions->specialBuffer():nullptr;
+        Nd4jLong* labelsLongBuffer = labels->dataType() == sd::DataType::INT64?(Nd4jLong*)labels->specialBuffer():nullptr;
+        Nd4jLong* predictionLongBuffer = predictions->dataType() == sd::DataType::INT64?(Nd4jLong*)predictions->specialBuffer():nullptr;
 
         if (labelsLongBuffer == nullptr) {
             auto err = cudaMalloc(&labelsLongBuffer, labels->lengthOf() * sizeof(Nd4jLong));
             if (err != 0)
-                throw nd4j::cuda_exception::build("Cannot allocate memory for labels long buffer", err);
+                throw sd::cuda_exception::build("Cannot allocate memory for labels long buffer", err);
             // copy with type conversion
             copyBuffers<X><<<256, 512, 1024, *stream>>>(labelsLongBuffer, labels->getSpecialBuffer(), labels->lengthOf());
         }
@@ -86,7 +86,7 @@ namespace helpers {
         if (predictionLongBuffer == nullptr) {
             auto err = cudaMalloc(&predictionLongBuffer, predictions->lengthOf() * sizeof(Nd4jLong));
             if (err != 0)
-                throw nd4j::cuda_exception::build("Cannot allocate memory for predictions long buffer", err);
+                throw sd::cuda_exception::build("Cannot allocate memory for predictions long buffer", err);
             // copy with type conversion
             copyBuffers<X><<<256, 512, 1024, *stream>>>(predictionLongBuffer, predictions->getSpecialBuffer(), predictions->lengthOf());
         }
@@ -100,17 +100,17 @@ namespace helpers {
         if (predictionLongBuffer != predictions->getSpecialBuffer()) {
             cudaError_t err = cudaFree(predictionLongBuffer);
             if (err != 0)
-                throw nd4j::cuda_exception::build("Cannot deallocate memory for predictions long buffer", err);
+                throw sd::cuda_exception::build("Cannot deallocate memory for predictions long buffer", err);
         }
 
         if (labelsLongBuffer != labels->getSpecialBuffer()) {
             cudaError_t err = cudaFree(labelsLongBuffer);
             if (err != 0)
-                throw nd4j::cuda_exception::build("Cannot deallocate memory for labels long buffer", err);
+                throw sd::cuda_exception::build("Cannot deallocate memory for labels long buffer", err);
         }
     }
 
-    void confusionFunctor(nd4j::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto xType = predictions->dataType();
         auto zType = output->dataType(); // weights can be null
         NDArray::prepareSpecialUse({output}, {labels, predictions, weights});

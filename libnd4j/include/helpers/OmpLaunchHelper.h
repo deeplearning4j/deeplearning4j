@@ -23,10 +23,10 @@
 #define LIBND4J_OMPLAUNCHHELPER_H
 
 #include <vector>
-#include <pointercast.h>
-#include <op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
 
-namespace nd4j {
+namespace sd {
 
 class ND4J_EXPORT OmpLaunchHelper {
 	

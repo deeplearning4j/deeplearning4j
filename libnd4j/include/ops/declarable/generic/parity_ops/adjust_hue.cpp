@@ -19,13 +19,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_adjust_hue)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/adjust_hue.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 
@@ -69,7 +69,7 @@ CONFIGURABLE_OP_IMPL(adjust_hue, 1, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(adjust_hue) {
-    getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)
+    getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)
                      ->setSameMode(true);
 }
 

@@ -26,17 +26,17 @@
 
 #define EXTRA_PARAMS_LENGTH 10
 
-#include <templatemath.h>
+#include <math/templatemath.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <pairwise_util.h>
-#include <dll.h>
+#include <system/pairwise_util.h>
+#include <system/dll.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
 #include <ops/ops.h>
-#include <op_boilerplate.h>
-#include <OmpLaunchHelper.h>
+#include <system/op_boilerplate.h>
+#include <helpers/OmpLaunchHelper.h>
 #include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__

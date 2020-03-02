@@ -19,14 +19,14 @@
 //
 #ifndef __MULTI_UNIQUE_H_HELPERS__
 #define __MULTI_UNIQUE_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    ND4J_EXPORT bool multiUnique(std::vector<NDArray*> const& inputList, nd4j::memory::Workspace* workspace = nullptr);
+    ND4J_EXPORT bool multiUnique(std::vector<NDArray*> const& inputList, sd::memory::Workspace* workspace = nullptr);
 
 }
 }

@@ -19,12 +19,12 @@
 //
 
 #include <types/types.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/type_conversions.h>
-#include <OmpLaunchHelper.h>
+#include <helpers/OmpLaunchHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 
     template <typename T>
     _CUDA_H void TypeCast::convertFromQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz) {
@@ -32,15 +32,15 @@ namespace nd4j {
         auto z = reinterpret_cast<T *>(dz);
 
         auto fx = reinterpret_cast<float *>(dx);
-        auto amin = nd4j::math::nd4j_abs<float>(fx[0]);
-        auto amax = nd4j::math::nd4j_abs<float>(fx[1]);
+        auto amin = sd::math::nd4j_abs<float>(fx[0]);
+        auto amax = sd::math::nd4j_abs<float>(fx[1]);
 
 
         auto x = reinterpret_cast<char *>(dx) + 8;
 
 
         for (Nd4jLong e = 0; e < N; e++) {
-            z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<int8_t>()) * nd4j::math::nd4j_max<float>(amin, amax));
+            z[e] = static_cast<T>(static_cast<float>(x[e]) / static_cast<float>(DataTypeUtils::max<int8_t>()) * sd::math::nd4j_max<float>(amin, amax));
         }
     }
 
@@ -76,13 +76,13 @@ namespace nd4j {
         fz[0] = min;
         fz[1] = max;
 
-        auto amax = nd4j::math::nd4j_abs<float>(max);
-        auto amin = nd4j::math::nd4j_abs<float>(min);
+        auto amax = sd::math::nd4j_abs<float>(max);
+        auto amin = sd::math::nd4j_abs<float>(min);
 
         // now we actually apply quantization
         auto func = PRAGMA_THREADS_FOR {
             for (auto e = start; e < stop; e++) {
-                rz[e] = static_cast<char>(nd4j::math::nd4j_round<float, char>( 1.0f * static_cast<float>(x[e]) / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
+                rz[e] = static_cast<char>(sd::math::nd4j_round<float, char>( 1.0f * static_cast<float>(x[e]) / sd::math::nd4j_max<float>(amax, amin) * max_byte));
             }
         };
 
@@ -179,7 +179,7 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
         auto func = PRAGMA_THREADS_FOR {
             for (auto e = start; e < stop; e++) {
                 int el = x[e];
-                int ael = nd4j::math::nd4j_abs<int>(el) - 1;
+                int ael = sd::math::nd4j_abs<int>(el) - 1;
                 z[ael] += el > 0 ? static_cast<T>(threshold) : static_cast<T>(-threshold);
             }
         };

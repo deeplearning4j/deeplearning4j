@@ -20,9 +20,9 @@
 //
 
 #include<ops/declarable/helpers/gammaMathFunc.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -60,7 +60,7 @@ static void diGammaCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 ///////////////////////////////////////////////////////////////////
-void diGamma(nd4j::LaunchContext* context, const NDArray& x, NDArray& z) {
+void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {
 
     int threadsPerBlock = MAX_NUM_THREADS / 2;
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;

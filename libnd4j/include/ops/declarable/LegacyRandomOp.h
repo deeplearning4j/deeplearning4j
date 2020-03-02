@@ -25,7 +25,7 @@
 #include <helpers/helper_random.h>
 #include <ops/declarable/LegacyOp.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
         *   This class provides wrapper for Random operations (i.e. linspace or Uniform)
@@ -41,11 +41,11 @@ namespace nd4j {
             template <typename T>
             Nd4jStatus validateAndExecute_(Context &block);
 
-            nd4j::ResultSet*  execute(nd4j::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
-            nd4j::ResultSet*  execute(nd4j::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
+            sd::ResultSet*  execute(sd::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
+            sd::ResultSet*  execute(sd::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
             Nd4jStatus execute(Context* block) override;
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
             LegacyOp* clone() override;
         };
     }

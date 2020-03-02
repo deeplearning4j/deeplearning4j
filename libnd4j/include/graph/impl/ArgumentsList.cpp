@@ -20,7 +20,7 @@
 
 #include <graph/ArgumentsList.h>
 
-namespace nd4j {
+namespace sd {
 namespace graph {
     ArgumentsList::ArgumentsList(std::initializer_list<Pair> arguments) {
         _arguments = arguments;

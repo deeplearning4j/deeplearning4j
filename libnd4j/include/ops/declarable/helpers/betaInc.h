@@ -22,15 +22,15 @@
 #define LIBND4J_BETAINC_H
 
 #include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include "array/NDArray.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
 	const uint maxIter = MAX_NUM_THREADS /*articles propose 10000*/;				// max number of loop iterations in function for continued fractions
 
-    void betaInc(nd4j::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output);
+    void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output);
 
 
 }

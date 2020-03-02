@@ -21,10 +21,10 @@
 #ifndef LIBND4J_HELPER_GENERATOR_H
 #define LIBND4J_HELPER_GENERATOR_H
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
 #include <array/DataTypeUtils.h>
-#include <dll.h>
+#include <system/dll.h>
 
 #ifdef _MSC_VER
 // include for uint64_t on MSVC
@@ -48,7 +48,7 @@
 #endif
 
 
-namespace nd4j {
+namespace sd {
     namespace random {
 
 #ifdef __CUDACC__
@@ -111,7 +111,7 @@ namespace nd4j {
                 this->synchronizer = 0;
                 this->devBuffer = devBuffer;
 
-                cudaMalloc(&devHolder, sizeof(nd4j::random::RandomBuffer));
+                cudaMalloc(&devHolder, sizeof(sd::random::RandomBuffer));
             }
 
             __host__
@@ -125,8 +125,8 @@ namespace nd4j {
             }
 
             __host__
-            void propagateToDevice(nd4j::random::RandomBuffer *buffer, cudaStream_t stream) {
-                cudaMemcpyAsync(devHolder, buffer, sizeof(nd4j::random::RandomBuffer), cudaMemcpyHostToDevice, stream);
+            void propagateToDevice(sd::random::RandomBuffer *buffer, cudaStream_t stream) {
+                cudaMemcpyAsync(devHolder, buffer, sizeof(sd::random::RandomBuffer), cudaMemcpyHostToDevice, stream);
             }
 
             __host__ __device__
@@ -231,7 +231,7 @@ namespace nd4j {
 
             uint64_t _CUDA_HD next64(uint64_t shiftedSeed) {
                 const auto s0 = static_cast<uint64_t>(shiftedSeed);
-                auto s1 = static_cast<uint64_t>(shiftedSeed) % nd4j::DataTypeUtils::max<int>() + 11;
+                auto s1 = static_cast<uint64_t>(shiftedSeed) % sd::DataTypeUtils::max<int>() + 11;
                 uint64_t r0, r1;
 
                 s1 ^= s0;
@@ -246,7 +246,7 @@ namespace nd4j {
             }
 
             uint64_t static _CUDA_HD inline safeShift(uint64_t x, uint64_t y) {
-                if (y != 0 && x > nd4j::DataTypeUtils::max<uint64_t>() / y) {
+                if (y != 0 && x > sd::DataTypeUtils::max<uint64_t>() / y) {
                     return x / y + 11;
                 } else return (x * y) + 11;
             }
@@ -349,7 +349,7 @@ namespace nd4j {
             */
             int _CUDA_D nextInt() {
                 auto u = nextUInt64();
-                return u <= nd4j::DataTypeUtils::max<int>() ? static_cast<int>(u) : static_cast<int>(u % nd4j::DataTypeUtils::max<int>());
+                return u <= sd::DataTypeUtils::max<int>() ? static_cast<int>(u) : static_cast<int>(u % sd::DataTypeUtils::max<int>());
             };
 
             uint64_t _CUDA_D nextUInt64() {
@@ -395,7 +395,7 @@ namespace nd4j {
             template<typename T>
             _CUDA_D T nextT() {
                 auto u = static_cast<float>(nextUInt64());
-                auto m = static_cast<float>(nd4j::DataTypeUtils::max<uint64_t>());
+                auto m = static_cast<float>(sd::DataTypeUtils::max<uint64_t>());
                 return static_cast<T>(u / m);
             }
 
@@ -432,7 +432,7 @@ namespace nd4j {
              */
             inline int _CUDA_D relativeInt(Nd4jLong index) {
                 auto u = relativeUInt64(index);
-                return u <= nd4j::DataTypeUtils::max<int>() ? static_cast<int>(u) : static_cast<int>(u % nd4j::DataTypeUtils::max<int>());
+                return u <= sd::DataTypeUtils::max<int>() ? static_cast<int>(u) : static_cast<int>(u % sd::DataTypeUtils::max<int>());
             }
 
             /**
@@ -476,7 +476,7 @@ namespace nd4j {
                  * FIXME: once we add support for additional datatypes this code must be tweaked
                  */
                 auto u = static_cast<float>(relativeUInt64(index));
-                auto m = static_cast<float> (nd4j::DataTypeUtils::max<uint64_t>());
+                auto m = static_cast<float> (sd::DataTypeUtils::max<uint64_t>());
                 return static_cast<T>(u / m);
             }
 
@@ -516,11 +516,11 @@ namespace nd4j {
             Nd4jLong limit;
             Nd4jLong seed;
             uint64_t *buffer;
-            nd4j::random::RandomBuffer *realBuffer;
+            sd::random::RandomBuffer *realBuffer;
 
         public:
 
-            _CUDA_HD IGenerator(nd4j::random::RandomBuffer *buffer) {
+            _CUDA_HD IGenerator(sd::random::RandomBuffer *buffer) {
                 this->limit = buffer->getSize();
                 this->buffer = reinterpret_cast<uint64_t *>(buffer->getBuffer());
                 this->realBuffer = buffer;
@@ -600,7 +600,7 @@ namespace nd4j {
             }
 
         public:
-            _CUDA_HD Xoroshiro128(nd4j::random::RandomBuffer *buffer) : IGenerator(buffer) {
+            _CUDA_HD Xoroshiro128(sd::random::RandomBuffer *buffer) : IGenerator(buffer) {
                 //
             }
 

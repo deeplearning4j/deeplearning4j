@@ -21,7 +21,7 @@
 #ifndef LIBND4J_OPREGISTRATOR_H
 #define LIBND4J_OPREGISTRATOR_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <vector>
 #include <unordered_map>
 #include <mutex>
@@ -53,7 +53,7 @@ namespace std {
 #endif
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
         *   This class provides runtime ops lookup, based on opName or opHash.
@@ -82,14 +82,14 @@ namespace nd4j {
             MAP_IMPL<Nd4jLong, std::string> _msvc;
 
             // pointers to our operations
-            MAP_IMPL<Nd4jLong, nd4j::ops::DeclarableOp*> _declarablesLD;
-            MAP_IMPL<std::string, nd4j::ops::DeclarableOp*> _declarablesD;
-            std::vector<nd4j::ops::DeclarableOp *> _uniqueD;
+            MAP_IMPL<Nd4jLong, sd::ops::DeclarableOp*> _declarablesLD;
+            MAP_IMPL<std::string, sd::ops::DeclarableOp*> _declarablesD;
+            std::vector<sd::ops::DeclarableOp *> _uniqueD;
 
             // pointers to platform-specific helpers
-            MAP_IMPL<std::pair<Nd4jLong, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> _helpersLH;
-            MAP_IMPL<std::pair<std::string, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> _helpersH;
-            std::vector<nd4j::ops::platforms::PlatformHelper*> _uniqueH;
+            MAP_IMPL<std::pair<Nd4jLong, samediff::Engine>, sd::ops::platforms::PlatformHelper*> _helpersLH;
+            MAP_IMPL<std::pair<std::string, samediff::Engine>, sd::ops::platforms::PlatformHelper*> _helpersH;
+            std::vector<sd::ops::platforms::PlatformHelper*> _uniqueH;
 
             std::mutex _locker;
             std::string _opsList;
@@ -114,18 +114,18 @@ namespace nd4j {
             *
             * @param op
             */
-            bool registerOperation(const char* name, nd4j::ops::DeclarableOp* op);
-            bool registerOperation(nd4j::ops::DeclarableOp *op);
+            bool registerOperation(const char* name, sd::ops::DeclarableOp* op);
+            bool registerOperation(sd::ops::DeclarableOp *op);
 
-            void registerHelper(nd4j::ops::platforms::PlatformHelper* op);
+            void registerHelper(sd::ops::platforms::PlatformHelper* op);
 
             bool hasHelper(Nd4jLong hash, samediff::Engine engine);
 
-            nd4j::ops::DeclarableOp* getOperation(const char *name);
-            nd4j::ops::DeclarableOp* getOperation(Nd4jLong hash);
-            nd4j::ops::DeclarableOp* getOperation(std::string &name);
+            sd::ops::DeclarableOp* getOperation(const char *name);
+            sd::ops::DeclarableOp* getOperation(Nd4jLong hash);
+            sd::ops::DeclarableOp* getOperation(std::string &name);
 
-            nd4j::ops::platforms::PlatformHelper* getPlatformHelper(Nd4jLong hash, samediff::Engine engine);
+            sd::ops::platforms::PlatformHelper* getPlatformHelper(Nd4jLong hash, samediff::Engine engine);
 
             std::vector<Nd4jLong> getAllHashes();
 

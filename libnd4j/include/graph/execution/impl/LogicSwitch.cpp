@@ -18,12 +18,12 @@
 // Created by raver119 on 21.10.17.
 //
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/execution/LogicSwitch.h>
-#include <GraphExecutioner.h>
-#include <Status.h>
+#include <graph/GraphExecutioner.h>
+#include <graph/Status.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicSwitch::processNode(Graph* graph, Node* node) {
             auto __variableSpace = graph->getVariableSpace();
@@ -102,7 +102,7 @@ namespace nd4j {
                 }
             }
 
-            return nd4j::Status::OK();
+            return sd::Status::OK();
         };
     }
 }

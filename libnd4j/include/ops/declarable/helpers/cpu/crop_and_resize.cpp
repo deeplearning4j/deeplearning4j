@@ -36,7 +36,7 @@ limitations under the License.
 #include <ops/declarable/helpers/crop_and_resize.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -53,7 +53,7 @@ namespace nd4j {
 // \@param crops - output image batch (4D with given type)
 //
             void
-            cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const *images, NDArray const *boxes,
+            cropAndResizeFunctor(sd::LaunchContext * context, NDArray const *images, NDArray const *boxes,
                                  NDArray const *indices, NDArray const *cropSize,
                                  int method, double extrapolationVal, NDArray *crops) {
                 BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_, (images, boxes, indices, cropSize, method, extrapolationVal, crops), NUMERIC_TYPES, FLOAT_TYPES, INTEGER_TYPES);

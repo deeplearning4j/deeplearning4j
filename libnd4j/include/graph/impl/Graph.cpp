@@ -22,16 +22,16 @@
 #include <array/DataTypeUtils.h>
 #include <helpers/EnumUtils.h>
 #include <graph/FlatUtils.h>
-#include <NativeOps.h>
+#include <legacy/NativeOps.h>
 #include <vector>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <graph/VariableProxy.h>
 #include <exceptions/graph_exception.h>
-#include <exceptions/unresolved_input_exception.h>
-#include <exceptions/unresolved_output_exception.h>
+#include <graph/exceptions/unresolved_input_exception.h>
+#include <graph/exceptions/unresolved_output_exception.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         std::vector<Node*>* Graph::getAllNodes() {
             return &_handles;
@@ -155,7 +155,7 @@ namespace nd4j {
                         Nd4jLong *newShape = nullptr;
 
                         // if that's scalar output - we don't care about previous node
-                        if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == nd4j::DataTypeUtils::max<int>())) {
+                        if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == sd::DataTypeUtils::max<int>())) {
                             newShape = new Nd4jLong[8];
 
                             newShape[0] = 2;
@@ -702,7 +702,7 @@ namespace nd4j {
 
             prepareOutputs();
 
-            return nd4j::Status::OK();
+            return sd::Status::OK();
         }
 
         void Graph::tagInplaceNodes() {
@@ -883,7 +883,7 @@ namespace nd4j {
 
             // if memory reqs were set - initialize workspace
             if (_configuration->_footprintForward > 0) {
-                nd4j::memory::Workspace *workspace = this->_variableSpace->launchContext()->getWorkspace();
+                sd::memory::Workspace *workspace = this->_variableSpace->launchContext()->getWorkspace();
                 workspace->expandBy(_configuration->_footprintForward);
             }
 
@@ -1175,10 +1175,10 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
-        std::vector<nd4j::ops::OpDescriptor> Graph::getOperations() {
+        std::vector<sd::ops::OpDescriptor> Graph::getOperations() {
             buildGraph();
             // nd4j_printf("\nRetrieving ops from the Graph and collect them...\n", "");
-            std::vector<nd4j::ops::OpDescriptor> res;
+            std::vector<sd::ops::OpDescriptor> res;
 
             int opCnt = 0;
             for (int l = 0; l < _onion->size(); l++) {
@@ -1187,7 +1187,7 @@ namespace nd4j {
                 for (int n = 0; n < layerSize; n++) {
                     Node* node = _onion->at(l)->at(n);
                     if (node->name() == nullptr) continue;
-                    nd4j::ops::OpDescriptor* pOpDescriptor = nullptr;
+                    sd::ops::OpDescriptor* pOpDescriptor = nullptr;
                     std::string opNameStr; //node->name();
                     int numInputs = 0;
                     int numOutputs = 0;
@@ -1221,7 +1221,7 @@ namespace nd4j {
                     if (pOpDescriptor)
                         res.emplace_back(*pOpDescriptor);
                     else
-                        res.emplace_back(nd4j::ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
+                        res.emplace_back(sd::ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
                 }
             }
 
@@ -1236,7 +1236,7 @@ namespace nd4j {
                     //printOutNode(node);
                     if (node->name() == nullptr) continue;
                     std::string opNameStr; //node->name();
-                    nd4j::ops::OpDescriptor* pOpDescriptor = nullptr;
+                    sd::ops::OpDescriptor* pOpDescriptor = nullptr;
                     int numInputs = 0;
                     int numOutputs = 0;
 
@@ -1264,7 +1264,7 @@ namespace nd4j {
                     if (pOpDescriptor != nullptr)
                         res.emplace_back(*pOpDescriptor);
                     else
-                        res.emplace_back(nd4j::ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
+                        res.emplace_back(sd::ops::OpDescriptor(numInputs, numOutputs, opNameStr, inplace));
                 }
             }
 

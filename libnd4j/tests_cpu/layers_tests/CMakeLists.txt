@@ -1,5 +1,5 @@
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-include_directories(../../include ../../layers ../../include/helpers ../../include/exceptions ../../include/execution ../../include/array ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas ../lib/googletest-release-1.8.0/googletest/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 if(LINUX)
     link_directories(/usr/local/lib)
     link_directories(/usr/lib)
@@ -21,7 +21,7 @@ if(WIN32)
     endforeach()
 endif()
 
-if (CUDA_BLAS)
+if (SD_CUDA)
 	find_package(CUDA)
 	message("Tests CUDA include directory: ${CUDA_INCLUDE_DIRS}")
 	include_directories(${CUDA_INCLUDE_DIRS})
@@ -44,11 +44,11 @@ endif()
 if (APPLE)
     set(CMAKE_CXX_FLAGS  " -fPIC  -fmax-errors=2 -D__APPLE_OS__=true")
 elseif(WIN32)
-    if (CPU_BLAS)
+    if (SD_CPU)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC -march=native -mtune=native -O3")
     endif()
 
-	if (CPU_BLAS AND LINUX)
+	if (SD_CPU AND LINUX)
 		set(CMAKE_CXX_FLAGS  " -fPIC  -fmax-errors=2")
 	endif()
 else()
@@ -60,7 +60,7 @@ else()
         set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -march=native -mtune=native")
     endif()
 
-    if (CPU_BLAS)
+    if (SD_CPU AND SD_SANITIZE)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -fsanitize=address")
     else()
         # CUDA?
@@ -69,7 +69,7 @@ endif()
 
 
 # tests are always compiled with all ops included
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true -DBUILD_TESTS=true")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=true -DBUILD_TESTS=true")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -109,9 +109,9 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
-if (CPU_BLAS)
+if (SD_CPU)
 	file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.h)
-elseif (CUDA_BLAS)
+elseif (SD_CUDA)
 	file(GLOB_RECURSE TEST_SOURCES false ./*.cpp ./*.cu ./*.h)
 endif()
 
@@ -124,14 +124,14 @@ foreach (TMP_PATH ${TEST_SOURCES})
     endif ()
 endforeach(TMP_PATH)
 
-if (CPU_BLAS)
+if (SD_CPU)
     if (NOT BLAS_LIBRARIES)
         set(BLAS_LIBRARIES "")
     endif()
 
 	add_executable(runtests ${TEST_SOURCES})
-	target_link_libraries(runtests ${LIBND4J_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES} gtest gtest_main)
-elseif(CUDA_BLAS)
+	target_link_libraries(runtests ${SD_LIBRARY_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES} gtest gtest_main)
+elseif(SD_CUDA)
 
 	add_executable(runtests ${TEST_SOURCES})
 
@@ -148,5 +148,5 @@ elseif(CUDA_BLAS)
         message("CUDNN library: ${CUDNN}")
     endif()
 
-	target_link_libraries(runtests ${LIBND4J_NAME}static ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN} gtest gtest_main)
+	target_link_libraries(runtests ${SD_LIBRARY_NAME}static ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN} gtest gtest_main)
 endif()

@@ -22,7 +22,7 @@
 #include <ops/declarable/helpers/range.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -45,7 +45,7 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
     samediff::Threads::parallel_for(func, 0, len);
 }
 
-    void range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+    void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
         BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (start, delta, outVector), LIBND4J_TYPES);
     }
 

@@ -24,7 +24,7 @@
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs) : DeclarableOp::DeclarableOp(numInputs, numOutputs, opName, false, tArgs, iArgs) {
             // This kind of operations work with sets: NDArrayList
@@ -44,14 +44,14 @@ namespace nd4j {
          * @param block
          * @return
          */
-        ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) {
+        ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) {
             // TODO: ensure this method isn't ever called
 
             auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', {1, 1});
             return SHAPELIST(newShape);
         }
 
-        nd4j::NDArray* nd4j::ops::DeclarableListOp::getZ(Context& block, int inputId) {
+        sd::NDArray* sd::ops::DeclarableListOp::getZ(Context& block, int inputId) {
             //nd4j_printf("wow\n","");
             return nullptr;
         }

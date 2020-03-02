@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_random_normal)
 
 #include <ops/declarable/headers/random.h>
 #include <helpers/RandomLauncher.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(random_normal, 1, 1, true, 2, 0) {
             // normal distribution
@@ -56,7 +56,7 @@ namespace nd4j {
 
         DECLARE_TYPES(random_normal) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

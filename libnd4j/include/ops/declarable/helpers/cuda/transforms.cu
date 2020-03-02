@@ -24,13 +24,13 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
@@ -71,7 +71,7 @@ __host__ static void invertPermutationCudaLauncher(const int blocksPerGrid, cons
 }
 
 ////////////////////////////////////////////////////////////////////////
-void invertPermutation(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
+void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
 
     const int threadsPerBlock = MAX_NUM_THREADS;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -153,7 +153,7 @@ static void traceCudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 
 
 ///////////////////////////////////////////////////////////////////
-void trace(nd4j::LaunchContext* context, const NDArray& input, NDArray& output) {
+void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
 
     PointersManager manager(context, "trace");
 
@@ -217,7 +217,7 @@ static void triuBPCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void triuBP(nd4j::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
+void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -283,9 +283,9 @@ static void tileBPCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 
 
 //////////////////////////////////////////////////////////////////////////
-void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
 
-    NDArray memBuff('c', gradO.getShapeAsVector(), nd4j::DataType::INT64, context);        // empty auxiliary array for storing device memory which will be used in kernel calculations
+    NDArray memBuff('c', gradO.getShapeAsVector(), sd::DataType::INT64, context);        // empty auxiliary array for storing device memory which will be used in kernel calculations
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -528,7 +528,7 @@ static void clipByNormBPCudaLauncher(const int blocksPerGrid, const int threadsP
 BUILD_DOUBLE_TEMPLATE(template void clipByNormBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const Nd4jLong* xTadOffsets, const void *vy, const Nd4jLong *yShapeInfo, const Nd4jLong* yTadOffsets, void *vz, const Nd4jLong *zShapeInfo, const Nd4jLong* zTadOffsets, void* vreducBuff, const double clipNormVal), FLOAT_TYPES, FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
+void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
 
     PointersManager manager(context, "clipByNormBP");
 
@@ -564,7 +564,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 }
 
     template <typename T>
-    static __global__ void swapShuffleKernel(T* input, Nd4jLong* shape, Nd4jLong firstDim, nd4j::graph::RandomGenerator* rng) {
+    static __global__ void swapShuffleKernel(T* input, Nd4jLong* shape, Nd4jLong firstDim, sd::graph::RandomGenerator* rng) {
         auto tid = blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
 
@@ -582,7 +582,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
         }
     }
     template <typename T>
-    static __global__ void fillShuffleKernel(T* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape, Nd4jLong firstDim, int* indices, nd4j::graph::RandomGenerator* rng) {
+    static __global__ void fillShuffleKernel(T* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape, Nd4jLong firstDim, int* indices, sd::graph::RandomGenerator* rng) {
 
 //        PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
         auto tid = blockIdx.x * blockDim.x;
@@ -602,7 +602,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
     }
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    void randomShuffle_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
+    void randomShuffle_(sd::LaunchContext * context, NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
 
         // check edge cases first
         int temp;
@@ -616,9 +616,9 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
         else if (input.isVector() || shape::isLikeVector(input.getShapeInfo(), temp)) {
 
             // apply Fisher-Yates shuffle
-            nd4j::graph::RandomGenerator* dRandom = nullptr;
-            cudaMalloc(&dRandom, sizeof(nd4j::graph::RandomGenerator));
-            cudaMemcpy(dRandom, &rng, sizeof(nd4j::graph::RandomGenerator), cudaMemcpyHostToDevice);
+            sd::graph::RandomGenerator* dRandom = nullptr;
+            cudaMalloc(&dRandom, sizeof(sd::graph::RandomGenerator));
+            cudaMemcpy(dRandom, &rng, sizeof(sd::graph::RandomGenerator), cudaMemcpyHostToDevice);
             T* inputBuf = reinterpret_cast<T*>(input.specialBuffer());
             if(isInplace) {
                 swapShuffleKernel<T><<<128, 256, 1024, *stream>>>(inputBuf, input.specialShapeInfo(), firstDim, dRandom);
@@ -679,15 +679,15 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 
     }
 
-    void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
+    void randomShuffle(sd::LaunchContext * context, NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (context, input, output, rng, isInplace), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (sd::LaunchContext * context, NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace), LIBND4J_TYPES);
 
 
     //////////////////////////////////////////////////////////////////////////
-    void eye(nd4j::LaunchContext * context, NDArray& output) {
+    void eye(sd::LaunchContext * context, NDArray& output) {
 
         output.setIdentity();
     }
@@ -743,7 +743,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    static void clipByNorm_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, NDArray const& clipNormA, const bool isInplace) {
+    static void clipByNorm_(sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, NDArray const& clipNormA, const bool isInplace) {
         const int rank = input.rankOf();
         auto norm2 = input.reduceAlongDimension(reduce::Norm2, dimensions);
         clipNormA.syncToHost();
@@ -762,8 +762,8 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 
                 std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
                 const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
-                //auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimsToExclude);
+                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
+                //auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimsToExclude);
                 T* inputBuffer = reinterpret_cast<T*>(input.specialBuffer());
                 T* norm2buf = reinterpret_cast<T*>(norm2.specialBuffer());
 
@@ -785,8 +785,8 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 
                 std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
                 const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
-                auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimensions);
+                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
+                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimensions);
                 T* inputBuffer = reinterpret_cast<T*>(input.specialBuffer());
                 T* norm2buf = reinterpret_cast<T*>(norm2.specialBuffer());
                 T* outputBuffer = reinterpret_cast<T*>(output.specialBuffer());
@@ -796,14 +796,14 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
         }
     }
 
-    void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    void clipByNorm(sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(output.dataType(), clipByNorm_, (context, input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
 
     template <typename T>
-    void clipByGlobalNorm_(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+    void clipByGlobalNorm_(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
         NDArray globalNorm = NDArrayFactory::create<T>(0, inputs[0]->getContext()); //sqrt(sum([l2norm(t)**2 for t in t_list]))
 
         for (auto i = 0; i < inputs.size(); i++) {
@@ -812,7 +812,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
             globalNorm += l2norm * l2norm;
         }
 
-        globalNorm.applyTransform(transform::Sqrt, globalNorm);     // = nd4j::math::nd4j_sqrt(globalNorm);
+        globalNorm.applyTransform(transform::Sqrt, globalNorm);     // = sd::math::nd4j_sqrt(globalNorm);
         outputs[inputs.size()]->p(0, globalNorm);
         globalNorm.syncToHost();
         const T factor = static_cast<T>(clipNorm) / globalNorm.e<T>(0);
@@ -833,16 +833,16 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
         }
     }
 
-    void clipByGlobalNorm(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+    void clipByGlobalNorm(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
         BUILD_SINGLE_SELECTOR(outputs[0]->dataType(), clipByGlobalNorm_, (context, inputs, clipNorm, workspace, outputs, isInplace), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
 
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
-    static void clipByAveraged_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    static void clipByAveraged_(sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
         auto cn = clipNorm.e<T>(0);
         if (dimensions.size() == 0) {
             // all-reduce
@@ -877,11 +877,11 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
         }
     }
 
-    void clipByAveraged(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    void clipByAveraged(sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), clipByAveraged_, (context, input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByAveraged_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByAveraged_, (sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
 
 /*
     if (d1 > params[1])
@@ -923,7 +923,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
     }
 
     template <typename T>
-    static void clipByValue_(nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
+    static void clipByValue_(sd::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
         auto stream = context->getCudaStream();
         if (!input.isActualOnDeviceSide())
             input.syncToDevice();
@@ -932,11 +932,11 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
         NDArray::registerSpecialUse({&output}, {&input});
     }
 
-    void clipByValue(nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
+    void clipByValue(sd::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), clipByValue_, (context, input, leftBound, rightBound, output), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByValue_, (nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output);, FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByValue_, (sd::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output);, FLOAT_TYPES);
 
 }
 }

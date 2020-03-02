@@ -21,16 +21,16 @@
 #ifndef LIBND4J_CONVO_OPS_H
 #define LIBND4J_CONVO_OPS_H
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_conv2d)
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <memory>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <declarable/helpers/convolutions.h>
+#include <ops/declarable/helpers/convolutions.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -140,7 +140,7 @@ DECLARE_SHAPE_FN(conv2d) {
 
     DECLARE_TYPES(conv2d) {
         getOpDescriptor()
-                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0, sd::DataType::ANY)
                 ->setAllowedInputTypes(1, {ALL_FLOATS})
                 ->setAllowedInputTypes(2, {ALL_FLOATS})
                 ->setAllowedOutputTypes({ALL_FLOATS});
@@ -148,7 +148,7 @@ DECLARE_SHAPE_FN(conv2d) {
 
     DECLARE_TYPES(conv2d_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
@@ -312,7 +312,7 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
 
         DECLARE_TYPES(conv2d_input_bp) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 

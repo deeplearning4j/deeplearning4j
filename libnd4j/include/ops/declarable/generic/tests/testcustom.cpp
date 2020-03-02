@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_testcustom)
 
 #include <ops/declarable/headers/tests.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         //////////////////////////////////////////////////////////////////////////
         CUSTOM_OP_IMPL(testcustom, 1, 1, false, 0, -1) {
@@ -46,7 +46,7 @@ namespace nd4j {
 
         DECLARE_TYPES(testcustom) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

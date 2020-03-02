@@ -26,10 +26,10 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <dll.h>
+#include <system/dll.h>
 #include <ops/ops.h>
-#include <op_boilerplate.h>
-#include <OmpLaunchHelper.h>
+#include <system/op_boilerplate.h>
+#include <helpers/OmpLaunchHelper.h>
 #include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
@@ -41,7 +41,7 @@
 #include <helpers/TAD.h>
 
 
-#include "../pairwise_util.h"
+#include "system/pairwise_util.h"
 
 #include "legacy_ops.h"
 

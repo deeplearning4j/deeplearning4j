@@ -23,7 +23,7 @@
 
 #include <ops/declarable/helpers/helpers.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             void print_special(LaunchContext &ctx, const NDArray &array, const std::string &message = {});

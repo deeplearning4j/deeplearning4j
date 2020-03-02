@@ -22,9 +22,9 @@
 #define LIBND4J_OPS_DECLARABLE_COMMON_H
 
 #include <memory>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/float16.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <graph/Context.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/BooleanOp.h>
@@ -36,7 +36,7 @@
 #include <helpers/ArrayUtils.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ShapeList.h>
-#include <Status.h>
+#include <graph/Status.h>
 #include <stdexcept>
 
 #endif

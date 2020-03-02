@@ -22,9 +22,9 @@
 #ifndef DEV_TESTS_CONSTANTTADHELPER_H
 #define DEV_TESTS_CONSTANTTADHELPER_H
 
-#include <dll.h>
-#include <op_boilerplate.h>
-#include <pointercast.h>
+#include <system/dll.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
 #include <map>
 #include <vector>
 #include <mutex>
@@ -32,7 +32,7 @@
 #include <array/TadDescriptor.h>
 #include <array/TadPack.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT ConstantTadHelper {
     private:
         static ConstantTadHelper *_INSTANCE;

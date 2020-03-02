@@ -19,13 +19,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_permute)
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(permute, 1, 1, true, 0, -2) {
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(permute) {
     getOpDescriptor()
-            ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+            ->setAllowedInputTypes(0, sd::DataType::ANY)
             ->setAllowedInputTypes(1, {ALL_INTS})
             ->setSameMode(true);
 }

@@ -23,9 +23,9 @@
 
 #include <ops/declarable/DeclarableOp.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
-        class ND4J_EXPORT DeclarableReductionOp : public nd4j::ops::DeclarableOp {
+        class ND4J_EXPORT DeclarableReductionOp : public sd::ops::DeclarableOp {
         protected:
             /**
              * This method executes this Op
@@ -34,7 +34,7 @@ namespace nd4j {
         public:
             DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
         };
     }
 }

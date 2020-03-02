@@ -19,12 +19,12 @@
 //
 
 #include "testlayers.h"
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 #include <graph/GraphHolder.h>
 #include <graph/InferenceRequest.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class ServerRelatedTests : public testing::Test {
 public:

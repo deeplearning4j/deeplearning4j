@@ -22,18 +22,18 @@
 #define LIBND4J_LOOPS_H
 
 #include <functional>
-#include <pointercast.h>
-#include <shape.h>
-#include <LoopKind.h>
-#include <OmpLaunchHelper.h>
-#include <DataTypeUtils.h>
-#include <ops.h>
-#include <indexreduce.h>
+#include <system/pointercast.h>
+#include <helpers/shape.h>
+#include <helpers/LoopKind.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <array/DataTypeUtils.h>
+#include <ops/ops.h>
+#include <loops/indexreduce.h>
 #include <helpers/ConstantTadHelper.h>
-#include <openmp_pragmas.h>
+#include <system/openmp_pragmas.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 
     template <typename X, typename Z, typename E>
     class ND4J_EXPORT ReductionLoops {
@@ -263,7 +263,7 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z, typename E>
     template <typename OpType>
-    void nd4j::ReductionLoops<X, Z, E>::loopReduce(X* x, Nd4jLong* xShapeInfo,
+    void sd::ReductionLoops<X, Z, E>::loopReduce(X* x, Nd4jLong* xShapeInfo,
         Z* z, Nd4jLong* zShapeInfo,
         Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
         E* extraParams, int64_t start, int64_t stop) {
@@ -429,7 +429,7 @@ namespace nd4j {
         //*********************************************//
         case LoopKind::X_EWSNONZERO: {
             uint castZShapeInfo[MAX_RANK];
-            const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, castZShapeInfo);
+            const bool canCastZ = sd::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, castZShapeInfo);
 
             for (auto i = start; i < stop; i++) {
                 auto tad = x + tadOffsets[i];
@@ -447,7 +447,7 @@ namespace nd4j {
         //*********************************************//
         case LoopKind::Z_EWSNONZERO: {
             uint castTadShapeInfo[MAX_RANK];
-            const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
+            const bool canCastTad = sd::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
 
             for (auto i = start; i < stop; i++) {
                 auto tad = x + tadOffsets[i];
@@ -469,7 +469,7 @@ namespace nd4j {
             shape::calcOffsets(tadShapeInfo, innertadOffsets);
 
             uint castZShapeInfo[MAX_RANK];
-            const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, castZShapeInfo);
+            const bool canCastZ = sd::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, castZShapeInfo);
 
             for (auto i = start; i < stop; i++) {
                 auto tad = x + tadOffsets[i];
@@ -492,7 +492,7 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////////
     template <typename X, typename Z, typename E>
     template <typename OpType>
-    void nd4j::TransformLoops<X, Z, E>::loopTransform(X* x, Nd4jLong* xShapeInfo,
+    void sd::TransformLoops<X, Z, E>::loopTransform(X* x, Nd4jLong* xShapeInfo,
         Z* z, Nd4jLong* zShapeInfo,
         E* extraParams, uint64_t threadId, uint64_t numThreads) {
 
@@ -536,7 +536,7 @@ namespace nd4j {
         case LoopKind::Z_EWSNONZERO: {
             const uint zEws = shape::elementWiseStride(zShapeInfo);
             uint castXShapeInfo[MAX_RANK];
-            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
+            const bool canCastX = sd::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
 
             auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
             int64_t start = span.startX(), stop = span.stopX();
@@ -682,7 +682,7 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z>
     template <typename OpType>
-    void nd4j::Reduction3Loops<X, Z>::loopReduce3(X* x, Nd4jLong* xShapeInfo,
+    void sd::Reduction3Loops<X, Z>::loopReduce3(X* x, Nd4jLong* xShapeInfo,
         X* y, Nd4jLong* yShapeInfo,
         Z* z, Nd4jLong* zShapeInfo,
         int* dims, int dimsLen,
@@ -700,21 +700,21 @@ namespace nd4j {
         std::vector<Nd4jLong> zeroOffsets;
 
         if (xLen == yLen) {
-            tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
-            tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
+            tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
+            tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = tadPackX.primaryShapeInfo();
             yTadShapeInfo = tadPackY.primaryShapeInfo();
             xTadOffsets = tadPackX.primaryOffsets();
             yTadOffsets = tadPackY.primaryOffsets();
         }
         else if (yLen > xLen) {
-            tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
+            tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = xShapeInfo;
             yTadShapeInfo = tadPackY.primaryShapeInfo();
             yTadOffsets = tadPackY.primaryOffsets();
         }
         else {
-            tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
+            tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
             yTadShapeInfo = yShapeInfo;
             xTadShapeInfo = tadPackX.primaryShapeInfo();
             xTadOffsets = tadPackX.primaryOffsets();
@@ -912,7 +912,7 @@ namespace nd4j {
         //*********************************************//
         default: {
             uint castXTadShapeInfo[MAX_RANK];
-            const bool canCastXTad = nd4j::DataTypeUtils::castShapeInfo<uint>(xTadShapeInfo, castXTadShapeInfo);
+            const bool canCastXTad = sd::DataTypeUtils::castShapeInfo<uint>(xTadShapeInfo, castXTadShapeInfo);
 
             if (shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
                 Z extraParams[3];
@@ -935,7 +935,7 @@ namespace nd4j {
             }
             else {
                 uint castYTadShapeInfo[MAX_RANK];
-                const bool canCastYTad = nd4j::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
+                const bool canCastYTad = sd::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
 
                 Z extraParams[3];
                 for (auto i = start; i < stop; i++) {
@@ -962,7 +962,7 @@ namespace nd4j {
     //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z>
     template <typename OpType>
-    void nd4j::Reduction3Loops<X, Z>::loopReduce3All(X* x, Nd4jLong* xShapeInfo,
+    void sd::Reduction3Loops<X, Z>::loopReduce3All(X* x, Nd4jLong* xShapeInfo,
         X* y, Nd4jLong* yShapeInfo,
         Z* z, Nd4jLong* zShapeInfo,
         Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets,
@@ -1188,7 +1188,7 @@ namespace nd4j {
         //*********************************************//
         default: {
             uint castXTadShapeInfo[MAX_RANK];
-            const bool canCastXTad = nd4j::DataTypeUtils::castShapeInfo<uint>(xTadShapeInfo, castXTadShapeInfo);
+            const bool canCastXTad = sd::DataTypeUtils::castShapeInfo<uint>(xTadShapeInfo, castXTadShapeInfo);
 
             if (shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
                 Z extraParams[3];
@@ -1213,7 +1213,7 @@ namespace nd4j {
             }
             else {
                 uint castYTadShapeInfo[MAX_RANK];
-                const bool canCastYTad = nd4j::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
+                const bool canCastYTad = sd::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
 
                 Z extraParams[3];
                 for (Nd4jLong ix = 0; ix < numXTads; ix++) {

@@ -22,7 +22,7 @@
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyPairwiseTransformOp::LegacyPairwiseTransformOp() : LegacyOp::LegacyOp(2) {
             this->getOpDescriptor()->allowInplace(true);
@@ -68,7 +68,7 @@ namespace nd4j {
         /**
         *   Output shape of PWT operations always the same as input[0] shape, no exclusions.
         */
-        ShapeList *LegacyPairwiseTransformOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyPairwiseTransformOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;

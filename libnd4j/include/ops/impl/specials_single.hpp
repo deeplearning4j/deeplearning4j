@@ -20,17 +20,17 @@
 //
 
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
-#include <specials.h>
-#include <dll.h>
-#include <NDArray.h>
+#include <ops/specials.h>
+#include <system/dll.h>
+#include <array/NDArray.h>
 #include <ops/declarable/CustomOperations.h>
 #include <types/types.h>
 #include <helpers/Loops.h>
 
-namespace nd4j {
+namespace sd {
 /**
 * Concatneate multi array of the same shape together
 * along a particular dimension
@@ -100,7 +100,7 @@ namespace nd4j {
 //         auto func = PRAGMA_THREADS_FOR {
 //             for (auto i = start; i < stop; i += increment) {
 //                 auto temp = output(indices[i], true);
-//                 nd4j::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr, 0, 1);
+//                 sd::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr, 0, 1);
 //             }
 //         };
 
@@ -211,7 +211,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     for(int i = 0; i < numArrays; ++i)
         inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));
 
-    nd4j::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
+    sd::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
 
     for(int i = 0; i < numArrays; ++i)
         delete inputs[i];
@@ -486,7 +486,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
                         continue;
 
                     T val = dx[e];
-                    T abs = nd4j::math::nd4j_abs<T>(val);
+                    T abs = sd::math::nd4j_abs<T>(val);
 
                     int bitId = e % 16;
 

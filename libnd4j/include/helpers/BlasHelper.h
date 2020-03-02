@@ -21,7 +21,7 @@
 #ifndef LIBND4J_BLAS_HELPER_H
 #define LIBND4J_BLAS_HELPER_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <types/float16.h>
 #include <cblas.h>
 #include <helpers/logger.h>
@@ -34,7 +34,7 @@
 #define CUSOLVERAPI 
 #endif
 
-namespace nd4j {
+namespace sd {
     typedef enum{
         CUBLAS_STATUS_SUCCESS         =0,
         CUBLAS_STATUS_NOT_INITIALIZED =1,
@@ -415,8 +415,8 @@ namespace nd4j {
         template <typename T>
         bool hasGEMM();
 
-        bool hasGEMM(const nd4j::DataType dtype);
-        bool hasGEMV(const nd4j::DataType dtype);
+        bool hasGEMM(const sd::DataType dtype);
+        bool hasGEMV(const sd::DataType dtype);
 
         template <typename T>
         bool hasBatchedGEMM();

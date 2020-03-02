@@ -21,11 +21,11 @@
 #ifndef DEV_TESTS_SG_CB_H
 #define DEV_TESTS_SG_CB_H
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const bool preciseMode, const int numWorkers);

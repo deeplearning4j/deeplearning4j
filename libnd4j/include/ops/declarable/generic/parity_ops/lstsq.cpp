@@ -18,14 +18,15 @@
 // Created by GS <sgazeos@gmail.com> at 01/28/2020
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_lstsq)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lstsq.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
+
         CUSTOM_OP_IMPL(lstsq, 2, 1, false, 0, 0) {
             auto a = INPUT_VARIABLE(0);
             auto b = INPUT_VARIABLE(1);

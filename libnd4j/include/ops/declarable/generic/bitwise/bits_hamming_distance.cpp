@@ -18,14 +18,14 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_bits_hamming_distance)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/helpers.h>
 #include <ops/declarable/helpers/hamming.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(bits_hamming_distance, 2, 1, true, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -41,7 +41,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(bits_hamming_distance) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(sd::DataType::INT64));
         }
 
         DECLARE_TYPES(bits_hamming_distance) {

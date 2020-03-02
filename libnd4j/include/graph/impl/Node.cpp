@@ -40,52 +40,52 @@
 #include <ops/declarable/LegacyTransformStrictOp.h>
 #include <ops/declarable/LegacyTransformBoolOp.h>
 #include <graph/FlatUtils.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
-        void nd4j::graph::Node::setOuterTime(Nd4jLong time){
+        void sd::graph::Node::setOuterTime(Nd4jLong time){
 //            if (hasBlockAttached())
 //                _block->setOuterTime(time);
         }
 
-        void nd4j::graph::Node::setInnerTime(Nd4jLong time){
+        void sd::graph::Node::setInnerTime(Nd4jLong time){
 //            if (hasBlockAttached())
 //                _block->setInnerTime(time);
         }
 
-        void nd4j::graph::Node::setGraph(nd4j::graph::Graph* graph) {
+        void sd::graph::Node::setGraph(sd::graph::Graph* graph) {
             _graph = graph;
         }
 
-        nd4j::graph::Graph* nd4j::graph::Node::getGraph() {
+        sd::graph::Graph* sd::graph::Node::getGraph() {
             return _graph;
         }
 
-        bool nd4j::graph::Node::hasGraphEmbedded() {
+        bool sd::graph::Node::hasGraphEmbedded() {
             return _graph != nullptr;
         }
 
-        void nd4j::graph::Node::markInplace(bool reallyInplace) {
+        void sd::graph::Node::markInplace(bool reallyInplace) {
             _isInplace = reallyInplace;
             if (_protoContext != nullptr) {
                 _protoContext->markInplace(reallyInplace);
             }
         }
 
-        OpClass nd4j::graph::Node::getOpClass() {
+        OpClass sd::graph::Node::getOpClass() {
             return _opClass;
         }
 
-        bool nd4j::graph::Node::hasBlockAttached() {
+        bool sd::graph::Node::hasBlockAttached() {
             return _protoContext != nullptr;
         }
 
-        bool nd4j::graph::Node::isInplace() {
+        bool sd::graph::Node::isInplace() {
             return _isInplace;
         }
 
-        bool nd4j::graph::Node::isDivergencePoint() {
+        bool sd::graph::Node::isDivergencePoint() {
             if (hasCustomOp()) {
                 return _customOp->getOpDescriptor()->isDivergent();
             } else if (opType() == OpType_LOGIC && opNum() == 30)
@@ -94,11 +94,11 @@ namespace nd4j {
                 return false;
         }
 
-        void nd4j::graph::Node::setActive(bool reallyActive) {
+        void sd::graph::Node::setActive(bool reallyActive) {
             _active = reallyActive;
         }
 
-        bool nd4j::graph::Node::isActive() {
+        bool sd::graph::Node::isActive() {
             return _active;
         }
 
@@ -110,7 +110,7 @@ namespace nd4j {
             _frameId = frameId;
         }
 
-        ContextPrototype * nd4j::graph::Node::getContextPrototype() {
+        ContextPrototype * sd::graph::Node::getContextPrototype() {
             if (_protoContext == nullptr)
                 _protoContext = new ContextPrototype(this->getCustomOp() != nullptr ? this->getCustomOp()->getOpDescriptor() : nullptr, this->id());
             if (_protoContext->inputs()->empty()) {
@@ -121,22 +121,22 @@ namespace nd4j {
             return _protoContext;
         }
 
-        void nd4j::graph::Node::setContextPrototype(ContextPrototype *block) {
+        void sd::graph::Node::setContextPrototype(ContextPrototype *block) {
             if (_protoContext != nullptr)
                 throw std::runtime_error("Block already exists");
 
             _protoContext = block;
         }
 
-        void nd4j::graph::Node::setId(int id) {
+        void sd::graph::Node::setId(int id) {
             _id = id;
         }
 
-        nd4j::ops::DeclarableOp* nd4j::graph::Node::getCustomOp() {
+        sd::ops::DeclarableOp* sd::graph::Node::getCustomOp() {
             return _customOp;
         }
 
-        void nd4j::graph::Node::setCustomOp(nd4j::ops::DeclarableOp *customOp) {
+        void sd::graph::Node::setCustomOp(sd::ops::DeclarableOp *customOp) {
             _customOp = customOp;
 
             // divergent ops (Switch etc) are always inplace, they don't allocate anything
@@ -144,40 +144,40 @@ namespace nd4j {
                 _isInplace = true;
         }
 
-        bool nd4j::graph::Node::hasCustomOp() {
+        bool sd::graph::Node::hasCustomOp() {
             return _customOp != nullptr;
         }
 
-        std::string * nd4j::graph::Node::name() {
+        std::string * sd::graph::Node::name() {
             return this->getName();
         }
 
-        std::string * nd4j::graph::Node::getName() {
+        std::string * sd::graph::Node::getName() {
             return &_name;
         }
 
-        void nd4j::graph::Node::setName(const std::string& name) {
+        void sd::graph::Node::setName(const std::string& name) {
             _name = name.c_str();
         }
 
-        void nd4j::graph::Node::setName(std::string *name) {
+        void sd::graph::Node::setName(std::string *name) {
             _name = *name;
         }
 
-        double nd4j::graph::Node::scalar() {
+        double sd::graph::Node::scalar() {
             return  _scalar.e<double>(0);
         };
 
-        void nd4j::graph::Node::pickInput(std::pair<int,int>& pair) {
+        void sd::graph::Node::pickInput(std::pair<int,int>& pair) {
             _input.push_back(pair);
         }
 
-        void nd4j::graph::Node::pickInput(int inputId, int outputId) {
+        void sd::graph::Node::pickInput(int inputId, int outputId) {
             std::pair<int,int> p(inputId,outputId);
             pickInput(p);
         }
 
-        void nd4j::graph::Node::pickInput(int inputId) {
+        void sd::graph::Node::pickInput(int inputId) {
             pickInput(inputId, 0);
 
             if (inputId < 0)
@@ -186,25 +186,25 @@ namespace nd4j {
                 _hasInternalInputs = true;
         }
 
-        void nd4j::graph::Node::pickExternalOutput(int outputId) {
+        void sd::graph::Node::pickExternalOutput(int outputId) {
             std::pair<int, int> pair(outputId, 0);
             _output.push_back(pair);
 
             _hasExternalOutputs = true;
         }
 
-        void nd4j::graph::Node::pickOutputOnce(int outputId) {
+        void sd::graph::Node::pickOutputOnce(int outputId) {
             std::pair<int, int> pair(outputId, 0);
             if (std::find(_output.begin(), _output.end(), pair) == _output.end())
                 pickOutput(outputId);
         }
 
-        void nd4j::graph::Node::pickOutput(int nodeId, int outputId) {
+        void sd::graph::Node::pickOutput(int nodeId, int outputId) {
             std::pair<int, int> pair(nodeId, outputId);
             _output.emplace_back(pair);
         }
 
-        void nd4j::graph::Node::pickOutput(int outputId) {
+        void sd::graph::Node::pickOutput(int outputId) {
             std::pair<int, int> pair(outputId, 0);
             _output.emplace_back(pair);
 
@@ -214,47 +214,47 @@ namespace nd4j {
                 _hasInternalOutputs = true;
         }
 
-        int * nd4j::graph::Node::getDimensionsPtr() {
+        int * sd::graph::Node::getDimensionsPtr() {
             return _dim;
         }
 
-        std::vector<int> * nd4j::graph::Node::getDimensions() {
+        std::vector<int> * sd::graph::Node::getDimensions() {
             return &_dimensions;
         }
 
-        int nd4j::graph::Node::getLayer() {
+        int sd::graph::Node::getLayer() {
             return _layer;
         }
 
-        void nd4j::graph::Node::setLayer(int layer) {
+        void sd::graph::Node::setLayer(int layer) {
             _layer = layer;
         }
 
-        bool nd4j::graph::Node::hasExternalOutputs() {
+        bool sd::graph::Node::hasExternalOutputs() {
             return _hasExternalOutputs;
         }
 
-        bool nd4j::graph::Node::hasExternalInputs() {
+        bool sd::graph::Node::hasExternalInputs() {
             return _hasExternalInputs;
         }
 
-        bool nd4j::graph::Node::hasInternalOutputs() {
+        bool sd::graph::Node::hasInternalOutputs() {
             return _hasInternalOutputs;
         }
 
-        bool nd4j::graph::Node::hasInternalInputs() {
+        bool sd::graph::Node::hasInternalInputs() {
             return _hasInternalInputs;
         }
 
-        bool nd4j::graph::Node::isMultiInput() {
+        bool sd::graph::Node::isMultiInput() {
             return _input.size() > 1;
         }
 
-        bool nd4j::graph::Node::isMultiOutput() {
+        bool sd::graph::Node::isMultiOutput() {
             return _output.size() > 1;
         }
 
-        double * nd4j::graph::Node::extraParams() {
+        double * sd::graph::Node::extraParams() {
             return _extraParams;
         }
 
@@ -266,23 +266,23 @@ namespace nd4j {
             _referencedBy.emplace_back(nodeId);
         }
 
-        nd4j::graph::OpType nd4j::graph::Node::opType() {
+        sd::graph::OpType sd::graph::Node::opType() {
             return _opType;
         }
 
-        int nd4j::graph::Node::id() {
+        int sd::graph::Node::id() {
             return _id;
         }
 
-        Nd4jLong nd4j::graph::Node::opNum() {
+        Nd4jLong sd::graph::Node::opNum() {
             return _opNum;
         }
 
-        std::vector<std::pair<int,int>> *nd4j::graph::Node::input() {
+        std::vector<std::pair<int,int>> *sd::graph::Node::input() {
             return &_input;
         }
 
-        std::vector<std::pair<int, int>> *nd4j::graph::Node::output() {
+        std::vector<std::pair<int, int>> *sd::graph::Node::output() {
             return &_output;
         }
 
@@ -313,12 +313,12 @@ namespace nd4j {
         }
         BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT Node* Node::asT, (), LIBND4J_TYPES);
 
-        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, std::initializer_list<int> input, std::initializer_list<int> output,  std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+        sd::graph::Node::Node(sd::ops::DeclarableOp *customOp, int id, std::initializer_list<int> input, std::initializer_list<int> output,  std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = OpType_CUSTOM;
             this->_id = id;
             this->_opNum = customOp->getOpHash();
             this->_extraParams = nullptr;
-            this->_dataType = nd4j::DataType::FLOAT32; // float as default
+            this->_dataType = sd::DataType::FLOAT32; // float as default
             this->_dim = nullptr;
             this->_customOp = customOp;
 
@@ -358,16 +358,16 @@ namespace nd4j {
             this->setContextPrototype(block);
         }
 
-        void nd4j::graph::Node::setOpType(OpType opType) {
+        void sd::graph::Node::setOpType(OpType opType) {
             this->_opType = opType;
         }
 
-        nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+        sd::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             this->_opType = opType;
             this->_id = id;
             this->_opNum = opNum;
             this->_extraParams = nullptr;
-            this->_dataType = nd4j::DataType::FLOAT32; // float as default
+            this->_dataType = sd::DataType::FLOAT32; // float as default
             this->_dim = nullptr;
 
             _hasExternalInputs = false;
@@ -455,14 +455,14 @@ namespace nd4j {
             }
         };
 
-        nd4j::graph::Node::Node(const nd4j::graph::FlatNode *node) {
+        sd::graph::Node::Node(const sd::graph::FlatNode *node) {
             _hasExternalInputs = false;
             _hasExternalOutputs = false;
             _hasInternalInputs = false;
             _hasInternalOutputs = false;
             _extraParams = nullptr;
             _dim = nullptr;
-            _dataType = nd4j::DataType::FLOAT32; // float as default
+            _dataType = sd::DataType::FLOAT32; // float as default
             if (node->scope_id() != 0)
                 this->_scope_id = node->scope_id();
 
@@ -470,7 +470,7 @@ namespace nd4j {
                 this->_scope_name = node->scope_name()->str();
 
             if (node->scalar() != nullptr) {
-                auto scalar = nd4j::graph::FlatUtils::fromFlatArray(node->scalar());
+                auto scalar = sd::graph::FlatUtils::fromFlatArray(node->scalar());
                 _scalar = *scalar;
                 delete scalar;
             }
@@ -589,7 +589,7 @@ namespace nd4j {
 
                         if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
                             for (int e = 0; e < (int) node->extraTypes()->size(); e++) {
-                                block->getDArguments()->emplace_back((nd4j::DataType) node->extraTypes()->Get(e));
+                                block->getDArguments()->emplace_back((sd::DataType) node->extraTypes()->Get(e));
                             }
                         }
 
@@ -626,7 +626,7 @@ namespace nd4j {
 
                         if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
                             for (int e = 0; e < (int) node->extraTypes()->size(); e++) {
-                                block->getDArguments()->emplace_back((nd4j::DataType) node->extraTypes()->Get(e));
+                                block->getDArguments()->emplace_back((sd::DataType) node->extraTypes()->Get(e));
                             }
                         }
 
@@ -636,7 +636,7 @@ namespace nd4j {
                         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     }
                 } else if (this->_opType == OpType_CUSTOM) {
-                        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(this->opNum());
+                        auto op = sd::ops::OpRegistrator::getInstance()->getOperation(this->opNum());
                         if (op == nullptr) {
                             nd4j_verbose("Can't find operation: %lld\n", this->opNum());
                             throw std::runtime_error("Can't find requested operation");
@@ -666,7 +666,7 @@ namespace nd4j {
 
                         if (node->extraTypes() != nullptr && node->extraTypes()->size() > 0) {
                             for (int e = 0; e < (int) node->extraTypes()->size(); e++) {
-                                block->getDArguments()->emplace_back((nd4j::DataType) node->extraTypes()->Get(e));
+                                block->getDArguments()->emplace_back((sd::DataType) node->extraTypes()->Get(e));
                             }
                         }
 
@@ -682,7 +682,7 @@ namespace nd4j {
             }
         }
 
-        nd4j::DataType Node::dataType() {
+        sd::DataType Node::dataType() {
             return _dataType;
         }
 
@@ -690,7 +690,7 @@ namespace nd4j {
             return _protoContext;
         }
 
-        nd4j::graph::Node::~Node() {
+        sd::graph::Node::~Node() {
             if (_extraParams != nullptr)
                 delete[] _extraParams;
 
@@ -705,132 +705,132 @@ namespace nd4j {
             }
         }
 
-        int nd4j::graph::Node::getRewindNode() {
+        int sd::graph::Node::getRewindNode() {
             return _rewindNode;
         }
 
-        void nd4j::graph::Node::setRewindNode(int nodeId) {
+        void sd::graph::Node::setRewindNode(int nodeId) {
             _rewindNode = nodeId;
         }
 
-        std::pair<int, int>& nd4j::graph::Node::getRewindLayer() {
+        std::pair<int, int>& sd::graph::Node::getRewindLayer() {
             return _rewindLayer;
         };
 
-        void nd4j::graph::Node::setRewindLayer(int layerId, int stepId) {
+        void sd::graph::Node::setRewindLayer(int layerId, int stepId) {
             _rewindLayer.first = layerId;
             _rewindLayer.second = stepId;
         }
 
-        bool nd4j::graph::Node::equals(Node *other) {
+        bool sd::graph::Node::equals(Node *other) {
             if (_opType == other->_opType && _dataType == other->_dataType && _opNum == other->_opNum)
                 return true;
 
             return false;
         }
 
-        void nd4j::graph::Node::deleteOpByType(OpType opType, void *op) {
+        void sd::graph::Node::deleteOpByType(OpType opType, void *op) {
             switch (opType) {
                 case OpType_PAIRWISE:
-                    delete reinterpret_cast<nd4j::ops::LegacyPairwiseTransformOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyPairwiseTransformOp*>(op);
                     break;
                 case OpType_PAIRWISE_BOOL:
-                    delete reinterpret_cast<nd4j::ops::LegacyPairwiseTransformBoolOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyPairwiseTransformBoolOp*>(op);
                     break;
                 case OpType_TRANSFORM_STRICT:
-                    delete reinterpret_cast<nd4j::ops::LegacyTransformStrictOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyTransformStrictOp*>(op);
                     break;
                 case OpType_TRANSFORM_SAME:
-                    delete reinterpret_cast<nd4j::ops::LegacyTransformSameOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyTransformSameOp*>(op);
                     break;
                 case OpType_TRANSFORM_FLOAT:
-                    delete reinterpret_cast<nd4j::ops::LegacyTransformFloatOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyTransformFloatOp*>(op);
                     break;
                 case OpType_TRANSFORM_BOOL:
-                    delete reinterpret_cast<nd4j::ops::LegacyTransformBoolOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyTransformBoolOp*>(op);
                     break;
                 case OpType_SCALAR:
-                    delete reinterpret_cast<nd4j::ops::LegacyScalarOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyScalarOp*>(op);
                     break;
                 case OpType_SCALAR_BOOL:
-                    delete reinterpret_cast<nd4j::ops::LegacyScalarBoolOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyScalarBoolOp*>(op);
                     break;
                 case OpType_REDUCE_3:
-                    delete reinterpret_cast<nd4j::ops::LegacyReduce3Op*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyReduce3Op*>(op);
                     break;
                 case OpType_REDUCE_SAME:
-                    delete reinterpret_cast<nd4j::ops::LegacyReduceSameOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyReduceSameOp*>(op);
                     break;
                 case OpType_REDUCE_FLOAT:
-                    delete reinterpret_cast<nd4j::ops::LegacyReduceFloatOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyReduceFloatOp*>(op);
                     break;
                 case OpType_REDUCE_LONG:
-                    delete reinterpret_cast<nd4j::ops::LegacyReduceLongOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyReduceLongOp*>(op);
                     break;
                 case OpType_REDUCE_BOOL:
-                    delete reinterpret_cast<nd4j::ops::LegacyReduceBoolOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyReduceBoolOp*>(op);
                     break;
                 case OpType_INDEX_REDUCE:
-                    delete reinterpret_cast<nd4j::ops::LegacyIndexReduceOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyIndexReduceOp*>(op);
                     break;
                 case OpType_SUMMARYSTATS:
-                    delete reinterpret_cast<nd4j::ops::LegacyStatsOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyStatsOp*>(op);
                     break;
                 case OpType_RANDOM:
-                    delete reinterpret_cast<nd4j::ops::LegacyRandomOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyRandomOp*>(op);
                     break;
                 case OpType_BROADCAST:
-                    delete reinterpret_cast<nd4j::ops::LegacyBroadcastOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyBroadcastOp*>(op);
                     break;
                 case OpType_BROADCAST_BOOL:
-                    delete reinterpret_cast<nd4j::ops::LegacyBroadcastBoolOp*>(op);
+                    delete reinterpret_cast<sd::ops::LegacyBroadcastBoolOp*>(op);
                     break;
                 case OpType_CUSTOM:
-                    delete reinterpret_cast<nd4j::ops::DeclarableOp*>(op);
+                    delete reinterpret_cast<sd::ops::DeclarableOp*>(op);
                     break;
                 default:
                     throw std::runtime_error("Bad opType passed in");
             }
         }
 
-        nd4j::ops::DeclarableOp* nd4j::graph::Node::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, NDArray *scalar) {
+        sd::ops::DeclarableOp* sd::graph::Node::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, NDArray *scalar) {
             switch (opType) {
                 case OpType_PAIRWISE:
-                    return new nd4j::ops::LegacyPairwiseTransformOp(opNum);
+                    return new sd::ops::LegacyPairwiseTransformOp(opNum);
                 case OpType_PAIRWISE_BOOL:
-                    return new nd4j::ops::LegacyPairwiseTransformBoolOp(opNum);
+                    return new sd::ops::LegacyPairwiseTransformBoolOp(opNum);
                 case OpType_TRANSFORM_STRICT:
-                    return new nd4j::ops::LegacyTransformStrictOp(opNum);
+                    return new sd::ops::LegacyTransformStrictOp(opNum);
                 case OpType_TRANSFORM_SAME:
-                    return new nd4j::ops::LegacyTransformSameOp(opNum);
+                    return new sd::ops::LegacyTransformSameOp(opNum);
                 case OpType_TRANSFORM_FLOAT:
-                    return new nd4j::ops::LegacyTransformFloatOp(opNum);
+                    return new sd::ops::LegacyTransformFloatOp(opNum);
                 case OpType_TRANSFORM_BOOL:
-                    return new nd4j::ops::LegacyTransformBoolOp(opNum);
+                    return new sd::ops::LegacyTransformBoolOp(opNum);
                 case OpType_SCALAR:
-                    return scalar == nullptr ? new nd4j::ops::LegacyScalarOp(opNum) : new nd4j::ops::LegacyScalarOp(opNum, *scalar);
+                    return scalar == nullptr ? new sd::ops::LegacyScalarOp(opNum) : new sd::ops::LegacyScalarOp(opNum, *scalar);
                 case OpType_SCALAR_BOOL:
-                    return scalar == nullptr ? new nd4j::ops::LegacyScalarBoolOp(opNum) : new nd4j::ops::LegacyScalarBoolOp(opNum, *scalar);
+                    return scalar == nullptr ? new sd::ops::LegacyScalarBoolOp(opNum) : new sd::ops::LegacyScalarBoolOp(opNum, *scalar);
                 case OpType_REDUCE_3:
-                    return new nd4j::ops::LegacyReduce3Op(opNum);
+                    return new sd::ops::LegacyReduce3Op(opNum);
                 case OpType_REDUCE_SAME:
-                    return new nd4j::ops::LegacyReduceSameOp(opNum);
+                    return new sd::ops::LegacyReduceSameOp(opNum);
                 case OpType_REDUCE_FLOAT:
-                    return new nd4j::ops::LegacyReduceFloatOp(opNum);
+                    return new sd::ops::LegacyReduceFloatOp(opNum);
                 case OpType_REDUCE_LONG:
-                    return new nd4j::ops::LegacyReduceLongOp(opNum);
+                    return new sd::ops::LegacyReduceLongOp(opNum);
                 case OpType_REDUCE_BOOL:
-                    return new nd4j::ops::LegacyReduceBoolOp(opNum);
+                    return new sd::ops::LegacyReduceBoolOp(opNum);
                 case OpType_INDEX_REDUCE:
-                    return new nd4j::ops::LegacyIndexReduceOp(opNum);
+                    return new sd::ops::LegacyIndexReduceOp(opNum);
                 case OpType_SUMMARYSTATS:
-                    return new nd4j::ops::LegacyStatsOp(opNum);
+                    return new sd::ops::LegacyStatsOp(opNum);
                 case OpType_RANDOM:
-                    return new nd4j::ops::LegacyRandomOp(opNum);
+                    return new sd::ops::LegacyRandomOp(opNum);
                 case OpType_BROADCAST:
-                    return new nd4j::ops::LegacyBroadcastOp(opNum);
+                    return new sd::ops::LegacyBroadcastOp(opNum);
                 case OpType_BROADCAST_BOOL:
-                    return new nd4j::ops::LegacyBroadcastBoolOp(opNum);
+                    return new sd::ops::LegacyBroadcastBoolOp(opNum);
                 default:
                     throw std::runtime_error("Bad opType passed in");
             }
@@ -846,7 +846,7 @@ namespace nd4j {
 
 
         Node* Node::clone() {
-            if (this->_customOp && this->_opType == nd4j::graph::OpType_CUSTOM) {
+            if (this->_customOp && this->_opType == sd::graph::OpType_CUSTOM) {
                 auto clone = new Node(this->_customOp, _id);
                 clone->pullValues(this);
                 return clone;
@@ -860,7 +860,7 @@ namespace nd4j {
             if (!_isDeductable)
                 clone->_customOp = _customOp;
             else {
-                auto c = dynamic_cast<nd4j::ops::LegacyOp*>(_customOp);
+                auto c = dynamic_cast<sd::ops::LegacyOp*>(_customOp);
                 clone->_customOp = c->clone();
             }
 

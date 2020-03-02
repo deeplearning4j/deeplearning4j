@@ -24,11 +24,11 @@
 
 #include <ops/declarable/helpers/helpers.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
-	void ismax(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions);
+	void ismax(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions);
 
 }
 }

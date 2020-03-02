@@ -21,14 +21,14 @@
 #ifndef SD_PLATFORMHELPER_H
 #define SD_PLATFORMHELPER_H
 
-#include <ShapeUtils.h>
+#include <helpers/ShapeUtils.h>
 #include <execution/Engine.h>
 #include <graph/Context.h>
 #include <string>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 
-namespace  nd4j {
+namespace sd {
     namespace ops {
         namespace platforms {
             /**
@@ -77,7 +77,7 @@ namespace  nd4j {
                  * @param inputId
                  * @return
                  */
-                nd4j::NDArray *getZ(graph::Context &ctx, int inputId);
+                sd::NDArray *getZ(graph::Context &ctx, int inputId);
             };
         }
     }

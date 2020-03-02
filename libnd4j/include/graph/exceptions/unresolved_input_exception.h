@@ -25,7 +25,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class unresolved_input_exception : public std::runtime_error {
         public:

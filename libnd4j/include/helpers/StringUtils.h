@@ -23,15 +23,15 @@
 #ifndef LIBND4J_STRINGUTILS_H
 #define LIBND4J_STRINGUTILS_H
 
-#include <pointercast.h>
-#include <op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
 #include <string>
 #include <sstream>
 #include <vector>
-#include <NDArray.h>
-#include <unicode.h>
+#include <array/NDArray.h>
+#include <helpers/unicode.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT StringUtils {
     public:
         template <typename T>

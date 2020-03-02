@@ -38,7 +38,7 @@ limitations under the License.
 #include <ops/declarable/headers/parity_ops.h>
 #include "../cross.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -171,10 +171,10 @@ namespace helpers {
        	    for (auto k = start; k < stop; k++) {
                 auto i = (outSize - k - 1);
                 double  const in =  scaler(i, scale);
-                double const in_f = nd4j::math::nd4j_floor<double, double>(in);
-                double const in_c = nd4j::math::nd4j_ceil<double, double>(in);
-                interpolationData[i]._bottomIndex = nd4j::math::nd4j_max(static_cast<Nd4jLong>(in_f), (Nd4jLong)0LL);//static_cast<Nd4jLong>(in);
-                interpolationData[i]._topIndex = nd4j::math::nd4j_min(static_cast<Nd4jLong>(in_c), inSize - 1);
+                double const in_f = sd::math::nd4j_floor<double, double>(in);
+                double const in_c = sd::math::nd4j_ceil<double, double>(in);
+                interpolationData[i]._bottomIndex = sd::math::nd4j_max(static_cast<Nd4jLong>(in_f), (Nd4jLong)0LL);//static_cast<Nd4jLong>(in);
+                interpolationData[i]._topIndex = sd::math::nd4j_min(static_cast<Nd4jLong>(in_c), inSize - 1);
                 interpolationData[i]._interpolarValue = in - in_f;
      	    }
 	    };
@@ -305,16 +305,16 @@ namespace helpers {
         auto func = PRAGMA_THREADS_FOR_2D {
             for (auto b = start_x; b < stop_x; b += inc_x) {
                 for (auto y = start_y; y < stop_y; y += inc_y) {
-                    auto posY = alignCorners ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(scaler(y, st.heightScale))) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(scaler(y, st.heightScale)));
-                    Nd4jLong inY = nd4j::math::nd4j_min(posY, inHeight - 1);
+                    auto posY = alignCorners ? static_cast<Nd4jLong>(sd::math::p_round<float>(scaler(y, st.heightScale))) : static_cast<Nd4jLong>(sd::math::p_floor<float>(scaler(y, st.heightScale)));
+                    Nd4jLong inY = sd::math::nd4j_min(posY, inHeight - 1);
                     if (halfPixelCenter) {
-                        inY = nd4j::math::nd4j_max(0LL, inY);
+                        inY = sd::math::nd4j_max(0LL, inY);
                     }
                     for (Nd4jLong x = 0; x < outWidth; ++x) {
-                        auto posX = alignCorners ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(scaler(x, st.widthScale))) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(scaler(x, st.widthScale)));
-                        Nd4jLong inX = nd4j::math::nd4j_min(posX,inWidth - 1);
+                        auto posX = alignCorners ? static_cast<Nd4jLong>(sd::math::p_round<float>(scaler(x, st.widthScale))) : static_cast<Nd4jLong>(sd::math::p_floor<float>(scaler(x, st.widthScale)));
+                        Nd4jLong inX = sd::math::nd4j_min(posX,inWidth - 1);
                         if (halfPixelCenter) {
-                            inX = nd4j::math::nd4j_max(0LL, inX);
+                            inX = sd::math::nd4j_max(0LL, inX);
                         }
                         // copy pixel over all channels
                         for (Nd4jLong e = 0; e < channels; e++)
@@ -355,13 +355,13 @@ namespace helpers {
 //                              NUMERIC_TYPES, FLOAT_TYPES);
 //    }
 
-    int resizeBilinearFunctor(nd4j::LaunchContext * context, NDArray const *images, int const width, int const height,
+    int resizeBilinearFunctor(sd::LaunchContext * context, NDArray const *images, int const width, int const height,
             bool const alignCorners, bool const halfPixelCenter, NDArray *output) {
         BUILD_DOUBLE_SELECTOR(images->dataType(), output->dataType(), return resizeBilinearFunctor_, (images, width, height, alignCorners, halfPixelCenter, output), NUMERIC_TYPES, FLOAT_TYPES);
         return Status::OK();
     }
 
-    int resizeNeighborFunctor(nd4j::LaunchContext * context, NDArray const *images, int const width, int const height,
+    int resizeNeighborFunctor(sd::LaunchContext * context, NDArray const *images, int const width, int const height,
             bool const alignCorners,  bool const halfPixelCenter, NDArray *output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (images, width, height, alignCorners, halfPixelCenter, output), LIBND4J_TYPES);
     }
@@ -451,12 +451,12 @@ namespace helpers {
     }
 
     template <typename T>
-    int resizeBicubicFunctor_(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+    int resizeBicubicFunctor_(sd::LaunchContext * context, NDArray const* image, int width, int height,
                              bool preserveAspectRatio, bool antialias, NDArray* output) {
         return ND4J_STATUS_OK;
     }
 
-    int resizeBicubicFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+    int resizeBicubicFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
                              bool preserveAspectRatio, bool antialias, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_, (context, image,
                 width, height, preserveAspectRatio, antialias, output), NUMERIC_TYPES);
@@ -780,7 +780,7 @@ namespace helpers {
 // simplified bicubic resize without antialiasing
 //
     template <typename T>
-    int resizeBicubicFunctorA_(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
+    int resizeBicubicFunctorA_(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, bool const halfPixelAlign, NDArray* output) {
         ImageResizerState st(alignCorners, halfPixelAlign); // align_corners, half_pixel_align
         int res = st.validateAndCreateOutput(image, width, height);
@@ -789,7 +789,7 @@ namespace helpers {
 
         return res;
     }
-    int resizeBicubicFunctorA(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
+    int resizeBicubicFunctorA(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, bool const halfPixelAlign, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context, image, width, height, alignCorners, halfPixelAlign, output), NUMERIC_TYPES);
     }
@@ -954,7 +954,7 @@ namespace helpers {
     }
 
     template <typename X>
-    int resizeAreaFunctor_(nd4j::LaunchContext* context, NDArray const* image, int const width, int const height,
+    int resizeAreaFunctor_(sd::LaunchContext* context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, NDArray* output) {
             ImageResizerState st(alignCorners, false); // Create resize info
             auto res = st.validateAndCalculateOutputSize(image, width, height);
@@ -988,13 +988,13 @@ namespace helpers {
             return res;
     }
 
-    int resizeAreaFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
+    int resizeAreaFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                               bool const alignCorners, NDArray* output) {
         BUILD_SINGLE_SELECTOR(image->dataType(), return resizeAreaFunctor_, (context, image, width, height, alignCorners, output), NUMERIC_TYPES);
     }
 
 // ------------------------------------------------------------------------------------------------------------------ //
-    int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int const width, int const height,
+    int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
                       ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output) {
         switch (method) {
             case kResizeBilinear: return resizeBilinearFunctor(context, image, width, height, false, false, output); break;

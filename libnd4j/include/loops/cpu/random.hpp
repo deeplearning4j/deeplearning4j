@@ -20,9 +20,9 @@
 //
 
 #include <types/types.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/random.h>
-#include <OmpLaunchHelper.h>
+#include <helpers/OmpLaunchHelper.h>
 
 using namespace randomOps;
 
@@ -53,7 +53,7 @@ namespace functions {
 
             auto length = shape::length(zShapeInfo);
 
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
 
             if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
@@ -71,7 +71,7 @@ namespace functions {
                 }
                 else{
                     uint xShapeInfoCast[MAX_RANK];
-                    const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
                     auto func = PRAGMA_THREADS_FOR {
                         PRAGMA_OMP_SIMD
@@ -88,8 +88,8 @@ namespace functions {
 
                 uint xShapeInfoCast[MAX_RANK];
                 uint zShapeInfoCast[MAX_RANK];
-                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
@@ -106,8 +106,8 @@ namespace functions {
 
                 uint xShapeInfoCast[MAX_RANK];
                 uint yShapeInfoCast[MAX_RANK];
-                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
@@ -124,8 +124,8 @@ namespace functions {
 
                 uint xShapeInfoCast[MAX_RANK];
                 uint yShapeInfoCast[MAX_RANK];
-                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
@@ -143,9 +143,9 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 uint yShapeInfoCast[MAX_RANK];
                 uint zShapeInfoCast[MAX_RANK];
-                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-                const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
@@ -178,9 +178,9 @@ namespace functions {
             auto length = shape::length(zShapeInfo);
 
             uint xShapeInfoCast[MAX_RANK];
-            const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+            const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
 
             if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
@@ -209,7 +209,7 @@ namespace functions {
             else {
 
                 uint zShapeInfoCast[MAX_RANK];
-                const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
@@ -234,7 +234,7 @@ namespace functions {
 
             auto length = shape::length(zShapeInfo);
 
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
 
             if(shape::elementWiseStride(zShapeInfo) ==  1){
 
@@ -248,10 +248,10 @@ namespace functions {
                 samediff::Threads::parallel_for(func,  0, length, 1); 
             }
             else{
-                nd4j::OmpLaunchHelper info(length);
+                sd::OmpLaunchHelper info(length);
 
                 uint zShapeInfoCast[MAX_RANK];
-                const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                 auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD

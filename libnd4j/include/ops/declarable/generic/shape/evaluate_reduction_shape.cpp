@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_evaluate_reduction_shape)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(evaluate_reduction_shape, 2, 1, false, 0, 0) {
             auto inputShape = INPUT_VARIABLE(0);
@@ -34,7 +34,7 @@ namespace nd4j {
 
             auto shape = inputShape->asVectorT<Nd4jLong>();
 
-            auto tempShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::DataType::INT64, 'c', shape);
+            auto tempShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(sd::DataType::INT64, 'c', shape);
             auto tempReductionShapeInfo = ShapeUtils::evalReduceShapeInfo('c', axis, tempShapeInfo, keepDims, oldFormat, block.workspace());
 
             REQUIRE_TRUE(output->lengthOf() == shape::rank(tempReductionShapeInfo), 0, "evaluate_reduction_shape: output length should be %i, but got %i instead", shape::rank(tempReductionShapeInfo), output->lengthOf());
@@ -49,7 +49,7 @@ namespace nd4j {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, {ALL_INTS})
                     ->setAllowedInputTypes(1, {ALL_INTS})
-                    ->setAllowedOutputTypes(0, nd4j::DataType::INT64);
+                    ->setAllowedOutputTypes(0, sd::DataType::INT64);
         }
 
         DECLARE_SHAPE_FN(evaluate_reduction_shape) {
@@ -64,16 +64,16 @@ namespace nd4j {
             if (keepDims) {
                 if (oldFormat) {
                     // for oldFormat we can't go below rank 2
-                    length = nd4j::math::nd4j_max<int>(2, length);
+                    length = sd::math::nd4j_max<int>(2, length);
                 }
             } else {
                 length -= axis.size();
                 if (oldFormat) {
-                    length = nd4j::math::nd4j_max<int>(2, length);
+                    length = sd::math::nd4j_max<int>(2, length);
                 }
             }
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(length, nd4j::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(length, sd::DataType::INT64));
         }
     }
 }

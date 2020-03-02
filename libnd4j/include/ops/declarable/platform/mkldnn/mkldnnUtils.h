@@ -22,18 +22,18 @@
 #ifndef DEV_TESTS_MKLDNNUTILS_H
 #define DEV_TESTS_MKLDNNUTILS_H
 
-#include <NativeOps.h>
-#include <NDArray.h>
+#include <legacy/NativeOps.h>
+#include <array/NDArray.h>
 #include <dnnl.hpp>
-#include <MKLDNNStream.h>
+#include <helpers/MKLDNNStream.h>
 #include <graph/Context.h>
 #include <ops/declarable/PlatformHelper.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 using namespace samediff;
 
 
-namespace nd4j{
+namespace sd{
     namespace ops {
         namespace platforms {
             /**

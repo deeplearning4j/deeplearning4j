@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_add)
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(add, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -33,7 +33,7 @@ namespace nd4j {
 
             BROADCAST_CHECK_EMPTY(x,y,z);
 
-            auto tZ = BroadcastHelper::broadcastApply(nd4j::BroadcastOpsTuple::Add(), x, y, z);
+            auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Add(), x, y, z);
             if (tZ == nullptr)
                 return ND4J_STATUS_KERNEL_FAILURE;
             else if (tZ != z)
@@ -71,7 +71,7 @@ namespace nd4j {
                 gradX->assign(epsNext);
             } else if (y->isScalar()) {
                 // scalar case
-                auto tmp = epsNext->reduceNumber(nd4j::reduce::Sum);
+                auto tmp = epsNext->reduceNumber(sd::reduce::Sum);
                 gradY->assign(tmp);
                 gradX->assign(epsNext);
             } else {
@@ -80,13 +80,13 @@ namespace nd4j {
                 auto axisY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), epsNext->shapeInfo());
 
                 if (axisX.size() > 0) {
-                    auto sum = epsNext->reduceAlongDimension(nd4j::reduce::Sum, axisX);
+                    auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisX);
                     gradX->assign(sum);
                 } else
                     gradX->assign(epsNext);
 
                 if (axisY.size() > 0) {
-                    auto sum = epsNext->reduceAlongDimension(nd4j::reduce::Sum, axisY);
+                    auto sum = epsNext->reduceAlongDimension(sd::reduce::Sum, axisY);
                     gradY->assign(sum);
                 } else
                     gradY->assign(epsNext);

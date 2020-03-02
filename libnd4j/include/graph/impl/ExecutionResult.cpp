@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <graph/ExecutionResult.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         ExecutionResult::ExecutionResult(const FlatResult* flatResult) {
             if (flatResult->variables() != nullptr) {

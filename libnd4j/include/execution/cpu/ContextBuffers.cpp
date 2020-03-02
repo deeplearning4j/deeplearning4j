@@ -20,7 +20,7 @@
 #include <execution/ContextBuffers.h>
 #include <execution/AffinityManager.h>
 
-namespace nd4j {
+namespace sd {
     ContextBuffers::ContextBuffers() {
         _deviceId = AffinityManager::currentDeviceId();
     }

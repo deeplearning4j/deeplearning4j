@@ -23,7 +23,7 @@
 
 #include <performance/benchmarking/BenchmarkSuit.h>
 
-namespace nd4j {
+namespace sd {
     class LightBenchmarkSuit : public BenchmarkSuit {
     public:
         std::string runSuit() override;

@@ -23,9 +23,9 @@
 
 #include <helpers/shape.h>
 
-#include <TAD.h>
+#include <helpers/TAD.h>
 #include <types/types.h>
-#include <dll.h>
+#include <system/dll.h>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
@@ -33,7 +33,7 @@
 #include <device_launch_parameters.h>
 #include <helpers/DebugHelper.h>
 
-namespace nd4j {
+namespace sd {
 
     template <typename T>
     _CUDA_H void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong *xShapeInfo, Nd4jLong length, long idx);

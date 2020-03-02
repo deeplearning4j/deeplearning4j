@@ -19,11 +19,11 @@
 //
 
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/reduce3.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
-#include <specials_cuda.h>
+#include <ops/specials_cuda.h>
 
 namespace functions {
     namespace reduce3 {

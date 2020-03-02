@@ -21,12 +21,12 @@
 #ifndef LIBND4J_STASHTESTS_H
 #define LIBND4J_STASHTESTS_H
 
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include "testlayers.h"
 #include <graph/Stash.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class StashTests : public testing::Test {
 public:

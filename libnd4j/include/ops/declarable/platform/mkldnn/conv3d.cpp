@@ -21,7 +21,7 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 #include <helpers/MKLDNNStream.h>
 #include "mkldnnUtils.h"
@@ -29,7 +29,7 @@
 
 using namespace dnnl;
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -342,7 +342,7 @@ static void conv3dBpMKLDNN(const NDArray *input, const NDArray *weights, const N
 
 /*
 //////////////////////////////////////////////////////////////////////
-static void conv3dMKLDNN(nd4j::graph::Context &block,
+static void conv3dMKLDNN(sd::graph::Context &block,
                         const NDArray *input, const NDArray *weights, const NDArray *bias,
                               NDArray *output,
                         const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, int pD, int pH, int pW, const int dD, const int dH, const int dW,
@@ -416,7 +416,7 @@ static void conv3dMKLDNN(nd4j::graph::Context &block,
 
 
 //////////////////////////////////////////////////////////////////////
-static void conv3dBpMKLDNN(nd4j::graph::Context &block,
+static void conv3dBpMKLDNN(sd::graph::Context &block,
                             const NDArray *input, const NDArray *weights, const NDArray *bias, const NDArray *gradO,
                             NDArray *gradI, NDArray *gradW, NDArray *gradB,
                             const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, int pD, int pH, int pW, const int dD, const int dH, const int dW,
@@ -584,7 +584,7 @@ PLATFORM_CHECK(conv3dnew, ENGINE_CPU) {
     auto bias = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
     auto output = OUTPUT_VARIABLE(0);                                   // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW)
 
-    return block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, weights, bias, output});
+    return block.isUseMKLDNN() && sd::MKLDNNStream::isSupported({input, weights, bias, output});
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -651,7 +651,7 @@ PLATFORM_CHECK(conv3dnew_bp, ENGINE_CPU) {
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
     return block.isUseMKLDNN() &&
-           nd4j::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB});
+           sd::MKLDNNStream::isSupported({input, weights, bias, gradO, gradI, gradW, gradB});
 }
 
 

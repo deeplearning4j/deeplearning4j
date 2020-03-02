@@ -18,13 +18,13 @@
 // @author Paul Dubs
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_multi_head_dot_product_attention)
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/AttentionHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
     CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
@@ -100,14 +100,14 @@ namespace ops  {
         // Apply Attention
         // attnResults = [minibatch, numHeads, projectedSize, seqLenth
         NDArray attnResults('c', {projectedQueries.sizeAt(0), projectedValues.sizeAt(1), projectedValues.sizeAt(2), projectedQueries.sizeAt(3)}, projectedValues.dataType(), block.launchContext());
-        nd4j::ops::dot_product_attention attention;
+        sd::ops::dot_product_attention attention;
         attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask}, {&attnResults, weights ? OUTPUT_VARIABLE(1) : nullptr}, {}, {normalization, weights}, {});
 
         // Project attention results
         attnResults.permutei({0, 3, 1, 2});
         attnResults.reshapei(attnResults.ordering(), {miniBatchSize * queryCount, numHeads * projectedValuesSize});
 
-        nd4j::ops::matmul mmul;
+        sd::ops::matmul mmul;
         NDArray projRes('c', {attnResults.sizeAt(0), Wo->sizeAt(1)}, values->dataType(), block.launchContext());
         mmul.execute({&attnResults, Wo},{&projRes}, {}, {}, {});
         projRes.reshapei(projRes.ordering(), {miniBatchSize, queryCount, outSize});
@@ -138,8 +138,8 @@ namespace ops  {
         auto numHeads = shape::sizeAt(WkShape, 0);
         auto timeSteps = shape::sizeAt(keysShape, 2);
 
-        auto weightsShape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c', {batchSize, numHeads, timeSteps, queryCount});
-        auto outputShape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::ArrayOptions::dataType(valuesShape), 'c', {batchSize, outSize, queryCount});
+        auto weightsShape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::ArrayOptions::dataType(valuesShape), 'c', {batchSize, numHeads, timeSteps, queryCount});
+        auto outputShape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::ArrayOptions::dataType(valuesShape), 'c', {batchSize, outSize, queryCount});
 
         if(INT_ARG(1)){
             return SHAPELIST(outputShape, weightsShape);
@@ -227,7 +227,7 @@ namespace ops  {
 
         // Apply Attention
         NDArray attnResults('c', {projectedQueries.sizeAt(0), projectedValues.sizeAt(1), projectedValues.sizeAt(2), projectedQueries.sizeAt(3)}, projectedValues.dataType(), block.launchContext());
-        nd4j::ops::dot_product_attention attention;
+        sd::ops::dot_product_attention attention;
         attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask}, {&attnResults}, {}, {normalization, 0}, {});
 
         // Project attention results
@@ -237,7 +237,7 @@ namespace ops  {
         // dLdWo
         auto epsPerm = eps->permute({0, 2, 1});
         auto epsPostReshape = epsPerm.reshape(eps->ordering(), {miniBatchSize * queryCount, outSize});
-        nd4j::ops::matmul_bp matmulBp;
+        sd::ops::matmul_bp matmulBp;
         NDArray dLdPreWo(attnResults.shapeInfo(), false, block.launchContext());
         matmulBp.execute({&attnResults, Wo, &epsPostReshape}, std::vector<NDArray*>{&dLdPreWo, dLdWo}, {}, {}, {});
 
@@ -245,7 +245,7 @@ namespace ops  {
         dLdPreWo.reshapei({miniBatchSize, queryCount, numHeads, projectedValues.sizeAt(2)});
         dLdPreWo.permutei({0, 2, 3, 1});
 
-        nd4j::ops::dot_product_attention_bp attentionBp;
+        sd::ops::dot_product_attention_bp attentionBp;
         NDArray dLdProjectedQueries(projectedQueries.shapeInfo(), false, block.launchContext());
         NDArray dLdProjectedKeys(projectedKeys.shapeInfo(), false, block.launchContext());
         NDArray dLdProjectedValues(projectedValues.shapeInfo(), false, block.launchContext());

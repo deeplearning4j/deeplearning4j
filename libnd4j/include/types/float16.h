@@ -20,7 +20,7 @@
 #include <cfloat>
 #include <iosfwd>
 #include <iostream>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #if defined(__INTEL_COMPILER) || defined(SD_F16C)
     #include <immintrin.h>
 #endif

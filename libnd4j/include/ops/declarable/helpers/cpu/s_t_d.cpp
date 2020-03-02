@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/s_t_d.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
     template <typename T>
@@ -97,7 +97,7 @@ namespace helpers {
         }
     }
 
-    void _spaceTodepth(nd4j::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+    void _spaceTodepth(sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
         BUILD_SINGLE_SELECTOR(input->dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), LIBND4J_TYPES);
     }
 

@@ -20,9 +20,9 @@
 
 #include <ops/declarable/helpers/dilation2d.h>
 #include <array/DataTypeUtils.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops 	  {
 namespace helpers {
 
@@ -113,7 +113,7 @@ static void dilation2dCudaLauncher(const int blocksPerGrid, const int threadsPer
     dilation2dCuda<X,Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, sH, sW, pH, pW, dH, dW);
 }
 
-void dilation2d(nd4j::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
+void dilation2d(sd::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
 
    	PointersManager manager(context, "dilation2d");
 

@@ -21,17 +21,17 @@
 #ifndef DEV_TESTS_CONSTANTSHAPEHELPER_H
 #define DEV_TESTS_CONSTANTSHAPEHELPER_H
 
-#include <dll.h>
-#include <pointercast.h>
+#include <system/dll.h>
+#include <system/pointercast.h>
 #include <map>
 #include <mutex>
 #include <vector>
-#include <ShapeDescriptor.h>
+#include <array/ShapeDescriptor.h>
 #include <array/ConstantDataBuffer.h>
 #include <memory/Workspace.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
-namespace nd4j {
+namespace sd {
 
     class ND4J_EXPORT ConstantShapeHelper {
     private:
@@ -48,21 +48,21 @@ namespace nd4j {
         static ConstantShapeHelper* getInstance();
 
 
-        ConstantDataBuffer bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
+        ConstantDataBuffer bufferForShapeInfo(sd::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
         ConstantDataBuffer bufferForShapeInfo(const ShapeDescriptor &descriptor);
         ConstantDataBuffer bufferForShapeInfo(const Nd4jLong *shapeInfo);
-        ConstantDataBuffer bufferForShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
+        ConstantDataBuffer bufferForShapeInfo(const sd::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
 
 
-        Nd4jLong* emptyShapeInfo(const nd4j::DataType dataType);
-        Nd4jLong* scalarShapeInfo(const nd4j::DataType dataType);
-        Nd4jLong* vectorShapeInfo(const Nd4jLong length, const nd4j::DataType dataType);
+        Nd4jLong* emptyShapeInfo(const sd::DataType dataType);
+        Nd4jLong* scalarShapeInfo(const sd::DataType dataType);
+        Nd4jLong* vectorShapeInfo(const Nd4jLong length, const sd::DataType dataType);
         Nd4jLong* createShapeInfo(const ShapeDescriptor &descriptor);
-        Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> &shape);
-        Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
-        Nd4jLong* createShapeInfo(const nd4j::DataType dataType, const Nd4jLong* shapeInfo);
+        Nd4jLong* createShapeInfo(const sd::DataType dataType, const char order, const std::vector<Nd4jLong> &shape);
+        Nd4jLong* createShapeInfo(const sd::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
+        Nd4jLong* createShapeInfo(const sd::DataType dataType, const Nd4jLong* shapeInfo);
 
-        Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, nd4j::memory::Workspace *workspace);
+        Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, sd::memory::Workspace *workspace);
         Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, bool destroyOriginal = true);
 
         bool checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor);

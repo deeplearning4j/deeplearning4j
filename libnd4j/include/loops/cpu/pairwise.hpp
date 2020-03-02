@@ -21,11 +21,11 @@
 #include <ops/ops.h>
 #include <loops/pairwise_transform.h>
 #include <types/types.h>
-#include <LoopKind.h>
-#include <templatemath.h>
+#include <helpers/LoopKind.h>
+#include <math/templatemath.h>
 #include <helpers/shape.h>
-#include <op_boilerplate.h>
-#include <OmpLaunchHelper.h>
+#include <system/op_boilerplate.h>
+#include <helpers/OmpLaunchHelper.h>
 #include <execution/Threads.h>
 
 using namespace simdOps;
@@ -135,7 +135,7 @@ namespace functions {
             if (shape::isScalar(yShapeInfo)) {
 
                 uint xShapeInfoCast[MAX_RANK];
-                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
                 if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
                     PRAGMA_OMP_SIMD
@@ -146,7 +146,7 @@ namespace functions {
                 }
                 else {
                     uint zShapeInfoCast[MAX_RANK];
-                    const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                    const bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
                     for(auto i = start; i < stop; i++)  {
@@ -160,20 +160,20 @@ namespace functions {
 
 
 
-            const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
+            const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xShapeInfo, yShapeInfo, zShapeInfo);
             const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
 
-            if ((kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) && sameShapesXY) {
+            if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && sameShapesXY) {
                 exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
             }
-            else if ((kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) && !sameShapesXY) { //not same shape
+            else if ((kindOfLoop == sd::LoopKind::EWS1 || kindOfLoop == sd::LoopKind::EWSNONZERO) && !sameShapesXY) { //not same shape
                 exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
             }
             else {
 
                 if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
                     uint xShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
                     for (auto i = start; i < stop; i++)  {
@@ -184,8 +184,8 @@ namespace functions {
                 else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
                     uint xShapeInfoCast[MAX_RANK];
                     uint zShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
                     for (auto i = start; i < stop; i++)  {
@@ -197,8 +197,8 @@ namespace functions {
                 else if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
                     uint xShapeInfoCast[MAX_RANK];
                     uint yShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
                     for (auto i = start; i < stop; i++)  {
@@ -210,8 +210,8 @@ namespace functions {
                 else if(shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
                     uint xShapeInfoCast[MAX_RANK];
                     uint yShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
                     for (auto i = start; i < stop; i++)  {
@@ -224,9 +224,9 @@ namespace functions {
                     uint xShapeInfoCast[MAX_RANK];
                     uint yShapeInfoCast[MAX_RANK];
                     uint zShapeInfoCast[MAX_RANK];
-                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
-                    bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
                     for (auto i = start; i < stop; i++)  {

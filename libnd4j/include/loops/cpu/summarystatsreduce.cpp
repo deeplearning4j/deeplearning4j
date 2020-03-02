@@ -19,7 +19,7 @@
 //
 
 #include <types/types.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/summarystatsreduce.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
@@ -89,7 +89,7 @@ namespace functions {
             auto length = shape::length(xShapeInfo);
 
             uint xShapeInfoCast[MAX_RANK];
-            const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
+            const bool canCast = sd::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
 
             for (Nd4jLong i = 0; i < length; i++) {
                 auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCast);
@@ -118,8 +118,8 @@ namespace functions {
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
             auto resultLength = shape::length(zShapeInfo);
 
-            if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
-               if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+            if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
+               if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
                     return;
                 SummaryStatsData<X> comp;
                 comp.initWithValue(x[0]);
@@ -138,7 +138,7 @@ namespace functions {
             if (dimensionLength < 1)
                 return;
 
-            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+            auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
             //pre squeezed: this is for keeping the pointer to the original
             //shape information for tad offset
@@ -155,7 +155,7 @@ namespace functions {
             auto tadOrder = shape::order(tadPack.primaryShapeInfo());
 
             uint tadShapeShapeInfoCast[MAX_RANK];
-            const bool canCast = tadEWS == 1 && tadOrder == 'c' ? false : nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
+            const bool canCast = tadEWS == 1 && tadOrder == 'c' ? false : sd::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto r = start; r < stop; r++) {

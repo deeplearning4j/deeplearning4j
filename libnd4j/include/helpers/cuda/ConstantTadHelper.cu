@@ -19,14 +19,14 @@
 //
 
 #include "../ConstantTadHelper.h"
-#include <TAD.h>
-#include <ConstantHelper.h>
-#include <AffinityManager.h>
+#include <helpers/TAD.h>
+#include <helpers/ConstantHelper.h>
+#include <execution/AffinityManager.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
-#include <ShapeUtils.h>
+#include <helpers/ShapeUtils.h>
 
-namespace nd4j {
+namespace sd {
     ConstantTadHelper::ConstantTadHelper() {
         auto numDevices = AffinityManager::numberOfDevices();
 
@@ -108,5 +108,5 @@ namespace nd4j {
         }
     }
 
-    nd4j::ConstantTadHelper* nd4j::ConstantTadHelper::_INSTANCE = 0;
+    sd::ConstantTadHelper* sd::ConstantTadHelper::_INSTANCE = 0;
 }

@@ -26,9 +26,9 @@
 #include "../AttentionHelper.h"
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 
-    nd4j::NDArray AttentionHelper::multiHeadProject(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix, nd4j::LaunchContext * context) {
+    sd::NDArray AttentionHelper::multiHeadProject(const sd::NDArray *input, const sd::NDArray *projectionMatrix, sd::LaunchContext * context) {
         auto miniBatchSize = input->sizeAt(0);
         auto seqLength = input->sizeAt(2);
         auto numHeads = projectionMatrix->sizeAt(0);
@@ -39,7 +39,7 @@ namespace nd4j {
         auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});    //[nHeads, hS, nIn] -> [nHeads*hS, nIn]
 
         NDArray projected('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(), context);  //[nHeads*hS, batch*timeSteps]
-        nd4j::ops::matmul mmul;
+        sd::ops::matmul mmul;
         mmul.execute({&projectionPrep, &inputPrep}, {&projected});
 
         projected.reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
@@ -48,9 +48,9 @@ namespace nd4j {
         return projected;
     }
 
-    void AttentionHelper::multiHeadProjectBp(const nd4j::NDArray *input, const nd4j::NDArray *projectionMatrix,
-                                        const nd4j::NDArray *eps, nd4j::NDArray *dLdInput,
-                                        nd4j::NDArray *dLdProjectionMatrix, nd4j::LaunchContext * context) {
+    void AttentionHelper::multiHeadProjectBp(const sd::NDArray *input, const sd::NDArray *projectionMatrix,
+                                        const sd::NDArray *eps, sd::NDArray *dLdInput,
+                                        sd::NDArray *dLdProjectionMatrix, sd::LaunchContext * context) {
         auto miniBatchSize = input->sizeAt(0);
         auto seqLength = input->sizeAt(2);
         auto numHeads = projectionMatrix->sizeAt(0);
@@ -63,7 +63,7 @@ namespace nd4j {
         auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
         auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
 
-        nd4j::ops::matmul_bp mmulBp;
+        sd::ops::matmul_bp mmulBp;
         NDArray dLdProjectionPrep(projectionPrep.shapeInfo(), false, context);
         NDArray dLdInputPrep(inputPrep.shapeInfo(), false, context);
         mmulBp.execute({&projectionPrep, &inputPrep, &epsReshaped}, std::vector<NDArray*>{&dLdProjectionPrep, &dLdInputPrep}, {}, {}, {});

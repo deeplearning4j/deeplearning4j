@@ -13,7 +13,7 @@
 #include <grpc++/impl/codegen/rpc_service_method.h>
 #include <grpc++/impl/codegen/service_type.h>
 #include <grpc++/impl/codegen/sync_stream.h>
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 static const char* GraphInferenceServer_method_names[] = {
@@ -138,6 +138,6 @@ GraphInferenceServer::Service::~Service() {
 }
 
 
-}  // namespace nd4j
+}  // namespace sd
 }  // namespace graph
 

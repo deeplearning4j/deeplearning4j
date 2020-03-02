@@ -20,7 +20,7 @@
 
 #include <graph/execution/LogicExpose.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicExpose::processNode(Graph *graph, Node *node) {
             // do we really want this?

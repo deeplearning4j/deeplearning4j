@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_fill)
 
 #include <ops/declarable/headers/parity_ops.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         
         CUSTOM_OP_IMPL(fill, 1, 1, false, -2, 0) {
@@ -75,16 +75,16 @@ namespace nd4j {
                 newShape[e+1] = shapeArray->e<Nd4jLong>(e);
             }
 
-            nd4j::DataType dataType;
+            sd::DataType dataType;
 
             if (block.width() > 1) {
                 dataType = INPUT_VARIABLE(1)->dataType();
             } else if (block.numT() > 0) {
                 dataType = Environment::getInstance()->defaultFloatDataType();
             } else if (block.numI() > 0) {
-                dataType = nd4j::DataType::INT32;
+                dataType = sd::DataType::INT32;
             } else if (block.numB() > 0) {
-                dataType = nd4j::DataType::BOOL;
+                dataType = sd::DataType::BOOL;
             } else
                 throw std::runtime_error("Fill: missing value to fill output array with");
 

@@ -20,7 +20,7 @@
 
 #include <ops/declarable/helpers/weights.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -48,13 +48,13 @@ namespace helpers {
                     Nd4jLong yOffset = shape::getIndexOffset(e, weightsShape);
                     //atomicAdd();
                     //*reinterpret_cast<int *>(outputBuffer) +=  reinterpret_cast<int *>(weightsBuffer)[yOffset];
-                    nd4j::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), reinterpret_cast<T *>(weightsBuffer)[yOffset]); //output->p(val, output->e<T>(val) + 1);
+                    sd::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), reinterpret_cast<T *>(weightsBuffer)[yOffset]); //output->p(val, output->e<T>(val) + 1);
 //                    atomicAdd(reinterpret_cast<int *>(outputBuffer), reinterpret_cast<int *>(weightsBuffer)[yOffset]); //output->p(val, output->e<T>(val) + 1);
                 }
                 else {
                     //*reinterpret_cast<int *>(outputBuffer) += int(1);
                     //printf("outputBuffer[0] = %d\n", static_cast<int>(*(reinterpret_cast<T *>(outputBuffer))));
-                    nd4j::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), T(1)); //output->p(val, output->e<T>(val) + 1);
+                    sd::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), T(1)); //output->p(val, output->e<T>(val) + 1);
 //                    atomicAdd(reinterpret_cast<int *>(outputBuffer), int(1)); //output->p(val, output->e<T>(val) + 1);
                     //            printf("outputBuffer[%ld] = %d\n", zOffset, static_cast<int>(*(reinterpret_cast<T *>(outputBuffer) + zOffset)));
                 }
@@ -92,7 +92,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void adjustWeights_(nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+    static void adjustWeights_(sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
 //        for (int e = 0; e < input->lengthOf(); e++) {
 //            int val = input->e<int>(e);
 //            if (val < maxLength) {
@@ -109,11 +109,11 @@ namespace helpers {
                 output->specialBuffer(), output->specialShapeInfo(), minLength, maxLength);
     }
 
-    void adjustWeights(nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+    void adjustWeights(sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
         BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (context, input, weights, output, minLength, maxLength), GENERIC_NUMERIC_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), GENERIC_NUMERIC_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void adjustWeights_, (sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength), GENERIC_NUMERIC_TYPES);
 }
 }
 }

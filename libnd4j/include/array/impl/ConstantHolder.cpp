@@ -18,17 +18,17 @@
 // Created by raver on 5/17/2019.
 //
 
-#include <DataTypeUtils.h>
+#include <array/DataTypeUtils.h>
 #include <array/ConstantHolder.h>
-#include <shape.h>
+#include <helpers/shape.h>
 
-namespace nd4j {
+namespace sd {
     ConstantHolder::ConstantHolder(const ConstantHolder& other) {
         _buffers = other._buffers;
         _deviceId = other._deviceId;
     }
 
-    bool ConstantHolder::hasBuffer(nd4j::DataType dataType) {
+    bool ConstantHolder::hasBuffer(sd::DataType dataType) {
         return _buffers.count(dataType) > 0;
     }
 
@@ -42,7 +42,7 @@ namespace nd4j {
     }
     BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT bool ConstantHolder::hasBuffer, (void), LIBND4J_TYPES);
 
-    void ConstantHolder::addBuffer(ConstantDataBuffer &pointer, nd4j::DataType dataType) {
+    void ConstantHolder::addBuffer(ConstantDataBuffer &pointer, sd::DataType dataType) {
         _buffers[dataType] = pointer;
     }
 
@@ -52,7 +52,7 @@ namespace nd4j {
     }
     BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void ConstantHolder::addBuffer, (ConstantDataBuffer& cb), LIBND4J_TYPES);
 
-    ConstantDataBuffer* ConstantHolder::getConstantDataBuffer(nd4j::DataType dataType) {
+    ConstantDataBuffer* ConstantHolder::getConstantDataBuffer(sd::DataType dataType) {
         if (!hasBuffer(dataType))
             throw std::runtime_error("Requested dataType is absent in storage");
 

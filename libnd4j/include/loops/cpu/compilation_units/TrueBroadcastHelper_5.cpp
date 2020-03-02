@@ -20,7 +20,7 @@
 
 #include "../TrueBroadcastHelper.hpp"
 
-namespace nd4j {
+namespace sd {
     namespace helpers {
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT TrueBroadcastHelper, , PAIRWISE_TYPES_4);
     }

@@ -19,10 +19,10 @@
 //
 
 #include <ops/declarable/helpers/lrn.h>
-#include <Status.h>
-#include <ConstantTadHelper.h>
+#include <graph/Status.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -50,15 +50,15 @@ namespace helpers {
             shared[threadIdx.x] = x[threadIdx.x * xEws];
             __syncthreads();
 
-            const uint begin = nd4j::math::nd4j_max<int>(0, threadIdx.x - depth);
+            const uint begin = sd::math::nd4j_max<int>(0, threadIdx.x - depth);
             const uint last  = depth + threadIdx.x + 1;
-            const uint end   = nd4j::math::nd4j_min<int>(last, tadLength);
+            const uint end   = sd::math::nd4j_min<int>(last, tadLength);
 
             T prev = 0.;
             for (int s = begin; s < end; s++)
                 prev = prev + shared[s] * shared[s];
 
-            z[threadIdx.x * zEws] = shared[threadIdx.x] / nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * prev, tbeta);
+            z[threadIdx.x * zEws] = shared[threadIdx.x] / sd::math::nd4j_pow<T, T, T>(tbias + alpha * prev, tbeta);
         }
     }
 
@@ -85,9 +85,9 @@ namespace helpers {
             auto x = reinterpret_cast<X*>(vx) + xTadOffsets[i];
             auto z = reinterpret_cast<Z*>(vz) + zTadOffsets[i];
 
-            const uint begin = nd4j::math::nd4j_max<int>(0, threadIdx.x - depth);
+            const uint begin = sd::math::nd4j_max<int>(0, threadIdx.x - depth);
             const uint last  = depth + threadIdx.x + 1;
-            const uint end   = nd4j::math::nd4j_min<int>(last, tadLength);
+            const uint end   = sd::math::nd4j_min<int>(last, tadLength);
 
             // load everything into shared memory
             sharedX[threadIdx.x] = x[threadIdx.x * xEws];
@@ -104,7 +104,7 @@ namespace helpers {
 
             Z prev = 0.f;
             for (uint s = begin; s < end; ++s) {
-                factor[s] = nd4j::math::nd4j_pow<Z, Z, Z>(tbias + talpha * sharedY[s], -tbeta - 1);
+                factor[s] = sd::math::nd4j_pow<Z, Z, Z>(tbias + talpha * sharedY[s], -tbeta - 1);
                 prev = prev + sharedX[s] * factor[s];
             }
 
@@ -114,13 +114,13 @@ namespace helpers {
 
 
     template <typename X, typename Z>
-    static void lrnBP_(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
+    static void lrnBP_(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
         auto rank = input.rankOf();
         auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {rank - 1});
         auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), {rank - 1});
 
         const auto tadLength = shape::length(packX.primaryShapeInfo());
-        const int numBlocks = nd4j::math::nd4j_min<Nd4jLong>(1024, packX.numberOfTads());
+        const int numBlocks = sd::math::nd4j_min<Nd4jLong>(1024, packX.numberOfTads());
         const int numThreads = tadLength;
 
         if (tadLength > 1024 || tadLength < 1)
@@ -132,7 +132,7 @@ namespace helpers {
         gradI *= gradO;
     }
 
-    void lrnBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
+    void lrnBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
         input.syncToDevice();
         gradO.syncToDevice();
 
@@ -142,13 +142,13 @@ namespace helpers {
     }
 
     template <typename T>
-    static void lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
+    static void lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
         auto rank = input->rankOf();
         auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), {rank - 1});
         auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {rank - 1});
 
         const auto tadLength = shape::length(packX.primaryShapeInfo());
-        const int numBlocks = nd4j::math::nd4j_min<Nd4jLong>(1024, packX.numberOfTads());
+        const int numBlocks = sd::math::nd4j_min<Nd4jLong>(1024, packX.numberOfTads());
         const int numThreads = tadLength;
 
         if (tadLength > 1024 || tadLength < 1)
@@ -157,7 +157,7 @@ namespace helpers {
         lrnKernel<T><<<numBlocks, numThreads, numThreads * sizeof(T), *block.launchContext()->getCudaStream()>>>(input->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), packX.numberOfTads(), tadLength, depth, bias, alpha, beta);
     }
 
-    int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
+    int lrnFunctor(sd::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
         input->syncToDevice();
 
         BUILD_SINGLE_SELECTOR(input->dataType(), lrnFunctor_, (block, input, output, depth, bias, alpha, beta), FLOAT_TYPES);

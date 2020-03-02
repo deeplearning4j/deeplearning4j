@@ -21,7 +21,7 @@
 #ifndef LIBND4J_SPARSETYPE_H
 #define LIBND4J_SPARSETYPE_H
 
-namespace nd4j {
+namespace sd {
     enum SparseType {
         CSR = 1,
         CSC = 2,

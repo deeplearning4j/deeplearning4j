@@ -19,13 +19,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_biasadd)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/addBias.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 ////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
     REQUIRE_TRUE(output->isSameShape(input), 0, "BIASADD CUSTOM_OP: wrong shape of output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(output).c_str());
 
     helpers::addBias(block, *input, *bias, *output, isNCHW);
-    // input->applyBroadcast(nd4j::broadcast::Add, {channelDim}, bias, output);
+    // input->applyBroadcast(sd::broadcast::Add, {channelDim}, bias, output);
 
     return Status::OK();
 }
@@ -63,7 +63,7 @@ DECLARE_SHAPE_FN(biasadd) {
 
 DECLARE_TYPES(biasadd) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -82,7 +82,7 @@ CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
 
     gradI->assign(gradO);
 
-    gradO->reduceAlongDimension(nd4j::reduce::Sum, *gradB, ShapeUtils::evalDimsToExclude(gradO->rankOf(), {channelDim}));
+    gradO->reduceAlongDimension(sd::reduce::Sum, *gradB, ShapeUtils::evalDimsToExclude(gradO->rankOf(), {channelDim}));
 
     return ND4J_STATUS_OK;
 }
@@ -104,7 +104,7 @@ DECLARE_SHAPE_FN(biasadd_bp) {
 
 DECLARE_TYPES(biasadd_bp) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

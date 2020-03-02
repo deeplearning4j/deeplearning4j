@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_log_poisson_loss)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(log_poisson_loss, 3, 1, true, 0, 1) {
         auto log_predictions = INPUT_VARIABLE(0);
@@ -111,7 +111,7 @@ namespace ops {
 
     //////////////////////////////////////////////////////////////////////////
     DECLARE_TYPES(log_poisson_loss) {
-        getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -279,7 +279,7 @@ namespace ops {
 
     DECLARE_TYPES(log_poisson_loss_grad) {
 
-        getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+        getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
     }
 
     DECLARE_SHAPE_FN(log_poisson_loss_grad) {

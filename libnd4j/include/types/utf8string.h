@@ -22,9 +22,9 @@
 #define DEV_TESTS_UTF8STRING_H
 
 #include <string>
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     struct ND4J_EXPORT utf8string {
     private:
         bool _allocated = false;

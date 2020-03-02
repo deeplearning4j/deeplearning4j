@@ -22,7 +22,7 @@
 #include <graph/profiling/NodeProfile.h>
 #include <helpers/ShapeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         NodeProfile::NodeProfile(int id, const char *name) {
             _id = id;

@@ -21,17 +21,17 @@
 #ifndef LIBND4J_DATATYPECONVERSIONS_H
 #define LIBND4J_DATATYPECONVERSIONS_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <helpers/logger.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <array/DataType.h>
 #include <types/float16.h>
 #include <helpers/BitwiseUtils.h>
 #include <loops/type_conversions.h>
-#include <dll.h>
+#include <system/dll.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     template <typename T>
     class ND4J_EXPORT DataTypeConversions {
     private:

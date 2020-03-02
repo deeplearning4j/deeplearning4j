@@ -20,17 +20,17 @@
 //
 
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
-#include <specials.h>
-#include <dll.h>
-#include <NDArray.h>
+#include <ops/specials.h>
+#include <system/dll.h>
+#include <array/NDArray.h>
 #include <ops/declarable/CustomOperations.h>
 #include <types/types.h>
 #include <helpers/Loops.h>
 
-namespace nd4j {
+namespace sd {
 
 
     template<typename S, typename T>

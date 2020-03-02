@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 #if NOT_EXCLUDED(test_output_reshape)
 #include <ops/declarable/headers/tests.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(test_output_reshape, 1, 1, true) {
             auto input = INPUT_VARIABLE(0);
@@ -39,7 +39,7 @@ namespace nd4j {
 
         DECLARE_TYPES(test_output_reshape) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

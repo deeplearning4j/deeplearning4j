@@ -23,7 +23,7 @@
 //#include <execution/Threads.h>
 //#include <helper_math.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -39,7 +39,7 @@ void lgamma_(NDArray& x, NDArray& z) {
     x.applyLambda(lgammaProc, z);
 }
 
-void lgamma(nd4j::LaunchContext* context, NDArray& x, NDArray& z) {
+void lgamma(sd::LaunchContext* context, NDArray& x, NDArray& z) {
 
 	BUILD_SINGLE_SELECTOR(x.dataType(), lgamma_, (x, z), FLOAT_TYPES);
 }

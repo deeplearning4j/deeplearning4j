@@ -19,13 +19,13 @@
 // @author George A. Shulinok <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_lgamma)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lgamma.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 OP_IMPL(lgamma, 1, 1, true) {

@@ -19,14 +19,14 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include "../MmulHelper.h"
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <exceptions/datatype_exception.h>
 #include <execution/Threads.h>
 
 
-namespace nd4j {
+namespace sd {
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
@@ -282,7 +282,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 
 ////////////////////////////////////////////////////////////////////////////
 // MXN x N = M
-NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* Y, const double alpha, const double beta, const char outOrder) {
+NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y, const double alpha, const double beta, const char outOrder) {
 
     if (X->dataType() != A->dataType())
         throw datatype_exception::build("mmulMxV expects all data types to be the same", A->dataType(), X->dataType());
@@ -362,7 +362,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
 
 ////////////////////////////////////////////////////////////////////////////
 // (X * Y) = Z[0]
-NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, nd4j::NDArray* Z, const double alpha, const double beta) {
+NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
     if (X->dataType() != Y->dataType())
         throw datatype_exception::build("Dot expects all data types to be the same", X->dataType(), Y->dataType());
 

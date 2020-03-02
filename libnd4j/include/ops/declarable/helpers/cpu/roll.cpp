@@ -20,7 +20,7 @@
 
 #include <ops/declarable/helpers/roll.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -50,7 +50,7 @@ namespace helpers {
                 auto _e0 = output->e<T>(e);
                 auto _e1 = output->e<T>(sourceIndex);
 
-                //nd4j::math::nd4j_swap((*output)(e), (*output)(sourceIndex));
+                //sd::math::nd4j_swap((*output)(e), (*output)(sourceIndex));
                 output->p<T>(e, _e1);
                 output->p<T>(sourceIndex, _e0);
             }
@@ -65,7 +65,7 @@ namespace helpers {
                     auto _e0 = output->e<T>(destinationIndex);
                     auto _e1 = output->e<T>(sourceIndex);
 
-                    //nd4j::math::nd4j_swap((*output)(destinationIndex), (*output)(sourceIndex));
+                    //sd::math::nd4j_swap((*output)(destinationIndex), (*output)(sourceIndex));
                     output->p<T>(destinationIndex, _e1);
                     output->p<T>(sourceIndex, _e0);
                 }
@@ -77,7 +77,7 @@ namespace helpers {
                 auto _e0 = output->e<T>(i);
                 auto _e1 = output->e<T>(i + remainShift);
 
-                //nd4j::math::nd4j_swap((*output)(i), (*output)(i + remainShift));
+                //sd::math::nd4j_swap((*output)(i), (*output)(i + remainShift));
 
                 output->p<T>(i, _e1);
                 output->p<T>(i + remainShift, _e0);
@@ -85,7 +85,7 @@ namespace helpers {
         }
     }
 
-    void rollFunctorFull(nd4j::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace){
+    void rollFunctorFull(sd::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace){
 
         if (!inplace)
             output->assign(input);
@@ -151,7 +151,7 @@ namespace helpers {
         }
     }
 
-    void rollFunctorLinear(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace){
+    void rollFunctorLinear(sd::LaunchContext * context, NDArray* input, NDArray* output, int shift, bool inplace){
         BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorLinear_, (input, output, shift, inplace), LIBND4J_TYPES);
     }
 
