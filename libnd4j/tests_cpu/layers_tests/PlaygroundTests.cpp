@@ -90,6 +90,65 @@ TEST_F(PlaygroundTests, test_biasAdd_1) {
 }
 
 
+TEST_F(PlaygroundTests, test_bert_full_1) {
+    // this test will run ONLY if this model exists
+    if (sd::graph::getFileSize("/home/raver119/Downloads/BertFull/model.fb") < 0)
+        return;
+
+    auto graph = GraphExecutioner::importFromFlatBuffers("/home/raver119/Downloads/BertFull/model.fb");
+
+    auto t = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in0_IteratorGetNext.npy");
+    auto u = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in1_IteratorGetNext_1.npy");
+    auto v = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/in2_IteratorGetNext_4.npy");
+    auto z = NDArrayFactory::fromNpyFile("/home/raver119/Downloads/BertFull/out_loss-Softmax.npy");
+
+    //graph->printOut();
+
+    graph->tagInplaceNodes();
+
+    graph->getVariableSpace()->putVariable(658,0, t);
+    graph->getVariableSpace()->putVariable(659,0, u);
+    graph->getVariableSpace()->putVariable(660,0, v);
+
+/*
+    // validating graph now
+    auto status = GraphExecutioner::execute(graph);
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1620));
+
+    auto array = graph->getVariableSpace()->getVariable(1620)->getNDArray();
+    ASSERT_EQ(z, *array);
+
+*/
+
+    sd::Environment::getInstance()->setProfiling(true);
+    auto profile = GraphProfilingHelper::profile(graph, 1);
+
+    profile->printOut();
+
+    sd::Environment::getInstance()->setProfiling(false);
+    delete profile;
+
+/*
+    std::vector<Nd4jLong> values;
+
+    for (int e = 0; e < 1; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        GraphExecutioner::execute(graph);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+*/
+    delete graph;
+}
+
 
 TEST_F(PlaygroundTests, test_bert_1) {
     // this test will run ONLY if this model exists

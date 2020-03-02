@@ -199,8 +199,8 @@ namespace sd {
                     return a->getExecutionTime() > b->getExecutionTime();
                 });
 
-                nd4j_printf("\nTop 30 reports by EXEC:\n", "");
-                auto limit = sd::math::nd4j_min<int>(30, sorted.size());
+                nd4j_printf("\nTop 50 reports by EXEC:\n", "");
+                auto limit = sd::math::nd4j_min<int>(50, sorted.size());
                 for (int e = 0; e < limit; e++) {
                     sorted[e]->printOut();
                 }
