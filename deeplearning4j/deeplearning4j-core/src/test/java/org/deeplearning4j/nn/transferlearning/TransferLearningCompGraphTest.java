@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.distribution.ConstantDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.graph.AttentionVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
@@ -35,6 +36,7 @@ import org.deeplearning4j.nn.weights.WeightInitDistribution;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,6 +45,9 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -564,5 +569,100 @@ public class TransferLearningCompGraphTest extends BaseDL4JTest {
         assertEquals("Incorrect number of outputs!", 5 , newGraph.layerSize(changeNoutName));
         assertEquals("Incorrect number of inputs!", 5, newGraph.layerInputSize(afterPoolName));
         newGraph.output(input);
+    }
+
+
+
+
+    @Test
+    public void testTransferLearningSameDiffLayersGraph(){
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .graphBuilder()
+                .addInputs("in")
+                .layer("l0", new LSTM.Builder().nIn(5).nOut(5).build(), "in")
+                .layer("l1", new RecurrentAttentionLayer.Builder().nHeads(1).headSize(5).nIn(5).nOut(5).build(), "l0")
+                .layer("out", new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build(), "l1")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray arr = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+        INDArray out = cg.output(arr)[0];
+
+
+        ComputationGraph cg2 = new TransferLearning.GraphBuilder(cg).removeVertexAndConnections("out")
+                .fineTuneConfiguration(FineTuneConfiguration.builder().updater(new Adam(0.01)).build())
+                .removeVertexAndConnections("out")
+                .addLayer("newOut", new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build(), "l1")
+                .setOutputs("newOut")
+                .build();
+
+        cg2.output(arr);
+
+        Map<String,INDArray> m = new HashMap<>(cg.paramTable());
+        m.put("newOut_W", m.remove("out_W"));
+        m.put("newOut_b", m.remove("out_b"));
+        cg2.setParamTable(m);
+
+        Map<String,INDArray> p1 = cg.paramTable();
+        Map<String,INDArray> p2 = cg2.paramTable();
+        for(String s : p1.keySet()){
+            INDArray i1 = p1.get(s);
+            INDArray i2 = p2.get(s.replaceAll("out", "newOut"));
+            assertEquals(s, i1, i2);
+        }
+
+        INDArray out2 = cg2.outputSingle(arr);
+        assertEquals(out, out2);
+    }
+
+    @Test
+    public void testTransferLearningSameDiffLayersGraphVertex(){
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+
+                .graphBuilder()
+                .addInputs("in")
+                .layer("l0", new LSTM.Builder().nIn(5).nOut(5).build(), "in")
+                .addVertex("l1", new AttentionVertex.Builder().nHeads(1).headSize(5).nInKeys(5).nInQueries(5).nInValues(5).nOut(5).build(), "l0", "l0", "l0")
+                .layer("out", new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build(), "l1")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray arr = Nd4j.rand(DataType.FLOAT, 2, 5, 10);
+        INDArray out = cg.output(arr)[0];
+
+
+        ComputationGraph cg2 = new TransferLearning.GraphBuilder(cg).removeVertexAndConnections("out")
+                .fineTuneConfiguration(FineTuneConfiguration.builder().updater(new Adam(0.01)).build())
+                .removeVertexAndConnections("out")
+                .addLayer("newOut", new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build(), "l1")
+                .setOutputs("newOut")
+                .build();
+
+        cg2.output(arr);
+
+        Map<String,INDArray> m = new HashMap<>(cg.paramTable());
+        m.put("newOut_W", m.remove("out_W"));
+        m.put("newOut_b", m.remove("out_b"));
+        cg2.setParamTable(m);
+
+        Map<String,INDArray> p1 = cg.paramTable();
+        Map<String,INDArray> p2 = cg2.paramTable();
+        for(String s : p1.keySet()){
+            INDArray i1 = p1.get(s);
+            INDArray i2 = p2.get(s.replaceAll("out", "newOut"));
+            assertEquals(s, i1, i2);
+        }
+
+        INDArray out2 = cg2.outputSingle(arr);
+        assertEquals(out, out2);
     }
 }

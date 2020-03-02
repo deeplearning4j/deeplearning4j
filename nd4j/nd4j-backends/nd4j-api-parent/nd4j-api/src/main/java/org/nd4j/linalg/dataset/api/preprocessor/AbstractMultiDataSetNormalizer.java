@@ -79,7 +79,6 @@ public abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> 
     }
 
     protected List<S> getFeatureStats() {
-        assertIsFit();
         return featureStats;
     }
 
@@ -88,7 +87,6 @@ public abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> 
     }
 
     protected List<S> getLabelStats() {
-        assertIsFit();
         return labelStats;
     }
 

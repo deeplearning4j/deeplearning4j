@@ -73,6 +73,20 @@ public class AttentionVertex extends SameDiffVertex {
     }
 
     @Override
+    public AttentionVertex clone() {
+        AttentionVertex av = new AttentionVertex();
+        av.nInKeys = nInKeys;
+        av.nInValues = nInValues;
+        av.nInQueries = nInQueries;
+        av.nOut = nOut;
+        av.headSize = headSize;
+        av.nHeads = nHeads;
+        av.projectInput = projectInput;
+        av.weightInit = weightInit;
+        return av;
+    }
+
+    @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         InputType.InputTypeRecurrent queries = (InputType.InputTypeRecurrent) vertexInputs[0];
 

@@ -427,7 +427,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             if(!disconnected.isEmpty() && !allowNoOutput){  //If allowing no output: by definition we have disconnected vertices
                 throw new IllegalStateException("Invalid configuration: disconnected vertices found - " + disconnected
                         + ". Disconnected vertices are those that do not connect to either another vertex, and are also"
-                        + " not a network output. To disable this error (i.e., allow network configurations with" +
+                        + " not a network output. This vertex can be set as an output using setOutputs(String...). "
+                        + "To disable this error (i.e., allow network configurations with" +
                         " disconnected vertices) use GraphBuilder.allowDisconnected(true)");
             }
         }

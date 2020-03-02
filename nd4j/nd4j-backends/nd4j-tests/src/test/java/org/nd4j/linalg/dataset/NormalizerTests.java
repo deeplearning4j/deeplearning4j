@@ -22,11 +22,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.TestDataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.dataset.api.preprocessor.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -189,11 +188,11 @@ public class NormalizerTests extends BaseNd4jTest {
 
             INDArray zeros = Nd4j.zeros(shouldBe0_1.shape());
 
-            for (int j = 0; j < 2; j++) {
-                System.out.println(ds.getFeatures().get(NDArrayIndex.point(j), NDArrayIndex.all(),
-                                NDArrayIndex.all()));
-                System.out.println();
-            }
+//            for (int j = 0; j < 2; j++) {
+//                System.out.println(ds.getFeatures().get(NDArrayIndex.point(j), NDArrayIndex.all(),
+//                                NDArrayIndex.all()));
+//                System.out.println();
+//            }
 
             assertEquals(zeros, shouldBe0_1);
             assertEquals(zeros, shouldBe0_2);
@@ -217,6 +216,69 @@ public class NormalizerTests extends BaseNd4jTest {
 
         }
     }
+
+    @Test
+    public void testNormalizerToStringHashCode(){
+        //https://github.com/eclipse/deeplearning4j/issues/8565
+
+        testNormalizer(new NormalizerMinMaxScaler());
+        NormalizerMinMaxScaler n1 = new NormalizerMinMaxScaler();
+        n1.fitLabel(true);
+        testNormalizer(n1);
+
+        testNormalizer(new NormalizerStandardize());
+        NormalizerStandardize n2 = new NormalizerStandardize();
+        n2.fitLabel(true);
+        testNormalizer(n2);
+
+        testNormalizer(new ImagePreProcessingScaler());
+        ImagePreProcessingScaler n3 = new ImagePreProcessingScaler();
+        n3.fitLabel(true);
+        testNormalizer(n3);
+
+        testNormalizer(new VGG16ImagePreProcessor());
+        VGG16ImagePreProcessor n4 = new VGG16ImagePreProcessor();
+        n4.fitLabel(true);
+        testNormalizer(n4);
+    }
+
+    private static void testNormalizer(DataNormalization n){
+        n.toString();
+        n.hashCode();
+
+        n.fit(new IrisDataSetIterator(30, 150));
+
+        n.toString();
+        n.hashCode();
+    }
+
+    @Test
+    public void testMultiNormalizerToStringHashCode(){
+        //https://github.com/eclipse/deeplearning4j/issues/8565
+
+        testMultiNormalizer(new MultiNormalizerMinMaxScaler());
+        MultiNormalizerMinMaxScaler n1 = new MultiNormalizerMinMaxScaler();
+        n1.fitLabel(true);
+        testMultiNormalizer(n1);
+
+        testMultiNormalizer(new MultiNormalizerStandardize());
+        MultiNormalizerStandardize n2 = new MultiNormalizerStandardize();
+        n2.fitLabel(true);
+        testMultiNormalizer(n2);
+
+        testMultiNormalizer(new ImageMultiPreProcessingScaler(0));
+    }
+
+    private static void testMultiNormalizer(MultiDataNormalization n){
+        n.toString();
+        n.hashCode();
+
+        n.fit(new MultiDataSetIteratorAdapter(new IrisDataSetIterator(30, 150)));
+
+        n.toString();
+        n.hashCode();
+    }
+
 
     @Override
     public char ordering() {
