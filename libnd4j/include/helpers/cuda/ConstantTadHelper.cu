@@ -77,7 +77,7 @@ namespace sd {
             auto oPtr = new Nd4jLong[numOfSubArrs];
 
             if (numOfSubArrs > 0)
-                shape::calcSubArrShapeAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr, oPtr, descriptor.areUnitiesinShape());
+                shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr, oPtr, descriptor.areUnitiesinShape());
 
             Nd4jPointer soPtr;
             auto res = cudaMalloc(reinterpret_cast<void**>(&soPtr),  numOfSubArrs * sizeof(Nd4jLong));

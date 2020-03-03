@@ -124,19 +124,19 @@ static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDAr
     if(m < n)
         throw std::runtime_error("svdQR: due to cuda api input constrains given shape of A array are not valid !");
 
-    if(ShapeUtils::shapeAsString({minDim}) != ShapeUtils::shapeAsString(S))
+    if(std::vector<Nd4jLong>({minDim}) != S->getShapeAsVector())
         throw std::runtime_error("svdQR: wrong shape of S array !");
 
     if(calcUV) {
 
-        if(fullUV && ShapeUtils::shapeAsString({m,m}) != ShapeUtils::shapeAsString(U))
+        if(fullUV && std::vector<Nd4jLong>({m,m}) != U->getShapeAsVector())
             throw std::runtime_error("svdQR: wrong shape of U array !");
-        else if(!fullUV && ShapeUtils::shapeAsString({m,minDim}) != ShapeUtils::shapeAsString(U))
+        else if(!fullUV && std::vector<Nd4jLong>({m,minDim}) != U->getShapeAsVector())
             throw std::runtime_error("svdQR: wrong shape of U array !");
 
-        if(fullUV && ShapeUtils::shapeAsString({n,n}) != ShapeUtils::shapeAsString(VT))
+        if(fullUV && std::vector<Nd4jLong>({n,n}) != VT->getShapeAsVector())
             throw std::runtime_error("svdQR: wrong shape of VT array !");
-        else if(!fullUV && ShapeUtils::shapeAsString({minDim,n}) != ShapeUtils::shapeAsString(VT))
+        else if(!fullUV && std::vector<Nd4jLong>({minDim,n}) != VT->getShapeAsVector())
             throw std::runtime_error("svdQR: wrong shape of VT array !");
     }
 
@@ -280,19 +280,19 @@ static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDA
     int n = A->sizeAt(1);
     const int minDim = m < n ? m : n;
 
-    if(ShapeUtils::shapeAsString({minDim}) != ShapeUtils::shapeAsString(S))
+    if(std::vector<Nd4jLong>({minDim}) != S->getShapeAsVector())
         throw std::runtime_error("svdJcb: wrong shape of S array !");
 
     if(calcUV) {
 
-        if(fullUV && ShapeUtils::shapeAsString({m,m}) != ShapeUtils::shapeAsString(U))
+        if(fullUV && std::vector<Nd4jLong>({m,m}) != U->getShapeAsVector())
             throw std::runtime_error("svdJcb: wrong shape of U array !");
-        else if(!fullUV && ShapeUtils::shapeAsString({m,minDim}) != ShapeUtils::shapeAsString(U))
+        else if(!fullUV && std::vector<Nd4jLong>({m,minDim}) != U->getShapeAsVector())
             throw std::runtime_error("svdJcb: wrong shape of U array !");
 
-        if(fullUV && ShapeUtils::shapeAsString({n,n}) != ShapeUtils::shapeAsString(V))
+        if(fullUV && std::vector<Nd4jLong>({n,n}) != V->getShapeAsVector())
             throw std::runtime_error("svdJcb: wrong shape of V array !");
-        else if(!fullUV && ShapeUtils::shapeAsString({n,minDim}) != ShapeUtils::shapeAsString(V))
+        else if(!fullUV && std::vector<Nd4jLong>({n,minDim}) != V->getShapeAsVector())
             throw std::runtime_error("svdJcb: wrong shape of V array !");
     }
 

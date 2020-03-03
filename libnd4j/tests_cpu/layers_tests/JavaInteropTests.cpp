@@ -1242,7 +1242,7 @@ TEST_F(JavaInteropTests, test_ismax_view) {
     v.assign(1.0);
 
     auto e = v.like();
-    auto t = e.tensorAlongDimension(0, {0, 1});
+    auto t = e(0, {2});
     t.assign(1.0);
 
     auto z = v.ulike();

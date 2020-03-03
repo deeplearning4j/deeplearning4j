@@ -130,7 +130,7 @@ TEST_F(TadTests, TadEdgeCase_1) {
     auto exp = NDArrayFactory::create<float>('c', {5, 4});
     array.linspace(1);
 
-    auto tad = array.tensorAlongDimension(0, {0, 1});
+    auto tad = array(0, {2});
 
     ASSERT_TRUE(exp.isSameShape(tad));
 }
@@ -140,7 +140,7 @@ TEST_F(TadTests, TestEdgeCase_2) {
     auto array = NDArrayFactory::create<float>('f', {2, 3, 1}, {1, 4, 2, 5, 3, 6});
 
     for (int e = 0 ; e < array.lengthOf(); e++) {
-        auto tad = array.tensorAlongDimension(e, {2});
+        auto tad = array(e, {0,1});
         ASSERT_NEAR(tad.e<float>(0), array.e<float>(e), 1e-5);
     }
 }
@@ -148,7 +148,7 @@ TEST_F(TadTests, TestEdgeCase_2) {
 TEST_F(TadTests, TadEdgeCase_2) {
     auto array = NDArrayFactory::create<float>('c', {2, 3, 4});
 
-    auto tad = array.tensorAlongDimension(0, {1});
+    auto tad = array(0, {0,2});
 
     ASSERT_EQ(3, tad.lengthOf());
 }

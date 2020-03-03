@@ -328,6 +328,25 @@ TEST_F(ParityOpsTests, TestUnstack12) {
     delete result;
 }
 
+TEST_F(ParityOpsTests, TestUnstack13) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3});
+
+    sd::ops::unstack op;
+    auto result = op.evaluate({&x}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    ASSERT_EQ(3, result->size());
+
+    for (int e = 0; e < 3; e++)
+        ASSERT_EQ(1, result->at(e)->rankOf());
+
+    delete result;
+}
+
+
+
 TEST_F(ParityOpsTests, ExpandDimsTest1) {
     auto input = NDArrayFactory::create<float>('c', {5, 5});
     input.linspace(1);

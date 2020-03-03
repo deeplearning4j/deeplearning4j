@@ -83,14 +83,12 @@ __host__ static void concatCudaLauncher(const int blocksPerGrid, const int threa
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void concat(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
 
     const int numOfInArrs = inArrs.size();
     const auto sizeofT    = output.sizeOfT();
 
-    for(int i = 0; i < numOfInArrs; ++i)
-        inArrs[i]->syncToDevice();
-    output.syncToDevice();
+    NDArray::prepareSpecialUse({&output}, inArrs);
 
     bool luckCase1 = ((axis == 0 && output.ordering() == 'c') || (axis == output.rankOf() - 1 && output.ordering() == 'f')) && output.ews() == 1;
 
@@ -122,43 +120,48 @@ void concat(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, ND
         return;
     }
 
-    const bool isZcontin = output.strideAt(axis) == 1;
-    bool areInputsContin = true;
-    bool allSameOrder    = true;
+    // const bool isZcontin = output.strideAt(axis) == 1;
+    // bool areInputsContin = true;
+    // bool allSameOrder    = true;
+    // std::vector<Nd4jLong> strideOfContigStride(numOfInArrs);
 
-    if(isZcontin) {
-        for (uint i = 0; i < inArrs.size(); ++i) {
-            areInputsContin &= inArrs[i]->strideAt(axis) == 1;
-            allSameOrder    &= output.ordering() == inArrs[i]->ordering();
-            if(!areInputsContin || !allSameOrder)
-                break;
-        }
-    }
+    // if(isZcontin) {
 
-    const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
+    //     for (uint i = 0; i < inArrs.size(); ++i) {
 
-    if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
+    //         areInputsContin &= inArrs[i]->strideAt(axis) == 1;
+    //         allSameOrder    &= output.ordering() == inArrs[i]->ordering();
+    //         if(!areInputsContin || !allSameOrder)
+    //             break;
 
-        const uint zDim = output.sizeAt(axis);
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->getShapeInfo());
+    //     }
+    // }
 
-        for (uint i = 0; i < output.lengthOf() / zDim; ++i) {
+    // const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
 
-            const auto iShift = i * sizeofT;
-            void* z = static_cast<int8_t*>(output.getSpecialBuffer()) + zDim * iShift;
+    // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
 
-            for (uint j = 0; j < numOfInArrs; ++j) {
-                const auto xDim = inArrs[j]->sizeAt(axis);
-                void* x = static_cast<int8_t*>(inArrs[j]->getSpecialBuffer()) + xDim * iShift;
-                const auto memSizeToCopy = xDim * sizeofT;
-                cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
-                z = static_cast<int8_t*>(z) + memSizeToCopy;
-            }
-        }
+    //     const auto zStep = shape::strideOverContigAxis(axis, output.getShapeInfo());
 
-        if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
-            throw std::runtime_error("concat cuda: luckCase2 failed!");
-    }
-    else {      // general (slower) case
+    //     for (uint i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
+
+    //         const auto iShift = i * sizeofT;
+    //         void* z = static_cast<int8_t*>(output.getSpecialBuffer()) + zStep * iShift;
+
+    //         for (uint j = 0; j < numOfInArrs; ++j) {
+    //             const auto xDim = inArrs[j]->sizeAt(axis);
+    //             void* x = static_cast<int8_t*>(inArrs[j]->getSpecialBuffer()) + strideOfContigStride[j] * iShift;
+    //             const auto memSizeToCopy = xDim * sizeofT;
+    //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
+    //             z = static_cast<int8_t*>(z) + memSizeToCopy;
+    //         }
+    //     }
+
+    //     if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
+    //         throw std::runtime_error("concat cuda: luckCase2 failed!");
+    // }
+    // else {      // general (slower) case
 
         const int threadsPerBlock = 256;
         const int blocksPerGrid = 512;
@@ -181,11 +184,9 @@ void concat(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, ND
         BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo, output.specialBuffer(), output.specialShapeInfo(), axis), LIBND4J_TYPES);
 
         manager.synchronize();
-    }
+    // }
 
-    for(int i = 0; i < numOfInArrs; ++i)
-        inArrs[i]->tickReadDevice();
-    output.tickWriteDevice();
+    NDArray::registerSpecialUse({&output}, inArrs);
 }
 
 }

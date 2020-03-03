@@ -229,7 +229,7 @@ TEST_F(NlpTests, basic_sg_ns_test_1) {
     auto result = op.evaluate({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {1, 1}, {false}, {}, true);
     ASSERT_EQ(Status::OK(), result->status());
 
-    auto row0 = syn0({1,2, 0,0}, true);    
+    auto row0 = syn0({1,2, 0,0}, true);
 
     ASSERT_EQ(exp0, row0);
     ASSERT_FALSE(syn1Neg2.equalsTo(syn1Neg, 1e-6));
@@ -417,10 +417,6 @@ TEST_F(NlpTests, test_sg_ns_batch_1) {
     sd::ops::skipgram op;
     auto result = op.evaluate({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {4, 5}, {false, true}, {}, true);
     ASSERT_EQ(Status::OK(), result->status());
-
-    auto row0 = syn0({0,0, 0,0}, true);
-    auto row1 = syn0({5,0, 0,0}, true);
-    auto row2 = syn0({2,0, 0,0}, true);
 
     delete result;
 }

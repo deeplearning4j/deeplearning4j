@@ -904,14 +904,6 @@ namespace sd {
         void transposei();
 
         /**
-        *  return array pointing on certain range of this array
-        *  index - the number of array to be returned among set of possible arrays
-        *  dimensions - array of dimensions to point on
-        */
-        NDArray tensorAlongDimension(Nd4jLong index, const std::initializer_list<int>& dimensions) const;
-        NDArray tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const;
-
-        /**
         *  returns the number of arrays pointing on specified dimension(s)
         *  dimensions - array of dimensions to point on
         */

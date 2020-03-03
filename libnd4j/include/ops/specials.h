@@ -50,8 +50,9 @@ namespace sd {
     template <typename T>
     class ND4J_EXPORT SpecialMethods {
     public:
-        static void concatCpuGeneric(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis);
+        static void concatCpuGeneric(const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis);
         static void concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *result, Nd4jLong *resultShapeInfo);
+        static void splitCpuGeneric(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis);
         static void accumulateGeneric(void **x, void *z, Nd4jLong *zShapeInfo, int n, const Nd4jLong length);
         static void averageGeneric(void **x, void *z, Nd4jLong  *zShapeInfo, int n, const Nd4jLong length, bool propagate);
 

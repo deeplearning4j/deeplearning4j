@@ -216,47 +216,6 @@ TEST_F(ScalarTests, Test_Permute_1) {
     delete result;
 }
 
-
-TEST_F(ScalarTests, Test_Stack_1) {
-    auto t = NDArrayFactory::create<float>(1.0f);
-    auto u = NDArrayFactory::create<float>(2.0f);
-    auto v = NDArrayFactory::create<float>(3.0f);
-    auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
-
-    sd::ops::stack op;
-    auto result = op.evaluate({&t, &u, &v}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(ScalarTests, Test_Stack_2) {
-    auto t = NDArrayFactory::create<float>('c', {1, 1}, {1.0f});
-    auto u = NDArrayFactory::create<float>('c', {1, 1}, {2.0f});
-    auto v = NDArrayFactory::create<float>('c', {1, 1}, {3.0f});
-    auto w = NDArrayFactory::create<float>('c', {1, 1}, {4.0f});
-    auto exp = NDArrayFactory::create<float>('c', {4, 1, 1}, {1, 2, 3, 4});
-
-    sd::ops::stack op;
-    auto result = op.evaluate({&t, &u, &v, &w}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    // z->printShapeInfo("z shape");
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-
 TEST_F(ScalarTests, Test_Concat_Scalar_1) {
     auto t = NDArrayFactory::create<float>('c', {1, 1}, {1.0f});
     auto u = NDArrayFactory::create<float>('c', {1, 1}, {2.0f});
@@ -268,7 +227,7 @@ TEST_F(ScalarTests, Test_Concat_Scalar_1) {
     auto result = op.evaluate({&t, &u, &v, &w}, {}, {0});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
-    auto z = result->at(0);    
+    auto z = result->at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

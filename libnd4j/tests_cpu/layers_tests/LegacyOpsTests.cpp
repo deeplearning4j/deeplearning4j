@@ -674,10 +674,10 @@ TEST_F(LegacyOpsTests, test_inverse_broadcast_2) {
     auto e = NDArrayFactory::create<bool>('c', {3, 4});
     e.assign(false);
 
-    auto row = y.tensorAlongDimension(1, {1});
+    auto row = y(1, {0});
     row.assign(2.0f);
 
-    auto erow = e.tensorAlongDimension(1, {1});
+    auto erow = e(1, {0});
     erow.assign(true);
 
     auto tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), 1);

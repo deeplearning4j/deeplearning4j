@@ -1197,14 +1197,9 @@ void NDArray::assign(const NDArray& other, bool allowParallelism) {
             throw std::runtime_error("NDArray::assign: lengths of arrays are mismatched");
         }
 
-        // memcpy is allowed only for same order c && same ews (being equal to 1)
-        if (ordering() == other.ordering() && ordering() == 'c' && dataType() == other.dataType() && ews() == 1 && other.ews() == 1)
-            copyBuffersContinuouslyFrom(other, other.lengthOf() * other.sizeOfT());
-        else {
-            NDArray::prepareSpecialUse({this}, {&other});
-            NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr, allowParallelism);
-            NDArray::registerSpecialUse({this}, {&other});
-        }
+        NDArray::prepareSpecialUse({this}, {&other});
+        NativeOpExecutioner::execTransformAny(getContext(), transform::Assign, other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), nullptr, nullptr, nullptr, allowParallelism);
+        NDArray::registerSpecialUse({this}, {&other});
     }
 }
 
@@ -4810,30 +4805,6 @@ ResultSet NDArray::allTensorsAlongDimension(const std::vector<int> &dimensions) 
     return result;
 }
 
-//////////////////////////////////////////////////////////////////////////
-NDArray NDArray::tensorAlongDimension(Nd4jLong index, const std::vector<int>& dimensions) const {
-    std::vector<int> copy(dimensions);
-    shape::checkDimensions(rankOf(), copy);
-
-    Nd4jLong tadLength = shape::tadLength(this->getShapeInfo(), copy.data(), copy.size());
-    Nd4jLong numTads = this->lengthOf() / tadLength;
-
-    if (index >= numTads)
-        throw std::runtime_error("Can't get index higher than total number of TADs");
-
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-
-    NDArray array(_buffer, ShapeDescriptor(packX.primaryShapeInfo()), getContext(), packX.primaryOffsets()[index] + getBufferOffset());
-    array._isView = true;
-
-    return array;
-}
-
-//////////////////////////////////////////////////////////////////////////
-NDArray NDArray::tensorAlongDimension(Nd4jLong index, const std::initializer_list<int>& dimensions) const {
-    return tensorAlongDimension(index, std::vector<int>(dimensions));
-}
-
 ////////////////////////////////////////////////////////////////////////
 // operator returns sub-array with buffer pointing at this->_buffer + certain offset
 NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUnitiesInShape, const bool isStrided)  const {
@@ -4841,63 +4812,73 @@ NDArray NDArray::operator()(const std::vector<Nd4jLong>& idx, const bool keepUni
     if(isEmpty())
         throw std::invalid_argument("NDArray::operator(sub-arrays): array is empty !");
 
-    const int rank = rankOf();
-    Nd4jLong *newShapeInfo = ShapeBuilders::copyShapeInfo(getShapeInfo(), true, getContext()->getWorkspace());
+    // Nd4jLong *outShapeInfo = nullptr;
+    //     ALLOCATE(outShapeInfo, workspace, shape::shapeInfoLength(inShapeInfo), Nd4jLong);
 
-    auto shapeOf = shape::shapeOf(newShapeInfo);
-    auto stridesOf = shape::stride(newShapeInfo);
+    int numOfUntiesInSubArrShape = 0;
 
-    Nd4jLong offset = 0;
-    int n(isStrided ? 3 : 2), first, last, stride;
-
-    for (int d = rank - 1; d >= 0; --d) {
-
-        if (idx[n * d] != idx[n * d + 1]) {
-
-            first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + sizeAt(d) + 1;
-            last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + sizeAt(d) + 1;
-            stride = isStrided           ? idx[n * d + 2] : 1;
-
-            shapeOf[d] = (last - first + stride - 1) / stride;      // ceil (last - first) / stride;
-            offset += first * stridesOf[d];
-
-            if(shapeOf[d] != 1)
-                stridesOf[d] *= stride;
-        }
-    }
-
-    Nd4jLong *newShapeInfo2 = newShapeInfo;
+    Nd4jLong* subArrShapeInfo = nullptr;
 
     if(!keepUnitiesInShape) {
 
-        std::vector<int> dimsWithUnities;
+        int n(isStrided ? 3 : 2), first, last;
 
-        for (int d = 0; d < rank; ++d)
-            if(idx[n*d] != idx[n*d+1] && shapeOf[d] == 1)
-                dimsWithUnities.push_back(d);
+        // calculate the number of unities in shape
+        for (uint d = 0; d < rankOf(); ++d) {
 
-        if(!dimsWithUnities.empty())
-            newShapeInfo2 = ShapeBuilders::copyShapeInfoWithoutUnites(newShapeInfo, dimsWithUnities.size(), dimsWithUnities.data(), getContext()->getWorkspace());
+            if (idx[n * d] != idx[n * d + 1]) {
+
+                first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + sizeAt(d) + 1;
+                last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + sizeAt(d) + 1;
+                if(last - first == 1)
+                    ++numOfUntiesInSubArrShape;
+            }
+        }
     }
 
-    // check if there is possibility to set ews = 1
-    shape::checkStridesEwsAndOrder(newShapeInfo2);
+    ALLOCATE(subArrShapeInfo, getContext()->getWorkspace(), shape::shapeInfoLength(rankOf() - numOfUntiesInSubArrShape), Nd4jLong);
 
-    NDArray result(_buffer, ShapeDescriptor(newShapeInfo2), getContext(), offset + getBufferOffset());
+    Nd4jLong offset;
+
+    shape::calcSubArrShapeInfoAndOffset(idx.data(), getShapeInfo(), subArrShapeInfo, offset, keepUnitiesInShape, isStrided, numOfUntiesInSubArrShape);
+
+    NDArray result(_buffer, ShapeDescriptor(subArrShapeInfo), getContext(), offset + getBufferOffset());
     result._isView = true;
 
-    RELEASE(newShapeInfo, getContext()->getWorkspace());
-    if(newShapeInfo != newShapeInfo2)
-        RELEASE(newShapeInfo2, getContext()->getWorkspace());
+    RELEASE(subArrShapeInfo, getContext()->getWorkspace());
 
     return result;
 }
 
 ////////////////////////////////////////////////////////////////////////
 NDArray NDArray::operator()(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape)  const {
+
     std::vector<Nd4jLong> idxRanges(2 * rankOf());
 
-    ShapeUtils::evalIdxRangesForSubArr(subArrIdx, _shapeInfo, dimsToExclude, idxRanges.data());
+    const auto rank = rankOf();
+    const auto subArrRank = static_cast<int>(dimsToExclude.size());
+
+    if(subArrRank > rank)
+        throw std::invalid_argument("NDArray::operator(const Nd4jLong subArrIdx, const std::vector<int>& dimsToExclude, bool keepUnitiesInShape): static method: dimsToExclude is empty or has size > rank of array !");
+
+    memset(idxRanges.data(), 0, 2 * rank * sizeof(Nd4jLong));
+
+    // subArrRank == 0 means whole array, idxRanges should contain zeros only
+
+    if(subArrRank != 0) {
+
+        std::vector<Nd4jLong> shapeOfSubArr(subArrRank), indexes(subArrRank);
+        for(int i = 0; i < subArrRank; ++i)
+            shapeOfSubArr[i] = sizeAt(dimsToExclude[i]);
+
+        shape::index2coords(subArrIdx, subArrRank, shapeOfSubArr.data(), indexes.data());
+
+        for(int i = 0; i < subArrRank; ++i) {
+            int currIdx = 2 * dimsToExclude[i];
+            idxRanges[currIdx]     = indexes[i];
+            idxRanges[currIdx + 1] = indexes[i] + 1;
+        }
+    }
 
     return (*this)(idxRanges, keepUnitiesInShape);
 }
@@ -4916,7 +4897,7 @@ void NDArray::getSubArrShapeAndOffsets(const std::vector<int>& dimsToExclude, Nd
     ALLOCATE(subArrShapeInfo, getContext()->getWorkspace(), shape::shapeInfoLength(subArrRank), Nd4jLong);
     ALLOCATE(subArrOffsets,   getContext()->getWorkspace(), numOfSubArrs, Nd4jLong);
 
-    shape::calcSubArrShapeAndOffsets(_shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), subArrShapeInfo, subArrOffsets, keepUnitiesInShape);
+    shape::calcSubArrsShapeInfoAndOffsets(_shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), subArrShapeInfo, subArrOffsets, keepUnitiesInShape);
 }
 
 //////////////////////////////////////////////////////////////////////////

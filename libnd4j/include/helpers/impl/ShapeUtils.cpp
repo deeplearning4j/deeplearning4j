@@ -975,35 +975,6 @@ Nd4jLong ShapeUtils::getNumOfSubArrs(const Nd4jLong* shapeInfo, const std::vecto
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void ShapeUtils::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges) {
-
-    const auto rank = shape::rank(shapeInfo);
-    const auto subArrRank = static_cast<int>(dimsToExclude.size());
-
-    if(subArrRank > rank)
-        throw std::invalid_argument("ShapeUtils::evalIdxRangesForSubArr static method: dimsToExclude is empty or has size > rank of array !");
-
-    if(subArrRank == 0) { // means whole array
-        memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
-        return;
-    }
-
-    std::vector<Nd4jLong> shapeOfSubArr(subArrRank), indexes(subArrRank);
-    for(int i = 0; i < subArrRank; ++i)
-        shapeOfSubArr[i] = shapeInfo[dimsToExclude[i] + 1];
-
-    shape::index2coords(subArrIdx, subArrRank, shapeOfSubArr.data(), indexes.data());
-
-    memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
-
-    for(int i = 0; i < subArrRank; ++i) {
-        int currIdx = 2 * dimsToExclude[i];
-        idxRanges[currIdx]     = indexes[i];
-        idxRanges[currIdx + 1] = indexes[i] + 1;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
 std::vector<Nd4jLong> ShapeUtils::evalDimsWithoutUnities(const Nd4jLong* shapeInfo) {
 
     std::vector<Nd4jLong> result;
@@ -1080,6 +1051,19 @@ void ShapeUtils::copyCertainStridesFromShapeInfo(const Nd4jLong* inShapeInfo, co
         }
     }
 }
+
+bool ShapeUtils::areShapesEqual(const Nd4jLong* shapeInfo, const std::vector<Nd4jLong>& shapeOnly) {
+
+    if(shape::rank(shapeInfo) != shapeOnly.size())
+        return false;
+
+    for(uint i = 0; i < shape::rank(shapeInfo); ++i)
+        if(shape::shapeOf(shapeInfo)[i] != shapeOnly[i])
+            return false;
+
+    return true;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /*
 bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2, std::vector<int>& sameDims) {

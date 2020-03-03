@@ -48,11 +48,11 @@ __global__ static void splitCuda(const void* vx, const Nd4jLong* xShapeInfo, voi
         xLen  = shape::length(xShapeInfo);
         xRank = shape::rank(xShapeInfo);
         zDim  = shape::shapeOf(zTadShapeInfo)[axis];          // same for all input arrays
-        totalThreads = gridDim.z * blockDim.z;
+        totalThreads = gridDim.x * blockDim.x;
     }
     __syncthreads();
 
-    const auto tid = blockIdx.z * blockDim.z + threadIdx.z;
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     Nd4jLong coords[MAX_RANK];
 
@@ -121,43 +121,48 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
         return;
     }
 
-    const bool isXcontin = input.strideAt(axis) == 1;
-    bool areOutputsContin = true;
-    bool allSameOrder    = true;
+    // const bool isXcontin = input.strideAt(axis) == 1;
+    // bool areOutputsContin = true;
+    // bool allSameOrder    = true;
+    // std::vector<Nd4jLong> strideOfContigStride(outArrs.size());
 
-    if(isXcontin) {
-        for (uint i = 0; i < outArrs.size(); ++i) {
-            areOutputsContin &= outArrs[i]->strideAt(axis) == 1;
-            allSameOrder     &= input.ordering() == outArrs[i]->ordering();
-            if(!areOutputsContin || !allSameOrder)
-                break;
-        }
-    }
+    // if(isXcontin) {
 
-    const bool luckCase2 = isXcontin && areOutputsContin && allSameOrder;
+    //     for (uint i = 0; i < outArrs.size(); ++i) {
 
-    if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and input array
+    //         areOutputsContin &= outArrs[i]->strideAt(axis) == 1;
+    //         allSameOrder     &= input.ordering() == outArrs[i]->ordering();
+    //         if(!areOutputsContin || !allSameOrder)
+    //             break;
 
-        const auto xDim = input.sizeAt(axis);
-        const auto zDim = outArrs[0]->sizeAt(axis);     // same for all outArrs
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, outArrs[i]->getShapeInfo());
+    //     }
+    // }
 
-        for (uint i = 0; i < input.lengthOf() / xDim; ++i) {
+    // const bool luckCase2 = isXcontin && areOutputsContin && allSameOrder;
 
-            const auto iShift = i * sizeofT;
-            void* x = static_cast<int8_t*>(input.getSpecialBuffer()) + xDim * iShift;
+    // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and input array
 
-            for (uint j = 0; j < numOfSubArrs; ++j) {
-                void* z = static_cast<int8_t*>(outArrs[j]->getSpecialBuffer()) + zDim * iShift;
-                const auto memSizeToCopy = zDim * sizeofT;
-                cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
-                x = static_cast<int8_t*>(x) + memSizeToCopy;
-            }
-        }
+    //     const auto xStep = shape::strideOverContigAxis(axis, input.getShapeInfo());
+    //     const auto zDim = outArrs[0]->sizeAt(axis);     // same for all outArrs
 
-        if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
-            throw std::runtime_error("split cuda: luckCase2 failed!");
-    }
-    else {      // general (slower) case
+    //     for (uint i = 0; i < input.lengthOf() / input.sizeAt(axis); ++i) {
+
+    //         const auto iShift = i * sizeofT;
+    //         void* x = static_cast<int8_t*>(input.getSpecialBuffer()) + xStep * iShift;
+
+    //         for (uint j = 0; j < numOfSubArrs; ++j) {
+    //             void* z = static_cast<int8_t*>(outArrs[j]->getSpecialBuffer()) + strideOfContigStride[j] * iShift;
+    //             const auto memSizeToCopy = zDim * sizeofT;
+    //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
+    //             x = static_cast<int8_t*>(x) + memSizeToCopy;
+    //         }
+    //     }
+
+    //     if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
+    //         throw std::runtime_error("split cuda: luckCase2 failed!");
+    // }
+    // else {      // general (slower) case
 
         const int threadsPerBlock = MAX_NUM_THREADS / 2;
         const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -175,7 +180,7 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
         BUILD_SINGLE_SELECTOR(input.dataType(), splitCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), dOutBuffers, outArrs[0]->specialShapeInfo(), axis), LIBND4J_TYPES);
 
         manager.synchronize();
-    }
+    // }
 
     for(int i = 0; i < numOfSubArrs; ++i)
         outArrs[i]->tickWriteDevice();

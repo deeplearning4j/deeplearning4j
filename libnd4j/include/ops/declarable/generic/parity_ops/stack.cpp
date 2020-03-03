@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
  	for(int i = 0; i < block.width(); ++i)
 		inArrs[i] = INPUT_VARIABLE(i);
 
-	helpers::stack(block.launchContext(), inArrs, output, dim);
+	helpers::stack(block.launchContext(), inArrs, *output, dim);
 
   	return Status::OK();
 }

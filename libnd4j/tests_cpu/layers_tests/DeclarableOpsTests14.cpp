@@ -250,68 +250,6 @@ TEST_F(DeclarableOpsTests14, test_lstmBlockCell_1) {
     ASSERT_EQ(Status::OK(), result);
 }
 
-TEST_F(DeclarableOpsTests14, test_empty_stack_1) {
-    auto x = NDArrayFactory::create<float>('c', {0});
-    auto e = NDArrayFactory::create<float>('c', {1, 0});
-
-    sd::ops::stack op;
-    auto result = op.evaluate({&x}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-    ASSERT_EQ(e, *z);
-    sd::ops::reduce_min sumOp;
-    auto res2 = sumOp.evaluate({&e}, {1.}, {1});
-    ASSERT_EQ(res2->status(), Status::OK());
-    auto out = res2->at(0);
-
-    ASSERT_EQ(out->e<float>(0), DataTypeUtils::infOrMax<float>());
-    delete res2;
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests14, test_empty_stack_2) {
-    auto x = NDArrayFactory::empty<float>();
-    auto e = NDArrayFactory::create<float>('c', {0});
-
-    sd::ops::stack op;
-    auto result = op.evaluate({&x}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-    ASSERT_EQ(e, *z);
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests14, test_empty_stack_3) {
-    auto x = NDArrayFactory::empty<float>();
-    auto e = NDArrayFactory::create<float>('c', {2, 0});
-
-    sd::ops::stack op;
-    auto result = op.evaluate({&x, &x}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-    ASSERT_EQ(e, *z);
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests14, test_empty_stack_4) {
-    auto x = NDArrayFactory::create<float>('c', {0});
-    auto e = NDArrayFactory::create<float>('c', {2, 0});
-
-    sd::ops::stack op;
-    auto result = op.evaluate({&x, &x}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-    ASSERT_EQ(e, *z);
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests14, test_empty_reduce_min_1) {
 
     auto e = NDArrayFactory::create<float>('c', {1, 0});
@@ -1655,30 +1593,489 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_5D_4) {
     ASSERT_EQ(e, z);
 }
 
-// @Test
-//     public void testMmulRank4_simple(){
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_1) {
 
-//         INDArray arr1 = Nd4j.ones(DataType.FLOAT, 32, 12, 128, 64);
-//         INDArray arr2 = Nd4j.ones(DataType.FLOAT, 32, 12, 128, 64);
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
+    Nd4jLong shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 2, 3, 4, 12, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
 
-//         DynamicCustomOp op = DynamicCustomOp.builder("matmul")
-//                 .addInputs(arr1, arr2)
-//                 .addIntegerArguments(0, 1)      //Transpose arr2 only
-//                 .build();
+    NDArray input1(buff1, shape1);
+    NDArray input2(buff2, shape2);
+    NDArray expected(expBuff, expShape);
 
-//         List<LongShapeDescriptor> shapes = op.calculateOutputShape();
-//         assertEquals(1, shapes.size());
-//         long[] shape = new long[]{32,12,128,128};
-//         assertArrayEquals(shape, shapes.get(0).getShape());
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input2}, {}, {0});
+    auto output = results->at(0);
 
-//         INDArray out = Nd4j.create(DataType.FLOAT, shape);
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
 
-//         op.setOutputArgument(0, out);
-//         Nd4j.exec(op);
-// //        System.out.println(out);
+    delete results;
 
-//         INDArray exp = Nd4j.valueArrayOf(shape, 64.0, DataType.FLOAT);      //Each entry in output is sum of 64 (1.0 x 1.0) multiplications
-//         assertEquals(exp, out);
-//     }
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_2) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1,2,3,4, 13, 14, 16, 16, 5,6,7,8, 17, 18, 19, 20, 9, 10, 11, 12, 21, 22, 23, 24};
+    Nd4jLong shape1[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 3, 4, 4, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 3, 2, 4, 8, 4, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray input2(buff2, shape2);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input2}, {}, {1});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_3) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
+    Nd4jLong shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 2, 1, 12, 12, 12, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray input2(buff2, shape2);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input2}, {}, {0});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_4) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
+    Nd4jLong shape1[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 1, 12, 12, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 1, 2, 12, 24, 12, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray input2(buff2, shape2);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input2}, {}, {1});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_5) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,16,16,17,18,19,20,21,22,23,24};
+    Nd4jLong shape1[]    = {2, 12, 1, 1,1, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 12, 1, 1,1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 2, 12, 1, 12, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray input2(buff2, shape2);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input2}, {}, {0});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_6) {
+
+    float buff1[]   = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12};
+    float buff2[]   = {13,14,16,16,17,18,19,20,21,22,23,24};
+    float expBuff[] = {1 ,13 ,2 ,14 ,3 ,16 ,4 ,16 ,5 ,17 ,6 ,18 ,7 ,19 ,8 ,20 ,9 ,21 ,10 ,22 ,11 ,23 ,12 ,24};
+    Nd4jLong shape1[]    = {2, 12, 1, 1, 12, 0, 1, 99};
+    Nd4jLong shape2[]    = {2, 12, 1, 1, 12, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 12, 2, 1, 2, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(shape2, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray input2(buff2, shape2);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input2}, {}, {1});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_7) {
+
+    float buff1[]   = {1};
+    float expBuff[] = {1, 1, 1};
+    Nd4jLong shape1[]    = {2, 1, 1, 1, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 3, 1, 1, 1, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input1, &input1}, {}, {0});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_8) {
+
+    float buff1[]   = {1};
+    float expBuff[] = {1, 1, 1};
+    Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {2, 3, 1, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input1, &input1}, {}, {0});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_9) {
+
+    float buff1[]   = {1};
+    float expBuff[] = {1, 1, 1};
+    Nd4jLong shape1[]    = {2, 1, 1, 1, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {3, 1, 3, 1, 3, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input1, &input1}, {}, {1});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_10) {
+
+    float buff1[]   = {1};
+    float expBuff[] = {1, 1, 1};
+    Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {2, 1, 3, 3, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input1, &input1}, {}, {1});
+    auto output = results->at(0);
+
+    //expected.printShapeInfo("exp");
+    //output->printShapeInfo("out");
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests14, Stack_11) {
+
+    float buff1[]   = {1};
+    float expBuff[] = {1, 1, 1};
+    Nd4jLong shape1[]    = {1, 1, 1, 0, 1, 99};
+    Nd4jLong expShape[]  = {2, 3, 1, 1, 1, 0, 1, 99};
+    ArrayOptions::setDataType(shape1, sd::DataType::FLOAT32);
+    ArrayOptions::setDataType(expShape, sd::DataType::FLOAT32);
+
+    NDArray input1(buff1, shape1);
+    NDArray expected(expBuff, expShape);
+
+    sd::ops::stack op;
+    auto results = op.evaluate({&input1, &input1, &input1}, {}, {});
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(*output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_12) {
+    float inBuff[]  = {1.0f, 2.0f, 3.0f};
+    float expBuff[] = {1.0f, 2.0f, 3.0f};
+
+    auto input = NDArrayFactory::create<float>(inBuff, 'c', {1, 3});
+
+    auto exp = NDArrayFactory::create<float>(expBuff, 'c', {1, 1, 3});
+
+    sd::ops::stack op;
+
+    auto result = op.evaluate({&input}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_13) {
+    float inBuff[]  = {1.0f, 2.0f, 3.0f};
+    float expBuff[] = {1.0f, 2.0f, 3.0f};
+
+    auto input = NDArrayFactory::create<float>(inBuff, 'c', {1, 1, 3});
+
+    auto exp = NDArrayFactory::create<float>(expBuff, 'c', {1, 1, 1, 3});
+
+    sd::ops::stack op;
+
+    auto result = op.evaluate({&input}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Stack_14) {
+    float inBuff[]  = {1.0f, 2.0f, 3.0f};
+    float expBuff[] = {1.0f, 2.0f, 3.0f};
+
+    auto input = NDArrayFactory::create<float>(inBuff, 'c', {1, 3});
+
+    auto exp = NDArrayFactory::create<float>(expBuff, 'c', {1, 1, 3});
+
+    sd::ops::stack op;
+
+    auto result = op.evaluate({&input}, {}, {1});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    //z->printShapeInfo();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Stack_15) {
+    auto t = NDArrayFactory::create<double>('c', {2, 3, 5});
+    auto u = NDArrayFactory::create<double>('c', {2, 3, 5});
+    auto v = NDArrayFactory::create<double>('c', {2, 3, 5});
+    auto exp = NDArrayFactory::create<double>('c', {3, 2, 3, 5});
+
+    sd::ops::stack op;
+    auto result = op.evaluate({&t, &u, &v}, {}, {-4});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+
+    delete result;
+}
+
+
+TEST_F(DeclarableOpsTests14, Stack_16) {
+    auto t = NDArrayFactory::create<float>(1.0f);
+    auto u = NDArrayFactory::create<float>(2.0f);
+    auto v = NDArrayFactory::create<float>(3.0f);
+    auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
+
+    sd::ops::stack op;
+    auto result = op.evaluate({&t, &u, &v}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Stack_17) {
+    auto t = NDArrayFactory::create<float>('c', {1, 1}, {1.0f});
+    auto u = NDArrayFactory::create<float>('c', {1, 1}, {2.0f});
+    auto v = NDArrayFactory::create<float>('c', {1, 1}, {3.0f});
+    auto w = NDArrayFactory::create<float>('c', {1, 1}, {4.0f});
+    auto exp = NDArrayFactory::create<float>('c', {4, 1, 1}, {1, 2, 3, 4});
+
+    sd::ops::stack op;
+    auto result = op.evaluate({&t, &u, &v, &w}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    // z->printShapeInfo("z shape");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Stack_18) {
+    auto x = NDArrayFactory::create<float>('c', {0});
+    auto e = NDArrayFactory::create<float>('c', {1, 0});
+
+    sd::ops::stack op;
+    auto result = op.evaluate({&x}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+    sd::ops::reduce_min sumOp;
+    auto res2 = sumOp.evaluate({&e}, {1.}, {1});
+    ASSERT_EQ(res2->status(), Status::OK());
+    auto out = res2->at(0);
+
+    ASSERT_EQ(out->e<float>(0), DataTypeUtils::infOrMax<float>());
+    delete res2;
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Stack_19) {
+    auto x = NDArrayFactory::empty<float>();
+    auto e = NDArrayFactory::create<float>('c', {0});
+
+    sd::ops::stack op;
+    auto result = op.evaluate({&x}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Stack_20) {
+    auto x = NDArrayFactory::empty<float>();
+    auto e = NDArrayFactory::create<float>('c', {2, 0});
+
+    sd::ops::stack op;
+    auto result = op.evaluate({&x, &x}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests14, Stack_21) {
+
+    NDArray x1('c', {3,2}, sd::DataType::FLOAT32);
+    NDArray x2('c', {3,2}, sd::DataType::FLOAT32);
+    x1.linspace(0);
+    x2.linspace(6);
+
+    sd::ops::stack opStack;
+    auto resultStack = opStack.evaluate({&x1, &x2}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, resultStack->status());
+
+
+    sd::ops::concat opConcat;
+    auto resultConcat = opConcat.evaluate({&x1, &x2}, {}, {0});
+    ASSERT_EQ(ND4J_STATUS_OK, resultConcat->status());
+
+    auto outStack  = resultStack->at(0);
+    auto outConcat = resultConcat->at(0);
+
+    outConcat->reshapei({2,3,2});
+
+    ASSERT_TRUE(outStack->isSameShape(outConcat));
+    ASSERT_TRUE(outStack->equalsTo(outConcat));
+
+    delete resultStack;
+    delete resultConcat;
+}
 
 

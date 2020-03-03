@@ -927,24 +927,6 @@ TEST_F(DeclarableOpsTests4, Test_Split_3) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests4, Test_Stack_4) {
-    auto t = NDArrayFactory::create<double>('c', {2, 3, 5});
-    auto u = NDArrayFactory::create<double>('c', {2, 3, 5});
-    auto v = NDArrayFactory::create<double>('c', {2, 3, 5});
-    auto exp = NDArrayFactory::create<double>('c', {3, 2, 3, 5});
-
-    sd::ops::stack op;
-    auto result = op.evaluate({&t, &u, &v}, {}, {-4});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests4, Test_Squeeze_args_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 1, 1, 1, 2}, {1, 2, 3, 4});
     auto exp = NDArrayFactory::create<double>('c', {2, 1, 2}, {1, 2, 3, 4});
@@ -991,22 +973,6 @@ TEST_F(DeclarableOpsTests4, Test_Squeeze_args_3) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests4, Test_1D_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 3});
-
-    sd::ops::unstack op;
-    auto result = op.evaluate({&x}, {}, {1});
-
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    ASSERT_EQ(3, result->size());
-
-    for (int e = 0; e < 3; e++)
-        ASSERT_EQ(1, result->at(e)->rankOf());
 
     delete result;
 }

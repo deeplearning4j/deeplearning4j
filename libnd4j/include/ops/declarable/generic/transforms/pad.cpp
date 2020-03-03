@@ -36,16 +36,16 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
     auto paddings = INPUT_VARIABLE(1);
     auto output   = OUTPUT_VARIABLE(0);
 
-    const int rank =  input->rankOf();    	
+    const int rank =  input->rankOf();
 
 	// input validation
-	std::string expectedPaddingsShape = ShapeUtils::shapeAsString({rank, 2});
-	std::string currentPaddingsShape  = ShapeUtils::shapeAsString(paddings);
-	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
+	std::vector<Nd4jLong> expectedPaddingsShape = {rank, 2};
+	std::vector<Nd4jLong> currentPaddingsShape  = paddings->getShapeAsVector();
+	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedPaddingsShape).c_str(), ShapeUtils::shapeAsString(currentPaddingsShape).c_str());
 
 	NDArray padValue(input->dataType(), block.launchContext());
 
-	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements 	
+	// in case of REFLECT and SYMMETRIC modes paddings must obey additional shape requirements
 	if (INT_ARG(0) == 0) { // CONSTANT mode
 		if(block.width() > 2) {
 			REQUIRE_TRUE(input->dataType() == INPUT_VARIABLE(2)->dataType(), 0, "PAD op: data types of input and padValue arrays should be the same but got %i and %i correspondingly !", input->dataType(), INPUT_VARIABLE(2)->dataType());
@@ -68,10 +68,10 @@ CUSTOM_OP_IMPL(pad, 2, 1, false, 0, 1) {
 
 	// std::vector<int> dimensions(input->rankOf());
  //    std::iota(dimensions.begin(), dimensions.end(), 0);   			// fill with 0, 1, ... rank-1
-    
+
 	// helpers::recursiveLoopForPad(INT_ARG(0), *input, *paddings, *output, dimensions, 0, 0, 0, padValue);
 	helpers::pad(block.launchContext(), INT_ARG(0), *input, *paddings, *output, padValue);
-	
+
     return Status::OK();
 }
 
@@ -85,27 +85,26 @@ DECLARE_TYPES(pad) {
 
 DECLARE_SHAPE_FN(pad) {
 
-	// check shape of paddings 
+	// check shape of paddings
 	auto inputShapeInfo = inputShape->at(0);
     auto paddings = INPUT_VARIABLE(1);
-    const int rank =  inputShapeInfo[0];    	
+    const int rank =  inputShapeInfo[0];
 
     // paddings validation
-    std::string expectedPaddingsShape = ShapeUtils::shapeAsString({rank, 2});
-	std::string currentPaddingsShape  = ShapeUtils::shapeAsString(paddings);
-	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", expectedPaddingsShape.c_str(), currentPaddingsShape.c_str());
-		
+    const std::vector<Nd4jLong> expectedPaddingsShape = {rank, 2};
+	const std::vector<Nd4jLong> currentPaddingsShape  = paddings->getShapeAsVector();
+	REQUIRE_TRUE(expectedPaddingsShape == currentPaddingsShape, 0, "PAD op: wrong shape of paddings array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedPaddingsShape).c_str(), ShapeUtils::shapeAsString(currentPaddingsShape).c_str());
+
 	Nd4jLong* outShapeInfo = nullptr;
     ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
     outShapeInfo[0] = rank;
     for(int i=1; i <= rank; ++i)
     	outShapeInfo[i] = inputShapeInfo[i] + paddings->e<Nd4jLong>(i-1,0) + paddings->e<Nd4jLong>(i-1,1);
-	
+
     ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
     ShapeDescriptor descriptor(outShapeInfo);
     RELEASE(outShapeInfo, block.getWorkspace());
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor));
-    
 }
 
 

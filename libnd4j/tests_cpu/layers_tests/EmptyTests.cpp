@@ -206,24 +206,17 @@ TEST_F(EmptyTests, test_empty_scatter_1) {
 }
 
 TEST_F(EmptyTests, test_empty_scatter_2) {
-    auto x = NDArrayFactory::create<float>('c', {5});
-    auto z = NDArrayFactory::create<float>('c', {5});
+    NDArray x ('c', {5}, sd::DataType::FLOAT32);
+    NDArray z ('c', {5}, sd::DataType::FLOAT32);
     auto indices = NDArrayFactory::create<int>('c', {0});
     auto updates = NDArrayFactory::create<float>('c', {0});
 
     x.linspace(1.0f);
 
-    Context ctx(1);
-    ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
-    ctx.setInputArray(1, indices.buffer(), indices.shapeInfo(), indices.specialBuffer(), indices.specialShapeInfo());
-    ctx.setInputArray(2, updates.buffer(), updates.shapeInfo(), updates.specialBuffer(), updates.specialShapeInfo());
-    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
-    bool args[] = {true};
-    ctx.setBArguments(args, 1);
-
     sd::ops::scatter_upd op;
-    auto result = op.execute(&ctx);
-    ASSERT_EQ(Status::OK(), result);
+    auto status = op.execute({&x, &indices, &updates}, {&z}, {}, {}, {true});
+
+    ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(x, z);
 }

@@ -197,7 +197,7 @@ TEST_F(NDArrayTest, EqualityTest1) {
 TEST_F(NDArrayTest, TestTad1) {
     auto array = NDArrayFactory::create_<float>('c', {3, 3});
 
-    auto row2 = array->tensorAlongDimension(1, {1});
+    auto row2 = (*array)(1, {0});
 
     ASSERT_TRUE(row2.isView());
     ASSERT_EQ(3, row2.lengthOf());
@@ -221,7 +221,7 @@ TEST_F(NDArrayTest, TestTad2) {
 TEST_F(NDArrayTest, TestTad3) {
     auto array = NDArrayFactory::create_<float>('c', {4, 3});
 
-    auto row2 = array->tensorAlongDimension(1, {1});
+    auto row2 = (*array)(1, {0});
 
     ASSERT_TRUE(row2.isView());
     ASSERT_EQ(3, row2.lengthOf());
@@ -1529,7 +1529,7 @@ TEST_F(NDArrayTest, TestStdDev1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest, TestStdDev2) {
     auto array = NDArrayFactory::create<double>('c', {5, 6});
-    auto tad = array.tensorAlongDimension(0, {0});
+    auto tad = array(0, {1});
 
     ASSERT_EQ(5, tad.lengthOf());
 

@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
 		inArrs[i] = INPUT_VARIABLE(i);
 
 	const int dim = 0;
-	helpers::stack(block.launchContext(), inArrs, output, dim);
+	helpers::stack(block.launchContext(), inArrs, *output, dim);
 
   	return Status::OK();
 }

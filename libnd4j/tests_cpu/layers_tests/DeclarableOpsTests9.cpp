@@ -637,7 +637,7 @@ TEST_F(DeclarableOpsTests9, concat_test18) {
     for (int e = 0; e < 2000; e++) {
         auto exp = NDArrayFactory::create<int>('c', {300});
         exp.assign(e);
-        auto row = z.tensorAlongDimension(e, {1});
+        auto row = z(e, {0});
         ASSERT_EQ(exp, row);
     }
 }
@@ -771,6 +771,33 @@ TEST_F(DeclarableOpsTests9, concat_test25) {
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test26) {
+
+    NDArray x0('f', {1, 2, 3}, sd::DataType::INT32);
+    NDArray x1('f', {1, 2, 3}, sd::DataType::INT32);
+    NDArray x2('f', {1, 2, 3}, sd::DataType::INT32);
+
+    NDArray exp('f', {3, 2, 3}, {0, 6, 12, 3, 9, 15, 1, 7, 13, 4, 10, 16, 2, 8, 14, 5, 11, 17}, sd::DataType::INT32);
+
+    x0.linspace(0);
+    x1.linspace(6);
+    x2.linspace(12);
+
+    sd::ops::concat op;
+
+    auto result = op.evaluate({&x0, &x1, &x2}, {}, {0}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+    output->printLinearBuffer();
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
