@@ -16,9 +16,11 @@
 
 package org.nd4j.tensorflow.conversion;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.nd4j.BaseND4JTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -29,7 +31,9 @@ import static org.bytedeco.tensorflow.global.tensorflow.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
+import static org.nd4j.linalg.api.buffer.DataType.*;
 
+@Slf4j
 public class TensorflowConversionTest extends BaseND4JTest {
 
     @Test
@@ -53,15 +57,39 @@ public class TensorflowConversionTest extends BaseND4JTest {
 
     @Test
     public void testConversionFromNdArray() throws Exception {
-        INDArray arr = Nd4j.linspace(1,4,4);
-        TensorflowConversion tensorflowConversion =TensorflowConversion.getInstance();
-        TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
-        INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
-        assertEquals(arr,fromTensor);
-        arr.addi(1.0);
-        tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
-        fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
-        assertEquals(arr,fromTensor);
+        DataType[] dtypes = new DataType[]{
+          DOUBLE,
+          FLOAT,
+          SHORT,
+          LONG,
+          BYTE,
+          UBYTE,
+          UINT16,
+          UINT32,
+          UINT64,
+          BFLOAT16,
+          BOOL,
+          INT,
+          HALF
+        };
+        for(DataType dtype: dtypes){
+            log.debug("Testing conversion for data type " + dtype);
+            INDArray arr = Nd4j.linspace(1, 4, 4).reshape(2, 2).castTo(dtype);
+            TensorflowConversion tensorflowConversion =TensorflowConversion.getInstance();
+            TF_Tensor tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
+            INDArray fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
+            assertEquals(arr,fromTensor);
+            if (dtype == BOOL){
+                arr.putScalar(3, 0);
+            }
+            else{
+                arr.addi(1.0);
+            }
+            tf_tensor = tensorflowConversion.tensorFromNDArray(arr);
+            fromTensor = tensorflowConversion.ndArrayFromTensor(tf_tensor);
+            assertEquals(arr,fromTensor);
+        }
+
 
 
     }
