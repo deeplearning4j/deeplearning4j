@@ -3304,8 +3304,9 @@ public class Nd4j {
      */
     public static INDArray randomExponential(double lambda, INDArray target) {
         Preconditions.checkArgument(lambda > 0, "Lambda argument must be >= 0 - got %s", lambda);
-        INDArray shapeArr = Nd4j.create(ArrayUtil.toDouble(target.shape()));
-        Nd4j.getExecutioner().execAndReturn(new RandomExponential(shapeArr, target, lambda));
+        INDArray shapeArr = Nd4j.createFromArray(target.shape());
+        RandomExponential r = new RandomExponential(shapeArr, target, lambda);
+        Nd4j.exec(r);
         return target;
     }
 

@@ -18,9 +18,11 @@ package org.nd4j.linalg.multithreading;
 
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -30,7 +32,16 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class MultithreadedTests {
+public class MultithreadedTests extends BaseNd4jTest {
+
+    public MultithreadedTests(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void basicMigrationTest_1() throws Exception {

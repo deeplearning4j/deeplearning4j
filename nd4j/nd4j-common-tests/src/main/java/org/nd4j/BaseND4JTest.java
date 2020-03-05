@@ -17,11 +17,10 @@
 
 package org.nd4j;
 
+import ch.qos.logback.classic.LoggerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestName;
 import org.junit.rules.Timeout;
 import org.nd4j.base.Preconditions;
@@ -31,6 +30,8 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.ProfilerConfig;
+import org.slf4j.ILoggerFactory;
+import org.slf4j.LoggerFactory;
 
 import java.lang.management.ManagementFactory;
 import java.util.List;
@@ -142,6 +143,15 @@ public abstract class BaseND4JTest {
             //Not really safe to continue testing under this situation... other tests will likely fail with obscure
             // errors that are hard to track back to this
             log.error("Open workspace leaked from test! Exiting - {}, isOpen = {} - {}", currWS.getId(), currWS.isScopeActive(), currWS);
+            System.out.println("Open workspace leaked from test! Exiting - " + currWS.getId() + ", isOpen = " + currWS.isScopeActive() + " - " + currWS);
+            System.out.flush();
+            //Try to flush logs also:
+            try{ Thread.sleep(1000); } catch (InterruptedException e){ }
+            ILoggerFactory lf = LoggerFactory.getILoggerFactory();
+            if( lf instanceof LoggerContext){
+                ((LoggerContext)lf).stop();
+            }
+            try{ Thread.sleep(1000); } catch (InterruptedException e){ }
             System.exit(1);
         }
 

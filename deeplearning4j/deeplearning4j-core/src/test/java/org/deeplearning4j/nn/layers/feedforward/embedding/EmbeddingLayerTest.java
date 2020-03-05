@@ -731,7 +731,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         // https://github.com/eclipse/deeplearning4j/issues/8663
         //The embedding layer weight initialization should be independent of the vocabulary size (nIn setting)
 
-        for(WeightInit wi : new WeightInit[]{WeightInit.XAVIER, WeightInit.RELU, WeightInit.XAVIER_UNIFORM, WeightInit.LECUN_NORMAL, WeightInit.VAR_SCALING_NORMAL_FAN_OUT}) {
+        for(WeightInit wi : new WeightInit[]{WeightInit.XAVIER, WeightInit.RELU, WeightInit.XAVIER_UNIFORM, WeightInit.LECUN_NORMAL}) {
 
             for (boolean seq : new boolean[]{false, true}) {
 
@@ -771,7 +771,9 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 INDArray p1 = net.params();
                 INDArray p2 = net2.params();
                 INDArray p3 = net3.params();
-                assertEquals(p1, p2);
+                boolean eq = p1.equalsWithEps(p2, 1e-4);
+                String str = (seq ? "EmbeddingSequenceLayer" : "EmbeddingLayer") + " - " + wi;
+                assertTrue(str + " p1/p2 params not equal", eq);
 
                 double m1 = p1.meanNumber().doubleValue();
                 double s1 = p1.stdNumber().doubleValue();
@@ -779,7 +781,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 double m3 = p3.meanNumber().doubleValue();
                 double s3 = p3.stdNumber().doubleValue();
 
-                String str = (seq ? "EmbeddingSequenceLayer" : "EmbeddingLayer") + " - " + wi;
+
 
                 assertEquals(str, m1, m3, 0.1);
                 assertEquals(str, s1, s3, 0.1);

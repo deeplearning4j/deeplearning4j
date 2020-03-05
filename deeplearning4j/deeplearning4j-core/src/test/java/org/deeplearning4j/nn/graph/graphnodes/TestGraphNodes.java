@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.graph.graphnodes;
 
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -54,7 +55,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class TestGraphNodes {
+public class TestGraphNodes extends BaseDL4JTest {
 
     @Test
     public void testMergeNode() {

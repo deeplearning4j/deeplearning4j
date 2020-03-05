@@ -1,5 +1,6 @@
 package org.deeplearning4j.optimizer.listener;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.listeners.CollectScoresIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -7,7 +8,7 @@ import org.junit.Test;
 import java.util.List;
 import static org.junit.Assert.*;
 
-public class ScoreStatTest  {
+public class ScoreStatTest extends BaseDL4JTest {
     @Test
     public void testScoreStatSmall() {
         CollectScoresIterationListener.ScoreStat statTest = new CollectScoresIterationListener.ScoreStat();

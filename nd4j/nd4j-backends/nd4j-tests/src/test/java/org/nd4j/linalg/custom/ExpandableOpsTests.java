@@ -19,9 +19,11 @@ package org.nd4j.linalg.custom;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ops.compat.CompatStringSplit;
 import org.nd4j.linalg.api.ops.util.PrintVariable;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -30,7 +32,16 @@ import static org.junit.Assert.assertNotNull;
  * This is special test suit: we test operations that on C++ side modify arrays that come from Java
  */
 @Slf4j
-public class ExpandableOpsTests {
+public class ExpandableOpsTests extends BaseNd4jTest {
+
+    public ExpandableOpsTests(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test
     public void testCompatStringSplit_1() throws Exception {
