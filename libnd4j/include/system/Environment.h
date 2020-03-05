@@ -51,6 +51,8 @@ namespace sd{
         std::atomic<int64_t> _maxTotalSpecialMemory{-1};
         std::atomic<int64_t> _maxDeviceMemory{-1};
 
+        bool _blasFallback = false;
+
 #ifdef __ND4J_EXPERIMENTAL__
         const bool _experimental = true;
 #else
@@ -85,6 +87,8 @@ namespace sd{
         void setLeaksDetector(bool reallyDetect);
         bool helpersAllowed();
         void allowHelpers(bool reallyAllow);
+
+        bool blasFallback();
         
         int tadThreshold();
         void setTadThreshold(int threshold);
