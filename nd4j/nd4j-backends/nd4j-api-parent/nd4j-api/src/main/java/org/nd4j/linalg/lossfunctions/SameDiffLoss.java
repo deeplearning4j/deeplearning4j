@@ -7,6 +7,9 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
+
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 
@@ -68,21 +71,27 @@ public abstract class SameDiffLoss implements ILossFunction {
      */
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask){
 
-        Preconditions.checkArgument((labels.size(1) != preOutput.size(1)),"\"Labels array numColumns (size(1) = \" + labels.size(1) + \") does not match output layer\"\n" +
-                "                            + \" number of outputs (nOut = \" + preOutput.size(1) + \") \"");
+        Preconditions.checkArgument((labels.size(1) != preOutput.size(1)), "Labels array numColumns (size(1) = %s) does not match output layer number of outputs (nOut = %s)", labels.size(1), preOutput.size(1));
 
 
-        INDArray scoreArr;
+        // but this output is unused? How graph inside know about outputs? should I add
+        // SDVariable output  =  sd.placeHolder("output", output)?
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
-        scoreArr = output.rsubi(labels).divi(labels);
-        scoreArr.muli(100.0 / labels.size(1));
 
+        Map<String, INDArray> m = new HashMap<>();
+        m.put("labels", this.sd.getVariable("labels").eval());
+        m.put("layerInput", this.sd.getVariable("layerInput").eval());
+
+
+        // How scoreArr var appear in graph? is it in someway connected to output?  ScoreArr is the same as lossVal
+        // So its depends on output, have spaghetti understanding
+        INDArray scoreArr = sd.output(m,"scoreArr").get("scoreArr");
 
 
         if (mask != null) {
             LossUtil.applyMask(scoreArr, mask);
         }
-        return scoreArr.sum(1);
+        return scoreArr;
 
 
     }
@@ -101,14 +110,16 @@ public abstract class SameDiffLoss implements ILossFunction {
 
 
 
-        SDVariable label = sd.var("label", labels.dup());
-        SDVariable output = sd.var("out", activationFn.getActivation(preOutput.dup(), true));
-        Map<String,INDArray> grads = sd.calculateGradients(null, "out");
+        Map<String, INDArray> m = new HashMap<>();
+        m.put("labels", this.sd.getVariable("labels").eval());
+        m.put("layerInput", this.sd.getVariable("layerInput").eval());
+
+        Map<String,INDArray> grads = sd.calculateGradients(m, "layerInput");
 
         if (mask != null) {
-            LossUtil.applyMask(sd.getVariable("out").eval(), mask);
+            LossUtil.applyMask(grads.get("layerInput"), mask);
         }
-        return sd.getVariable("out").eval();
+        return grads.get("layerInput");
     }
 
     /**
