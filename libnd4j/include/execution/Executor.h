@@ -21,7 +21,7 @@
 #ifndef SD_EXECUTOR_H
 #define SD_EXECUTOR_H
 
-namespace nd4j {
+namespace sd {
     class Executor {
     public:
         static void execute() {

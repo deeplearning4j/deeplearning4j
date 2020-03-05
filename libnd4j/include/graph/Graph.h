@@ -24,6 +24,7 @@
 #include <list>
 #include <algorithm>
 #include <unordered_map>
+#include <map>
 //#include <NDArray.h>
 #include <graph/Node.h>
 #include <graph/Stash.h>
@@ -36,7 +37,7 @@
 #include <graph/ExecutorConfiguration.h>
 #include <ops/declarable/OpDescriptor.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
 
         class ND4J_EXPORT Graph {
@@ -50,10 +51,10 @@ namespace nd4j {
 
             // vector holds ID's of top nodes only
             std::vector<int > *_nodes;
-            std::map<int, nd4j::graph::Node*> *_mapped;
+            MAP_IMPL<int, sd::graph::Node*> *_mapped;
 
-            std::map<int, std::vector<nd4j::graph::Node*> *> *_onion;
-            std::map<int, nd4j::graph::Node*> _unmapped;
+            MAP_IMPL<int, std::vector<sd::graph::Node*> *> *_onion;
+            MAP_IMPL<int, sd::graph::Node*> _unmapped;
             std::vector<int> _unmappedMap; // macOS?
 
             std::mutex _mutexPreprocessing;
@@ -63,15 +64,15 @@ namespace nd4j {
             std::vector<int> _autos;
 
 
-            std::map<int, Scope*> _mappedScopes;
+            MAP_IMPL<int, Scope*> _mappedScopes;
             std::vector<Scope*> _scopes;
 
 ////////////////////////////////////////
-            Nd4jStatus validateNode(nd4j::graph::Node *node);
+            Nd4jStatus validateNode(sd::graph::Node *node);
 
             void expandOnion(int newLayer);
 
-            void injectNode(nd4j::graph::Node *node);
+            void injectNode(sd::graph::Node *node);
 
             void pushToOutputOnce(int id);
 
@@ -104,39 +105,39 @@ namespace nd4j {
 
             int numberOfPlaceholders();
 
-            std::vector<nd4j::graph::Variable*>* getPlaceholders();
+            std::vector<sd::graph::Variable*>* getPlaceholders();
 
             /**
              * This method returns pointer to thread_local VariableSpace
              * @return
              */
-            nd4j::graph::VariableSpace *getVariableSpace();
+            sd::graph::VariableSpace *getVariableSpace();
 
             /**
              * This method adds given node to the graph
              *
              * @param node
              */
-            void addNode(nd4j::graph::Node *node);
+            void addNode(sd::graph::Node *node);
 
             /**
              * This method returns layered representation of the graph
              *
              * @return
              */
-            std::map<int, std::vector<nd4j::graph::Node*> *> *getOnion();
+            MAP_IMPL<int, std::vector<sd::graph::Node*> *> *getOnion();
 
             /**
              * This method returns map of all nodes of the graph
              * @return
              */
-            std::map<int, nd4j::graph::Node*> *getMapped();
+            MAP_IMPL<int, sd::graph::Node*>* getMapped();
 
             /**
              * This method returns outputs of this graph
              * @return
              */
-            std::vector<nd4j::graph::Variable*> *fetchOutputs();
+            std::vector<sd::graph::Variable*> *fetchOutputs();
 
             /**
              * This method returns pointer to ExecutorConfiguration
@@ -155,7 +156,7 @@ namespace nd4j {
              * This method returns all nodes at once (order is NOT guaranteed)
              * @return
              */
-            std::vector<nd4j::graph::Node*> *getAllNodes();
+            std::vector<sd::graph::Node*> *getAllNodes();
 
             /**
              * This method prints out Graph op-by-op, and respective inputs
@@ -165,7 +166,7 @@ namespace nd4j {
             /**
              * This method collect all ops from the graph into ops vector
              */
-            std::vector<nd4j::ops::OpDescriptor> getOperations();
+            std::vector<sd::ops::OpDescriptor> getOperations();
 
             /**
              * This method returns Scope ptr specified with id
@@ -233,7 +234,7 @@ namespace nd4j {
                 return &_output;
             }
 
-            FORCEINLINE std::map<int, Scope*>* scopes() {
+            FORCEINLINE MAP_IMPL<int, Scope*>* scopes() {
                 return &_mappedScopes;
             }
 

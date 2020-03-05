@@ -24,7 +24,7 @@
 #include <helpers/OpTracker.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 
     _loader::_loader() {
         //
@@ -47,5 +47,5 @@ namespace nd4j {
 //#endif
     };
 
-    static nd4j::_loader loader;
+    static sd::_loader loader;
 }

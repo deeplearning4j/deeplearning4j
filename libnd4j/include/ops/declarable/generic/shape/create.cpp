@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_shapes_of)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         CUSTOM_OP_IMPL(create, 1, 1, false, 0, 1) {
@@ -44,13 +44,13 @@ namespace nd4j {
 
             auto shape = shapeInput->getBufferAsVector<Nd4jLong>();
 
-            return SHAPELIST(nd4j::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, order, shape));
+            return SHAPELIST(sd::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, order, shape));
         }
 
         DECLARE_TYPES(create) {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_INTS})
-                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                    ->setAllowedOutputTypes(sd::DataType::ANY);
         }
     }
 }

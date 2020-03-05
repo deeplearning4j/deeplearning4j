@@ -18,9 +18,9 @@
 //  @author raver119@gmail.com
 //
 
-#include <Environment.h>
+#include <system/Environment.h>
 #include <loops/transform_same.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 #include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
@@ -173,7 +173,7 @@ namespace functions {
 
             DISPATCH_SIMPLE(transformShaped, float16, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
-            if (nd4j::Environment::getInstance()->isDebug())
+            if (sd::Environment::getInstance()->isDebug())
 		        checkCudaErrors(cudaStreamSynchronize(*stream));
         }
 

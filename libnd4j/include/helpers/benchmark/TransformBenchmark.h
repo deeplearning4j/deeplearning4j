@@ -22,9 +22,9 @@
 #ifndef DEV_TESTS_TRANSFORMBENCHMARK_H
 #define DEV_TESTS_TRANSFORMBENCHMARK_H
 
-using namespace nd4j::graph;
+using namespace sd::graph;
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT TransformBenchmark : public OpBenchmark {
 
     protected:

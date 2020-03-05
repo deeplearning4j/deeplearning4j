@@ -18,13 +18,13 @@
 // @author raver119@gmail.com
 //
 
-#include <NDArray.h>
-#include <NDArrayFactory.h>
+#include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
 #include "testlayers.h"
 #include <graph/Stash.h>
-#include <FlatUtils.h>
+#include <graph/FlatUtils.h>
 
-using namespace nd4j;
+using namespace sd;
 
 class FlatUtilsTests : public testing::Test {
 public:

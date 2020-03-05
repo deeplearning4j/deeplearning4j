@@ -26,8 +26,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
+using namespace sd;
+using namespace sd::ops;
 
 class JavaInteropCudaTests : public testing::Test {
 public:
@@ -41,7 +41,7 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_1) {
     x.assign(1.f);
     e.assign(2.f);
 
-    nd4j::ops::add op;
+    sd::ops::add op;
     Context context(1);
 
     context.setCudaContext(LaunchContext::defaultContext()->getCudaStream(), LaunchContext::defaultContext()->getReductionPointer(), LaunchContext::defaultContext()->getAllocationPointer());
@@ -59,16 +59,16 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_1) {
 }
 
 TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_2) {
-    NDArray x('c', {3, 1, 2}, nd4j::DataType::FLOAT32);
-    NDArray y('c', {2, 2}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {3, 2, 2}, nd4j::DataType::BOOL);
-    NDArray e('c', {3, 2, 2}, nd4j::DataType::BOOL);
+    NDArray x('c', {3, 1, 2}, sd::DataType::FLOAT32);
+    NDArray y('c', {2, 2}, sd::DataType::FLOAT32);
+    NDArray z('c', {3, 2, 2}, sd::DataType::BOOL);
+    NDArray e('c', {3, 2, 2}, sd::DataType::BOOL);
 
     x.assign(1.f);
     y.assign(2.f);
     e.assign(false);
 
-    nd4j::ops::equals op;
+    sd::ops::equals op;
     Context context(1);
 
     context.setCudaContext(LaunchContext::defaultContext()->getCudaStream(), LaunchContext::defaultContext()->getReductionPointer(), LaunchContext::defaultContext()->getAllocationPointer());

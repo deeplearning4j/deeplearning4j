@@ -22,10 +22,10 @@
 #define LIBND4J_SESSIONLOCALTESTS_H
 
 #include "testlayers.h"
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <graph/SessionLocalStorage.h>
 
-using namespace nd4j::graph;
+using namespace sd::graph;
 
 class SessionLocalTests : public testing::Test {
 public:
@@ -62,7 +62,7 @@ TEST_F(SessionLocalTests, BasicTests_2) {
     if (omp_get_max_threads() <= 1)
         return;
 
-    auto alpha = nd4j::NDArrayFactory::create_<float>('c',{5,5});
+    auto alpha = sd::NDArrayFactory::create_<float>('c',{5,5});
     alpha->assign(0.0);
 
     variableSpace.putVariable(-1, alpha);
@@ -74,7 +74,7 @@ TEST_F(SessionLocalTests, BasicTests_2) {
         auto varSpace = storage.localVariableSpace();
 
         auto arr = varSpace->getVariable(-1)->getNDArray();
-        arr->applyScalar(nd4j::scalar::Add, (float) e+1, *arr);
+        arr->applyScalar(sd::scalar::Add, (float) e+1, *arr);
     }
 
     float lastValue = 0.0f;

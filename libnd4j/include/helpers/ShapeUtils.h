@@ -22,9 +22,9 @@
 #define LIBND4J_SHAPEUTILS_H
 
 #include <vector>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 
     class ND4J_EXPORT ShapeUtils {
 
@@ -35,28 +35,28 @@ namespace nd4j {
         static std::vector<Nd4jLong> evalShapeForTensorDot(const NDArray* a,   const NDArray* b,   const std::vector<int>& axesA, const std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<Nd4jLong>& shapeAt, std::vector<Nd4jLong>& shapeBt);
 
         // evaluate resulting shape after reduce operation
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const nd4j::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const nd4j::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const bool keepDims = false, const bool supportOldShapes = false, nd4j::memory::Workspace* workspace = nullptr);
+        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const sd::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
+        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const sd::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
+        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
+        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
 
         /**
          * evaluate output shape for reduce operation when input shape is empty
          * behavior is analogous to tf
          */
-        static Nd4jLong* evalReduceShapeInfoEmpty(const char order, std::vector<int>& dimensions, const Nd4jLong *shapeInfo, const nd4j::DataType dataType, const bool keepDims, nd4j::memory::Workspace* workspace);
+        static Nd4jLong* evalReduceShapeInfoEmpty(const char order, std::vector<int>& dimensions, const Nd4jLong *shapeInfo, const sd::DataType dataType, const bool keepDims, sd::memory::Workspace* workspace);
 
 		// evaluate shape for array which is result of repeat operation applied to arr
     	static std::vector<Nd4jLong> evalRepeatShape(int axis, const std::vector<int>& repeats, const NDArray& arr);
 
         // evaluate shapeInfo of permuted array
         // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-        static Nd4jLong* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace, const bool setContigStrides = false);
-        static Nd4jLong* evalPermShapeInfo(const Nd4jLong* dimensions, const int rank, const NDArray& arr, nd4j::memory::Workspace* workspace);
+        static Nd4jLong* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, sd::memory::Workspace* workspace, const bool setContigStrides = false);
+        static Nd4jLong* evalPermShapeInfo(const Nd4jLong* dimensions, const int rank, const NDArray& arr, sd::memory::Workspace* workspace);
 
         // evaluate shapeInfo of transposed array
         // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-        static Nd4jLong* evalTranspShapeInfo(const NDArray& arr, nd4j::memory::Workspace* workspace, const bool setContigStrides = false);
+        static Nd4jLong* evalTranspShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace, const bool setContigStrides = false);
 
         static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
 
@@ -72,8 +72,8 @@ namespace nd4j {
 
         // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
         // if evalMinMax == false then array with larger rank has to be passed as first argument
-        static bool evalBroadcastShapeInfo(const NDArray& max, const NDArray& min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace);
-        static bool evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, nd4j::memory::Workspace* workspace);
+        static bool evalBroadcastShapeInfo(const NDArray& max, const NDArray& min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, sd::memory::Workspace* workspace);
+        static bool evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, sd::memory::Workspace* workspace);
 
         // evaluate sorted vector of max axes to create tads along in case of simple broadcast operation
         // if simple broadcast is not possible then empty vector is returned
@@ -88,7 +88,7 @@ namespace nd4j {
         static std::vector<int> getDimsWithSameShape(const NDArray& max, const NDArray& min);
 
         // evaluate shapeInfo for resulting array of tile operation
-        static Nd4jLong* evalTileShapeInfo(const NDArray& arr, const std::vector<Nd4jLong>& reps, nd4j::memory::Workspace* workspace);
+        static Nd4jLong* evalTileShapeInfo(const NDArray& arr, const std::vector<Nd4jLong>& reps, sd::memory::Workspace* workspace);
 
         // returns shape part of shapeInfo as std::vector
         static std::vector<Nd4jLong> pullShapeFromShapeInfo(Nd4jLong *shapeInfo);
@@ -104,13 +104,13 @@ namespace nd4j {
         static std::vector<Nd4jLong> shapeAsVector(const Nd4jLong* shapeInfo);
 
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
-        static Nd4jLong* evalDiagShapeInfo(const Nd4jLong* shapeInfo, nd4j::memory::Workspace* workspace);
+        static Nd4jLong* evalDiagShapeInfo(const Nd4jLong* shapeInfo, sd::memory::Workspace* workspace);
 
         static std::vector<int> evalBroadcastBackwardAxis(const Nd4jLong *operand, const Nd4jLong *result);
 
         // utility to calculate matrix product shape with give source shapes and additional params
         // returns ShapeList pointer with result shape
-        static Nd4jLong* matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, nd4j::DataType dtype, nd4j::memory::Workspace* workspace);
+        static Nd4jLong* matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, sd::DataType dtype, sd::memory::Workspace* workspace);
 
         /**
         *  This method evaluates permutation vector necessary for reducing of shapeFrom to shapeTo
@@ -137,16 +137,6 @@ namespace nd4j {
         *  i.e. if shape is [2,3,4,5] and dimsToExclude={0,2}, then number of sub-arrays = 8
         */
         static Nd4jLong getNumOfSubArrs(const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude);
-
-        /**
-        *  evaluate indexes ranges that define sub-array of array having shape=shapeInfo
-        *  subArrIdx - index of current sub-array
-        *  shapeInfo - shapeInfo of array for which to evaluate sub-arrays
-        *  dimsToExclude - MUST BE SORTED, dimensions to evaluate sub-arrays along, i.e. when shape is [2,3,4,5] and dimsToExclude={0,2}, then there will be 8 sub-arrays with shape [3,5],
-        *                  if dimsToExclude is empty then idxRanges containing all zeros (means whole array) will be returned.
-        *  idxRanges - where to put result, the length of idxRanges must be equal to 2*shapeInfo[0]
-        */
-        static void evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLong* shapeInfo, const std::vector<int>& dimsToExclude, Nd4jLong* idxRanges);
 
         /**
         *   return shape without unities, for example if shape is [1,2,1,3] then [2,3] will be returned
@@ -180,6 +170,17 @@ namespace nd4j {
             return (numStrings + 1) * sizeof(Nd4jLong);
         }
 
+        /**
+         * This method selects strides based on dimentions required for broadcasting
+         * @param const pointer to input (Y) shape info for strides selection
+         * @param rank of input (X) to broadcasting
+         * @param dimentions size
+         * @param const pointer to dimentions for broadcasting
+         * @param pointer to output strides have to be pre allocated by 0
+         * @return
+         */
+        static void copyCertainStridesFromShapeInfo(const Nd4jLong* inShapeInfo, const int nRank, const int dimsSize, const int* dims, Nd4jLong* outStrides);
+
         /*
         * check whether arr1/arr2 is sub-array of arr2/arr1,
         * this method do not evaluate what array is sub-array, it returns true if arr1 is sub-array of arr2 or arr2 is sub-array of arr1
@@ -191,6 +192,11 @@ namespace nd4j {
 
         static bool isSubArrayCase(const NDArray& arr1, const NDArray& arr2, std::vector<int>& sameDims);
         */
+
+        /*
+        *   comparing of shapes, not strides
+        */
+        static bool areShapesEqual(const Nd4jLong* shapeInfo, const std::vector<Nd4jLong>& shapeOnly);
     };
 
 

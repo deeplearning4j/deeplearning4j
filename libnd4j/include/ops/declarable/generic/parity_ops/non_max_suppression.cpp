@@ -22,7 +22,7 @@
 #include <ops/declarable/helpers/image_suppression.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 #if NOT_EXCLUDED(OP_image_non_max_suppression)
         CUSTOM_OP_IMPL(non_max_suppression, 2, 1, false, 0, 0) {
@@ -112,14 +112,14 @@ namespace nd4j {
         }
         DECLARE_TYPES(non_max_suppression) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INDICES});
         }
 #endif
 #if NOT_EXCLUDED(OP_image_non_max_suppression_v3)
         DECLARE_TYPES(non_max_suppression_v3) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INDICES});
         }
 

@@ -18,16 +18,16 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/broadcasting_bool.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
-#include <Environment.h>
+#include <system/Environment.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <string>
 #include <stdexcept>
-#include <StringUtils.h>
+#include <helpers/StringUtils.h>
 
 using namespace simdOps;
 
@@ -70,7 +70,7 @@ namespace functions {
         template <typename OpClass>
         __host__ void BroadcastBool<X,Z>::intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
             broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
-            nd4j::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
+            sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -86,7 +86,7 @@ namespace functions {
         template <typename OpClass>
         __host__ void BroadcastBool<X,Z>::intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
             broadcastBoolInverseSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
-            nd4j::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
+            sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
         }
 
 //////////////////////////////////////////////////////////////////////////

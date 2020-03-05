@@ -19,13 +19,13 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_Pow)
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
         BROADCASTABLE_OP_IMPL(Pow, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -75,7 +75,7 @@ namespace ops {
            // dL/dy = x^y * log(x) * dL/dz
            auto temp = x->applyTrueBroadcast(BroadcastOpsTuple::Pow(), *y); // a = x^y
            x->applyTransform(transform::Log, *dLdx); // b = log(x)
-           dLdx->applyScalar(nd4j::scalar::ReplaceNans, 0, *dLdx);
+           dLdx->applyScalar(sd::scalar::ReplaceNans, 0, *dLdx);
            temp *= *dLdx; // c = b*a
            temp *= *dLdz; // dL/dy = c * dL/dz
            if (dLdy->isSameShape(*dLdz)) {

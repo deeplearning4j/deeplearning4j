@@ -19,7 +19,7 @@
 //
 #include <graph/Intervals.h>
 
-namespace nd4j {
+namespace sd {
 
     // default constructor
     Intervals::Intervals(): _content({{}}) {}

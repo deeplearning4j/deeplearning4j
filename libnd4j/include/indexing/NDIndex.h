@@ -21,11 +21,11 @@
 #ifndef LIBND4J_NDINDEX_H
 #define LIBND4J_NDINDEX_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <vector>
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT NDIndex {
     protected:
         std::vector<Nd4jLong> _indices;

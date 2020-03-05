@@ -20,7 +20,7 @@
 
 #include <types/int16.h>
 
-namespace nd4j {
+namespace sd {
 
     /*
     template int16::int16(const float& rhs);

@@ -18,13 +18,13 @@
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_random_gamma)
 
 #include <ops/declarable/headers/random.h>
 #include <ops/declarable/helpers/random.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(random_gamma, 2, 1, false, 0, 0) {
             // gamma distribution

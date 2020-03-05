@@ -18,14 +18,14 @@
 // Created by raver119 on 12.10.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_tear)
 
 #include <ops/declarable/CustomOperations.h>
-#include <TAD.h>
+#include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(tear, 1, -1, false, 0, -1) {
             auto input = INPUT_VARIABLE(0);
@@ -57,7 +57,7 @@ namespace nd4j {
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
 
-            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
+            auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
             auto numTads = tadPack.numberOfTads();
 
             auto result = SHAPELIST();
@@ -71,7 +71,7 @@ namespace nd4j {
 
         DECLARE_TYPES(tear) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

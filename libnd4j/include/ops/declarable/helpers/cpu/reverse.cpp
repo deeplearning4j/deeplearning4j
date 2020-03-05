@@ -24,7 +24,7 @@
 #include <execution/Threads.h>
 
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -38,7 +38,7 @@ inline void swap(T* arr, Nd4jLong from, Nd4jLong to) {
 // this legacy op is written by raver119@gmail.com
 
 template<typename T>
-static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse = 0) {
+static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse = 0) {
             auto inArr = reinterpret_cast<T *>(vinArr);
             auto outArr = reinterpret_cast<T *>(voutArr);
 
@@ -54,7 +54,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
             if (inArr == outArr) {
                 if (inEWS == 1) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto idx = sLength - e;
                             swap(inArr, e, idx);
                         }
@@ -63,7 +63,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 }
                 else if (inEWS > 1) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto idx1 = (sLength - e) * inEWS;
                             Nd4jLong idx2 = e * inEWS;
                             swap(inArr, idx1, idx2);
@@ -75,7 +75,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 else {
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
                             auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer);
                             swap(outArr, inOffset, outOffset);
@@ -93,14 +93,14 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 if (inEWS == 1 && outEWS == 1 && inOrder == outOrder) {
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (Nd4jLong e = start; e < stop; e += increment)
+                        for (Nd4jLong e = start; e < stop; e++)
                             outArr[sLength - e] = inArr[e];
                     };
                     samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
                         auto f2 = PRAGMA_THREADS_FOR {
-                            for (auto e = start; e < stop; e += increment)
+                            for (auto e = start; e < stop; e++)
                                 outArr[e] = inArr[e];
                         };
                         samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
@@ -109,14 +109,14 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 else if (inEWS >= 1 && outEWS >= 1 && inOrder == outOrder) {
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment)
+                        for (auto e = start; e < stop; e++)
                             outArr[(sLength - e) * outEWS] = inArr[e * inEWS];
                     };
                     samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
                         auto f2 = PRAGMA_THREADS_FOR {
-                            for (auto e = start; e < stop; e += increment)
+                            for (auto e = start; e < stop; e++)
                                 outArr[e * outEWS] = inArr[e * inEWS];
                         };
                         samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
@@ -125,7 +125,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 else {
 
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
                             auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer);
                             outArr[outOffset] = inArr[inOffset];
@@ -136,7 +136,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                     if(inLength != numOfElemsToReverse) {
 
                         auto f2 = PRAGMA_THREADS_FOR {
-                            for (auto e = start; e < stop; e += increment) {
+                            for (auto e = start; e < stop; e++) {
                                 auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
                                 auto outOffset = shape::getIndexOffset(e, outShapeBuffer);
                                 outArr[outOffset] = inArr[inOffset];
@@ -151,7 +151,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void reverseSequence_(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
+static void reverseSequence_(sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
 
     int posOfNonUnityDim = -1;
     if(input->isVector() || shape::isLikeVector(input->getShapeInfo(), posOfNonUnityDim)) {
@@ -188,12 +188,12 @@ static void reverseSequence_(nd4j::LaunchContext * context, const NDArray* input
     }
 }
 
-    void reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
+    void reverseSequence(sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
         BUILD_SINGLE_SELECTOR(input->dataType(), reverseSequence_, (context, input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
+void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
 
     // we need to reverse axis only if that's new op
     std::vector<int> dimensions = isBackProp ? ShapeUtils::evalDimsToExclude(input->rankOf(), *intArgs) : *intArgs;
@@ -210,8 +210,8 @@ void reverse(nd4j::LaunchContext * context, const NDArray* input, NDArray* outpu
     }
 }
 
-BUILD_SINGLE_TEMPLATE(template void reverseSequence_, (nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void reverseArray, (nd4j::LaunchContext * context, void *inArr, Nd4jLong *inShapeBuffer, void *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void reverseSequence_, (sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void reverseArray, (sd::LaunchContext * context, void *inArr, Nd4jLong *inShapeBuffer, void *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
 
 
 }

@@ -18,13 +18,13 @@
 //  @author sgazeos@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_clip_by_global_norm)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(clip_by_global_norm, 1, 2, true, 1, 0) {
@@ -61,7 +61,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
 
     DECLARE_TYPES(clip_by_global_norm) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

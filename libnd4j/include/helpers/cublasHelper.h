@@ -21,12 +21,12 @@
 #ifndef DEV_TESTS_CUBLASHELPER_H
 #define DEV_TESTS_CUBLASHELPER_H
 
-#include <dll.h>
-#include <pointercast.h>
+#include <system/dll.h>
+#include <system/pointercast.h>
 #include <vector>
 #include <mutex>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT CublasHelper {
     private:
         static CublasHelper *_INSTANCE;

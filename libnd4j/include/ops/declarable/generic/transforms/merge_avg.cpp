@@ -18,13 +18,13 @@
 // Created by raver119 on 24.11.17.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_mergeavg)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 OP_IMPL(mergeavg, -1, 1, false) {

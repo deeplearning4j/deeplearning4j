@@ -19,8 +19,8 @@
 //
 
 #include <ops/specials_sparse.h>
-#include <dll.h>
-#include <pointercast.h>
+#include <system/dll.h>
+#include <system/pointercast.h>
 #include <stdio.h>
 #include <stdlib.h>
 #ifdef _OPENMP
@@ -29,7 +29,7 @@
 #include <types/float16.h>
 #include <types/types.h>
 
-namespace nd4j {
+namespace sd {
     namespace sparse {
 
         template <typename T>

@@ -20,7 +20,7 @@
 
 #include "../cublasHelper.h"
 
-namespace nd4j {
+namespace sd {
     static void* handle_() {
         return nullptr;
     }
@@ -39,7 +39,7 @@ namespace nd4j {
 
     CublasHelper* CublasHelper::getInstance() {
         if (!_INSTANCE)
-            _INSTANCE = new nd4j::CublasHelper();
+            _INSTANCE = new sd::CublasHelper();
 
         return _INSTANCE;
     }
@@ -57,5 +57,5 @@ namespace nd4j {
     }
 
 
-    nd4j::CublasHelper* nd4j::CublasHelper::_INSTANCE = 0;
+    sd::CublasHelper* sd::CublasHelper::_INSTANCE = 0;
 }

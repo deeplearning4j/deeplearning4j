@@ -20,7 +20,7 @@
 
 #include <memory/MemoryRegistrator.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
 
         MemoryRegistrator::MemoryRegistrator() {

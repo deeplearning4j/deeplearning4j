@@ -20,10 +20,10 @@
 
 #include <helpers/ShapeBuilders.h>
 
-namespace nd4j {
+namespace sd {
 
 
-    Nd4jLong* ShapeBuilders::createScalarShapeInfo(const nd4j::DataType dataType, nd4j::memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createScalarShapeInfo(const sd::DataType dataType, sd::memory::Workspace* workspace) {
         Nd4jLong *newShape;
         ALLOCATE(newShape, workspace, shape::shapeInfoLength(0), Nd4jLong);
         newShape[0] = 0;
@@ -31,12 +31,12 @@ namespace nd4j {
         newShape[2] = 1;
         newShape[3] = 99;
 
-        nd4j::ArrayOptions::setDataType(newShape, dataType);
+        sd::ArrayOptions::setDataType(newShape, dataType);
 
         return newShape;
     }
 
-    Nd4jLong* ShapeBuilders::createVectorShapeInfo(const nd4j::DataType dataType, const Nd4jLong length, nd4j::memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createVectorShapeInfo(const sd::DataType dataType, const Nd4jLong length, sd::memory::Workspace* workspace) {
         Nd4jLong *newShape;
         ALLOCATE(newShape, workspace, shape::shapeInfoLength(1), Nd4jLong);
 
@@ -47,13 +47,13 @@ namespace nd4j {
         newShape[4] = 1;
         newShape[5] = 99;
 
-        nd4j::ArrayOptions::setDataType(newShape, dataType);
+        sd::ArrayOptions::setDataType(newShape, dataType);
 
         return newShape;
     }
 
     ////////////////////////////////////////////////////////////////////////////////
-    Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, int rank, const Nd4jLong* shapeOnly, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char order, int rank, const Nd4jLong* shapeOnly, memory::Workspace* workspace) {
         Nd4jLong* shapeInfo = nullptr;
 
         if(rank == 0) {    // scalar case
@@ -79,19 +79,19 @@ namespace nd4j {
                 ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
             }
 
-            nd4j::ArrayOptions::setDataType(shapeInfo, dataType);
+            sd::ArrayOptions::setDataType(shapeInfo, dataType);
         }
 
         return shapeInfo;
     }
 
-    Nd4jLong* ShapeBuilders::emptyShapeInfo(const nd4j::DataType dataType, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, memory::Workspace* workspace) {
         auto shapeInfo = createScalarShapeInfo(dataType, workspace);
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
         return shapeInfo;
     }
 
-    Nd4jLong* ShapeBuilders::emptyShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong> &shape, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::emptyShapeInfo(const sd::DataType dataType, const char order, const std::vector<Nd4jLong> &shape, memory::Workspace* workspace) {
         auto shapeInfo = createShapeInfo(dataType, order, shape, workspace);
         memset(shape::stride(shapeInfo), 0, shape.size() * sizeof(Nd4jLong));
         ArrayOptions::setPropertyBit(shapeInfo, ARRAY_EMPTY);
@@ -99,13 +99,13 @@ namespace nd4j {
     }
 
 ////////////////////////////////////////////////////////////////////////////////
-    Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char order, const std::vector<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
 
         return ShapeBuilders::createShapeInfo(dataType, order, shapeOnly.size(), shapeOnly.data(), workspace);
     }
 
 ////////////////////////////////////////////////////////////////////////////////
-    Nd4jLong* ShapeBuilders::createShapeInfo(const nd4j::DataType dataType, const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
+    Nd4jLong* ShapeBuilders::createShapeInfo(const sd::DataType dataType, const char order, const std::initializer_list<Nd4jLong>& shapeOnly, memory::Workspace* workspace) {
 
         return ShapeBuilders::createShapeInfo(dataType, order, std::vector<Nd4jLong>(shapeOnly), workspace);
     }

@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_check_numerics)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         CUSTOM_OP_IMPL(check_numerics, 2, 1, true, 0, 0) {
@@ -47,7 +47,7 @@ namespace nd4j {
         DECLARE_TYPES(check_numerics) {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, nd4j::DataType::UTF8)
+                    ->setAllowedInputTypes(1, sd::DataType::UTF8)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

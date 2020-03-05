@@ -19,21 +19,21 @@
 //
 
 #include <execution/LaunchContext.h>
-#include <logger.h>
+#include <helpers/logger.h>
 #include <exceptions/cuda_exception.h>
 #include <thread>
 
-#if defined(IOS_BUILD) || defined(APPLE_BUILD) || defined(ANDROID_BUILD)
-nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
+#if defined(SD_IOS_BUILD) || defined(SD_APPLE_BUILD) || defined(SD_ANDROID_BUILD)
+sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 #else
-thread_local nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
+thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 #endif
 
 #ifdef HAVE_MKLDNN
 #include <dnnl.hpp>
 #endif
 
-namespace nd4j {
+namespace sd {
 
     LaunchContext::~LaunchContext() {
 #ifdef HAVE_MKLDNN

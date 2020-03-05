@@ -16,7 +16,7 @@
 
 #include <ops/declarable/helpers/compare_elem.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -107,21 +107,21 @@ namespace nd4j {
             }
 
             template<typename T>
-            static void _compare_elem(nd4j::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
+            static void _compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
                 auto z = NDArrayFactory::create<bool>(false, context);
 
                 const int numThreads = 256;
-                const int numBlocks = nd4j::math::nd4j_min<int>(128, nd4j::math::nd4j_max<int>(1, input->lengthOf() / numThreads));
+                const int numBlocks = sd::math::nd4j_min<int>(128, sd::math::nd4j_max<int>(1, input->lengthOf() / numThreads));
 
                 comparator<T><<<numBlocks, numThreads, numThreads * 4 + 1024, *context->getCudaStream()>>>(input->specialBuffer(), input->specialShapeInfo(), input->lengthOf(), isStrictlyIncreasing, context->getReductionPointer(), reinterpret_cast<bool *>(z.specialBuffer()));
 
                 z.tickWriteDevice();
-                nd4j::DebugHelper::checkErrorCode(context->getCudaStream(), "is_strictly_increasing");
+                sd::DebugHelper::checkErrorCode(context->getCudaStream(), "is_strictly_increasing");
 
                 output = z.e<bool>(0);
             }
 
-            void compare_elem(nd4j::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
+            void compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
                 auto xType = input->dataType();
                 input->syncToDevice();
 
@@ -129,7 +129,7 @@ namespace nd4j {
             }
 
 
-            BUILD_SINGLE_TEMPLATE(template void _compare_elem, (nd4j::LaunchContext * context, NDArray *A, bool isStrictlyIncreasing, bool& output);, LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void _compare_elem, (sd::LaunchContext * context, NDArray *A, bool isStrictlyIncreasing, bool& output);, LIBND4J_TYPES);
         }
     }
 }

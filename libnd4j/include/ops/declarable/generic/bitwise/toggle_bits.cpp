@@ -18,14 +18,14 @@
 // Created by raver119 on 23.11.17.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_toggle_bits)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/helpers.h>
 #include <ops/declarable/helpers/toggle_bits.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(toggle_bits, -1, -1, true) {
 

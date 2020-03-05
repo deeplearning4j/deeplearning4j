@@ -19,9 +19,9 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <ShapeUtils.h>
-#include <reduce3.h>
+#include <array/NDArray.h>
+#include <helpers/ShapeUtils.h>
+#include <loops/reduce3.h>
 #include <ops/declarable/LegacyTransformOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
@@ -31,10 +31,10 @@
 #include <ops/declarable/LegacyBroadcastOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
-#include <type_conversions.h>
+#include <loops/type_conversions.h>
 #include <ops/declarable/CustomOperations.h>
-using namespace nd4j;
-using namespace nd4j::ops;
+using namespace sd;
+using namespace sd::ops;
 
 class NativeOpsTests : public testing::Test {
 public:
@@ -76,7 +76,7 @@ printf("Unsupported for cuda now.\n");
 //    auto exp = NDArrayFactory::create<float>('c', {5, 5});
 //    exp.assign(-1.0);
 //
-//    nd4j::ops::LegacyTransformSameOp op(transform::Neg); // Neg
+//    sd::ops::LegacyTransformSameOp op(transform::Neg); // Neg
 //    auto result = op.execute({&x}, {}, {});
 //
 //    ASSERT_EQ(1, result->size());
@@ -95,7 +95,7 @@ TEST_F(NativeOpsTests, ThresholdTests_1) {
     printf("Unsupported for cuda now.\n");
 #else
     ::setElementThreshold(4);
-    ASSERT_TRUE(4 == nd4j::Environment::getInstance()->elementwiseThreshold());
+    ASSERT_TRUE(4 == sd::Environment::getInstance()->elementwiseThreshold());
 #endif
 
 }
@@ -107,7 +107,7 @@ TEST_F(NativeOpsTests, ThresholdTests_2) {
     printf("Unsupported for cuda now.\n");
 #else
     ::setTADThreshold(4);
-    ASSERT_TRUE(4 == nd4j::Environment::getInstance()->tadThreshold());
+    ASSERT_TRUE(4 == sd::Environment::getInstance()->tadThreshold());
 #endif
 
 }
@@ -644,8 +644,8 @@ TEST_F(NativeOpsTests, Reduce3Test_4) {
     x.syncToDevice();
     dimension.syncToHost();
     int* dimensions = reinterpret_cast<int*>(dimension.buffer());
-    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
-    auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), dimensions, dimension.lengthOf());
+    auto tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
+    auto tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), dimensions, dimension.lengthOf());
 
     auto hTADShapeInfoX = tadPackX.primaryShapeInfo();
     auto hTADOffsetsX = tadPackX.primaryOffsets();
@@ -963,8 +963,8 @@ TEST_F(NativeOpsTests, ScalarTadTest_1) {
     z.syncToDevice();
     auto dimension = NDArrayFactory::create<int>({0, 1});
     auto dimensions = reinterpret_cast<int*>(dimension.buffer());
-    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
-    auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
+    auto tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
+    auto tadPackZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
 
     OpaqueDataBuffer xBuf(x.dataBuffer());
     OpaqueDataBuffer yBuf(y.dataBuffer());
@@ -1008,8 +1008,8 @@ TEST_F(NativeOpsTests, ScalarTadTest_2) {
     z.syncToDevice();
     auto dimension = NDArrayFactory::create<int>({0, 1});
     auto dimensions = reinterpret_cast<int*>(dimension.buffer());
-    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
-    auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
+    auto tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
+    auto tadPackZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
     z.assign(true);
 
     OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -1057,8 +1057,8 @@ TEST_F(NativeOpsTests, ConcatTest_2) {
     int d = 0;
     auto dimension = NDArrayFactory::create<int>('c', {1}, {d});
     auto dimensions = reinterpret_cast<int*>(dimension.buffer());
-    //auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
-    auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
+    //auto tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
+    auto tadPackZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
     exp.linspace(1);
     Nd4jPointer datas[] = {x.buffer(), y.buffer()};
     Nd4jPointer shapes[] = {x.shapeInfo(), y.shapeInfo()};
@@ -1117,7 +1117,7 @@ TEST_F(NativeOpsTests, MemTest_1) {
 
 TEST_F(NativeOpsTests, PullRowsTest_1) {
     NDArray x('c', {5, 1}, {0,1,2,3,4});
-    NDArray z('c', {4, 1}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {4, 1}, sd::DataType::DOUBLE);
     NDArray exp('c', {4, 1}, {0,2,3,4});
 
     Nd4jLong indexes[] = {0,2,3,4};
@@ -1126,8 +1126,8 @@ TEST_F(NativeOpsTests, PullRowsTest_1) {
 
     std::vector<int> dims = {1};
 
-    auto xTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
-    auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
+    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
+    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
     Nd4jPointer nativeStart[2];
 
@@ -1151,7 +1151,7 @@ TEST_F(NativeOpsTests, TadPackTest_1) {
     int dimension[] = {1};
     int const dimensionLength = 1;
     auto x = NDArrayFactory::create<int>('c', {2,3,4});
-    nd4j::TadPack* pack = ::tadOnlyShapeInfo(x.shapeInfo(),
+    sd::TadPack* pack = ::tadOnlyShapeInfo(x.shapeInfo(),
                                     dimension,
                                     dimensionLength);
     ASSERT_TRUE(pack != nullptr);
@@ -1231,7 +1231,7 @@ TEST_F(NativeOpsTests, ShuffleTest_1) {
     Nd4jPointer zShapeList[] = {z.shapeInfo(), z.shapeInfo()};
     Nd4jPointer dzShapeList[] = {z.specialShapeInfo(), z.specialShapeInfo()};
     int shuffleMap[] = {1, 0, 4, 3, 2};
-    auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
     Nd4jPointer zListOffset[] = {zTadPack.platformOffsets(), zTadPack.platformOffsets()};
     Nd4jPointer zListTADs[] = {zTadPack.platformShapeInfo(), zTadPack.platformShapeInfo()};
     ::shuffle(nullptr,
@@ -1268,7 +1268,7 @@ TEST_F(NativeOpsTests, ConvertTypesTest_1) {
 //    auto y = NDArrayFactory::create<float>('c', {5,5});
 //
 //
-//    ops.execAggregate(nullptr, 0, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIndexArguments, maxRealArguments, pointer.data(), nd4j::DataType::FLOAT32);
+//    ops.execAggregate(nullptr, 0, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIndexArguments, maxRealArguments, pointer.data(), sd::DataType::FLOAT32);
 //    void **arguments,
 //    int numArguments,
 //    Nd4jLong **shapeArguments,
@@ -1279,7 +1279,7 @@ TEST_F(NativeOpsTests, ConvertTypesTest_1) {
 //    int numIntArrays,
 //    void *realArguments,
 //    int numRealArguments,
-//    nd4j::DataType dtype
+//    sd::DataType dtype
 //}
 
 TEST_F(NativeOpsTests, RandomTest_1) {
@@ -1492,7 +1492,7 @@ TEST_F(NativeOpsTests, CustomOpTest_1) {
     auto z = NDArrayFactory::create<float>('c', {6});
     auto e = NDArrayFactory::create<float>('c', {6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
 
-    nd4j::ops::squeeze op;
+    sd::ops::squeeze op;
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), x.getSpecialBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), x.getSpecialShapeInfo()};
@@ -1522,7 +1522,7 @@ TEST_F(NativeOpsTests, CustomOpTests_2) {
 
     ASSERT_EQ(2, ctx.width());
 
-    nd4j::ops::add op;
+    sd::ops::add op;
     ::execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
     NDArray::registerSpecialUse({&z}, {&array0, &array1});
@@ -1534,7 +1534,7 @@ TEST_F(NativeOpsTests, CalculateOutputShapeTests_1) {
     auto weights = NDArrayFactory::create<float>('c', {2, 2, 2, 3});
     auto exp = NDArrayFactory::create<float>('c', {1, 3, 5, 4});
 
-    nd4j::ops::conv2d op;
+    sd::ops::conv2d op;
 
     std::vector<double> tArgs({});
     std::vector<Nd4jLong> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -1566,7 +1566,7 @@ TEST_F(NativeOpsTests, CalculateOutputShapeTests_2) {
     auto weights = NDArrayFactory::create<float>('c', {2, 2, 2, 3});
     auto exp = NDArrayFactory::create<float>('c', {1, 3, 5, 4});
 
-    nd4j::ops::conv2d op;
+    sd::ops::conv2d op;
 
     std::vector<double> tArgs({});
     std::vector<bool> bArgsF({});

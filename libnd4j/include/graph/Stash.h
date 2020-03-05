@@ -22,44 +22,70 @@
 #define LIBND4J_STASH_H
 
 //#include <graph/Block.h>
-#include <NDArray.h>
-#include <unordered_map>
+#include <array/NDArray.h>
+#include <map>
+#include <vector>
 #include <string>
 #include <atomic>
-#include <pointercast.h>
+#include <functional>
+#include <system/pointercast.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT KeyPair {
             int _node;
             std::string _name;
         public:
-            KeyPair(int node = 0, const char * name = nullptr);
+            KeyPair(int node = 0, const char *name = nullptr);
 
-            bool operator<(const KeyPair& other) const;
+            bool operator<(const KeyPair &other) const;
+
+            bool operator==(const KeyPair &other) const {
+                return _node == other._node;
+            }
+
+            int key() const { return _node; }
+            std::string name() const { return _name; }
         };
+    }
+}
 
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+    template <>
+    class ND4J_EXPORT hash<sd::graph::KeyPair> {
+    public:
+        size_t operator()(const sd::graph::KeyPair& k) const;
+    };
+};
+
+#endif
+
+namespace sd {
+    namespace graph {
         class ND4J_EXPORT Stash {
         protected:
-            std::map<nd4j::graph::KeyPair, nd4j::NDArray*> _stash;
-            std::vector<nd4j::NDArray*> _handles;
+            std::map<sd::graph::KeyPair, sd::NDArray*> _stash;
+            std::vector<sd::NDArray*> _handles;
 
         public:
             Stash();
             ~Stash();
 
-            //void storeArray(nd4j::graph::Block<T>& block, const char *name, nd4j::NDArray<T> *array);
-            void storeArray(int nodeId, const char *name, nd4j::NDArray *array);
+            //void storeArray(sd::graph::Block<T>& block, const char *name, sd::NDArray<T> *array);
+            void storeArray(int nodeId, const char *name, sd::NDArray *array);
 
-            //bool checkStash(nd4j::graph::Block<T>& block, const char *name);
+            //bool checkStash(sd::graph::Block<T>& block, const char *name);
             bool checkStash(int nodeId, const char *name);
 
-            //nd4j::NDArray<T>* extractArray(nd4j::graph::Block<T>& block, const char *name);
-            nd4j::NDArray* extractArray(int nodeId, const char *name);
+            //sd::NDArray<T>* extractArray(sd::graph::Block<T>& block, const char *name);
+            sd::NDArray* extractArray(int nodeId, const char *name);
 
             void clear();
         };
     }
+
 }
 
 

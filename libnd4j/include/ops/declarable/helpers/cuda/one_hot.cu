@@ -23,14 +23,14 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
 
-namespace nd4j 		{
+namespace sd 		{
 namespace ops		{
 namespace helpers 	{
 
@@ -86,7 +86,7 @@ static void onehotCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void onehot(const nd4j::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
+void onehot(const sd::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
 
 	const auto xType = indices->dataType();
 	const auto zType = output->dataType();

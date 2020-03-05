@@ -19,12 +19,12 @@
 //
 
 #include "testlayers.h"
-#include <Graph.h>
-#include <Node.h>
+#include <graph/Graph.h>
+#include <graph/Node.h>
 #include <ops/declarable/CustomOperations.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class SanityTests : public testing::Test {
 public:

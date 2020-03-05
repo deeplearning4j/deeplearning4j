@@ -21,10 +21,10 @@
 #ifndef LIBND4J_LOGICEXIT_H
 #define LIBND4J_LOGICEXIT_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/Graph.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class LogicExit {
         public:

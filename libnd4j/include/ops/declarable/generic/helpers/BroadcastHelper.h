@@ -21,17 +21,17 @@
 #ifndef LIBND4J_BROADCAST_HELPER_H
 #define LIBND4J_BROADCAST_HELPER_H
 
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/BroadcastOpsTuple.h>
 #include <ops/BroadcastBoolOpsTuple.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         class BroadcastHelper {
         public:
-            static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z, ExtraArguments *extraArgs = nullptr) {
+            static FORCEINLINE NDArray* broadcastApply(sd::BroadcastOpsTuple op, NDArray* x, NDArray* y, NDArray* z, ExtraArguments *extraArgs = nullptr) {
 
                 if(x->isEmpty() || y->isEmpty()) {
                     if(!z->isEmpty())
@@ -98,7 +98,7 @@ namespace nd4j {
                 return z;
             }
 
-            static FORCEINLINE NDArray* broadcastApply(nd4j::BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z, ExtraArguments *extraArgs = nullptr) {
+            static FORCEINLINE NDArray* broadcastApply(sd::BroadcastBoolOpsTuple op, NDArray* x, NDArray* y, NDArray* z, ExtraArguments *extraArgs = nullptr) {
 
                 if(x->isEmpty() || y->isEmpty()) {
                     if(!z->isEmpty())

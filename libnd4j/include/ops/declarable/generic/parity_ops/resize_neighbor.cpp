@@ -19,14 +19,14 @@
 //  @author sgazeos@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_resize_nearest_neighbor)
 
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/image_resize.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(resize_nearest_neighbor, 1, 1, false, 0, -2) {
 

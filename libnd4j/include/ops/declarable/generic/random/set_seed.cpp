@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_set_seed)
 
 #include <ops/declarable/CustomOperations.h>
-#include <NativeOps.h>
+#include <legacy/NativeOps.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(set_seed, -2, 1, false, 0, -2) {
 //            REQUIRE_TRUE(block.getRNG() != nullptr, 0, "RNG should be defined in Graph");

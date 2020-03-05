@@ -18,14 +18,14 @@
 // @author Paul Dubs
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_standardize)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverse.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
     CONFIGURABLE_OP_IMPL(standardize, 1, 1, true, 0, -2) {
@@ -48,9 +48,9 @@ namespace ops  {
         auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
         stdev.reshapei(means.getShapeAsVector());
 
-        input->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), means, *output, false);
-        output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, *output, false);
-        output->applyScalar(nd4j::scalar::ReplaceNans, 0, *output);
+        input->applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), means, *output, false);
+        output->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, *output, false);
+        output->applyScalar(sd::scalar::ReplaceNans, 0, *output);
 
         return Status::OK();
     }
@@ -84,7 +84,7 @@ namespace ops  {
         auto stdev = input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, false, axis);
         stdev.reshapei(means.getShapeAsVector());
 
-        eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, *output, false);
+        eps->applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, *output, false);
 
         NDArray dldu_sum = -output->reduceAlongDimension(reduce::Sum, axis, true);
 
@@ -94,16 +94,16 @@ namespace ops  {
         std::vector<double> meanBpTArgs = {};
         std::vector<bool> meanBpBArgs = {};
 
-        nd4j::ops::reduce_mean_bp meanBp;
+        sd::ops::reduce_mean_bp meanBp;
         meanBp.execute(meanBpArgs, meanBpOutput, meanBpTArgs, longAxis, meanBpBArgs);
         *output += dldx_u;
 
         // (eps * (means - input) / (stdev * stdev))
         NDArray tmp(eps->shapeInfo(), false, block.launchContext());
-        means.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), *input, tmp, false);
-        tmp.applyPairwiseTransform(nd4j::pairwise::Multiply, *eps, tmp);
-        stdev.applyPairwiseTransform(nd4j::pairwise::Multiply, stdev, stdev);
-        tmp.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Divide(), stdev, tmp, false);
+        means.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), *input, tmp, false);
+        tmp.applyPairwiseTransform(sd::pairwise::Multiply, *eps, tmp);
+        stdev.applyPairwiseTransform(sd::pairwise::Multiply, stdev, stdev);
+        tmp.applyTrueBroadcast(sd::BroadcastOpsTuple::Divide(), stdev, tmp, false);
 
         auto dlds_sum = tmp.reduceAlongDimension(reduce::Sum, axis, true);
         NDArray dldx_s(input->shapeInfo(), false, block.launchContext());
@@ -111,18 +111,18 @@ namespace ops  {
         std::vector<NDArray*> stdevBpOutput = {&dldx_s};
         std::vector<double> stdevBpTArgs = {};
         std::vector<bool> stdevBpBArgs = {};
-        nd4j::ops::reduce_stdev_bp stdevBp;
+        sd::ops::reduce_stdev_bp stdevBp;
         stdevBp.execute(stdevBpArgs,  stdevBpOutput, stdevBpTArgs, longAxis, stdevBpBArgs);
         *output += dldx_s;
 
-        output->applyScalar(nd4j::scalar::ReplaceNans, 0, *output);
+        output->applyScalar(sd::scalar::ReplaceNans, 0, *output);
 
         return Status::OK();
     }
 
     DECLARE_TYPES(standardize_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

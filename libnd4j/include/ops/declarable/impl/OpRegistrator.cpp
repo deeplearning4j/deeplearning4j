@@ -23,7 +23,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <sstream>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         ///////////////////////////////
@@ -42,7 +42,7 @@ namespace nd4j {
                 std::string newName(name);
                 std::string oldName(oname);
 
-                OpRegistrator::getInstance()->updateMSVC(nd4j::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+                OpRegistrator::getInstance()->updateMSVC(sd::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
                 return;
             }
             OpRegistrator::getInstance()->registerOperation(name, ptr);
@@ -53,7 +53,7 @@ namespace nd4j {
 
         OpRegistrator* OpRegistrator::getInstance() {
             if (!_INSTANCE)
-                _INSTANCE = new nd4j::ops::OpRegistrator();
+                _INSTANCE = new sd::ops::OpRegistrator();
 
             return _INSTANCE;
         }
@@ -130,7 +130,7 @@ namespace nd4j {
             _locker.lock();
 
             if (!isInit) {
-                for (std::map<std::string, nd4j::ops::DeclarableOp*>::iterator it=_declarablesD.begin(); it!=_declarablesD.end(); ++it) {
+                for (MAP_IMPL<std::string, sd::ops::DeclarableOp*>::iterator it=_declarablesD.begin(); it!=_declarablesD.end(); ++it) {
                     std::string op = it->first + ":"
                                      + local_to_string(it->second->getOpDescriptor()->getHash()) + ":"
                                      + local_to_string(it->second->getOpDescriptor()->getNumberOfInputs()) + ":"
@@ -151,13 +151,13 @@ namespace nd4j {
         }
 
 
-        bool OpRegistrator::registerOperation(const char* name, nd4j::ops::DeclarableOp* op) {
+        bool OpRegistrator::registerOperation(const char* name, sd::ops::DeclarableOp* op) {
             std::string str(name);
-            std::pair<std::string, nd4j::ops::DeclarableOp*> pair(str, op);
+            std::pair<std::string, sd::ops::DeclarableOp*> pair(str, op);
             _declarablesD.insert(pair);
 
-            auto hash = nd4j::ops::HashHelper::getInstance()->getLongHash(str);
-            std::pair<Nd4jLong, nd4j::ops::DeclarableOp*> pair2(hash, op);
+            auto hash = sd::ops::HashHelper::getInstance()->getLongHash(str);
+            std::pair<Nd4jLong, sd::ops::DeclarableOp*> pair2(hash, op);
             _declarablesLD.insert(pair2);
             return true;
         }
@@ -167,12 +167,12 @@ namespace nd4j {
          *
          * @param op
          */
-        bool OpRegistrator::registerOperation(nd4j::ops::DeclarableOp *op) {
+        bool OpRegistrator::registerOperation(sd::ops::DeclarableOp *op) {
             _uniqueD.emplace_back(op);
             return registerOperation(op->getOpName()->c_str(), op);
         }
 
-        void OpRegistrator::registerHelper(nd4j::ops::platforms::PlatformHelper* op) {
+        void OpRegistrator::registerHelper(sd::ops::platforms::PlatformHelper* op) {
             std::pair<Nd4jLong, samediff::Engine> p = {op->hash(), op->engine()};
             if (_helpersLH.count(p) > 0)
                 throw std::runtime_error("Tried to double register PlatformHelper");
@@ -181,14 +181,14 @@ namespace nd4j {
 
             nd4j_debug("Adding helper for op \"%s\": [%lld - %i]\n", op->name().c_str(), op->hash(), (int) op->engine());
 
-            std::pair<std::pair<std::string, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> pair({op->name(), op->engine()}, op);
+            std::pair<std::pair<std::string, samediff::Engine>, sd::ops::platforms::PlatformHelper*> pair({op->name(), op->engine()}, op);
             _helpersH.insert(pair);
 
-            std::pair<std::pair<Nd4jLong, samediff::Engine>, nd4j::ops::platforms::PlatformHelper*> pair2(p, op);
+            std::pair<std::pair<Nd4jLong, samediff::Engine>, sd::ops::platforms::PlatformHelper*> pair2(p, op);
             _helpersLH.insert(pair2);
         }
 
-        nd4j::ops::DeclarableOp* OpRegistrator::getOperation(const char *name) {
+        sd::ops::DeclarableOp* OpRegistrator::getOperation(const char *name) {
             std::string str(name);
             return getOperation(str);
         }
@@ -199,7 +199,7 @@ namespace nd4j {
          * @param name
          * @return
          */
-        nd4j::ops::DeclarableOp *OpRegistrator::getOperation(Nd4jLong hash) {
+        sd::ops::DeclarableOp *OpRegistrator::getOperation(Nd4jLong hash) {
             if (!_declarablesLD.count(hash)) {
                 if (!_msvc.count(hash)) {
                     nd4j_printf("Unknown D operation requested by hash: [%lld]\n", hash);
@@ -211,7 +211,7 @@ namespace nd4j {
                     auto op = _declarablesD.at(str);
                     auto oHash = op->getOpDescriptor()->getHash();
 
-                    std::pair<Nd4jLong, nd4j::ops::DeclarableOp*> pair(oHash, op);
+                    std::pair<Nd4jLong, sd::ops::DeclarableOp*> pair(oHash, op);
                     _declarablesLD.insert(pair);
 
                     _locker.unlock();
@@ -221,7 +221,7 @@ namespace nd4j {
             return _declarablesLD.at(hash);
         }
 
-        nd4j::ops::DeclarableOp *OpRegistrator::getOperation(std::string& name) {
+        sd::ops::DeclarableOp *OpRegistrator::getOperation(std::string& name) {
             if (!_declarablesD.count(name)) {
                 nd4j_debug("Unknown operation requested: [%s]\n", name.c_str());
                 return nullptr;
@@ -230,7 +230,7 @@ namespace nd4j {
             return _declarablesD.at(name);
         }
 
-        nd4j::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash, samediff::Engine engine) {
+        sd::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash, samediff::Engine engine) {
             std::pair<Nd4jLong, samediff::Engine> p = {hash, engine};
             if (_helpersLH.count(p) == 0)
                 throw std::runtime_error("Requested helper can't be found");
@@ -257,7 +257,23 @@ namespace nd4j {
             return result;
         }
 
-        nd4j::ops::OpRegistrator* nd4j::ops::OpRegistrator::_INSTANCE = 0;
+        sd::ops::OpRegistrator* sd::ops::OpRegistrator::_INSTANCE = 0;
+    }
+}
+
+namespace std {
+    size_t hash<std::pair<Nd4jLong, samediff::Engine>>::operator()(const std::pair<Nd4jLong, samediff::Engine>& k) const {
+        using std::hash;
+        auto res = std::hash<Nd4jLong>()(k.first);
+        res ^= std::hash<int>()((int) k.second)  + 0x9e3779b9 + (res << 6) + (res >> 2);
+        return res;
+    }
+
+    size_t hash<std::pair<std::string, samediff::Engine>>::operator()(const std::pair<std::string, samediff::Engine>& k) const {
+        using std::hash;
+        auto res = std::hash<std::string>()(k.first);
+        res ^= std::hash<int>()((int) k.second)  + 0x9e3779b9 + (res << 6) + (res >> 2);
+        return res;
     }
 }
 

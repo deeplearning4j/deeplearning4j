@@ -19,15 +19,15 @@
 //
 
 #include <execution/LaunchContext.h>
-#include <logger.h>
+#include <helpers/logger.h>
 #include <exceptions/cuda_exception.h>
 #include <helpers/cublasHelper.h>
 #include <thread>
 #include <execution/AffinityManager.h>
 
-thread_local nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
+thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 
-namespace nd4j {
+namespace sd {
 
     std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
     std::mutex LaunchContext::_mutex;

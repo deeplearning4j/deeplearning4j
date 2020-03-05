@@ -19,14 +19,14 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <ops/declarable/helpers/activations.h>
-#include <ShapeUtils.h>
+#include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -79,7 +79,7 @@ linkage void preluCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
+void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
 
 	PointersManager manager(context, "prelu");
 
@@ -147,7 +147,7 @@ __global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeI
 
 			dLdI[dLdIOffset] =  grO * alpha[alphaOffset];
 
-			nd4j::math::atomics::nd4j_atomicAdd<Y>(&dLdA[dLdAOffset], static_cast<Y>(grO * xVal));
+			sd::math::atomics::nd4j_atomicAdd<Y>(&dLdA[dLdAOffset], static_cast<Y>(grO * xVal));
 		}
 		else
 			dLdI[dLdIOffset] = grO;
@@ -162,7 +162,7 @@ __host__ linkage void preluBPCudaLauncher(const int blocksPerGrid, const int thr
 }
 
 //////////////////////////////////////////////////////////////////////////
-void preluBP(nd4j::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+void preluBP(sd::LaunchContext* context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
     dLdA.nullify();
 
 	PointersManager manager(context, "preluBP");
@@ -211,7 +211,7 @@ __device__ void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
 			const Nd4jLong xOffset = shape::getIndexOffset(elemIdx, xShapeInfo);
-			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[xOffset] : nd4j::math::nd4j_max<T>(x[xOffset], temp);	// take into account max element evaluated on previous iteration and stored in temp
+			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[xOffset] : sd::math::nd4j_max<T>(x[xOffset], temp);	// take into account max element evaluated on previous iteration and stored in temp
 		}
 		else
 			shmem[threadIdx.x] = -DataTypeUtils::max<T>();	// FIXME: what if T is unsigned ??
@@ -220,7 +220,7 @@ __device__ void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
 		for (int s = blockDim.x / 2; s > 0; s /= 2) {
 			if(threadIdx.x < s)
-				shmem[threadIdx.x] = nd4j::math::nd4j_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
+				shmem[threadIdx.x] = sd::math::nd4j_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
 			__syncthreads();
 		}
 
@@ -238,7 +238,7 @@ __device__ void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
 		if(elemIdx < len) {
 			const Nd4jLong xOffset = shape::getIndexOffset(elemIdx, xShapeInfo);
 			const Nd4jLong zOffset = shape::getIndexOffset(elemIdx, zShapeInfo);
-			z[zOffset] = nd4j::math::nd4j_exp<T, T>(x[xOffset] - max);
+			z[zOffset] = sd::math::nd4j_exp<T, T>(x[xOffset] - max);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? z[zOffset] : (z[zOffset] + temp); // take into account sum element evaluated on previous iteration and stored in temp
 		}
 		else
@@ -302,7 +302,7 @@ static void softMaxCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 
 
 //////////////////////////////////////////////////////////////////////////
-void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+void softmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -321,8 +321,8 @@ void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& outpu
 	}
 	else {
 
-		auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {dimension});
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), {dimension});
+		auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {dimension});
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), {dimension});
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = packZ.numberOfTads();
@@ -374,7 +374,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
 			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
-			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : nd4j::math::nd4j_max<T>(x[offset], temp);	// take into account max element evaluated on previous iteration and stored in temp
+			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : sd::math::nd4j_max<T>(x[offset], temp);	// take into account max element evaluated on previous iteration and stored in temp
 		}
 		else
 			shmem[threadIdx.x] = -DataTypeUtils::max<T>();	// FIXME: what if T is unsigned ??
@@ -383,7 +383,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 
 		for (int s = blockDim.x / 2; s > 0; s /= 2) {
 			if(threadIdx.x < s)
-				shmem[threadIdx.x] = nd4j::math::nd4j_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
+				shmem[threadIdx.x] = sd::math::nd4j_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
 			__syncthreads();
 		}
 
@@ -400,7 +400,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
 			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
-			z[offset] = nd4j::math::nd4j_exp<T, T>(x[offset] - max);
+			z[offset] = sd::math::nd4j_exp<T, T>(x[offset] - max);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp); // take into account sum element evaluated on previous iteration and stored in temp
 		}
 		else
@@ -422,7 +422,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx >= len) continue;
 		const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
-		z[offset] = nd4j::math::nd4j_log<T,T>(z[offset] / shmem[0]);
+		z[offset] = sd::math::nd4j_log<T,T>(z[offset] / shmem[0]);
 	}
 }
 
@@ -434,7 +434,7 @@ linkage void logSoftMaxForVectorCudaLauncher(const cudaStream_t* stream, const v
 }
 
 //////////////////////////////////////////////////////////////////////////
-void logSoftmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+void logSoftmax(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -493,7 +493,7 @@ __global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
 			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
-			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : nd4j::math::nd4j_max<T>(x[offset], temp);	// take into account max element evaluated on previous iteration and stored in temp
+			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : sd::math::nd4j_max<T>(x[offset], temp);	// take into account max element evaluated on previous iteration and stored in temp
 		}
 		else
 			shmem[threadIdx.x] = -DataTypeUtils::max<T>();	// FIXME: what if T is unsigned ??
@@ -502,7 +502,7 @@ __global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong
 
 		for (int s = blockDim.x / 2; s > 0; s /= 2) {
 			if(threadIdx.x < s)
-				shmem[threadIdx.x] = nd4j::math::nd4j_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
+				shmem[threadIdx.x] = sd::math::nd4j_max<T>(shmem[threadIdx.x], shmem[threadIdx.x + s]);
 			__syncthreads();
 		}
 
@@ -519,7 +519,7 @@ __global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
 			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
-			z[offset] = nd4j::math::nd4j_exp<T, T>(x[offset] - max);
+			z[offset] = sd::math::nd4j_exp<T, T>(x[offset] - max);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp); // take into account sum element evaluated on previous iteration and stored in temp
 		}
 		else
@@ -554,7 +554,7 @@ linkage void softMaxDerivForVectorCudaLauncher(const cudaStream_t* stream, const
 }
 
 ///////////////////////////////////////////////////////////////////
-void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
+void softmaxDerivative(sd::LaunchContext * context, const NDArray& input, NDArray& output, const int dimension) {
 
 	if(!input.isActualOnDeviceSide()) input.syncToDevice();
 	const int rank = input.rankOf();
@@ -590,7 +590,7 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 		const_cast<NDArray&>(input).applyLambda(routine, output);
 	}
 
-	void thresholdRelu(nd4j::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
+	void thresholdRelu(sd::LaunchContext * context, NDArray const& input, double threshold, NDArray& output) {
 		BUILD_SINGLE_SELECTOR(input.dataType(), thresholdRelu_, (input, threshold, output), FLOAT_TYPES);
 	}
 
@@ -601,7 +601,7 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
         input->applyPairwiseLambda(*dLdO, derivative, *output);
 	}
 
-	void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
+	void thresholdReluDerivative(sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
 		BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
 	}
 

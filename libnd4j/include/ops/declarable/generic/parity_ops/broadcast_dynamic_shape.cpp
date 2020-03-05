@@ -18,12 +18,12 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_broadcast_dynamic_shape)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
@@ -46,8 +46,8 @@ CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
     // fill rank and data type
     xShapeInfo[0] = x->lengthOf();
     yShapeInfo[0] = y->lengthOf();
-    ArrayOptions::setDataType(xShapeInfo.data(), nd4j::DataType::INT64); // fill with some data type, it doesn't matter what type exactly to choose
-    ArrayOptions::setDataType(yShapeInfo.data(), nd4j::DataType::INT64);
+    ArrayOptions::setDataType(xShapeInfo.data(), sd::DataType::INT64); // fill with some data type, it doesn't matter what type exactly to choose
+    ArrayOptions::setDataType(yShapeInfo.data(), sd::DataType::INT64);
 
     for (Nd4jLong i = 0; i < x->lengthOf(); ++i)
         xShapeInfo[i + 1] = x->e<Nd4jLong>(i);

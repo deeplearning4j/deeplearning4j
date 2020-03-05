@@ -18,8 +18,8 @@
 // @author raver119@gmail.com
 //
 
-#include <NativeOps.h>
-#include <NDArray.h>
+#include <legacy/NativeOps.h>
+#include <array/NDArray.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/OpRegistrator.h>
 #include <graph/GraphHolder.h>
@@ -27,8 +27,8 @@
 #include "testlayers.h"
 #include <array>
 
-using namespace nd4j;
-using namespace nd4j::ops;
+using namespace sd;
+using namespace sd::ops;
 
 class JavaInteropTests : public testing::Test {
 public:
@@ -41,7 +41,7 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
     auto weights = NDArrayFactory::create<float>('c', {2, 2, 2, 3});
     auto exp = NDArrayFactory::create<float>('c', {1, 3, 5, 4});
 
-    nd4j::ops::conv2d op;
+    sd::ops::conv2d op;
 
     std::vector<double> tArgs({});
     std::vector<Nd4jLong> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
@@ -70,7 +70,7 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
     auto input = NDArrayFactory::create<float>('c', {1, 2, 5, 4});
     auto exp = NDArrayFactory::create<float>('c', {4}, {1, 2, 5, 4});
 
-    nd4j::ops::shape_of op;
+    sd::ops::shape_of op;
 
     std::vector<double> tArgs({});
     std::vector<Nd4jLong> iArgs({});
@@ -107,7 +107,7 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     Nd4jPointer inputBuffers[] = {x.buffer(), sizes.buffer(), x.getSpecialBuffer(), sizes.getSpecialBuffer()};
     Nd4jPointer inputShapes[] = {x.shapeInfo(), sizes.shapeInfo(), x.getSpecialShapeInfo(), sizes.getSpecialShapeInfo()};
 
-    nd4j::ops::split_v op;
+    sd::ops::split_v op;
 
     Nd4jLong iArgs[] = {1};
     auto hash = op.getOpHash();
@@ -128,7 +128,7 @@ TEST_F(JavaInteropTests, Test_Squeeze_1) {
     auto z = NDArrayFactory::create<float>('c', {6});
     auto e = NDArrayFactory::create<float>('c', {6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
 
-    nd4j::ops::squeeze op;
+    sd::ops::squeeze op;
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), x.getSpecialBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), x.getSpecialShapeInfo()};
@@ -149,7 +149,7 @@ TEST_F(JavaInteropTests, Test_RDiv_1) {
 
     NDArray::prepareSpecialUse({&z}, {&x, &y});
 
-    nd4j::ops::reversedivide op;
+    sd::ops::reversedivide op;
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer(), x.getSpecialBuffer(), y.getSpecialBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo(), x.getSpecialShapeInfo(), y.getSpecialShapeInfo()};
@@ -182,7 +182,7 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
 
     auto expOutput = NDArrayFactory::create<float>('c', {3, 2, 8, 8});
 
-    nd4j::ops::sconv2d op;
+    sd::ops::sconv2d op;
 
     NDArray::prepareSpecialUse({&output}, {&input, &weightsD, &weightsP, &bias});
 
@@ -217,7 +217,7 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     auto expOutput = NDArrayFactory::create<float>('c', {3, 3, 8, 8});
 
-    nd4j::ops::sconv2d op;
+    sd::ops::sconv2d op;
 
     NDArray::prepareSpecialUse({&output}, {&input, &weightsD});
 
@@ -253,7 +253,7 @@ TEST_F(JavaInteropTests, TestMaxPooling2d_1) {
 
     std::vector<Nd4jLong> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-    nd4j::ops::maxpool2d op;
+    sd::ops::maxpool2d op;
 
     Nd4jStatus status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 9, nullptr, 0, false);
 
@@ -282,7 +282,7 @@ TEST_F(JavaInteropTests, TestCol2Im_1) {
     Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer(), output.getSpecialBuffer()};
     Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo(), output.getSpecialShapeInfo()};
 
-    nd4j::ops::col2im op;
+    sd::ops::col2im op;
 
     Nd4jLong exp[] = {1, 1, 1, 1, 4, 5, 1, 1, 1};
 
@@ -312,7 +312,7 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
 
     NDArray::prepareSpecialUse({&output}, {&input});
 
-    nd4j::ops::pnormpool2d op;
+    sd::ops::pnormpool2d op;
 
     Nd4jLong exp[] = {2, 2, 1, 1, 0, 0, 1, 1, 0, 2, 0, 0};
 
@@ -338,7 +338,7 @@ TEST_F(JavaInteropTests, TestInplace_1) {
 
     NDArray::prepareSpecialUse({}, {&input});
 
-    nd4j::ops::clipbyvalue op;
+    sd::ops::clipbyvalue op;
 
     double extras[] = {-1.0f, 1.0f};
 
@@ -408,7 +408,7 @@ TEST_F(JavaInteropTests, Test_FastPath_Validation_1) {
     ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
-    nd4j::ops::softmax op;
+    sd::ops::softmax op;
     auto status = op.execute(&ctx);
     ASSERT_NE(Status::OK(), status);
 }
@@ -421,7 +421,7 @@ TEST_F(JavaInteropTests, Test_FastPath_Validation_2) {
     ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
-    nd4j::ops::softmax op;
+    sd::ops::softmax op;
     auto status = op.execute(&ctx);
     ASSERT_NE(Status::OK(), status);
 }
@@ -442,7 +442,7 @@ TEST_F(JavaInteropTests, Test_FastPath_Validation_3) {
     ctx.setInputArray(2, max.buffer(), max.shapeInfo(), max.specialBuffer(), max.specialShapeInfo());
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
-    nd4j::ops::fake_quant_with_min_max_vars_per_channel op;
+    sd::ops::fake_quant_with_min_max_vars_per_channel op;
     ASSERT_ANY_THROW(op.execute(&ctx));
 }
 
@@ -458,7 +458,7 @@ TEST_F(JavaInteropTests, Test_empty_cast_1) {
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
     ctx.setIArguments(iArgs, 1);
 
-    nd4j::ops::cast op;
+    sd::ops::cast op;
     auto result = op.execute(&ctx);
     ASSERT_EQ(Status::OK(), result);
     ASSERT_EQ(e, z);
@@ -477,7 +477,7 @@ TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
 
     NDArray::prepareSpecialUse({&z}, {&x});
 
-    nd4j::ops::avgpool2d op;
+    sd::ops::avgpool2d op;
     //auto result = op.execute({&x}, {}, {3,3, 1,1, 0,0, 1,1, 1, 0, 1});
 
     Nd4jLong exp[] = {3,3, 1,1, 0,0, 1,1, 1, 0, 1};
@@ -511,11 +511,11 @@ TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
             int hTo = hFrom + k;
             int wTo = wFrom + k;
 
-            hFrom = nd4j::math::nd4j_max<int>(0, hFrom);
-            wFrom = nd4j::math::nd4j_max<int>(0, wFrom);
+            hFrom = sd::math::nd4j_max<int>(0, hFrom);
+            wFrom = sd::math::nd4j_max<int>(0, wFrom);
 
-            hTo = nd4j::math::nd4j_min<int>(inOutH, hTo);
-            wTo = nd4j::math::nd4j_min<int>(inOutW, wTo);
+            hTo = sd::math::nd4j_min<int>(inOutH, hTo);
+            wTo = sd::math::nd4j_min<int>(inOutW, wTo);
 
             int idxOut[4];
             int idxIn[4];
@@ -547,7 +547,7 @@ TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
     for (int e = 0; e < z.lengthOf() && cnt < lim; e++) {
         auto _m = m.e<float>(e);
         auto _z = z.e<float>(e);
-        auto eq = nd4j::math::nd4j_eq<float>(_m, _z, 1e-5);
+        auto eq = sd::math::nd4j_eq<float>(_m, _z, 1e-5);
         if (!eq) {
             nd4j_printf("Difference at element e [%i]: <%f> vs <%f>\n", e, _m, _z);
             cnt++;
@@ -559,7 +559,7 @@ TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
 
 
 TEST_F(JavaInteropTests, Test_GraphReuse_1) {
-    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim_false.fb");
+    uint8_t* data = sd::graph::readFlatBuffers("./resources/reduce_dim_false.fb");
 
     registerGraph(nullptr, 119, (Nd4jPointer) data);
 
@@ -582,7 +582,7 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
     auto exp2 = NDArrayFactory::create<float>('c', {3}, {9, 9, 9});
 
     // we load graph from file, because we're not in java here, and dont have buffer ready
-    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim_false.fb");
+    uint8_t* data = sd::graph::readFlatBuffers("./resources/reduce_dim_false.fb");
 
     // we ensure that there's no such a graph stored earlier
     ASSERT_FALSE(GraphHolder::getInstance()->hasGraph(119));
@@ -667,7 +667,7 @@ TEST_F(JavaInteropTests, Test_Greater_1) {
 
     NDArray::prepareSpecialUse({&o}, {&x, &y});
 
-    nd4j::ops::greater op;
+    sd::ops::greater op;
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer(), x.getSpecialBuffer(), y.getSpecialBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo(), x.getSpecialShapeInfo(), y.getSpecialShapeInfo()};
@@ -689,7 +689,7 @@ TEST_F(JavaInteropTests, Test_Greater_2) {
 
     auto exp = NDArrayFactory::create<bool>('c', {2, 2}, {false, false, true, true});
 
-    nd4j::ops::greater op;
+    sd::ops::greater op;
 
     NDArray::prepareSpecialUse({&o}, {&x, &y});
 
@@ -708,7 +708,7 @@ TEST_F(JavaInteropTests, Test_Greater_2) {
 
 TEST_F(JavaInteropTests, Test_Boolean_Op_1) {
 
-    nd4j::ops::is_non_decreasing op;
+    sd::ops::is_non_decreasing op;
 
     auto x = NDArrayFactory::create<float>('c', {5}, {1.f, 2.f, 3.f, 4.f, 5.f});
     auto o = NDArrayFactory::create<bool>(false);
@@ -737,7 +737,7 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_1) {
     auto exp = NDArrayFactory::create<float>('c', {2, 3}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
     auto z = NDArrayFactory::create<float>('c', {2, 3});
 
-    nd4j::ops::test_output_reshape op;
+    sd::ops::test_output_reshape op;
 
     NDArray::prepareSpecialUse({&z}, {&x});
 
@@ -765,7 +765,7 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_2) {
     auto e = NDArrayFactory::create<float>('c', {2, 3}, {3.f, 4.f, 5.f, 6.f, 7.f, 8.f});
 
 
-    nd4j::ops::add op;
+    sd::ops::add op;
 
     NDArray::prepareSpecialUse({&z}, {&x, &y});
 
@@ -792,7 +792,7 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
     auto output = NDArrayFactory::create<double>('f', {2, 1, 6, 4});
     auto e = NDArrayFactory::create<double>('c', {2, 1, 6, 4}, {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 9,10,11,12, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16, 17,18,19,20, 21,22,23,24, 21,22,23,24, 17,18,19,20, 21,22,23,24});
 
-    nd4j::ops::gather op;
+    sd::ops::gather op;
 
     NDArray::prepareSpecialUse({&output}, {&input, &indices});
 
@@ -823,15 +823,15 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
     auto dims = NDArrayFactory::create<int>('c', {2}, {0, 1});
     dims.syncToHost();
 
-    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+    sd::LaunchContext* context = sd::LaunchContext::defaultContext();
 
     Nd4jPointer* extraPointers = nullptr;
     #ifdef __CUDABLAS__
         extraPointers = new Nd4jPointer[6] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer()};
     #endif
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {0,1});
-    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {0,1});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {0,1});
+    auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {0,1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dims});
     OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -856,7 +856,7 @@ TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
     Environment::getInstance()->setDebug(true);
     Environment::getInstance()->setVerbose(false);
 
-    auto pl = nd4j::graph::readFlatBuffers("./resources/simpleif_0_1.fb");
+    auto pl = sd::graph::readFlatBuffers("./resources/simpleif_0_1.fb");
     auto ptr = executeFlatGraph(nullptr, pl);
 
     Environment::getInstance()->setDebug(false);
@@ -873,7 +873,7 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_double) {
     auto z = NDArrayFactory::create<double>('c', {4, 4, 4, 3});
     auto exp = NDArrayFactory::create<double>('c', {4, 4, 4, 3}, {7.97172260, 0.06878620,             2.27749538,             7.29276514,             -0.14074677,             0.65480286,             5.70313978,             -0.06546132,             0.35443667,             3.70382833,             -0.84020567,             0.63826996,             8.60301399,             -0.38236514,             1.55177069,             7.37542057,             -0.99374938,             -0.29971302,             8.84352493,             -0.67121059,             0.43132120,             4.78175592,             -1.25070143,             -1.91523600,             6.03855371,             -0.00292124,             -1.11214364,             7.90158176,             -0.57949901,             -0.96735370,             7.81192017,             -0.53255427,             -0.48009714,             3.16953635,             0.08353355,             -1.54299748,             3.74821687,             1.69396687,             0.72724354,             5.42915201,             -1.13686812,             -0.71793109,             5.78376389,             -0.72239977,             -0.60055625,             2.53636408,             0.56777251,             -2.07892323,             6.08064651,             0.68620735,             2.54017019,             5.65828180,             -0.68255502,             1.47283304,             6.10842514,             -0.39655915,             0.28380761,             1.96707797,             -1.98206317,             0.94027776,             4.71811438,             0.32104525,             -0.92409706,             8.34588146,             -1.05581069,             -0.55217457,             9.58440876,             -0.96549922,             0.45820439,             5.65453672,             -2.50953507,             -0.71441835,             8.03059578,             -0.21281289,             0.92125505,             9.26900673,             -0.35963219,             -0.70039093,             8.59924412,             -1.22358346,             0.81318003,             3.85920119,             -0.01305223,             -1.09234154,             6.33158875,             1.28094780,             -1.48926139,             4.94969177,             -0.77126902,             -1.97033751,             5.64381838,             -0.16285487,             -1.31277227,             2.39893222,             -1.32902908,             -1.39609122,             6.47572327,             -0.45267010,             1.55727172,             6.70965624,             -1.68735468,             -0.05672536,             7.25092363,             -0.64613032,             0.67050058,             3.60789680,             -2.05948973,             2.22687531,             8.15202713,             -0.70148355,             1.28314006,             8.14842319,             -1.88807654,             -1.04808438,             8.45500565,             -0.76425624,             0.94542569,             4.56179953,             -0.28786001,             -2.04502511,             8.46278095,             -0.31019822,             0.07339200,             9.34214592,             -0.61948007,             0.52481830,             8.32515621,             -1.52418160,             0.49678251,             5.11082315,             -1.09908783,             -0.52969611,             5.27806664,             0.88632923,             0.66754371,             4.75839233,             0.48928693,             -0.68036932,             6.56925392,             -0.02949905,             -2.99189186,             4.46320581,             -0.64534980,             -0.29516968,             8.60809517,             -1.13120568,             3.41720533,             5.84243155,             -1.24109328,             0.89566326,             5.99578333,             -0.42496428,             2.07076764,             3.17812920,             -0.81566459,             -0.14363396,             6.55184317,             0.39633346,             -0.43852386,             8.70214558,             -2.24613595,             0.30708700,             8.73882294,             -0.53545928,             1.54409575,             4.49452257,             -0.16509305,             0.19028664,             8.24897003,             0.44750381,             2.15448594,             8.97640514,             -0.77728152,             0.57272542,             9.03467560,             0.47173575,             -1.10807717,             3.30056310,             -0.43268481,             -0.41470885,             3.53798294,             -0.08546703,             -2.16840744,             6.18733406,             -0.17871059,             -2.59837723,             5.94218683,             -1.02990067,             -0.49760687,             3.76938033,             0.86383581,             -1.91504073});
 
-    nd4j::ops::avgpool2d op;
+    sd::ops::avgpool2d op;
 
     NDArray::prepareSpecialUse({&z}, {&input});
 
@@ -911,7 +911,7 @@ TEST_F(JavaInteropTests, Test_MaxPool2D_float_1) {
 
     Nd4jLong iArgs[] = {2,2,  1,1,  1,1,  2,2,1,  0,0};
 
-    nd4j::ops::maxpool2d op;
+    sd::ops::maxpool2d op;
 
     auto hash = op.getOpHash();
     auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
@@ -939,7 +939,7 @@ TEST_F(JavaInteropTests, Test_Unstack_1) {
 
     Nd4jLong iArgs[] = {0};
 
-    nd4j::ops::unstack op;
+    sd::ops::unstack op;
 
     auto hash = op.getOpHash();
     auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 5, nullptr, 0, iArgs, 1, nullptr, 0, false);
@@ -954,7 +954,7 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_float) {
     auto z = NDArrayFactory::create<float>('c', {4, 4, 4, 3});
     auto exp = NDArrayFactory::create<float>('c', {4, 4, 4, 3}, {7.97172260f, 0.06878620f,             2.27749538f,             7.29276514f,             -0.14074677f,             0.65480286f,             5.70313978f,             -0.06546132f,             0.35443667f,             3.70382833f,             -0.84020567f,             0.63826996f,             8.60301399f,             -0.38236514f,             1.55177069f,             7.37542057f,             -0.99374938f,             -0.29971302f,             8.84352493f,             -0.67121059f,             0.43132120f,             4.78175592f,             -1.25070143f,             -1.91523600f,             6.03855371f,             -0.00292124f,             -1.11214364f,             7.90158176f,             -0.57949901f,             -0.96735370f,             7.81192017f,             -0.53255427f,             -0.48009714f,             3.16953635f,             0.08353355f,             -1.54299748f,             3.74821687f,             1.69396687f,             0.72724354f,             5.42915201f,             -1.13686812f,             -0.71793109f,             5.78376389f,             -0.72239977f,             -0.60055625f,             2.53636408f,             0.56777251f,             -2.07892323f,             6.08064651f,             0.68620735f,             2.54017019f,             5.65828180f,             -0.68255502f,             1.47283304f,             6.10842514f,             -0.39655915f,             0.28380761f,             1.96707797f,             -1.98206317f,             0.94027776f,             4.71811438f,             0.32104525f,             -0.92409706f,             8.34588146f,             -1.05581069f,             -0.55217457f,             9.58440876f,             -0.96549922f,             0.45820439f,             5.65453672f,             -2.50953507f,             -0.71441835f,             8.03059578f,             -0.21281289f,             0.92125505f,             9.26900673f,             -0.35963219f,             -0.70039093f,             8.59924412f,             -1.22358346f,             0.81318003f,             3.85920119f,             -0.01305223f,             -1.09234154f,             6.33158875f,             1.28094780f,             -1.48926139f,             4.94969177f,             -0.77126902f,             -1.97033751f,             5.64381838f,             -0.16285487f,             -1.31277227f,             2.39893222f,             -1.32902908f,             -1.39609122f,             6.47572327f,             -0.45267010f,             1.55727172f,             6.70965624f,             -1.68735468f,             -0.05672536f,             7.25092363f,             -0.64613032f,             0.67050058f,             3.60789680f,             -2.05948973f,             2.22687531f,             8.15202713f,             -0.70148355f,             1.28314006f,             8.14842319f,             -1.88807654f,             -1.04808438f,             8.45500565f,             -0.76425624f,             0.94542569f,             4.56179953f,             -0.28786001f,             -2.04502511f,             8.46278095f,             -0.31019822f,             0.07339200f,             9.34214592f,             -0.61948007f,             0.52481830f,             8.32515621f,             -1.52418160f,             0.49678251f,             5.11082315f,             -1.09908783f,             -0.52969611f,             5.27806664f,             0.88632923f,             0.66754371f,             4.75839233f,             0.48928693f,             -0.68036932f,             6.56925392f,             -0.02949905f,             -2.99189186f,             4.46320581f,             -0.64534980f,             -0.29516968f,             8.60809517f,             -1.13120568f,             3.41720533f,             5.84243155f,             -1.24109328f,             0.89566326f,             5.99578333f,             -0.42496428f,             2.07076764f,             3.17812920f,             -0.81566459f,             -0.14363396f,             6.55184317f,             0.39633346f,             -0.43852386f,             8.70214558f,             -2.24613595f,             0.30708700f,             8.73882294f,             -0.53545928f,             1.54409575f,             4.49452257f,             -0.16509305f,             0.19028664f,             8.24897003f,             0.44750381f,             2.15448594f,             8.97640514f,             -0.77728152f,             0.57272542f,             9.03467560f,             0.47173575f,             -1.10807717f,             3.30056310f,             -0.43268481f,             -0.41470885f,             3.53798294f,             -0.08546703f,             -2.16840744f,             6.18733406f,             -0.17871059f,             -2.59837723f,             5.94218683f,             -1.02990067f,             -0.49760687f,             3.76938033f,             0.86383581f,             -1.91504073f});
 
-    nd4j::ops::avgpool2d op;
+    sd::ops::avgpool2d op;
 
     NDArray::prepareSpecialUse({&z}, {&input});
 
@@ -1008,7 +1008,7 @@ TEST_F(JavaInteropTests, Test_Add_1) {
 
     NDArray::prepareSpecialUse({&x}, {&x, &y});
 
-    nd4j::ops::add op;
+    sd::ops::add op;
 
     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), y.getBuffer(), x.getSpecialBuffer(), y.getSpecialBuffer()};
     Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), y.getShapeInfo(), x.getSpecialShapeInfo(), y.getSpecialShapeInfo(),};
@@ -1031,7 +1031,7 @@ TEST_F(JavaInteropTests, zeta_test10) {
 
     auto e = NDArrayFactory::create<double>('c', {3, 4}, {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048, 2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
 
-    nd4j::ops::zeta op;
+    sd::ops::zeta op;
 
     NDArray::prepareSpecialUse({&z}, {&x, &q});
 
@@ -1064,7 +1064,7 @@ TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
     Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(arrayX.shapeInfo()), reinterpret_cast<Nd4jPointer>(arrayY.shapeInfo()), arrayX.getSpecialShapeInfo(), arrayY.getSpecialShapeInfo()};
 
     NDArray::prepareSpecialUse({}, {&arrayX, &arrayY});
-    nd4j::ops::greater_equal op;
+    sd::ops::greater_equal op;
     auto shapeList = calculateOutputShapes2(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0);
     NDArray::registerSpecialUse({}, {&arrayX, &arrayY});
     delete shapeList;
@@ -1083,7 +1083,7 @@ TEST_F(JavaInteropTests, Test_L2_Loss_3) {
     Nd4jPointer ptrsOutBuffer[] = {reinterpret_cast<Nd4jPointer>(z.buffer()), z.getSpecialBuffer()};
     Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo()), z.getSpecialShapeInfo()};
 
-    nd4j::ops::l2_loss op;
+    sd::ops::l2_loss op;
     auto status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffer, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
@@ -1108,7 +1108,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_3) {
 
     ASSERT_EQ(2, ctx.width());
 
-    nd4j::ops::add op;
+    sd::ops::add op;
     execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
     NDArray::registerSpecialUse({&z}, {&array0, &array1});
@@ -1130,7 +1130,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_4) {
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
     ctx.setIArguments(iArgs, 3);
 
-    nd4j::ops::tri op;
+    sd::ops::tri op;
     execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
     NDArray::registerSpecialUse({&z}, {});
@@ -1153,7 +1153,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_5) {
     ctx.setInputArray(1, b.buffer(), b.shapeInfo(), b.specialBuffer(), b.specialShapeInfo());
     ctx.setOutputArray(0, c.buffer(), c.shapeInfo(), c.specialBuffer(), c.specialShapeInfo());
 
-    nd4j::ops::matmul op;
+    sd::ops::matmul op;
     auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
     NDArray::registerSpecialUse({&c}, {&b, &c});
@@ -1186,7 +1186,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_6) {
 
     ctx.setIArguments(iArgs, 3);
 
-    nd4j::ops::matmul_bp op;
+    sd::ops::matmul_bp op;
     auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
 
     NDArray::registerSpecialUse({&gA, &gB}, {&a, &b, &gI});
@@ -1207,7 +1207,7 @@ TEST_F(JavaInteropTests, Test_Fastpath_7) {
 
     ctx.setIArguments(iArgs, 1);
 
-    nd4j::ops::concat op;
+    sd::ops::concat op;
 
     ctx.setInputArray(0, a.buffer(), a.shapeInfo(), a.specialBuffer(), a.specialShapeInfo());
     ctx.setInputArray(1, b.buffer(), b.shapeInfo(), b.specialBuffer(), b.specialShapeInfo());
@@ -1230,7 +1230,7 @@ TEST_F(JavaInteropTests, test_bfloat16_rng) {
     RandomGenerator rng(119, 323841120L);
     bfloat16 args[2] = {(bfloat16) 0.0f, (bfloat16) 1.0f};
     OpaqueDataBuffer zBuf(z.dataBuffer());
-    execRandom(nullptr, nd4j::random::Ops::UniformDistribution, &rng, &zBuf, z.shapeInfo(), z.specialShapeInfo(), args);
+    execRandom(nullptr, sd::random::Ops::UniformDistribution, &rng, &zBuf, z.shapeInfo(), z.specialShapeInfo(), args);
 
     //z.printIndexedBuffer("z");
     ASSERT_TRUE(z.sumNumber().e<float>(0) > 0);
@@ -1242,7 +1242,7 @@ TEST_F(JavaInteropTests, test_ismax_view) {
     v.assign(1.0);
 
     auto e = v.like();
-    auto t = e.tensorAlongDimension(0, {0, 1});
+    auto t = e(0, {2});
     t.assign(1.0);
 
     auto z = v.ulike();
@@ -1254,7 +1254,7 @@ TEST_F(JavaInteropTests, test_ismax_view) {
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
     ctx.setIArguments(iArgs, 1);
 
-    nd4j::ops::ismax op;
+    sd::ops::ismax op;
     op.execute(&ctx);
 
     ASSERT_EQ(e, z);
@@ -1269,7 +1269,7 @@ TEST_F(JavaInteropTests, test_size_dtype_1) {
     ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
-    nd4j::ops::size op;
+    sd::ops::size op;
     auto status = op.execute(&ctx);
     ASSERT_EQ(Status::OK(), status);
 
@@ -1278,7 +1278,7 @@ TEST_F(JavaInteropTests, test_size_dtype_1) {
 
 TEST_F(JavaInteropTests, test_expandable_array_op_1) {
     auto x = NDArrayFactory::string( {2}, {"first string", "second"});
-    auto d = NDArrayFactory::string(" ", nd4j::DataType::UTF8);
+    auto d = NDArrayFactory::string(" ", sd::DataType::UTF8);
 
     auto z0 = NDArrayFactory::create<Nd4jLong>('c', {6});
     auto z1 = NDArrayFactory::string( {3}, {"", "", ""});
@@ -1295,7 +1295,7 @@ TEST_F(JavaInteropTests, test_expandable_array_op_1) {
     ctx.setOutputArray(0, &iz0, z0.shapeInfo(), z0.specialShapeInfo());
     ctx.setOutputArray(1, &iz1, z1.shapeInfo(), z1.specialShapeInfo());
 
-    nd4j::ops::compat_string_split op;
+    sd::ops::compat_string_split op;
     auto status = op.execute(&ctx);
     ASSERT_EQ(Status::OK(), status);
 
@@ -1329,14 +1329,14 @@ TEST_F(JavaInteropTests, test_workspace_backed_arrays_1) {
 
     ctx.setIArguments({2, 2, 1, 1, 0, 0, 1, 1, 0, 0, 0});
 
-    nd4j::ops::maxpool2d_bp op;
+    sd::ops::maxpool2d_bp op;
     auto status = op.execute(&ctx);
     ASSERT_EQ(Status::OK(), status);
 }
 
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
-    auto pl = nd4j::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");
+    auto pl = sd::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");
     auto ptr = executeFlatGraph(nullptr, pl);
 
     // at this point we have FlatResults
@@ -1363,7 +1363,7 @@ TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
         ASSERT_TRUE(shape->size() > 0 && rank >= 0 &&  rank < MAX_RANK);
 
         // building regular NDArray out of this FlatArray
-        auto ndarray = nd4j::graph::FlatUtils::fromFlatArray(flatArray);
+        auto ndarray = sd::graph::FlatUtils::fromFlatArray(flatArray);
 
         // rank should match FlatArray
         ASSERT_EQ(rank, ndarray->rankOf());
@@ -1395,7 +1395,7 @@ TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
 
 //     for (int e = 0; e < exp.size(); e++) {
 //         auto f = static_cast<double>(e);
-//         auto tmp = nd4j::math::nd4j_exp<double, double>((f / 100000.0 * 2.0 - 1.0) * 6.0);
+//         auto tmp = sd::math::nd4j_exp<double, double>((f / 100000.0 * 2.0 - 1.0) * 6.0);
 //         exp[e] = static_cast<float>(tmp / (tmp + 1.0));
 //     }
 

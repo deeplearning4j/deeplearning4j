@@ -21,9 +21,9 @@
 #include "ops/declarable/BooleanOp.h"
 #include <vector>
 #include <initializer_list>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BooleanOp::BooleanOp(const char *name, int numInputs, bool scalar) : DeclarableOp::DeclarableOp(name, numInputs, scalar) {
             //
@@ -32,11 +32,11 @@ namespace nd4j {
         /**
         * Output shape of any BooleanOp is ALWAYS scalar
         */
-        ShapeList *BooleanOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *BooleanOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::BOOL));
         }
 
-        bool BooleanOp::verify(nd4j::graph::Context &block) {
+        bool BooleanOp::verify(sd::graph::Context &block) {
             // check if scalar or not
 
             // validation?
@@ -81,7 +81,7 @@ namespace nd4j {
             return true;
         }
 
-        Nd4jStatus nd4j::ops::BooleanOp::execute(Context* block)  {
+        Nd4jStatus sd::ops::BooleanOp::execute(Context* block)  {
 
             // basic validation: ensure inputs are set
             REQUIRE_OK(this->validateNonEmptyInput(*block));
@@ -115,7 +115,7 @@ namespace nd4j {
             return ND4J_STATUS_KERNEL_FAILURE;
         }
 
-        bool BooleanOp::verify(const std::vector<nd4j::NDArray *> &args) {
+        bool BooleanOp::verify(const std::vector<sd::NDArray *> &args) {
             VariableSpace variableSpace;
 
             int cnt = -1;

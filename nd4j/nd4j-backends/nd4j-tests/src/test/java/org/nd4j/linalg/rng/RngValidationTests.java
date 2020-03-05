@@ -76,13 +76,13 @@ public class RngValidationTests extends BaseNd4jTest {
         @Builder.Default private double stdRelativeErrorTolerance = 0.01;
         private Double meanMinAbsErrorTolerance;    //Consider relative error between 0 and 0.001: relative error is 1.0, but absolute error is small
         private Double stdMinAbsErrorTolerance;
-        @Builder.Default private Map<String,Object> args = new LinkedHashMap<>();
+        @Builder.Default private static Map<String,Object> args = new LinkedHashMap<>();
 
         public static class TestCaseBuilder {
 
             public TestCaseBuilder arg(String arg, Object value){
                 if(args == null) {
-                    args(new LinkedHashMap<>());
+                    args = new LinkedHashMap<>();
                 }
                 args.put(arg, value);
                 return this;

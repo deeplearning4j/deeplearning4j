@@ -21,10 +21,10 @@
 #ifndef LIBND4J_BIDIAGONALUP_H
 #define LIBND4J_BIDIAGONALUP_H
 
-#include <hhSequence.h>
-#include "NDArray.h"
+#include <helpers/hhSequence.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

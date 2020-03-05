@@ -19,12 +19,12 @@
 //
 
 #include <ops/ops.h>
-#include <ConstantTadHelper.h>
-#include <PointersManager.h>
-#include <ShapeUtils.h>
+#include <helpers/ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/prefix.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -146,10 +146,10 @@ static void prefixPerBlockCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 ///////////////////////////////////////////////////////////////////
-void prefix(nd4j::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse) {
+void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse) {
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
 
     const Nd4jLong numTads = packX.numberOfTads();
     const Nd4jLong tadLen = x->lengthOf() / numTads;
@@ -168,7 +168,7 @@ void prefix(nd4j::LaunchContext * context, scalar::Ops op, const NDArray* x, NDA
 }
 
 ///////////////////////////////////////////////////////////////////
-void prefix(nd4j::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
+void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
     prefix(context, op, x, z, {}, exclusive, reverse);
 }
 

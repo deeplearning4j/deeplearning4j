@@ -23,15 +23,15 @@
 
 #include <sstream>
 #include <types/float16.h>
-#include <pointercast.h>
-#include <NDArray.h>
+#include <system/pointercast.h>
+#include <array/NDArray.h>
 #include <graph/Context.h>
 #include "OpDescriptor.h"
 #include <helpers/helper_hash.h>
 #include <array/ShapeList.h>
 #include <array/ResultSet.h>
 #include <helpers/OpArgsHolder.h>
-#include <dll.h>
+#include <system/dll.h>
 #include <ops/declarable/EmptyHandling.h>
 //#include <ops/declarable/declarable_ops.h>
 
@@ -39,9 +39,9 @@
 #include <ctime>
 #include <mutex>
 
-using namespace nd4j::graph;
+using namespace sd::graph;
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         Nd4jStatus ND4J_EXPORT conditionHelper(const char *file, int line, int condition, int argNumber, const char *format, ...);
@@ -68,7 +68,7 @@ namespace nd4j {
         private:
             std::mutex _registrator;
             bool _registered = false;
-
+            std::string _name;
         protected:
             OpDescriptor *_descriptor;
             NDArray *_scalar = nullptr;
@@ -105,7 +105,7 @@ namespace nd4j {
             */
             void storeResult(Context &block, int outputNumber, NDArray& array);
             void storeResult(Context &block, int outputNumber, NDArray* array);
-            nd4j::NDArray* getZ(Context& block, int inputId = 0);
+            sd::NDArray* getZ(Context& block, int inputId = 0);
 
             /**
             *   This method pre-allocates NDArrays for Op output, in case they are not available at op execution time
@@ -137,7 +137,7 @@ namespace nd4j {
             /**
             *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)
             */
-            virtual ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) = 0;
+            virtual ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) = 0;
 
             /**
              * Returns opName
@@ -174,19 +174,19 @@ namespace nd4j {
             template <class T, typename = std::enable_if<DataTypeUtils::scalarTypesForExecution<T>::value>>
             Nd4jStatus execute(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs, std::initializer_list<T> tArgs);
 
-            Nd4jStatus execute(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<nd4j::DataType> &dArgs = std::vector<nd4j::DataType>(), bool isInplace = false);
+            Nd4jStatus execute(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<sd::DataType> &dArgs = std::vector<sd::DataType>(), bool isInplace = false);
 
 
-            nd4j::ResultSet* evaluate(const std::vector<NDArray*> &inputs);
+            sd::ResultSet* evaluate(const std::vector<NDArray*> &inputs);
 
             template <class T, typename = std::enable_if<DataTypeUtils::scalarTypesForExecution<T>::value>>
-            nd4j::ResultSet* evaluate(const std::vector<NDArray*> &inputs, std::initializer_list<T> args);
+            sd::ResultSet* evaluate(const std::vector<NDArray*> &inputs, std::initializer_list<T> args);
 
-            nd4j::ResultSet* evaluate(const std::vector<NDArray*> &inputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<nd4j::DataType> &dArgs = std::vector<nd4j::DataType>(), bool isInplace = false);
+            sd::ResultSet* evaluate(const std::vector<NDArray*> &inputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<sd::DataType> &dArgs = std::vector<sd::DataType>(), bool isInplace = false);
 
-            Nd4jStatus execute(nd4j::graph::RandomGenerator& rng, const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, const std::vector<bool>& bArgs, const std::vector<nd4j::DataType> &dArgs = std::vector<nd4j::DataType>(), bool isInplace = false, nd4j::DataType type = nd4j::DataType::FLOAT32);
+            Nd4jStatus execute(sd::graph::RandomGenerator& rng, const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, const std::vector<bool>& bArgs, const std::vector<sd::DataType> &dArgs = std::vector<sd::DataType>(), bool isInplace = false, sd::DataType type = sd::DataType::FLOAT32);
 
-            nd4j::ResultSet* execute(const nd4j::OpArgsHolder& holder, bool isInplace = false);
+            sd::ResultSet* execute(const sd::OpArgsHolder& holder, bool isInplace = false);
 
             // There methods provide various validation options
             Nd4jStatus validateNonEmptyInput(Context& block);

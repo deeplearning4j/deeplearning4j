@@ -24,9 +24,9 @@
 #include <initializer_list>
 #include <vector>
 #include <cstring>
-#include <pointercast.h>
+#include <system/pointercast.h>
 
-namespace nd4j {
+namespace sd {
     namespace ArrayUtils {
         void toIntPtr(std::initializer_list<int> list, int* target);
         void toIntPtr(std::vector<int>& list, int* target);

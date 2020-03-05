@@ -31,7 +31,7 @@ namespace samediff {
 
     Ticket::Ticket() {
         _acquired = true;
-        _interfaces.resize(nd4j::Environment::getInstance()->maxThreads());
+        _interfaces.resize(sd::Environment::getInstance()->maxThreads());
     }
 
     bool Ticket::acquired() {

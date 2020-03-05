@@ -21,7 +21,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/segment.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(segment_sum, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -81,12 +81,12 @@ namespace nd4j {
 
         DECLARE_TYPES(segment_sum) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
         DECLARE_TYPES(segment_sum_bp) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes(0, {ALL_FLOATS})
 					->setAllowedOutputTypes(1, {ALL_INTS})
                     ->setSameMode(false);

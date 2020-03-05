@@ -24,12 +24,12 @@
 #include <map>
 #include <vector>
 #include <atomic>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/generated/utils_generated.h>
 #include <ops/declarable/OpDescriptor.h>
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT OpTracker {
     private:
         static OpTracker* _INSTANCE;        
@@ -37,7 +37,7 @@ namespace nd4j {
         std::string _export;
 
         int _operations = 0;
-        std::map<nd4j::graph::OpType, std::vector<nd4j::ops::OpDescriptor>> _map;
+        std::map<sd::graph::OpType, std::vector<sd::ops::OpDescriptor>> _map;
 
         OpTracker() = default;
         ~OpTracker() = default;
@@ -50,8 +50,8 @@ namespace nd4j {
         int totalGroups();
         int totalOperations();
 
-        void storeOperation(nd4j::graph::OpType opType, const nd4j::ops::OpDescriptor& descriptor);
-        void storeOperation(nd4j::graph::OpType opType, const char* opName, const Nd4jLong opNum);
+        void storeOperation(sd::graph::OpType opType, const sd::ops::OpDescriptor& descriptor);
+        void storeOperation(sd::graph::OpType opType, const char* opName, const Nd4jLong opNum);
 
         const char* exportOperations();
     };

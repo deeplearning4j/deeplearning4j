@@ -20,28 +20,28 @@
 //
 
 #include <ops/declarable/helpers/lrn.h>
-#include <Status.h>
-#include <ConstantTadHelper.h>
+#include <graph/Status.h>
+#include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
 template <typename T>
-static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta) {
+static int lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta) {
 
     nd4j_debug("MKL-DNN is not used for lrn!\n", 0);
 
     const int rank = input->rankOf();
 
-    TadPack inTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {rank - 1});
+    TadPack inTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {rank - 1});
     TadPack outTadPack;
 
     if(shape::haveSameShapeAndStrides(input->getShapeInfo(), output->getShapeInfo()))
         outTadPack = inTadPack;
     else
-        outTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {rank - 1});
+        outTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {rank - 1});
 
     const Nd4jLong numOfTads = inTadPack.numberOfTads();
     const Nd4jLong tadLen    = input->sizeAt(-1); 
@@ -62,7 +62,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
     if(inTadEws == 1 && outTadEws == 1) {
         
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 const T *x = inBuff + inTadOffsets[i];
                 T *y = outBuff + outTadOffsets[i];
 
@@ -70,10 +70,10 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
 
                 // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
                 // we store each squared sum in corresponding element of y array
-                for (uint j = 0; j < tadLen; ++j) {
-                    const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
+                    const uint begin = sd::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
-                    const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
+                    const uint end = sd::math::nd4j_min<int>(last, tadLen);
 
                     if (j == 0) {
                         for (uint s = begin; s < end; ++s)
@@ -91,7 +91,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
                     if (j != 0)
                         prev = y[j];
 
-                    y[j] = x[j] / nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * prev, tbeta);
+                    y[j] = x[j] / sd::math::nd4j_pow<T, T, T>(tbias + alpha * prev, tbeta);
                 }
             }
         };
@@ -100,7 +100,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
     }
     else {
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = 0; i < numOfTads; ++i) {
+            for (Nd4jLong i = 0; i < numOfTads; ++i) {
                 const T *x = inBuff + inTadOffsets[i];
                 T *y = outBuff + outTadOffsets[i];
 
@@ -108,10 +108,10 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
 
                 // calculate squared sum of elements per each j-th element range [j - depth, j + depth + 1]
                 // we store each squared sum in corresponding element of y array
-                for (uint j = 0; j < tadLen; ++j) {
-                    const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
+                    const uint begin = sd::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
-                    const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
+                    const uint end = sd::math::nd4j_min<int>(last, tadLen);
 
                     if (j == 0) {
                         for (uint s = begin; s < end; ++s)
@@ -129,7 +129,7 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
                     if (j != 0)
                         prev = y[j * outTadEws];
 
-                    y[j * outTadEws] = x[j * inTadEws] / nd4j::math::nd4j_pow<T, T, T>(tbias + alpha * prev, tbeta);
+                    y[j * outTadEws] = x[j * inTadEws] / sd::math::nd4j_pow<T, T, T>(tbias + alpha * prev, tbeta);
                 }
             }
         };
@@ -139,9 +139,9 @@ static int lrnFunctor_(nd4j::graph::Context& block, NDArray* input, NDArray* out
     return Status::OK();
 }
     
-BUILD_SINGLE_TEMPLATE(template int lrnFunctor_, (nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template int lrnFunctor_, (sd::graph::Context& block, NDArray* input, NDArray* output, int depth, float bias, float alpha, float beta), FLOAT_TYPES);
 
-int lrnFunctor(nd4j::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
+int lrnFunctor(sd::graph::Context& block, NDArray* input, NDArray* output, int depth, double bias, double alpha, double beta) {
     BUILD_SINGLE_SELECTOR(input->dataType(), return lrnFunctor_, (block, input, output, depth, bias, alpha, beta), FLOAT_TYPES);
 }
 
@@ -151,13 +151,13 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     
     const int rank = input.rankOf();
 
-    TadPack inTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {rank - 1});
+    TadPack inTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {rank - 1});
     TadPack gradITadPack;
 
     if(shape::haveSameShapeAndStrides(input.getShapeInfo(), gradI.getShapeInfo()))
         gradITadPack = inTadPack;
     else
-        gradITadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), {rank - 1});
+        gradITadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), {rank - 1});
 
     const Nd4jLong numOfTads = inTadPack.numberOfTads();
     const Nd4jLong tadLen    = input.sizeAt(-1); 
@@ -179,16 +179,16 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     if(inTadEws == 1 && gradITadEws == 1) {
         
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 const X *x = inBuff + inTadOffsets[i];
                       Y *y = gradIBuff + gradITadOffsets[i];
 
                 // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
                 // we store each squared sum in corresponding element of y array
-                for (uint j = 0; j < tadLen; ++j) {
-                    const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
+                    const uint begin = sd::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
-                    const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
+                    const uint end = sd::math::nd4j_min<int>(last, tadLen);
 
                     if (j == 0) {
                         y[0] = 0;
@@ -208,24 +208,24 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
 
                 Y prev = 0;
                 // second loop calculates derivatives using information gained in first loop above
-                for (uint j = 0; j < tadLen; ++j) {
-                    const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
+                    const uint begin = sd::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
-                    const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
+                    const uint end = sd::math::nd4j_min<int>(last, tadLen);
 
                     Y init = tbias + talpha * y[j];
 
                     if (j == 0) {
                         for (uint s = begin; s < end; ++s) {
-                            factor[s] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[s], -tbeta - 1);
+                            factor[s] = sd::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[s], -tbeta - 1);
                             prev = prev + x[s] * factor[s];
                         }
                         y[0] = prev;
                     } else if (begin == 0 && last <= tadLen) {
-                        factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
+                        factor[end - 1] = sd::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
                         y[j] = prev + x[end - 1] * factor[end - 1];
                     } else if (begin > 0 && last <= tadLen) {
-                        factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
+                        factor[end - 1] = sd::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[end - 1], -tbeta - 1);
                         y[j] = prev + x[end - 1] * factor[end - 1] - x[begin - 1] * factor[begin - 1];
                     } else if (begin > 0 && last > tadLen)
                         y[j] = prev - x[begin - 1] * factor[begin - 1];
@@ -247,16 +247,16 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     else {
 
         auto func = PRAGMA_THREADS_FOR {
-            for (uint i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 const X *x = inBuff + inTadOffsets[i];
                       Y *y = gradIBuff + gradITadOffsets[i];
 
                 // this loop calculates squared sum of elements per each j-th element range [j - depth, j + depth + 1]
                 // we store each squared sum in corresponding element of y array
-                for (uint j = 0; j < tadLen; ++j) {
-                    const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
+                    const uint begin = sd::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
-                    const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
+                    const uint end = sd::math::nd4j_min<int>(last, tadLen);
 
                     if (j == 0) {
                         y[0] = 0;
@@ -280,25 +280,25 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
 
                 Y prev = 0;
                 // second loop calculates derivatives using information gained in first loop above
-                for (uint j = 0; j < tadLen; ++j) {
-                    const uint begin = nd4j::math::nd4j_max<int>(0, j - depth);
+                for (Nd4jLong j = 0; j < tadLen; ++j) {
+                    const uint begin = sd::math::nd4j_max<int>(0, j - depth);
                     const uint last = depth + j + 1;
-                    const uint end = nd4j::math::nd4j_min<int>(last, tadLen);
+                    const uint end = sd::math::nd4j_min<int>(last, tadLen);
 
                     Y init = tbias + talpha * y[j * gradITadEws];
 
                     if (j == 0) {
                         for (uint s = begin; s < end; ++s) {
-                            factor[s] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[s * gradITadEws], -tbeta - 1);
+                            factor[s] = sd::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[s * gradITadEws], -tbeta - 1);
                             prev = prev + x[s * inTadEws] * factor[s];
                         }
                         y[0] = prev;
                     } else if (begin == 0 && last <= tadLen) {
-                        factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[(end - 1) * gradITadEws],
+                        factor[end - 1] = sd::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[(end - 1) * gradITadEws],
                                                                         -tbeta - 1);
                         y[j * gradITadEws] = prev + x[(end - 1) * inTadEws] * factor[end - 1];
                     } else if (begin > 0 && last <= tadLen) {
-                        factor[end - 1] = nd4j::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[(end - 1) * gradITadEws],
+                        factor[end - 1] = sd::math::nd4j_pow<Y, Y, Y>(tbias + talpha * y[(end - 1) * gradITadEws],
                                                                         -tbeta - 1);
                         y[j * gradITadEws] = prev + x[(end - 1) * inTadEws] * factor[end - 1] -
                                              x[(begin - 1) * inTadEws] * factor[begin - 1];
@@ -323,7 +323,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
 }
 
 
-void lrnBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
+void lrnBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
     BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_, (input, gradO, gradI, depth, bias, alpha, beta), FLOAT_TYPES, FLOAT_TYPES);
 }
 

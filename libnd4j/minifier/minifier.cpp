@@ -23,12 +23,12 @@
 #endif
 #include <cstdlib>
 #include "graphopt.h"
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 #include <ops/declarable/CustomOperations.h>
 #include <graph/GraphUtils.h>
 
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd::ops;
+using namespace sd::graph;
 
 int
 main(int argc, char *argv[]) {

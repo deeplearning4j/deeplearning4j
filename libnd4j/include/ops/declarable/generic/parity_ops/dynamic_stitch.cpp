@@ -18,13 +18,13 @@
 //  @author GS <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dynamic_stitch)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/dynamic.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(dynamic_stitch, 2, 1, false, 0, 0) {
         int numOfData = block.width();
@@ -54,7 +54,7 @@ namespace ops {
 
     DECLARE_TYPES(dynamic_stitch) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
     }
 

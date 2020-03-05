@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_listdiff)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/listdiff.h>
 
 // this op will probably never become GPU-compatible
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(listdiff, 2, 2, false, 0, 0) {
             auto values = INPUT_VARIABLE(0);

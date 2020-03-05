@@ -19,10 +19,10 @@
 //
 
 #include <ops/declarable/helpers/legacy_helpers.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <ops/ops.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
     template <typename T>
@@ -34,7 +34,7 @@ namespace helpers {
         theFirst->applyPairwiseLambda<T>(*theSecond, functor, *theFirst);
     }
 
-    void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond) {
+    void reluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative__, (theFirst, theSecond), FLOAT_TYPES);
     }
 
@@ -64,7 +64,7 @@ namespace helpers {
         */
     }
 
-    void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void reluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -77,7 +77,7 @@ namespace helpers {
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void relu6Derivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void relu6Derivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), relu6Derivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -93,7 +93,7 @@ namespace helpers {
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void leakyReluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
+    void leakyReluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), leakyReluDerivative_, (theFirst, theSecond, theOutput, alpha), FLOAT_TYPES);
     }
 
@@ -103,13 +103,13 @@ namespace helpers {
         const T alphaT = static_cast<T>(alpha);
 
         auto functor = LAMBDA_TT(x, y, alphaT){
-            return y * nd4j::math::nd4j_eluderivative<T,T>(x, alphaT);
+            return y * sd::math::nd4j_eluderivative<T,T>(x, alphaT);
         };
 
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void eluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
+    void eluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), eluDerivative_, (theFirst, theSecond, theOutput, alpha), FLOAT_TYPES);
     }
 
@@ -122,7 +122,7 @@ namespace helpers {
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void seluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void seluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), seluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -135,7 +135,7 @@ namespace helpers {
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void cubeDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void cubeDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), cubeDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -149,7 +149,7 @@ namespace helpers {
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void reduceNorm1(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void reduceNorm1(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), reduceNorm1_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -157,13 +157,13 @@ namespace helpers {
     template <typename T>
     static void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            return nd4j::math::nd4j_max<T>(x, (T)0.f) - x * y + nd4j::math::nd4j_log<T,T>((T)1.f + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(x)));
+            return sd::math::nd4j_max<T>(x, (T)0.f) - x * y + sd::math::nd4j_log<T,T>((T)1.f + sd::math::nd4j_exp<T,T>(-sd::math::nd4j_abs(x)));
         };
 
         logits->applyPairwiseLambda<T>(*labels, functor, *output);
     }
 
-    void sigmCrossEntropy(nd4j::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
+    void sigmCrossEntropy(sd::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
         BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropy_, (logits, labels, output), FLOAT_TYPES);
     }
 
@@ -173,15 +173,15 @@ namespace helpers {
         // 1 - labels - 1 / (1 + exp(logits))
         auto functor = LAMBDA_TT(x, y) {
             if(x <= 0)
-                return static_cast<T>(1.) - y - static_cast<T>(1.) / (static_cast<T>(1.) + nd4j::math::nd4j_exp<T,T>(x));
-            auto e = nd4j::math::nd4j_exp<T,T>(-x);
+                return static_cast<T>(1.) - y - static_cast<T>(1.) / (static_cast<T>(1.) + sd::math::nd4j_exp<T,T>(x));
+            auto e = sd::math::nd4j_exp<T,T>(-x);
             return static_cast<T>(1.) - y - e / (static_cast<T>(1.) + e);
         };
 
         logits->applyPairwiseLambda<T>(*labels, functor, *output);
     }
 
-    void sigmCrossEntropyGrad(nd4j::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
+    void sigmCrossEntropyGrad(sd::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
         BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropyGrad_, (logits, labels, output), FLOAT_TYPES);
     }
 
@@ -189,14 +189,14 @@ namespace helpers {
     template <typename T>
     static void tanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            T th = nd4j::math::nd4j_tanh<T,T>(x);
+            T th = sd::math::nd4j_tanh<T,T>(x);
             return y * ((T)1.0f - (th * th));
         };
 
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void tanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void tanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), tanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -204,14 +204,14 @@ namespace helpers {
     template <typename T>
     static void hardTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            T th = nd4j::math::nd4j_tanh<T,T>(x);
+            T th = sd::math::nd4j_tanh<T,T>(x);
             return y * simdOps::HardTanhDerivative<T>::op(x, nullptr);
         };
 
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void hardTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void hardTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), hardTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -224,51 +224,51 @@ namespace helpers {
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void rationalTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void rationalTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), rationalTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
     template <typename T>
     static void rectifiedTanhDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            return x > (T) 0.0f ? y * (nd4j::math::nd4j_tanhderivative<T,T>(x)) : (T) 0.0f;
+            return x > (T) 0.0f ? y * (sd::math::nd4j_tanhderivative<T,T>(x)) : (T) 0.0f;
         };
 
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void rectifiedTanhDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void rectifiedTanhDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), rectifiedTanhDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
-    //            X f = (X) 1.0f + nd4j::math::nd4j_abs<X>(d1);
+    //            X f = (X) 1.0f + sd::math::nd4j_abs<X>(d1);
     //            return (X) d2 * ((X) 1.0f / (f * f));
 
     template <typename T>
     static void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            T ss = (T)1.f + nd4j::math::nd4j_abs<T>(x);
+            T ss = (T)1.f + sd::math::nd4j_abs<T>(x);
             return y * ((T) 1.0f  / (ss * ss));
         };
 
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void softSignDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void softSignDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), softSignDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
     template <typename T>
     static void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            T p = nd4j::math::nd4j_pow<T, T, T>(static_cast<T>(M_E), x);
+            T p = sd::math::nd4j_pow<T, T, T>(static_cast<T>(M_E), x);
             return y * (p / (p + 1.));
         };
 
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void softPlusDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void softPlusDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), softPlusDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 ///
@@ -278,14 +278,14 @@ namespace helpers {
     template <typename T>
     static void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            T s = nd4j::math::nd4j_sigmoid<T,T>(x);
+            T s = sd::math::nd4j_sigmoid<T,T>(x);
             return y * (s * ((T) 1.0f - s));
         };
 
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void sigmoidDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void sigmoidDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), sigmoidDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -298,7 +298,7 @@ namespace helpers {
         input->applyPairwiseLambda<T>(*epsilon, functor, *output);
     }
 
-    void hardSigmoidDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+    void hardSigmoidDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), hardSigmoidDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
@@ -334,11 +334,11 @@ namespace helpers {
         output->applyTransform(transform::Log, *output);
     }
 
-    void logSumExp(nd4j::LaunchContext * context, NDArray* input, NDArray* axis, NDArray* output) {
+    void logSumExp(sd::LaunchContext * context, NDArray* input, NDArray* axis, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, axis, output), FLOAT_TYPES);
     }
 
-    void logSumExp(nd4j::LaunchContext * context, NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
+    void logSumExp(sd::LaunchContext * context, NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, subtrah, axis, output), FLOAT_TYPES);
     }
 
@@ -351,15 +351,15 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArr
     auto mainRoutineT1 = LAMBDA_TT(_x, _z, posWeight) {
         T targetWeight = (1. + (posWeight - (T)1.f) * _z);
         return (1. - _z) * _x +
-               targetWeight * (nd4j::math::nd4j_log<T,T>((T)1.f + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(_x))) +
-                               nd4j::math::nd4j_max(-_x, T(0.f))
+               targetWeight * (sd::math::nd4j_log<T,T>((T)1.f + sd::math::nd4j_exp<T,T>(-sd::math::nd4j_abs(_x))) +
+                               sd::math::nd4j_max(-_x, T(0.f))
                );
     };
 
     auto mainRoutineT2 = LAMBDA_TTT(_x, _z, _w) {
         return (((T)1.0 - _z) * _x) +
-               _w * (nd4j::math::nd4j_log<T,T>(T(1.) + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(_x))) +
-                     nd4j::math::nd4j_max(-_x, T(0.f)));
+               _w * (sd::math::nd4j_log<T,T>(T(1.) + sd::math::nd4j_exp<T,T>(-sd::math::nd4j_abs(_x))) +
+                     sd::math::nd4j_max(-_x, T(0.f)));
     };
 
 
@@ -377,7 +377,7 @@ static void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArr
     }
 }
 
-void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
+void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
     BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output), FLOAT_TYPES);
 }
 

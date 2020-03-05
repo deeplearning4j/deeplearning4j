@@ -18,11 +18,11 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 19.11.2018
 
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/reduce3.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
-#include <specials_cuda.h>
+#include <ops/specials_cuda.h>
 
 using namespace simdOps;
 
@@ -168,7 +168,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
     }
 
     __syncthreads();
-    aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, length), extraZ);
+    aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, length), extraZ);
     __syncthreads();
 
     if (gridDim.x > 1) {
@@ -214,7 +214,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
                     sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], static_cast<Z*>(reductionBuffer)[i], extraZ);
 
             __syncthreads();
-            aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraZ);
+            aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, sd::math::nd4j_min<int>(gridDim.x, blockDim.x), extraZ);
             __syncthreads();
 
             if (threadIdx.x == 0)
@@ -324,7 +324,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 					__syncthreads();
        		}
 
-			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, xTadLength), extraZ);
+			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, xTadLength), extraZ);
 			__syncthreads();
 
             if (threadIdx.x == 0) {
@@ -410,7 +410,7 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             }
 
             __syncthreads();
-			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLen), extraZ);
+			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLen), extraZ);
             __syncthreads();
 
             if (threadIdx.x == 0)
@@ -440,7 +440,7 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             }
 
          	__syncthreads();
-			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLen), extraZ);
+			aggregatePartials<OpType>(reinterpret_cast<void*>(sPartials), threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLen), extraZ);
             __syncthreads();
 
             if (threadIdx.x == 0)
@@ -515,7 +515,7 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
     execGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
-    nd4j::DebugHelper::checkErrorCode(stream, "reduce3exec(...) failed");
+    sd::DebugHelper::checkErrorCode(stream, "reduce3exec(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -533,7 +533,7 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 									 Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
 
 		execAllGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
-        nd4j::DebugHelper::checkErrorCode(stream, "execAllGeneric(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "execAllGeneric(...) failed");
 	}
 
 ////////////////////////////////////////////////////////////////////////
@@ -549,7 +549,7 @@ __host__ void Reduce3<X,Z>::execScalar(dim3 launchDims, cudaStream_t *stream,
 										Nd4jLong *tadOnlyShapeInfo) {
 
     execScalarGeneric<X,Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo);
-    nd4j::DebugHelper::checkErrorCode(stream, "execScalarGeneric(...) failed");
+    sd::DebugHelper::checkErrorCode(stream, "execScalarGeneric(...) failed");
 }
 
 

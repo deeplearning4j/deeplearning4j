@@ -21,7 +21,7 @@
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/BroadcastBoolOpsTuple.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(equals, 0, 0) {
             auto x = INPUT_VARIABLE(0);

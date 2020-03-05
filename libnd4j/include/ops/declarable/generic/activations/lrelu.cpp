@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_lrelu)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(lrelu, 1, 1, true, -2, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -31,7 +31,7 @@ namespace nd4j {
 
             float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
 
-            input->applyScalar(nd4j::scalar::LeakyRELU, alpha, *output);
+            input->applyScalar(sd::scalar::LeakyRELU, alpha, *output);
             STORE_RESULT(output);
 
             return Status::OK();

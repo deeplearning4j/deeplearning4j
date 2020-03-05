@@ -21,7 +21,7 @@
 
 #include "testlayers.h"
 #include <initializer_list>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/CustomOperations.h>
 #include <execution/Engine.h>
@@ -32,14 +32,14 @@
 
 #endif
 
-using namespace nd4j;
+using namespace sd;
 
 class CuDnnTests : public testing::Test {
 public:
 
 };
 
-static void printer(std::initializer_list<nd4j::ops::platforms::PlatformHelper*> helpers) {
+static void printer(std::initializer_list<sd::ops::platforms::PlatformHelper*> helpers) {
 
     for (auto v:helpers) {
         nd4j_printf("Initialized [%s]\n", v->name().c_str());
@@ -50,22 +50,22 @@ static void printer(std::initializer_list<nd4j::ops::platforms::PlatformHelper*>
 TEST_F(CuDnnTests, helpers_includer) {
     // we need this block, to make sure all helpers are still available within binary, and not optimized out by linker
 #ifdef HAVE_CUDNN
-    nd4j::ops::platforms::PLATFORM_conv2d_ENGINE_CUDA conv2d;
-    nd4j::ops::platforms::PLATFORM_conv2d_bp_ENGINE_CUDA conv2d_bp;
-    nd4j::ops::platforms::PLATFORM_conv3dnew_ENGINE_CUDA conv3dnew;
-    nd4j::ops::platforms::PLATFORM_conv3dnew_bp_ENGINE_CUDA conv3dnew_bp;
-    nd4j::ops::platforms::PLATFORM_depthwise_conv2d_ENGINE_CUDA depthwise_conv2d;
-    nd4j::ops::platforms::PLATFORM_depthwise_conv2d_bp_ENGINE_CUDA depthwise_conv2d_bp;
-    nd4j::ops::platforms::PLATFORM_batchnorm_ENGINE_CUDA batchnorm;
-    nd4j::ops::platforms::PLATFORM_batchnorm_bp_ENGINE_CUDA batchnorm_bp;
-    nd4j::ops::platforms::PLATFORM_avgpool2d_ENGINE_CUDA avgpool2d;
-    nd4j::ops::platforms::PLATFORM_avgpool2d_bp_ENGINE_CUDA avgpool2d_bp;
-    nd4j::ops::platforms::PLATFORM_maxpool2d_ENGINE_CUDA maxpool2d;
-    nd4j::ops::platforms::PLATFORM_maxpool2d_bp_ENGINE_CUDA maxpool2d_bp;
-    nd4j::ops::platforms::PLATFORM_avgpool3dnew_ENGINE_CUDA avgpool3dnew;
-    nd4j::ops::platforms::PLATFORM_avgpool3dnew_bp_ENGINE_CUDA avgpool3dnew_bp;
-    nd4j::ops::platforms::PLATFORM_maxpool3dnew_ENGINE_CUDA maxpool3dnew;
-    nd4j::ops::platforms::PLATFORM_maxpool3dnew_bp_ENGINE_CUDA maxpool3dnew_bp;
+    sd::ops::platforms::PLATFORM_conv2d_ENGINE_CUDA conv2d;
+    sd::ops::platforms::PLATFORM_conv2d_bp_ENGINE_CUDA conv2d_bp;
+    sd::ops::platforms::PLATFORM_conv3dnew_ENGINE_CUDA conv3dnew;
+    sd::ops::platforms::PLATFORM_conv3dnew_bp_ENGINE_CUDA conv3dnew_bp;
+    sd::ops::platforms::PLATFORM_depthwise_conv2d_ENGINE_CUDA depthwise_conv2d;
+    sd::ops::platforms::PLATFORM_depthwise_conv2d_bp_ENGINE_CUDA depthwise_conv2d_bp;
+    sd::ops::platforms::PLATFORM_batchnorm_ENGINE_CUDA batchnorm;
+    sd::ops::platforms::PLATFORM_batchnorm_bp_ENGINE_CUDA batchnorm_bp;
+    sd::ops::platforms::PLATFORM_avgpool2d_ENGINE_CUDA avgpool2d;
+    sd::ops::platforms::PLATFORM_avgpool2d_bp_ENGINE_CUDA avgpool2d_bp;
+    sd::ops::platforms::PLATFORM_maxpool2d_ENGINE_CUDA maxpool2d;
+    sd::ops::platforms::PLATFORM_maxpool2d_bp_ENGINE_CUDA maxpool2d_bp;
+    sd::ops::platforms::PLATFORM_avgpool3dnew_ENGINE_CUDA avgpool3dnew;
+    sd::ops::platforms::PLATFORM_avgpool3dnew_bp_ENGINE_CUDA avgpool3dnew_bp;
+    sd::ops::platforms::PLATFORM_maxpool3dnew_ENGINE_CUDA maxpool3dnew;
+    sd::ops::platforms::PLATFORM_maxpool3dnew_bp_ENGINE_CUDA maxpool3dnew_bp;
 
 
 
@@ -115,7 +115,7 @@ TEST_F(CuDnnTests, mixed_helpers_test_1) {
     weights.syncToHost();
     bias.syncToHost();
 
-    nd4j::ops::conv2d op;
+    sd::ops::conv2d op;
 
     // cuDNN part
     Context cuda(1);

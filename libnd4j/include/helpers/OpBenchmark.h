@@ -21,13 +21,13 @@
 #ifndef DEV_TESTS_OPEXECUTIONER_H
 #define DEV_TESTS_OPEXECUTIONER_H
 
-#include <NativeOpExecutioner.h>
-#include <NDArray.h>
+#include <legacy/NativeOpExecutioner.h>
+#include <array/NDArray.h>
 #include <helpers/ShapeUtils.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT OpBenchmark {
     protected:
         int _opNum = 0;

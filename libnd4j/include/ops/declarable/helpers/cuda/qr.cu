@@ -18,10 +18,10 @@
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 #include <ops/declarable/helpers/qr.h>
-#include <NDArrayFactory.h>
-#include <MmulHelper.h>
+#include <array/NDArrayFactory.h>
+#include <helpers/MmulHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -151,7 +151,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void qr_(LaunchContext* context, NDArray* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+    void qr_(LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
         Nd4jLong lastDim = input->rankOf() - 1;
         Nd4jLong preLastDim = input->rankOf() - 2;
 
@@ -170,7 +170,7 @@ namespace helpers {
         NDArray::registerSpecialUse({outputQ, outputR}, {input});
     }
 
-    void qr(nd4j::LaunchContext* context, NDArray* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
+    void qr(sd::LaunchContext* context, NDArray const* input, NDArray* outputQ, NDArray* outputR, bool const fullMatricies) {
         BUILD_SINGLE_SELECTOR(input->dataType(), qr_, (context, input, outputQ, outputR, fullMatricies), FLOAT_TYPES);
     }
 

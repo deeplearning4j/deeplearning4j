@@ -92,9 +92,9 @@ public class HashingBalancedPartitionerTest extends BaseSparkTest {
 
         int[][] colorCountsByPartition = new int[3][2];
         for (final Tuple2<Tuple2<Long, Integer>, String> val : testList) {
-            System.out.println(val);
+//            System.out.println(val);
             Integer partition = hbp.getPartition(val._1());
-            System.out.println(partition);
+//            System.out.println(partition);
 
             if (val._2().equals("red"))
                 colorCountsByPartition[partition][0] += 1;
@@ -102,9 +102,9 @@ public class HashingBalancedPartitionerTest extends BaseSparkTest {
                 colorCountsByPartition[partition][1] += 1;
         }
 
-        for (int i = 0; i < 3; i++) {
-            System.out.println(Arrays.toString(colorCountsByPartition[i]));
-        }
+//        for (int i = 0; i < 3; i++) {
+//            System.out.println(Arrays.toString(colorCountsByPartition[i]));
+//        }
         for (int i = 0; i < 3; i++) {
             // avg red per partition : 2.33
             assertTrue(colorCountsByPartition[i][0] >= 1 && colorCountsByPartition[i][0] < 4);
@@ -178,12 +178,12 @@ public class HashingBalancedPartitionerTest extends BaseSparkTest {
                 colorCountsByPartition[partition][1] += 1;
         }
 
-        for (int i = 0; i < numPartitions; i++) {
-            System.out.println(Arrays.toString(colorCountsByPartition[i]));
-        }
-
-        System.out.println("Ideal red # per partition: " + avgRed);
-        System.out.println("Ideal blue # per partition: " + avgBlue);
+//        for (int i = 0; i < numPartitions; i++) {
+//            System.out.println(Arrays.toString(colorCountsByPartition[i]));
+//        }
+//
+//        System.out.println("Ideal red # per partition: " + avgRed);
+//        System.out.println("Ideal blue # per partition: " + avgBlue);
 
         for (int i = 0; i < numPartitions; i++) {
             // avg red per partition : 2.33

@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_clone_list)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LIST_OP_IMPL(clone_list, 1, 1, 0, 0) {
             auto list = INPUT_LIST(0);

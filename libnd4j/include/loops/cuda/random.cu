@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/random.h>
-#include <dll.h>
+#include <system/dll.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <helpers/DebugHelper.h>
-#include <specials_cuda.h>
+#include <ops/specials_cuda.h>
 
 using namespace randomOps;
 
@@ -130,10 +130,10 @@ namespace functions {
                 __shared__ char yOrder;
                 __shared__ char zOrder;
 
-                __shared__ nd4j::graph::RandomGenerator *buffer;
+                __shared__ sd::graph::RandomGenerator *buffer;
                 __shared__ unsigned char *cB;
                 __shared__ unsigned char *dB;
-                nd4j::graph::RandomGenerator *devBuffer;
+                sd::graph::RandomGenerator *devBuffer;
                 if (threadIdx.x == 0) {
                     length = shape::length(zShapeBuffer);
                     xEWS = shape::elementWiseStride(xShapeBuffer);
@@ -144,15 +144,15 @@ namespace functions {
                     zOrder = shape::order(zShapeBuffer);
 
                     extern __shared__ unsigned char shmem[];
-                    buffer = (nd4j::graph::RandomGenerator *) shmem;
+                    buffer = (sd::graph::RandomGenerator *) shmem;
                     cB = shmem;
-                    devBuffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
+                    devBuffer = reinterpret_cast<sd::graph::RandomGenerator *> (state);
                     dB = reinterpret_cast<unsigned char *> (state);
                 }
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+                for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                     cB[e] = dB[e];
 
                 __syncthreads();
@@ -192,16 +192,16 @@ namespace functions {
                 __shared__ char xOrder;
                 __shared__ char zOrder;
 
-                __shared__ nd4j::graph::RandomGenerator *buffer;
+                __shared__ sd::graph::RandomGenerator *buffer;
                 __shared__ unsigned char *cB;
                 __shared__ unsigned char *dB;
-                __shared__ nd4j::graph::RandomGenerator *devBuffer;
+                __shared__ sd::graph::RandomGenerator *devBuffer;
 
                 if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
-                    buffer = (nd4j::graph::RandomGenerator *) shmem;
+                    buffer = (sd::graph::RandomGenerator *) shmem;
                     cB = shmem;
-                    devBuffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
+                    devBuffer = reinterpret_cast<sd::graph::RandomGenerator *> (state);
                     dB = reinterpret_cast<unsigned char *> (state);
 
                     length = shape::length(zShapeBuffer);
@@ -213,7 +213,7 @@ namespace functions {
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+                for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                     cB[e] = dB[e];
 
                 __syncthreads();
@@ -245,16 +245,16 @@ namespace functions {
 
                 __shared__ Nd4jLong length;
                 __shared__ Nd4jLong ews;
-                __shared__ nd4j::graph::RandomGenerator *buffer;
+                __shared__ sd::graph::RandomGenerator *buffer;
                 __shared__ unsigned char *cB;
                 __shared__ unsigned char *dB;
-                __shared__ nd4j::graph::RandomGenerator *devBuffer;
+                __shared__ sd::graph::RandomGenerator *devBuffer;
 
                 if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
-                    buffer = (nd4j::graph::RandomGenerator *) shmem;
+                    buffer = (sd::graph::RandomGenerator *) shmem;
                     cB = shmem;
-                    devBuffer = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
+                    devBuffer = reinterpret_cast<sd::graph::RandomGenerator *> (state);
                     dB = reinterpret_cast<unsigned char *> (state);
                     length = shape::length(zShapeBuffer);
                     ews = shape::elementWiseStride(zShapeBuffer);
@@ -262,7 +262,7 @@ namespace functions {
                 __syncthreads();
 
                 // using this loop instead of memcpy
-                for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+                for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                     cB[e] = dB[e];
 
                 __syncthreads();

@@ -25,7 +25,7 @@
 #include "OpDescriptor.h"
 #include "DeclarableOp.h"
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         class ND4J_EXPORT BooleanOp : public DeclarableOp {
         protected:
@@ -36,12 +36,12 @@ namespace nd4j {
         public:
             BooleanOp(const char *name, int numInputs, bool scalar);
 
-            bool verify(const std::vector<nd4j::NDArray*>& args);
-            bool verify(nd4j::graph::Context& block);
+            bool verify(const std::vector<sd::NDArray*>& args);
+            bool verify(sd::graph::Context& block);
 
             Nd4jStatus execute(Context* block) override;
 
-            ShapeList *calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context& block) override;
+            ShapeList *calculateOutputShape(ShapeList *inputShape, sd::graph::Context& block) override;
         };
     }
 }

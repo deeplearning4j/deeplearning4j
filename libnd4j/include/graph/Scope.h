@@ -25,7 +25,7 @@
 #include <unordered_map>
 #include <graph/Node.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
 
         /**

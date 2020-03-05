@@ -24,7 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     NDArrayList::NDArrayList(int height, bool expandable) {
         _expandable = expandable;
         _elements.store(0);
@@ -47,7 +47,7 @@ namespace nd4j {
         return new NDArray(readRaw(idx)->dup());
     }
 
-    nd4j::DataType NDArrayList::dataType() {
+    sd::DataType NDArrayList::dataType() {
         return _dtype;
     }
 
@@ -144,7 +144,7 @@ namespace nd4j {
 
     NDArray* NDArrayList::stack() {
         // FIXME: this is bad for perf, but ok as poc
-        nd4j::ops::stack op;
+        sd::ops::stack op;
         std::vector<NDArray*> inputs;
         std::vector<double> targs;
         std::vector<Nd4jLong> iargs({0});
@@ -175,7 +175,7 @@ namespace nd4j {
         return _name;
     }
 
-    nd4j::LaunchContext * NDArrayList::context() {
+    sd::LaunchContext * NDArrayList::context() {
         return _context;
     }
 

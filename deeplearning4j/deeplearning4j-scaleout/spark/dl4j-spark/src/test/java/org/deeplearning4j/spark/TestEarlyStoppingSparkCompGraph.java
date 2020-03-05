@@ -69,7 +69,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
                         .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
 
         JavaRDD<DataSet> irisData = getIris();
@@ -120,7 +120,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MSE).build(), "in")
                         .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
         JavaRDD<DataSet> irisData = getIris();
         EarlyStoppingModelSaver<ComputationGraph> saver = new InMemoryModelSaver<>();
@@ -158,7 +158,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
                         .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
         JavaRDD<DataSet> irisData = getIris();
 
@@ -203,7 +203,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
                         .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
         JavaRDD<DataSet> irisData = getIris();
 
@@ -238,7 +238,7 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
                         .setOutputs("0").build();
         ComputationGraph net = new ComputationGraph(conf);
-        net.setListeners(new ScoreIterationListener(1));
+        net.setListeners(new ScoreIterationListener(5));
 
 
         JavaRDD<DataSet> irisData = getIris();

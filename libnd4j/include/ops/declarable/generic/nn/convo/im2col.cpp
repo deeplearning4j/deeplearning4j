@@ -18,7 +18,7 @@
 // Created by raver119 on 17.10.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_im2col)
 
 #include <ops/declarable/CustomOperations.h>
@@ -26,7 +26,7 @@
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
             auto x = INPUT_VARIABLE(0);
@@ -51,7 +51,7 @@ namespace nd4j {
 
             // FIXME: zeropad value is void
             LaunchContext* ctx = block.launchContext();
-            nd4j::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.launchContext()));
+            sd::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.launchContext()));
 
             STORE_RESULT(*z);
 

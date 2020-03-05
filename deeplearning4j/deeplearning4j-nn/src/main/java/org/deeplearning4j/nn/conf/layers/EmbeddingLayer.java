@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.params.EmbeddingLayerParamInitializer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.embeddings.ArrayEmbeddingInitializer;
 import org.deeplearning4j.nn.weights.embeddings.EmbeddingInitializer;
@@ -79,7 +80,7 @@ public class EmbeddingLayer extends FeedForwardLayer {
 
     @Override
     public ParamInitializer initializer() {
-        return DefaultParamInitializer.getInstance();
+        return EmbeddingLayerParamInitializer.getInstance();
     }
 
     @Override

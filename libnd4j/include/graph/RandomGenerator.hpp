@@ -19,14 +19,14 @@
 //
 // relies on xoroshiro64** and xoroshiro128 implementations
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
 #include <graph/RandomGenerator.h>
 #include <chrono>
 #include <array/DataTypeUtils.h>
 #include <helpers/logger.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
 
 

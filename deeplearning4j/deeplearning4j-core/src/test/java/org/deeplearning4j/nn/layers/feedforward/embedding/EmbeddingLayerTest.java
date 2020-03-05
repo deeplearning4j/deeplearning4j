@@ -47,8 +47,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class EmbeddingLayerTest extends BaseDL4JTest {
 
@@ -725,4 +724,77 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         assertEquals(new ActivationIdentity(), l2.getActivationFn());
 
     }
+
+
+    @Test
+    public void testEmbeddingWeightInit(){
+        // https://github.com/eclipse/deeplearning4j/issues/8663
+        //The embedding layer weight initialization should be independent of the vocabulary size (nIn setting)
+
+        for(WeightInit wi : new WeightInit[]{WeightInit.XAVIER, WeightInit.RELU, WeightInit.XAVIER_UNIFORM, WeightInit.LECUN_NORMAL, WeightInit.VAR_SCALING_NORMAL_FAN_OUT}) {
+
+            for (boolean seq : new boolean[]{false, true}) {
+
+                Nd4j.getRandom().setSeed(12345);
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .list()
+                        .layer(seq ?
+                                new EmbeddingSequenceLayer.Builder().weightInit(wi).nIn(100).nOut(100).build() :
+                                new EmbeddingLayer.Builder().weightInit(wi).nIn(100).nOut(100).build())
+                        .build();
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                Nd4j.getRandom().setSeed(12345);
+                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .list()
+                        .layer(seq ?
+                                new EmbeddingSequenceLayer.Builder().weightInit(wi).nIn(100).nOut(100).build() :
+                                new EmbeddingLayer.Builder().weightInit(wi).nIn(100).nOut(100).build())
+                        .build();
+                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                net2.init();
+
+                Nd4j.getRandom().setSeed(12345);
+                MultiLayerConfiguration conf3 = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .list()
+                        .layer(seq ?
+                                new EmbeddingSequenceLayer.Builder().weightInit(wi).nIn(100000).nOut(100).build() :
+                                new EmbeddingLayer.Builder().weightInit(wi).nIn(100000).nOut(100).build())
+                        .build();
+                MultiLayerNetwork net3 = new MultiLayerNetwork(conf3);
+                net3.init();
+
+                INDArray p1 = net.params();
+                INDArray p2 = net2.params();
+                INDArray p3 = net3.params();
+                assertEquals(p1, p2);
+
+                double m1 = p1.meanNumber().doubleValue();
+                double s1 = p1.stdNumber().doubleValue();
+
+                double m3 = p3.meanNumber().doubleValue();
+                double s3 = p3.stdNumber().doubleValue();
+
+                String str = (seq ? "EmbeddingSequenceLayer" : "EmbeddingLayer") + " - " + wi;
+
+                assertEquals(str, m1, m3, 0.1);
+                assertEquals(str, s1, s3, 0.1);
+
+                double re = relErr(s1, s3);
+                assertTrue(str + " - " + re, re < 0.05);
+            }
+        }
+
+    }
+
+    public static double relErr(double d1, double d2){
+        if(d1 == 0.0 && d2 == 0.0)
+            return 0.0;
+        return Math.abs(d1 - d2) / (Math.abs(d1) + Math.abs(d2));
+    }
+
 }

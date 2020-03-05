@@ -20,11 +20,11 @@
 
 #include "testlayers.h"
 #include <memory>
-#include <NDArray.h>
-#include <DebugHelper.h>
+#include <array/NDArray.h>
+#include <helpers/DebugHelper.h>
 #include <ops/declarable/headers/parity_ops.h>
 
-using namespace nd4j;
+using namespace sd;
 
 //////////////////////////////////////////////////////////////////////
 class NDArrayTest2 : public testing::Test {
@@ -662,8 +662,8 @@ TEST_F(NDArrayTest2, permute_test4) {
     auto arr1Buffer = new float[786432];
     auto arr2Buffer = new float[786432];
 
-    NDArray arr1(arr1Buffer, arr1ShapeInfo, nd4j::LaunchContext ::defaultContext());
-    NDArray arr2(arr2Buffer, arr2ShapeInfo, nd4j::LaunchContext ::defaultContext());
+    NDArray arr1(arr1Buffer, arr1ShapeInfo, sd::LaunchContext ::defaultContext());
+    NDArray arr2(arr2Buffer, arr2ShapeInfo, sd::LaunchContext ::defaultContext());
 
     const std::vector<int> perm = {0, 4, 5, 1, 2, 3};
     auto arr1P = arr1.permute(perm);
@@ -776,7 +776,7 @@ TEST_F(NDArrayTest2, scalar_get_test1) {
 
     auto scalar1 = NDArrayFactory::create(20.f);
 
-    NDArray arr('c', {2,2}, {0., 10., 20., 30.}, nd4j::DataType::FLOAT32);
+    NDArray arr('c', {2,2}, {0., 10., 20., 30.}, sd::DataType::FLOAT32);
 
     NDArray scalar2 = arr.e(2);
 
@@ -790,7 +790,7 @@ TEST_F(NDArrayTest2, scalar_get_test2) {
 
     auto scalar1 = NDArrayFactory::create(20.f);
 
-    NDArray arr('f', {2,2}, {0., 10., 20., 30.}, nd4j::DataType::FLOAT32);
+    NDArray arr('f', {2,2}, {0., 10., 20., 30.}, sd::DataType::FLOAT32);
 
     NDArray scalar2 = arr.e(1);
 
@@ -804,8 +804,8 @@ TEST_F(NDArrayTest2, scalar_set_test1) {
 
     NDArray scalar1 = NDArrayFactory::create(20.f);
 
-    NDArray arr('c', {2,2}, {0., 10., -20., 30.}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {2,2}, {0., 10.,  20., 30.}, nd4j::DataType::FLOAT32);
+    NDArray arr('c', {2,2}, {0., 10., -20., 30.}, sd::DataType::FLOAT32);
+    NDArray exp('c', {2,2}, {0., 10.,  20., 30.}, sd::DataType::FLOAT32);
 
     arr.p(2, scalar1);
 
@@ -818,8 +818,8 @@ TEST_F(NDArrayTest2, scalar_set_test2) {
 
     NDArray scalar1 = NDArrayFactory::create(20.f);
 
-    NDArray arr('f', {2,2}, {0., 10., -20., 30.}, nd4j::DataType::FLOAT32);
-    NDArray exp('f', {2,2}, {0., 10.,  20., 30.}, nd4j::DataType::FLOAT32);
+    NDArray arr('f', {2,2}, {0., 10., -20., 30.}, sd::DataType::FLOAT32);
+    NDArray exp('f', {2,2}, {0., 10.,  20., 30.}, sd::DataType::FLOAT32);
 
     arr.p(1, scalar1);
 
@@ -846,14 +846,14 @@ TEST_F(NDArrayTest2, debugInfoTest_1) {
             91.,  -82.,  37.,  64.,     55.,  46.,  73.,  28.,    -119.,  12., 112.,  13.,     14., 114.,  16., 117.,
             51.,  42.,  67.,  24.,     15.,  0.,  93.,  28.,    109.,  82.,  12., 113.,    114.,  14., 116.,  11.,
             31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
-            91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, nd4j::DataType::DOUBLE);
-    NDArray res(nd4j::DataType::DOUBLE);
+            91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, sd::DataType::DOUBLE);
+    NDArray res(sd::DataType::DOUBLE);
     DebugInfo info = DebugHelper::debugStatistics(&testArray);
     DebugInfo exp; // = {}
-    nd4j::ops::reduce_min minOp;
-    nd4j::ops::reduce_mean meanOp;
-    nd4j::ops::reduce_max maxOp;
-    nd4j::ops::reduce_stdev stdevOp;
+    sd::ops::reduce_min minOp;
+    sd::ops::reduce_mean meanOp;
+    sd::ops::reduce_max maxOp;
+    sd::ops::reduce_stdev stdevOp;
 
     minOp.execute({&testArray}, {&res}, {}, {}, {});
     exp._minValue = res.e<double>(0);
@@ -883,7 +883,7 @@ TEST_F(NDArrayTest2, debugInfoTest_2) {
             91.,  -82.,  37.,  64.,     55.,  46.,  73.,  28.,    -119.,  12., 112.,  13.,     14., 114.,  16., 117.,
             51.,  42.,  67.,  24.,     15.,  0.,  93.,  28.,    109.,  82.,  12., 113.,    114.,  14., 116.,  11.,
             31.,  22.,  87.,  44.,     55.,  46.,  73.,  28.,    119.,  12., 112.,  13.,     14., 114.,  16., 117.,
-            91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, nd4j::DataType::DOUBLE);
+            91.,  82.,  37.,  64.,    -3,  0, 73.,  28.,    119.,  12., 112.,  13.,    140., 110., 160., 107.}, sd::DataType::DOUBLE);
 
     DebugInfo info;
     DebugInfo exp; // = {}
@@ -908,7 +908,7 @@ TEST_F(NDArrayTest2, debugInfoTest_2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, test_subarray_ews_1) {
 
-    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {10, 5}, sd::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
 
     ASSERT_EQ(5, subArr1.ews());
@@ -917,7 +917,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, test_subarray_ews_2) {
 
-    NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
+    NDArray x('f', {10, 5}, sd::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
 
     ASSERT_EQ(1, subArr1.ews());
@@ -926,7 +926,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, test_subarray_ews_3) {
 
-    NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {10, 5}, sd::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
 
     ASSERT_EQ(1, subArr1.ews());
@@ -935,7 +935,7 @@ TEST_F(NDArrayTest2, test_subarray_ews_3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, test_subarray_ews_4) {
 
-    NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
+    NDArray x('f', {10, 5}, sd::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
 
     ASSERT_EQ(10, subArr1.ews());
@@ -944,8 +944,8 @@ TEST_F(NDArrayTest2, test_subarray_ews_4) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, subarray_1) {
 
-    NDArray x('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, nd4j::DataType::FLOAT32);
-    NDArray y('f', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, sd::DataType::FLOAT32);
+    NDArray y('f', {2,3,4}, {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, sd::DataType::FLOAT32);
 
     Nd4jLong shapeExpX0[] = {1, 2, 12, 8192, 12, 99};
     float    buffExpX0[]  = {1.000000, 13.000000};
@@ -956,7 +956,7 @@ TEST_F(NDArrayTest2, subarray_1) {
     float    buffExpX3[]  = {9.000000, 10.000000, 11.000000, 12.000000, 21.000000, 22.000000, 23.000000, 24.000000};
     Nd4jLong shapeExpX4[] = {3, 2, 1, 4, 12, 4, 1, 8192, 0, 99};
     float    buffExpX4[]  = {9.000000, 10.000000, 11.000000, 12.000000, 21.000000, 22.000000, 23.000000, 24.000000};
-    Nd4jLong shapeExpX5[] = {2, 2, 3, 12, 4, 8192, 0, 99};
+    Nd4jLong shapeExpX5[] = {2, 2, 3, 12, 4, 8192, 4, 99};
     float    buffExpX5[]  = {4.000000, 8.000000, 12.000000, 16.000000, 20.000000, 24.000000};
 
     Nd4jLong shapeExpY0[] = {1, 2, 1, 8192, 1, 102};
@@ -1049,7 +1049,7 @@ TEST_F(NDArrayTest2, subarray_1) {
 
 TEST_F(NDArrayTest2, test_subarray_interval_1) {
 
-    NDArray x('f', {10, 10}, nd4j::DataType::FLOAT32);
+    NDArray x('f', {10, 10}, sd::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0,9)});
 
     ASSERT_EQ(10, subArr1.sizeAt(0));
@@ -1058,7 +1058,7 @@ TEST_F(NDArrayTest2, test_subarray_interval_1) {
 
 TEST_F(NDArrayTest2, test_subarray_interval_2) {
 
-    NDArray x('c', {10, 10}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {10, 10}, sd::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0,9)});
 
     ASSERT_EQ(10, subArr1.sizeAt(0));
@@ -1066,8 +1066,8 @@ TEST_F(NDArrayTest2, test_subarray_interval_2) {
 }
 
 TEST_F(NDArrayTest2, test_subarray_3d_cf) {
-    NDArray f('f', {10, 20, 30}, nd4j::DataType::FLOAT32);
-    NDArray c('c', {10, 20, 30}, nd4j::DataType::FLOAT32);
+    NDArray f('f', {10, 20, 30}, sd::DataType::FLOAT32);
+    NDArray c('c', {10, 20, 30}, sd::DataType::FLOAT32);
 
     auto subarrayF = f({0,0, 0,0, 2,3}, true);
 
@@ -1198,10 +1198,10 @@ TEST_F(NDArrayTest2, trueBroadcast_1) {
 
     NDArray x('f', {2, 3}, {1., 2., 3., 4., 5., 6.});
     NDArray y('f', {1, 3}, {5., 4., 3.});
-    NDArray z('c', {2, 3}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {2, 3}, sd::DataType::DOUBLE);
 
     auto exp = x - y;
-    x.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Subtract(), y, z);
+    x.applyTrueBroadcast(sd::BroadcastOpsTuple::Subtract(), y, z);
 
     // exp.printIndexedBuffer();
     // z.printIndexedBuffer();
@@ -1212,12 +1212,12 @@ TEST_F(NDArrayTest2, trueBroadcast_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayTest2, reduce_1) {
 
-    NDArray arr6('f', {1, 1, 4, 4, 4, 4}, nd4j::DataType::DOUBLE);
-    NDArray exp('f', {1, 1, 4, 4}, nd4j::DataType::DOUBLE);
+    NDArray arr6('f', {1, 1, 4, 4, 4, 4}, sd::DataType::DOUBLE);
+    NDArray exp('f', {1, 1, 4, 4}, sd::DataType::DOUBLE);
 
     arr6.linspace(1);
 
-    NDArray arr6s = arr6.reduceAlongDimension(nd4j::reduce::Sum, {2,3});
+    NDArray arr6s = arr6.reduceAlongDimension(sd::reduce::Sum, {2,3});
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
@@ -1248,7 +1248,7 @@ TEST_F(NDArrayTest2, reduce3_1) {
     NDArray y('c', {1,4}, {2,3,4,5});
     NDArray exp('c', {4}, {1,1,1,1});
 
-    NDArray z = x.applyReduce3(nd4j::reduce3::EuclideanDistance, y, {0}, nullptr);
+    NDArray z = x.applyReduce3(sd::reduce3::EuclideanDistance, y, {0}, nullptr);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1281,8 +1281,8 @@ TEST_F(NDArrayTest2, test_trueBroadcast_empty_2) {
 
 TEST_F(NDArrayTest2, test_subarray_followed_by_reshape_1) {
 
-    NDArray x('c', {5, 1, 3}, nd4j::DataType::FLOAT32);
-    NDArray e('c', {1, 3}, {7.f, 8.f, 9.f}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {5, 1, 3}, sd::DataType::FLOAT32);
+    NDArray e('c', {1, 3}, {7.f, 8.f, 9.f}, sd::DataType::FLOAT32);
 
     x.linspace(1.);
 

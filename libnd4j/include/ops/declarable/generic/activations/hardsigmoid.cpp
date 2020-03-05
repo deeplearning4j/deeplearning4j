@@ -18,19 +18,19 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_hardsigmoid)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(hardsigmoid, 1, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->applyTransform(nd4j::transform::HardSigmoid, *output);
+            input->applyTransform(sd::transform::HardSigmoid, *output);
             STORE_RESULT(output);
 
             return Status::OK();

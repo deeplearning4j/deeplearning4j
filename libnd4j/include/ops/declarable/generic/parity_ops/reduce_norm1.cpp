@@ -22,7 +22,7 @@
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 #if NOT_EXCLUDED(OP_reduce_norm1)
 
@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(reduce_norm1) {
 
 DECLARE_TYPES(reduce_norm1) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 #endif
@@ -100,7 +100,7 @@ CUSTOM_OP_IMPL(reduce_norm1_bp, 2, 1, false, 0, 0) {
     auto gradO = INPUT_VARIABLE(1);
     auto gradI = OUTPUT_VARIABLE(0);
 
-    input->applyTransform(nd4j::transform::Sign, *gradI);
+    input->applyTransform(sd::transform::Sign, *gradI);
 
     if (gradO->lengthOf() == 1) {
         *gradI *= *gradO;
@@ -158,7 +158,7 @@ DECLARE_SHAPE_FN(reduce_norm1_bp) {
 
 DECLARE_TYPES(reduce_norm1_bp) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

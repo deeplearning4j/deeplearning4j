@@ -18,12 +18,12 @@
 // Created by george@skymind.io on 26.01.2018.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_normalize_moments)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(normalize_moments, 3, 2, false, 1, 0) {
             auto counts = INPUT_VARIABLE(0);
@@ -75,7 +75,7 @@ namespace nd4j {
 
         DECLARE_TYPES(normalize_moments) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

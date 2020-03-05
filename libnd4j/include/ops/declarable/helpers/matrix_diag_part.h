@@ -19,14 +19,14 @@
 //
 #ifndef __MATRIX_DIAG_PART_HELPERS__
 #define __MATRIX_DIAG_PART_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    int matrixDiagPart(nd4j::LaunchContext * context, NDArray const* input, NDArray* output);
+    int matrixDiagPart(sd::LaunchContext * context, NDArray const* input, NDArray* output);
 
 }
 }

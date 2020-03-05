@@ -23,7 +23,7 @@
 #include <helpers/ShapeUtils.h>
 #include <execution/Threads.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -45,7 +45,7 @@ Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output, const int 
 
         Nd4jLong xCoords[MAX_RANK];
 
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
 
             shape::index2coords(i, xShapeInfo, xCoords);
 
@@ -64,13 +64,13 @@ Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output, const int 
 }
 
 ///////////////////////////////////////////////////////////////////
-Nd4jLong checkIndices(nd4j::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
+Nd4jLong checkIndices(sd::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
 
     BUILD_SINGLE_SELECTOR(indices.dataType(), return checkIndices_, (indices, output, axis), INDEXING_TYPES);
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const int outRank = output.rankOf();
     const int indRank = indices.rankOf();
@@ -79,7 +79,7 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
 
     if(outRank == 1) {
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 Nd4jLong idx = indices.e<Nd4jLong>(i);
                 NDArray out = output({idx, idx + 1});
 
@@ -87,7 +87,7 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : nd4j::Environment::getInstance()->maxThreads());
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
     }
     else {      // outRank > 1
 
@@ -99,7 +99,7 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 NDArray outSubArr = output(indices.e<Nd4jLong>(i), std::vector<int>({0}));
                 NDArray updSubArr = updates(i, dimsToExcludeUpd);
 
@@ -107,12 +107,12 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : nd4j::Environment::getInstance()->maxThreads());
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
     }
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const Nd4jLong indLen = indices.lengthOf();
     const int outRank = output.rankOf();
@@ -121,7 +121,7 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
 
     if(outRank == 1) {
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 Nd4jLong idx = indices.e<Nd4jLong>(i);
                 NDArray out = output({idx, idx + 1});
 
@@ -129,7 +129,7 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : nd4j::Environment::getInstance()->maxThreads());
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
     }
     else {
         std::vector<int> dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank-1});
@@ -139,7 +139,7 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
         auto func = PRAGMA_THREADS_FOR {
             std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
 
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 NDArray indSubArr = indices(i, dimsToExcludeInd);
 
                 for (Nd4jLong j = 0; j < indLastDim; ++j) {
@@ -154,11 +154,11 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen / indLastDim, 1, lock ? 1 : nd4j::Environment::getInstance()->maxThreads());
+        samediff::Threads::parallel_tad(func, 0, indLen / indLastDim, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
     }
 }
 
-void scatterForLoss(nd4j::LaunchContext  *context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
+void scatterForLoss(sd::LaunchContext  *context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
 
     // shapes of indices and output must be the same
     // shape of indices should be the same as updates shape with last dimension excluded
@@ -170,7 +170,7 @@ void scatterForLoss(nd4j::LaunchContext  *context, const NDArray& indices, NDArr
 
     if(!calcGrad) {
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto subArr = updates(i, dimsToExclude);
                 output.p(i, subArr.e(indices.e<Nd4jLong>(i)));
             }
@@ -179,7 +179,7 @@ void scatterForLoss(nd4j::LaunchContext  *context, const NDArray& indices, NDArr
         samediff::Threads::parallel_for(func, 0, indicesLen);
     } else {
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto subArr = updates(i, dimsToExclude);
                 auto ind = indices.e<Nd4jLong>(i);
                 subArr.p(ind, subArr.e(ind) - 1.);

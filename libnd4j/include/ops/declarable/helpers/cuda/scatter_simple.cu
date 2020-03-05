@@ -23,13 +23,13 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Y>
@@ -48,7 +48,7 @@ namespace nd4j {
 
 
             template <typename X, typename Y>
-            void scatterSimple_(nd4j::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
+            void scatterSimple_(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
 
                 auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(), dimensions);
                 auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dims);
@@ -61,7 +61,7 @@ namespace nd4j {
             }
 
 
-            void scatterSimple(nd4j::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
+            void scatterSimple(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
                 auto xType = input.dataType();
                 auto yType = indices.dataType();
 

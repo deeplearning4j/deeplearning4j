@@ -23,14 +23,14 @@
 #define __LIBND4J_L_GAMMA__H__
 
 #include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include "array/NDArray.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
     // calculate the digamma function for each element for array
-    void lgamma(nd4j::LaunchContext* context, NDArray& x, NDArray& z);
+    void lgamma(sd::LaunchContext* context, NDArray& x, NDArray& z);
 
 }
 }

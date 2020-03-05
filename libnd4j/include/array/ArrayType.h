@@ -21,7 +21,7 @@
 #ifndef ND4J_ARRAY_TYPE_H
 #define ND4J_ARRAY_TYPE_H
 
-namespace nd4j {
+namespace sd {
     enum ArrayType {
         DENSE = 1,
         SPARSE = 2,

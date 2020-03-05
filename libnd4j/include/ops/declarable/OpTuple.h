@@ -23,24 +23,24 @@
 
 #include <vector>
 #include <initializer_list>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         class ND4J_EXPORT OpTuple {
         public:
             std::string _opName;
-            std::vector<nd4j::NDArray*> _inputs;
-            std::vector<nd4j::NDArray*> _outputs;
+            std::vector<sd::NDArray*> _inputs;
+            std::vector<sd::NDArray*> _outputs;
             std::vector<double> _tArgs;
             std::vector<Nd4jLong> _iArgs;
 
             OpTuple(const char *opName);
-            OpTuple(const char *opName, std::initializer_list<nd4j::NDArray *>&& inputs, std::initializer_list<double>&& tArgs, std::initializer_list<Nd4jLong>&& iArgs);
+            OpTuple(const char *opName, std::initializer_list<sd::NDArray *>&& inputs, std::initializer_list<double>&& tArgs, std::initializer_list<Nd4jLong>&& iArgs);
             ~OpTuple();
 
-            OpTuple* addInput(nd4j::NDArray *array);
-            OpTuple* addOutput(nd4j::NDArray *array);
+            OpTuple* addInput(sd::NDArray *array);
+            OpTuple* addOutput(sd::NDArray *array);
             OpTuple* setTArgs(std::initializer_list<double> tArgs);
             OpTuple* setIArgs(std::initializer_list<Nd4jLong> iArgs);
         };

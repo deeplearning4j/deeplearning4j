@@ -333,15 +333,16 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                     sparkNet.fit(rdd);
                 }
 
-                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+//                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+                sparkNet.getSparkTrainingStats().statsAsString();
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
 
-                System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
-                System.out.println("Initial (Spark) params:       "
-                                + Arrays.toString(initialSparkParams.data().asFloat()));
-                System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
-                System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
+//                System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
+//                System.out.println("Initial (Spark) params:       "
+//                                + Arrays.toString(initialSparkParams.data().asFloat()));
+//                System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
+//                System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
                 assertEquals(initialParams, initialSparkParams);
                 assertNotEquals(initialParams, finalParams);
                 assertEquals(finalParams, finalSparkParams);
@@ -405,15 +406,16 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                     sparkNet.fit(rdd);
                 }
 
-                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+//                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+                sparkNet.getSparkTrainingStats().statsAsString();
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
 
-                System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
-                System.out.println("Initial (Spark) params:       "
-                                + Arrays.toString(initialSparkParams.data().asFloat()));
-                System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
-                System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
+//                System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
+//                System.out.println("Initial (Spark) params:       "
+//                                + Arrays.toString(initialSparkParams.data().asFloat()));
+//                System.out.println("Final (Local) params: " + Arrays.toString(finalParams.data().asFloat()));
+//                System.out.println("Final (Spark) params: " + Arrays.toString(finalSparkParams.data().asFloat()));
                 assertArrayEquals(initialParams.data().asFloat(), initialSparkParams.data().asFloat(), 1e-8f);
                 assertArrayEquals(finalParams.data().asFloat(), finalSparkParams.data().asFloat(), 1e-6f);
 
@@ -478,18 +480,19 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                     sparkNet.fit(rdd);
                 }
 
-                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+//                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+                sparkNet.getSparkTrainingStats().statsAsString();
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
                 //                executioner.addToWatchdog(finalSparkParams, "finalSparkParams");
 
                 float[] fp = finalParams.data().asFloat();
                 float[] fps = finalSparkParams.data().asFloat();
-                System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
-                System.out.println("Initial (Spark) params:       "
-                                + Arrays.toString(initialSparkParams.data().asFloat()));
-                System.out.println("Final (Local) params: " + Arrays.toString(fp));
-                System.out.println("Final (Spark) params: " + Arrays.toString(fps));
+//                System.out.println("Initial (Local) params:       " + Arrays.toString(initialParams.data().asFloat()));
+//                System.out.println("Initial (Spark) params:       "
+//                                + Arrays.toString(initialSparkParams.data().asFloat()));
+//                System.out.println("Final (Local) params: " + Arrays.toString(fp));
+//                System.out.println("Final (Spark) params: " + Arrays.toString(fps));
 
                 assertEquals(initialParams, initialSparkParams);
                 assertNotEquals(initialParams, finalParams);
@@ -551,14 +554,15 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
                     sparkNet.fit(rdd);
                 }
 
-                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+//                System.out.println(sparkNet.getSparkTrainingStats().statsAsString());
+                sparkNet.getSparkTrainingStats().statsAsString();
 
                 INDArray finalSparkParams = sparkNet.getNetwork().params().dup();
 
-                System.out.println("Initial (Local) params:  " + Arrays.toString(initialParams.data().asFloat()));
-                System.out.println("Initial (Spark) params:  " + Arrays.toString(initialSparkParams.data().asFloat()));
-                System.out.println("Final (Local) params:    " + Arrays.toString(finalParams.data().asFloat()));
-                System.out.println("Final (Spark) params:    " + Arrays.toString(finalSparkParams.data().asFloat()));
+//                System.out.println("Initial (Local) params:  " + Arrays.toString(initialParams.data().asFloat()));
+//                System.out.println("Initial (Spark) params:  " + Arrays.toString(initialSparkParams.data().asFloat()));
+//                System.out.println("Final (Local) params:    " + Arrays.toString(finalParams.data().asFloat()));
+//                System.out.println("Final (Spark) params:    " + Arrays.toString(finalSparkParams.data().asFloat()));
                 assertArrayEquals(initialParams.data().asFloat(), initialSparkParams.data().asFloat(), 1e-8f);
                 assertArrayEquals(finalParams.data().asFloat(), finalSparkParams.data().asFloat(), 1e-6f);
 

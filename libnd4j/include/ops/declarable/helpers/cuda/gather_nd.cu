@@ -23,13 +23,13 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             ///////////////////////////////////////////////////////////////////
@@ -53,7 +53,7 @@ namespace nd4j {
                     xRank   = shape::rank(xShapeInfo);
                     yRank   = shape::rank(yShapeInfo);
                     zRank   = shape::rank(zShapeInfo);
-                    maxRank = nd4j::math::nd4j_max<int>(yRank, nd4j::math::nd4j_max<int>(xRank, zRank));
+                    maxRank = sd::math::nd4j_max<int>(yRank, sd::math::nd4j_max<int>(xRank, zRank));
 
                     zLen     = shape::length(zShapeInfo);
                     yLastDim = yShapeInfo[yRank];
@@ -121,9 +121,9 @@ namespace nd4j {
             }
 
 ///////////////////////////////////////////////////////////////////
-            void gatherND(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
+            void gatherND(sd::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
 
-                const int maxRank = nd4j::math::nd4j_max<int>(indices.rankOf(), nd4j::math::nd4j_max<int>(input.rankOf(), output.rankOf()));
+                const int maxRank = sd::math::nd4j_max<int>(indices.rankOf(), sd::math::nd4j_max<int>(input.rankOf(), output.rankOf()));
 
                 const int threadsPerBlock = 256;
                 const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;

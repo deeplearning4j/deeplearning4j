@@ -21,11 +21,11 @@
 #ifndef LIBND4J_LOGICCONDITIONAL_H
 #define LIBND4J_LOGICCONDITIONAL_H
 
-#include <pointercast.h>
-#include <Node.h>
-#include <Graph.h>
+#include <system/pointercast.h>
+#include <graph/Node.h>
+#include <graph/Graph.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         /**
          * This class is responsible for execution logic of Conditional logical abstraction

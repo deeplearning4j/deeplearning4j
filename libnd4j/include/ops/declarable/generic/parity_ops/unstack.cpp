@@ -16,125 +16,114 @@
 
 //
 // @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_unstack)
 
 #include <ops/declarable/CustomOperations.h>
-#include <helpers/ConstantTadHelper.h>
+#include<ops/declarable/helpers/stack.h>
 
-namespace nd4j {
-    namespace ops {
-        CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
-            auto input = INPUT_VARIABLE(0);
+namespace sd {
+namespace ops  {
 
-            auto dim = INT_ARG(0);
-            if (dim < 0)
-                dim += input->rankOf();
+CUSTOM_OP_IMPL(unstack, 1, -1, false, 0, 1) {
+
+    auto input = INPUT_VARIABLE(0);
+
+    auto dim = INT_ARG(0);
+    if (dim < 0)
+        dim += input->rankOf();
 
 
-            REQUIRE_TRUE(dim < input->rankOf(), 0, "Unstack dimension should be lower then rank of input %i, but got dimension=%i !", input->rankOf(), dim);
-            REQUIRE_TRUE(dim >= 0, 0, "Unstack dimension should be non-negative value, but got %i !", dim);
+    REQUIRE_TRUE(dim < input->rankOf(), 0, "Unstack dimension should be lower then rank of input %i, but got dimension=%i !", input->rankOf(), dim);
+    REQUIRE_TRUE(dim >= 0, 0, "Unstack dimension should be non-negative value, but got %i !", dim);
 
-            if(input->isEmpty())
-                return Status::OK();
+    if(input->isEmpty())
+        return Status::OK();
 
-            std::vector<int> dims;
-            for (int e = 0; e < input->rankOf(); e++)
-                if (e != dim)
-                    dims.emplace_back(e);
-            if (dims.size() == 0 && input->rankOf() == 1) { // split vector into lenthOf scalars
-                for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
-                    auto outE = OUTPUT_VARIABLE(e);
-                    outE->assign(input->e(e));
-                }
-            }
+    std::vector<NDArray*> outArrs(input->sizeAt(dim));
+    for(uint i = 0; i < outArrs.size(); ++i)
+        outArrs[i] = OUTPUT_VARIABLE(i);
 
-            auto tads = input->allTensorsAlongDimension(dims);
-            //nd4j_printf("Tad size: %d\n",tads.size());
-            for (int e = 0; e < tads.size(); e++) {
-                //nd4j_printf("Calling assign at index %d\n",e);
-                auto outE = OUTPUT_VARIABLE(e);
-                auto tadAtE = tads.at(e);
+    helpers::unstack(block.launchContext(), *input, outArrs, dim);
 
-                outE->assign(tadAtE);
+    return Status::OK();
+}
 
-                this->storeResult(block, e, *outE);
-            }
+DECLARE_SYN(unpack, unstack);
 
-            return Status::OK();
-        }
+DECLARE_SHAPE_FN(unstack) {
+    auto inShapeInfo = inputShape->at(0);
 
-        DECLARE_SYN(unpack, unstack);
+    auto dim = INT_ARG(0);
+    if (dim < 0)
+        dim += shape::rank(inShapeInfo);
 
-        DECLARE_SHAPE_FN(unstack) {
-            auto inShape = inputShape->at(0);
+    REQUIRE_TRUE(dim < inShapeInfo[0], 0, "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShapeInfo[0], dim);
+    REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension should be non-negative value, but got %i !", dim);
 
-            auto dim = INT_ARG(0);
-            if (dim < 0)
-                dim += shape::rank(inShape);
+    if(ArrayOptions::arrayType(inShapeInfo) == ArrayType::EMPTY) {
 
-            REQUIRE_TRUE(dim < inShape[0], 0, "UNSTACK op: dimension should be lower then rank of input %i, but got dimension=%i !", inShape[0], dim);
-            REQUIRE_TRUE(dim >= 0, 0, "UNSTACK op: dimension should be non-negative value, but got %i !", dim);
+        if(shape::shapeOf(inShapeInfo)[dim] == 0)
+            return SHAPELIST();
 
-            if(ArrayOptions::arrayType(inShape) == ArrayType::EMPTY) {
-                if(shape::shapeOf(inShape)[dim] == 0)
-                    return SHAPELIST();
-                const Nd4jLong numTads = shape::shapeOf(inShape)[dim];
-                std::vector<Nd4jLong> outShape;
-                for(uint i = 0; i < shape::rank(inShape); ++i)
-                    if(i != dim)
-                        outShape.push_back(shape::shapeOf(inShape)[i]);
+        const Nd4jLong numTads = shape::shapeOf(inShapeInfo)[dim];
+        std::vector<Nd4jLong> outShape;
+        for(uint i = 0; i < shape::rank(inShapeInfo); ++i)
+            if(i != dim)
+                outShape.push_back(shape::shapeOf(inShapeInfo)[i]);
 
-                auto result = SHAPELIST();
-                for(uint i = 0; i < numTads; ++i)
-                    result->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), outShape));
-                return result;
-            }
+        auto result = SHAPELIST();
+        for(uint i = 0; i < numTads; ++i)
+            result->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape));
 
-            std::vector<int> dims;
-            for (int e = 0; e < shape::rank(inShape); e++)
-                if (e != dim)
-                    dims.emplace_back(e);
-            if (dims.size() == 0 && shape::rank(inShape) == 1) { // split vector into lenthOf scalars
-                //
-                auto result = SHAPELIST();
-                for (Nd4jLong e = 0; e < shape::length(inShape); e++)
-                    result->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape)));
-                return result;
-            }
-
-            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
-            auto numTads = tadPack.numberOfTads();
-
-            std::vector<Nd4jLong> shape(shape::rank(tadPack.primaryShapeInfo()));
-            for (int e = 0; e < shape::rank(tadPack.primaryShapeInfo()); e++)
-                shape[e] = shape::shapeOf(tadPack.primaryShapeInfo())[e];
-
-            // remove leading and trailing 1
-            if (inShape[0] == 2 && shape.size() == 2) {
-                if (shape[0] == 1) {
-                    shape.erase(shape.begin());
-                } else if (shape[1] == 1) {
-                    shape.erase(shape.end());
-                }
-            }
-
-            auto result = SHAPELIST();
-            for (int e = 0; e < numTads; e++) {
-                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
-                result->push_back(newShape);
-            }
-            return result;
-        }
-
-        DECLARE_TYPES(unstack) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
-                    ->setSameMode(true);
-        }
+        return result;
     }
+
+    std::vector<int> dims = ShapeUtils::evalDimsToExclude(inShapeInfo[0], {dim});
+
+    if (dims.size() == 0 && shape::rank(inShapeInfo) == 1) { // split vector into lenthOf scalars
+
+        auto result = SHAPELIST();
+        for (Nd4jLong e = 0; e < shape::length(inShapeInfo); e++)
+            result->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShapeInfo)));
+
+        return result;
+    }
+
+    std::vector<Nd4jLong> subArrShape(shape::rank(inShapeInfo) - 1);
+
+    for(uint j = 0, i = 0; i < shape::rank(inShapeInfo); i++)
+        if(i != dim)
+            subArrShape[j++] = shape::shapeOf(inShapeInfo)[i];
+
+    // remove leading and trailing 1
+    if (inShapeInfo[0] == 2 && subArrShape.size() == 2) {
+
+        if (subArrShape[0] == 1)
+            subArrShape.erase(subArrShape.begin());
+        else if (subArrShape[1] == 1)
+            subArrShape.erase(subArrShape.end());
+    }
+
+    auto result = SHAPELIST();
+    for (int e = 0; e < shape::shapeOf(inShapeInfo)[dim]; e++) {
+        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), subArrShape);
+        result->push_back(newShape);
+    }
+    return result;
+}
+
+DECLARE_TYPES(unstack) {
+    getOpDescriptor()
+            ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+            ->setSameMode(true);
+}
+
+
+}
 }
 
 #endif

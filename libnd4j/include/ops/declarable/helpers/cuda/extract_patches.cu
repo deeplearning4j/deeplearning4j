@@ -25,7 +25,7 @@
 #include <array>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +92,7 @@ namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static void _extractPatches(nd4j::LaunchContext * context, NDArray* images, NDArray* output, int sizeRow, int sizeCol, int strideRow, int strideCol, int rateRow, int rateCol, bool theSame){
+    static void _extractPatches(sd::LaunchContext * context, NDArray* images, NDArray* output, int sizeRow, int sizeCol, int strideRow, int strideCol, int rateRow, int rateCol, bool theSame){
         NDArray::prepareSpecialUse({output}, {images});
         std::vector<int> restDims({1, 2, 3}); // the first and the last dims
         // 3D matricies - 2D matricies of vectors (if last dim is greater than 1)
@@ -114,8 +114,8 @@ namespace helpers {
         if (sizeCol * rateCol < 3)
             colCast = 0;
 
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(images->getShapeInfo(), restDims.data(), restDims.size());
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), restDims.data(), restDims.size());
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(images->getShapeInfo(), restDims.data(), restDims.size());
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), restDims.data(), restDims.size());
         int batchCount = packX.numberOfTads();
 
         PointersManager manager(context, "helpers::extractPatches");
@@ -132,11 +132,11 @@ namespace helpers {
         manager.synchronize();
         NDArray::registerSpecialUse({output}, {images});
     }
-    BUILD_SINGLE_TEMPLATE(template void _extractPatches, (nd4j::LaunchContext * context, NDArray* input, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _extractPatches, (sd::LaunchContext * context, NDArray* input, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame), LIBND4J_TYPES);
 
 
 
-    void extractPatches(nd4j::LaunchContext * context, NDArray* images, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
+    void extractPatches(sd::LaunchContext * context, NDArray* images, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
         auto xType = images->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, _extractPatches, (context, images, output, sizeRow, sizeCol, stradeRow, stradeCol, rateRow, rateCol, theSame), LIBND4J_TYPES);

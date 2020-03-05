@@ -23,11 +23,11 @@
 
 #include <ops/declarable/helpers/helpers.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-void histogramFixedWidth(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output);
+void histogramFixedWidth(sd::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output);
 
 
 }

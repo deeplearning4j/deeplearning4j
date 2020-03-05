@@ -18,11 +18,11 @@
 // @author raver119@gmail.com
 //
 
-#include <NDArray.h>
-#include <NDArrayList.h>
+#include <array/NDArray.h>
+#include <array/NDArrayList.h>
 #include "testlayers.h"
 
-using namespace nd4j;
+using namespace sd;
 
 class NDArrayListTests : public testing::Test {
 public:

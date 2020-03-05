@@ -21,11 +21,11 @@
 
 #include<ops/declarable/helpers/batchnorm.h>
 #include <helpers/ShapeUtils.h>
-#include <OmpLaunchHelper.h>
-#include <ConstantTadHelper.h>
-#include <PointersManager.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <helpers/ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
@@ -67,7 +67,7 @@ namespace helpers {
 // 		const auto meanOffset     = shape::getIndexOffset(i, meanShapeInfo);
 //     	const auto varianceOffset = shape::getIndexOffset(i, varianceShapeInfo);
 
-//     	T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
+//     	T sigmaInvGam = 1. / sd::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
 
 //     	if(gamma != nullptr)
 //     		sigmaInvGam *= gamma[shape::getIndexOffset(i, gammaShapeInfo)];
@@ -149,7 +149,7 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
         const auto meanOffset     = shape::getOffset(meanShapeInfo, coords);
         const auto varianceOffset = shape::getOffset(varianceShapeInfo, coords);
 
-        T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
+        T sigmaInvGam = 1. / sd::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
 
         if(gamma != nullptr) {
             const auto gammaOffset = shape::getOffset(gammaShapeInfo, coords);
@@ -201,8 +201,8 @@ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* varianc
 
 	// std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 
-	// auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimsToExclude);
- //    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimsToExclude);
+	// auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimsToExclude);
+ //    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimsToExclude);
 
  //    const int threadsPerBlock = MAX_NUM_THREADS / 2;
  //    const int blocksPerGrid = (mean->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;

@@ -23,12 +23,12 @@
 
 #include <map>
 #include <string>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <mutex>
 #include "AllocationEntry.h"
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         /**
          * This class is used for tracking memory allocation wrt their allocation points in code

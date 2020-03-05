@@ -19,8 +19,8 @@
 // @author raver119@gmail.com
 //
 
-#include "../specials.hpp"
+#include "../specials_single.hpp"
 
-namespace nd4j {
+namespace sd {
     BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES_0);
 }

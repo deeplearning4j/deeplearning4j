@@ -23,9 +23,9 @@
 #include <ops/declarable/helpers/axis.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/ConstantTadHelper.h>
-#include <Status.h>
+#include <graph/Status.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         Nd4jStatus LegacyBroadcastOp::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
@@ -47,7 +47,7 @@ namespace nd4j {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
 
             auto tadLen = shape::length(packX.primaryShapeInfo());
             REQUIRE_TRUE(tadLen == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]",tadLen, (int) y->lengthOf());
@@ -62,7 +62,7 @@ namespace nd4j {
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), dims.size(), pTadShape, pTadOffsets, pTadShape, pTadOffsets);
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
-                auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
+                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
 
                 auto zTadShape = Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
                 auto zTadOffsets = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong));
@@ -94,7 +94,7 @@ namespace nd4j {
         /**
         *   If external NDArray wasn't specified - the same shape is returned by all broadcast ops.
         */
-        ShapeList* LegacyBroadcastOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList* LegacyBroadcastOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             // FIXME: remove memcpy

@@ -21,7 +21,7 @@
 #include <helpers/StringUtils.h>
 #include <exceptions/unknown_graph_exception.h>
 
-namespace nd4j {
+namespace sd {
     unknown_graph_exception::unknown_graph_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Unknown graph", graphId), graphId) {
         _graphId = graphId;
     }

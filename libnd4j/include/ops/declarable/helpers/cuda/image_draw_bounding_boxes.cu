@@ -17,10 +17,10 @@
 //
 //  @author sgazeos@gmail.com
 //
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -58,22 +58,22 @@ namespace helpers {
                 // box with shape
                 //auto internalBox = &boxes[b * colorSetSize * 4 + c * 4];//(*boxes)(b, {0})(c, {0});//internalBoxes->at(c);
                 auto colorIndex = boxIndex % colorTableLen;//colorSet->at(c);
-//                auto rowStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((height - 1) * internalBox[0]));
-//                auto rowEnd = nd4j::math::nd4j_min(Nd4jLong (height - 1), Nd4jLong ((height - 1) * internalBox[2]));
-//                auto colStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((width - 1) * internalBox[1]));
-//                auto colEnd = nd4j::math::nd4j_min(Nd4jLong(width - 1), Nd4jLong ((width - 1) * internalBox[3]));
+//                auto rowStart = sd::math::nd4j_max(Nd4jLong (0), Nd4jLong ((height - 1) * internalBox[0]));
+//                auto rowEnd = sd::math::nd4j_min(Nd4jLong (height - 1), Nd4jLong ((height - 1) * internalBox[2]));
+//                auto colStart = sd::math::nd4j_max(Nd4jLong (0), Nd4jLong ((width - 1) * internalBox[1]));
+//                auto colEnd = sd::math::nd4j_min(Nd4jLong(width - 1), Nd4jLong ((width - 1) * internalBox[3]));
                 Nd4jLong indices0[] = {batch, boxIndex, 0};
                 Nd4jLong indices1[] = {batch, boxIndex, 1};
                 Nd4jLong indices2[] = {batch, boxIndex, 2};
                 Nd4jLong indices3[] = {batch, boxIndex, 3};
                 auto rowStart = Nd4jLong ((height - 1) * boxes[shape::getOffset(boxesShape, indices0, 0)]);
-                auto rowStartBound = nd4j::math::nd4j_max(Nd4jLong (0), rowStart);
+                auto rowStartBound = sd::math::nd4j_max(Nd4jLong (0), rowStart);
                 auto rowEnd = Nd4jLong ((height - 1) * boxes[shape::getOffset(boxesShape, indices2, 0)]);
-                auto rowEndBound = nd4j::math::nd4j_min(Nd4jLong (height - 1), rowEnd);
+                auto rowEndBound = sd::math::nd4j_min(Nd4jLong (height - 1), rowEnd);
                 auto colStart = Nd4jLong ((width - 1) * boxes[shape::getOffset(boxesShape, indices1, 0)]);
-                auto colStartBound = nd4j::math::nd4j_max(Nd4jLong (0), colStart);
+                auto colStartBound = sd::math::nd4j_max(Nd4jLong (0), colStart);
                 auto colEnd = Nd4jLong ((width - 1) * boxes[shape::getOffset(boxesShape, indices3, 0)]);
-                auto colEndBound = nd4j::math::nd4j_min(Nd4jLong(width - 1), colEnd);
+                auto colEndBound = sd::math::nd4j_min(Nd4jLong(width - 1), colEnd);
                 if (rowStart > rowEnd || colStart > colEnd) {
 //                    printf("helpers::drawBoundingBoxesFunctor: Bounding box (%lld, %lld, %lld, %lld) is inverted "
 //                                "and will not be drawn\n", rowStart, colStart, rowEnd, colEnd);
@@ -137,7 +137,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void drawBoundingBoxesH(nd4j::LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors, NDArray* output) {
+    void drawBoundingBoxesH(sd::LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors, NDArray* output) {
         auto batchSize = images->sizeAt(0);
         auto height = images->sizeAt(1);
         auto width = images->sizeAt(2);
@@ -158,7 +158,7 @@ namespace helpers {
                 outputBuf, output->specialShapeInfo(), batchSize, width, height, channels, boxSize, colorsTable.lengthOf());
     }
 
-    void drawBoundingBoxesFunctor(nd4j::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output) {
+    void drawBoundingBoxesFunctor(sd::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output) {
         // images - batch of 3D images with BW (last dim = 1), RGB (last dim = 3) or RGBA (last dim = 4) channel set
         // boxes - batch of 2D bounds with last dim (y_start, x_start, y_end, x_end) to compute i and j as
         // floor((height - 1 ) * y_start) => rowStart, floor((height - 1) * y_end) => rowEnd
@@ -171,7 +171,7 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(output->dataType(), drawBoundingBoxesH, (context, images, boxes, colors, output), FLOAT_TYPES);
         NDArray::registerSpecialUse({output}, {images, boxes, colors});
     }
-    BUILD_SINGLE_TEMPLATE(template void drawBoundingBoxesH, (nd4j::LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors, NDArray* output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void drawBoundingBoxesH, (sd::LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors, NDArray* output), FLOAT_TYPES);
 }
 }
 }

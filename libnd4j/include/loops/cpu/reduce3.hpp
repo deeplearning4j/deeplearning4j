@@ -19,11 +19,11 @@
 
 
 #include <types/types.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/reduce3.h>
 #include <loops/legacy_ops.h>
 #include <helpers/ConstantTadHelper.h>
-#include <Loops.h>
+#include <helpers/Loops.h>
 #include <execution/Threads.h>
 
 using namespace simdOps;
@@ -48,12 +48,12 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     auto xEws = shape::elementWiseStride(xShapeInfo);
     auto yEws = shape::elementWiseStride(yShapeInfo);
 
-    if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY || nd4j::ArrayOptions::arrayType(yShapeInfo) == nd4j::ArrayType::EMPTY) {
-        if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+    if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY || sd::ArrayOptions::arrayType(yShapeInfo) == sd::ArrayType::EMPTY) {
+        if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
             return;
         const auto startingVal = OpType::startingValue(x);
 
-        for (uint i = 0; i < length; i++)
+        for (Nd4jLong i = 0; i < length; i++)
             z[i] = startingVal;
 
         return;
@@ -62,10 +62,10 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
 
     uint xShapeInfoCast[MAX_RANK];
-    const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+    const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     Z startingVal = OpType::startingValue(x);
-    int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
+    int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
     Z intermediate[64];
     Z extraParamsLocal[3 * 64];
 
@@ -84,11 +84,11 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         }
     }
 
-    nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
+    sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
 
-    if (kindOfLoop == nd4j::LoopKind::EWS1) {
+    if (kindOfLoop == sd::LoopKind::EWS1) {
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], y[i], extraParamsLocal + 3 * thread_id), extraParamsLocal + 3 * thread_id);
             }
         };
@@ -98,7 +98,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     } else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                 intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[offset], y[offset], extraParamsLocal + 3 * thread_id), extraParamsLocal + 3 * thread_id);
             }
@@ -107,10 +107,10 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
     } else {
         uint yShapeInfoCast[MAX_RANK];
-        const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
+        const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                 auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                 intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * thread_id), extraParamsLocal + 3 * thread_id);
@@ -162,9 +162,9 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         return;
     }
 #ifdef INLINE_LOOPS
-    nd4j::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams, start, stop);
+    sd::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams, start, stop);
 #else
-    nd4j::Reduction3Loops<X,Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams, start, stop);
+    sd::Reduction3Loops<X,Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams, start, stop);
 #endif
 }
 
@@ -183,9 +183,9 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 #ifdef INLINE_LOOPS
-    nd4j::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams, start, stop);
+    sd::Reduction3Loops<X,Z>::template loopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams, start, stop);
 #else
-    nd4j::Reduction3Loops<X,Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams, start, stop);
+    sd::Reduction3Loops<X,Z>::template innerloopReduce3<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, extraParams, start, stop);
 #endif
 }
 
@@ -207,9 +207,9 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
 
 #ifdef INLINE_LOOPS
-    nd4j::Reduction3Loops<X,Z>::template loopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams, start, stop);
+    sd::Reduction3Loops<X,Z>::template loopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams, start, stop);
 #else
-    nd4j::Reduction3Loops<X,Z>::template innerloopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams, start, stop);
+    sd::Reduction3Loops<X,Z>::template innerloopReduce3All<OpType>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, extraParams, start, stop);
 #endif
 }
 

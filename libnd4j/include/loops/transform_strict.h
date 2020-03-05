@@ -25,14 +25,14 @@
 #ifndef TRANSFORM_STRICT_H_
 #define TRANSFORM_STRICT_H_
 #include <vector>
-#include <templatemath.h>
+#include <math/templatemath.h>
 #include <ops/ops.h>
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <pairwise_util.h>
-#include <dll.h>
+#include <system/pairwise_util.h>
+#include <system/dll.h>
 
 //#include <loops/reduce.h>
 //#include <loops/scalar.h>

@@ -22,15 +22,15 @@
 #define LIBND4J_ZETA_H
 
 #include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include "array/NDArray.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
 
 	// calculate the Hurwitz zeta function for arrays
-    void zeta(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& output);
+    void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& output);
 
     	
 	

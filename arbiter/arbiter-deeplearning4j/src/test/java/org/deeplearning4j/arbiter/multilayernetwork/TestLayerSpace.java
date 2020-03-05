@@ -101,7 +101,7 @@ public class TestLayerSpace extends BaseDL4JTest {
             double l2 = TestUtils.getL2(l);
             IActivation activation = l.getActivationFn();
 
-            System.out.println(lr + "\t" + l2 + "\t" + activation);
+//            System.out.println(lr + "\t" + l2 + "\t" + activation);
 
             assertTrue(lr >= 0.3 && lr <= 0.4);
             assertTrue(l2 >= 0.01 && l2 <= 0.1);
@@ -190,7 +190,7 @@ public class TestLayerSpace extends BaseDL4JTest {
             ActivationLayer al = als.getValue(d);
             IActivation activation = al.getActivationFn();
 
-            System.out.println(activation);
+//            System.out.println(activation);
 
             assertTrue(containsActivationFunction(actFns, activation));
         }
@@ -228,7 +228,7 @@ public class TestLayerSpace extends BaseDL4JTest {
             IActivation activation = el.getActivationFn();
             long nOut = el.getNOut();
 
-            System.out.println(activation + "\t" + nOut);
+//            System.out.println(activation + "\t" + nOut);
 
             assertTrue(containsActivationFunction(actFns, activation));
             assertTrue(nOut >= 10 && nOut <= 20);
@@ -295,7 +295,7 @@ public class TestLayerSpace extends BaseDL4JTest {
             long nOut = el.getNOut();
             double forgetGate = el.getForgetGateBiasInit();
 
-            System.out.println(activation + "\t" + nOut + "\t" + forgetGate);
+//            System.out.println(activation + "\t" + nOut + "\t" + forgetGate);
 
             assertTrue(containsActivationFunction(actFns, activation));
             assertTrue(nOut >= 10 && nOut <= 20);

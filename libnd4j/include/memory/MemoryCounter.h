@@ -21,13 +21,13 @@
 #ifndef SD_MEMORYCOUNTER_H
 #define SD_MEMORYCOUNTER_H
 
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <map>
 #include <memory/MemoryType.h>
 #include <mutex>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         /**
          * This class provides simple per-device counter
@@ -44,13 +44,13 @@ namespace nd4j {
 
             // TODO: change this wrt heterogenous stuff on next iteration
             // per-group counters
-            std::map<nd4j::memory::MemoryType, Nd4jLong> _groupCounters;
+            std::map<sd::memory::MemoryType, Nd4jLong> _groupCounters;
 
             // per-device limits
             std::map<int, Nd4jLong> _deviceLimits;
 
             // per-group limits
-            std::map<nd4j::memory::MemoryType, Nd4jLong> _groupLimits;
+            std::map<sd::memory::MemoryType, Nd4jLong> _groupLimits;
 
             MemoryCounter();
             ~MemoryCounter() = default;
@@ -79,7 +79,7 @@ namespace nd4j {
              * @param numBytes
              * @return TRUE if allocated ammount will keep us below limit, FALSE otherwise
              */
-            bool validateGroup(nd4j::memory::MemoryType group, Nd4jLong numBytes);
+            bool validateGroup(sd::memory::MemoryType group, Nd4jLong numBytes);
 
             /**
              * This method adds specified number of bytes to specified counter
@@ -87,7 +87,7 @@ namespace nd4j {
              * @param numBytes
              */
             void countIn(int deviceId, Nd4jLong numBytes);
-            void countIn(nd4j::memory::MemoryType group, Nd4jLong numBytes);
+            void countIn(sd::memory::MemoryType group, Nd4jLong numBytes);
 
             /**
              * This method subtracts specified number of bytes from specified counter
@@ -95,7 +95,7 @@ namespace nd4j {
              * @param numBytes
              */
             void countOut(int deviceId, Nd4jLong numBytes);
-            void countOut(nd4j::memory::MemoryType group, Nd4jLong numBytes);
+            void countOut(sd::memory::MemoryType group, Nd4jLong numBytes);
 
             /**
              * This method returns amount of memory allocated on specified device
@@ -109,7 +109,7 @@ namespace nd4j {
              * @param group
              * @return
              */
-            Nd4jLong allocatedGroup(nd4j::memory::MemoryType group);
+            Nd4jLong allocatedGroup(sd::memory::MemoryType group);
 
             /**
              * This method allows to set per-device memory limits
@@ -130,14 +130,14 @@ namespace nd4j {
              * @param group
              * @param numBytes
              */
-            void setGroupLimit(nd4j::memory::MemoryType group, Nd4jLong numBytes);
+            void setGroupLimit(sd::memory::MemoryType group, Nd4jLong numBytes);
 
             /**
              * This method returns current group limit in bytes
              * @param group
              * @return
              */
-            Nd4jLong groupLimit(nd4j::memory::MemoryType group);
+            Nd4jLong groupLimit(sd::memory::MemoryType group);
         };
     }
 }

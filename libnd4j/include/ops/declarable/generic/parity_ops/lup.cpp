@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> at 12/10/2019
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_matrix_inverse)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lup.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(lu, 1, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -32,7 +32,7 @@ namespace nd4j {
             auto p = OUTPUT_VARIABLE(1);
             if (block.getIArguments()->size()) {
                 DataType dtype = (DataType)INT_ARG(0);
-                REQUIRE_TRUE(dtype == nd4j::DataType::INT32 || dtype == nd4j::DataType::INT64, 0, "lu: Permutation data type should be 32bit or 64bit int only, but '%s' given.", DataTypeUtils::asString(dtype).c_str());            }
+                REQUIRE_TRUE(dtype == sd::DataType::INT32 || dtype == sd::DataType::INT64, 0, "lu: Permutation data type should be 32bit or 64bit int only, but '%s' given.", DataTypeUtils::asString(dtype).c_str());            }
 
             REQUIRE_TRUE(input->rankOf() >=2, 0, "lu: The rank of input array should not less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "lu: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
@@ -45,10 +45,10 @@ namespace nd4j {
             auto in = inputShape->at(0);
             auto shapeVector = ShapeUtils::shapeAsVector(in);
             auto luShape = ShapeBuilders::copyShapeInfoAndType(in, in, true, block.workspace());
-            auto dtype = nd4j::DataType::INT32;
+            auto dtype = sd::DataType::INT32;
             if (block.getIArguments()->size()) {
                 dtype = (DataType)INT_ARG(0);
-                REQUIRE_TRUE(dtype == nd4j::DataType::INT32 || dtype == nd4j::DataType::INT64, 0, "lu: Permutation data type should be 32bit or 64bit int only, but '%s' given.", DataTypeUtils::asString(dtype).c_str());
+                REQUIRE_TRUE(dtype == sd::DataType::INT32 || dtype == sd::DataType::INT64, 0, "lu: Permutation data type should be 32bit or 64bit int only, but '%s' given.", DataTypeUtils::asString(dtype).c_str());
             }
             auto luP = ShapeBuilders::createShapeInfo(dtype, shape::order(in), shapeVector.size() - 1,
                     shapeVector.data(),  block.workspace());
@@ -59,7 +59,7 @@ namespace nd4j {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_FLOATS})
                     ->setAllowedOutputTypes(0, {ALL_FLOATS})
-                    ->setAllowedOutputTypes(1, {nd4j::DataType::INT32, nd4j::DataType::INT64})
+                    ->setAllowedOutputTypes(1, {sd::DataType::INT32, sd::DataType::INT64})
                     ->setSameMode(false);
         }
     }

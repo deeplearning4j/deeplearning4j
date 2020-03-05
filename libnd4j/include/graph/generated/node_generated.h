@@ -10,7 +10,7 @@
 #include "properties_generated.h"
 #include "utils_generated.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct FlatNode;
@@ -324,7 +324,7 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *varControlDeps = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepFor = nullptr,
     const std::vector<int8_t> *extraTypes = nullptr) {
-  return nd4j::graph::CreateFlatNode(
+  return sd::graph::CreateFlatNode(
       _fbb,
       id,
       name ? _fbb.CreateString(name) : 0,
@@ -351,37 +351,37 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       extraTypes ? _fbb.CreateVector<int8_t>(*extraTypes) : 0);
 }
 
-inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatNode>(buf);
+inline const sd::graph::FlatNode *GetFlatNode(const void *buf) {
+  return flatbuffers::GetRoot<sd::graph::FlatNode>(buf);
 }
 
-inline const nd4j::graph::FlatNode *GetSizePrefixedFlatNode(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatNode>(buf);
+inline const sd::graph::FlatNode *GetSizePrefixedFlatNode(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatNode>(buf);
 }
 
 inline bool VerifyFlatNodeBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatNode>(nullptr);
+  return verifier.VerifyBuffer<sd::graph::FlatNode>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatNodeBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatNode>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatNode>(nullptr);
 }
 
 inline void FinishFlatNodeBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatNode> root) {
+    flatbuffers::Offset<sd::graph::FlatNode> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatNodeBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatNode> root) {
+    flatbuffers::Offset<sd::graph::FlatNode> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_NODE_ND4J_GRAPH_H_

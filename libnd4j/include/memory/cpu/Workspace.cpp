@@ -21,17 +21,17 @@
 //
 
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <atomic>
 #include <stdio.h>
 #include <stdlib.h>
 #include "../Workspace.h"
 #include <helpers/logger.h>
-#include <templatemath.h>
+#include <math/templatemath.h>
 #include <cstring>
 
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         Workspace::Workspace(ExternalWorkspace *external) {
             if (external->sizeHost() > 0) {
@@ -182,7 +182,7 @@ namespace nd4j {
             return _spillsSize.load();
         }
 
-        void* Workspace::allocateBytes(nd4j::memory::MemoryType type, Nd4jLong numBytes) {
+        void* Workspace::allocateBytes(sd::memory::MemoryType type, Nd4jLong numBytes) {
             if (type == DEVICE)
                 throw std::runtime_error("CPU backend doesn't have device memory");
 
@@ -211,7 +211,7 @@ namespace nd4j {
 
         Workspace* Workspace::clone() {
             // for clone we take whatever is higher: current allocated size, or allocated size of current loop
-            return new Workspace(nd4j::math::nd4j_max<Nd4jLong >(this->getCurrentSize(), this->_cycleAllocations.load()));
+            return new Workspace(sd::math::nd4j_max<Nd4jLong >(this->getCurrentSize(), this->_cycleAllocations.load()));
         }
     }
 }

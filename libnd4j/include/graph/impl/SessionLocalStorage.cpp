@@ -18,11 +18,11 @@
 // @author raver119@gmail.com
 //
 
-#include <VariableSpace.h>
-#include <Stash.h>
+#include <graph/VariableSpace.h>
+#include <graph/Stash.h>
 #include <graph/SessionLocalStorage.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         SessionLocalStorage::SessionLocalStorage(VariableSpace* variableSpace, Stash* stash) {
             // we start from 1, since key 0 holds original VariableSpace
@@ -104,7 +104,7 @@ namespace nd4j {
             return ntid;
         }
 
-        Nd4jLong nd4j::graph::SessionLocalStorage::startSession() {
+        Nd4jLong sd::graph::SessionLocalStorage::startSession() {
             auto tid = getThreadId();
 
             nd4j_debug("Adding ThreadId: %i;\n", (int) tid);

@@ -18,12 +18,12 @@
 // @author George Shulinok (sgazeos@gmail.com), created on 13.11.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/fake_quantization.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(fake_quant_with_min_max_vars, 1, 1, true, 0, 0) {
 

@@ -17,7 +17,7 @@
 include "variable.fbs";
 include "config.fbs";
 
-namespace nd4j.graph;
+namespace sd.graph;
 
 table FlatInferenceRequest {
     id:long; // id of the graph to be executed

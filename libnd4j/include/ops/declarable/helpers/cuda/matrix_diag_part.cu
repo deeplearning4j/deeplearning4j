@@ -18,16 +18,16 @@
 // Created by GS <sgazeos@gmail.com> on 3/21/2018.
 //
 
-#include "ResultSet.h"
+#include <array/ResultSet.h>
 #include <ops/declarable/helpers/matrix_diag_part.h>
-#include <Status.h>
-#include <ShapeUtils.h>
-#include <ShapeUtils.h>
-#include <TAD.h>
-#include <cuda_exception.h>
+#include <graph/Status.h>
+#include <helpers/ShapeUtils.h>
+#include <helpers/ShapeUtils.h>
+#include <helpers/TAD.h>
+#include <exceptions/cuda_exception.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -54,7 +54,7 @@ namespace helpers {
 // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
 //
     template <typename T>
-    int _matrixDiagPart(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
+    int _matrixDiagPart(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
         auto stream = context->getCudaStream();
         auto listOut  = output->allTensorsAlongDimension({output->rankOf() - 1});
         auto listDiag = input->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
@@ -63,7 +63,7 @@ namespace helpers {
             nd4j_printf("matrix_diag_part: Input matrix has wrong shape.", "");
             return ND4J_STATUS_VALIDATION;
         }
-        Nd4jLong lastDimension = nd4j::math::nd4j_min(input->sizeAt(-2), input->sizeAt(-1));
+        Nd4jLong lastDimension = sd::math::nd4j_min(input->sizeAt(-2), input->sizeAt(-1));
 
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(output->rankOf(), {output->rankOf() - 1});
         const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude); //this->tensorsAlongDimension({dimension});
@@ -71,8 +71,8 @@ namespace helpers {
         //tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets;
         std::vector<int> outputDims({output->rankOf() - 1});
         std::vector<int> inputDims({input->rankOf() - 2, input->rankOf() - 1});
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), inputDims);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), outputDims);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), inputDims);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), outputDims);
 
 
         if (!output->isActualOnDeviceSide())
@@ -91,11 +91,11 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // caller for _matrixDiagPart
 //
-    int matrixDiagPart(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
+    int matrixDiagPart(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (context, input, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template int _matrixDiagPart, (nd4j::LaunchContext * context, const NDArray* input, NDArray* output), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template int _matrixDiagPart, (sd::LaunchContext * context, const NDArray* input, NDArray* output), LIBND4J_TYPES);
 
 }
 }

@@ -19,7 +19,7 @@
 // 
 // PLESE NOTE: It will delete all stored NDArrays upon destructor call
 //
-// Created by raver119 on 07.09.17.
+// @author raver119@gmail.com
 //
 
 #ifndef LIBND4J_RESULTSET_H
@@ -27,22 +27,25 @@
 
 #include <vector>
 #include <graph/generated/result_generated.h>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 
-namespace  nd4j {
+namespace sd {
 
     class NDArray; // forward declaration of template class NDArray
     
     class ND4J_EXPORT ResultSet {
     private:
-        std::vector<nd4j::NDArray *> _content;
+        std::vector<sd::NDArray *> _content;
         Nd4jStatus _status = ND4J_STATUS_OK;
         bool _removable = true;
 
     public:
-        // default constructor
-        ResultSet(const nd4j::graph::FlatResult* result = nullptr);
+        explicit ResultSet();
+
+#ifndef __JAVACPP_HACK__
+        ResultSet(const sd::graph::FlatResult* result);
+#endif
 
         ResultSet(const ResultSet& other) noexcept;
 
@@ -57,9 +60,9 @@ namespace  nd4j {
         ~ResultSet();
 
         int size();
-        nd4j::NDArray* at(const unsigned long idx) const;
-        nd4j::NDArray* operator[](const unsigned long idx) const;
-        void push_back(nd4j::NDArray* array);
+        sd::NDArray* at(const unsigned long idx) const;
+        sd::NDArray* operator[](const unsigned long idx) const;
+        void push_back(sd::NDArray* array);
 
         Nd4jStatus status();
         void setStatus(Nd4jStatus status);

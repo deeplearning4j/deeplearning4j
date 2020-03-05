@@ -20,16 +20,16 @@
 
 #ifndef __UNIQUE_H_HELPERS__
 #define __UNIQUE_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    Nd4jLong uniqueCount(nd4j::LaunchContext * context, NDArray* input);
+    Nd4jLong uniqueCount(sd::LaunchContext * context, NDArray* input);
 
-    Nd4jStatus uniqueFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts);
+    Nd4jStatus uniqueFunctor(sd::LaunchContext * context, NDArray* input, NDArray* values, NDArray* indices, NDArray* counts);
 
 }
 }

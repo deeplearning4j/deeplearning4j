@@ -23,7 +23,7 @@
 #include <helpers/StringUtils.h>
 #include <exceptions/datatype_exception.h>
 
-namespace nd4j {
+namespace sd {
     static FORCEINLINE bool match(const uint8_t *haystack, const uint8_t *needle, uint64_t length) {
         for (int e = 0; e < length; e++)
             if (haystack[e] != needle[e])
@@ -49,7 +49,7 @@ namespace nd4j {
 
     uint64_t StringUtils::byteLength(const NDArray &array) {
         if (!array.isS())
-            throw nd4j::datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType());
+            throw sd::datatype_exception::build("StringUtils::byteLength expects one of String types;", array.dataType());
 
         auto buffer = array.bufferAsT<Nd4jLong>();
         return buffer[array.lengthOf()];

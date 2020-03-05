@@ -20,10 +20,10 @@
 #ifndef DEV_TESTS_BROADCASTSCALARCONVERTER_H
 #define DEV_TESTS_BROADCASTSCALARCONVERTER_H
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <stdexcept>
 
-namespace nd4j {
+namespace sd {
     inline bool isConvertibleToScalar(broadcast::Ops op) {
         int opNum = (int) op;
 

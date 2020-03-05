@@ -23,7 +23,7 @@
 #include <ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 #if NOT_EXCLUDED(OP_reduce_norm_max)
 
@@ -84,7 +84,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
 
 DECLARE_TYPES(reduce_norm_max) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 #endif
@@ -116,16 +116,16 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
 
     if(gradO->lengthOf() == 1) {
 
-        auto indOfAbsMaxElem = input->indexReduceNumber(nd4j::indexreduce::IndexAbsoluteMax);
+        auto indOfAbsMaxElem = input->indexReduceNumber(sd::indexreduce::IndexAbsoluteMax);
         const Nd4jLong ind = indOfAbsMaxElem.t<Nd4jLong>(0);
         const int sign = input->e<float>(ind) >= 0 ? 1 : -1;
         gradI->p(ind, sign * gradO->e(0));
     }
     else {
 
-        auto indicesArr = input->applyIndexReduce(nd4j::indexreduce::IndexAbsoluteMax, dimensions);
+        auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexAbsoluteMax, dimensions);
         helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));      // 6 corresponds to copy operation
-        *gradI *= input->transform(nd4j::transform::Sign);
+        *gradI *= input->transform(sd::transform::Sign);
     }
 
     return Status::OK();
@@ -152,7 +152,7 @@ DECLARE_SHAPE_FN(reduce_norm_max_bp) {
 
 DECLARE_TYPES(reduce_norm_max_bp) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

@@ -23,7 +23,7 @@
 
 #if NOT_EXCLUDED(OP_image_non_max_suppression_overlaps)
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(non_max_suppression_overlaps, 2, 1, false, 0, 0) {
             auto boxes = INPUT_VARIABLE(0);

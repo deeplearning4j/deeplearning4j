@@ -20,8 +20,8 @@
 #include <graph/Graph.h>
 #include <array>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class GraphRandomGeneratorTests : public testing::Test {
 public:
@@ -29,8 +29,8 @@ public:
 };
 
 TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_1) {
-    nd4j::graph::RandomGenerator g0(119);
-    nd4j::graph::RandomGenerator g1(119);
+    sd::graph::RandomGenerator g0(119);
+    sd::graph::RandomGenerator g1(119);
 
     auto i0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
     auto i1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -39,8 +39,8 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_1) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_2) {
-    nd4j::graph::RandomGenerator g0(119);
-    nd4j::graph::RandomGenerator g1(117);
+    sd::graph::RandomGenerator g0(119);
+    sd::graph::RandomGenerator g1(117);
 
     auto i0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
     auto i1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -49,8 +49,8 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_2) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_3) {
-    nd4j::graph::RandomGenerator g0(119, 5);
-    nd4j::graph::RandomGenerator g1(119, 10);
+    sd::graph::RandomGenerator g0(119, 5);
+    sd::graph::RandomGenerator g1(119, 10);
 
     auto i0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
     auto i1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -59,8 +59,8 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_3) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_4) {
-    nd4j::graph::RandomGenerator g0(119, 5);
-    nd4j::graph::RandomGenerator g1(117, 5);
+    sd::graph::RandomGenerator g0(119, 5);
+    sd::graph::RandomGenerator g1(117, 5);
 
     auto i0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
     auto i1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -69,8 +69,8 @@ TEST_F(GraphRandomGeneratorTests, Reproducibility_Test_4) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Sequential_Test_1) {
-    nd4j::graph::RandomGenerator g0(119, 5);
-    nd4j::graph::RandomGenerator g1(119, 5);
+    sd::graph::RandomGenerator g0(119, 5);
+    sd::graph::RandomGenerator g1(119, 5);
 
     auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
     auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -89,8 +89,8 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_1) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Sequential_Test_2) {
-    nd4j::graph::RandomGenerator g0(119, 5);
-    nd4j::graph::RandomGenerator g1(119, 5);
+    sd::graph::RandomGenerator g0(119, 5);
+    sd::graph::RandomGenerator g1(119, 5);
 
     auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
     auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -110,8 +110,8 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_2) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Sequential_Test_3) {
-    nd4j::graph::RandomGenerator g0(119, 5);
-    nd4j::graph::RandomGenerator g1(119, 5);
+    sd::graph::RandomGenerator g0(119, 5);
+    sd::graph::RandomGenerator g1(119, 5);
 
     auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
     auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -131,8 +131,8 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_3) {
 }
 
 TEST_F(GraphRandomGeneratorTests, Sequential_Test_4) {
-    nd4j::graph::RandomGenerator g0(119, 5);
-    nd4j::graph::RandomGenerator g1(119, 5);
+    sd::graph::RandomGenerator g0(119, 5);
+    sd::graph::RandomGenerator g1(119, 5);
 
     auto v0 = g0.relativeT<int>(15, 0, DataTypeUtils::max<int>());
     auto v1 = g1.relativeT<int>(15, 0, DataTypeUtils::max<int>());
@@ -171,8 +171,8 @@ TEST_F(GraphRandomGeneratorTests, Sequential_Test_4) {
 //#ifndef __clang__
 
 TEST_F(GraphRandomGeneratorTests, Long_Test_1) {
-    nd4j::graph::RandomGenerator g0(119, 5);
-    nd4j::graph::RandomGenerator g1(119, 5);
+    sd::graph::RandomGenerator g0(119, 5);
+    sd::graph::RandomGenerator g1(119, 5);
 
     std::array<Nd4jLong, 10000> z0, z1, z2, z3; 
 
@@ -215,8 +215,8 @@ TEST_F(GraphRandomGeneratorTests, Long_Test_1) {
 
 
 TEST_F(GraphRandomGeneratorTests, FloatingPoint_Test_1) {
-    nd4j::graph::RandomGenerator g0(119, 5);
-    nd4j::graph::RandomGenerator g1(119, 5);
+    sd::graph::RandomGenerator g0(119, 5);
+    sd::graph::RandomGenerator g1(119, 5);
 
     std::array<double, 100> z0, z1, z2, z3;
 

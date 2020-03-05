@@ -22,18 +22,20 @@
 #define LIBND4J_SESSIONLOCALSTORAGE_H
 
 #include <thread>
+#include <unordered_map>
+#include <map>
 #include "VariableSpace.h"
 #include "Context.h"
 #include "Stash.h"
 #include <memory/Workspace.h>
 
-namespace nd4j{
+namespace sd{
     namespace graph {
         class ND4J_EXPORT SessionLocalStorage {
         protected:
             std::atomic<Nd4jLong> _sessionCounter;
-            std::map<Nd4jLong, Nd4jLong> _threadSession;
-            std::map<Nd4jLong, VariableSpace*> _threadVariableSpace;
+            MAP_IMPL<Nd4jLong, Nd4jLong> _threadSession;
+            MAP_IMPL<Nd4jLong, VariableSpace*> _threadVariableSpace;
 
             VariableSpace* _variableSpace;
             Stash* _stash;

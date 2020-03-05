@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_split_string)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/sparse_to_dense.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(compat_sparse_to_dense, 4, 1, false, 0, 0) {
             auto indices = INPUT_VARIABLE(0);
@@ -37,7 +37,7 @@ namespace nd4j {
             if (block.width() > 3)
                 def = INPUT_VARIABLE(3);
 
-            nd4j::ops::helpers::compat_sparse_to_dense(*values, *indices, def, *output);
+            sd::ops::helpers::compat_sparse_to_dense(*values, *indices, def, *output);
 
             return Status::OK();
         };
@@ -63,9 +63,9 @@ namespace nd4j {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, {ALL_INTS}) // indices
                     ->setAllowedInputTypes(1, {ALL_INTS}) // shape
-                    ->setAllowedInputTypes(2,nd4j::DataType::ANY) // sparse values
-                    ->setAllowedInputTypes(3,nd4j::DataType::ANY) // default value
-                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                    ->setAllowedInputTypes(2,sd::DataType::ANY) // sparse values
+                    ->setAllowedInputTypes(3,sd::DataType::ANY) // default value
+                    ->setAllowedOutputTypes(sd::DataType::ANY);
         }
     }
 }

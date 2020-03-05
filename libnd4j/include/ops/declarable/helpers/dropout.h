@@ -19,11 +19,11 @@
 //
 #ifndef __DROP_OUT_HELPERS__
 #define __DROP_OUT_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 #include <graph/Context.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

@@ -18,13 +18,13 @@
 // @author Alex Black
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_lstmBlock)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/lstmBlock.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -68,7 +68,7 @@ CUSTOM_OP_IMPL(lstmBlock, 9, 7, false, 2, 2) {
 
 DECLARE_TYPES(lstmBlock) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

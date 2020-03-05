@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_in_top_k)
 
 //#include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/top_k.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(in_top_k, 2, 1, true, 0, 1) {
             auto predictions = INPUT_VARIABLE(0);
@@ -46,7 +46,7 @@ namespace nd4j {
             auto in = inputShape->at(1);
             int shapeRank = shape::rank(in);
 
-            auto aShape = ConstantShapeHelper::getInstance()->createShapeInfo(nd4j::DataType::BOOL, shape::order(in), shape::rank(in), shape::shapeOf(in));
+            auto aShape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::DataType::BOOL, shape::order(in), shape::rank(in), shape::shapeOf(in));
             shapeList->push_back(aShape);
             return shapeList;
         }

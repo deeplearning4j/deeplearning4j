@@ -23,7 +23,7 @@
 
 using namespace dnnl;
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 

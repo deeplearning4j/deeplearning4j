@@ -16,24 +16,24 @@
  ******************************************************************************/
 
 #include "testlayers.h"
-#include <householder.h>
-#include <biDiagonalUp.h>
-#include <hhSequence.h>
-#include <svd.h>
-#include <hhColPivQR.h>
+#include <helpers/householder.h>
+#include <helpers/biDiagonalUp.h>
+#include <helpers/hhSequence.h>
+#include <helpers/svd.h>
+#include <helpers/hhColPivQR.h>
 #include <array>
-#include <jacobiSVD.h>
+#include <helpers/jacobiSVD.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/activations.h>
 #include <ops/declarable/helpers/rnn.h>
 #include <ops/declarable/helpers/sg_cb.h>
-#include <MmulHelper.h>
-#include <GradCheck.h>
+#include <helpers/MmulHelper.h>
+#include <helpers/GradCheck.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lstmLayer.h>
 
 
-using namespace nd4j;
+using namespace sd;
 
 class HelpersTests1 : public testing::Test {
 public:
@@ -50,14 +50,14 @@ public:
 TEST_F(HelpersTests1, test_binary_search_1) {
     std::array<int, 10> array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-    auto idx = nd4j::ops::helpers::binarySearch(array.data(), 2, 10);
+    auto idx = sd::ops::helpers::binarySearch(array.data(), 2, 10);
     ASSERT_EQ(2, idx);
 }
 
 TEST_F(HelpersTests1, test_binary_search_2) {
     std::array<int, 10> array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
-    auto idx = nd4j::ops::helpers::binarySearch(array.data(), 18, 10);
+    auto idx = sd::ops::helpers::binarySearch(array.data(), 18, 10);
     ASSERT_EQ(-1, idx);
 }
 
@@ -1440,7 +1440,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto outArr = NDArrayFactory::create<float>('c', {2,5});
 //
 //
-//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
+//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
 //
 //    ASSERT_TRUE(outArr.equalsTo(&exp));
 //    ASSERT_TRUE(outArr.isSameShapeStrict(exp));
@@ -1454,7 +1454,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
 //
 //
-//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
+//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
 //
 //    ASSERT_TRUE(inArr.equalsTo(&exp));
 //    ASSERT_TRUE(inArr.isSameShapeStrict(exp));
@@ -1468,7 +1468,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto exp = NDArrayFactory::create<float>('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
 //    auto outArr = NDArrayFactory::create<float>('c', {2,5});
 //
-//    ops::helpers::reverseArray<float>(nd4j::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
+//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
 //
 //    ASSERT_TRUE(outArr.equalsTo(&exp));
 //    ASSERT_TRUE(outArr.isSameShapeStrict(exp));
@@ -1481,12 +1481,12 @@ TEST_F(HelpersTests1, rnnCell_test1) {
     const int inSize   = 4;
     const int numUnits = 4;
 
-    NDArray xt('c', {bS, inSize}, nd4j::DataType::DOUBLE);
-    NDArray ht_1('c', {bS, numUnits}, nd4j::DataType::DOUBLE);
-    NDArray Wx('c', {inSize, numUnits}, nd4j::DataType::DOUBLE);
-    NDArray Wh('c', {numUnits, numUnits}, nd4j::DataType::DOUBLE);
+    NDArray xt('c', {bS, inSize}, sd::DataType::DOUBLE);
+    NDArray ht_1('c', {bS, numUnits}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {inSize, numUnits}, sd::DataType::DOUBLE);
+    NDArray Wh('c', {numUnits, numUnits}, sd::DataType::DOUBLE);
     NDArray b ('c', {2*numUnits}, {0.0,0.0,0.0,0.0,  0.1,0.2,0.3,0.4});
-    NDArray ht('c', {bS, numUnits}, nd4j::DataType::DOUBLE);
+    NDArray ht('c', {bS, numUnits}, sd::DataType::DOUBLE);
 
     xt.assign(0.1);
     ht_1.assign(0.2);
@@ -1495,7 +1495,7 @@ TEST_F(HelpersTests1, rnnCell_test1) {
 
     NDArray expHt('c', {bS, numUnits}, {0.492988, 0.56489956, 0.6291452 , 0.6858091,0.492988, 0.56489956, 0.6291452 , 0.6858091});
 
-    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(sd::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1524,7 +1524,7 @@ TEST_F(HelpersTests1, rnnCell_test2) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.6169093,0.67506987,0.72589741,0.76986654,0.6169093,0.67506987,0.72589741,0.76986654});
 
-    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(sd::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1552,7 +1552,7 @@ TEST_F(HelpersTests1, rnnCell_test3) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.5915195, 0.6043678, 0.6169093, 0.6291452,0.5915195, 0.6043678, 0.6169093, 0.6291452});
 
-    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(sd::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1581,7 +1581,7 @@ TEST_F(HelpersTests1, rnnCell_test4) {
 
     auto expHt = NDArrayFactory::create<double>('c', {bS, numUnits}, {0.68474828, 0.68474828, 0.68474828, 0.68474828,0.69882484, 0.69882484, 0.69882484, 0.69882484});
 
-    ops::helpers::rnnCell(nd4j::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
+    ops::helpers::rnnCell(sd::LaunchContext ::defaultContext(), &xt, &Wx, &Wh, &b, &ht_1, &ht);
 
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
@@ -1887,7 +1887,7 @@ TEST_F(HelpersTests1, OpArgsHolder_test3) {
     gradO.linspace(0.01, 0.01);
 
     OpArgsHolder holderFF({&input}, {}, {2, 3});
-    nd4j::ops::tile opFF;                                              // the kind of op doesn't matter, we simply check here whether op.execute() works with OpArgsHolder correctly
+    sd::ops::tile opFF;                                              // the kind of op doesn't matter, we simply check here whether op.execute() works with OpArgsHolder correctly
     auto results = opFF.execute(holderFF);
     auto tiled = results->at(0);
     ASSERT_EQ(Status::OK(), results->status());
@@ -1896,7 +1896,7 @@ TEST_F(HelpersTests1, OpArgsHolder_test3) {
     delete results;
 
     OpArgsHolder holderBP = holderFF.createArgsHolderForBP({&gradO}, true);
-    nd4j::ops::tile_bp opBP;
+    sd::ops::tile_bp opBP;
     results = opBP.execute(holderBP);
     auto gradI = results->at(0);
     ASSERT_EQ(Status::OK(), results->status());
@@ -1915,8 +1915,8 @@ TEST_F(HelpersTests1, checkGrad_test1) {
     const OpArgsHolder argsHolderFF({&x}, {}, {});
     const OpArgsHolder argsHolderBP({&x, &gradO}, {}, {});
 
-    nd4j::ops::sigmoid opFF;
-    nd4j::ops::sigmoid_bp opBP;
+    sd::ops::sigmoid opFF;
+    sd::ops::sigmoid_bp opBP;
 
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
@@ -1937,8 +1937,8 @@ TEST_F(HelpersTests1, checkGrad_test2) {
     const OpArgsHolder argsHolderFF({&x, &weights},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-    nd4j::ops::conv2d opFF;
-    nd4j::ops::conv2d_bp opBP;
+    sd::ops::conv2d opFF;
+    sd::ops::conv2d_bp opBP;
 
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
@@ -1961,8 +1961,8 @@ TEST_F(HelpersTests1, checkGrad_test3) {
     const OpArgsHolder argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-    nd4j::ops::conv2d opFF;
-    nd4j::ops::conv2d_bp opBP;
+    sd::ops::conv2d opFF;
+    sd::ops::conv2d_bp opBP;
 
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
@@ -1985,8 +1985,8 @@ TEST_F(HelpersTests1, checkGrad_test4) {
     const OpArgsHolder argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-    nd4j::ops::conv2d opFF;
-    nd4j::ops::conv2d_bp opBP;
+    sd::ops::conv2d opFF;
+    sd::ops::conv2d_bp opBP;
 
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 0, 1});
 
@@ -2009,8 +2009,8 @@ TEST_F(HelpersTests1, checkGrad_test5) {
     const OpArgsHolder argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-    nd4j::ops::conv2d opFF;
-    nd4j::ops::conv2d_bp opBP;
+    sd::ops::conv2d opFF;
+    sd::ops::conv2d_bp opBP;
 
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1, 1}, {0.5, 1});
 
@@ -2033,8 +2033,8 @@ TEST_F(HelpersTests1, checkGrad_test6) {
     const OpArgsHolder argsHolderFF({&x, &weights, &bias},         {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
     const OpArgsHolder argsHolderBP({&x, &weights, &bias, &gradO}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 1});
 
-    nd4j::ops::conv2d opFF;
-    nd4j::ops::conv2d_bp opBP;
+    sd::ops::conv2d opFF;
+    sd::ops::conv2d_bp opBP;
 
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 0, 1}, {0.5, 1}, GradCheck::MEAN);
 
@@ -2049,7 +2049,7 @@ TEST_F(HelpersTests1, softMaxForVector_test1) {
     auto expOutput = NDArrayFactory::create<double>('c', {1,5});
     expOutput = 1;
 
-    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    ops::helpers::softmax(sd::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2061,7 +2061,7 @@ TEST_F(HelpersTests1, softMaxForVector_test2) {
     auto output = NDArrayFactory::create<double>('c', {5,1});
     auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
 
-    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    ops::helpers::softmax(sd::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2073,7 +2073,7 @@ TEST_F(HelpersTests1, softMaxForVector_test3) {
     auto output = NDArrayFactory::create<double>('c', {5});
     auto expOutput = NDArrayFactory::create<double>('c', {5}, {0.01165623,  0.03168492,  0.08612854,  0.23412166,  0.63640865});
 
-    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    ops::helpers::softmax(sd::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2081,8 +2081,8 @@ TEST_F(HelpersTests1, softMaxForVector_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, softMaxForVector_test4) {
 
-    NDArray input('c', {1500}, nd4j::DataType::DOUBLE);
-    NDArray output('c', {1500}, nd4j::DataType::DOUBLE);
+    NDArray input('c', {1500}, sd::DataType::DOUBLE);
+    NDArray output('c', {1500}, sd::DataType::DOUBLE);
     NDArray expOutput('c', {1500}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2103,10 +2103,10 @@ TEST_F(HelpersTests1, softMaxForVector_test4) {
 0.001103, 0.001114, 0.001125, 0.001136, 0.001148, 0.001159, 0.001171, 0.001182, 0.001194, 0.001206, 0.001218, 0.001231, 0.001243, 0.001256, 0.001268, 0.001281, 0.001294, 0.001307, 0.001320, 0.001333, 0.001347, 0.001360, 0.001374, 0.001388, 0.001402, 0.001416, 0.001430, 0.001444,0.001459, 0.001473, 0.001488, 0.001503, 0.001518, 0.001534, 0.001549, 0.001565, 0.001580, 0.001596, 0.001612, 0.001628, 0.001645, 0.001661, 0.001678, 0.001695, 0.001712, 0.001729, 0.001746, 0.001764, 0.001782, 0.001800, 0.001818, 0.001836, 0.001854, 0.001873, 0.001892, 0.001911,
 0.001930, 0.001950, 0.001969, 0.001989, 0.002009, 0.002029, 0.002049, 0.002070, 0.002091, 0.002112, 0.002133, 0.002155, 0.002176, 0.002198, 0.002220, 0.002242, 0.002265, 0.002288, 0.002311, 0.002334, 0.002357, 0.002381, 0.002405, 0.002429, 0.002454, 0.002478, 0.002503, 0.002528,0.002554, 0.002579, 0.002605, 0.002632, 0.002658, 0.002685, 0.002712, 0.002739, 0.002767, 0.002794, 0.002822, 0.002851, 0.002879, 0.002908, 0.002938, 0.002967, 0.002997, 0.003027, 0.003057, 0.003088, 0.003119, 0.003151, 0.003182, 0.003214, 0.003247, 0.003279, 0.003312, 0.003345,
 0.003379, 0.003413, 0.003447, 0.003482, 0.003517, 0.003552, 0.003588, 0.003624, 0.003660, 0.003697, 0.003734, 0.003772, 0.003810, 0.003848, 0.003887, 0.003926, 0.003965, 0.004005, 0.004045, 0.004086, 0.004127, 0.004169, 0.004211, 0.004253, 0.004296, 0.004339, 0.004382, 0.004426,0.004471, 0.004516, 0.004561, 0.004607, 0.004653, 0.004700, 0.004747, 0.004795, 0.004843, 0.004892, 0.004941, 0.004991, 0.005041, 0.005092, 0.005143, 0.005194, 0.005247, 0.005299, 0.005353, 0.005406, 0.005461, 0.005516, 0.005571, 0.005627, 0.005684, 0.005741, 0.005798, 0.005857,
-0.005916, 0.005975, 0.006035, 0.006096, 0.006157, 0.006219, 0.006281, 0.006345, 0.006408, 0.006473, 0.006538, 0.006603, 0.006670, 0.006737, 0.006805, 0.006873, 0.006942, 0.007012, 0.007082, 0.007153, 0.007225, 0.007298, 0.007371, 0.007445, 0.007520, 0.007596, 0.007672, 0.007749,0.007827, 0.007906, 0.007985, 0.008065, 0.008147, 0.008228, 0.008311, 0.008395, 0.008479, 0.008564, 0.008650, 0.008737, 0.008825, 0.008914, 0.009003, 0.009094, 0.009185, 0.009277, 0.009371, 0.009465, 0.009560, 0.009656, 0.009753, 0.009851, 0.009950}, nd4j::DataType::DOUBLE);
+0.005916, 0.005975, 0.006035, 0.006096, 0.006157, 0.006219, 0.006281, 0.006345, 0.006408, 0.006473, 0.006538, 0.006603, 0.006670, 0.006737, 0.006805, 0.006873, 0.006942, 0.007012, 0.007082, 0.007153, 0.007225, 0.007298, 0.007371, 0.007445, 0.007520, 0.007596, 0.007672, 0.007749,0.007827, 0.007906, 0.007985, 0.008065, 0.008147, 0.008228, 0.008311, 0.008395, 0.008479, 0.008564, 0.008650, 0.008737, 0.008825, 0.008914, 0.009003, 0.009094, 0.009185, 0.009277, 0.009371, 0.009465, 0.009560, 0.009656, 0.009753, 0.009851, 0.009950}, sd::DataType::DOUBLE);
     input.linspace(0.01, 0.01);
 
-    ops::helpers::softmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    ops::helpers::softmax(sd::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2119,7 +2119,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test1) {
     auto expOutput = NDArrayFactory::create<double>('c', {1,5});
     expOutput = 0;
 
-    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    ops::helpers::logSoftmax(sd::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2131,7 +2131,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test2) {
     auto output = NDArrayFactory::create<double>('c', {5,1});
     auto expOutput = NDArrayFactory::create<double>('c', {5,1}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    ops::helpers::logSoftmax(sd::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2143,7 +2143,7 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
     auto output = NDArrayFactory::create<double>('c', {5});
     auto expOutput = NDArrayFactory::create<double>('c', {5}, {-4.4519144, -3.4519144, -2.4519144, -1.4519144, -0.4519144});
 
-    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    ops::helpers::logSoftmax(sd::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2151,8 +2151,8 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test3) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, logSoftMaxForVector_test4) {
 
-    NDArray input('c', {1500}, nd4j::DataType::DOUBLE);
-    NDArray output('c', {1500}, nd4j::DataType::DOUBLE);
+    NDArray input('c', {1500}, sd::DataType::DOUBLE);
+    NDArray output('c', {1500}, sd::DataType::DOUBLE);
     NDArray expOutput('c', {1500}, {-8.154773, -8.153772, -8.152773, -8.151772, -8.150773, -8.149773, -8.148773, -8.147773, -8.146772, -8.145773, -8.144773, -8.143773, -8.142773, -8.141773, -8.140773, -8.139772, -8.138773, -8.137773, -8.136773, -8.135773, -8.134773, -8.133773, -8.132772, -8.131773, -8.130773, -8.129773, -8.128773, -8.127772, -8.126773, -8.125772, -8.124773, -8.123773, -8.122773, -8.121773, -8.120772, -8.119773, -8.118773, -8.117773, -8.116773, -8.115773, -8.114773, -8.113772, -8.112773, -8.111773, -8.110773, -8.109773, -8.108773, -8.107773, -8.106772, -8.105773, -8.104773, -8.103773, -8.102773, -8.101772, -8.100773, -8.099772, -8.098773, -8.097773, -8.096773, -8.095773, -8.094772, -8.093773, -8.092772, -8.091773, -8.090773, -8.089773, -8.088773, -8.087772, -8.086773, -8.085773, -8.084773, -8.083773, -8.082773, -8.081773, -8.080772, -8.079773, -8.078773, -8.077773, -8.076773, -8.075773, -8.074773, -8.073772, -8.072773, -8.071773, -8.070773, -8.069773, -8.068772, -8.067773, -8.066772, -8.065773, -8.064773, -8.063773, -8.062773, -8.061772, -8.060773, -8.059772, -8.058773, -8.057773, -8.056773, -8.055773, -8.054772,
 -8.053773, -8.052773, -8.051773, -8.050773, -8.049773, -8.048773, -8.047772, -8.046773, -8.045773, -8.044773, -8.043773, -8.042773, -8.041773, -8.040772, -8.039773, -8.038773, -8.037773, -8.036773, -8.035772, -8.034773, -8.033772, -8.032773, -8.031773, -8.030773, -8.029773, -8.028772, -8.027773, -8.026772, -8.025773, -8.024773, -8.023773, -8.022773, -8.021772, -8.020773, -8.019773, -8.018773, -8.017773, -8.016773, -8.015773, -8.014772, -8.013773, -8.012773, -8.011773, -8.010773, -8.009773, -8.008773, -8.007772, -8.006773, -8.005773, -8.004773, -8.003773, -8.002772, -8.001773, -8.000772, -7.999773, -7.998773, -7.997773, -7.996773, -7.995773, -7.994773, -7.993773, -7.992773, -7.991773, -7.990773, -7.989773, -7.988773, -7.987773, -7.986773, -7.985773, -7.984773, -7.983773, -7.982773, -7.981773, -7.980773, -7.979773, -7.978773, -7.977773, -7.976773, -7.975773, -7.974773, -7.973773, -7.972773, -7.971773, -7.970773, -7.969773, -7.968773, -7.967773, -7.966773, -7.965773, -7.964773, -7.963773, -7.962773, -7.961773, -7.960773, -7.959773, -7.958773, -7.957773, -7.956773, -7.955773, -7.954773, -7.953773, -7.952773,
 -7.951773, -7.950773, -7.949773, -7.948773, -7.947773, -7.946773, -7.945773, -7.944773, -7.943773, -7.942773, -7.941773, -7.940773, -7.939773, -7.938773, -7.937773, -7.936773, -7.935773, -7.934773, -7.933773, -7.932773, -7.931773, -7.930773, -7.929773, -7.928773, -7.927773, -7.926773, -7.925773, -7.924773, -7.923773, -7.922773, -7.921773, -7.920773, -7.919773, -7.918773, -7.917773, -7.916773, -7.915773, -7.914773, -7.913773, -7.912773, -7.911773, -7.910773, -7.909773, -7.908773, -7.907773, -7.906773, -7.905773, -7.904773, -7.903773, -7.902773, -7.901773, -7.900773, -7.899773, -7.898773, -7.897773, -7.896773, -7.895773, -7.894773, -7.893773, -7.892773, -7.891773, -7.890773, -7.889773, -7.888773, -7.887773, -7.886773, -7.885773, -7.884773, -7.883773, -7.882773, -7.881773, -7.880773, -7.879773, -7.878773, -7.877773, -7.876773, -7.875773, -7.874773, -7.873773, -7.872773, -7.871773, -7.870773, -7.869773, -7.868773, -7.867773, -7.866773, -7.865773, -7.864773, -7.863773, -7.862773, -7.861773, -7.860773, -7.859773, -7.858773, -7.857773, -7.856773, -7.855773, -7.854773, -7.853773, -7.852773, -7.851773, -7.850773, -7.849773,
@@ -2167,10 +2167,10 @@ TEST_F(HelpersTests1, logSoftMaxForVector_test4) {
 -7.024773, -7.023773, -7.022773, -7.021773, -7.020773, -7.019773, -7.018773, -7.017773, -7.016773, -7.015773, -7.014773, -7.013773, -7.012773, -7.011773, -7.010773, -7.009773, -7.008773, -7.007773, -7.006773, -7.005773, -7.004773, -7.003773, -7.002773, -7.001773, -7.000773, -6.999773, -6.998773, -6.997773, -6.996773, -6.995773, -6.994773, -6.993773, -6.992773, -6.991773, -6.990773, -6.989773, -6.988773, -6.987773, -6.986773, -6.985773, -6.984773, -6.983773, -6.982773, -6.981773, -6.980773, -6.979773, -6.978773, -6.977773, -6.976773, -6.975773, -6.974773, -6.973773, -6.972773, -6.971773, -6.970773, -6.969773, -6.968773, -6.967773, -6.966773, -6.965773, -6.964773, -6.963773, -6.962773, -6.961773, -6.960773, -6.959773, -6.958773, -6.957773, -6.956773, -6.955773, -6.954773, -6.953773, -6.952773, -6.951773, -6.950773, -6.949773, -6.948773, -6.947773, -6.946773, -6.945773, -6.944773, -6.943773, -6.942773, -6.941773, -6.940773, -6.939773, -6.938773, -6.937773, -6.936773, -6.935773, -6.934773, -6.933773, -6.932773, -6.931773, -6.930773, -6.929773, -6.928773, -6.927773, -6.926773, -6.925773, -6.924773, -6.923773, -6.922773,
 -6.921773, -6.920773, -6.919773, -6.918773, -6.917773, -6.916773, -6.915773, -6.914773, -6.913773, -6.912773, -6.911773, -6.910773, -6.909773, -6.908773, -6.907773, -6.906773, -6.905773, -6.904773, -6.903773, -6.902773, -6.901773, -6.900773, -6.899773, -6.898773, -6.897773, -6.896773, -6.895773, -6.894773, -6.893773, -6.892773, -6.891773, -6.890773, -6.889773, -6.888773, -6.887773, -6.886773, -6.885773, -6.884773, -6.883773, -6.882773, -6.881773, -6.880773, -6.879773, -6.878773, -6.877773, -6.876773, -6.875773, -6.874773, -6.873773, -6.872773, -6.871773, -6.870773, -6.869773, -6.868773, -6.867773, -6.866773, -6.865773, -6.864773, -6.863773, -6.862773, -6.861773, -6.860773, -6.859773, -6.858773, -6.857773, -6.856773, -6.855773, -6.854773, -6.853773, -6.852773, -6.851773, -6.850773, -6.849773, -6.848773, -6.847773, -6.846773, -6.845773, -6.844773, -6.843773, -6.842773, -6.841773, -6.840773, -6.839773, -6.838773, -6.837773, -6.836773, -6.835773, -6.834773, -6.833773, -6.832773, -6.831773, -6.830773, -6.829773, -6.828773, -6.827773, -6.826773, -6.825773, -6.824773, -6.823773, -6.822773, -6.821773, -6.820773, -6.819773,
 -6.818773, -6.817773, -6.816773, -6.815773, -6.814773, -6.813773, -6.812773, -6.811773, -6.810773, -6.809773, -6.808773, -6.807773, -6.806773, -6.805773, -6.804773, -6.803773, -6.802773, -6.801773, -6.800773, -6.799773, -6.798773, -6.797773, -6.796773, -6.795773, -6.794773, -6.793773, -6.792773, -6.791773, -6.790773, -6.789773, -6.788773, -6.787773, -6.786773, -6.785773, -6.784773, -6.783773, -6.782773, -6.781773, -6.780773, -6.779773, -6.778773, -6.777773, -6.776773, -6.775773, -6.774773, -6.773773, -6.772773, -6.771773, -6.770773, -6.769773, -6.768773, -6.767773, -6.766773, -6.765773, -6.764773, -6.763773, -6.762773, -6.761773, -6.760773, -6.759773, -6.758773, -6.757773, -6.756773, -6.755773, -6.754773, -6.753773, -6.752773, -6.751773, -6.750773, -6.749773, -6.748773, -6.747773, -6.746773, -6.745773, -6.744773, -6.743773, -6.742773, -6.741773, -6.740773, -6.739773, -6.738773, -6.737773, -6.736773, -6.735773, -6.734773, -6.733773, -6.732773, -6.731773, -6.730773, -6.729773, -6.728773, -6.727773, -6.726773, -6.725773, -6.724773, -6.723773, -6.722773, -6.721773, -6.720773, -6.719773, -6.718773, -6.717773, -6.716773, -6.715773,
--6.714773, -6.713773, -6.712773, -6.711773, -6.710773, -6.709773, -6.708773, -6.707773, -6.706773, -6.705773, -6.704773, -6.703773, -6.702773, -6.701773, -6.700773, -6.699773, -6.698773, -6.697773, -6.696773, -6.695773, -6.694773, -6.693773, -6.692773, -6.691773, -6.690773, -6.689773, -6.688773, -6.687773, -6.686773, -6.685773, -6.684773, -6.683773, -6.682773, -6.681773, -6.680773, -6.679773, -6.678773, -6.677773, -6.676773, -6.675773, -6.674773, -6.673773, -6.672773, -6.671773, -6.670773, -6.669773, -6.668773, -6.667773, -6.666773, -6.665773, -6.664773, -6.663773, -6.662773, -6.661773, -6.660773, -6.659773, -6.658773, -6.657773, -6.656773, -6.655773}, nd4j::DataType::DOUBLE);
+-6.714773, -6.713773, -6.712773, -6.711773, -6.710773, -6.709773, -6.708773, -6.707773, -6.706773, -6.705773, -6.704773, -6.703773, -6.702773, -6.701773, -6.700773, -6.699773, -6.698773, -6.697773, -6.696773, -6.695773, -6.694773, -6.693773, -6.692773, -6.691773, -6.690773, -6.689773, -6.688773, -6.687773, -6.686773, -6.685773, -6.684773, -6.683773, -6.682773, -6.681773, -6.680773, -6.679773, -6.678773, -6.677773, -6.676773, -6.675773, -6.674773, -6.673773, -6.672773, -6.671773, -6.670773, -6.669773, -6.668773, -6.667773, -6.666773, -6.665773, -6.664773, -6.663773, -6.662773, -6.661773, -6.660773, -6.659773, -6.658773, -6.657773, -6.656773, -6.655773}, sd::DataType::DOUBLE);
     input.linspace(0.01, 0.001);
 
-    ops::helpers::logSoftmax(nd4j::LaunchContext ::defaultContext(), input, output, 0);
+    ops::helpers::logSoftmax(sd::LaunchContext ::defaultContext(), input, output, 0);
 
     ASSERT_TRUE(output.equalsTo(&expOutput));
 }
@@ -2182,14 +2182,14 @@ TEST_F(HelpersTests1, mmulMxV_1) {
     const Nd4jLong M = 3;
     const Nd4jLong N = 4;
 
-    NDArray a('f', {M,N}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
-    NDArray temp('f', {M,N,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray a('f', {M,N}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, sd::DataType::DOUBLE);
+    NDArray temp('f', {M,N,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, sd::DataType::DOUBLE);
     NDArray x = temp(6, {0,2});
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+    NDArray y('f', {M}, sd::DataType::DOUBLE);
 
-    NDArray exp('f', {M}, {5.5, 5.1, 4.7}, nd4j::DataType::DOUBLE);
+    NDArray exp('f', {M}, {5.5, 5.1, 4.7}, sd::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2199,15 +2199,15 @@ TEST_F(HelpersTests1, mmulMxV_2) {
     const Nd4jLong M = 3;
     const Nd4jLong N = 4;
 
-    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, sd::DataType::DOUBLE);
     a.permutei({1,0});
-    NDArray temp('f', {M,N,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray temp('f', {M,N,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, sd::DataType::DOUBLE);
     NDArray x = temp(6, {0,2});
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+    NDArray y('f', {M}, sd::DataType::DOUBLE);
 
-    NDArray exp('f', {M}, {5.1, 3.3, 1.5}, nd4j::DataType::DOUBLE);
+    NDArray exp('f', {M}, {5.1, 3.3, 1.5}, sd::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2217,15 +2217,15 @@ TEST_F(HelpersTests1, mmulMxV_3) {
     const Nd4jLong M = 3;
     const Nd4jLong N = 4;
 
-    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, sd::DataType::DOUBLE);
     a.permutei({1,0});
-    NDArray temp('f', {N,M,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray temp('f', {N,M,5}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, sd::DataType::DOUBLE);
     NDArray x = temp(4, {1,2});
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+    NDArray y('f', {M}, sd::DataType::DOUBLE);
 
-    NDArray exp('f', {M}, {6.2, 4.5, 1.7}, nd4j::DataType::DOUBLE);
+    NDArray exp('f', {M}, {6.2, 4.5, 1.7}, sd::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2235,15 +2235,15 @@ TEST_F(HelpersTests1, mmulMxV_4) {
     const Nd4jLong M = 3;
     const Nd4jLong N = 4;
 
-    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    NDArray a('f', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, sd::DataType::DOUBLE);
     a.permutei({1,0});
-    NDArray temp('f', {5,M,N}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray temp('f', {5,M,N}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, sd::DataType::DOUBLE);
     NDArray x = temp(3, {0,1});
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+    NDArray y('f', {M}, sd::DataType::DOUBLE);
 
-    NDArray exp('f', {M}, {1.5, 1.8, 1.5}, nd4j::DataType::DOUBLE);
+    NDArray exp('f', {M}, {1.5, 1.8, 1.5}, sd::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2253,15 +2253,15 @@ TEST_F(HelpersTests1, mmulMxV_5) {
     const Nd4jLong M = 3;
     const Nd4jLong N = 4;
 
-    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, sd::DataType::DOUBLE);
     a.permutei({1,0});
-    NDArray temp('f', {5,M,N}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray temp('f', {5,M,N}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, sd::DataType::DOUBLE);
     NDArray x = temp(2, {0,1});
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+    NDArray y('f', {M}, sd::DataType::DOUBLE);
 
-    NDArray exp('f', {M}, {-0.3, 0.3, 0.9}, nd4j::DataType::DOUBLE);
+    NDArray exp('f', {M}, {-0.3, 0.3, 0.9}, sd::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2271,15 +2271,15 @@ TEST_F(HelpersTests1, mmulMxV_6) {
     const Nd4jLong M = 3;
     const Nd4jLong N = 4;
 
-    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, sd::DataType::DOUBLE);
     a.permutei({1,0});
-    NDArray temp('c', {5,N,M}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray temp('c', {5,N,M}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, sd::DataType::DOUBLE);
     NDArray x = temp(13, {0,2});
-    NDArray y('f', {M}, nd4j::DataType::DOUBLE);
+    NDArray y('f', {M}, sd::DataType::DOUBLE);
 
-    NDArray exp('f', {M}, {-12.1, -10.9, -9.7}, nd4j::DataType::DOUBLE);
+    NDArray exp('f', {M}, {-12.1, -10.9, -9.7}, sd::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
@@ -2289,28 +2289,28 @@ TEST_F(HelpersTests1, mmulMxV_7) {
     const Nd4jLong M = 3;
     const Nd4jLong N = 4;
 
-    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, nd4j::DataType::DOUBLE);
+    NDArray a('c', {N,M}, {1.2,1.1,1.0,0.9,0.8,0.7,0.5,0.4,0.3,0.2,0.1,0}, sd::DataType::DOUBLE);
     a.permutei({1,0});
-    NDArray temp('c', {5,N,M}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, nd4j::DataType::DOUBLE);
+    NDArray temp('c', {5,N,M}, {16,2,-6,7,2,-2,4,-7,6,4,4,6,-3,1,3,9,1,4,9,10,-10,-3,-8,7,-7,-7,6,9,7,-6,8,7,-3,-3,4,-2,5,-3,-3,4,6,-5,-1,7,-5,4,-10,-1,8,0,-7,4,-10,-7,-8,-9,2,9,7,9}, sd::DataType::DOUBLE);
     NDArray x = temp(10, {0,2});
-    NDArray y('c', {M}, nd4j::DataType::DOUBLE);
+    NDArray y('c', {M}, sd::DataType::DOUBLE);
 
-    NDArray exp('c', {M}, {3.3, 3.3, 3.3}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {M}, {3.3, 3.3, 3.3}, sd::DataType::DOUBLE);
 
-    nd4j::MmulHelper::mmul(&a, &x, &y, 1., 0.);
+    sd::MmulHelper::mmul(&a, &x, &y, 1., 0.);
     ASSERT_TRUE(y.equalsTo(&exp));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, softmaxDerivative_1) {
 
-    NDArray input('c', {3,3}, {-1, 1, -2, 2, -3, 3, -4, 4, 5.}, nd4j::DataType::DOUBLE);
-    NDArray expOutput('c', {3,3}, {0.04508, 0.04514, 0.0008 , 0.0472 , 0.00087, 0.10492, 0.00235, 0.04592, 0.10553}, nd4j::DataType::DOUBLE);
-    NDArray output('c', {3,3}, nd4j::DataType::DOUBLE);
+    NDArray input('c', {3,3}, {-1, 1, -2, 2, -3, 3, -4, 4, 5.}, sd::DataType::DOUBLE);
+    NDArray expOutput('c', {3,3}, {0.04508, 0.04514, 0.0008 , 0.0472 , 0.00087, 0.10492, 0.00235, 0.04592, 0.10553}, sd::DataType::DOUBLE);
+    NDArray output('c', {3,3}, sd::DataType::DOUBLE);
 
-    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+    // input.applyTransform(sd::transform::SoftMaxDerivative, &output);
 
-    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
+    sd::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 }
@@ -2318,15 +2318,15 @@ TEST_F(HelpersTests1, softmaxDerivative_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, softmaxDerivative_2) {
 
-    NDArray input('c', {3,3,3}, {-1, 1, -2, 2, -3, 3, -4, 4, -5,5 ,-6,6, -7,7, -8,8, -9,9, -10,10, -11,11, -12,12, -13,13, 14.}, nd4j::DataType::DOUBLE);
+    NDArray input('c', {3,3,3}, {-1, 1, -2, 2, -3, 3, -4, 4, -5,5 ,-6,6, -7,7, -8,8, -9,9, -10,10, -11,11, -12,12, -13,13, 14.}, sd::DataType::DOUBLE);
     NDArray expOutput('c', {3,3,3}, {4.50755e-02, 4.51394e-02, 6.64586e-03,4.72027e-02, 8.67128e-04, 6.97440e-03,2.35008e-03, 4.59243e-02, 3.32995e-04,
                                     4.51766e-02, 2.26032e-06, 4.51767e-02,2.91394e-07, 2.37285e-06, 3.94360e-08,4.51769e-02, 1.12535e-07, 4.51767e-02,
-                                    7.58256e-10, 4.51767e-02, 1.22325e-11,7.96007e-10, 1.32293e-11, 1.04994e-01,3.77513e-11, 4.51767e-02, 1.04994e-01}, nd4j::DataType::DOUBLE);
-    NDArray output('c', {3,3,3}, nd4j::DataType::DOUBLE);
+                                    7.58256e-10, 4.51767e-02, 1.22325e-11,7.96007e-10, 1.32293e-11, 1.04994e-01,3.77513e-11, 4.51767e-02, 1.04994e-01}, sd::DataType::DOUBLE);
+    NDArray output('c', {3,3,3}, sd::DataType::DOUBLE);
 
-    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+    // input.applyTransform(sd::transform::SoftMaxDerivative, &output);
 
-    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 1);
+    sd::ops::helpers::softmaxDerivative(input.getContext(), input, output, 1);
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 }
@@ -2334,13 +2334,13 @@ TEST_F(HelpersTests1, softmaxDerivative_2) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(HelpersTests1, softmaxDerivative_3) {
 
-    NDArray input('c', {5}, {-1., 1, -2, 2, 3}, nd4j::DataType::DOUBLE);
-    NDArray expOutput('c', {5}, {0.01184, 0.08071, 0.00439, 0.18277, 0.22618}, nd4j::DataType::DOUBLE);
-    NDArray output('c', {5}, nd4j::DataType::DOUBLE);
+    NDArray input('c', {5}, {-1., 1, -2, 2, 3}, sd::DataType::DOUBLE);
+    NDArray expOutput('c', {5}, {0.01184, 0.08071, 0.00439, 0.18277, 0.22618}, sd::DataType::DOUBLE);
+    NDArray output('c', {5}, sd::DataType::DOUBLE);
 
-    // input.applyTransform(nd4j::transform::SoftMaxDerivative, &output);
+    // input.applyTransform(sd::transform::SoftMaxDerivative, &output);
 
-    nd4j::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
+    sd::ops::helpers::softmaxDerivative(input.getContext(), input, output, 0);
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 }
@@ -2364,19 +2364,19 @@ TEST_F(HelpersTests1, lstmLayerCell_1) {
     const float outAlpha = 0;       // alpha value for output activation, not required for tanh
     const float outBeta = 0;        // beta value for output activation, not required for tanh
 
-    NDArray x ('c', {bS, nIn}, nd4j::DataType::FLOAT32);
-    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray b ('c', {4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
-    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
-    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+    NDArray x ('c', {bS, nIn}, sd::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::FLOAT32);
+    NDArray b ('c', {4*nOut}, sd::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, sd::DataType::FLOAT32);
 
-    NDArray h('c', {bS, nOut}, nd4j::DataType::FLOAT32);
-    NDArray c('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray h('c', {bS, nOut}, sd::DataType::FLOAT32);
+    NDArray c('c', {bS, nOut}, sd::DataType::FLOAT32);
 
-    NDArray expH('c', {bS, nOut}, {0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288}, nd4j::DataType::FLOAT32);
-    NDArray expC('c', {bS, nOut}, {3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778}, nd4j::DataType::FLOAT32);
+    NDArray expH('c', {bS, nOut}, {0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288}, sd::DataType::FLOAT32);
+    NDArray expC('c', {bS, nOut}, {3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778}, sd::DataType::FLOAT32);
 
     std::vector<float> params = {dataFormat, 0, cellClip, gateAct, gateAlpha, gateBeta, cellAct, cellAlpha, cellBeta, outAct, outAlpha, outBeta};
 
@@ -2388,7 +2388,7 @@ TEST_F(HelpersTests1, lstmLayerCell_1) {
     Wp = 0.3;
     b = 0.7;
 
-    nd4j::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+    sd::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
 
     ASSERT_TRUE(expH.isSameShape(h));
     ASSERT_TRUE(expH.equalsTo(h));
@@ -2415,19 +2415,19 @@ TEST_F(HelpersTests1, lstmLayerCell_2) {
     const float outAlpha = 0;       // alpha value for output activation, not required for tanh
     const float outBeta = 0;        // beta value for output activation, not required for tanh
 
-    NDArray x ('c', {bS, nIn}, nd4j::DataType::FLOAT32);
-    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray b ('c', {4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
-    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
-    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+    NDArray x ('c', {bS, nIn}, sd::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::FLOAT32);
+    NDArray b ('c', {4*nOut}, sd::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, sd::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, sd::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, sd::DataType::FLOAT32);
 
-    NDArray h('c', {bS, nOut}, nd4j::DataType::FLOAT32);
-    NDArray c('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray h('c', {bS, nOut}, sd::DataType::FLOAT32);
+    NDArray c('c', {bS, nOut}, sd::DataType::FLOAT32);
 
-    NDArray expH('c', {bS, nOut}, {0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995}, nd4j::DataType::FLOAT32);
-    NDArray expC('c', {bS, nOut}, {3., 3., 3., 3., 3., 3., 3., 3.}, nd4j::DataType::FLOAT32);
+    NDArray expH('c', {bS, nOut}, {0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995}, sd::DataType::FLOAT32);
+    NDArray expC('c', {bS, nOut}, {3., 3., 3., 3., 3., 3., 3., 3.}, sd::DataType::FLOAT32);
 
     std::vector<float> params = {dataFormat, 0, cellClip, gateAct, gateAlpha, gateBeta, cellAct, cellAlpha, cellBeta, outAct, outAlpha, outBeta};
 
@@ -2439,7 +2439,7 @@ TEST_F(HelpersTests1, lstmLayerCell_2) {
     Wp = 0.3;
     b = 0.7;
 
-    nd4j::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+    sd::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
 
     ASSERT_TRUE(expH.isSameShape(h));
     ASSERT_TRUE(expH.equalsTo(h));
@@ -2465,19 +2465,19 @@ TEST_F(HelpersTests1, lstmLayerCell_3) {
     const float outAlpha = 0;       // alpha value for output activation, not required for tanh
     const float outBeta = 0;        // beta value for output activation, not required for tanh
 
-    NDArray x ('c', {nIn}, nd4j::DataType::FLOAT32);
-    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray b ('c', {4*nOut}, nd4j::DataType::FLOAT32);
-    NDArray hI('c', {nOut}, nd4j::DataType::FLOAT32);
-    NDArray cI('c', {nOut}, nd4j::DataType::FLOAT32);
-    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+    NDArray x ('c', {nIn}, sd::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::FLOAT32);
+    NDArray b ('c', {4*nOut}, sd::DataType::FLOAT32);
+    NDArray hI('c', {nOut}, sd::DataType::FLOAT32);
+    NDArray cI('c', {nOut}, sd::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, sd::DataType::FLOAT32);
 
-    NDArray h('c', {nOut}, nd4j::DataType::FLOAT32);
-    NDArray c('c', {nOut}, nd4j::DataType::FLOAT32);
+    NDArray h('c', {nOut}, sd::DataType::FLOAT32);
+    NDArray c('c', {nOut}, sd::DataType::FLOAT32);
 
-    NDArray expH('c', {nOut}, {0.999288, 0.999288, 0.999288, 0.999288}, nd4j::DataType::FLOAT32);
-    NDArray expC('c', {nOut}, {3.999778, 3.999778, 3.999778, 3.999778}, nd4j::DataType::FLOAT32);
+    NDArray expH('c', {nOut}, {0.999288, 0.999288, 0.999288, 0.999288}, sd::DataType::FLOAT32);
+    NDArray expC('c', {nOut}, {3.999778, 3.999778, 3.999778, 3.999778}, sd::DataType::FLOAT32);
 
     std::vector<float> params = {dataFormat, 0, cellClip, gateAct, gateAlpha, gateBeta, cellAct, cellAlpha, cellBeta, outAct, outAlpha, outBeta};
 
@@ -2489,7 +2489,7 @@ TEST_F(HelpersTests1, lstmLayerCell_3) {
     Wp = 0.3;
     b = 0.7;
 
-    nd4j::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+    sd::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
 
     ASSERT_TRUE(expH.isSameShape(h));
     ASSERT_TRUE(expH.equalsTo(h));

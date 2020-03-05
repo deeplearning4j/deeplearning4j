@@ -18,13 +18,13 @@
 // Created by raver119 on 24.11.17.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_mergeadd)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 OP_IMPL(mergeadd, -1, 1, false) {
@@ -51,8 +51,8 @@ DECLARE_SYN(accumulate_n, mergeadd);
 
     DECLARE_TYPES(mergeadd) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                ->setAllowedInputTypes(sd::DataType::ANY)
+                ->setAllowedOutputTypes(sd::DataType::ANY);
     }
 }
 }

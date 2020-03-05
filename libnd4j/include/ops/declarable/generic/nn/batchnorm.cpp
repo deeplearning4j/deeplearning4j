@@ -20,13 +20,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_batchnorm)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/batchnorm.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 
@@ -61,7 +61,7 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     else
         axes.push_back(inRank-1);               // default dimension to reduce along is last dimension
 
-    const int numOfAxes = axes.size();
+    const uint numOfAxes = axes.size();
     REQUIRE_TRUE(numOfAxes <= inRank, 0, "BATCHNORM op: too big number of input axes to normalize over, expected number should be less or equal to rank of input array, but got %i and %i correspondingly !", numOfAxes, inRank);
 
     // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
@@ -83,14 +83,14 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
         REQUIRE_TRUE(beta->isSameShape(expShape), 0, "BATCHNORM op: wrong shape of beta array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expShape).c_str(), ShapeUtils::shapeAsString(beta).c_str());
 
     // types of all input arrays should be the same
-    for(int i = 1; i < block.width(); ++i)
+    for(unsigned long i = 1; i < block.width(); ++i)
         REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM op: types of all input arrays should be the same !");
 
     nd4j_debug("MKL-DNN is not used for batchnorm!\n", 0);
 
     // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
     // auto v = input->varianceAlongDimension(variance::SummaryStatsVariance, false, ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
-    // auto m = input->reduceAlongDimension(nd4j::reduce::Mean, ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
+    // auto m = input->reduceAlongDimension(sd::reduce::Mean, ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
 
     helpers::batchnorm(input, mean, variance, gamma, beta, output, axes, epsilon);
 
@@ -101,11 +101,11 @@ CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {
     //     stdInv *= *gamma;
 
     //  // empty array with same shape as input
-    // input->applyBroadcast(nd4j::broadcast::Subtract, axes, m, output);
-    // output->applyBroadcast(nd4j::broadcast::Multiply, axes, &stdInv);
+    // input->applyBroadcast(sd::broadcast::Subtract, axes, m, output);
+    // output->applyBroadcast(sd::broadcast::Multiply, axes, &stdInv);
 
     // if(applyOffset)
-    //     output->applyBroadcast(nd4j::broadcast::Add, axes, beta);
+    //     output->applyBroadcast(sd::broadcast::Add, axes, beta);
 
     // delete v;
     // delete m;
@@ -167,7 +167,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     else
         axes.push_back(inRank-1);               // default dimension to reduce along is last dimension
 
-    const int numOfAxes = axes.size();
+    const uint numOfAxes = axes.size();
     REQUIRE_TRUE(numOfAxes <= inRank, 0, "BATCHNORM_BP op: too big number of input axes to normalize over, expected number should be less or equal to rank of input array, but got %i and %i correspondingly !", numOfAxes, inRank);
 
     // evaluate expected shape for mean, variance and gamma. These 3 arrays should have identical shapes
@@ -191,7 +191,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     REQUIRE_TRUE(input->isSameShape(dLdO), 0, "BATCHNORM_BP op: wrong shape of output gradients array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(dLdO).c_str());
 
     // types of all input arrays should be the same (except dLdO)
-    for(int i = 1; i < block.width() - 2; ++i)
+    for(unsigned long i = 1; i < block.width() - 2; ++i)
         REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM_BP op: types of arrays (input, mean, variance, gamma, beta) should be the same !");
 
     // ***** calculations ***** //
@@ -218,7 +218,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     // dLdB = g_sum
 
     // variance = input->varianceAlongDimension(variance::SummaryStatsVariance, false, ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
-    // mean = input->reduceAlongDimension(nd4j::reduce::Mean, ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
+    // mean = input->reduceAlongDimension(sd::reduce::Mean, ShapeUtils::evalDimsToExclude(input->rankOf(), axes));
 
     const auto excludedAxes = ShapeUtils::evalDimsToExclude(inRank, axes);
     const bool keepUnitiesInShape = inRank == mean->rankOf();
@@ -228,7 +228,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     // input - mean
     NDArray xMinusMean(input); // empty array with same shape as input
-    input->applyBroadcast(nd4j::broadcast::Subtract, axes, *mean, xMinusMean);
+    input->applyBroadcast(sd::broadcast::Subtract, axes, *mean, xMinusMean);
 
     // stdInv
     NDArray stdInv = *variance + epsilon;
@@ -236,11 +236,11 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     stdInv.applyTransform(transform::Sqrt, stdInv);                                 // 1 / (variance + epsilon)^0.5
 
     // dvdm (use dLdM as storage for dvdm)
-    xMinusMean.reduceAlongDimension(nd4j::reduce::Sum, *dLdM, excludedAxes, keepUnitiesInShape);
+    xMinusMean.reduceAlongDimension(sd::reduce::Sum, *dLdM, excludedAxes, keepUnitiesInShape);
     *dLdM *= -Ninv;
 
     // g_sum
-    auto gSum = dLdO->reduceAlongDimension(nd4j::reduce::Sum, excludedAxes, keepUnitiesInShape);
+    auto gSum = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes, keepUnitiesInShape);
 
     // dLdB
     if(applyOffset)
@@ -248,11 +248,11 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
     // stdInv * (g - g_sum/N) (use dLdI as storage for this expression)
     gSum *= Ninv;
-    dLdO->applyBroadcast(nd4j::broadcast::Subtract, axes, gSum, *dLdI);
-    dLdI->applyBroadcast(nd4j::broadcast::Multiply, axes, stdInv, *dLdI);
+    dLdO->applyBroadcast(sd::broadcast::Subtract, axes, gSum, *dLdI);
+    dLdI->applyBroadcast(sd::broadcast::Multiply, axes, stdInv, *dLdI);
 
     // dLdV <- [g*(x - m)]_sum
-    (xMinusMean * *dLdO).reduceAlongDimension(nd4j::reduce::Sum, *dLdV, excludedAxes, keepUnitiesInShape);
+    (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, *dLdV, excludedAxes, keepUnitiesInShape);
 
     // dLdG
     *dLdV *= stdInv;
@@ -264,13 +264,13 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     *dLdV *=  -Ninv;             // -0.5f * (2 / N);
 
     // dfdv * (dvdm  + (x - m)) (use xMinusMean as storage for this expression)
-    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, *dLdM, xMinusMean);
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, *dLdV, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Add, axes, *dLdM, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Multiply, axes, *dLdV, xMinusMean);
 
     // dLdI
     *dLdI += xMinusMean;
     if(applyScale)
-        dLdI->applyBroadcast(nd4j::broadcast::Multiply, axes, *gamma, *dLdI);
+        dLdI->applyBroadcast(sd::broadcast::Multiply, axes, *gamma, *dLdI);
 
     *dLdM = 0;      // put zeros so far
     *dLdV = 0;      // put zeros so far
@@ -280,11 +280,11 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     // std.applyTransform(transform::Reciprocal);                           // 1 / (variance + epsilon)
     // std.applyTransform(transform::Sqrt);                                 // 1 / (variance + epsilon)^0.5
     // NDArray xMu(input);
-    // input->applyBroadcast(nd4j::broadcast::Subtract, axes, mean, &xMu);
+    // input->applyBroadcast(sd::broadcast::Subtract, axes, mean, &xMu);
     // NDArray xHat(input);
-    // xMu.applyBroadcast(nd4j::broadcast::Multiply, axes, &std, &xHat);
+    // xMu.applyBroadcast(sd::broadcast::Multiply, axes, &std, &xHat);
     // NDArray dxhat(input);
-    // dLdO->applyBroadcast(nd4j::broadcast::Multiply, axes, gamma, &dxhat);
+    // dLdO->applyBroadcast(sd::broadcast::Multiply, axes, gamma, &dxhat);
     // NDArray temp = dxhat*xMu;
     // temp.reduceAlongDimension(reduce::Sum, dLdV, excludedAxes, keepUnitiesInShape);
     // *dLdV *= -0.5f * std*std*std;
@@ -295,10 +295,10 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     // NDArray dLdmu = *dxmu1 + *dxmu2;
     // dLdmu *= (1.f /N);
     // *dLdV *= (2.f/N);
-    // dxhat.applyBroadcast(nd4j::broadcast::Multiply, axes, &std);
-    // xMu.applyBroadcast(nd4j::broadcast::Multiply, axes, dLdV);
+    // dxhat.applyBroadcast(sd::broadcast::Multiply, axes, &std);
+    // xMu.applyBroadcast(sd::broadcast::Multiply, axes, dLdV);
     // dxhat += xMu;
-    // dxhat.applyBroadcast(nd4j::broadcast::Add, axes, &dLdmu, dLdI);
+    // dxhat.applyBroadcast(sd::broadcast::Add, axes, &dLdmu, dLdI);
     // delete  dxmu1;
     // delete  dxmu2;
     // xHat *= *dLdO;
@@ -309,12 +309,12 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
 
 DECLARE_TYPES(batchnorm_bp) {
     getOpDescriptor()
-            ->setAllowedInputTypes(0, nd4j::DataType::ANY)
-            ->setAllowedInputTypes(1, nd4j::DataType::ANY)
-            ->setAllowedInputTypes(2, nd4j::DataType::ANY)
+            ->setAllowedInputTypes(0, sd::DataType::ANY)
+            ->setAllowedInputTypes(1, sd::DataType::ANY)
+            ->setAllowedInputTypes(2, sd::DataType::ANY)
             ->setAllowedInputTypes(3, {ALL_FLOATS})
-            ->setAllowedInputTypes(4, nd4j::DataType::ANY)
-            ->setAllowedInputTypes(5, nd4j::DataType::ANY)
+            ->setAllowedInputTypes(4, sd::DataType::ANY)
+            ->setAllowedInputTypes(5, sd::DataType::ANY)
             ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

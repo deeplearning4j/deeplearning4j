@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cumprod)
 
 #include <ops/declarable/helpers/prefix.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(cumprod, 1, 1, true, 0, 2) {
             auto input = INPUT_VARIABLE(0);
@@ -42,7 +42,7 @@ namespace nd4j {
 
             if (block.getIArguments()->size() == 2 && block.width() == 1) {
                 // all at once case
-                nd4j::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, exclusive, reverse);
+                sd::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, exclusive, reverse);
             } else {
                 std::vector<int> dims(block.numI() - 2);
 
@@ -59,7 +59,7 @@ namespace nd4j {
                     if (dims[e] < 0)
                         dims[e] += input->rankOf();
 
-                nd4j::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
+                sd::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
             }
 
             return Status::OK();
@@ -67,7 +67,7 @@ namespace nd4j {
 
         DECLARE_TYPES(cumprod) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, sd::DataType::ANY)
                     ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setAllowedOutputTypes({ALL_FLOATS})
                     ->setSameMode(true);
@@ -75,7 +75,7 @@ namespace nd4j {
 
         DECLARE_TYPES(cumprod_bp) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, sd::DataType::ANY)
                     ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS}) // there is a case when axes given as IArgs
                     ->setAllowedInputTypes(2, {ALL_FLOATS})
                     ->setAllowedOutputTypes({ALL_FLOATS})
@@ -103,35 +103,35 @@ namespace nd4j {
                     dims[e] = INT_ARG(e + 2);
             }
 
-            nd4j::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
+            sd::ops::helpers::prefix(block.launchContext(), scalar::Multiply, input, output, dims, exclusive, reverse);
             NDArray val = NDArray(output->dup());
 
             gradOut->applyPairwiseTransform(pairwise::Multiply, *output, val);
             val.applyPairwiseTransform(pairwise::Divide, *input, val);
             if (!exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);
+                    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);
                 else
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, false, true);
+                    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, false, true);
 
             }
             else if (!exclusive && reverse){
                 if (dims.size())
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, false, false);
+                    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, false, false);
                 else
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, false, false);
+                    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, false, false);
             }
             else if (exclusive && !reverse) {
                 if (dims.size())
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, true);
+                    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, true);
                 else
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, true, true);
+                    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, true, true);
             }
             else {
                 if (dims.size())
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);
+                    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, dims, true, false);
                 else
-                    nd4j::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, true, false);
+                    sd::ops::helpers::prefix(block.launchContext(), scalar::Add, &val, output, true, false);
             }
 
             return Status::OK();

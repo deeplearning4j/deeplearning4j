@@ -19,12 +19,12 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <OmpLaunchHelper.h>
+#include <array/NDArray.h>
+#include <helpers/OmpLaunchHelper.h>
 
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class OmpLaunchHelperTests : public testing::Test {
 private:

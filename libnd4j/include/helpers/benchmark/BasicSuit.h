@@ -21,7 +21,7 @@
 #ifndef DEV_TESTS_BASICSUIT_H
 #define DEV_TESTS_BASICSUIT_H
 
-namespace nd4j {
+namespace sd {
     class BasicSuit {
     protected:
 

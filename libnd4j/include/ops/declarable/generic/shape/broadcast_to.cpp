@@ -18,12 +18,12 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 03.09.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_broadcast_to)
 
 #include <ops/declarable/headers/shape.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {

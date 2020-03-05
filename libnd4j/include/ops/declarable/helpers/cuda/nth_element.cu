@@ -19,13 +19,13 @@
 //
 
 #include <ops/declarable/helpers/nth_element.h>
-#include <TAD.h>
-#include <ShapeUtils.h>
-#include <PointersManager.h>
-#include <NativeOps.h>
+#include <helpers/TAD.h>
+#include <helpers/ShapeUtils.h>
+#include <helpers/PointersManager.h>
+#include <legacy/NativeOps.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -50,7 +50,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void nthElementFunctor_(nd4j::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
+    void nthElementFunctor_(sd::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
 
         NDArray::prepareSpecialUse({output}, {input});
         NDArray sortedVals(*input);
@@ -66,7 +66,7 @@ namespace helpers {
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
 
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.getShapeInfo(), lastDims);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.getShapeInfo(), lastDims);
 
             auto pTadShape = packX.specialShapeInfo();
             auto pTadShapeH = packX.primaryShapeInfo();
@@ -79,7 +79,7 @@ namespace helpers {
         }
         NDArray::registerSpecialUse({output}, {input});
     }
-    void nthElementFunctor(nd4j::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
+    void nthElementFunctor(sd::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (context, input, n, output, reverse), LIBND4J_TYPES);
 
     }

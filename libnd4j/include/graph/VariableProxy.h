@@ -20,7 +20,7 @@
 
 #include <graph/VariableSpace.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT VariableProxy: public VariableSpace {
         protected:
@@ -35,7 +35,7 @@ namespace nd4j {
             virtual int numberOfPlaceholders();
             virtual std::vector<Variable*>* getPlaceholders();
 
-            virtual nd4j::memory::Workspace *workspace();
+            virtual sd::memory::Workspace *workspace();
 
             virtual bool hasExternalVariable(int it);
             virtual bool hasExternalVariable(std::pair<int,int>& pair);
@@ -46,18 +46,18 @@ namespace nd4j {
             virtual bool hasVariable(std::pair<int,int>& pair);
             virtual bool hasVariable(std::string *symbol);
 
-            virtual nd4j::graph::Variable *getVariable(int id);
-            virtual nd4j::graph::Variable *getVariable(int id, int idx);
-            virtual nd4j::graph::Variable *getVariable(std::pair<int,int>& pair);
-            virtual nd4j::graph::Variable *getVariable(std::string *symbol);
+            virtual sd::graph::Variable *getVariable(int id);
+            virtual sd::graph::Variable *getVariable(int id, int idx);
+            virtual sd::graph::Variable *getVariable(std::pair<int,int>& pair);
+            virtual sd::graph::Variable *getVariable(std::string *symbol);
 
             virtual std::vector<Variable*> getVariables();
 
-            virtual void putVariable(std::pair<int,int>& pair, NDArray *array);
+            virtual Variable* putVariable(std::pair<int,int>& pair, NDArray *array);
             virtual void putVariable(std::pair<int,int>& pair, Variable *variable);
             virtual void putVariable(int id, Variable *variable);
             virtual void putVariable(int id, NDArray *array);
-            virtual void putVariable(int id, int idx, NDArray *array);
+            virtual Variable* putVariable(int id, int idx, NDArray *array);
             virtual void putVariable(int id, int idx, NDArray &array);
             virtual void putVariable(int id, int idx, Variable *array);
 
@@ -68,7 +68,7 @@ namespace nd4j {
 
             virtual void putOutputVariable(Variable *variable);
 
-            virtual void trackList(nd4j::NDArrayList *list);
+            virtual void trackList(sd::NDArrayList *list);
 
             // memory-related statistics
             virtual Nd4jLong externalMemory();
@@ -79,9 +79,9 @@ namespace nd4j {
             virtual int internalEntries();
             virtual int totalEntries();
 
-            virtual nd4j::graph::VariableSpace *clone();
+            virtual sd::graph::VariableSpace *clone();
 
-            virtual nd4j::graph::Stash* getStash();
+            virtual sd::graph::Stash* getStash();
             virtual void setFlowPath(FlowPath* timers);
             virtual FlowPath* flowPath();
         };

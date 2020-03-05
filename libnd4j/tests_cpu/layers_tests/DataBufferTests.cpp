@@ -19,9 +19,9 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <Context.h>
-#include <Node.h>
+#include <array/NDArray.h>
+#include <graph/Context.h>
+#include <graph/Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <ops/declarable/CustomOperations.h>
@@ -29,9 +29,9 @@
 #include <ops/declarable/helpers/col2im.h>
 #include <helpers/RandomLauncher.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
-using namespace nd4j::memory;
+using namespace sd;
+using namespace sd::graph;
+using namespace sd::memory;
 
 class DataBufferTests : public testing::Test {
 public:

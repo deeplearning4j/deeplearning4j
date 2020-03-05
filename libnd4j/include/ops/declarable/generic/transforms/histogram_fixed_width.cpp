@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 31.08.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_histogram_fixed_width)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/histogramFixedWidth.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(histogram_fixed_width, 2, 1, false, 0, 0) {
@@ -48,7 +48,7 @@ CUSTOM_OP_IMPL(histogram_fixed_width, 2, 1, false, 0, 0) {
 
 DECLARE_TYPES(histogram_fixed_width) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_INDICES});
 }
 

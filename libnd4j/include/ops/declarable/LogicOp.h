@@ -23,7 +23,7 @@
 
 #include "DeclarableOp.h"
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         /**
@@ -34,11 +34,11 @@ namespace nd4j {
          */
         class ND4J_EXPORT LogicOp : public DeclarableOp {
         protected:
-            Nd4jStatus validateAndExecute(nd4j::graph::Context& block) override;
+            Nd4jStatus validateAndExecute(sd::graph::Context& block) override;
         public:
             LogicOp(const char *name);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context &block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context &block) override;
         };
     }
 }

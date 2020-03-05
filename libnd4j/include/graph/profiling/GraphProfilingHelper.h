@@ -25,7 +25,7 @@
 #include <graph/Graph.h>
 #include "GraphProfile.h"
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class GraphProfilingHelper {
         public:

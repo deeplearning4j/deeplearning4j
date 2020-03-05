@@ -22,7 +22,7 @@
 #include <execution/Threads.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -32,7 +32,7 @@ namespace helpers {
         int lLen = labels->lengthOf();
 
         auto func = PRAGMA_THREADS_FOR {
-            for (int j = start; j < stop; j += increment) {
+            for (int j = start; j < stop; j++) {
                 auto label = labels->e<Nd4jLong>(j);
                 auto pred = predictions->e<Nd4jLong>(j);
                 T value = (weights == nullptr ? (T) 1.0f : weights->e<T>(j));
@@ -43,7 +43,7 @@ namespace helpers {
         samediff::Threads::parallel_for(func, 0, lLen);
     }
 
-    void confusionFunctor(nd4j::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
+    void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {
         auto xType = output->dataType(); // weights can be null
 
         BUILD_SINGLE_SELECTOR(xType, _confusionFunctor, (labels, predictions, weights, output), NUMERIC_TYPES);

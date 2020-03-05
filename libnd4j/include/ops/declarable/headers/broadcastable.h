@@ -25,7 +25,7 @@
 #include <ops/declarable/headers/common.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         // TODO: make broadcastables separate class
 

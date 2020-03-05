@@ -21,7 +21,7 @@
 #include "../benchmark/Parameters.h"
 #include <stdexcept>
 
-namespace nd4j {
+namespace sd {
     Parameters* Parameters::addIntParam(std::string string, int param) {
         _intParams[string] = param;
         return this;

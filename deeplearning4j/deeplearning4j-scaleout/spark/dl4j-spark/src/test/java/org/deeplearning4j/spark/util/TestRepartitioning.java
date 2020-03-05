@@ -63,7 +63,7 @@ public class TestRepartitioning extends BaseSparkTest {
         assertEquals(10, rdd2.partitions().size());
         for (int i = 0; i < 10; i++) {
             List<String> partition = rdd2.collectPartitions(new int[] {i})[0];
-            System.out.println("Partition " + i + " size: " + partition.size());
+//            System.out.println("Partition " + i + " size: " + partition.size());
             assertEquals(100, partition.size()); //Should be exactly 100, for the util method (but NOT spark .repartition)
         }
     }
@@ -170,7 +170,7 @@ public class TestRepartitioning extends BaseSparkTest {
 
         List<Tuple2<Integer, Integer>> partitionCounts = initial.values().mapPartitionsWithIndex(new CountPartitionsFunction<Integer>(), true).collect();
 
-        System.out.println(partitionCounts);
+//        System.out.println(partitionCounts);
 
         List<Tuple2<Integer,Integer>> initialExpected = Arrays.asList(
                 new Tuple2<>(0,29),
@@ -185,7 +185,7 @@ public class TestRepartitioning extends BaseSparkTest {
 
         JavaRDD<Integer> afterRepartition = SparkUtils.repartitionBalanceIfRequired(initial.values(), Repartition.Always, 2, 112);
         List<Tuple2<Integer, Integer>> partitionCountsAfter = afterRepartition.mapPartitionsWithIndex(new CountPartitionsFunction<Integer>(), true).collect();
-        System.out.println(partitionCountsAfter);
+//        System.out.println(partitionCountsAfter);
 
         for(Tuple2<Integer,Integer> t2 : partitionCountsAfter){
             assertEquals(2, (int)t2._2());
@@ -219,8 +219,8 @@ public class TestRepartitioning extends BaseSparkTest {
             }
         }
 
-        System.out.println("min: " + min + "\t@\t" + minIdx);
-        System.out.println("max: " + max + "\t@\t" + maxIdx);
+//        System.out.println("min: " + min + "\t@\t" + minIdx);
+//        System.out.println("max: " + max + "\t@\t" + maxIdx);
 
         assertEquals(1, min);
         assertEquals(2, max);
@@ -244,7 +244,7 @@ public class TestRepartitioning extends BaseSparkTest {
 
         for (int i = 0; i < 10; i++) {
             List<String> partition = rdd2.collectPartitions(new int[] {i})[0];
-            System.out.println("Partition " + i + " size: " + partition.size());
+//            System.out.println("Partition " + i + " size: " + partition.size());
             assertTrue(partition.size() >= 90 && partition.size() <= 110);
         }
     }

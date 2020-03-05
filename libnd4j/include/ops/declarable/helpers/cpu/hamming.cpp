@@ -22,7 +22,7 @@
 #include <ops/declarable/helpers/hamming.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -47,7 +47,7 @@ namespace nd4j {
 
                 Nd4jLong distance = 0;
                 auto lengthOf = x.lengthOf();
-                int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+                int maxThreads = sd::math::nd4j_min<int>(256, omp_get_max_threads());
                 Nd4jLong intermediate[256];
 
                 // nullify temp values
@@ -56,7 +56,7 @@ namespace nd4j {
 
                 if (xEws == 1 && yEws == 1 && x.ordering() == y.ordering()) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto _x = static_cast<unsigned long long>(xBuffer[e]);
                             auto _y = static_cast<unsigned long long>(yBuffer[e]);
 
@@ -67,7 +67,7 @@ namespace nd4j {
                     maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 } else if (xEws > 1 && yEws > 1 && x.ordering() == y.ordering()) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto _x = static_cast<unsigned long long>(xBuffer[e * xEws]);
                             auto _y = static_cast<unsigned long long>(yBuffer[e * yEws]);
 
@@ -78,7 +78,7 @@ namespace nd4j {
                     maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 } else {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto _x = static_cast<unsigned long long>(x.e<Nd4jLong>(e));
                             auto _y = static_cast<unsigned long long>(y.e<Nd4jLong>(e));
 

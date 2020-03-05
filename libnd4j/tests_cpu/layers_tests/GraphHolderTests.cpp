@@ -21,9 +21,9 @@
 #include "testlayers.h"
 #include <graph/GraphHolder.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::ops;
+using namespace sd::graph;
 
 class GraphHolderTests : public testing::Test {
 public:

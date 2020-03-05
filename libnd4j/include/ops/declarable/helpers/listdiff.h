@@ -20,14 +20,14 @@
 #ifndef __LIST_DIFF_HELPERS__
 #define __LIST_DIFF_HELPERS__
 //#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    int listDiffFunctor(nd4j::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);
-    Nd4jLong listDiffCount(nd4j::LaunchContext * context, NDArray* values, NDArray* keep);
+    int listDiffFunctor(sd::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2);
+    Nd4jLong listDiffCount(sd::LaunchContext * context, NDArray* values, NDArray* keep);
 }
 }
 }

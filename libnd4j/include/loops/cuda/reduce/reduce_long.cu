@@ -19,7 +19,7 @@
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/reduce_long.h>
 #include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
@@ -156,7 +156,7 @@ __device__ void ReduceLongFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
         __syncthreads();
 
         // aggregate. do NOT reduce for elements > tadLength
-        aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
         __syncthreads();
 
         if (threadIdx.x == 0)
@@ -203,7 +203,7 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
 
     __syncthreads();
-    aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, len), extraParams);
+    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, len), extraParams);
     __syncthreads();
 
     if (gridDim.x > 1) {
@@ -233,7 +233,7 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
                 sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
 
             __syncthreads();
-            aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
+            aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
             __syncthreads();
 
             if (threadIdx.x == 0) {
@@ -263,11 +263,11 @@ __host__ void ReduceLongFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStrea
 
         const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<X*>(x)));
 
-        auto res = cudaMemcpyAsync(nd4j::LaunchContext::defaultContext()->getScalarPointer(), &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
+        auto res = cudaMemcpyAsync(sd::LaunchContext::defaultContext()->getScalarPointer(), &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
-            throw nd4j::cuda_exception::build("ReduceLongFunction<X,Z>::intermediateXD: failed to copy temporary scalar", res);
+            throw sd::cuda_exception::build("ReduceLongFunction<X,Z>::intermediateXD: failed to copy temporary scalar", res);
 
-        auto ptr = nd4j::LaunchContext::defaultContext()->getScalarPointer();
+        auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
 
         // scalar assign
         functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, zShapeInfo, hXShapeInfo, z, zShapeInfo, hZShapeInfo, ptr, nullptr);
@@ -291,7 +291,7 @@ __host__ void ReduceLongFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaS
 
         auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
-            throw nd4j::cuda_exception::build("ReduceLongFunction<X,Z>::intermediateScalar: failed to copy resulting scalar", res);
+            throw sd::cuda_exception::build("ReduceLongFunction<X,Z>::intermediateScalar: failed to copy resulting scalar", res);
     }
     else {
         simpleScalar<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
@@ -303,7 +303,7 @@ template <typename X, typename Y>
 _CUDA_H void ReduceLongFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong* hXShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, Nd4jLong* hZShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
         DISPATCH_BY_OPNUM_TT(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, hXShapeInfo, extraParams, z, zShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_LONG_OPS));
-        nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

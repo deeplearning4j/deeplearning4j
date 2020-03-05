@@ -19,14 +19,14 @@
 //
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_xw_plus_b)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/matmul.h>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(xw_plus_b, 3, 1, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -55,7 +55,7 @@ namespace nd4j {
 
         DECLARE_TYPES(xw_plus_b) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

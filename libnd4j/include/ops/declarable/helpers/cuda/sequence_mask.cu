@@ -20,7 +20,7 @@
 
 #include <ops/declarable/helpers/sequence_mask.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -54,11 +54,11 @@ namespace helpers {
         NDArray::registerSpecialUse({output}, {input});
     }
 
-    void sequenceMask(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
+    void sequenceMask(sd::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (context, input, output, maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
     }
 
-    BUILD_DOUBLE_TEMPLATE(template void sequenceMask_, (nd4j::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
+    BUILD_DOUBLE_TEMPLATE(template void sequenceMask_, (sd::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
 }
 }
 }

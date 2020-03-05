@@ -19,25 +19,25 @@
  //
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <NDArrayFactory.h>
-#include <Context.h>
-#include <Node.h>
+#include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
+#include <graph/Context.h>
+#include <graph/Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <specials_cuda.h>
-#include <TAD.h>
-#include <MmulHelper.h>
+#include <ops/specials_cuda.h>
+#include <helpers/TAD.h>
+#include <helpers/MmulHelper.h>
 #include <helpers/PointersManager.h>
 #include <cuda.h>
 #include <helpers/RandomLauncher.h>
-#include <ConstantShapeHelper.h>
-#include <ConstantTadHelper.h>
-#include <ShapeDescriptor.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <helpers/ConstantTadHelper.h>
+#include <array/ShapeDescriptor.h>
 #include <array/ConstantDataBuffer.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class CudaBasicsTests1 : public testing::Test {
 public:
@@ -128,15 +128,15 @@ TEST_F(CudaBasicsTests1, TestPairwise_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 
-    NDArray x1('c', {2,2}, {0, 1, 2, 3}, nd4j::DataType::INT32);
-    NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::BFLOAT16);    
-    NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
+    NDArray x1('c', {2,2}, {0, 1, 2, 3}, sd::DataType::INT32);
+    NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, sd::DataType::BFLOAT16);
+    NDArray x3('c', {2,2}, {0, -1, 0, 1}, sd::DataType::BOOL);
     
-    NDArray scalar('c', {}, std::vector<double>{0}, nd4j::DataType::INT64);
+    NDArray scalar('c', {}, std::vector<double>{0}, sd::DataType::INT64);
 
-    NDArray exp1('c', {}, std::vector<double>{3}, nd4j::DataType::INT64);
-    NDArray exp2('c', {}, std::vector<double>{2}, nd4j::DataType::INT64);
-    NDArray exp3('c', {}, std::vector<double>{1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, std::vector<double>{3}, sd::DataType::INT64);
+    NDArray exp2('c', {}, std::vector<double>{2}, sd::DataType::INT64);
+    NDArray exp3('c', {}, std::vector<double>{1}, sd::DataType::INT64);
 
     void *dX1, *dX2, *dX3, *dZ; 
     Nd4jLong *dX1ShapeInfo, *dX2ShapeInfo, *dX3ShapeInfo, *dZShapeInfo;
@@ -180,7 +180,7 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 	/***************************************/
 	
     NativeOpExecutioner::execIndexReduceScalar(&lc,
-    											nd4j::indexreduce::IndexAbsoluteMax, 
+    											sd::indexreduce::IndexAbsoluteMax,
     											x1.buffer(), x1.getShapeInfo(),
     	                                       	dX1, dX1ShapeInfo, 
     	                                       	nullptr, 
@@ -202,7 +202,7 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
     /***************************************/
     
     NativeOpExecutioner::execIndexReduceScalar(&lc,
-    											nd4j::indexreduce::IndexAbsoluteMax, 
+    											sd::indexreduce::IndexAbsoluteMax,
     											nullptr, x2.getShapeInfo(),
     	                                       	dX2, dX2ShapeInfo, 
     	                                       	nullptr, 
@@ -222,7 +222,7 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
     // *************************************
 
     NativeOpExecutioner::execIndexReduceScalar(&lc, 
-    											nd4j::indexreduce::IndexAbsoluteMax, 
+    											sd::indexreduce::IndexAbsoluteMax,
     											nullptr, x3.getShapeInfo(),
     	                                       	dX3, dX3ShapeInfo, 
     	                                       	nullptr, 
@@ -257,16 +257,16 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 	 if (!Environment::getInstance()->isExperimentalBuild())
         return;
 
-    NDArray x1('c', {2,2}, {1,2,3,4}, nd4j::DataType::INT32);
-    NDArray x2('c', {2,2}, {-1,-2,-3,-4}, nd4j::DataType::INT32);
-    NDArray x3('c', {2,2}, {1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
-    NDArray x4('c', {2,2}, {1,2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray x1('c', {2,2}, {1,2,3,4}, sd::DataType::INT32);
+    NDArray x2('c', {2,2}, {-1,-2,-3,-4}, sd::DataType::INT32);
+    NDArray x3('c', {2,2}, {1.5,1.5,1.5,1.5}, sd::DataType::DOUBLE);
+    NDArray x4('c', {2,2}, {1,2,3,4}, sd::DataType::DOUBLE);
 
-    NDArray exp1('c', {}, std::vector<double>{-30.f}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {}, std::vector<double>{15.}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, std::vector<double>{-30.f}, sd::DataType::FLOAT32);
+    NDArray exp2('c', {}, std::vector<double>{15.}, sd::DataType::DOUBLE);
     
-	NDArray scalar1('c', {}, std::vector<double>{100.f}, nd4j::DataType::FLOAT32);
-    NDArray scalar2('c', {}, std::vector<double>{100.}, nd4j::DataType::DOUBLE);
+	NDArray scalar1('c', {}, std::vector<double>{100.f}, sd::DataType::FLOAT32);
+    NDArray scalar2('c', {}, std::vector<double>{100.}, sd::DataType::DOUBLE);
 
     void *dX1, *dX2, *dX3, *dX4, *dZ1, *dZ2; 
     Nd4jLong *dX1ShapeInfo, *dX3ShapeInfo, *dZ1ShapeInfo, *dZ2ShapeInfo;
@@ -316,7 +316,7 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 
 	/***************************************/
 	
-    NativeOpExecutioner::execReduce3Scalar(&lc, nd4j::reduce3::Dot,nullptr, x1.getShapeInfo(),dX1, dX1ShapeInfo, nullptr, nullptr, x2.getShapeInfo(),dX2, dX1ShapeInfo,nullptr, scalar1.getShapeInfo(),dZ1, dZ1ShapeInfo);
+    NativeOpExecutioner::execReduce3Scalar(&lc, sd::reduce3::Dot,nullptr, x1.getShapeInfo(),dX1, dX1ShapeInfo, nullptr, nullptr, x2.getShapeInfo(),dX2, dX1ShapeInfo,nullptr, scalar1.getShapeInfo(),dZ1, dZ1ShapeInfo);
 
     cudaResult = cudaStreamSynchronize(stream);     
     ASSERT_EQ(0, cudaResult);
@@ -333,7 +333,7 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 
     /***************************************/
     
-    NativeOpExecutioner::execReduce3Scalar(&lc, nd4j::reduce3::Dot,nullptr, x3.getShapeInfo(),dX3, dX3ShapeInfo, nullptr, nullptr, x4.getShapeInfo(),dX4, dX3ShapeInfo,nullptr, scalar2.getShapeInfo(),dZ2, dZ2ShapeInfo);
+    NativeOpExecutioner::execReduce3Scalar(&lc, sd::reduce3::Dot,nullptr, x3.getShapeInfo(),dX3, dX3ShapeInfo, nullptr, nullptr, x4.getShapeInfo(),dX4, dX3ShapeInfo,nullptr, scalar2.getShapeInfo(),dZ2, dZ2ShapeInfo);
 
     cudaResult = cudaStreamSynchronize(stream); 
     ASSERT_EQ(0, cudaResult);
@@ -360,11 +360,11 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3_1) {
 
-    NDArray x('c', {2,2}, {1,2,3,4}, nd4j::DataType::INT32);
-    NDArray y('c', {2,2}, {-1,-2,-3,-4}, nd4j::DataType::INT32);
+    NDArray x('c', {2,2}, {1,2,3,4}, sd::DataType::INT32);
+    NDArray y('c', {2,2}, {-1,-2,-3,-4}, sd::DataType::INT32);
 
-    NDArray exp('c', {}, std::vector<double>{-30.f}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {}, std::vector<double>{100.f},  nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, std::vector<double>{-30.f}, sd::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100.f},  sd::DataType::FLOAT32);
 
     std::vector<int> dimensions = {0, 1};
 
@@ -386,7 +386,7 @@ TEST_F(CudaBasicsTests1, execReduce3_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduce3(&lc, nd4j::reduce3::Dot, 
+	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -412,11 +412,11 @@ TEST_F(CudaBasicsTests1, execReduce3_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3_2) {
     
-	NDArray x('c', {2,2}, {1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
-    NDArray y('c', {2,2}, {1,2,3,4}, nd4j::DataType::DOUBLE);
+	NDArray x('c', {2,2}, {1.5,1.5,1.5,1.5}, sd::DataType::DOUBLE);
+    NDArray y('c', {2,2}, {1,2,3,4}, sd::DataType::DOUBLE);
 
-    NDArray exp('c', {}, std::vector<double>{15.}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {}, std::vector<double>{100.},  nd4j::DataType::DOUBLE);
+    NDArray exp('c', {}, std::vector<double>{15.}, sd::DataType::DOUBLE);
+    NDArray z('c', {}, std::vector<double>{100.},  sd::DataType::DOUBLE);
    
     std::vector<int> dimensions = {0, 1};   
 
@@ -435,7 +435,7 @@ TEST_F(CudaBasicsTests1, execReduce3_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result	
-	NativeOpExecutioner::execReduce3(&lc, nd4j::reduce3::Dot, 
+	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -461,11 +461,11 @@ TEST_F(CudaBasicsTests1, execReduce3_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3_3) {
     
-	NDArray x('c', {2,3}, {1,2,3,4,5,6}, nd4j::DataType::INT32);
-    NDArray y('c', {2,3}, {-6,-5,-4,-3,-2,-1}, nd4j::DataType::INT32);        
+	NDArray x('c', {2,3}, {1,2,3,4,5,6}, sd::DataType::INT32);
+    NDArray y('c', {2,3}, {-6,-5,-4,-3,-2,-1}, sd::DataType::INT32);
 
-    NDArray exp('c', {3}, {-18,-20,-18}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {3}, {-18,-20,-18}, sd::DataType::FLOAT32);
+    NDArray z('c', {3}, {100,100,100}, sd::DataType::FLOAT32);
    
     std::vector<int> dimensions = {0};
 
@@ -501,7 +501,7 @@ TEST_F(CudaBasicsTests1, execReduce3_3) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result	
-	NativeOpExecutioner::execReduce3(&lc, nd4j::reduce3::Dot, 
+	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -527,11 +527,11 @@ TEST_F(CudaBasicsTests1, execReduce3_3) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3_4) {
     	
-    NDArray x('c', {2,3}, {1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
-    NDArray y('c', {2,3}, {1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
+    NDArray x('c', {2,3}, {1,2,3,4,5,6}, sd::DataType::DOUBLE);
+    NDArray y('c', {2,3}, {1.5,1.5,1.5,1.5,1.5,1.5}, sd::DataType::DOUBLE);
 
-    NDArray exp('c', {2}, {9,22.5}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {2}, {100,100}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2}, {9,22.5}, sd::DataType::DOUBLE);
+    NDArray z('c', {2}, {100,100}, sd::DataType::DOUBLE);
    
     std::vector<int> dimensions = {1};
 
@@ -567,7 +567,7 @@ TEST_F(CudaBasicsTests1, execReduce3_4) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result	
-	NativeOpExecutioner::execReduce3(&lc, nd4j::reduce3::Dot,
+	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -593,11 +593,11 @@ TEST_F(CudaBasicsTests1, execReduce3_4) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3_5) {
     	
-    NDArray x('c', {2,2,3}, {1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::FLOAT32);
-    NDArray y('c', {2,2,3}, {1,2,3,4,5,6,7,8,9,10,11,12}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,2,3}, {1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5,1.5}, sd::DataType::FLOAT32);
+    NDArray y('c', {2,2,3}, {1,2,3,4,5,6,7,8,9,10,11,12}, sd::DataType::FLOAT32);
 
-    NDArray exp('c', {2,3}, {7.5, 10.5, 13.5, 25.5, 28.5, 31.5}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {2,3}, {7.5, 10.5, 13.5, 25.5, 28.5, 31.5}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,3}, {100,100,100,100,100,100}, sd::DataType::FLOAT32);
    
     std::vector<int> dimensions = {1};
 
@@ -633,7 +633,7 @@ TEST_F(CudaBasicsTests1, execReduce3_5) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduce3(&lc, nd4j::reduce3::Dot,
+	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -659,11 +659,11 @@ TEST_F(CudaBasicsTests1, execReduce3_5) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3All_1) {
     	
-    NDArray x('c', {2,2}, {1,2,3,4}, nd4j::DataType::INT32);
-    NDArray y('c', {2,3}, {-1,1,-1,1,-1,1}, nd4j::DataType::INT32);
+    NDArray x('c', {2,2}, {1,2,3,4}, sd::DataType::INT32);
+    NDArray y('c', {2,3}, {-1,1,-1,1,-1,1}, sd::DataType::INT32);
 
-    NDArray exp('c', {2,3}, {2,-2,2,2,-2,2}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {2,3}, {2,-2,2,2,-2,2}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,3}, {100,100,100,100,100,100}, sd::DataType::FLOAT32);
    
     std::vector<int> dimensions = {0};
 
@@ -699,7 +699,7 @@ TEST_F(CudaBasicsTests1, execReduce3All_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduce3All(&lc, nd4j::reduce3::Dot, 
+	NativeOpExecutioner::execReduce3All(&lc, sd::reduce3::Dot,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, 
 										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -725,11 +725,11 @@ TEST_F(CudaBasicsTests1, execReduce3All_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3All_2) {
     	
-    NDArray x('c', {2,2}, {1,2,3,4}, nd4j::DataType::DOUBLE);
-    NDArray y('c', {2,3}, {1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);    
+    NDArray x('c', {2,2}, {1,2,3,4}, sd::DataType::DOUBLE);
+    NDArray y('c', {2,3}, {1.5,1.5,1.5,1.5,1.5,1.5}, sd::DataType::DOUBLE);
 
-    NDArray exp('c', {2,3}, {6,6,6,9,9,9}, nd4j::DataType::DOUBLE);    
-    NDArray z('c', {2,3}, {100,100,100,100,100,100,},nd4j::DataType::DOUBLE);    
+    NDArray exp('c', {2,3}, {6,6,6,9,9,9}, sd::DataType::DOUBLE);
+    NDArray z('c', {2,3}, {100,100,100,100,100,100,},sd::DataType::DOUBLE);
    
     std::vector<int> dimensions = {0};
 
@@ -765,7 +765,7 @@ TEST_F(CudaBasicsTests1, execReduce3All_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduce3All(&lc, nd4j::reduce3::Dot, 
+	NativeOpExecutioner::execReduce3All(&lc, sd::reduce3::Dot,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, 
 										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -791,10 +791,10 @@ TEST_F(CudaBasicsTests1, execReduce3All_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execIndexReduce_1) {
     	
-    NDArray x('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::DOUBLE);
+    NDArray x('c', {2,3}, {100,100,100,100,100,100}, sd::DataType::DOUBLE);
     x.linspace(-2.); x.syncToDevice();
-    NDArray exp('c', {2}, {2, 2}, nd4j::DataType::INT64);
-    NDArray z('c', {2}, {100,100}, nd4j::DataType::INT64);
+    NDArray exp('c', {2}, {2, 2}, sd::DataType::INT64);
+    NDArray z('c', {2}, {100,100}, sd::DataType::INT64);
     
     std::vector<int> dimensions = {1};          
 
@@ -822,7 +822,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execIndexReduce(&lc, nd4j::indexreduce::IndexMax, 
+	NativeOpExecutioner::execIndexReduce(&lc, sd::indexreduce::IndexMax,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, 
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -852,10 +852,10 @@ TEST_F(CudaBasicsTests1, execIndexReduce_2) {
     							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
     							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
     							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
-    							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
+    							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::FLOAT32);
     x.linspace(-2.f); x.syncToDevice();
-    NDArray exp('c', {2,5}, {11,11,11,11,11,11,11,11,11,11}, nd4j::DataType::INT64);    
-    NDArray z('c', {2,5}, {100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::INT64);
+    NDArray exp('c', {2,5}, {11,11,11,11,11,11,11,11,11,11}, sd::DataType::INT64);
+    NDArray z('c', {2,5}, {100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT64);
     
     std::vector<int> dimensions = {1,2};     
 
@@ -884,7 +884,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execIndexReduce(&lc, nd4j::indexreduce::IndexMax, 
+	NativeOpExecutioner::execIndexReduce(&lc, sd::indexreduce::IndexMax,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, 
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -914,10 +914,10 @@ TEST_F(CudaBasicsTests1, execIndexReduce_3) {
     							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
     							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
     							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,
-    							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::DOUBLE);
+    							100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::DOUBLE);
     x.linspace(-2.); x.syncToDevice();
-    NDArray exp('c', {3}, {39, 39, 39}, nd4j::DataType::INT64);    
-    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::INT64);
+    NDArray exp('c', {3}, {39, 39, 39}, sd::DataType::INT64);
+    NDArray z('c', {3}, {100,100,100}, sd::DataType::INT64);
     
     std::vector<int> dimensions = {0,2,3};
 
@@ -945,7 +945,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_3) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execIndexReduce(&lc, nd4j::indexreduce::IndexMax, 
+	NativeOpExecutioner::execIndexReduce(&lc, sd::indexreduce::IndexMax,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, 
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -973,10 +973,10 @@ TEST_F(CudaBasicsTests1, execScalar_1) {
 	if (!Environment::getInstance()->isExperimentalBuild())
         return;
     	
-    NDArray x('c', {2,3},  {0,1,2,3,4,5}, nd4j::DataType::INT64); 
-    NDArray exp('c',{2,3}, {0,0,1,1,2,2}, nd4j::DataType::INT64);
-    NDArray scalar('c',{}, std::vector<double>{2.f}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::INT64);
+    NDArray x('c', {2,3},  {0,1,2,3,4,5}, sd::DataType::INT64);
+    NDArray exp('c',{2,3}, {0,0,1,1,2,2}, sd::DataType::INT64);
+    NDArray scalar('c',{}, std::vector<double>{2.f}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,3}, {100,100,100,100,100,100}, sd::DataType::INT64);
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -985,7 +985,7 @@ TEST_F(CudaBasicsTests1, execScalar_1) {
 	LaunchContext lc(&stream);
 	
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execScalar(&lc, nd4j::scalar::Divide, 
+	NativeOpExecutioner::execScalar(&lc, sd::scalar::Divide,
 									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
 									nullptr, scalar.getShapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(), 
@@ -1008,10 +1008,10 @@ TEST_F(CudaBasicsTests1, execScalar_2) {
 	if (!Environment::getInstance()->isExperimentalBuild())
         return;
     	
-    NDArray x('c', {2,3},  {-1,-2,-3,-4,-5,-6}, nd4j::DataType::INT64); 
-    NDArray exp('c',{2,3}, {10,10,10,10,10,10}, nd4j::DataType::FLOAT32);
-    NDArray scalar('c',{}, std::vector<double>{10.f}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,3},  {-1,-2,-3,-4,-5,-6}, sd::DataType::INT64);
+    NDArray exp('c',{2,3}, {10,10,10,10,10,10}, sd::DataType::FLOAT32);
+    NDArray scalar('c',{}, std::vector<double>{10.f}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,3}, {100,100,100,100,100,100}, sd::DataType::FLOAT32);
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1020,7 +1020,7 @@ TEST_F(CudaBasicsTests1, execScalar_2) {
 	LaunchContext lc(&stream);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execScalar(&lc, nd4j::scalar::CopyPws, 
+	NativeOpExecutioner::execScalar(&lc, sd::scalar::CopyPws,
 									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
 									nullptr, scalar.getShapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(), 
@@ -1044,10 +1044,10 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 	if (!Environment::getInstance()->isExperimentalBuild())
         return;
     	
-    NDArray x('c', {2,3,2},  {0,1,2,3,4,5,6,7,8,9,10,11}, nd4j::DataType::INT64); 
-    NDArray scalars('c',{2,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {2,3,2},  {0,0,2,1,4,2, 2,1,2,2,3,2}, nd4j::DataType::INT64);     
-    NDArray z('c', {2,3,2}, {100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::INT64);
+    NDArray x('c', {2,3,2},  {0,1,2,3,4,5,6,7,8,9,10,11}, sd::DataType::INT64);
+    NDArray scalars('c',{2,2}, {1,2,3,4}, sd::DataType::FLOAT32);
+    NDArray exp('c', {2,3,2},  {0,0,2,1,4,2, 2,1,2,2,3,2}, sd::DataType::INT64);
+    NDArray z('c', {2,3,2}, {100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT64);
 
     std::vector<int> dimensions = {1};
 
@@ -1075,7 +1075,7 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execScalar(&lc, nd4j::scalar::Divide, 
+	NativeOpExecutioner::execScalar(&lc, sd::scalar::Divide,
 									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 									nullptr,
 									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1102,10 +1102,10 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execScalarBool_1) {
     	
-    NDArray x('c', {2,3},  {-1,-2,0,1,2,3}, nd4j::DataType::BFLOAT16); 
-    NDArray scalar('c',{}, std::vector<double>{0}, nd4j::DataType::BFLOAT16);
-    NDArray exp('c',{2,3}, {0,0,0,1,1,1}, nd4j::DataType::BOOL);    
-    NDArray z('c', {2,3}, {100,100,100,100,100,100,}, nd4j::DataType::BOOL);    
+    NDArray x('c', {2,3},  {-1,-2,0,1,2,3}, sd::DataType::BFLOAT16);
+    NDArray scalar('c',{}, std::vector<double>{0}, sd::DataType::BFLOAT16);
+    NDArray exp('c',{2,3}, {0,0,0,1,1,1}, sd::DataType::BOOL);
+    NDArray z('c', {2,3}, {100,100,100,100,100,100,}, sd::DataType::BOOL);
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1115,7 +1115,7 @@ TEST_F(CudaBasicsTests1, execScalarBool_1) {
 		
 	// call cuda kernel which calculates result
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execScalarBool(&lc, nd4j::scalar::GreaterThan, 
+	NativeOpExecutioner::execScalarBool(&lc, sd::scalar::GreaterThan,
 									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
 									nullptr, scalar.getShapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(), 
@@ -1135,10 +1135,10 @@ TEST_F(CudaBasicsTests1, execScalarBool_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execScalarBool_2) {
     	
-    NDArray x('c', {2,3},  {0,1,2,3,4,5}, nd4j::DataType::FLOAT32); 
-    NDArray scalars('c',{2}, {-1,4}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {2,3},  {1,1,1,0,0,1}, nd4j::DataType::BOOL);
-    NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::BOOL);
+    NDArray x('c', {2,3},  {0,1,2,3,4,5}, sd::DataType::FLOAT32);
+    NDArray scalars('c',{2}, {-1,4}, sd::DataType::FLOAT32);
+    NDArray exp('c', {2,3},  {1,1,1,0,0,1}, sd::DataType::BOOL);
+    NDArray z('c', {2,3}, {100,100,100,100,100,100}, sd::DataType::BOOL);
 
     std::vector<int> dimensions = {1};
 
@@ -1165,7 +1165,7 @@ TEST_F(CudaBasicsTests1, execScalarBool_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 			
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execScalarBool(&lc, nd4j::scalar::GreaterThan, 
+	NativeOpExecutioner::execScalarBool(&lc, sd::scalar::GreaterThan,
 									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 									nullptr,
 									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1195,10 +1195,10 @@ TEST_F(CudaBasicsTests1, execBroadcast_1) {
 	if (!Environment::getInstance()->isExperimentalBuild())
         return;
     	
-	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::INT32);
-    NDArray y('c', {3},   {10, 20, 30}, nd4j::DataType::INT64);
-    NDArray z('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::INT32);	
-	NDArray exp('c', {2,3,4}, {10, 11, 12, 13,24, 25, 26, 27,38, 39, 40, 41,22, 23, 24, 25,36, 37, 38, 39,50, 51, 52, 53}, nd4j::DataType::INT32);
+	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT32);
+    NDArray y('c', {3},   {10, 20, 30}, sd::DataType::INT64);
+    NDArray z('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT32);
+	NDArray exp('c', {2,3,4}, {10, 11, 12, 13,24, 25, 26, 27,38, 39, 40, 41,22, 23, 24, 25,36, 37, 38, 39,50, 51, 52, 53}, sd::DataType::INT32);
 	x.linspace(0); x.syncToDevice();
 
     std::vector<int> dimensions = {1};
@@ -1226,7 +1226,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execBroadcast(&lc, nd4j::broadcast::Add,
+	NativeOpExecutioner::execBroadcast(&lc, sd::broadcast::Add,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1255,10 +1255,10 @@ TEST_F(CudaBasicsTests1, execBroadcast_2) {
 	if (!Environment::getInstance()->isExperimentalBuild())
         return;
     	
-	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::INT32);
-    NDArray y('c', {2,4},   {10,20,30,40,50,60,70,80}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::FLOAT32);	
-	NDArray exp('c', {2,3,4}, {10., 21., 32., 43., 14., 25., 36., 47., 18., 29., 40., 51., 62., 73., 84., 95., 66., 77., 88., 99., 70., 81., 92., 103}, nd4j::DataType::FLOAT32);
+	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT32);
+    NDArray y('c', {2,4},   {10,20,30,40,50,60,70,80}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::FLOAT32);
+	NDArray exp('c', {2,3,4}, {10., 21., 32., 43., 14., 25., 36., 47., 18., 29., 40., 51., 62., 73., 84., 95., 66., 77., 88., 99., 70., 81., 92., 103}, sd::DataType::FLOAT32);
 	x.linspace(0); x.syncToDevice();
 
     std::vector<int> dimensions = {0,2};
@@ -1286,7 +1286,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execBroadcast(&lc, nd4j::broadcast::Add,
+	NativeOpExecutioner::execBroadcast(&lc, sd::broadcast::Add,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1312,10 +1312,10 @@ TEST_F(CudaBasicsTests1, execBroadcast_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
     	
-	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::INT32);
-    NDArray y('c', {3},   {2, 12, 22}, nd4j::DataType::INT32);
-    NDArray z('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,}, nd4j::DataType::BOOL);	
-	NDArray exp('c', {2,3,4}, {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}, nd4j::DataType::BOOL);
+	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT32);
+    NDArray y('c', {3},   {2, 12, 22}, sd::DataType::INT32);
+    NDArray z('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,}, sd::DataType::BOOL);
+	NDArray exp('c', {2,3,4}, {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0}, sd::DataType::BOOL);
 	x.linspace(1); x.syncToDevice();
 
     std::vector<int> dimensions = {1};
@@ -1343,7 +1343,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execBroadcastBool(&lc, nd4j::broadcast::EqualTo,
+	NativeOpExecutioner::execBroadcastBool(&lc, sd::broadcast::EqualTo,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1370,10 +1370,10 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
     	
-	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100},nd4j::DataType::FLOAT32);
-    NDArray y('c', {2,4},   {1,10,10,15,20,20,20,24}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::BOOL);	
-	NDArray exp('c', {2,3,4}, {1, 0, 0, 0,0, 0, 0, 0,0, 1, 0, 0,0, 0, 0, 0,0, 0, 0, 0,0, 0, 0, 1}, nd4j::DataType::BOOL);
+	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100},sd::DataType::FLOAT32);
+    NDArray y('c', {2,4},   {1,10,10,15,20,20,20,24}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::BOOL);
+	NDArray exp('c', {2,3,4}, {1, 0, 0, 0,0, 0, 0, 0,0, 1, 0, 0,0, 0, 0, 0,0, 0, 0, 0,0, 0, 0, 1}, sd::DataType::BOOL);
 	x.linspace(1); x.syncToDevice();
 
     std::vector<int> dimensions = {0,2};
@@ -1402,7 +1402,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execBroadcastBool(&lc, nd4j::broadcast::EqualTo,
+	NativeOpExecutioner::execBroadcastBool(&lc, sd::broadcast::EqualTo,
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1432,10 +1432,10 @@ TEST_F(CudaBasicsTests1, execPairwiseTransform_1) {
 	if (!Environment::getInstance()->isExperimentalBuild())
         return;
     	
-	NDArray x('c', {2,2,2}, {1,5,3,7,2,6,4,8}, nd4j::DataType::INT32);
-    NDArray y('c', {4,2}, {0.1,0.2,0.3,0.4,1.5,0.6,0.7,1.8}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {8}, {100,100,100,100,100,100,100,100}, nd4j::DataType::INT32);	
-	NDArray exp('c', {8}, {0,1,2,3,3,5,6,6}, nd4j::DataType::INT32);
+	NDArray x('c', {2,2,2}, {1,5,3,7,2,6,4,8}, sd::DataType::INT32);
+    NDArray y('c', {4,2}, {0.1,0.2,0.3,0.4,1.5,0.6,0.7,1.8}, sd::DataType::DOUBLE);
+    NDArray z('c', {8}, {100,100,100,100,100,100,100,100}, sd::DataType::INT32);
+	NDArray exp('c', {8}, {0,1,2,3,3,5,6,6}, sd::DataType::INT32);
 	x.permutei({2,1,0});	// -> {1,2,3,4,5,6,7,8}
     x.syncShape();
 
@@ -1446,7 +1446,7 @@ TEST_F(CudaBasicsTests1, execPairwiseTransform_1) {
 	LaunchContext lc(&stream);
 	
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execPairwiseTransform(&lc, nd4j::pairwise::Subtract,
+	NativeOpExecutioner::execPairwiseTransform(&lc, sd::pairwise::Subtract,
 												nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 												nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
 												nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -1466,10 +1466,10 @@ TEST_F(CudaBasicsTests1, execPairwiseTransform_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execPairwiseBoolTransform_1) {
     	
-	NDArray x('c', {2,2,2}, {1,5,3,7,2,6,4,8}, nd4j::DataType::INT64);
-    NDArray y('c', {4,2}, {0,2,0,4,0,6,0,8}, nd4j::DataType::INT64);
-    NDArray z('c', {8}, {100,100,100,100,100,100,100,100}, nd4j::DataType::BOOL);	
-	NDArray exp('c', {8}, {0,1,0,1,0,1,0,1}, nd4j::DataType::BOOL);
+	NDArray x('c', {2,2,2}, {1,5,3,7,2,6,4,8}, sd::DataType::INT64);
+    NDArray y('c', {4,2}, {0,2,0,4,0,6,0,8}, sd::DataType::INT64);
+    NDArray z('c', {8}, {100,100,100,100,100,100,100,100}, sd::DataType::BOOL);
+	NDArray exp('c', {8}, {0,1,0,1,0,1,0,1}, sd::DataType::BOOL);
 	x.permutei({2,1,0});	// -> {1,2,3,4,5,6,7,8}
 	x.syncShape();
         
@@ -1480,7 +1480,7 @@ TEST_F(CudaBasicsTests1, execPairwiseBoolTransform_1) {
 	LaunchContext lc(&stream);	
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execPairwiseBoolTransform(&lc, nd4j::pairwise::EqualTo,
+	NativeOpExecutioner::execPairwiseBoolTransform(&lc, sd::pairwise::EqualTo,
 													nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 													nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
 													nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -1501,9 +1501,9 @@ TEST_F(CudaBasicsTests1, execPairwiseBoolTransform_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformFloat_1) {
     	
-	NDArray x('c', {2,2}, {0, 6.25, 2.25, 12.25}, nd4j::DataType::DOUBLE);    
-    NDArray z('c', {4}, {100,100,100,100}, nd4j::DataType::FLOAT32);	
-	NDArray exp('c', {4}, {0, 1.5, 2.5, 3.5}, nd4j::DataType::FLOAT32);
+	NDArray x('c', {2,2}, {0, 6.25, 2.25, 12.25}, sd::DataType::DOUBLE);
+    NDArray z('c', {4}, {100,100,100,100}, sd::DataType::FLOAT32);
+	NDArray exp('c', {4}, {0, 1.5, 2.5, 3.5}, sd::DataType::FLOAT32);
 	x.permutei({1,0});
 	x.syncShape();
         
@@ -1514,7 +1514,7 @@ TEST_F(CudaBasicsTests1, execTransformFloat_1) {
 	LaunchContext lc(&stream);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformFloat(&lc, nd4j::transform::Sqrt,
+	NativeOpExecutioner::execTransformFloat(&lc, sd::transform::Sqrt,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1533,9 +1533,9 @@ TEST_F(CudaBasicsTests1, execTransformFloat_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformFloat_2) {
     	
-	NDArray x('c', {1,4}, {0, 4, 9, 16}, nd4j::DataType::INT64);
-    NDArray z('c', {2,2}, {100,100,100,100}, nd4j::DataType::DOUBLE);	
-	NDArray exp('c', {2,2}, {0, 2, 3, 4}, nd4j::DataType::DOUBLE);	       
+	NDArray x('c', {1,4}, {0, 4, 9, 16}, sd::DataType::INT64);
+    NDArray z('c', {2,2}, {100,100,100,100}, sd::DataType::DOUBLE);
+	NDArray exp('c', {2,2}, {0, 2, 3, 4}, sd::DataType::DOUBLE);
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1544,7 +1544,7 @@ TEST_F(CudaBasicsTests1, execTransformFloat_2) {
 	LaunchContext lc(&stream);
 	
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformFloat(&lc, nd4j::transform::Sqrt,
+	NativeOpExecutioner::execTransformFloat(&lc, sd::transform::Sqrt,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1563,9 +1563,9 @@ TEST_F(CudaBasicsTests1, execTransformFloat_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformAny_1) {
     	
-	NDArray x('c', {2,2}, {0, 6.25, 2.25, 12.25}, nd4j::DataType::DOUBLE);    
-    NDArray z('c', {4,1}, {100,100,100,100}, nd4j::DataType::INT32);	
-	NDArray exp('c', {4,1}, {0, 2, 6, 12}, nd4j::DataType::INT32);
+	NDArray x('c', {2,2}, {0, 6.25, 2.25, 12.25}, sd::DataType::DOUBLE);
+    NDArray z('c', {4,1}, {100,100,100,100}, sd::DataType::INT32);
+	NDArray exp('c', {4,1}, {0, 2, 6, 12}, sd::DataType::INT32);
 	x.permutei({1,0});
         
 	// create cuda stream and LaunchContext
@@ -1575,7 +1575,7 @@ TEST_F(CudaBasicsTests1, execTransformAny_1) {
 	LaunchContext lc(&stream);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformAny(&lc, nd4j::transform::Assign,
+	NativeOpExecutioner::execTransformAny(&lc, sd::transform::Assign,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1594,9 +1594,9 @@ TEST_F(CudaBasicsTests1, execTransformAny_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformAny_2) {
     	
-	NDArray x('c', {1,4}, {0, 6.25, 2.25, 12.25}, nd4j::DataType::BFLOAT16);
-    NDArray z('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);	
-	NDArray exp('c', {2,2}, {0, 6.25, 2.25, 12.25}, nd4j::DataType::FLOAT32);
+	NDArray x('c', {1,4}, {0, 6.25, 2.25, 12.25}, sd::DataType::BFLOAT16);
+    NDArray z('c', {2,2}, {100,100,100,100}, sd::DataType::FLOAT32);
+	NDArray exp('c', {2,2}, {0, 6.25, 2.25, 12.25}, sd::DataType::FLOAT32);
 
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1605,7 +1605,7 @@ TEST_F(CudaBasicsTests1, execTransformAny_2) {
 	LaunchContext lc(&stream);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformAny(&lc, nd4j::transform::Assign,
+	NativeOpExecutioner::execTransformAny(&lc, sd::transform::Assign,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1624,9 +1624,9 @@ TEST_F(CudaBasicsTests1, execTransformAny_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformStrict_1) {
     	
-	NDArray x('c', {2,3}, {0,2,4,1,3,5}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::DOUBLE);	
-	NDArray exp('c', {3,2}, {0, 3, 12, 27, 48, 75}, nd4j::DataType::DOUBLE);
+	NDArray x('c', {2,3}, {0,2,4,1,3,5}, sd::DataType::DOUBLE);
+    NDArray z('c', {3,2}, {100,100,100,100,100,100}, sd::DataType::DOUBLE);
+	NDArray exp('c', {3,2}, {0, 3, 12, 27, 48, 75}, sd::DataType::DOUBLE);
 	x.permutei({1,0});
 	
 	// create cuda stream and LaunchContext
@@ -1636,7 +1636,7 @@ TEST_F(CudaBasicsTests1, execTransformStrict_1) {
 	LaunchContext lc(&stream);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformStrict(&lc, nd4j::transform::CubeDerivative,
+	NativeOpExecutioner::execTransformStrict(&lc, sd::transform::CubeDerivative,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1655,9 +1655,9 @@ TEST_F(CudaBasicsTests1, execTransformStrict_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformStrict_2) {
     	
-	NDArray x('c', {6}, {0,1,2,3,4,5}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);	
-	NDArray exp('c', {3,2}, {0, 3, 12, 27, 48, 75}, nd4j::DataType::FLOAT32);	
+	NDArray x('c', {6}, {0,1,2,3,4,5}, sd::DataType::FLOAT32);
+    NDArray z('c', {3,2}, {100,100,100,100,100,100}, sd::DataType::FLOAT32);
+	NDArray exp('c', {3,2}, {0, 3, 12, 27, 48, 75}, sd::DataType::FLOAT32);
     	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1666,7 +1666,7 @@ TEST_F(CudaBasicsTests1, execTransformStrict_2) {
 	LaunchContext lc(&stream);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformStrict(&lc, nd4j::transform::CubeDerivative,
+	NativeOpExecutioner::execTransformStrict(&lc, sd::transform::CubeDerivative,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1685,9 +1685,9 @@ TEST_F(CudaBasicsTests1, execTransformStrict_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformSame_1) {
     
-	NDArray x('c', {2,3}, {0,2.5,4.5,1.5,3.5,5.5}, nd4j::DataType::DOUBLE);	
-    NDArray z('c', {1,6}, {100,100,100,100,100,100}, nd4j::DataType::DOUBLE);	
-	NDArray exp('c', {1,6}, {0,2.25,6.25,12.25,20.25,30.25}, nd4j::DataType::DOUBLE);
+	NDArray x('c', {2,3}, {0,2.5,4.5,1.5,3.5,5.5}, sd::DataType::DOUBLE);
+    NDArray z('c', {1,6}, {100,100,100,100,100,100}, sd::DataType::DOUBLE);
+	NDArray exp('c', {1,6}, {0,2.25,6.25,12.25,20.25,30.25}, sd::DataType::DOUBLE);
 	x.permutei({1,0});
     	
 	// create cuda stream and LaunchContext
@@ -1697,7 +1697,7 @@ TEST_F(CudaBasicsTests1, execTransformSame_1) {
 	LaunchContext lc(&stream);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformSame(&lc, nd4j::transform::Square,
+	NativeOpExecutioner::execTransformSame(&lc, sd::transform::Square,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1716,9 +1716,9 @@ TEST_F(CudaBasicsTests1, execTransformSame_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformSame_2) {
     	
-	NDArray x('c', {6}, {0,1,2,3,4,5}, nd4j::DataType::INT32);
-    NDArray z('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::INT32);	
-	NDArray exp('c', {3,2}, {0,1,4,9,16,25}, nd4j::DataType::INT32);	
+	NDArray x('c', {6}, {0,1,2,3,4,5}, sd::DataType::INT32);
+    NDArray z('c', {3,2}, {100,100,100,100,100,100}, sd::DataType::INT32);
+	NDArray exp('c', {3,2}, {0,1,4,9,16,25}, sd::DataType::INT32);
     	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1727,7 +1727,7 @@ TEST_F(CudaBasicsTests1, execTransformSame_2) {
 	LaunchContext lc(&stream);
 	
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformSame(&lc, nd4j::transform::Square,
+	NativeOpExecutioner::execTransformSame(&lc, sd::transform::Square,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1746,9 +1746,9 @@ TEST_F(CudaBasicsTests1, execTransformSame_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformBool_1) {
     
-	NDArray x('c', {2,3}, {0,2,4,-1,-3,-5}, nd4j::DataType::DOUBLE);	
-    NDArray z('c', {1,6}, {100,100,100,100,100,100}, nd4j::DataType::BOOL);	    
-	NDArray exp('c', {1,6}, {0,0,1,0,1,0}, nd4j::DataType::BOOL);
+	NDArray x('c', {2,3}, {0,2,4,-1,-3,-5}, sd::DataType::DOUBLE);
+    NDArray z('c', {1,6}, {100,100,100,100,100,100}, sd::DataType::BOOL);
+	NDArray exp('c', {1,6}, {0,0,1,0,1,0}, sd::DataType::BOOL);
 	x.permutei({1,0});
     
 	// create cuda stream and LaunchContext
@@ -1758,7 +1758,7 @@ TEST_F(CudaBasicsTests1, execTransformBool_1) {
 	LaunchContext lc(&stream);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformBool(&lc, nd4j::transform::IsPositive,
+	NativeOpExecutioner::execTransformBool(&lc, sd::transform::IsPositive,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1777,9 +1777,9 @@ TEST_F(CudaBasicsTests1, execTransformBool_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execTransformBool_2) {
     	
-	NDArray x('c', {6}, {0,-1,2,-3,4,-5}, nd4j::DataType::INT32);
-    NDArray z('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::BOOL);	
-	NDArray exp('c', {3,2}, {0,0,1,0,1,0}, nd4j::DataType::BOOL);
+	NDArray x('c', {6}, {0,-1,2,-3,4,-5}, sd::DataType::INT32);
+    NDArray z('c', {3,2}, {100,100,100,100,100,100}, sd::DataType::BOOL);
+	NDArray exp('c', {3,2}, {0,0,1,0,1,0}, sd::DataType::BOOL);
     	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1788,7 +1788,7 @@ TEST_F(CudaBasicsTests1, execTransformBool_2) {
 	LaunchContext lc(&stream);
 
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execTransformBool(&lc, nd4j::transform::IsPositive,
+	NativeOpExecutioner::execTransformBool(&lc, sd::transform::IsPositive,
 		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
@@ -1807,9 +1807,9 @@ TEST_F(CudaBasicsTests1, execTransformBool_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceFloat_1) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {3}, {2.5, 6.5, 10.5}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, sd::DataType::INT32);
+    NDArray z('c', {3}, {100,100,100}, sd::DataType::FLOAT32);
+    NDArray exp('c', {3}, {2.5, 6.5, 10.5}, sd::DataType::FLOAT32);
     x.permutei({2,1,0});
     
     std::vector<int> dimensions = {0,2};
@@ -1837,7 +1837,7 @@ TEST_F(CudaBasicsTests1, execReduceFloat_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceFloat(&lc, nd4j::reduce::Mean, 
+	NativeOpExecutioner::execReduceFloat(&lc, sd::reduce::Mean,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1862,9 +1862,9 @@ TEST_F(CudaBasicsTests1, execReduceFloat_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceFloat_2) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {2,4}, {-1., 0., 1., 2.,11., 12., 13., 14.}, nd4j::DataType::DOUBLE);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, sd::DataType::INT32);
+    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, sd::DataType::DOUBLE);
+    NDArray exp('c', {2,4}, {-1., 0., 1., 2.,11., 12., 13., 14.}, sd::DataType::DOUBLE);
     
     std::vector<int> dimensions = {1};
 
@@ -1891,7 +1891,7 @@ TEST_F(CudaBasicsTests1, execReduceFloat_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceFloat(&lc, nd4j::reduce::Mean, 
+	NativeOpExecutioner::execReduceFloat(&lc, sd::reduce::Mean,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1916,9 +1916,9 @@ TEST_F(CudaBasicsTests1, execReduceFloat_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceSame_1) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::INT32);
-    NDArray exp('c', {3}, {20, 52, 84}, nd4j::DataType::INT32);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, sd::DataType::INT32);
+    NDArray z('c', {3}, {100,100,100}, sd::DataType::INT32);
+    NDArray exp('c', {3}, {20, 52, 84}, sd::DataType::INT32);
     x.permutei({2,1,0});
     
     std::vector<int> dimensions = {0,2};
@@ -1946,7 +1946,7 @@ TEST_F(CudaBasicsTests1, execReduceSame_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceSame(&lc, nd4j::reduce::Sum, 
+	NativeOpExecutioner::execReduceSame(&lc, sd::reduce::Sum,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -1971,9 +1971,9 @@ TEST_F(CudaBasicsTests1, execReduceSame_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceSame_2) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {2,4}, {-3., 0., 3., 6.,33., 36., 39., 42.}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, sd::DataType::FLOAT32);
+    NDArray exp('c', {2,4}, {-3., 0., 3., 6.,33., 36., 39., 42.}, sd::DataType::FLOAT32);
     
     std::vector<int> dimensions = {1};
 
@@ -2000,7 +2000,7 @@ TEST_F(CudaBasicsTests1, execReduceSame_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceSame(&lc, nd4j::reduce::Sum, 
+	NativeOpExecutioner::execReduceSame(&lc, sd::reduce::Sum,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -2025,9 +2025,9 @@ TEST_F(CudaBasicsTests1, execReduceSame_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceBool_1) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::INT32);
-    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::BOOL);
-    NDArray exp('c', {3}, {0, 1, 1}, nd4j::DataType::BOOL);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, sd::DataType::INT32);
+    NDArray z('c', {3}, {100,100,100}, sd::DataType::BOOL);
+    NDArray exp('c', {3}, {0, 1, 1}, sd::DataType::BOOL);
     x.permutei({2,1,0});
 
     
@@ -2056,7 +2056,7 @@ TEST_F(CudaBasicsTests1, execReduceBool_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceBool(&lc, nd4j::reduce::IsPositive, 
+	NativeOpExecutioner::execReduceBool(&lc, sd::reduce::IsPositive,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -2081,9 +2081,9 @@ TEST_F(CudaBasicsTests1, execReduceBool_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceBool_2) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, nd4j::DataType::BOOL);
-    NDArray exp('c', {2,4}, {1, 1, 1, 1, 0, 0, 0, 0}, nd4j::DataType::BOOL);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, sd::DataType::BOOL);
+    NDArray exp('c', {2,4}, {1, 1, 1, 1, 0, 0, 0, 0}, sd::DataType::BOOL);
     
     std::vector<int> dimensions = {1};
 
@@ -2110,7 +2110,7 @@ TEST_F(CudaBasicsTests1, execReduceBool_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceBool(&lc, nd4j::reduce::IsPositive, 
+	NativeOpExecutioner::execReduceBool(&lc, sd::reduce::IsPositive,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -2135,9 +2135,9 @@ TEST_F(CudaBasicsTests1, execReduceBool_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceLong_1) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::INT32);
-    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::INT64);
-    NDArray exp('c', {3}, {5,6,6}, nd4j::DataType::INT64);
+    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, sd::DataType::INT32);
+    NDArray z('c', {3}, {100,100,100}, sd::DataType::INT64);
+    NDArray exp('c', {3}, {5,6,6}, sd::DataType::INT64);
     x.permutei({2,1,0});
     
     std::vector<int> dimensions = {0,2};
@@ -2165,7 +2165,7 @@ TEST_F(CudaBasicsTests1, execReduceLong_1) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceLong(&lc, nd4j::reduce::CountNonZero, 
+	NativeOpExecutioner::execReduceLong(&lc, sd::reduce::CountNonZero,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -2190,9 +2190,9 @@ TEST_F(CudaBasicsTests1, execReduceLong_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceLong_2) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, nd4j::DataType::INT64);
-    NDArray exp('c', {2,4}, {3, 1, 3, 2, 2, 1, 2, 3}, nd4j::DataType::INT64);    
+    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,4}, {100,100,100,100,100,100,100,100}, sd::DataType::INT64);
+    NDArray exp('c', {2,4}, {3, 1, 3, 2, 2, 1, 2, 3}, sd::DataType::INT64);
 
     std::vector<int> dimensions = {1};
 
@@ -2219,7 +2219,7 @@ TEST_F(CudaBasicsTests1, execReduceLong_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceLong(&lc, nd4j::reduce::CountNonZero, 
+	NativeOpExecutioner::execReduceLong(&lc, sd::reduce::CountNonZero,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -2244,9 +2244,9 @@ TEST_F(CudaBasicsTests1, execReduceLong_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {}, std::vector<double>{6.5}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, sd::DataType::INT32);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::FLOAT32);
+    NDArray exp('c', {}, std::vector<double>{6.5}, sd::DataType::FLOAT32);
     x.permutei({2,1,0});
        
 	// create cuda stream and LaunchContext
@@ -2262,7 +2262,7 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
 	lc.setAllocationPointer(allocationPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceFloatScalar(&lc, nd4j::reduce::Mean, 
+	NativeOpExecutioner::execReduceFloatScalar(&lc, sd::reduce::Mean,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
@@ -2281,9 +2281,9 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {}, std::vector<double>{6.5}, nd4j::DataType::DOUBLE);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, sd::DataType::INT32);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::DOUBLE);
+    NDArray exp('c', {}, std::vector<double>{6.5}, sd::DataType::DOUBLE);
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2298,7 +2298,7 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
 	lc.setAllocationPointer(allocationPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceFloatScalar(&lc, nd4j::reduce::Mean, 
+	NativeOpExecutioner::execReduceFloatScalar(&lc, sd::reduce::Mean,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
@@ -2317,9 +2317,9 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::INT32);
-    NDArray exp('c', {}, std::vector<double>{156}, nd4j::DataType::INT32);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, sd::DataType::INT32);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::INT32);
+    NDArray exp('c', {}, std::vector<double>{156}, sd::DataType::INT32);
     x.permutei({2,1,0});
        
 	// create cuda stream and LaunchContext
@@ -2335,7 +2335,7 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
 	lc.setAllocationPointer(allocationPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceSameScalar(&lc, nd4j::reduce::Sum, 
+	NativeOpExecutioner::execReduceSameScalar(&lc, sd::reduce::Sum,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
@@ -2354,9 +2354,9 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {}, std::vector<double>{156}, nd4j::DataType::DOUBLE);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, sd::DataType::DOUBLE);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::DOUBLE);
+    NDArray exp('c', {}, std::vector<double>{156}, sd::DataType::DOUBLE);
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2371,7 +2371,7 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
 	lc.setAllocationPointer(allocationPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceSameScalar(&lc, nd4j::reduce::Sum, 
+	NativeOpExecutioner::execReduceSameScalar(&lc, sd::reduce::Sum,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
@@ -2390,9 +2390,9 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::BOOL);
-    NDArray exp('c', {}, std::vector<double>{1}, nd4j::DataType::BOOL);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, sd::DataType::INT32);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::BOOL);
+    NDArray exp('c', {}, std::vector<double>{1}, sd::DataType::BOOL);
     x.permutei({2,1,0});
     x.syncShape();    
        
@@ -2409,7 +2409,7 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
 	lc.setAllocationPointer(allocationPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceBoolScalar(&lc, nd4j::reduce::IsPositive, 
+	NativeOpExecutioner::execReduceBoolScalar(&lc, sd::reduce::IsPositive,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
@@ -2428,9 +2428,9 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::BOOL);
-    NDArray exp('c', {}, std::vector<double>{1}, nd4j::DataType::BOOL);
+    NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, sd::DataType::DOUBLE);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::BOOL);
+    NDArray exp('c', {}, std::vector<double>{1}, sd::DataType::BOOL);
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2445,7 +2445,7 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
 	lc.setAllocationPointer(allocationPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceBoolScalar(&lc, nd4j::reduce::IsPositive, 
+	NativeOpExecutioner::execReduceBoolScalar(&lc, sd::reduce::IsPositive,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
@@ -2464,9 +2464,9 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::INT32);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::INT64);
-    NDArray exp('c', {}, std::vector<double>{17}, nd4j::DataType::INT64);
+    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, sd::DataType::INT32);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::INT64);
+    NDArray exp('c', {}, std::vector<double>{17}, sd::DataType::INT64);
     x.permutei({2,1,0});
     x.syncShape();    
        
@@ -2483,7 +2483,7 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
 	lc.setAllocationPointer(allocationPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceLongScalar(&lc, nd4j::reduce::CountNonZero, 
+	NativeOpExecutioner::execReduceLongScalar(&lc, sd::reduce::CountNonZero,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
@@ -2502,9 +2502,9 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduceLongScalar_2) {
     	   	
-    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::INT64);
-    NDArray exp('c', {}, std::vector<double>{17}, nd4j::DataType::INT64);
+    NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, sd::DataType::DOUBLE);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::INT64);
+    NDArray exp('c', {}, std::vector<double>{17}, sd::DataType::INT64);
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2519,7 +2519,7 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_2) {
 	lc.setAllocationPointer(allocationPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduceLongScalar(&lc, nd4j::reduce::CountNonZero, 
+	NativeOpExecutioner::execReduceLongScalar(&lc, sd::reduce::CountNonZero,
 					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
@@ -2538,10 +2538,10 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
     	
-    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::FLOAT32);
-    NDArray y('c', {2,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {3}, {10,20,30}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {3}, {100,100,100}, nd4j::DataType::DOUBLE);
+    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, sd::DataType::FLOAT32);
+    NDArray y('c', {2,2}, {1,2,3,4}, sd::DataType::FLOAT32);
+    NDArray exp('c', {3}, {10,20,30}, sd::DataType::DOUBLE);
+    NDArray z('c', {3}, {100,100,100}, sd::DataType::DOUBLE);
    
     std::vector<int> dimensions = {0,1};
     auto packX = ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions);
@@ -2551,7 +2551,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
 	y.syncToDevice();
 	PointersManager pm(context, "execReduce3TAD_1");
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduce3TAD(context, nd4j::reduce3::Dot,
+	NativeOpExecutioner::execReduce3TAD(context, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -2571,10 +2571,10 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
     	
-    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::INT64);
-    NDArray y('c', {2,3}, {1,2,3,4,5,6}, nd4j::DataType::INT64);
-    NDArray exp('c', {2}, {10,73}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, sd::DataType::INT64);
+    NDArray y('c', {2,3}, {1,2,3,4,5,6}, sd::DataType::INT64);
+    NDArray exp('c', {2}, {10,73}, sd::DataType::FLOAT32);
+    NDArray z('c', {2}, {100,100}, sd::DataType::FLOAT32);
    
     std::vector<int> dimensions = {0,2};
 
@@ -2602,7 +2602,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduce3TAD(&lc, nd4j::reduce3::Dot,
+	NativeOpExecutioner::execReduce3TAD(&lc, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -2627,10 +2627,10 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
     	
-    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::INT64);
-    NDArray y('c', {3}, {1,2,3}, nd4j::DataType::INT64);
-    NDArray exp('c', {2,2}, {-22,-4,14,32}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, sd::DataType::INT64);
+    NDArray y('c', {3}, {1,2,3}, sd::DataType::INT64);
+    NDArray exp('c', {2,2}, {-22,-4,14,32}, sd::DataType::FLOAT32);
+    NDArray z('c', {2,2}, {100,100,100,100}, sd::DataType::FLOAT32);
    
     std::vector<int> dimensions = {2};
 
@@ -2658,7 +2658,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduce3TAD(&lc, nd4j::reduce3::Dot,
+	NativeOpExecutioner::execReduce3TAD(&lc, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -2683,10 +2683,10 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
     	
-    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
-    NDArray y('c', {2,2,3}, {10,20,30,40,50,60,70,80,90,100,110,120}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {}, std::vector<double>{1820}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, sd::DataType::DOUBLE);
+    NDArray y('c', {2,2,3}, {10,20,30,40,50,60,70,80,90,100,110,120}, sd::DataType::DOUBLE);
+    NDArray exp('c', {}, std::vector<double>{1820}, sd::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::FLOAT32);
 
     std::vector<int> dimensions = {0,1,2};
 
@@ -2713,7 +2713,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execReduce3TAD(&lc, nd4j::reduce3::Dot,
+	NativeOpExecutioner::execReduce3TAD(&lc, sd::reduce3::Dot,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 
 								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -2738,9 +2738,9 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execSummaryStats_1) {
     	
-    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::INT64);    
-    NDArray exp('c', {}, std::vector<double>{3.605551}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, sd::DataType::INT64);
+    NDArray exp('c', {}, std::vector<double>{3.605551}, sd::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::FLOAT32);
 
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2752,7 +2752,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_1) {
 	lc.setReductionPointer(reductionPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execSummaryStats(&lc, nd4j::variance::SummaryStatsStandardDeviation,
+	NativeOpExecutioner::execSummaryStats(&lc, sd::variance::SummaryStatsStandardDeviation,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 								
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -2772,9 +2772,9 @@ TEST_F(CudaBasicsTests1, execSummaryStats_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execSummaryStats_2) {
     	
-    NDArray x('c', {2,2,3}, {-5,-4,-3,-20,-1,0,1,2,3,4,5,6}, nd4j::DataType::DOUBLE);    
-    NDArray exp('c', {2}, {3.405877, 9.715966}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,2,3}, {-5,-4,-3,-20,-1,0,1,2,3,4,5,6}, sd::DataType::DOUBLE);
+    NDArray exp('c', {2}, {3.405877, 9.715966}, sd::DataType::FLOAT32);
+    NDArray z('c', {2}, {100,100}, sd::DataType::FLOAT32);
 
     std::vector<int> dimensions = {0,2};
 
@@ -2801,7 +2801,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_2) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execSummaryStats(&lc, nd4j::variance::SummaryStatsStandardDeviation,
+	NativeOpExecutioner::execSummaryStats(&lc, sd::variance::SummaryStatsStandardDeviation,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 								
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -2826,9 +2826,9 @@ TEST_F(CudaBasicsTests1, execSummaryStats_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execSummaryStats_3) {
     	
-    NDArray x('c', {2,2,3}, {-5,-4,-3,-20,-1,0,1,2,3,4,5,6}, nd4j::DataType::DOUBLE);    
-    NDArray exp('c', {2}, {10.606602, 2.121320}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,2,3}, {-5,-4,-3,-20,-1,0,1,2,3,4,5,6}, sd::DataType::DOUBLE);
+    NDArray exp('c', {2}, {10.606602, 2.121320}, sd::DataType::FLOAT32);
+    NDArray z('c', {2}, {100,100}, sd::DataType::FLOAT32);
 
     std::vector<int> dimensions = {1};
 
@@ -2855,7 +2855,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execSummaryStats(&lc, nd4j::variance::SummaryStatsStandardDeviation,
+	NativeOpExecutioner::execSummaryStats(&lc, sd::variance::SummaryStatsStandardDeviation,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 								
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -2880,9 +2880,9 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execSummaryStatsScalar_1) {
     	
-    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::INT64);
-    NDArray exp('c', {}, std::vector<double>{3.605551}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {}, std::vector<double>{100}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, sd::DataType::INT64);
+    NDArray exp('c', {}, std::vector<double>{3.605551}, sd::DataType::FLOAT32);
+    NDArray z('c', {}, std::vector<double>{100}, sd::DataType::FLOAT32);
 
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2894,7 +2894,7 @@ TEST_F(CudaBasicsTests1, execSummaryStatsScalar_1) {
 	lc.setReductionPointer(reductionPointer);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execSummaryStatsScalar(&lc, nd4j::variance::SummaryStatsStandardDeviation,
+	NativeOpExecutioner::execSummaryStatsScalar(&lc, sd::variance::SummaryStatsStandardDeviation,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, 								
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
@@ -2914,11 +2914,11 @@ TEST_F(CudaBasicsTests1, execSummaryStatsScalar_1) {
 //////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execRandom_1) {
     	   
-//    NDArray z('c', {10}, {100,0,0,0,0,0,0,0,0,0}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {10}, {100,0,0,0,0,0,0,0,0,100}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {10}, {0.050942, -0.183229, -0.093921, 0.075469, 0.257166, -0.254838, 0.342227, -0.682188, -0.004345, 0.464633}, nd4j::DataType::FLOAT32);
+//    NDArray z('c', {10}, {100,0,0,0,0,0,0,0,0,0}, sd::DataType::DOUBLE);
+    NDArray z('c', {10}, {100,0,0,0,0,0,0,0,0,100}, sd::DataType::FLOAT32);
+    NDArray exp('c', {10}, {0.050942, -0.183229, -0.093921, 0.075469, 0.257166, -0.254838, 0.342227, -0.682188, -0.004345, 0.464633}, sd::DataType::FLOAT32);
 
-    nd4j::graph::RandomGenerator gen(119,5);
+    sd::graph::RandomGenerator gen(119,5);
 
 	cudaError_t cudaResult;
     NDArray* array = &z;
@@ -2942,7 +2942,7 @@ TEST_F(CudaBasicsTests1, execRandom_1) {
 //
 //	//	::execRandom(extraPointers, random::GaussianDistribution, &gen, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &extra);
 //	// call cuda kernel which calculates result
-//	NativeOpExecutioner::execRandom(&lc, nd4j::random::GaussianDistribution,
+//	NativeOpExecutioner::execRandom(&lc, sd::random::GaussianDistribution,
 //								&gen,
 //								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 //								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
@@ -2968,12 +2968,12 @@ TEST_F(CudaBasicsTests1, execRandom_1) {
 //////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execRandom_2) {
     	   
-    NDArray x('c', {10}, {0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1}, nd4j::DataType::DOUBLE);    
-    NDArray z('c', {2,5}, {100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {10}, {0., 0., 0.3, 0., 0.5, 0., 0.7, 0., 0., 1.}, nd4j::DataType::DOUBLE);
+    NDArray x('c', {10}, {0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1}, sd::DataType::DOUBLE);
+    NDArray z('c', {2,5}, {100,100,100,100,100,100,100,100,100,100}, sd::DataType::DOUBLE);
+    NDArray exp('c', {10}, {0., 0., 0.3, 0., 0.5, 0., 0.7, 0., 0., 1.}, sd::DataType::DOUBLE);
     
     ExtraArguments extraArguments({0.7});
-    nd4j::graph::RandomGenerator gen(119,5);
+    sd::graph::RandomGenerator gen(119,5);
     
 //    // prepare input arrays for prepareDataForCuda function
 //    std::vector<std::pair<void*,size_t>> hostData;
@@ -2990,7 +2990,7 @@ TEST_F(CudaBasicsTests1, execRandom_2) {
 //	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execRandom(lc, nd4j::random::DropOut,
+	NativeOpExecutioner::execRandom(lc, sd::random::DropOut,
 								&gen,
 								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 								
@@ -3013,11 +3013,11 @@ TEST_F(CudaBasicsTests1, execRandom_2) {
 //////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execRandom_3) {
     	       
-    NDArray z('c', {10}, {100,100,100,100,100,100,100,100,100,100}, nd4j::DataType::DOUBLE);    
-    NDArray exp('c', {10}, {2.373649, 2.239791, 1.887353, 2.488636, 2.068904, 2.281399, 1.828228, 2.228222, 2.490847, 1.669537}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {10}, {100,100,100,100,100,100,100,100,100,100}, sd::DataType::DOUBLE);
+    NDArray exp('c', {10}, {2.373649, 2.239791, 1.887353, 2.488636, 2.068904, 2.281399, 1.828228, 2.228222, 2.490847, 1.669537}, sd::DataType::DOUBLE);
     
     std::vector<double> extraArguments = {1.5, 2.5};
-    nd4j::graph::RandomGenerator gen(119,5);
+    sd::graph::RandomGenerator gen(119,5);
     
     // prepare input arrays for prepareDataForCuda function
     std::vector<std::pair<void*,size_t>> hostData;    		
@@ -3034,7 +3034,7 @@ TEST_F(CudaBasicsTests1, execRandom_3) {
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
 		
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execRandom(&lc, nd4j::random::UniformDistribution,
+	NativeOpExecutioner::execRandom(&lc, sd::random::UniformDistribution,
 								&gen,
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 								
 								devicePtrs[0]);
@@ -3056,12 +3056,12 @@ TEST_F(CudaBasicsTests1, execRandom_3) {
 //////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execRandom_4) {
     	       
-    NDArray z('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {10}, {2.373649, 2.281399, 2.239791, 1.828228, 1.887353, 2.228222, 2.488636, 2.490847, 2.068904, 1.669537}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {2,5}, {1,2,3,4,5,6,7,8,9,10}, sd::DataType::FLOAT32);
+    NDArray exp('c', {10}, {2.373649, 2.281399, 2.239791, 1.828228, 1.887353, 2.228222, 2.488636, 2.490847, 2.068904, 1.669537}, sd::DataType::FLOAT32);
     z.permutei({1,0});        
         
     ExtraArguments extraArguments({1.5, 2.5});
-    nd4j::graph::RandomGenerator gen(119,5);
+    sd::graph::RandomGenerator gen(119,5);
     
 //    // prepare input arrays for prepareDataForCuda function
 //    std::vector<std::pair<void*,size_t>> hostData;
@@ -3079,7 +3079,7 @@ TEST_F(CudaBasicsTests1, execRandom_4) {
     auto context = z.getContext();
     PointersManager pm(context, "execRandom4");
 	// call cuda kernel which calculates result
-	NativeOpExecutioner::execRandom(context, nd4j::random::UniformDistribution,
+	NativeOpExecutioner::execRandom(context, sd::random::UniformDistribution,
 								&gen,
 								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 								
 								extraArguments.argumentsAsT(z.dataType()));

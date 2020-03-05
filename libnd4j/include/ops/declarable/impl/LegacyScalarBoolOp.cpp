@@ -19,11 +19,11 @@
 //
 
 #include <ops/declarable/LegacyScalarBoolOp.h>
-#include <NDArrayFactory.h>
-#include <Status.h>
+#include <array/NDArrayFactory.h>
+#include <graph/Status.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyScalarBoolOp::LegacyScalarBoolOp() : LegacyOp::LegacyOp(1) {
             // no-op
@@ -41,7 +41,7 @@ namespace nd4j {
             _scalar = new NDArray(scalar.dup(scalar.ordering()));
         }
 
-        ShapeList *LegacyScalarBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyScalarBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;

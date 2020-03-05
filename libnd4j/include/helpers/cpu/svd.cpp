@@ -18,14 +18,14 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 03.01.2018
 //
 
-#include <svd.h>
-#include <jacobiSVD.h>
-#include <biDiagonalUp.h>
+#include <helpers/svd.h>
+#include <helpers/jacobiSVD.h>
+#include <helpers/biDiagonalUp.h>
 #include <array/ResultSet.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -374,7 +374,7 @@ T SVD<T>::secularEq(const T diff, const NDArray& col0, const NDArray& diag, cons
     auto len = permut.lengthOf();
     T res = 1.;
     T item;
-    for(int i=0; i<len; ++i) {
+    for(Nd4jLong i=0; i<len; ++i) {
         auto j = permut.e<int>(i);
         item = col0.e<T>(j) / ((diagShifted.e<T>(j) - diff) * (diag.e<T>(j) + shift + diff));
         res += item * col0.e<T>(j);
@@ -382,7 +382,6 @@ T SVD<T>::secularEq(const T diff, const NDArray& col0, const NDArray& diag, cons
 
     return res;
 }
-
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -394,7 +393,7 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
     while(curLen > 1 && col0.e<T>(curLen-1) == (T)0.f)
         --curLen;
 
-    for (int k = 0; k < len; ++k)  {
+    for (Nd4jLong k = 0; k < len; ++k)  {
 
         if (col0.e<T>(k) == (T)0.f || curLen==1) {
 

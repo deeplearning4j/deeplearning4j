@@ -16,7 +16,7 @@
 
 include "array.fbs";
 
-namespace nd4j.graph;
+namespace sd.graph;
 
 
 table FlatProperties {

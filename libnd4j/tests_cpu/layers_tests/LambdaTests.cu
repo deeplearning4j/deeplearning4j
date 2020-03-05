@@ -24,7 +24,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-using namespace nd4j;
+using namespace sd;
 
 class LambdaTests : public testing::Test {
 public:
@@ -191,10 +191,10 @@ template <typename T>
 void testPairwiseMy(NDArray &x, NDArray &y, NDArray &z) {
 
     auto f = LAMBDA_TT(x, y){
-        return nd4j::math::nd4j_max<T>(x, (T)0.f)
+        return sd::math::nd4j_max<T>(x, (T)0.f)
               - x * y
-              + nd4j::math::nd4j_log<T,T>((T)1.f
-                + nd4j::math::nd4j_exp<T,T>(-nd4j::math::nd4j_abs(x)));
+              + sd::math::nd4j_log<T,T>((T)1.f
+                + sd::math::nd4j_exp<T,T>(-sd::math::nd4j_abs(x)));
     };
 
     x.applyPairwiseLambda(y, f, z);
@@ -204,8 +204,8 @@ void testPairwiseMy(NDArray &x, NDArray &y, NDArray &z) {
 TEST_F(LambdaTests, test_basic_9) {
 
     NDArray labels('c', {2,3,4},{0,1,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,0,1,1,0,1,0});
-    NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    NDArray output('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray logits('c', {2,3,4}, sd::DataType::DOUBLE);
+    NDArray output('c', {2,3,4}, sd::DataType::DOUBLE);
     NDArray expected('c', {2,3,4}, {0.744397, 0.598139, 0.554355, 0.913015, 0.474077, 1.037488, 0.403186, 1.171101, 0.341154, 1.313262, 0.287335, 1.463282, 0.241008, 1.620417, 0.201413, 1.783901, 0.167786, 1.952978, 2.039387, 0.126928, 0.115520, 2.305083, 0.095545, 2.486836});
 
     logits.linspace(0.1, 0.1);

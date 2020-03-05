@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/print_variable.h>
 #include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>

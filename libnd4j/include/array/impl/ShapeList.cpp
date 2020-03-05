@@ -18,10 +18,10 @@
 // @author raver119@gmail.com
 //
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <array/ShapeList.h>
 
-namespace nd4j {
+namespace sd {
     //ShapeList::ShapeList(bool autoRemovable) {
 //        _autoremovable = autoRemovable;
 //    }

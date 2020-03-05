@@ -19,12 +19,12 @@
 //
 
 #include<cmath>
-#include <DataTypeUtils.h>
-#include<ops/declarable/helpers/betaInc.h>
-#include <NDArrayFactory.h>
+#include <array/DataTypeUtils.h>
+#include <ops/declarable/helpers/betaInc.h>
+#include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -112,12 +112,12 @@ static T betaIncCore(T a, T b, T x) {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-static void betaIncForArray(nd4j::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+static void betaIncForArray(sd::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
 
 	int xLen = x.lengthOf();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
+        for (auto i = start; i < stop; i++)
             output.t<T>(i) = betaIncCore<T>(a.t<T>(i), b.t<T>(i), x.t<T>(i));
     };
 
@@ -126,12 +126,12 @@ static void betaIncForArray(nd4j::LaunchContext * context, const NDArray& a, con
 
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-void betaInc(nd4j::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+void betaInc(sd::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
 	auto xType = a.dataType();
 	BUILD_SINGLE_SELECTOR(xType, betaIncForArray, (context, a, b, x, output), FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void betaIncForArray, (nd4j::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void betaIncForArray, (sd::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output), FLOAT_TYPES);
 
 
 }

@@ -18,15 +18,15 @@
 // Created by raver119 on 15.12.17.
 //
 #include "testlayers.h"
-#include <Graph.h>
+#include <graph/Graph.h>
 #include <chrono>
-#include <Node.h>
+#include <graph/Node.h>
 #include <helpers/OpTracker.h>
 #include <ops/declarable/CustomOperations.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::ops;
+using namespace sd::graph;
 
 class OpTrackerTests : public testing::Test {
 public:
@@ -40,7 +40,7 @@ public:
 };
 
 TEST_F(OpTrackerTests, Test_Existence_1) {
-    nd4j::_loader loader;
+    sd::_loader loader;
 
     // nd4j_printf("Groups: %i; Operations: %i\n", OpTracker::getInstance()->totalGroups(), OpTracker::getInstance()->totalOperations());
 
@@ -51,7 +51,7 @@ TEST_F(OpTrackerTests, Test_Existence_1) {
 }
 
 TEST_F(OpTrackerTests, Test_Ops_List_1) {
-    nd4j::ops::less op;
+    sd::ops::less op;
     auto vec = OpRegistrator::getInstance()->getAllHashes();
 
     // nd4j_printf("Total ops: %lld\n", vec.size());

@@ -22,11 +22,11 @@
 #define LIBND4J_GEMM_H
 
 #include <cblas.h>
-#include <templatemath.h>
-#include <op_boilerplate.h>
+#include <math/templatemath.h>
+#include <system/op_boilerplate.h>
 
 
-namespace nd4j {
+namespace sd {
      namespace blas {
          template <typename T>
          static void * transpose(int orderSource, int orderTarget, int rows, int cols, void *source);
@@ -42,7 +42,7 @@ namespace nd4j {
          };
 
          template <typename X, typename Y, typename Z>
-         class GEMV : public nd4j::blas::GEMM<X, Y, Z>{
+         class GEMV : public sd::blas::GEMM<X, Y, Z>{
          public:
              static void op(int TRANS, int M, int N, double alpha, void* vA, int lda, void* vX, int incx, double beta, void* vY, int incy );
          };

@@ -22,10 +22,10 @@
 #define LIBND4J_UINT16_H
 
 #include <stdint.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 
-namespace nd4j {
+namespace sd {
 
     uint16_t _CUDA_HD FORCEINLINE cpu_float2uint16(float data);
     float _CUDA_HD FORCEINLINE cpu_uint162float(uint16_t data);

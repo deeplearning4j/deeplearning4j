@@ -20,14 +20,14 @@
 //
 
 #include "../DataBuffer.h"
-#include <DataTypeUtils.h>
-#include <op_boilerplate.h>
+#include <array/DataTypeUtils.h>
+#include <system/op_boilerplate.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/AffinityManager.h>
 #include <memory/MemoryCounter.h>
 #include <exceptions/allocation_exception.h>
 
-namespace nd4j {
+namespace sd {
     void DataBuffer::expand(const uint64_t size) {
         if (size > _lenInBytes) {
             // allocate new buffer
@@ -67,19 +67,19 @@ namespace nd4j {
 void DataBuffer::allocateSpecial() {
 
     if (_specialBuffer == nullptr && getLenInBytes() > 0) {
-        auto deviceId = nd4j::AffinityManager::currentDeviceId();
+        auto deviceId = sd::AffinityManager::currentDeviceId();
 
         if (_workspace == nullptr)
-            if (!nd4j::memory::MemoryCounter::getInstance()->validate(getLenInBytes()))
-                throw nd4j::allocation_exception::build("Requested amount exceeds device limits", nd4j::memory::MemoryCounter::getInstance()->deviceLimit(deviceId), getLenInBytes());
+            if (!sd::memory::MemoryCounter::getInstance()->validate(getLenInBytes()))
+                throw sd::allocation_exception::build("Requested amount exceeds device limits", sd::memory::MemoryCounter::getInstance()->deviceLimit(deviceId), getLenInBytes());
 
 
         ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
         _isOwnerSpecial = true;
 
         if (_workspace == nullptr) {
-            nd4j::memory::MemoryCounter::getInstance()->countIn(deviceId, getLenInBytes());
-            nd4j::memory::MemoryCounter::getInstance()->countIn(nd4j::memory::MemoryType::DEVICE, getLenInBytes());
+            sd::memory::MemoryCounter::getInstance()->countIn(deviceId, getLenInBytes());
+            sd::memory::MemoryCounter::getInstance()->countIn(sd::memory::MemoryType::DEVICE, getLenInBytes());
         }
     }
 }
@@ -135,8 +135,8 @@ void DataBuffer::deleteSpecial() {
 
         // count out towards DataBuffer device, only if we're not in workspace
         if (_workspace == nullptr) {
-            nd4j::memory::MemoryCounter::getInstance()->countOut(_deviceId, getLenInBytes());
-            nd4j::memory::MemoryCounter::getInstance()->countOut(nd4j::memory::MemoryType::DEVICE, getLenInBytes());
+            sd::memory::MemoryCounter::getInstance()->countOut(_deviceId, getLenInBytes());
+            sd::memory::MemoryCounter::getInstance()->countOut(sd::memory::MemoryType::DEVICE, getLenInBytes());
         }
     }
 }

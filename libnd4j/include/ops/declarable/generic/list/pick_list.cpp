@@ -18,12 +18,12 @@
 // Created by raver119 on 06.11.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_pick_list)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LIST_OP_IMPL(pick_list, 1, 1, 0, -2) {
             auto list = INPUT_LIST(0);

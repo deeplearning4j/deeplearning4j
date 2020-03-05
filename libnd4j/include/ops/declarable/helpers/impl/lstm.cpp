@@ -27,15 +27,15 @@
 
 
 #include <ops/declarable/helpers/lstm.h>
-#include <VariableSpace.h>
+#include <graph/VariableSpace.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <array/NDArrayList.h>
 #include <iterator>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -102,7 +102,7 @@ namespace nd4j {
 
 
             //////////////////////////////////////////////////////////////////////////
-            void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+            void lstmTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
                               NDArray* h, NDArray* c, const std::vector<double>& params) {
 
                 // x  input [time x bS x nIn]

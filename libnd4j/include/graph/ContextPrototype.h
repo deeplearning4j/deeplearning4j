@@ -23,10 +23,10 @@
 #define ND4J_CONTEXT_PROTOTYPE_H
 
 #include <vector>
-#include <Environment.h>
+#include <system/Environment.h>
 #include <array/DataType.h>
-#include <dll.h>
-#include <RandomGenerator.h>
+#include <system/dll.h>
+#include <graph/RandomGenerator.h>
 #include <ops/declarable/OpDescriptor.h>
 #include <execution/Engine.h>
 #include <execution/ExecutionMode.h>
@@ -35,7 +35,7 @@
 #include <config.h>
 #endif
 
-namespace nd4j {
+namespace sd {
     namespace graph {
 
         class ND4J_EXPORT ContextPrototype {
@@ -47,10 +47,10 @@ namespace nd4j {
             std::vector<int> _iArgs;
             std::vector<bool> _bArgs;
             std::vector<int> _axis;
-            std::vector<nd4j::DataType> _dArgs;
+            std::vector<sd::DataType> _dArgs;
 
             // TODO: remove this field
-			nd4j::DataType _dataType = nd4j::DataType::FLOAT32;
+			sd::DataType _dataType = sd::DataType::FLOAT32;
 			bool _isInplace;
 
             // opNum for legacy XYZ ops
@@ -58,17 +58,17 @@ namespace nd4j {
             uint64_t _rootSeed;
             RandomGenerator _randomGenerator;
 
-            std::vector<nd4j::DataType> _dataTypes;
+            std::vector<sd::DataType> _dataTypes;
 
-            nd4j::ops::OpDescriptor* _opDescriptor;
-            bool _useMKLDNN = nd4j::Environment::getInstance()->isUseMKLDNN();
+            sd::ops::OpDescriptor* _opDescriptor;
+            bool _useMKLDNN = sd::Environment::getInstance()->isUseMKLDNN();
 
             // target engine for execution
             samediff::Engine _engine = DEFAULT_ENGINE;
 
             samediff::ExecutionMode _execMode = samediff::ExecutionMode::MODE_UNDEFINED;
         public:
-            explicit ContextPrototype(nd4j::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
+            explicit ContextPrototype(sd::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
 
             int getNodeId();
@@ -77,11 +77,11 @@ namespace nd4j {
             // this method returns true, if inputs are defined
             bool hasVariablesFilled();
 
-            void setOpDescriptor(nd4j::ops::OpDescriptor* opDescriptor);
+            void setOpDescriptor(sd::ops::OpDescriptor* opDescriptor);
 
-            virtual nd4j::DataType dataType();
-            virtual nd4j::DataType dataType(int index);
-            virtual void setDataType(int index, nd4j::DataType type);
+            virtual sd::DataType dataType();
+            virtual sd::DataType dataType(int index);
+            virtual void setDataType(int index, sd::DataType type);
 
             bool isInplace();
             void markInplace(bool reallyInplace);
@@ -96,7 +96,7 @@ namespace nd4j {
             std::vector<double>* getTArguments();
             std::vector<int>* getIArguments();
             std::vector<bool>* getBArguments();
-            std::vector<nd4j::DataType>* getDArguments();
+            std::vector<sd::DataType>* getDArguments();
             std::vector<int>* getAxis();
 
             samediff::Engine engine();

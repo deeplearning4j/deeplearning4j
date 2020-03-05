@@ -21,7 +21,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/sequence_mask.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(sequence_mask, 1, 1, false, 0, 0) {
             auto input  = INPUT_VARIABLE(0);
@@ -99,7 +99,7 @@ namespace nd4j {
         DECLARE_TYPES(sequence_mask) {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_INTS})
-                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                    ->setAllowedOutputTypes(sd::DataType::ANY);
         }
 }
 }

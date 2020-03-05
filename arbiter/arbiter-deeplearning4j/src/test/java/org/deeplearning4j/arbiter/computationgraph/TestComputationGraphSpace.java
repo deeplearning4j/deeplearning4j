@@ -158,7 +158,7 @@ public class TestComputationGraphSpace extends BaseDL4JTest {
             }
         }
 
-        System.out.println("ReLU vs. Tanh: " + reluCount + "\t" + tanhCount);
+//        System.out.println("ReLU vs. Tanh: " + reluCount + "\t" + tanhCount);
         assertTrue(reluCount > 0);
         assertTrue(tanhCount > 0);
 

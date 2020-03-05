@@ -23,12 +23,12 @@
 
 #ifndef BROADCASTING_H_
 #define BROADCASTING_H_
-#include <dll.h>
+#include <system/dll.h>
 #include <helpers/shape.h>
-#include <templatemath.h>
-#include <pairwise_util.h>
+#include <math/templatemath.h>
+#include <system/pairwise_util.h>
 #include <ops/ops.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
@@ -40,6 +40,7 @@
 #endif
 
 #include <helpers/TAD.h>
+#include <helpers/LoopKind.h>
 
 #include "legacy_ops.h"
 
@@ -122,6 +123,7 @@ namespace functions {
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ,
+                             sd::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop);
 
@@ -149,6 +151,7 @@ namespace functions {
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ,
+                             sd::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop);
 

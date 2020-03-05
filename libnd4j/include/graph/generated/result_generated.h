@@ -12,7 +12,7 @@
 #include "utils_generated.h"
 #include "variable_generated.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct FlatTiming;
@@ -86,7 +86,7 @@ inline flatbuffers::Offset<FlatTiming> CreateFlatTimingDirect(
     int32_t id = 0,
     const char *name = nullptr,
     flatbuffers::Offset<LongPair> timing = 0) {
-  return nd4j::graph::CreateFlatTiming(
+  return sd::graph::CreateFlatTiming(
       _fbb,
       id,
       name ? _fbb.CreateString(name) : 0,
@@ -184,7 +184,7 @@ inline flatbuffers::Offset<FlatResult> CreateFlatResultDirect(
     const std::vector<flatbuffers::Offset<FlatTiming>> *timing = nullptr,
     int64_t footprintForward = 0,
     int64_t footprintBackward = 0) {
-  return nd4j::graph::CreateFlatResult(
+  return sd::graph::CreateFlatResult(
       _fbb,
       id,
       variables ? _fbb.CreateVector<flatbuffers::Offset<FlatVariable>>(*variables) : 0,
@@ -193,37 +193,37 @@ inline flatbuffers::Offset<FlatResult> CreateFlatResultDirect(
       footprintBackward);
 }
 
-inline const nd4j::graph::FlatResult *GetFlatResult(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatResult>(buf);
+inline const sd::graph::FlatResult *GetFlatResult(const void *buf) {
+  return flatbuffers::GetRoot<sd::graph::FlatResult>(buf);
 }
 
-inline const nd4j::graph::FlatResult *GetSizePrefixedFlatResult(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatResult>(buf);
+inline const sd::graph::FlatResult *GetSizePrefixedFlatResult(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatResult>(buf);
 }
 
 inline bool VerifyFlatResultBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatResult>(nullptr);
+  return verifier.VerifyBuffer<sd::graph::FlatResult>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatResultBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatResult>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatResult>(nullptr);
 }
 
 inline void FinishFlatResultBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatResult> root) {
+    flatbuffers::Offset<sd::graph::FlatResult> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatResultBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatResult> root) {
+    flatbuffers::Offset<sd::graph::FlatResult> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_RESULT_ND4J_GRAPH_H_

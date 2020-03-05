@@ -23,13 +23,13 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 ///////////////////////////////////////////////////////////////////
@@ -126,7 +126,7 @@ namespace nd4j {
             }
 
 ///////////////////////////////////////////////////////////////////
-            void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
+            void pad(sd::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
 
                 PointersManager manager(context, "pad");
 
@@ -232,7 +232,7 @@ namespace nd4j {
             }
 
             template<typename F, typename I>
-            static void mirrorPad_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+            static void mirrorPad_(sd::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
                 // mode:  0 - REFLECT, else - SYMMETRIC
                 const int reflBorder = (bool)mode ? 1 : 0;
                 const int rank        = input.rankOf();
@@ -248,16 +248,16 @@ namespace nd4j {
                     const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;
 
                     mirrorPadLinearKernel<F><<<256, 512, 256, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftSide, leftSideCorrected, inLen, len, outLen);
-                    nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernel(...) failed");
+                    sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernel(...) failed");
                 }
                 else {
                     mirrorPadKernel<F, I><<<256, 256, 8192, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), reflBorder);
-                    nd4j::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadKernel(...) failed");
+                    sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadKernel(...) failed");
                 }
                 NDArray::registerSpecialUse({&output}, {&input, &paddings});
             }
 
-            void mirrorPad(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+            void mirrorPad(sd::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
                 BUILD_DOUBLE_SELECTOR(input.dataType(), paddings.dataType(), mirrorPad_, (context, input, paddings, output, mode), LIBND4J_TYPES, INDEXING_TYPES);
             }
 

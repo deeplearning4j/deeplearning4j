@@ -23,13 +23,13 @@
 #ifndef DEV_TESTS_TOGGLE_BITS_H
 #define DEV_TESTS_TOGGLE_BITS_H
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
-            static void toggle_bits__(nd4j::LaunchContext * context, NDArray& in, NDArray& out);
+            static void toggle_bits__(sd::LaunchContext * context, NDArray& in, NDArray& out);
 
-            void __toggle_bits(nd4j::LaunchContext * context, NDArray& in, NDArray& out);
+            void __toggle_bits(sd::LaunchContext * context, NDArray& in, NDArray& out);
         }
     }
 }

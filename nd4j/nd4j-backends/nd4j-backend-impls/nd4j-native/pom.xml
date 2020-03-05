@@ -50,17 +50,7 @@
             <version>${openblas.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl</artifactId>
-            <version>${mkl.version}-${javacpp-presets.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl</artifactId>
-            <version>${mkl.version}-${javacpp-presets.version}</version>
-            <classifier>${dependency.platform2}</classifier>
-        </dependency>
+
         <!--
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -235,7 +225,7 @@
                                 </requireProperty>
                                 <requireFilesExist>
                                     <files>
-                                        <file>${libnd4jhome}/blas/NativeOps.h</file>
+                                        <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
                                         <file>${libnd4jhome}/blasbuild/cpu/blas</file>
                                     </files>
                                     <message>!!! You have to compile libnd4j with cpu support first!</message>
@@ -258,6 +248,28 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>mkl</id>
+            <activation>
+                <property>
+                    <name>os.arch</name>
+                    <value>x86_64</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>${dependency.platform2}</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>testresources</id>
         </profile>

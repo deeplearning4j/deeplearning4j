@@ -41,12 +41,15 @@ import org.deeplearning4j.nn.weights.WeightInitRelu;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
+
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -688,5 +691,52 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
         assertEquals("Incorrect number of outputs!", 5 , newNet.layerSize(0));
         assertEquals("Incorrect number of inputs!", 5, newNet.layerInputSize(2));
         newNet.output(input);
+    }
+
+
+    @Test
+    public void testTransferLearningSameDiffLayers(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .dataType(DataType.DOUBLE)
+                .activation(Activation.TANH)
+                .updater(new Adam(0.01))
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(new LSTM.Builder().nOut(8).build())
+                .layer( new SelfAttentionLayer.Builder().nOut(4).nHeads(2).projectInput(true).build())
+                .layer(new GlobalPoolingLayer.Builder().poolingType(PoolingType.MAX).build())
+                .layer(new OutputLayer.Builder().nOut(2).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .setInputType(InputType.recurrent(4))
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.rand(DataType.FLOAT, 3, 4, 5);
+        INDArray out = net.output(in);
+
+        MultiLayerNetwork net2 = new TransferLearning.Builder(net)
+                .fineTuneConfiguration(FineTuneConfiguration.builder().updater(new Adam(0.01)).build())
+                .removeLayersFromOutput(1)
+                .addLayer(new OutputLayer.Builder().nIn(4).nOut(2).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .build();
+
+        net2.setParam("3_W", net.getParam("3_W"));
+        net2.setParam("3_b", net.getParam("3_b"));
+
+        Map<String,INDArray> p1 = net.paramTable();
+        Map<String,INDArray> p2 = net2.paramTable();
+        for(String s : p1.keySet()){
+            INDArray i1 = p1.get(s);
+            INDArray i2 = p2.get(s);
+            assertEquals(s, i1, i2);
+        }
+
+        INDArray out2 = net2.output(in);
+
+        assertEquals(out, out2);
     }
 }

@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/sequence_mask.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -37,7 +37,7 @@ namespace helpers {
         samediff::Threads::parallel_for(func, 0, maxIndex, 1, 0, input->lengthOf(), 1);
     }
 
-    void sequenceMask(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
+    void sequenceMask(sd::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (input, output, maxIndex), INTEGER_TYPES, LIBND4J_TYPES_EXTENDED);
     }
 

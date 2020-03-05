@@ -29,19 +29,24 @@ if(APPLE)
     link_directories(/lib)
 endif()
 
-if (APPLE_BUILD)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPPLE_BUILD=true -mmacosx-version-min=10.10")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAPPLE_BUILD=true -mmacosx-version-min=10.10")
+if (SD_APPLE_BUILD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_APPLE_BUILD=true -mmacosx-version-min=10.10")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_APPLE_BUILD=true -mmacosx-version-min=10.10")
 endif()
 
-if (ANDROID_BUILD)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID_BUILD=true")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DANDROID_BUILD=true")
+if (SD_ARM_BUILD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_ARM_BUILD=true")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_ARM_BUILD=true")
 endif()
 
-if (IOS_BUILD)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DIOS_BUILD=true")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIOS_BUILD=true")
+if (SD_ANDROID_BUILD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_ANDROID_BUILD=true")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_ANDROID_BUILD=true")
+endif()
+
+if (SD_IOS_BUILD)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_IOS_BUILD=true")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_IOS_BUILD=true")
 endif()
 
 if(WIN32)
@@ -63,33 +68,33 @@ if(WIN32)
     SET(CMAKE_NINJA_FORCE_RESPONSE_FILE 1 CACHE INTERNAL "")
 endif()
 
-if ("${LIBND4J_ALL_OPS}")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
+if ("${SD_ALL_OPS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=true")
 else()
-    message("_OPS: ${LIBND4J_OPS_LIST}")
-    foreach(OP "${LIBND4J_OPS_LIST}")
+    message("_OPS: ${SD_OPS_LIST}")
+    foreach(OP "${SD_OPS_LIST}")
         message(STATUS "${OP}")
     endforeach()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${LIBND4J_OPS_LIST}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SD_OPS_LIST}")
 endif()
 
-IF(${ARCH} MATCHES "arm*")
-    set(ARCH_TUNE "-march=${ARCH}")
-ELSEIF(${ARCH} MATCHES "power*")
-    set(ARCH_TUNE "-mcpu=${ARCH} -mtune=${ARCH} -D__POWER")
-ELSEIF(${EXTENSION} MATCHES "avx2")
+IF(${SD_ARCH} MATCHES "arm*")
+    set(ARCH_TUNE "-march=${SD_ARCH}")
+ELSEIF(${SD_ARCH} MATCHES "power*")
+    set(ARCH_TUNE "-mcpu=${SD_ARCH} -mtune=${SD_ARCH} -D__POWER")
+ELSEIF(${SD_EXTENSION} MATCHES "avx2")
     message("Building AVX2 binary...")
     set(ARCH_TUNE "-mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mprefetchwt1 -DSD_F16C=true -DF_AVX2=true")
 ELSE()
-    if ("${ARCH}" STREQUAL "x86-64")
+    if ("${SD_ARCH}" STREQUAL "x86-64")
         message("Building x86_64 binary...")
         set(ARCH_TYPE "generic")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DF_X64=true")
     else()
-        set(ARCH_TYPE "${ARCH}")
+        set(ARCH_TYPE "${SD_ARCH}")
     endif()
 
-    IF(${EXTENSION} MATCHES "avx512")
+    IF(${SD_EXTENSION} MATCHES "avx512")
         message("Building AVX512 binary...")
         # we need to set flag here, that we can use hardware f16 conversion + tell that cpu features should be tracked
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mavx512f -mavx512vl -mavx512bw -mavx512dq  -mavx512cd -mbmi -mbmi2 -mprefetchwt1 -mclflushopt -mxsavec -mxsaves -DSD_F16C=true -DF_AVX512=true")
@@ -97,11 +102,11 @@ ELSE()
 
     if (NOT WIN32)
         # we don't want this definition for msvc
-        set(ARCH_TUNE "-march=${ARCH} -mtune=${ARCH_TYPE}")
+        set(ARCH_TUNE "-march=${SD_ARCH} -mtune=${ARCH_TYPE}")
     endif()
 ENDIF()
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang" AND X86_BUILD)
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang" AND SD_X86_BUILD)
     # apple clang but not ios-arm
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -124,10 +129,10 @@ IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     include_directories("/usr/include")
     include_directories("/usr/local/include")
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-if(!CUDA_BLAS)
-    if(!CPU_BLAS)
-        set(CUDA_BLAS FALSE)
-        set(CPU_BLAS TRUE)
+if(!SD_CUDA)
+    if(!SD_CPU)
+        set(SD_CUDA FALSE)
+        set(SD_CPU TRUE)
     endif()
 endif()
 
@@ -136,7 +141,7 @@ if (HAVE_MKLDNN)
     file(GLOB_RECURSE CUSTOMOPS_MKLDNN_SOURCES false ../include/ops/declarable/platform/mkldnn/*.cpp ../include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
 endif()
 
-if(CUDA_BLAS)
+if(SD_CUDA)
     message("Build cublas")
     find_package(CUDA)
     add_definitions(-D__CUDABLAS__=true)
@@ -149,7 +154,7 @@ if(CUDA_BLAS)
 		include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
 
-        if ("${EXPERIMENTAL}" STREQUAL "yes")
+        if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
             message("Experimental mode ENABLED")
             set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
@@ -213,6 +218,7 @@ if(CUDA_BLAS)
         file(GLOB_RECURSE HELPERS_SOURCES false ../include/helpers/impl/*.cpp ../include/helpers/*.cu ../include/helpers/*.cupp ../include/helpers/*.h)
         file(GLOB_RECURSE INDEXING_SOURCES false ../include/indexing/*.cpp ../include/indexing/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/impl/*.cpp ../include/loops/*.h)
+        file(GLOB_RECURSE LEGACY_SOURCES false ../include/legacy/impl/*.cpp  ../include/legacy/*.cu ../include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA false ../include/loops/*.cu)
 
         if (HAVE_CUDNN)
@@ -220,43 +226,41 @@ if(CUDA_BLAS)
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
         endif()
 
-		add_library(nd4jobj OBJECT cuda/NativeOps.cu cuda/NativeOpExecutioner.cu cuda/BlasVersionHelper.cu Environment.cpp ${LOOPS_SOURCES_CUDA}
+		add_library(nd4jobj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES}
                 ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
-                ../include/cnpy/cnpy.cpp ../include/nd4jmemset.h ../include/nd4jmalloc.h
-                cpu/GraphExecutioner.cpp cuda/NDArray.cu cpu/NDArrayFactory.cpp
-                Environment.h ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
+                ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES})
 
-        add_library(${LIBND4J_NAME} SHARED $<TARGET_OBJECTS:nd4jobj>)
+        add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:nd4jobj>)
 
         if (WIN32)
             message("MSVC runtime for library: ${MSVC_RT_LIB}")
         endif()
 
         # static library is built only if we're going to build tests, skip otherwise
-        if (BUILD_TESTS)
-            add_library(${LIBND4J_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
-            set_property(TARGET ${LIBND4J_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            install(TARGETS ${LIBND4J_NAME}static DESTINATION .)
+        if (SD_BUILD_TESTS OR SD_STATIC_LIB)
+            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
+            set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME}static DESTINATION .)
         endif()
 
         # on windows we want to make sure we use MT or MD, but since we use it in one lib, we must use it everywhere to avoid conflicts
         set_property(TARGET nd4jobj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-        set_property(TARGET ${LIBND4J_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
         if(WIN32)
             message("CUDA on Windows: enabling /EHsc")
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
 
-		target_link_libraries(${LIBND4J_NAME} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})
+		target_link_libraries(${SD_LIBRARY_NAME} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})
 	    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 
-		install(TARGETS ${LIBND4J_NAME} DESTINATION .)
+		install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif(CUDA_FOUND)
-elseif(CPU_BLAS)
+elseif(SD_CPU)
 
-    if ("${EXPERIMENTAL}" STREQUAL "yes")
+    if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
         message("Experimental mode ENABLED")
         set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
@@ -274,15 +278,16 @@ elseif(CPU_BLAS)
     file(GLOB_RECURSE OPS_SOURCES false ../include/ops/impl/*.cpp ../include/ops/declarable/impl/*.cpp  ../include/ops/*.h)
     file(GLOB_RECURSE INDEXING_SOURCES false ../include/indexing/*.cpp ../include/indexing/*.h)
     file(GLOB_RECURSE HELPERS_SOURCES false ../include/helpers/*.cpp ../include/helpers/*.h)
+    file(GLOB_RECURSE LEGACY_SOURCES false ../include/legacy/impl/*.cpp  ../include/legacy/cpu/*.cpp ../include/legacy/*.h)
     file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/*.cpp ../include/loops/*.h)
 
-    if (X86_BUILD)
+    if (SD_X86_BUILD)
         # we disable platform optimizations for certains files for linux/macos
         set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
         set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
 
-    if(CHECK_VECTORIZATION)
+    if(SD_CHECK_VECTORIZATION)
        set(VECT_FILES cpu/NativeOps.cpp ${OPS_SOURCES} ${HELPERS_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${LOOPS_SOURCES})
        if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         
@@ -310,33 +315,31 @@ elseif(CPU_BLAS)
 
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
-    add_library(nd4jobj OBJECT cpu/NativeOps.cpp cpu/GraphExecutioner.cpp
-            cpu/NativeOpExecutioner.cpp cpu/NDArray.cpp cpu/NDArrayFactory.cpp
-            ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
-            Environment.cpp Environment.h ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
+    add_library(nd4jobj OBJECT ${LEGACY_SOURCES}
+            ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
             ${OPS_SOURCES} ${PERF_SOURCES})
     if(IOS)
-        add_library(${LIBND4J_NAME}       STATIC $<TARGET_OBJECTS:nd4jobj>)
+        add_library(${SD_LIBRARY_NAME}       STATIC $<TARGET_OBJECTS:nd4jobj>)
     else()
         # static library is built only if we're going to build tests, skip otherwise
-        if (BUILD_TESTS)
-            add_library(${LIBND4J_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
+        if (SD_BUILD_TESTS OR SD_STATIC_LIB)
+            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
         endif()
 
-        add_library(${LIBND4J_NAME}       SHARED $<TARGET_OBJECTS:nd4jobj>)
+        add_library(${SD_LIBRARY_NAME}       SHARED $<TARGET_OBJECTS:nd4jobj>)
     endif()
 
     # we're including {MKLDNN} here in case of building from sources. in future that'll replace {MKLDNN_LIBRARIES}. same applies to BLAS
     if (NOT BLAS_LIBRARIES)
         set(BLAS_LIBRARIES "")
     endif()
-    target_link_libraries(${LIBND4J_NAME} ${MKLDNN} ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+    target_link_libraries(${SD_LIBRARY_NAME} ${MKLDNN} ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
 
-    if ("${LIBND4J_ALL_OPS}" AND "${LIBND4J_BUILD_MINIFIER}")
+    if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")
         add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
-        target_link_libraries(minifier ${LIBND4J_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(minifier ${SD_LIBRARY_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES})
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
@@ -357,6 +360,6 @@ elseif(CPU_BLAS)
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
     endif()
 
-    install(TARGETS ${LIBND4J_NAME} DESTINATION  .)
+    install(TARGETS ${SD_LIBRARY_NAME} DESTINATION  .)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cpu)
 endif()

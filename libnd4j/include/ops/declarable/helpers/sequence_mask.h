@@ -19,14 +19,14 @@
 //
 #ifndef __SEQUENCE_MASK_HELPERS__
 #define __SEQUENCE_MASK_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    void sequenceMask(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex);
+    void sequenceMask(sd::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex);
 
 }
 }

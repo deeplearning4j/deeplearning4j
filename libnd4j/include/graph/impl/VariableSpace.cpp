@@ -19,19 +19,19 @@
 //
 
 #include <graph/VariableSpace.h>
-#include <NativeOps.h>
+#include <legacy/NativeOps.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
-        std::vector<nd4j::graph::Variable *> * nd4j::graph::VariableSpace::getExternalVariables() {
+        std::vector<sd::graph::Variable *> * sd::graph::VariableSpace::getExternalVariables() {
             return &_external;
         }
 
-        nd4j::graph::Stash* nd4j::graph::VariableSpace::getStash() {
+        sd::graph::Stash* sd::graph::VariableSpace::getStash() {
             return &_stash;
         }
 
-        nd4j::graph::VariableSpace* nd4j::graph::VariableSpace::clone() {
+        sd::graph::VariableSpace* sd::graph::VariableSpace::clone() {
             auto result = new VariableSpace();
 
             for (auto const& x : _paired) {
@@ -45,12 +45,12 @@ namespace nd4j {
             return result;
         }
 
-        void VariableSpace::setWorkspace(nd4j::memory::Workspace *workspace) {
+        void VariableSpace::setWorkspace(sd::memory::Workspace *workspace) {
             //_workspace = *workspace;
         }
 
         
-        nd4j::graph::VariableSpace* nd4j::graph::VariableSpace::asT() {
+        sd::graph::VariableSpace* sd::graph::VariableSpace::asT() {
             auto result = new VariableSpace();
 
             for (auto const& x : _paired) {
@@ -65,7 +65,7 @@ namespace nd4j {
         }
 
         
-        void nd4j::graph::VariableSpace::injectVariable(std::pair<int, int> &pair, Variable* variable) {
+        void sd::graph::VariableSpace::injectVariable(std::pair<int, int> &pair, Variable* variable) {
             if (pair.second == 0) {
                 if (pair.first < 0)
                     this->_variables[pair.first] = variable;
@@ -81,23 +81,23 @@ namespace nd4j {
             this->_handles->push_back(variable);
         }
 
-        std::vector<nd4j::graph::Variable*> * nd4j::graph::VariableSpace::getPlaceholders() {
+        std::vector<sd::graph::Variable*> * sd::graph::VariableSpace::getPlaceholders() {
             return &_placeholders;
         }
 
-        int nd4j::graph::VariableSpace ::numberOfPlaceholders() {
+        int sd::graph::VariableSpace ::numberOfPlaceholders() {
             return _placeholders.size();
         }
 
-        bool nd4j::graph::VariableSpace::hasVariable(std::string *symbol) {
+        bool sd::graph::VariableSpace::hasVariable(std::string *symbol) {
             return _symbolic.count(*symbol) == 1;
         }
 
-        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(std::string *symbol) {
+        sd::graph::Variable * sd::graph::VariableSpace::getVariable(std::string *symbol) {
             return _symbolic.at(*symbol);
         }
 
-        bool nd4j::graph::VariableSpace::hasVariable(int id, int index) {
+        bool sd::graph::VariableSpace::hasVariable(int id, int index) {
             std::pair<int, int> pair(id, index);
             return hasVariable(pair);
         }
@@ -126,57 +126,47 @@ namespace nd4j {
             return var->isExternal();
         }
 
-        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(int id, int index) {
+        sd::graph::Variable * sd::graph::VariableSpace::getVariable(int id, int index) {
             std::pair<int, int> pair(id, index);
             return getVariable(pair);
         }
 
-        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(std::pair<int, int>& pair) {
-//            if (pair.first == 0)
-//                throw "0 requested";
-
-            //nd4j_debug("Requested variable: [%i:%i]\n", pair.first, pair.second);
-
+        sd::graph::Variable * sd::graph::VariableSpace::getVariable(std::pair<int, int>& pair) {
             if (pair.first < 0)
                 return getVariable(pair.first);
-            else if (_paired.count(pair) > 0)
+            else
                 return _paired.at(pair);
-            else {
-                if (hasVariable(pair.first) && pair.second == 0)
-                    return getVariable(pair.first);
-            }
 
             nd4j_printf("Unknown variable requested: [%i,%i]\n", pair.first, pair.second);
-
-            return nullptr;
+            throw std::runtime_error("Unknown variable requested");
         }
 
-        bool nd4j::graph::VariableSpace::hasVariable(int id) {
+        bool sd::graph::VariableSpace::hasVariable(int id) {
             return _variables.count(id) == 1 || _temporary.count(id) == 1;
         }
 
-        bool nd4j::graph::VariableSpace::hasVariable(std::pair<int,int>& id) {
+        bool sd::graph::VariableSpace::hasVariable(std::pair<int,int>& id) {
             return _paired.count(id) > 0;
         }
 
-        void nd4j::graph::VariableSpace::putOutputVariable(Variable *variable) {
+        void sd::graph::VariableSpace::putOutputVariable(Variable *variable) {
             //putVariable(_auto_counter--, variable);
             putVariable(variable->id(), variable);
         }
 
-        int nd4j::graph::VariableSpace::externalEntries() {
+        int sd::graph::VariableSpace::externalEntries() {
             return _external.size();
         }
 
-        int nd4j::graph::VariableSpace::internalEntries() {
+        int sd::graph::VariableSpace::internalEntries() {
             return _internal.size();
         }
 
-        int nd4j::graph::VariableSpace::totalEntries() {
+        int sd::graph::VariableSpace::totalEntries() {
             return externalEntries() + internalEntries();
         }
 
-        Nd4jLong nd4j::graph::VariableSpace::externalMemory() {
+        Nd4jLong sd::graph::VariableSpace::externalMemory() {
             Nd4jLong size = 0;
             for (auto n: _external) {
                 size += n->getNDArray()->memoryFootprint();
@@ -197,7 +187,7 @@ namespace nd4j {
             return result;
         }
 
-        Nd4jLong nd4j::graph::VariableSpace::internalMemory() {
+        Nd4jLong sd::graph::VariableSpace::internalMemory() {
             Nd4jLong size = 0;
             for (auto n: _internal) {
                 size += n->getNDArray()->memoryFootprint();
@@ -206,35 +196,36 @@ namespace nd4j {
             return size;
         }
 
-        Nd4jLong nd4j::graph::VariableSpace::totalMemory() {
+        Nd4jLong sd::graph::VariableSpace::totalMemory() {
             return externalMemory() + internalMemory();
         }
 
-        void nd4j::graph::VariableSpace::putVariable(std::pair<int,int>& pair, NDArray *array) {
+        Variable* sd::graph::VariableSpace::putVariable(std::pair<int,int>& pair, NDArray *array) {
             auto variable = new Variable(array, nullptr, pair.first, pair.second);
             this->putVariable(pair, variable);
+            return variable;
         }
 
-        void nd4j::graph::VariableSpace::putVariable(int node, int idx, NDArray *array) {
+        Variable* sd::graph::VariableSpace::putVariable(int node, int idx, NDArray *array) {
             std::pair<int, int> pair(node, idx);
-            this->putVariable(pair, array);
+            return this->putVariable(pair, array);
         }
 
-        void nd4j::graph::VariableSpace::putVariable(int node, int idx, Variable *variable) {
+        void sd::graph::VariableSpace::putVariable(int node, int idx, Variable *variable) {
             std::pair<int, int> pair(node, idx);
             this->putVariable(pair, variable);
         }
 
-        void nd4j::graph::VariableSpace::silentPutVariable(std::pair<int,int>& pair, Variable *variable) {
+        void sd::graph::VariableSpace::silentPutVariable(std::pair<int,int>& pair, Variable *variable) {
             _varmap.lock();
 
-            //std::pair<std::pair<int, int>, nd4j::graph::Variable *> p(pair, variable);
+            //std::pair<std::pair<int, int>, sd::graph::Variable *> p(pair, variable);
             _paired[pair] = variable;
 
             _varmap.unlock();
         }
 
-        void nd4j::graph::VariableSpace::putVariable(std::pair<int,int>& pair, Variable *variable) {
+        void sd::graph::VariableSpace::putVariable(std::pair<int,int>& pair, Variable *variable) {
             silentPutVariable(pair, variable);
 
             if (variable->isPlaceholder())
@@ -256,11 +247,11 @@ namespace nd4j {
             }
         }
 
-        void VariableSpace::trackList(nd4j::NDArrayList* list) {
+        void VariableSpace::trackList(sd::NDArrayList* list) {
             _lists.emplace_back(list);
         }
 
-        void nd4j::graph::VariableSpace::putVariable(int id, Variable *variable) {
+        void sd::graph::VariableSpace::putVariable(int id, Variable *variable) {
             // we don't want to add variables more then once
             if (_variables.count(id) > 0 || _temporary.count(id) > 0) {
                 auto local = id < 0 ? _variables.at(id) : _temporary.at(id);
@@ -286,7 +277,7 @@ namespace nd4j {
             variable->setId(id);
 
             if (variable->getName() != nullptr && variable->getName()->length() != 0) {
-                //std::pair<std::string, nd4j::graph::Variable *> pair(*(variable->getName()), variable);
+                //std::pair<std::string, sd::graph::Variable *> pair(*(variable->getName()), variable);
                 _symbolic[*(variable->getName())] = variable;
             }
 
@@ -314,8 +305,8 @@ namespace nd4j {
             }
         }
 
-        void nd4j::graph::VariableSpace::putVariable(int id, int idx, NDArray &array) {
-            auto *var = new nd4j::graph::Variable(&array, "", id, idx);
+        void sd::graph::VariableSpace::putVariable(int id, int idx, NDArray &array) {
+            auto *var = new sd::graph::Variable(&array, "", id, idx);
             var->markRemovable(false);
             var->markReadOnly(true);
 
@@ -329,39 +320,31 @@ namespace nd4j {
                 delete var;
         }
 
-        void nd4j::graph::VariableSpace::putVariable(int id, NDArray *array) {
-            auto *var = new nd4j::graph::Variable(array);
+        void sd::graph::VariableSpace::putVariable(int id, NDArray *array) {
+            auto *var = new sd::graph::Variable(array);
             this->putVariable(id, var);
         }
 
-        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(int id) {
-//            _varmap.lock();
-
+        sd::graph::Variable * sd::graph::VariableSpace::getVariable(int id) {
             if (id < 0) {
-                auto  v = _variables.at(id);
-   //             _varmap.unlock();
-
-                return v;
+                return _variables.at(id);
             } else {
-                auto v = _temporary.at(id);
-    //            _varmap.unlock();
-
-                return v;
+                return _temporary.at(id);
             }
         }
 
-        LaunchContext* nd4j::graph::VariableSpace::launchContext() {
+        LaunchContext* sd::graph::VariableSpace::launchContext() {
             return LaunchContext::defaultContext();
         }
 
-        std::vector<Variable*>* nd4j::graph::VariableSpace::handles() {
+        std::vector<Variable*>* sd::graph::VariableSpace::handles() {
             return _handles;
         }
 
 /*
  * FIXME: this thing have nice chances to become backend-specific!
  */
-        nd4j::graph::VariableSpace::~VariableSpace() {
+        sd::graph::VariableSpace::~VariableSpace() {
             // loop through variables and release them
             for (auto p: *_handles) {
                 delete p;

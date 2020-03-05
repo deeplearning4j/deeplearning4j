@@ -18,10 +18,10 @@
 // Created by GS <sgazeos@gmail.com> on 4/6/2018.
 //
 
-#include "ResultSet.h"
+#include <array/ResultSet.h>
 #include <ops/declarable/helpers/diag.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -38,7 +38,7 @@ static void _diagFunctor(const NDArray* input, NDArray* output) {
         output->p<T>(i * (inLength + 1), (*input).e<T>(i));
 }
 
-    void diagFunctor(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
+    void diagFunctor(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
         auto xType = input->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, _diagFunctor, (input, output), LIBND4J_TYPES);
@@ -46,7 +46,7 @@ static void _diagFunctor(const NDArray* input, NDArray* output) {
 
 BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
-void diagPartFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output) {
+void diagPartFunctor(sd::LaunchContext * context, NDArray const* input, NDArray* output) {
     const int outLen = output->lengthOf();
     const int inLen = input->lengthOf();
     int i(0), j(0);

@@ -18,12 +18,12 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 25.11.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_softmax_cross_entropy_loss)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -253,8 +253,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 				*dLdl *= *weights;
 			}
 			else {
-				dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, *weightsBroad, *dLdp);
-				dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, *weightsBroad, *dLdl);
+				dLdp->applyBroadcast(sd::broadcast::Multiply, dimensions, *weightsBroad, *dLdp);
+				dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, *weightsBroad, *dLdl);
 
 				if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
@@ -289,8 +289,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 				else {
 
 					NDArray temp = *weightsBroad / sum;
-					dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, temp, *dLdp);
-					dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, temp, *dLdl);
+					dLdp->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdp);
+					dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdl);
 
 					if(weights != weightsBroad) {
 						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
@@ -326,8 +326,8 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 				}
 				else {
 					NDArray temp = *weightsBroad / numOfNonZeroWeights;
-					dLdp->applyBroadcast(nd4j::broadcast::Multiply, dimensions, temp, *dLdp);
-					dLdl->applyBroadcast(nd4j::broadcast::Multiply, dimensions, temp, *dLdl);
+					dLdp->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdp);
+					dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdl);
 
 					if(weights != weightsBroad) {
 						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());

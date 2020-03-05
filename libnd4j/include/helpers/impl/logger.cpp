@@ -20,7 +20,7 @@
 
 #include <helpers/logger.h>
 
-namespace nd4j {
+namespace sd {
 
 
 #ifdef __CUDACC__

@@ -18,13 +18,13 @@
 // @author George A. Shulinok <sgazeos@gmail.com>, created on 4/18/2019.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_barnes_symmetrized)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 		NDArray* rowCountsPtr = nullptr;
 
@@ -80,9 +80,9 @@ namespace ops  {
 //            outShapeInfo[2] = len;
            // ShapeUtils::updateStridesAndType(outShapeInfo, ArrayOptions::dataType(valPShapeInfo), 'c');
             //outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(valPShapeInfo), len, block.workspace());
-            outShapeInfo = nd4j::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
-            auto outColsShapeInfo = nd4j::ShapeBuilders::createShapeInfo(dataType, 'c', {1, len}, block.getWorkspace());
-            auto outRowsShapeInfo = nd4j::ShapeBuilders::createShapeInfo(dataType, 'c', {1, N + 1}, block.getWorkspace());
+            outShapeInfo = sd::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
+            auto outColsShapeInfo = sd::ShapeBuilders::createShapeInfo(dataType, 'c', {1, len}, block.getWorkspace());
+            auto outRowsShapeInfo = sd::ShapeBuilders::createShapeInfo(dataType, 'c', {1, N + 1}, block.getWorkspace());
     		return SHAPELIST(CONSTANT(outRowsShapeInfo), CONSTANT(outColsShapeInfo), CONSTANT(outShapeInfo));
 		}
 

@@ -23,7 +23,7 @@
 #include <vector>
 #include <memory>
 #include <graph/Context.h>
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

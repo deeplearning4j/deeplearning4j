@@ -22,10 +22,10 @@
 #define LIBND4J_GRADCHECK_H
 
 
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/declarable/DeclarableOp.h>
 
-namespace nd4j {
+namespace sd {
 
 class ND4J_EXPORT GradCheck {
 

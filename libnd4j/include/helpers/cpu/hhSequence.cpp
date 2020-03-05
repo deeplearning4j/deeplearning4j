@@ -18,11 +18,11 @@
 // Created by Yurii Shyrma on 02.01.2018
 //
 
-#include <hhSequence.h>
-#include <householder.h>
-#include <NDArrayFactory.h>
+#include <helpers/hhSequence.h>
+#include <helpers/householder.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -30,7 +30,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 HHsequence::HHsequence(const NDArray& vectors, const NDArray& coeffs, const char type): _vectors(vectors), _coeffs(coeffs) {
 	
-	_diagSize = nd4j::math::nd4j_min(_vectors.sizeAt(0), _vectors.sizeAt(1));
+	_diagSize = sd::math::nd4j_min(_vectors.sizeAt(0), _vectors.sizeAt(1));
 	_shift = 0;    
 	_type  = type;
 }
@@ -117,7 +117,7 @@ void HHsequence::_applyTo(NDArray& dest) {
         BUILD_SINGLE_SELECTOR(xType, _mulLeft, (matrix), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void HHsequence::_applyTo, (nd4j::NDArray &dest), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void HHsequence::_applyTo, (sd::NDArray &dest), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template void HHsequence::_mulLeft, (NDArray& matrix), FLOAT_TYPES);
 }
 }

@@ -20,13 +20,13 @@
 
 #include <ops/declarable/helpers/weights.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
     template <typename T>
     static void adjustWeights_(NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
-            for (int e = 0; e < input->lengthOf(); e++) {
+            for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
                 int val = input->e<int>(e);
                 if (val < maxLength) {
                     if (weights != nullptr)
@@ -37,7 +37,7 @@ namespace helpers {
             }
     }
 
-    void adjustWeights(nd4j::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
+    void adjustWeights(sd::LaunchContext * context, NDArray* input, NDArray* weights, NDArray* output, int minLength, int maxLength) {
         BUILD_SINGLE_SELECTOR(output->dataType(), adjustWeights_, (input, weights, output, minLength, maxLength), LIBND4J_TYPES);
     }
 

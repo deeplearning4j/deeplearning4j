@@ -23,7 +23,7 @@
 #include "cudnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -42,7 +42,7 @@ static void conv2dCUDNN(const LaunchContext* context,
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
     cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: can't set stream for cuDNN", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: can't set stream for cuDNN", err);
 
     cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
@@ -53,13 +53,13 @@ static void conv2dCUDNN(const LaunchContext* context,
         err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
         err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for input failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for input failed", err);
 
     // weights descriptor
     cudnnFilterDescriptor_t w;
     cudnnCreateFilterDescriptor(&w);
     err = cudnnSetFilter4dDescriptor(w, cudnnDataType(weights->dataType()), CUDNN_TENSOR_NCHW, oC, iC, kH, kW);
-    if(err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnSetFilter4dDescriptor failed", err);
+    if(err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnSetFilter4dDescriptor failed", err);
 
     // output descriptor
     cudnnTensorDescriptor_t z;
@@ -68,27 +68,27 @@ static void conv2dCUDNN(const LaunchContext* context,
         err = cudnnSetTensor4dDescriptor(z, format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
     else
         err = cudnnSetTensor4dDescriptorEx(z, cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC), output->strideAt(indOoH), output->strideAt(indOoH + 1));
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for output failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for output failed", err);
 
     // description of convolution
     cudnnConvolutionDescriptor_t conv;
     cudnnCreateConvolutionDescriptor(&conv);
     err = cudnnSetConvolution2dDescriptor(conv, pH, pW, sH, sW, dH, dW, CUDNN_CROSS_CORRELATION, cudnnDataType(output->dataType()));
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnSetConvolution2dDescriptor failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnSetConvolution2dDescriptor failed", err);
 
     // algorithm description
     cudnnConvolutionFwdAlgo_t algo;
     err = cudnnGetConvolutionForwardAlgorithm(*handle, x, w, conv, z, CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, &algo);
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed", err);
 
 
     // allocate auxiliary device memory, abbreviation ws means workspace
     size_t wsSize;
     err = cudnnGetConvolutionForwardWorkspaceSize(*handle, x, w, conv, z, algo, &wsSize);
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnGetConvolutionForwardWorkspaceSize failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnGetConvolutionForwardWorkspaceSize failed", err);
     void* wsData;
     auto cudaErr = cudaMalloc(&wsData, wsSize);
-    if (cudaErr != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudaMalloc for auxiliary workspace memory failed", cudaErr);
+    if (cudaErr != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudaMalloc for auxiliary workspace memory failed", cudaErr);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -100,7 +100,7 @@ static void conv2dCUDNN(const LaunchContext* context,
 
     // run calculation
     err = cudnnConvolutionForward(*handle, alpha, x, input->getSpecialBuffer(), w, weights->getSpecialBuffer(), conv, algo, wsData, wsSize, beta, z, output->specialBuffer());
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnConvolutionForward failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnConvolutionForward failed", err);
 
     // add bias if it is present
     if (bias != nullptr) {
@@ -108,9 +108,9 @@ static void conv2dCUDNN(const LaunchContext* context,
         cudnnTensorDescriptor_t b;
         cudnnCreateTensorDescriptor(&b);
         err = cudnnSetTensor4dDescriptor(b, format, cudnnDataType(bias->dataType()), 1, isNCHW ? bias->lengthOf() : 1, 1, isNCHW ? 1: bias->lengthOf());
-        if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnSetTensor4dDescriptor for bias failed", err);
+        if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnSetTensor4dDescriptor for bias failed", err);
         err = cudnnAddTensor(*handle, alpha, b, bias->getSpecialBuffer(), alpha, z, output->specialBuffer());
-        if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudnnAddTensor bias failed", err);
+        if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudnnAddTensor bias failed", err);
     }
 
     // cudaErr = cudaStreamSynchronize(*context->getCudaStream());
@@ -118,7 +118,7 @@ static void conv2dCUDNN(const LaunchContext* context,
     //     throw cuda_exception::build("conv2dCUDNN: cudaStreamSynchronize failed !", cudaErr);
 
     cudaErr = cudaFree(wsData);
-    if (cudaErr != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: cudaFree for auxiliary workspace memory failed", cudaErr);
+    if (cudaErr != 0) throw sd::cuda_exception::build("conv2dCUDNN: cudaFree for auxiliary workspace memory failed", cudaErr);
 
     NDArray::registerSpecialUse({output}, {input, weights, bias});
 }
@@ -139,7 +139,7 @@ static void conv2dBpCUDNN(const LaunchContext* context,
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
     cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: can't set stream for cuDNN", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: can't set stream for cuDNN", err);
 
     cudnnTensorFormat_t format = isNCHW ? CUDNN_TENSOR_NCHW : CUDNN_TENSOR_NHWC;
 
@@ -150,7 +150,7 @@ static void conv2dBpCUDNN(const LaunchContext* context,
         err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
         err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for input failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for input failed", err);
 
     // gradO descriptor
     cudnnTensorDescriptor_t dz;
@@ -159,7 +159,7 @@ static void conv2dBpCUDNN(const LaunchContext* context,
         err = cudnnSetTensor4dDescriptor(dz, format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
     else
         err = cudnnSetTensor4dDescriptorEx(dz, cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC), gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for gradO failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for gradO failed", err);
 
     // gradI descriptor
     cudnnTensorDescriptor_t dx;
@@ -168,45 +168,45 @@ static void conv2dBpCUDNN(const LaunchContext* context,
         err = cudnnSetTensor4dDescriptor(dx, format, cudnnDataType(gradI->dataType()), bS, iC, iH, iW);
     else
         err = cudnnSetTensor4dDescriptorEx(dx, cudnnDataType(gradI->dataType()), bS, iC, iH, iW, gradI->strideAt(0), gradI->strideAt(indIOioC), gradI->strideAt(indIiH), gradI->strideAt(indIiH + 1));
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for gradI failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnSetTensor4dDescriptor/cudnnSetTensor4dDescriptorEx for gradI failed", err);
 
     // gradW descriptor
     cudnnFilterDescriptor_t dw;
     cudnnCreateFilterDescriptor(&dw);
     err = cudnnSetFilter4dDescriptor(dw, cudnnDataType(gradW->dataType()), CUDNN_TENSOR_NCHW, oC, iC, kH, kW);
-    if(err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnSetFilter4dDescriptor gradW failed", err);
+    if(err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnSetFilter4dDescriptor gradW failed", err);
 
     // description of convolution
     cudnnConvolutionDescriptor_t conv;
     cudnnCreateConvolutionDescriptor(&conv);
     err = cudnnSetConvolution2dDescriptor(conv, pH, pW, sH, sW, dH, dW, CUDNN_CROSS_CORRELATION, cudnnDataType(gradO->dataType()));
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnSetConvolution2dDescriptor failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnSetConvolution2dDescriptor failed", err);
 
     // gradW algorithm description
     cudnnConvolutionBwdFilterAlgo_t algoGradW;
     err = cudnnGetConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &algoGradW);
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed", err);
 
     // gradI algorithm description
     cudnnConvolutionBwdDataAlgo_t algoGradI;
     err = cudnnGetConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, &algoGradI);
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed", err);
 
     // allocate auxiliary device memory for gradW calculation, abbreviation ws means workspace
     size_t wsGradWSize;
     err = cudnnGetConvolutionBackwardFilterWorkspaceSize(*handle, x, dz, conv, dw, algoGradW, &wsGradWSize);
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardFilterWorkspaceSize failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardFilterWorkspaceSize failed", err);
     void* wsGradWData;
     auto cudaErr = cudaMalloc(&wsGradWData, wsGradWSize);
-    if (cudaErr != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudaMalloc for auxiliary workspace memory wsGradWData failed", cudaErr);
+    if (cudaErr != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudaMalloc for auxiliary workspace memory wsGradWData failed", cudaErr);
 
     // allocate auxiliary device memory for gradI calculation, abbreviation ws means workspace
     size_t wsGradISize;
     err = cudnnGetConvolutionBackwardDataWorkspaceSize(*handle, dw, dz, conv, dx, algoGradI, &wsGradISize);
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardDataWorkspaceSize failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnGetConvolutionBackwardDataWorkspaceSize failed", err);
     void* wsGradIData;
     cudaErr = cudaMalloc(&wsGradIData, wsGradISize);
-    if (cudaErr != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudaMalloc for auxiliary workspace memory wsGradIData failed", cudaErr);
+    if (cudaErr != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudaMalloc for auxiliary workspace memory wsGradIData failed", cudaErr);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -221,28 +221,28 @@ static void conv2dBpCUDNN(const LaunchContext* context,
         cudnnTensorDescriptor_t db;
         cudnnCreateTensorDescriptor(&db);
         err = cudnnSetTensor4dDescriptor(db, format, cudnnDataType(gradB->dataType()), 1, isNCHW ? gradB->lengthOf() : 1, 1, isNCHW ? 1: gradB->lengthOf());
-        if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnSetTensor4dDescriptor for gradB failed", err);
+        if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnSetTensor4dDescriptor for gradB failed", err);
 
         err = cudnnConvolutionBackwardBias(*handle, alpha, dz, gradO->getSpecialBuffer(), beta, db, gradB->getSpecialBuffer());
-        if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnConvolutionBackwardBias failed", err);
+        if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnConvolutionBackwardBias failed", err);
     }
 
     // run calculation for gradW
     err = cudnnConvolutionBackwardFilter(*handle, alpha, x, input->getSpecialBuffer(), dz, gradO->getSpecialBuffer(), conv, algoGradW, wsGradWData, wsGradWSize, beta, dw, gradW->getSpecialBuffer());
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnConvolutionBackwardFilter failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnConvolutionBackwardFilter failed", err);
 
     // run calculation for gradI
     err = cudnnConvolutionBackwardData(*handle, alpha, dw, weights->getSpecialBuffer(), dz, gradO->getSpecialBuffer(), conv, algoGradI, wsGradIData, wsGradISize, beta, dx, gradI->getSpecialBuffer());
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudnnConvolutionBackwardData failed", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudnnConvolutionBackwardData failed", err);
 
     // cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     // if (cudaErr != 0)
     //     throw cuda_exception::build("conv2dBpCUDNN: cudaStreamSynchronize failed !", cudaErr);
 
     cudaErr = cudaFree(wsGradWData);
-    if (cudaErr != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudaFree for auxiliary workspace memory wsGradWData failed", cudaErr);
+    if (cudaErr != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudaFree for auxiliary workspace memory wsGradWData failed", cudaErr);
     cudaErr = cudaFree(wsGradIData);
-    if (cudaErr != 0) throw nd4j::cuda_exception::build("conv2dBpCUDNN: cudaFree for auxiliary workspace memory wsGradIData failed", cudaErr);
+    if (cudaErr != 0) throw sd::cuda_exception::build("conv2dBpCUDNN: cudaFree for auxiliary workspace memory wsGradIData failed", cudaErr);
 
     NDArray::registerSpecialUse({gradI, gradW, gradB}, {input, weights, gradO});
 }
@@ -422,7 +422,7 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CUDA) {
 //     auto handle = reinterpret_cast<cudnnHandle_t *>(block.launchContext()->getCuDnnHandle());
 //     auto res = cudnnSetStream(*handle, *block.launchContext()->getCudaStream());
 //     if (res != 0)
-//         throw nd4j::cuda_exception::build("Can't set stream for cuDNN", res);
+//         throw sd::cuda_exception::build("Can't set stream for cuDNN", res);
 
 //     auto input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
 //     auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, oC] always
@@ -456,39 +456,39 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CUDA) {
 //     cudnnCreateTensorDescriptor(&src);
 //     res = cudnnSetTensor4dDescriptorEx(src, dtype, input->sizeAt(0), input->sizeAt(1), input->sizeAt(2), input->sizeAt(3), input->strideAt(0), input->strideAt(1), input->strideAt(2), input->strideAt(3));
 //     if (res != 0)
-//         throw nd4j::cuda_exception::build("cudnnSetTensor4dDescriptorEx src failed", res);
+//         throw sd::cuda_exception::build("cudnnSetTensor4dDescriptorEx src failed", res);
 
 //     // TODO: we definitely want NHWC here as well
 //     cudnnFilterDescriptor_t wght;
 //     cudnnCreateFilterDescriptor(&wght);
 //     res = cudnnSetFilter4dDescriptor(wght, dtype, CUDNN_TENSOR_NCHW, oC, iC, kH, kW);
 //     if (res != 0)
-//         throw nd4j::cuda_exception::build("cudnnSetFilter4dDescriptor failed", res);
+//         throw sd::cuda_exception::build("cudnnSetFilter4dDescriptor failed", res);
 
 //     cudnnConvolutionDescriptor_t cdc;
 //     cudnnCreateConvolutionDescriptor(&cdc);
 //     res = cudnnSetConvolution2dDescriptor(cdc, pH, pW, sH, sW, dH, dW, CUDNN_CROSS_CORRELATION, dtype);
 //     if (res != 0)
-//         throw nd4j::cuda_exception::build("cudnnSetConvolution2dDescriptor failed", res);
+//         throw sd::cuda_exception::build("cudnnSetConvolution2dDescriptor failed", res);
 
 //     cudnnTensorDescriptor_t dst;
 //     cudnnCreateTensorDescriptor(&dst);
 //     res = cudnnSetTensor4dDescriptorEx(dst, dtype, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3), output->strideAt(0), output->strideAt(1), output->strideAt(2), output->strideAt(3));
 //     if (res != 0)
-//         throw nd4j::cuda_exception::build("cudnnSetTensor4dDescriptorEx dst failed", res);
+//         throw sd::cuda_exception::build("cudnnSetTensor4dDescriptorEx dst failed", res);
 
 //     // TODO: workspace algorithms are supposed to be faster, so we should use it here if we have enough memory
 //     cudnnConvolutionFwdAlgo_t algo;
 //     res = cudnnGetConvolutionForwardAlgorithm(*handle, src, wght, cdc, dst, CUDNN_CONVOLUTION_FWD_NO_WORKSPACE, 0, &algo);
 //     if (res != 0)
-//         throw nd4j::cuda_exception::build("cudnnGetConvolutionForwardAlgorithm failed", res);
+//         throw sd::cuda_exception::build("cudnnGetConvolutionForwardAlgorithm failed", res);
 
 //     // TODO: should be float if dtype is half/float, and double otherwise
 //     float alpha = 1.0f;
 //     float beta = 0.0f;
 //     res = cudnnConvolutionForward(*handle, &alpha, src, input->specialBuffer(), wght, weights->specialBuffer(), cdc, algo, nullptr, 0, &beta, dst, output->specialBuffer());
 //     if (res != 0)
-//         throw nd4j::cuda_exception::build("cudnnConvolutionForward failed", res);
+//         throw sd::cuda_exception::build("cudnnConvolutionForward failed", res);
 
 
 //     if (bias != nullptr) {
@@ -497,16 +497,16 @@ PLATFORM_CHECK(conv2d_bp, ENGINE_CUDA) {
 //         if (isNCHW) {
 //             res = cudnnSetTensor4dDescriptor(bs, CUDNN_TENSOR_NCHW, dtype, 1, bias->lengthOf(), 1, 1);
 //             if (res != 0)
-//                 throw nd4j::cuda_exception::build("cudnnSetTensor4dDescriptorEx bias NHWC failed", res);
+//                 throw sd::cuda_exception::build("cudnnSetTensor4dDescriptorEx bias NHWC failed", res);
 //         } else {
 //             res = cudnnSetTensor4dDescriptor(bs, CUDNN_TENSOR_NHWC, dtype, 1, 1, 1, bias->lengthOf());
 //             if (res != 0)
-//                 throw nd4j::cuda_exception::build("cudnnSetTensor4dDescriptorEx bias NHWC failed", res);
+//                 throw sd::cuda_exception::build("cudnnSetTensor4dDescriptorEx bias NHWC failed", res);
 //         }
 
 //         res = cudnnAddTensor(*handle, &alpha, bs, bias->specialBuffer(), &alpha, dst, output->specialBuffer());
 //         if (res != 0)
-//             throw nd4j::cuda_exception::build("cudnnAddTensor failed", res);
+//             throw sd::cuda_exception::build("cudnnAddTensor failed", res);
 //     }
 
 

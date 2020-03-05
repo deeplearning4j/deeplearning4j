@@ -18,10 +18,10 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/uint16.h>
 
-namespace nd4j {
+namespace sd {
 
 
     /*

@@ -41,7 +41,7 @@ public class TestGraphLoading extends BaseDL4JTest {
 
         IGraph<String, String> graph = GraphLoader
                         .loadUndirectedGraphEdgeListFile(cpr.getTempFileFromArchive().getAbsolutePath(), 7, ",");
-        System.out.println(graph);
+//        System.out.println(graph);
 
         assertEquals(graph.numVertices(), 7);
         int[][] edges = {{1, 2}, {0, 2, 4}, {0, 1, 3, 4}, {2, 4, 5}, {1, 2, 3, 5, 6}, {3, 4, 6}, {4, 5}};
@@ -66,7 +66,7 @@ public class TestGraphLoading extends BaseDL4JTest {
                         edgeLineProcessor, vertexFactory, 10, false);
 
 
-        System.out.println(graph);
+//        System.out.println(graph);
 
         for (int i = 0; i < 10; i++) {
             List<Edge<String>> edges = graph.getEdgesOut(i);
@@ -111,7 +111,7 @@ public class TestGraphLoading extends BaseDL4JTest {
         Graph<String, String> graph = GraphLoader.loadGraph(verticesCPR.getTempFileFromArchive().getAbsolutePath(),
                         edgesCPR.getTempFileFromArchive().getAbsolutePath(), vertexLoader, edgeLineProcessor, false);
 
-        System.out.println(graph);
+//        System.out.println(graph);
 
         for (int i = 0; i < 10; i++) {
             List<Edge<String>> edges = graph.getEdgesOut(i);

@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <helpers/BlasHelper.h>
 #include <execution/Threads.h>
 
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -94,7 +94,7 @@ void bgemm_(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, st
         int vaSize = vA.size();
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto p = start; p < stop; p += increment) {
+            for (auto p = start; p < stop; p++) {
                 auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
                 auto B = reinterpret_cast<T *>(vB.at(p)->buffer());
                 auto C = reinterpret_cast<T *>(vC.at(p)->buffer());

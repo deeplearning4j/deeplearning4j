@@ -18,7 +18,7 @@ include "node.fbs";
 include "utils.fbs";
 include "variable.fbs";
 
-namespace nd4j.graph;
+namespace sd.graph;
 
 table FlatTiming {
     id:int; // ID of the node for this time report

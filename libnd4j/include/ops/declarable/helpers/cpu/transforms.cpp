@@ -23,27 +23,27 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
-#include <Loops.h>
+#include <helpers/Loops.h>
 #include <graph/RandomGenerator.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
+static void triuBP_(sd::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
 
     auto dOdI = NDArray(&gradO);                // dO/dI
     const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), dOdI, 'b');
     int dLen = dOdI.lengthOf();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             if (dOdI.t<T>(i) != static_cast<T>(0.f))
                 dOdI.t<T>(i) = static_cast<T>(1.f);
         }
@@ -54,7 +54,7 @@ static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const N
     gradI.assign(dOdI * gradO);                          // chain rule: dLoss/dI = dO/dI * dLoss/dO
 }
 
-    void triuBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
+    void triuBP(sd::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal) {
         BUILD_SINGLE_SELECTOR(gradO.dataType(), triuBP_, (context, input, gradO, gradI, diagonal), LIBND4J_TYPES);
     }
 
@@ -65,19 +65,19 @@ static void trace_(const NDArray& input, NDArray& output) {
     auto setOfSubArrs = input.allTensorsAlongDimension({inRank-2, inRank-1});
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
+        for (auto i = start; i < stop; i++)
             output.p(i, setOfSubArrs.at(i)->getTrace());
     };
     samediff::Threads::parallel_for(func, 0, setOfSubArrs.size());
 }
 
-    void trace(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
+    void trace(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), trace_, (input, output), LIBND4J_TYPES);
     }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void randomShuffle_(NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
+void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
 
     // check edge cases first
     int temp;
@@ -163,7 +163,7 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::graph::RandomGenerato
 
 }
 
-    void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
+    void randomShuffle(sd::LaunchContext * context, NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (input, output, rng, isInplace), LIBND4J_TYPES);
     }
 
@@ -189,7 +189,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
         auto func = PRAGMA_THREADS_FOR {
             Nd4jLong coords[MAX_RANK];
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 shape::index2coords(i, output.getShapeInfo(), coords);
                 const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
@@ -220,7 +220,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
         auto func = PRAGMA_THREADS_FOR {
             Nd4jLong coords[MAX_RANK];
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 shape::index2coords(i, output.getShapeInfo(), coords);
                 const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
@@ -374,7 +374,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 //     }
 // }
 
-void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
+void pad(sd::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
     BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (mode, input, paddings, output, padValue), LIBND4J_TYPES);
 }
 
@@ -528,7 +528,7 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
 */
 
 ////////////////////////////////////////////////////////////////////////
-void invertPermutation(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
+void invertPermutation(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
 
     std::set<int> uniqueElems;
     const int length = input.lengthOf();
@@ -558,7 +558,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
     const int xRank    = input.rankOf();
     const int yRank    = indices.rankOf();
     const int zRank    = output.rankOf();
-    const int maxRank  = nd4j::math::nd4j_max<int>(yRank, nd4j::math::nd4j_max<int>(xRank, zRank));
+    const int maxRank  = sd::math::nd4j_max<int>(yRank, sd::math::nd4j_max<int>(xRank, zRank));
 
     const Nd4jLong zLen = output.lengthOf();
 
@@ -566,7 +566,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
     auto func = PRAGMA_THREADS_FOR {
         Nd4jLong coords[MAX_RANK * 3];
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             Nd4jLong *zCoordStart, *xCoordStart;
 
             if (yLastDim == xRank) {
@@ -597,7 +597,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
                 zCoordStart[yRank - 1] = coordToRestore;
 
             // construct coordinates for x
-            for (uint j = 0; j < yLastDim; ++j)
+            for (int j = 0; j < yLastDim; ++j)
                 xCoordStart[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
 
             const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoordStart);
@@ -610,7 +610,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void gatherND(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
+void gatherND(sd::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
     BUILD_DOUBLE_SELECTOR(input.dataType(), indices.dataType(), gatherND_, (input, indices, output), LIBND4J_TYPES, INDEXING_TYPES);
 }
 
@@ -628,7 +628,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
     if (indices != nullptr) {
 
-        for(int i = 0; i < indices->lengthOf(); ++i)
+        for(Nd4jLong i = 0; i < indices->lengthOf(); ++i)
             if(indices->e<Nd4jLong>(i) >= input->sizeAt(axis))
                 throw std::runtime_error("helpers::gather function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
 
@@ -641,7 +641,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 output->assign(scalarNDArray);
             } else {
                 auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+                auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
 
                 auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tadPack.primaryOffsets()[indices->e<Nd4jLong>(0)]), tadPack.primaryShapeInfo(), output->getContext());
                 output->assign(&tadArr);
@@ -650,7 +650,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
         else if (input->rankOf() == 1 && indices->isVector()) {
             // special case
             auto func = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment)
+                for (auto e = start; e < stop; e++)
                     output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
             };
 
@@ -663,7 +663,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     NDArray subArrOut = (*output)(i, dimsOut);
                     NDArray subArrIn = (*input)(indices->e<Nd4jLong>(i), {axis});
                     subArrOut.assign(subArrIn);
@@ -687,7 +687,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), {axis});
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     NDArray subArrOut = (*output)(i, {axis});
                     NDArray subArrIn = (*input)(intArgs[i + 1], {axis});
                     subArrOut.assign(subArrIn);
@@ -704,13 +704,13 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
     }
 
 //////////////////////////////////////////////////////////////////////////
-void eye(nd4j::LaunchContext * context, NDArray& output) {
+void eye(sd::LaunchContext * context, NDArray& output) {
 
     const int rank = output.rankOf();
     auto arrs = output.allTensorsAlongDimension({rank-2, rank-1});
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment)
+        for (auto i = start; i < stop; i++)
             arrs.at(i)->setIdentity();
     };
 
@@ -718,7 +718,7 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
+void scatterUpdate(sd::LaunchContext * context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
 
     int opCode = (*intArgs)[0];
     int dimSize = (*intArgs)[1];
@@ -733,11 +733,11 @@ void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updat
     // increasing counter to skip numIndices
     e++;
     std::vector<int> indices;
-    for (; e < intArgs->size(); e++)
+    for (; e < static_cast<Nd4jLong>(intArgs->size()); e++)
         indices.push_back((*intArgs)[e]);
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
             auto inSubArr = input(indices[i], dimsToExclude, true);
             auto updSubArr = updates(i, dimsToExclude, true);
 
@@ -777,7 +777,7 @@ void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updat
 
 
 //////////////////////////////////////////////////////////////////////////
-void scatterSimple(nd4j::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
+void scatterSimple(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
 
     // updates and indices have same length
     const Nd4jLong len = indices.lengthOf();
@@ -786,7 +786,7 @@ void scatterSimple(nd4j::LaunchContext * context, const int opId, NDArray& input
 
         case 6: {   // copy
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto inSubArr = input(i, dimensions);
                     inSubArr.p(indices.t<Nd4jLong>(i), updates.e(i));
                 }
@@ -809,11 +809,11 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
     auto x = inArrs[0];
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             T max = -DataTypeUtils::max<T>();
             Nd4jLong idx = 0;
 
-            for (int i = 0; i < numArgs; i++) {
+            for (Nd4jLong i = 0; i < numArgs; i++) {
                 T v = inArrs[i]->e<T>(e);
                 if (v > max) {
                     max = v;
@@ -827,7 +827,7 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
     samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
-void mergeMaxIndex(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+void mergeMaxIndex(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
     BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), mergeMaxIndex_, (inArrs, output), LIBND4J_TYPES);
 }
 
@@ -839,9 +839,9 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     auto x = inArrs[0];
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             T max = -DataTypeUtils::max<T>();
-            for (int i = 0; i < numArgs; i++) {
+            for (Nd4jLong i = 0; i < numArgs; i++) {
                 T v = inArrs[i]->e<T>(e);
                 if (v > max)
                     max = v;
@@ -853,7 +853,7 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
-void mergeMax(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+void mergeMax(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
     BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (inArrs, output), LIBND4J_TYPES);
 }
 
@@ -865,9 +865,9 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     auto x = inArrs[0];
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             T sum = 0.;
-            for (int i = 0; i < numArgs; i++) {
+            for (Nd4jLong i = 0; i < numArgs; i++) {
                 T v = inArrs[i]->e<T>(e);
                 sum += v;
             }
@@ -878,7 +878,7 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
-void mergeAvg(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+void mergeAvg(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
     BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (inArrs, output), LIBND4J_TYPES);
 }
 
@@ -891,9 +891,9 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     auto x = inArrs[0];
 
     auto func = PRAGMA_THREADS_FOR {
-        for (auto e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             T sum = (T) 0.f;
-            for (int i = 0; i < numArgs; i++)
+            for (Nd4jLong i = 0; i < numArgs; i++)
                 sum += inArrs[i]->e<T>(e);
 
             output.p(e, sum);
@@ -902,7 +902,7 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
 
     samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
-    void mergeAdd(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    void mergeAdd(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (inArrs, output), LIBND4J_TYPES);
     }
 
@@ -928,7 +928,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
             auto listOfInSubArrs = input.allTensorsAlongDimension(dimensions);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     const T iNormActual = norm2.e<T>(i);
                     if (iNormActual > normClip)
                         *listOfInSubArrs.at(i) *= normClip / iNormActual;
@@ -952,7 +952,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
             auto listOfOutSubArrs = output.allTensorsAlongDimension(dimensions);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+                for (auto i = start; i < stop; i++) {
                     auto inputSubArr = listOfInSubArrs.at(i);
                     auto outputSubArr = listOfOutSubArrs.at(i);
                     outputSubArr->assign(inputSubArr);
@@ -969,7 +969,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
 }
 
 //////////////////////////////////////////////////////////////////////////
-void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+void clipByNorm(sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
     BUILD_SINGLE_SELECTOR(output.dataType(), clipByNorm_, (input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
 }
 
@@ -983,7 +983,7 @@ void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, 
 
 
     template <typename T>
-    static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+    static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
         T globalNorm = 0; //NDArrayFactory::create<T>(0, inputs[0]->getContext()); //sqrt(sum([l2norm(t)**2 for t in t_list]))
 //        PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(sumT : globalNorm)
         for (size_t i = 0; i < inputs.size(); i++) {
@@ -992,8 +992,8 @@ void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, 
             globalNorm += l2norm.t<T>(0) * l2norm.t<T>(0);
         }
 
-        //globalNorm.applyTransform(transform::Sqrt, nullptr, nullptr);// = nd4j::math::nd4j_sqrt(globalNorm);
-        auto normS = nd4j::math::nd4j_sqrt<T,T>(globalNorm);
+        //globalNorm.applyTransform(transform::Sqrt, nullptr, nullptr);// = sd::math::nd4j_sqrt(globalNorm);
+        auto normS = sd::math::nd4j_sqrt<T,T>(globalNorm);
         outputs[inputs.size()]->p(0, normS);
 
         const T factor = clipNorm / normS;
@@ -1014,11 +1014,11 @@ void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, 
             }
         }
     }
-    void clipByGlobalNorm(nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
+    void clipByGlobalNorm(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
         BUILD_SINGLE_SELECTOR(outputs[0]->dataType(), clipByGlobalNorm_, (inputs, clipNorm, workspace, outputs, isInplace), FLOAT_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -1058,7 +1058,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
         auto cn = clipNorm.e<T>(0);
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 T N = norm2.e<T>(i);
 
                 auto gradOSubArr = gradOSubArrs.at(i);
@@ -1083,7 +1083,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
     }
 }
 
-    void clipByNormBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
+    void clipByNormBP(sd::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
         BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBP_, (input, gradO, gradI, dimensions, clipNorm), FLOAT_TYPES);
     }
 
@@ -1126,7 +1126,7 @@ static void clipByAveraged_(NDArray& input, NDArray& output, const std::vector<i
     }
 }
 
-    void clipByAveraged(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    void clipByAveraged(sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), clipByAveraged_, (input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
     }
 
@@ -1151,7 +1151,7 @@ static void clipByAveraged_(NDArray& input, NDArray& output, const std::vector<i
         input.applyLambda<T>(routine, output);
     }
 
-    void clipByValue(nd4j::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
+    void clipByValue(sd::LaunchContext * context, NDArray& input, double leftBound, double rightBound, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), clipByValue_, (input, leftBound, rightBound, output), FLOAT_TYPES);
     }
 
@@ -1190,7 +1190,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
         auto func = PRAGMA_THREADS_FOR {
             Nd4jLong inIdx[MAX_RANK];
             Nd4jLong outIdx[MAX_RANK];
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
                 shape::index2coords(i, output.getShapeInfo(), outIdx);
 
                 for (int j = 0; j < rank; ++j) {
@@ -1219,23 +1219,12 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     }
 }
 
-    void mirrorPad(nd4j::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
+    void mirrorPad(sd::LaunchContext * context, const NDArray& input, const NDArray& paddings, NDArray& output, const int mode) {
         BUILD_SINGLE_SELECTOR(input.dataType(), mirrorPad_, (input, paddings, output, mode), LIBND4J_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template void mirrorPad_, (const NDArray& input, const NDArray& paddings, NDArray& output, const int mode), LIBND4J_TYPES);
 
-//////////////////////////////////////////////////////////////////////////
-template<typename T>
-static void concat_(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
-    nd4j::SpecialMethods<T>::concatCpuGeneric(inArrs, output, axis);
-}
-
-    void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
-        BUILD_SINGLE_SELECTOR(output.dataType(), concat_,(inArrs, output, axis), LIBND4J_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void concat_, (const std::vector<NDArray*>& inArrs, NDArray& output, const int axis), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -1245,7 +1234,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
     const T* gradOBuff      = reinterpret_cast<T*>(gradO.getBuffer());
     const Nd4jLong gradILen = gradI.lengthOf();
     const Nd4jLong gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
-    const Nd4jLong gradIEWS = nd4j::math::nd4j_abs<Nd4jLong>(gradI.ews());
+    const Nd4jLong gradIEWS = sd::math::nd4j_abs<Nd4jLong>(gradI.ews());
     const Nd4jLong gradOEWS = gradO.ews();
 
     // initial zeroing of gradI content
@@ -1253,7 +1242,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
         memset(gradIBuff, 0, gradILen * sizeof(T));
     else {
         //PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int i = 0; i < gradILen * gradIEWS; i += gradIEWS)
+        for (Nd4jLong i = 0; i < gradILen * gradIEWS; i += gradIEWS)
             gradIBuff[i] = static_cast<T>(0.f);
     }
 
@@ -1285,7 +1274,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
     }
 }
 
-void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
     BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (gradO, gradI, reps), FLOAT_TYPES);
 }
 

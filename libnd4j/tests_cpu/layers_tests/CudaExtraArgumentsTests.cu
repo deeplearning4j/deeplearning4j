@@ -24,7 +24,7 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-using namespace nd4j;
+using namespace sd;
 
 class CudaExtraArgumentsTests : public testing::Test {
 public:

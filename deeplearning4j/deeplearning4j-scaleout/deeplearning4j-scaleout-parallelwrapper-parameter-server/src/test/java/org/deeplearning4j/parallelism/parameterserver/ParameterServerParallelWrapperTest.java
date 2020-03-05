@@ -79,8 +79,9 @@ public class ParameterServerParallelWrapperTest extends BaseDL4JTest {
         model.init();
 
         ParallelWrapper parameterServerParallelWrapper =
-                        new ParallelWrapper.Builder(model).trainerFactory(new ParameterServerTrainerContext())
-                                        .workers(Runtime.getRuntime().availableProcessors())
+                        new ParallelWrapper.Builder(model)
+                                .workers(Math.min(4, Runtime.getRuntime().availableProcessors()))
+                                .trainerFactory(new ParameterServerTrainerContext())
                                         .reportScoreAfterAveraging(true).prefetchBuffer(3).build();
         parameterServerParallelWrapper.fit(mnistTrain);
 

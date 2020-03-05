@@ -27,10 +27,10 @@
 #define TAD_THRESHOLD 2
 #endif
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <vector>
 
-namespace nd4j {
+namespace sd {
     class NDArray;
 
     //FIXME: get rid of this redefinition
@@ -50,8 +50,9 @@ namespace nd4j {
     template <typename T>
     class ND4J_EXPORT SpecialMethods {
     public:
-        static void concatCpuGeneric(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis);
+        static void concatCpuGeneric(const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis);
         static void concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *result, Nd4jLong *resultShapeInfo);
+        static void splitCpuGeneric(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis);
         static void accumulateGeneric(void **x, void *z, Nd4jLong *zShapeInfo, int n, const Nd4jLong length);
         static void averageGeneric(void **x, void *z, Nd4jLong  *zShapeInfo, int n, const Nd4jLong length, bool propagate);
 
@@ -67,6 +68,7 @@ namespace nd4j {
 
         static void decodeBitmapGeneric(void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
         static Nd4jLong encodeBitmapGeneric(void *dx, Nd4jLong *zShapeInfo, Nd4jLong N, int *dz, float threshold);
+
     };
 
     template <typename X, typename Y>

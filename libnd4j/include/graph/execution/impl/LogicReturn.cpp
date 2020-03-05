@@ -20,9 +20,9 @@
 
 #include "graph/execution/LogicReturn.h"
 #include <helpers/EnumUtils.h>
-#include <Status.h>
+#include <graph/Status.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicReturn::processNode(Graph *graph, Node *node) {
             auto __variableSpace = graph->getVariableSpace();
@@ -49,7 +49,7 @@ namespace nd4j {
                     nd4j_debug("In after: [%f]; Out after: [%f]\n", varIn->getNDArray()->meanNumber().e<float>(0), varOut->getNDArray()->meanNumber().e<float>(0));
             }
 
-            return nd4j::Status::OK();
+            return sd::Status::OK();
         }
     }
 }

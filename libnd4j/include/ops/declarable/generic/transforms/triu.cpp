@@ -22,7 +22,7 @@
 #include<ops/declarable/helpers/transforms.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 

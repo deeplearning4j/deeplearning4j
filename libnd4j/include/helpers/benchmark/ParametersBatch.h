@@ -21,11 +21,11 @@
 #ifndef DEV_TESTS_PARAMETERSBATCH_H
 #define DEV_TESTS_PARAMETERSBATCH_H
 
-#include "ParametersSpace.h"
+#include <helpers/benchmark/ParametersSpace.h>
 #include <vector>
-#include <shape.h>
+#include <helpers/shape.h>
 
-namespace nd4j {
+namespace sd {
     class ParametersBatch {
     protected:
         std::vector<ParametersSpace*> _spaces;

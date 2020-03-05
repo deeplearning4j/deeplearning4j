@@ -21,17 +21,17 @@
 #ifndef LIBND4J_DATATYPECONVERSIONS_H
 #define LIBND4J_DATATYPECONVERSIONS_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <helpers/logger.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <array/DataType.h>
 #include <types/float16.h>
 #include <helpers/BitwiseUtils.h>
 #include <loops/type_conversions.h>
-#include <dll.h>
+#include <system/dll.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     template <typename T>
     class ND4J_EXPORT DataTypeConversions {
     private:
@@ -52,7 +52,7 @@ namespace nd4j {
                                 TypeCast::convertGeneric<T2, T>(nullptr, tmp, length, buffer);
 #else
                 auto func = PRAGMA_THREADS_FOR {
-                    for (auto e = start; e < stop; e += increment)
+                    for (auto e = start; e < stop; e++)
                         buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                 };
 
@@ -110,7 +110,7 @@ namespace nd4j {
                                 TypeCast::convertGeneric<float, T>(nullptr, tmp, length, buffer);
 #else
                             auto func = PRAGMA_THREADS_FOR {
-                                for (auto e = start; e < stop; e += increment)
+                                for (auto e = start; e < stop; e++)
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 
@@ -138,7 +138,7 @@ namespace nd4j {
 
 #else
                             auto func = PRAGMA_THREADS_FOR {
-                                for (auto e = start; e < stop; e += increment)
+                                for (auto e = start; e < stop; e++)
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 
@@ -164,7 +164,7 @@ namespace nd4j {
                                 TypeCast::convertGeneric<float16, T>(nullptr, tmp, length, buffer);
 #else
                             auto func = PRAGMA_THREADS_FOR {
-                                for (auto e = start; e < stop; e += increment)
+                                for (auto e = start; e < stop; e++)
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 

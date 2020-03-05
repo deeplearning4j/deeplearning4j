@@ -21,11 +21,11 @@
 #include <ops/declarable/LegacyIndexReduceOp.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
-#include <Status.h>
+#include <graph/Status.h>
 #include <helpers/ConstantTadHelper.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyIndexReduceOp::LegacyIndexReduceOp() : LegacyOp::LegacyOp(1){
             //
@@ -39,7 +39,7 @@ namespace nd4j {
             return new LegacyIndexReduceOp(this->_opNum);
         }
 
-        ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyIndexReduceOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
@@ -139,7 +139,7 @@ namespace nd4j {
                     if (dims.size() > 1)
                         std::sort(dims.begin(), dims.end());
 
-                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
+                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
                     NativeOpExecutioner::execIndexReduce(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(),
                                                         x->getSpecialBuffer(), x->getSpecialShapeInfo(),
@@ -175,7 +175,7 @@ namespace nd4j {
 
                     REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
+                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
 
                     NativeOpExecutioner::execIndexReduce(block.launchContext(), opNum,
                             x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),

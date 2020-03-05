@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic.crossover;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.CrossoverResult;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.TwoParentsCrossoverOperator;
@@ -26,7 +27,6 @@ import org.deeplearning4j.arbiter.optimize.genetic.TestParentSelection;
 import org.deeplearning4j.arbiter.optimize.genetic.TestPopulationInitializer;
 import org.junit.Assert;
 import org.junit.Test;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class TwoParentsCrossoverOperatorTests extends BaseDL4JTest {
 
@@ -42,7 +42,7 @@ public class TwoParentsCrossoverOperatorTests extends BaseDL4JTest {
 
         @Override
         public CrossoverResult crossover() {
-            throw new NotImplementedException();
+            throw new NotImplementedException("Not implemented");
         }
     }
 

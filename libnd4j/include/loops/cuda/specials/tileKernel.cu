@@ -20,7 +20,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
     static Nd4jLong __device__ __noinline__ _getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo) {
         return shape::getIndexOffset(index, shapeInfo);
     }

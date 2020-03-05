@@ -20,10 +20,10 @@
 
 #include <ops/declarable/LegacyTransformBoolOp.h>
 
-#include <NativeOpExecutioner.h>
+#include <legacy/NativeOpExecutioner.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyTransformBoolOp::LegacyTransformBoolOp() : LegacyOp::LegacyOp(1) {
             // just a no-op
@@ -63,7 +63,7 @@ namespace nd4j {
         * But these ops already have CustomOp implementations.
         *
         */
-        ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
             return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }

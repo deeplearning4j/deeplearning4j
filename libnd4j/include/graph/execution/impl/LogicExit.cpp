@@ -21,7 +21,7 @@
 #include <graph/execution/LogicExit.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicExit::processNode(Graph *graph, Node *node) {
             // this op is basically no-op

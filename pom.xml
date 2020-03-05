@@ -226,6 +226,7 @@
         <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
         <datavec.version>1.0.0-SNAPSHOT</datavec.version>
         <dl4j-test-resources.version>1.0.0-SNAPSHOT</dl4j-test-resources.version>
+        <dl4j-test-resources.classifier></dl4j-test-resources.classifier>
 
         <jackson-asl.version>1.9.13</jackson-asl.version>
         <asm.version>5.1</asm.version>
@@ -296,7 +297,7 @@
         <numpy.version>1.18.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
-        <openblas.version>0.3.7</openblas.version>
+        <openblas.version>0.3.8</openblas.version>
         <mkl.version>2020.0</mkl.version>
         <opencv.version>4.2.0</opencv.version>
         <ffmpeg.version>4.2.2</ffmpeg.version>
@@ -334,7 +335,7 @@
         <jackson.databind.version>2.10.1</jackson.databind.version>
         <shaded.snakeyaml.version>1.24</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
-        <lombok.version>1.18.2</lombok.version>
+        <lombok.version>1.18.12</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.7.1</lucene-solr.version>
         <json.version>20131018</json.version>
@@ -561,6 +562,7 @@
                     <groupId>org.deeplearning4j</groupId>
                     <artifactId>dl4j-test-resources</artifactId>
                     <version>${dl4j-test-resources.version}</version>
+                    <classifier>${dl4j-test-resources.classifier}</classifier>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
@@ -741,6 +743,7 @@
                 </os>
             </activation>
             <properties>
+                <os.kernel>linux</os.kernel>
                 <os.name>linux</os.name>
             </properties>
         </profile>
@@ -752,6 +755,7 @@
                 </os>
             </activation>
             <properties>
+                <os.kernel>darwin</os.kernel>
                 <os.name>macosx</os.name>
             </properties>
         </profile>
@@ -763,7 +767,41 @@
                 </os>
             </activation>
             <properties>
+                <os.kernel>windows</os.kernel>
                 <os.name>windows</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>arm</id>
+            <activation>
+                <os>
+                    <arch>arm</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>armhf</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>aarch64</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>arm64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>armv8</id>
+            <activation>
+                <os>
+                    <arch>armv8</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>arm64</os.arch>
             </properties>
         </profile>
         <profile>
@@ -843,18 +881,7 @@
                 <os.arch>x86_64</os.arch>
             </properties>
         </profile>
-        <profile>
-            <id>arm</id>
-            <activation>
-                <os>
-                    <arch>arm</arch>
-                </os>
-            </activation>
-            <properties>
-                <os.arch>arm</os.arch>
-            </properties>
-        </profile>
-        
+
         <!-- Integration Tests Profile. By default (when this profile is not enabled) unit tests are run only.
              Note also that some tests may run fewer/quicker cases for unit tests vs. integration tests
         -->

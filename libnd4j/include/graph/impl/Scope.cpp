@@ -18,9 +18,9 @@
 // Created by raver119 on 14.10.2017.
 //
 
-#include "Scope.h"
+#include <graph/Scope.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Scope::Scope(int id, const char *name) {
             _id = id;

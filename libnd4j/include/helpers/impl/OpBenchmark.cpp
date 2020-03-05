@@ -20,7 +20,7 @@
 
 #include "../OpBenchmark.h"
 
-namespace nd4j {
+namespace sd {
     OpBenchmark::OpBenchmark(std::string name, NDArray *x, NDArray *y, NDArray *z) {
         _testName = name;
         _x = x;

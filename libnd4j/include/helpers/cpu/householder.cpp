@@ -18,10 +18,10 @@
 // Created by Yurii Shyrma on 18.12.2017
 //
 
-#include <householder.h>
-#include <NDArrayFactory.h>
+#include <helpers/householder.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

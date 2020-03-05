@@ -18,13 +18,13 @@
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_divide_no_nan)
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(divide_no_nan, 0, 0) {
             auto x = INPUT_VARIABLE(0);

@@ -18,13 +18,13 @@
 // @author George A. Shulinok <sgazeos@gmail.com>, created on 4/18/2019.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_barnes_edge_force)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 		
     CUSTOM_OP_IMPL(barnes_edge_forces, 4, 1, false, 0, 1) {

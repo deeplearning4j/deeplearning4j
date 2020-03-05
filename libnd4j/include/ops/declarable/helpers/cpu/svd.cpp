@@ -18,12 +18,12 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 03.01.2018
 //
 
-#include <svd.h>
-#include <NDArrayFactory.h>
+#include <helpers/svd.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/jacobiSVD.h>
 #include <helpers/biDiagonalUp.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -972,7 +972,7 @@ static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const b
     }
 }
 
-    void svd(nd4j::LaunchContext * context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
+    void svd(sd::LaunchContext * context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
         BUILD_SINGLE_SELECTOR(x->dataType(), svd_, (x, outArrs, fullUV, calcUV, switchNum), FLOAT_TYPES);
     }
 

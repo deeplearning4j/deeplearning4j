@@ -20,7 +20,7 @@
 
 #include <ops/declarable/helpers/histogram.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Z>
@@ -49,7 +49,7 @@ namespace nd4j {
                     }
 
                     PRAGMA_OMP_SIMD
-                    for (int x = 0; x < numBins; x++) {
+                    for (Nd4jLong x = 0; x < numBins; x++) {
                         result[x] += bins[x];
                     }
 
@@ -58,7 +58,7 @@ namespace nd4j {
                 }
             }
 
-            void histogramHelper(nd4j::LaunchContext *context, NDArray &input, NDArray &output) {
+            void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output) {
                 Nd4jLong numBins = output.lengthOf();
                 double min_val = input.reduceNumber(reduce::SameOps::Min).e<double>(0);
                 double max_val = input.reduceNumber(reduce::SameOps::Max).e<double>(0);

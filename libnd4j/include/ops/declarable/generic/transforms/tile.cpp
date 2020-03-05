@@ -19,13 +19,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_tile)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
@@ -60,9 +60,9 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
 }
 
     DECLARE_TYPES(tile) {
-        getOpDescriptor()->setAllowedInputTypes(0, nd4j::DataType::ANY)
+        getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)
                 ->setAllowedInputTypes(1, {ALL_INTS})
-                ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                ->setAllowedOutputTypes(sd::DataType::ANY);
     }
 
 

@@ -22,17 +22,17 @@
 #ifndef SD_CROP_AND_RESIZE_H
 #define SD_CROP_AND_RESIZE_H
 
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template<typename T, typename F, typename I>
             void cropAndResizeFunctor_(NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops);
 
-            void cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
+            void cropAndResizeFunctor(sd::LaunchContext * context, NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops);
         }
     }
 }

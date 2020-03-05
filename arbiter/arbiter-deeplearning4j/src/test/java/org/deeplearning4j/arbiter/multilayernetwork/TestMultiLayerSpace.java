@@ -293,8 +293,8 @@ public class TestMultiLayerSpace extends BaseDL4JTest {
             assertTrue(nLayerCounts[i] >= 5); //Expect approx equal (50/3 each), but some variation randomly
         }
 
-        System.out.println("Number of layers: " + Arrays.toString(nLayerCounts));
-        System.out.println("ReLU vs. Tanh: " + reluCount + "\t" + tanhCount);
+//        System.out.println("Number of layers: " + Arrays.toString(nLayerCounts));
+//        System.out.println("ReLU vs. Tanh: " + reluCount + "\t" + tanhCount);
 
     }
 

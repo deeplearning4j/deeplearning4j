@@ -33,10 +33,10 @@
 #endif
 */
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 
-namespace nd4j {
+namespace sd {
 
     typedef struct {
         unsigned char x;

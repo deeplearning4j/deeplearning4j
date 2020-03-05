@@ -18,11 +18,11 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include "ResultSet.h"
+#include <array/ResultSet.h>
 #include <ops/declarable/helpers/matrixSetDiag.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -82,7 +82,7 @@ static void matrixSetDiagCudaLauncher(const int blocksPerGrid, const int threads
 }
 
 ///////////////////////////////////////////////////////////////////
-void matrixSetDiag(nd4j::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;

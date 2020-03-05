@@ -17,13 +17,13 @@ limitations under the License.
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_space_to_batch)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/s_t_b.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 
@@ -60,7 +60,7 @@ CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
 ////////////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(space_to_batch) {
 
-    getOpDescriptor()->setAllowedInputTypes(0, nd4j::DataType::ANY)
+    getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)
                      ->setAllowedInputTypes(1, {ALL_INTS})
                      ->setSameMode(true);
 }

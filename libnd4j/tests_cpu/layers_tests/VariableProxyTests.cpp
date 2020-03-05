@@ -21,8 +21,8 @@
 #include "testlayers.h"
 #include <graph/VariableProxy.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class VariableProxyTests : public testing::Test {
 public:

@@ -21,7 +21,7 @@
 #ifndef SD_HAMMING_H
 #define SD_HAMMING_H
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output);

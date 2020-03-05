@@ -24,12 +24,12 @@
 #define LIBND4J_PARITY_OPS_H
 
 #include <climits>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <memory>
-#include <shape.h>
+#include <helpers/shape.h>
 #include <ops/ops.h>
 #include <loops/random.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <graph/Variable.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/DeclarableReductionOp.h>
@@ -39,7 +39,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <helpers/ShapeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
     }

@@ -19,17 +19,17 @@
 //
 
 #include <ops/declarable/helpers/dropout.h>
-#include <NativeOps.h>
+#include <legacy/NativeOps.h>
 #include <vector>
 #include <memory>
-#include <cuda_exception.h>
+#include <exceptions/cuda_exception.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
     template <typename T>
-    static __global__ void dropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probVal, int inLen, nd4j::graph::RandomGenerator* nodeRng) {
+    static __global__ void dropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probVal, int inLen, sd::graph::RandomGenerator* nodeRng) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
         T const* input = reinterpret_cast<T const*>(inputBuf);
@@ -46,18 +46,18 @@ namespace helpers {
     }
 
     template <typename T>
-    static void dropoutSimple(nd4j::LaunchContext* context, NDArray const* input, NDArray* output, double probValue, int seed) {
-        nd4j::graph::RandomGenerator nodeRng(3019L, seed);
+    static void dropoutSimple(sd::LaunchContext* context, NDArray const* input, NDArray* output, double probValue, int seed) {
+        sd::graph::RandomGenerator nodeRng(3019L, seed);
         int inLen = input->lengthOf();
-        nd4j::graph::RandomGenerator* dRandom;
+        sd::graph::RandomGenerator* dRandom;
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input});
 
-        auto err = cudaMalloc(&dRandom, sizeof(nd4j::graph::RandomGenerator));
+        auto err = cudaMalloc(&dRandom, sizeof(sd::graph::RandomGenerator));
         if (err) {
             throw cuda_exception::build("helpers::dropoutSimple: Cannot allocate device memory for random generator.", err);
         }
-        err = cudaMemcpy(dRandom, &nodeRng, sizeof(nd4j::graph::RandomGenerator), cudaMemcpyHostToDevice);
+        err = cudaMemcpy(dRandom, &nodeRng, sizeof(sd::graph::RandomGenerator), cudaMemcpyHostToDevice);
         if (err) {
             throw cuda_exception::build("helpers::dropoutSimple: Cannot set up device memory for random generator.", err);
         }
@@ -165,7 +165,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static __global__ void alphaDropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probValue, double alpha, double alpha1, double beta, int inLen, nd4j::graph::RandomGenerator* nodeRng) {
+    static __global__ void alphaDropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probValue, double alpha, double alpha1, double beta, int inLen, sd::graph::RandomGenerator* nodeRng) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
         T const* input = reinterpret_cast<T const*>(inputBuf);
@@ -178,15 +178,15 @@ namespace helpers {
         }
     }
     template <typename T>
-    static void alphaDropoutSimple(nd4j::LaunchContext* context, NDArray const* input, NDArray* output, int seed, double probValue, double alpha, double alpha1, double beta) {
-        nd4j::graph::RandomGenerator nodeRng(3019L, seed), *dRandom;
+    static void alphaDropoutSimple(sd::LaunchContext* context, NDArray const* input, NDArray* output, int seed, double probValue, double alpha, double alpha1, double beta) {
+        sd::graph::RandomGenerator nodeRng(3019L, seed), *dRandom;
         auto stream = context->getCudaStream();
-        auto err = cudaMalloc(&dRandom, sizeof(nd4j::graph::RandomGenerator));
+        auto err = cudaMalloc(&dRandom, sizeof(sd::graph::RandomGenerator));
         NDArray::prepareSpecialUse({output}, {input});
         if (err) {
             throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.", err);
         }
-        err = cudaMemcpy(dRandom, &nodeRng, sizeof(nd4j::graph::RandomGenerator), cudaMemcpyHostToDevice);
+        err = cudaMemcpy(dRandom, &nodeRng, sizeof(sd::graph::RandomGenerator), cudaMemcpyHostToDevice);
         if (err) {
             throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot set up device memory for random generator.", err);
         }

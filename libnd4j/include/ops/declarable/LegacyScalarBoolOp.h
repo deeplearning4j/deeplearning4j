@@ -23,7 +23,7 @@
 
 #include <ops/declarable/LegacyOp.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
         *   This class provides wrapper for scalar transform operations, i.e. a + b = c, where either a or b is scalar primitive and other operand is NDArray
@@ -37,7 +37,7 @@ namespace nd4j {
             LegacyScalarBoolOp(int opNum);
             LegacyScalarBoolOp(int opNum, NDArray &scalar);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
             LegacyOp* clone() override;
         };
     }

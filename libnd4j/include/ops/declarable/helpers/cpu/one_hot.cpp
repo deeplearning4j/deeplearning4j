@@ -23,7 +23,7 @@
 #include <execution/Threads.h>
 #include "../one_hot.h"
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename Z, typename I>
@@ -31,7 +31,7 @@ namespace nd4j {
                 auto output = reinterpret_cast<Z*>(voutput);
                 auto indices = reinterpret_cast<I*>(vindices);
 
-                auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(zShapeInfo, {axis});
+                auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(zShapeInfo, {axis});
 
                 auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
                 auto tLen = static_cast<unsigned int>(shape::length(tadPack.primaryShapeInfo()));
@@ -49,7 +49,7 @@ namespace nd4j {
 
                 if (tadEws >= 1) {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = 0; e < stop; e += increment) {
+                        for (auto e = 0; e < stop; e++) {
                             auto cO = output + tadPack.primaryOffsets()[e];
 
                             auto idx = static_cast<int>(indices[e]);
@@ -70,7 +70,7 @@ namespace nd4j {
                     samediff::Threads::parallel_tad(func, 0, numTads);
                 } else {
                     auto func = PRAGMA_THREADS_FOR {
-                        for (auto e = start; e < stop; e += increment) {
+                        for (auto e = start; e < stop; e++) {
                             auto cO = output + tadPack.primaryOffsets()[e];
 
                             auto idx = static_cast<int>(indices[e]);
@@ -92,7 +92,7 @@ namespace nd4j {
                 }
             }
 
-            void onehot(const nd4j::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
+            void onehot(const sd::LaunchContext* context, const NDArray *indices, NDArray *output, const uint axis, const uint depth, const double on, const double off) {
                 auto zType = output->dataType();
                 auto iType = indices->dataType();
 

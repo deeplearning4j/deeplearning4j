@@ -21,7 +21,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -88,7 +88,7 @@ namespace nd4j {
                                     Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
         execTearKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
-        nd4j::DebugHelper::checkErrorCode(stream, "tear(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "tear(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT tearKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * vx, Nd4jLong * xShapeInfo, Nd4jPointer *targets, Nd4jLong * zShapeInfo, Nd4jLong * tadShapeInfo, Nd4jLong * tadOffsets), LIBND4J_TYPES);

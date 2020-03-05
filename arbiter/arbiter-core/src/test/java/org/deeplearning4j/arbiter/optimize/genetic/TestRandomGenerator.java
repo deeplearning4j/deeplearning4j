@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.arbiter.optimize.genetic;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.math3.random.RandomGenerator;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 public class TestRandomGenerator implements RandomGenerator {
     private final int[] intRandomNumbers;
@@ -63,17 +63,17 @@ public class TestRandomGenerator implements RandomGenerator {
 
     @Override
     public long nextLong() {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Not implemented");
     }
 
     @Override
     public boolean nextBoolean() {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Not implemented");
     }
 
     @Override
     public float nextFloat() {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Not implemented");
     }
 
     @Override
@@ -83,6 +83,6 @@ public class TestRandomGenerator implements RandomGenerator {
 
     @Override
     public double nextGaussian() {
-        throw new NotImplementedException();
+        throw new NotImplementedException("Not implemented");
     }
 }

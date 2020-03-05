@@ -20,15 +20,15 @@
 
 #include <execution/ContextBuffers.h>
 #include <exceptions/cuda_exception.h>
-#include <logger.h>
-#include <AffinityManager.h>
+#include <helpers/logger.h>
+#include <execution/AffinityManager.h>
 
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 #include <cuda_runtime.h>
 #include <cuda_device_runtime_api.h>
 
-namespace nd4j {
+namespace sd {
     ContextBuffers::ContextBuffers() {
         //nd4j_printf("Creating ContextBuffers for device [%i]\n", AffinityManager::currentDeviceId());
         _deviceId = AffinityManager::currentDeviceId();

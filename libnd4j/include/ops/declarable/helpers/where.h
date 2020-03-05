@@ -23,10 +23,10 @@
 
 #include <ops/declarable/helpers/helpers.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
-            void _where(nd4j::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace);
+            void _where(sd::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace);
         }
     }
 }

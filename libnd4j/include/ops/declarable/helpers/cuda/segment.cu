@@ -20,14 +20,14 @@
 
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -39,7 +39,7 @@ namespace helpers {
         return true;
     }
 
-    bool segmentIndicesValidate(nd4j::LaunchContext* context , NDArray* indices, NDArray& expected, NDArray& output) {
+    bool segmentIndicesValidate(sd::LaunchContext* context , NDArray* indices, NDArray& expected, NDArray& output) {
         BUILD_DOUBLE_SELECTOR(output.dataType(), indices->dataType(), return segmentIndicesValidate_, (indices, expected, output), NUMERIC_TYPES, INDEXING_TYPES);
     }
 
@@ -59,14 +59,14 @@ namespace helpers {
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
         auto step = gridDim.x * blockDim.x;
         for (int e = start; e < len && onlyTrue; e += step) {
-            nd4j::math::atomics::nd4j_atomicMax(found, indices[e]);
+            sd::math::atomics::nd4j_atomicMax(found, indices[e]);
             if (expected < *found)
                 onlyTrue = false;
         }
     }
 
     template <typename I>
-    static bool unsortedSegmentIndicesValidate_(nd4j::LaunchContext* context , NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
+    static bool unsortedSegmentIndicesValidate_(sd::LaunchContext* context , NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
         output = expected;
         I found = output;
         I exp = expected;
@@ -81,7 +81,7 @@ namespace helpers {
         return expected == output;
     }
 
-    bool unsortedSegmentIndicesValidate(nd4j::LaunchContext* context , NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
+    bool unsortedSegmentIndicesValidate(sd::LaunchContext* context , NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
         BUILD_SINGLE_SELECTOR(indices->dataType(), return unsortedSegmentIndicesValidate_, (context, indices, expected, output), INDEXING_TYPES);
     }
 
@@ -105,8 +105,8 @@ namespace helpers {
 
         for (auto j = tid; j < idxLen; j += step) {
             auto pos = idxBuf[j];
-            nd4j::math::atomics::nd4j_atomicMin<int>(&classesRangesStart[pos], (int)j);
-            nd4j::math::atomics::nd4j_atomicAdd<int>(&classesRangesLenghts[pos], 1);
+            sd::math::atomics::nd4j_atomicMin<int>(&classesRangesStart[pos], (int)j);
+            sd::math::atomics::nd4j_atomicAdd<int>(&classesRangesLenghts[pos], 1);
         }
     }
 

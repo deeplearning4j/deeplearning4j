@@ -20,7 +20,7 @@
 
 #include "GraphServer.h"
 #include <graph/GraphHolder.h>
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 #include <graph/generated/result_generated.h>
 #include <helpers/StringUtils.h>
 #include <algorithm>
@@ -33,7 +33,7 @@
 
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
             grpc::Status GraphInferenceServerImpl::RegisterGraph( grpc::ServerContext *context, const flatbuffers::grpc::Message<FlatGraph> *request_msg, flatbuffers::grpc::Message<FlatResponse> *response_msg) {
                 auto flat_graph = request_msg->GetRoot();
@@ -75,7 +75,7 @@ namespace nd4j {
                     assert(response_msg->Verify());
 
                     return grpc::Status::OK;
-                } catch (nd4j::graph::unknown_graph_exception &e) {
+                } catch (sd::graph::unknown_graph_exception &e) {
                     grpc::string gmsg(e.message());
                     return grpc::Status(grpc::StatusCode::NOT_FOUND, gmsg);
                 } catch (std::runtime_error &e) {
@@ -100,7 +100,7 @@ namespace nd4j {
                     assert(response_msg->Verify());
 
                     return grpc::Status::OK;
-                } catch (nd4j::graph::unknown_graph_exception &e) {
+                } catch (sd::graph::unknown_graph_exception &e) {
                     grpc::string gmsg(e.message());
                     return grpc::Status(grpc::StatusCode::NOT_FOUND, gmsg);
                 }
@@ -118,13 +118,13 @@ namespace nd4j {
                     assert(response_msg->Verify());
 
                     return grpc::Status::OK;
-                } catch (nd4j::graph::no_results_exception &e) {
+                } catch (sd::graph::no_results_exception &e) {
                     grpc::string gmsg(e.message());
                     return grpc::Status(grpc::StatusCode::INTERNAL, gmsg);
-                } catch (nd4j::graph::unknown_graph_exception &e) {
+                } catch (sd::graph::unknown_graph_exception &e) {
                     grpc::string gmsg(e.message());
                     return grpc::Status(grpc::StatusCode::NOT_FOUND, gmsg);
-                } catch (nd4j::graph::graph_execution_exception &e) {
+                } catch (sd::graph::graph_execution_exception &e) {
                     grpc::string gmsg(e.message());
                     return grpc::Status(grpc::StatusCode::INTERNAL, gmsg);
                 } catch (std::runtime_error &e) {
@@ -139,10 +139,10 @@ void RunServer(int port) {
   assert(port > 0 && port < 65535);
 
   std::string server_address("0.0.0.0:");
-  server_address += nd4j::StringUtils::valueToString<int>(port);
+  server_address += sd::StringUtils::valueToString<int>(port);
 
-  nd4j::graph::GraphInferenceServerImpl service;
-  auto registrator = nd4j::ops::OpRegistrator::getInstance();
+  sd::graph::GraphInferenceServerImpl service;
+  auto registrator = sd::ops::OpRegistrator::getInstance();
 
   grpc::ServerBuilder builder;
   builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
@@ -181,7 +181,7 @@ int main(int argc, char *argv[]) {
     if(cmdOptionExists(argv, argv+argc, "-f")) {
         auto file = getCmdOption(argv, argv + argc, "-f");
         auto graph = GraphExecutioner<float>::importFromFlatBuffers(file);
-        nd4j::graph::GraphHolder::getInstance()->registerGraph<float>(0L, graph);
+        sd::graph::GraphHolder::getInstance()->registerGraph<float>(0L, graph);
     }
 
     RunServer(port);

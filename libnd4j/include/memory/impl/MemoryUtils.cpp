@@ -35,7 +35,7 @@
 #endif
 
 
-bool nd4j::memory::MemoryUtils::retrieveMemoryStatistics(nd4j::memory::MemoryReport &report) {
+bool sd::memory::MemoryUtils::retrieveMemoryStatistics(sd::memory::MemoryReport &report) {
 #if defined(__APPLE__)
     nd4j_debug("APPLE route\n", "");
 /*

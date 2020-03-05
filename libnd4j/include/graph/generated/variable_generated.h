@@ -9,7 +9,7 @@
 #include "array_generated.h"
 #include "utils_generated.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct FlatVariable;
@@ -201,7 +201,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepForOp = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepsForVar = nullptr) {
-  return nd4j::graph::CreateFlatVariable(
+  return sd::graph::CreateFlatVariable(
       _fbb,
       id,
       name ? _fbb.CreateString(name) : 0,
@@ -215,37 +215,37 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
       controlDepsForVar ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepsForVar) : 0);
 }
 
-inline const nd4j::graph::FlatVariable *GetFlatVariable(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatVariable>(buf);
+inline const sd::graph::FlatVariable *GetFlatVariable(const void *buf) {
+  return flatbuffers::GetRoot<sd::graph::FlatVariable>(buf);
 }
 
-inline const nd4j::graph::FlatVariable *GetSizePrefixedFlatVariable(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatVariable>(buf);
+inline const sd::graph::FlatVariable *GetSizePrefixedFlatVariable(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatVariable>(buf);
 }
 
 inline bool VerifyFlatVariableBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatVariable>(nullptr);
+  return verifier.VerifyBuffer<sd::graph::FlatVariable>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatVariableBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatVariable>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatVariable>(nullptr);
 }
 
 inline void FinishFlatVariableBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatVariable> root) {
+    flatbuffers::Offset<sd::graph::FlatVariable> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatVariableBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatVariable> root) {
+    flatbuffers::Offset<sd::graph::FlatVariable> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_VARIABLE_ND4J_GRAPH_H_

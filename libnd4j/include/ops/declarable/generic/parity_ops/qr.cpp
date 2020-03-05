@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> at 12/20/2019
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/qr.h>
 
 #if NOT_EXCLUDED(OP_qr)
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(qr, 1, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -35,8 +35,9 @@ namespace nd4j {
             REQUIRE_TRUE(input->rankOf() >=2, 0, "qr: The rank of input array should not be less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE((fullMatricies && outputQ->sizeAt(-1) == input->sizeAt(-2)) || (!fullMatricies && outputQ->isSameShape(input)), 0, "qr: The last dimmensions should be equal to result Q, but %i and %i are given", outputQ->sizeAt(-1), input->sizeAt(-2));
             REQUIRE_TRUE((fullMatricies && outputR->sizeAt(-1) == input->sizeAt(-1)) || (!fullMatricies && outputR->sizeAt(-1) == outputR->sizeAt(-2)), 0, "qr: The last dimmensions should be equal to result R, but %i and %i are given", outputR->sizeAt(-1), input->sizeAt(-1));
+            if (!input->isEmpty() && !outputQ->isEmpty() && !outputR->isEmpty())
+                helpers::qr(block.launchContext(), input, outputQ, outputR, fullMatricies);
 
-            helpers::qr(block.launchContext(), input, outputQ, outputR, fullMatricies);
             return Status::OK();
         }
 

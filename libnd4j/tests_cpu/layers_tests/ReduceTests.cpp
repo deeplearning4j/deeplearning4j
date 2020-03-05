@@ -21,7 +21,7 @@
 #include "testinclude.h"
 #include <loops/reduce3.h>
 #include <loops/reduce_float.h>
-#include <ArrayOptions.h>
+#include <array/ArrayOptions.h>
 
 class ReduceTest : public testing::Test {
 public:
@@ -65,8 +65,8 @@ public:
 #ifndef __CUDABLAS__
 TEST_F(EuclideanDistanceTest,Test1) {
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
-    nd4j::ArrayOptions::setDataType(shapeBuffer, nd4j::DataType::FLOAT32);
-    auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
+    sd::ArrayOptions::setDataType(shapeBuffer, sd::DataType::FLOAT32);
+    auto tadShapeBuffer = sd::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
     //shape::printShapeInfoLinear("tadShape", tadShapeBuffer);
     functions::reduce3::Reduce3<float, float>::exec(opNum,
                                              x,
@@ -84,9 +84,9 @@ TEST_F(EuclideanDistanceTest,Test1) {
 
 
 TEST_F(StdTest,MultiDimTest) {
-    auto xShapeInfo = shape::shapeBuffer(4, nd4j::DataType::FLOAT32, examplesShape);
+    auto xShapeInfo = shape::shapeBuffer(4, sd::DataType::FLOAT32, examplesShape);
     //int *resultShapeInfo = shape::computeResultShape(xShapeInfo,dimensionsForStd,dimensionLength);
-    auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dimsForStd, xShapeInfo, false, true, nullptr);
+    auto resultShapeInfo = sd::ShapeUtils::evalReduceShapeInfo('c', dimsForStd, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 5;
     ASSERT_EQ(resultLengthAssertion,shape::length(resultShapeInfo));
     shape::TAD *tad = new shape::TAD;
@@ -123,9 +123,9 @@ TEST_F(StdTest,MultiDimTest) {
 
 TEST_F(ReduceTest,MatrixTest) {
     int opNum = 4;    
-    auto xShapeInfo = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, shape);
+    auto xShapeInfo = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, shape);
     //int *resultShapeInfo = shape::computeResultShape(xShapeInfo,dimension,dimensionLength);
-    auto resultShapeInfo = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, xShapeInfo, false, true, nullptr);
+    auto resultShapeInfo = sd::ShapeUtils::evalReduceShapeInfo('c', dim, xShapeInfo, false, true, nullptr);
     int resultLengthAssertion = 3;
     ASSERT_EQ(resultLengthAssertion,shape::length(resultShapeInfo));
     shape::TAD *tad = new shape::TAD;

@@ -24,18 +24,18 @@
 // "Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation"
 
 
-#include<ops/declarable/helpers/gru.h>
+#include <ops/declarable/helpers/gru.h>
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
-#include <MmulHelper.h>
+#include <ops/declarable/helpers/transforms.h>
+#include <helpers/MmulHelper.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc,
+void gruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc,
              const NDArray* b, const NDArray* bc,
              NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
 
@@ -128,7 +128,7 @@ void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
+void gruTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
     // x   input [time, bS, iS]
     // hLast  initial cell output (at time step = 0) [bS, nU]
@@ -154,7 +154,7 @@ void gruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray*
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBP(nd4j::LaunchContext* context,
+void gruCellBP(sd::LaunchContext* context,
               const NDArray* x,    const NDArray* hLast,
               const NDArray* W,    const NDArray* Wc,        const NDArray* b,    const NDArray* bc,
               const NDArray* dLdr, const NDArray* dLdu,      const NDArray* dLdc, const NDArray* dLdh,

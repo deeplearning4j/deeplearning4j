@@ -18,14 +18,14 @@
 // Created by raver119 on 12.10.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_minimum)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/helpers/minimax.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(minimum, 0, 0) {
             auto x = INPUT_VARIABLE(0);

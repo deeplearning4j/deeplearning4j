@@ -21,9 +21,9 @@
 #ifndef LIBND4J_TRUEBROADCASTHELPER_H
 #define LIBND4J_TRUEBROADCASTHELPER_H
 
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////
@@ -39,7 +39,7 @@ class TrueBroadcastHelper {
         #endif
 
     public:
-        static void exec(const nd4j::broadcast::Ops opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
+        static void exec(const sd::broadcast::Ops opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
 };
 
 template <typename X, typename Y>
@@ -55,7 +55,7 @@ class TrueBroadcastBoolHelper {
 
     public:
 
-        static void exec(const nd4j::broadcast::BoolOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
+        static void exec(const sd::broadcast::BoolOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
 };
 
 ////////////////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ class TrueBroadcastIntHelper {
 
     public:
 
-        static void exec(const nd4j::broadcast::IntOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
+        static void exec(const sd::broadcast::IntOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
 };
 
 

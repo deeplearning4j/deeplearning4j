@@ -21,7 +21,7 @@
 #include <helpers/SimpleReadWriteLock.h>
 
 
-namespace nd4j {
+namespace sd {
     SimpleReadWriteLock::SimpleReadWriteLock(const SimpleReadWriteLock& other) {
         _read_locks.store(other._read_locks.load());
         _write_locks.store(other._write_locks.load());

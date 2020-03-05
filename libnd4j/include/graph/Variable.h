@@ -22,20 +22,45 @@
 #define LIBND4J_VARIABLE_H
 
 #include <string>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <array/NDArrayList.h>
 #include <graph/VariableType.h>
 #include <graph/generated/array_generated.h>
 #include <graph/generated/node_generated.h>
 #include <graph/generated/graph_generated.h>
 
-namespace nd4j {
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+
+    template <>
+    class ND4J_EXPORT hash<std::pair<int, int>> {
+    public:
+        size_t operator()(const std::pair<int,int>& k) const;
+    };
+
+    template <>
+    class ND4J_EXPORT hash<bfloat16> {
+    public:
+        size_t operator()(const bfloat16& k) const;
+    };
+
+    template <>
+    class ND4J_EXPORT hash<float16> {
+    public:
+        size_t operator()(const float16& k) const;
+    };
+};
+
+#endif
+
+namespace sd {
     namespace graph {
         class ND4J_EXPORT Variable {
         protected:
             int _id = 0;
             int _index = 0;
-            nd4j::NDArray *_ndarray = nullptr;
+            sd::NDArray *_ndarray = nullptr;
             std::string _name;
 
             std::vector<Nd4jLong> _shape;
@@ -50,15 +75,19 @@ namespace nd4j {
             //InputType _variableType = InputType_UNDEFINED;
             //DataType _dataType = INHERIT;
 
-            nd4j::NDArrayList *_list = nullptr;
+            sd::NDArrayList *_list = nullptr;
 
             VariableType _variableType = VariableType::NDARRAY;
             
         public:
             Variable(bool placeHolder);
-            Variable(nd4j::NDArray *arrayw, const char *name, int id, int idx = 0);
-            Variable(nd4j::NDArray *array = nullptr, const char *name = nullptr);
-            Variable(const nd4j::graph::FlatVariable *flatVariable);
+            Variable(sd::NDArray *arrayw, const char *name, int id, int idx = 0);
+            Variable(sd::NDArray *array = nullptr, const char *name = nullptr);
+
+#ifndef __JAVACPP_HACK__
+            Variable(const sd::graph::FlatVariable *flatVariable);
+#endif
+
             ~Variable();
 
             Variable* clone();
@@ -67,12 +96,12 @@ namespace nd4j {
             ND4J_EXPORT Variable* asT();
 
             bool hasNDArray();
-            nd4j::NDArray* getNDArray();
-            void setNDArray(nd4j::NDArray *array);
+            sd::NDArray* getNDArray();
+            void setNDArray(sd::NDArray *array);
 
             bool hasNDArrayList();
-            nd4j::NDArrayList* getNDArrayList();
-            void setNDArrayList(nd4j::NDArrayList* list);
+            sd::NDArrayList* getNDArrayList();
+            void setNDArrayList(sd::NDArrayList* list);
 
             bool isExternal();
             bool isReadOnly();

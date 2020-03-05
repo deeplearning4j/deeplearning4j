@@ -20,9 +20,9 @@
 
 #include <graph/ExecutorConfiguration.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
-        ExecutorConfiguration::ExecutorConfiguration(const nd4j::graph::FlatConfiguration *conf) {
+        ExecutorConfiguration::ExecutorConfiguration(const sd::graph::FlatConfiguration *conf) {
             if (conf != nullptr) {
                 _profilingMode = conf->profilingMode();
                 _executionMode = conf->executionMode();

@@ -19,9 +19,9 @@
 //
 
 #include <exceptions/allocation_exception.h>
-#include <StringUtils.h>
+#include <helpers/StringUtils.h>
 
-namespace nd4j {
+namespace sd {
     allocation_exception::allocation_exception(std::string message) : std::runtime_error(message){
         //
     }

@@ -20,7 +20,7 @@
 
 #include <ops/declarable/OpDescriptor.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         OpDescriptor::OpDescriptor(const char * opName, bool isLogic) {
@@ -33,8 +33,8 @@ namespace nd4j {
             _numOutputs = 1;
 
             _opName = opName;
-            _hash = nd4j::ops::HashHelper::getInstance()->getLongHash(_opName);
-            _opClass = nd4j::graph::OpClass_CONDITIONAL;
+            _hash = sd::ops::HashHelper::getInstance()->getLongHash(_opName);
+            _opClass = sd::graph::OpClass_CONDITIONAL;
 
             _scalar = isScalar;
         }
@@ -44,8 +44,8 @@ namespace nd4j {
             _numOutputs = 1;
 
             _opName = opName;
-            _hash = nd4j::ops::HashHelper::getInstance()->getLongHash(_opName);
-            _opClass = nd4j::graph::OpClass_CONDITIONAL;
+            _hash = sd::ops::HashHelper::getInstance()->getLongHash(_opName);
+            _opClass = sd::graph::OpClass_CONDITIONAL;
 
             _scalar = isScalar;
         }
@@ -77,11 +77,11 @@ namespace nd4j {
             std::string tmp(opName);
             _opName = tmp;
             _allowsInplace = allowsInplace;
-            _hash = nd4j::ops::HashHelper::getInstance()->getLongHash(tmp);
+            _hash = sd::ops::HashHelper::getInstance()->getLongHash(tmp);
             _divergent = false;
 
             // just default value
-            _opClass = nd4j::graph::OpClass_TRANSFORM;
+            _opClass = sd::graph::OpClass_TRANSFORM;
         }
 
         // constructor for configurable op
@@ -159,12 +159,12 @@ namespace nd4j {
             return _inputType;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const std::initializer_list<sd::DataType> &dtypes) {
             _allowedIns = dtypes;
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<nd4j::DataType> &dtypes) {
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const std::initializer_list<sd::DataType> &dtypes) {
             _allowedOuts = dtypes;
             return this;
         }
@@ -174,24 +174,24 @@ namespace nd4j {
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedInputTypes(const nd4j::DataType dtype) {
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(const sd::DataType dtype) {
             _allowedIns.clear();
             _allowedIns.emplace_back(dtype);
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const nd4j::DataType dtype) {
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(const sd::DataType dtype) {
             _allowedOuts.clear();
             _allowedOuts.emplace_back(dtype);
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setInputType(const int idx, const nd4j::DataType dtype) {
+        OpDescriptor* OpDescriptor::setInputType(const int idx, const sd::DataType dtype) {
             _inputTypes[idx] = { dtype };
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setOutputType(const int idx, const nd4j::DataType dtype) {
+        OpDescriptor* OpDescriptor::setOutputType(const int idx, const sd::DataType dtype) {
             _outputTypes[idx] = { dtype };
             return this;
         }
@@ -201,17 +201,17 @@ namespace nd4j {
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(int index, const std::vector<sd::DataType> &dtype) {
             _inputTypes[index] = dtype;
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, const std::vector<nd4j::DataType> &dtype) {
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, const std::vector<sd::DataType> &dtype) {
             _outputTypes[index] = dtype;
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedInputTypes(int index,  nd4j::DataType dtype) {
+        OpDescriptor* OpDescriptor::setAllowedInputTypes(int index,  sd::DataType dtype) {
             if (_inputTypes.count(index) == 0)
                 _inputTypes[index] = {dtype};
             else
@@ -220,7 +220,7 @@ namespace nd4j {
             return this;
         }
 
-        OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, nd4j::DataType dtype) {
+        OpDescriptor* OpDescriptor::setAllowedOutputTypes(int index, sd::DataType dtype) {
             if (_outputTypes.count(index) == 0)
                 _outputTypes[index] = {dtype};
             else
@@ -229,7 +229,7 @@ namespace nd4j {
             return this;
         }
 
-        bool OpDescriptor::checkDataTypesMatch(nd4j::DataType needle, std::vector<nd4j::DataType> &haystack) const {
+        bool OpDescriptor::checkDataTypesMatch(sd::DataType needle, std::vector<sd::DataType> &haystack) const {
             // if haystack is empty - INHERIT is occurs - any type is perfect?
             if (haystack.empty())
                 return true;
@@ -238,7 +238,7 @@ namespace nd4j {
             if (std::find(haystack.begin(), haystack.end(), needle) == haystack.end()) {
 
                 // if direct input match failed - we're checking for ANY as allowed input
-                if (std::find(haystack.begin(), haystack.end(), nd4j::DataType::ANY) == haystack.end())
+                if (std::find(haystack.begin(), haystack.end(), sd::DataType::ANY) == haystack.end())
                     return false;
                 else
                     return true;
@@ -247,7 +247,7 @@ namespace nd4j {
             }
         }
 
-        bool OpDescriptor::checkInputMatch(int index, nd4j::DataType dataType) {
+        bool OpDescriptor::checkInputMatch(int index, sd::DataType dataType) {
             // we check for per-input types first
             if (_inputTypes.empty() || _inputTypes.count(index) == 0) {
                 // checking global input types
@@ -260,7 +260,7 @@ namespace nd4j {
             return true;
         }
 
-        bool OpDescriptor::checkOutputMatch(int index, nd4j::DataType dataType) {
+        bool OpDescriptor::checkOutputMatch(int index, sd::DataType dataType) {
             // we check for per-output types first
             if (_outputTypes.empty() || _outputTypes.count(index) == 0) {
 
@@ -279,23 +279,23 @@ namespace nd4j {
         }
 
         bool OpDescriptor::isInherit(int index) {
-            if (std::find(_allowedOuts.begin(), _allowedOuts.end(), nd4j::DataType::INHERIT) != _allowedOuts.end())
+            if (std::find(_allowedOuts.begin(), _allowedOuts.end(), sd::DataType::INHERIT) != _allowedOuts.end())
                 return true;
             if (_outputTypes.count(index) > 0) {
                 auto vec = _outputTypes[index];
 
-                if (std::find(vec.begin(), vec.end(), nd4j::DataType::INHERIT) != vec.end())
+                if (std::find(vec.begin(), vec.end(), sd::DataType::INHERIT) != vec.end())
                     return true;
             }
 
             return false;
         }
 
-        std::vector<nd4j::DataType> OpDescriptor::getOutputTypesForOutput(int index) {
+        std::vector<sd::DataType> OpDescriptor::getOutputTypesForOutput(int index) {
             if (_outputTypes.count(index) > 0)
                 return _outputTypes.at(index);
             else
-                return std::vector<nd4j::DataType>();
+                return std::vector<sd::DataType>();
         }
     }
 }

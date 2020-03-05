@@ -22,7 +22,7 @@
 #include <graph/Node.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace graph {
     GraphState::GraphState(Nd4jLong id) {
         _id = id;

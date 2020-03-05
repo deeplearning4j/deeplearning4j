@@ -20,9 +20,9 @@
 //
 
 #include <ops/declarable/helpers/col2im.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -69,8 +69,8 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
         const uint colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
         const uint colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
 
-        const uint colHend = nd4j::math::nd4j_min<uint>(imH / sH + 1, oH);
-        const uint colWend = nd4j::math::nd4j_min<uint>(imW / sW + 1, oW);
+        const uint colHend = sd::math::nd4j_min<uint>(imH / sH + 1, oH);
+        const uint colWend = sd::math::nd4j_min<uint>(imW / sW + 1, oW);
 
         T val = 0;
 
@@ -140,10 +140,10 @@ __global__ static void col2imCuda2(const void *columns, void *image, const Nd4jL
               // compute the start and end of the output
               // These are the indexes for dimensions ??? in the 6d col matrix
               int w_col_start = (w_im < kWeff) ? 0 : (w_im - kWeff) / sW + 1;
-              int w_col_end = nd4j::math::nd4j_min<int>(w_im / sW + 1, oW);
+              int w_col_end = sd::math::nd4j_min<int>(w_im / sW + 1, oW);
 
               int h_col_start = (h_im < kHeff) ? 0 : (h_im - kHeff) / sH + 1;
-              int h_col_end = nd4j::math::nd4j_min<int>(h_im / sH + 1, oH);
+              int h_col_end = sd::math::nd4j_min<int>(h_im / sH + 1, oH);
 
               //Iterate over col entries in the 6d array... these are added up
               for (int colH = h_col_start; colH < h_col_end; colH += 1) {
@@ -184,7 +184,7 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 //////////////////////////////////////////////////////////////////////////
-void col2im(nd4j::LaunchContext& context, const NDArray& col, NDArray& im, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
 
     PointersManager manager(&context, "col2im");
 

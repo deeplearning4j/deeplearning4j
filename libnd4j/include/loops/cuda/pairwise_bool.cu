@@ -104,8 +104,8 @@ void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cu
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
 void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
-    auto xType = nd4j::DataTypeUtils::fromT<X>();
-    auto yType = nd4j::DataTypeUtils::fromT<Y>();
+    auto xType = sd::DataTypeUtils::fromT<X>();
+    auto yType = sd::DataTypeUtils::fromT<Y>();
 
 	DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams), PAIRWISE_BOOL_OPS);
 }

@@ -23,8 +23,8 @@
 
 #include <string>
 #include <stdexcept>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 
 #if defined(_MSC_VER)
 
@@ -33,7 +33,7 @@
 
 #endif
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT graph_exception : public std::runtime_error {
     protected:
         Nd4jLong _graphId;

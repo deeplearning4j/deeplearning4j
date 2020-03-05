@@ -23,7 +23,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -59,15 +59,15 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
     }
     else {
 
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  dimC);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
 
         const Nd4jLong numOfTads   = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];
         const Nd4jLong zDimCstride = output->stridesOf()[dimC];
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto i = start; i < stop; i += increment) {
+            for (auto i = start; i < stop; i++) {
 
                 const T *xTad = x + packX.platformOffsets()[i];
                 T *zTad = z + packZ.platformOffsets()[i];
@@ -92,13 +92,13 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
 }
 
 
-void adjustHue(nd4j::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
+void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input->dataType(), adjustHue_, (input, deltaScalarArr, output, dimC), FLOAT_TYPES);
 }
 
 /*
 template <typename T>
-static void adjust_hue_single_(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
+static void adjust_hue_single_(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
     // we're 100% sure it's 3
     const int numChannels = 3;
     int tuples = array->lengthOf() /  numChannels;
@@ -166,7 +166,7 @@ static void adjust_hue_single_(nd4j::LaunchContext * context, NDArray *array, ND
     }
 }
 
-void adjust_hue_(nd4j::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+void adjust_hue_(sd::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
     auto xType = array->dataType();
 
     float d = delta->e<float>(0);
@@ -188,7 +188,7 @@ void adjust_hue_(nd4j::LaunchContext * context, NDArray *array, NDArray *output,
     }
 }
 
-BUILD_SINGLE_TEMPLATE(template void adjust_hue_single_, (nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC);, FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void adjust_hue_single_, (sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC);, FLOAT_TYPES);
 */
 
 

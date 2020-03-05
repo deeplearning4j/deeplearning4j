@@ -18,14 +18,14 @@
 // Created by raver119 on 01/11/17.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_onehot)
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/helpers/one_hot.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(onehot, 1, 1, false, -2, -2) {
             auto input = INPUT_VARIABLE(0);
@@ -74,7 +74,7 @@ namespace nd4j {
         DECLARE_SHAPE_FN(onehot) {
             auto inShape = inputShape->at(0);
 
-            nd4j::DataType dtype = block.numD() > 0 ? D_ARG(0) : nd4j::DataType::FLOAT32;
+            sd::DataType dtype = block.numD() > 0 ? D_ARG(0) : sd::DataType::FLOAT32;
 
             int depth = -1;
             Nd4jLong axis = -1;
@@ -108,7 +108,7 @@ namespace nd4j {
 
         DECLARE_TYPES(onehot) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
         }
     }

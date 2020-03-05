@@ -28,7 +28,7 @@
 #include <memory>
 #include <execution/Threads.h>
 #include <execution/ThreadPool.h>
-#include <LoopsCoordsHelper.h>
+#include <helpers/LoopsCoordsHelper.h>
 #include <ops/declarable/helpers/addBias.h>
 
 #if defined(__GNUC__) 
@@ -39,7 +39,7 @@
 #define align32 
 #endif 
 
-namespace nd4j {
+namespace sd {
 	namespace ops {
 		namespace helpers {
 
@@ -129,19 +129,19 @@ namespace nd4j {
 			static void channel_atTheEnd_stride1_C(const Nd4jLong*& x_strides, const Nd4jLong*& bases, T* x, const T* b, T* z, const bool& inplace, const Nd4jLong& start, const Nd4jLong& stop, const Nd4jLong& inc)
 			{
 				size_t loop_count = (stop - start) / inc;
-				nd4j::CoordsState<constRank - 1> cst;
-				size_t offset = nd4j::init_coords<constRank>(cst, start, bases, x_strides);
+				sd::CoordsState<constRank - 1> cst;
+				size_t offset = sd::init_coords<constRank>(cst, start, bases, x_strides);
 
 				if (!inplace) {
 					for (size_t i = 0; i < loop_count; i++) {
 						_add(&(x[offset]), b, &(z[offset]), inc);
-						offset = nd4j::inc_coords<constRank - 1>(cst, offset);
+						offset = sd::inc_coords<constRank - 1>(cst, offset);
 					}
 				}
 				else {
 					for (size_t i = 0; i < loop_count; i++) {
 						_add_inplace(&(x[offset]), b, inc);
-						offset = nd4j::inc_coords<constRank - 1>(cst, offset);
+						offset = sd::inc_coords<constRank - 1>(cst, offset);
 					}
 				}
 			}
@@ -157,8 +157,8 @@ namespace nd4j {
 				}
 				else {
 					size_t loop_count = (stop - start) / inc;
-					nd4j::ZipCoordsState<constRank - 1> cst;
-					nd4j::zip_size_t offset = nd4j::init_coords<constRank>(cst, start, bases, x_strides, z_strides);
+					sd::ZipCoordsState<constRank - 1> cst;
+					sd::zip_size_t offset = sd::init_coords<constRank>(cst, start, bases, x_strides, z_strides);
 					Nd4jLong x_stride = ZIP_STRIDE1(cst, constRank - 1);
 					Nd4jLong z_stride = ZIP_STRIDE2(cst, constRank - 1);
 
@@ -166,7 +166,7 @@ namespace nd4j {
 						/* bases are equal with different strides , but the last one is 1. So we can still vectorize it  */
 						for (size_t i = 0; i < loop_count; i++) {
 							_add(&(x[offset.first]), b, &(z[offset.second]), inc);
-							offset = nd4j::inc_coords<constRank - 1>(cst, offset);
+							offset = sd::inc_coords<constRank - 1>(cst, offset);
 						}
 					}
 					else {
@@ -175,7 +175,7 @@ namespace nd4j {
 							T* zz = &(z[offset.second]);
 							for (size_t j = 0; j < inc; j++)
 								zz[j * z_stride] = xx[j * x_stride] + b[j];
-							offset = nd4j::inc_coords<constRank - 1>(cst, offset);
+							offset = sd::inc_coords<constRank - 1>(cst, offset);
 						}
 					}
 				}
@@ -215,21 +215,21 @@ namespace nd4j {
 			static void channel_NC_stride1_C(const Nd4jLong*& x_strides, const Nd4jLong*& bases, T* x, const T2* b, T* z, const bool& inplace, const Nd4jLong yStrideC, const Nd4jLong& start, const Nd4jLong& stop, const Nd4jLong& inc)
 			{
 				size_t loop_count = (stop - start) / inc;
-				nd4j::CoordsState<constRank - 1> cst;
-				size_t offset = nd4j::init_coords<constRank>(cst, start, bases, x_strides);
+				sd::CoordsState<constRank - 1> cst;
+				size_t offset = sd::init_coords<constRank>(cst, start, bases, x_strides);
 
 				if (!inplace) {
 					for (size_t i = 0; i < loop_count; i++) {
 						T yy = static_cast<T>(b[COORDS(cst, 1) * yStrideC]);
 						_add_broadcast(&(x[offset]), yy, &(z[offset]), inc);
-						offset = nd4j::inc_coords<constRank - 1>(cst, offset);
+						offset = sd::inc_coords<constRank - 1>(cst, offset);
 					}
 				}
 				else {
 					for (size_t i = 0; i < loop_count; i++) {
 						T yy = static_cast<T>(b[COORDS(cst, 1) * yStrideC]);
 						_add_broadcast_inplace(&(x[offset]), yy, inc);
-						offset = nd4j::inc_coords<constRank - 1>(cst, offset);
+						offset = sd::inc_coords<constRank - 1>(cst, offset);
 					}
 				}
 			}
@@ -248,8 +248,8 @@ namespace nd4j {
 
 					// (stop-start) % inc == 0 because  we  handled inside partitioning using the channel size
 					size_t loop_count = (stop - start) / inc;
-					nd4j::ZipCoordsState<constRank - 1> cst;
-					nd4j::zip_size_t offset = nd4j::init_coords<constRank>(cst, start, bases, x_strides, z_strides);
+					sd::ZipCoordsState<constRank - 1> cst;
+					sd::zip_size_t offset = sd::init_coords<constRank>(cst, start, bases, x_strides, z_strides);
 					Nd4jLong x_stride = ZIP_STRIDE1(cst, constRank - 1);
 					Nd4jLong z_stride = ZIP_STRIDE2(cst, constRank - 1);
 					if (same_order && z_stride == 1 && x_stride == 1) {
@@ -257,7 +257,7 @@ namespace nd4j {
 						for (size_t i = 0; i < loop_count; i++) {
 							T yy = static_cast<T>(b[ZIP_COORDS(cst, 1) * yStrideC]);
 							_add_broadcast(&(x[offset.first]), yy, &(z[offset.second]), inc);
-							offset = nd4j::inc_coords<constRank - 1>(cst, offset);
+							offset = sd::inc_coords<constRank - 1>(cst, offset);
 						}
 					}
 					else {
@@ -267,7 +267,7 @@ namespace nd4j {
 							T yy = static_cast<T>(b[ZIP_COORDS(cst, 1) * yStrideC]);
 							for (size_t j = 0; j < inc; j++)
 								zz[j * z_stride] = xx[j * x_stride] + yy;
-							offset = nd4j::inc_coords<constRank - 1>(cst, offset);
+							offset = sd::inc_coords<constRank - 1>(cst, offset);
 						}
 					}
 				}
@@ -280,16 +280,16 @@ namespace nd4j {
 				// (stop-start) % inc == 0 because  we  handled inside partitioning using the channel size
 				size_t loop_count = (stop - start) / inc;
 
-				nd4j::CoordsState<1> cst;
+				sd::CoordsState<1> cst;
 				//note: we had to manually pass index
-				size_t offset_p = nd4j::init_coords<2>(cst, start / inc, bases, x_strides);
+				size_t offset_p = sd::init_coords<2>(cst, start / inc, bases, x_strides);
 
 				//partitioning was done using numHW, so we can increment from rank 2
 				if (inplaceOp) {
 					for (size_t i = 0; i < loop_count; i++) {
 						T yy = static_cast<T>(b[COORDS(cst, 1) * yStrideC]);
 						_add_broadcast_inplace(&(x[offset_p]), yy, inc);
-						offset_p = nd4j::inc_coords<2>(cst, offset_p);
+						offset_p = sd::inc_coords<2>(cst, offset_p);
 					}
 				}
 				else {
@@ -297,14 +297,14 @@ namespace nd4j {
 						for (size_t i = 0; i < loop_count; i++) {
 							T yy = static_cast<T>(b[COORDS(cst, 1)]);
 							_add_broadcast(&(x[offset_p]), yy, &(z[offset_p]), inc);
-							offset_p = nd4j::inc_coords<2>(cst, offset_p);
+							offset_p = sd::inc_coords<2>(cst, offset_p);
 						}
 					}
 					else {
 						for (size_t i = 0; i < loop_count; i++) {
 							T yy = static_cast<T>(b[COORDS(cst, 1) * yStrideC]);
 							_add_broadcast(&(x[offset_p]), yy, &(z[offset_p]), inc);
-							offset_p = nd4j::inc_coords<2>(cst, offset_p);
+							offset_p = sd::inc_coords<2>(cst, offset_p);
 						}
 					}
 				}
@@ -316,20 +316,20 @@ namespace nd4j {
 			{
 				// (stop-start) % inc == 0 because  we  handled inside partitioning using the channel size
 				size_t loop_count = (stop - start) / inc;
-				nd4j::CoordsState<constRank - 1> cst;
-				size_t offset_p = nd4j::init_coords<constRank, 0, false>(cst, start, bases, x_strides);
+				sd::CoordsState<constRank - 1> cst;
+				size_t offset_p = sd::init_coords<constRank, 0, false>(cst, start, bases, x_strides);
 				if (!inplace) {
 					for (size_t i = 0; i < loop_count; i++) {
 						T yy = static_cast<T>(b[COORDS(cst, b_index) * yStrideC]);
 						_add_broadcast(&(x[offset_p]), yy, &(z[offset_p]), inc);
-						offset_p = nd4j::inc_coords<constRank, skip, false>(cst, offset_p);
+						offset_p = sd::inc_coords<constRank, skip, false>(cst, offset_p);
 					}
 				}
 				else {
 					for (size_t i = 0; i < loop_count; i++) {
 						T yy = static_cast<T>(b[COORDS(cst, b_index) * yStrideC]);
 						_add_broadcast_inplace(&(x[offset_p]), yy, inc);
-						offset_p = nd4j::inc_coords<constRank, skip, false>(cst, offset_p);
+						offset_p = sd::inc_coords<constRank, skip, false>(cst, offset_p);
 					}
 				}
 			}
@@ -346,8 +346,8 @@ namespace nd4j {
 					// (stop-start) % inc == 0 because  we  handled inside partitioning using the channel size
 
 					size_t loop_count = (stop - start) / inc;
-					nd4j::ZipCoordsState<constRank - 1> cst;
-					nd4j::zip_size_t offset = nd4j::init_coords<constRank, 0, false>(cst, start, bases, x_strides, z_strides);
+					sd::ZipCoordsState<constRank - 1> cst;
+					sd::zip_size_t offset = sd::init_coords<constRank, 0, false>(cst, start, bases, x_strides, z_strides);
 					Nd4jLong x_stride = ZIP_STRIDE1(cst, 0);
 					Nd4jLong z_stride = ZIP_STRIDE2(cst, 0);
 					if (same_order && z_stride == 1 && x_stride == 1) {
@@ -355,7 +355,7 @@ namespace nd4j {
 						for (size_t i = 0; i < loop_count; i++) {
 							T yy = static_cast<T>(b[ZIP_COORDS(cst, b_index) * yStrideC]);
 							_add_broadcast(&(x[offset.first]), yy, &(z[offset.second]), inc);
-							offset = nd4j::inc_coords<constRank, 1, false>(cst, offset);
+							offset = sd::inc_coords<constRank, 1, false>(cst, offset);
 						}
 					}
 					else {
@@ -365,7 +365,7 @@ namespace nd4j {
 							T yy = static_cast<T>(b[ZIP_COORDS(cst, b_index) * yStrideC]);
 							for (size_t j = 0; j < inc; j++)
 								zz[j * z_stride] = xx[j * x_stride] + yy;
-							offset = nd4j::inc_coords<constRank, 1, false>(cst, offset);
+							offset = sd::inc_coords<constRank, 1, false>(cst, offset);
 						}
 					}
 				}
@@ -418,7 +418,7 @@ namespace nd4j {
 				//for rank>5 
 				if (rank > 5) {
 					const int channelDim = isNCHW ? 1 : input.rankOf() - 1;      // second or last
-					const_cast<NDArray&>(input).applyBroadcast(nd4j::broadcast::Add, { channelDim }, bias, output);
+					const_cast<NDArray&>(input).applyBroadcast(sd::broadcast::Add, { channelDim }, bias, output);
 					return;
 				}
 
@@ -443,7 +443,7 @@ namespace nd4j {
 					const X* bias_new;
 					X* bias_extra = nullptr;
 					size_t total_num = 1;
-					for (size_t i = 0; i < rank; i++) {
+					for (Nd4jLong i = 0; i < rank; i++) {
 						total_num *= bases[i];
 					}
 					Nd4jLong inc;
@@ -482,7 +482,7 @@ namespace nd4j {
 						if (isContinuous) {
 							//we can choose other inc and index for that case
 							//but for now lets choose all till the last one
-							uint32_t req_numThreads = nd4j::Environment::getInstance()->maxMasterThreads();
+							uint32_t req_numThreads = sd::Environment::getInstance()->maxMasterThreads();
 							isContinuous = false;
 							if (rank > 2) {
 								if (req_numThreads < 2 || bases[rank - 1] >= req_numThreads) {
@@ -574,7 +574,7 @@ namespace nd4j {
 					for (size_t i = 0; i < 2; i++) {
 						numNC *= bases[i];
 					}
-					for (size_t i = 2; i < rank; i++) {
+					for (Nd4jLong i = 2; i < rank; i++) {
 						numHW *= bases[i];
 					}
 					Nd4jLong total_num = numNC * numHW;
@@ -582,7 +582,7 @@ namespace nd4j {
 					if (order == 'c' && isContinuous) {
 						//sometimes last dimension is too big and multithreading could suffer using unfair partitioning
 						//so we will do it only when inc is smaller our value or multithreading turned off
-						uint32_t req_numThreads = nd4j::Environment::getInstance()->maxMasterThreads();
+						uint32_t req_numThreads = sd::Environment::getInstance()->maxMasterThreads();
 						if (req_numThreads < 2 || numNC >= req_numThreads || inc <= 2 * 8196 || rank == 3) {
 							inc = numHW;
 						}
@@ -635,7 +635,7 @@ namespace nd4j {
 				}
 			}
 			//////////////////////////////////////////////////////////////////////////
-			void addBias(nd4j::graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
+			void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
 
 			    // bias.rankOf() == 1 ? bias : bias.reshape(bias.ordering(), {bias.lengthOf()})
 			    BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias_, (input, bias, output, isNCHW), FLOAT_TYPES, FLOAT_TYPES);

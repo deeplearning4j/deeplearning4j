@@ -16,13 +16,13 @@ limitations under the License.
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_space_to_batch_nd)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/s_t_b.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -64,7 +64,7 @@ CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
 ////////////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(space_to_batch_nd) {
 
-    getOpDescriptor()->setAllowedInputTypes(0, nd4j::DataType::ANY)
+    getOpDescriptor()->setAllowedInputTypes(0, sd::DataType::ANY)
                      ->setAllowedInputTypes(1, {ALL_INTS})
                      ->setAllowedInputTypes(2, {ALL_INTS})
                      ->setSameMode(true);
@@ -88,7 +88,7 @@ DECLARE_SHAPE_FN(space_to_batch_nd) {
 
     std::vector<Nd4jLong> outShape(inputShapeInfo + 1, inputShapeInfo + 1 + inputShapeInfo[0]);
 
-    outShape[0] *= INPUT_VARIABLE(1)->reduceNumber(nd4j::reduce::Prod).e<Nd4jLong>(0);
+    outShape[0] *= INPUT_VARIABLE(1)->reduceNumber(sd::reduce::Prod).e<Nd4jLong>(0);
 
     for (uint i = 0; i < numOfSpatialDims; ++i)
         outShape[i + 1] = (outShape[i + 1] + INPUT_VARIABLE(2)->e<uint>(i,0) + INPUT_VARIABLE(2)->e<uint>(i,1)) / INPUT_VARIABLE(1)->e<Nd4jLong>(i);

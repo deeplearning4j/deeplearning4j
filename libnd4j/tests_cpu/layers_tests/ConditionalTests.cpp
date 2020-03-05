@@ -19,13 +19,13 @@
 //
 
 #include "testlayers.h"
-#include <Graph.h>
-#include <GraphExecutioner.h>
-#include <Node.h>
+#include <graph/Graph.h>
+#include <graph/GraphExecutioner.h>
+#include <graph/Node.h>
 #include <ops/declarable/CustomOperations.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class ConditionalTests : public testing::Test {
 public:
@@ -75,7 +75,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
     auto nodeC0 = new Node(OpType_REDUCE_SAME, reduce::Sum, 7, {-1});
     nodeC0->setScopeInfo(1, "scopeCondition");
 
-    nd4j::ops::eq_scalar op;
+    sd::ops::eq_scalar op;
     auto nodeC1 = new Node(&op, 8, {7, -4});
     nodeC1->setScopeInfo(1, "scopeCondition");
 
@@ -110,7 +110,7 @@ TEST_F(ConditionalTests, BasicTests_1) {
  * Condition is False
  */
 TEST_F(ConditionalTests, Flat_Test_1) {
-    nd4j::ops::identity op0;
+    sd::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simpleif_0_1.fb");
     auto varSpace = graph->getVariableSpace();
@@ -141,7 +141,7 @@ TEST_F(ConditionalTests, Flat_Test_1) {
 TEST_F(ConditionalTests, Flat_Test_2) {
     Environment::getInstance()->setDebug(true);
     Environment::getInstance()->setVerbose(true);
-    nd4j::ops::identity op0;
+    sd::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simpleif_0.fb");
     auto varSpace = graph->getVariableSpace();
@@ -169,7 +169,7 @@ TEST_F(ConditionalTests, Flat_Test_2) {
  * Condition is false here, so there loop will be skipped
  */
 TEST_F(ConditionalTests, Flat_Test_3) {
-    nd4j::ops::identity op0;
+    sd::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_0_3.fb");
     auto varSpace = graph->getVariableSpace();
@@ -196,7 +196,7 @@ TEST_F(ConditionalTests, Flat_Test_3) {
  * just one cycle in body
  */
 TEST_F(ConditionalTests, Flat_Test_4) {
-    nd4j::ops::identity op0;
+    sd::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_0_4.fb");
     auto varSpace = graph->getVariableSpace();
@@ -225,7 +225,7 @@ TEST_F(ConditionalTests, Flat_Test_4) {
  * just two cycles in body
  */
 TEST_F(ConditionalTests, Flat_Test_5) {
-    nd4j::ops::identity op0;
+    sd::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_0_4.fb");
     auto varSpace = graph->getVariableSpace();
@@ -253,7 +253,7 @@ TEST_F(ConditionalTests, Flat_Test_5) {
  * While loop with multiple variables
  */
 TEST_F(ConditionalTests, Flat_Test_6) {
-    nd4j::ops::identity op0;
+    sd::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_1.fb");
     auto varSpace = graph->getVariableSpace();
@@ -280,7 +280,7 @@ TEST_F(ConditionalTests, Flat_Test_6) {
 }
 
 TEST_F(ConditionalTests, Flat_Test_7) {
-    nd4j::ops::identity op0;
+    sd::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simplewhile_1.fb");
     auto varSpace = graph->getVariableSpace();

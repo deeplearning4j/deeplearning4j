@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_where)
 
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/where.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(Where, 1, 1, false, 0, 0) {
             auto condition = INPUT_VARIABLE(0);
@@ -112,12 +112,12 @@ namespace nd4j {
                     newShape[5] = 0;
                     newShape[6] = 1;
                     newShape[7] = 99;
-                    ShapeUtils::updateStridesAndType(newShape, nd4j::DataType::INT64, 'c');
+                    ShapeUtils::updateStridesAndType(newShape, sd::DataType::INT64, 'c');
 
                     newShape = CONSTANT(newShape);
                 }
                 else {
-                    newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT64);
+                    newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(sd::DataType::INT64);
                 }
 
                 return SHAPELIST(newShape);

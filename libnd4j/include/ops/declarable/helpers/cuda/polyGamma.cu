@@ -20,9 +20,9 @@
 
 #include<ops/declarable/helpers/gammaMathFunc.h>
 #include<ops/declarable/helpers/zeta.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -83,7 +83,7 @@ static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& z) {
+void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& z) {
 
     NDArray::prepareSpecialUse({&z}, {&n, &x});
 

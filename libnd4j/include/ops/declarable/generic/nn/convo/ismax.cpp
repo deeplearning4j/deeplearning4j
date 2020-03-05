@@ -19,13 +19,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_ismax)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/ismax.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -2) {

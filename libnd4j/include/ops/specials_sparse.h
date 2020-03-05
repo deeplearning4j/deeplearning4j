@@ -23,9 +23,9 @@
 #ifndef LIBND4J_SPECIALS_SPARSE_H
 #define LIBND4J_SPECIALS_SPARSE_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 
-namespace nd4j {
+namespace sd {
     namespace sparse {
 
         template <typename T>

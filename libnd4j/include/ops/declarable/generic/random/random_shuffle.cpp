@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 26.01.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_random_shuffle)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 OP_IMPL(random_shuffle, 1, 1, true) {
@@ -33,8 +33,8 @@ OP_IMPL(random_shuffle, 1, 1, true) {
     const bool isInplace = block.isInplace();
     auto output = isInplace ? nullptr : OUTPUT_VARIABLE(0);
 
-//    nd4j::random::RandomBuffer* rng = block.getRNG();
-    nd4j::graph::RandomGenerator rng = block.randomGenerator();
+//    sd::random::RandomBuffer* rng = block.getRNG();
+    sd::graph::RandomGenerator rng = block.randomGenerator();
 //    REQUIRE_TRUE(rng != nullptr, 0, "RANDOM_SHUFFLE op: RNG should be defined in Graph !");
 
     helpers::randomShuffle(block.launchContext(), *input, *output, rng, isInplace);
@@ -45,7 +45,7 @@ OP_IMPL(random_shuffle, 1, 1, true) {
 
     DECLARE_TYPES(random_shuffle) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
     }
 }

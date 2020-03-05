@@ -27,22 +27,22 @@
 
 
 #include<ops/declarable/helpers/lstm.h>
-#include <VariableSpace.h>
+#include <graph/VariableSpace.h>
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <array/NDArrayList.h>
 #include <iterator>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-void lstmCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+void lstmCell(sd::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
               NDArray* ht, NDArray* ct, const std::vector<double>& params) {
 
     // xt   input [bS x nIn]
@@ -124,9 +124,9 @@ static void fusedTanh(NDArray *z, NDArray *i, NDArray *c, const NDArray *cLast, 
     auto h_ = h->bufferAsT<T>();
 
     auto func = PRAGMA_THREADS_FOR {
-        for (uint e = start; e < stop; e += increment) {
+        for (auto e = start; e < stop; e++) {
             c_[e] = z_[e] * i_[e] + (f_[e] * cLast_[e]);
-            h_[e] = nd4j::math::nd4j_tanh<T, T>(c_[e]);
+            h_[e] = sd::math::nd4j_tanh<T, T>(c_[e]);
         }
     };
 

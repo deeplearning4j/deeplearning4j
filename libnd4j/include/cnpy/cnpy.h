@@ -38,7 +38,7 @@
 #include <cstdio>
 #include <string>
 #include <algorithm>
-#include <map>
+#include <unordered_map>
 #include <assert.h>
 #include <iostream>
 #include <sstream>
@@ -49,8 +49,8 @@
 #include <string>
 #include <fstream>
 #include <streambuf>
-#include <op_boilerplate.h>
-#include <dll.h>
+#include <system/op_boilerplate.h>
+#include <system/dll.h>
 #include <array/DataType.h>
 
 
@@ -69,7 +69,7 @@ namespace cnpy {
         }
     };
 
-    struct ND4J_EXPORT npz_t : public std::map<std::string, NpyArray> {
+    struct ND4J_EXPORT npz_t : public std::unordered_map<std::string, NpyArray> {
         void destruct() {
             npz_t::iterator it = this->begin();
             for(; it != this->end(); ++it) (*it).second.destruct();
@@ -238,7 +238,7 @@ namespace cnpy {
 
     ND4J_EXPORT npz_t npzLoad(std::string fname);
 
-    ND4J_EXPORT nd4j::DataType dataTypeFromHeader(char *data);
+    ND4J_EXPORT sd::DataType dataTypeFromHeader(char *data);
 /**
 * Parse the numpy header from
 * the given file

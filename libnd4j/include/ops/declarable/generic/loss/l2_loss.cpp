@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> 31.01.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_l2_loss)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(l2_loss, 1, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -43,7 +43,7 @@ namespace nd4j {
 
         DECLARE_TYPES(l2_loss) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

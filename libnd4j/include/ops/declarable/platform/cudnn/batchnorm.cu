@@ -22,7 +22,7 @@
 #include "cudnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -44,7 +44,7 @@ static void batchnormCUDNN(const LaunchContext* context,
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
     cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw nd4j::cuda_exception::build("conv2dCUDNN: can't set stream for cuDNN", err);
+    if (err != 0) throw sd::cuda_exception::build("conv2dCUDNN: can't set stream for cuDNN", err);
 
     const std::vector<int> xShape = input->getShapeAsVectorInt();               // input and output have same shapes
 
@@ -77,7 +77,7 @@ static void batchnormCUDNN(const LaunchContext* context,
         err = cudnnSetTensorNdDescriptorEx(x, format, dataType, xRank, xShape.data());
     else
         err = cudnnSetTensorNdDescriptor(x, dataType, xRank, xShape.data(), xStrides.data());
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for input failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for input failed", err);
 
     // output descriptor
     cudnnTensorDescriptor_t z;
@@ -86,7 +86,7 @@ static void batchnormCUDNN(const LaunchContext* context,
         err = cudnnSetTensorNdDescriptorEx(z, format, dataType, xRank, xShape.data());
     else
         err = cudnnSetTensorNdDescriptor(z, dataType, xRank, xShape.data(), zStrides.data());
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for output failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for output failed", err);
 
     // mean, variance, gamma and beta descriptor, the same descriptor for all of them
     cudnnTensorDescriptor_t params;
@@ -95,7 +95,7 @@ static void batchnormCUDNN(const LaunchContext* context,
         err = cudnnSetTensorNdDescriptorEx(params, format, dataType, xRank, paramsShape.data());
     else
         err = cudnnSetTensorNdDescriptor(params, dataType, xRank, paramsShape.data(), paramsStrides.data());
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for mean/variance/gamma/beta failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for mean/variance/gamma/beta failed", err);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -114,7 +114,7 @@ static void batchnormCUDNN(const LaunchContext* context,
                                                  gamma->getSpecialBuffer(), beta->getSpecialBuffer(),
                                                  mean->getSpecialBuffer(), variance->getSpecialBuffer(), epsilon);
 
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormCUDNN: cudnnBatchNormalizationForwardInference failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnBatchNormalizationForwardInference failed", err);
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     if (cudaErr != 0)
@@ -139,7 +139,7 @@ static void batchnormBpCUDNN(const LaunchContext* context,
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
     cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormBpCUDNN: can't set stream for cuDNN", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: can't set stream for cuDNN", err);
 
     const std::vector<int> xShape = input->getShapeAsVectorInt();               // input and output have same shapes
 
@@ -174,7 +174,7 @@ static void batchnormBpCUDNN(const LaunchContext* context,
         err = cudnnSetTensorNdDescriptorEx(x, format, dataType, xRank, xShape.data());
     else
         err = cudnnSetTensorNdDescriptor(x, dataType, xRank, xShape.data(), xStrides.data());
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for input failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for input failed", err);
 
     // gradO descriptor
     cudnnTensorDescriptor_t dz;
@@ -183,7 +183,7 @@ static void batchnormBpCUDNN(const LaunchContext* context,
         err = cudnnSetTensorNdDescriptorEx(dz, format, dataType, xRank, xShape.data());
     else
         err = cudnnSetTensorNdDescriptor(dz, dataType, xRank, xShape.data(), dzStrides.data());
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for gradO failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for gradO failed", err);
 
     // gradI descriptor
     cudnnTensorDescriptor_t dx;
@@ -192,7 +192,7 @@ static void batchnormBpCUDNN(const LaunchContext* context,
         err = cudnnSetTensorNdDescriptorEx(dx, format, dataType, xRank, xShape.data());
     else
         err = cudnnSetTensorNdDescriptor(dx, dataType, xRank, xShape.data(), dxStrides.data());
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for gradI failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for gradI failed", err);
 
     // mean, variance, gamma, gradG and gradB descriptor, the same descriptor for all of them
     cudnnTensorDescriptor_t params;
@@ -201,7 +201,7 @@ static void batchnormBpCUDNN(const LaunchContext* context,
         err = cudnnSetTensorNdDescriptorEx(params, format, dataType, xRank, paramsShape.data());
     else
         err = cudnnSetTensorNdDescriptor(params, dataType, xRank, paramsShape.data(), paramsStrides.data());
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for mean/variance/gamma/gradG/gradB failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnSetTensorNdDescriptor/cudnnSetTensorNdDescriptorEx for mean/variance/gamma/gradG/gradB failed", err);
 
     // provide scaling parameters
     const float  alpha32(1), beta32(0);
@@ -223,7 +223,7 @@ static void batchnormBpCUDNN(const LaunchContext* context,
                                             epsilon,
                                             nullptr/*mean->getSpecialBuffer()*/, nullptr/*variance->getSpecialBuffer()*/);
 
-    if (err != 0) throw nd4j::cuda_exception::build("batchnormBpCUDNN: cudnnBatchNormalizationBackward failed", err);
+    if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnBatchNormalizationBackward failed", err);
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
     if (cudaErr != 0)

@@ -22,11 +22,11 @@
 #include<ops/declarable/helpers/addBias.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
-#include <NDArrayFactory.h>
-#include <MmulHelper.h>
+#include <array/NDArrayFactory.h>
+#include <helpers/MmulHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops  {
 
 
@@ -258,7 +258,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename X, typename Y>
-        static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
 
             // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
             // weights [kH, kW, iC, oC] always
@@ -319,7 +319,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename X, typename Y>
-        static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
 
             // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
             // weights [kH, kW, iC, oC] always
@@ -365,7 +365,7 @@ namespace nd4j {
             if(gradW) {
                 auto ctx = block.launchContext();
                 helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));   // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-                nd4j::MmulHelper::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, {2, 0, 1, 3});       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
+                sd::MmulHelper::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, {2, 0, 1, 3});       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
             }
 
             // ----- calculation of gradB ----- //
@@ -379,7 +379,7 @@ namespace nd4j {
             }
 
             //----- calculation of gradI -----//
-            nd4j::MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, {2, 3, 1, 0, 4, 5});  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
+            sd::MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, {2, 3, 1, 0, 4, 5});  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
 
             helpers::col2im(*block.launchContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                          // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
@@ -391,7 +391,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename X, typename Y>
-        static void depthwiseConv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
 
             // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
             // weights   [kH, kW, iC, mC] always
@@ -499,7 +499,7 @@ namespace nd4j {
             // ----- calculation of gradW and gradB ----- //
 
             helpers::im2col(*input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-            nd4j::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
+            sd::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
             // ----- calculation of gradB ----- //
             if(gradB) {
@@ -513,7 +513,7 @@ namespace nd4j {
             }
 
             //----- calculation of gradI -----//
-            nd4j::MmulHelper::tensorDot(weights, gradO, &columns, {{2,0,1,3},{iC,kH*kW,mC}}, modifGradO2, modifColumns); // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
+            sd::MmulHelper::tensorDot(weights, gradO, &columns, {{2,0,1,3},{iC,kH*kW,mC}}, modifGradO2, modifColumns); // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
             helpers::col2im(*input->getContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                                       // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
             if(!isNCHW) {
@@ -524,7 +524,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename X, typename Y>
-        static void sconv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        static void sconv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
 
             // input         [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
             // weightsDepth  [kH, kW, iC, mC]  always
@@ -782,7 +782,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename T>
-        static void pooling2d_(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+        static void pooling2d_(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
             // input is  [bS, iC, iH, iW]
             // output is [bS, iC, oH, oW]
             T* out = output.bufferAsT<T>();
@@ -832,13 +832,13 @@ namespace nd4j {
                                     wend = wstart + kWEff;
 
                                     if (hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                                     if (wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                                     if (hend > iH)
-                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                                     if (wend > iW)
-                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                                     hstart *= iStride2;
                                     hend *= iStride2;
@@ -881,13 +881,13 @@ namespace nd4j {
                                     wend = wstart + kWEff;
 
                                     if (hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                                     if (wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                                     if (hend > iH)
-                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                                     if (wend > iW)
-                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                                     hstart *= iStride2;
                                     hend *= iStride2;
@@ -935,13 +935,13 @@ namespace nd4j {
                                     wend = wstart + kWEff;
 
                                     if (hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                                     if (wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                                     if (hend > iH)
-                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                                     if (wend > iW)
-                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                                     hstart *= iStride2;
                                     hend *= iStride2;
@@ -952,9 +952,9 @@ namespace nd4j {
 
                                     for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                                         for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                            sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                            sum += sd::math::nd4j_pow<T, T, T>(sd::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
 
-                                    sum = nd4j::math::nd4j_pow<T, T, T>(sum, static_cast<T>((T) 1.f) / extraParam0);
+                                    sum = sd::math::nd4j_pow<T, T, T>(sum, static_cast<T>((T) 1.f) / extraParam0);
 
                                     out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                                 }
@@ -973,7 +973,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename T>
-        static void pooling3d_(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+        static void pooling3d_(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
             // input is  [bS, iC, iD, iH, iW]
             // output is [bS, iC, oD, oH, oW]
             T* out = output.bufferAsT<T>();
@@ -1119,7 +1119,7 @@ namespace nd4j {
                                                     sum += pIn[kd + kh + kw];
 
                                         if (extraParam0 == 0)         //Exclude padding
-                                            sum /= nd4j::math::nd4j_ceil<double, T>(static_cast<double>(dend - dstart) / static_cast<double>(iStep2)) * nd4j::math::nd4j_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(iStep3)) * nd4j::math::nd4j_ceil<double, T>(static_cast<double>(wend - wstart) / static_cast<double>(iStep4));   //Accounts for dilation
+                                            sum /= sd::math::nd4j_ceil<double, T>(static_cast<double>(dend - dstart) / static_cast<double>(iStep2)) * sd::math::nd4j_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(iStep3)) * sd::math::nd4j_ceil<double, T>(static_cast<double>(wend - wstart) / static_cast<double>(iStep4));   //Accounts for dilation
                                         else if (extraParam0 == 1)    //Include padding
                                             sum /= kProd;
 
@@ -1179,9 +1179,9 @@ namespace nd4j {
                                         for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
                                             for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
                                                 for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                    sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
+                                                    sum += sd::math::nd4j_pow<T, T, T>(sd::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
 
-                                        sum = nd4j::math::nd4j_pow<T, T, T>(sum, (T) 1.f / extraParam0);
+                                        sum = sd::math::nd4j_pow<T, T, T>(sum, (T) 1.f / extraParam0);
 
                                         out[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4] = sum;
                                     }
@@ -1202,7 +1202,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename T>
-        static void pooling2dBP_(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+        static void pooling2dBP_(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
             // input [bS, iC, iH, iW]
             // gradI [bS, iC, iH, iW] -> gradI is output in this function
             // gradO [bS, iC, oH, oW]
@@ -1265,13 +1265,13 @@ namespace nd4j {
                                     wend = wstart + kWEff;
 
                                     if (hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                                     if (wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                                     if (hend > iH)
-                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                                     if (wend > iW)
-                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                                     sum = -DataTypeUtils::max<T>();
                                     valO = gO[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3];
@@ -1343,16 +1343,16 @@ namespace nd4j {
 
                                     if (hstart < 0)
                                         hstart += dH * ((-hstart + dH - 1) /
-                                                        dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                                        dH); // (Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                                     if (wstart < 0)
                                         wstart += dW * ((-wstart + dW - 1) /
-                                                        dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                                        dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                                     if (hend > iH)
                                         hend -= dH * ((hend - iH + dH - 1) /
-                                                      dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                                      dH); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                                     if (wend > iW)
                                         wend -= dW * ((wend - iW + dW - 1) /
-                                                      dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                                      dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                                     hstart *= gIStride2;
                                     hend *= gIStride2;
@@ -1362,9 +1362,9 @@ namespace nd4j {
                                     valO = gO[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3];
 
                                     if ((int) extraParam0 == 0)         //Exclude padding
-                                        valO /= static_cast<T>(nd4j::math::nd4j_ceil<double, T>(
+                                        valO /= static_cast<T>(sd::math::nd4j_ceil<double, T>(
                                                 static_cast<double>(hend - hstart) / static_cast<double>(gIStep2))) *
-                                                static_cast<T>(nd4j::math::nd4j_ceil<double, T>(
+                                                static_cast<T>(sd::math::nd4j_ceil<double, T>(
                                                         static_cast<double>(wend - wstart) /
                                                         static_cast<double>(gIStep3)));   //Accounts for dilation
                                     else if ((int) extraParam0 == 1)    //Include padding
@@ -1402,16 +1402,16 @@ namespace nd4j {
 
                                     if (hstart < 0)
                                         hstart += dH * ((-hstart + dH - 1) /
-                                                        dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                                        dH); // (Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
                                     if (wstart < 0)
                                         wstart += dW * ((-wstart + dW - 1) /
-                                                        dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                                        dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
                                     if (hend > iH)
                                         hend -= dH * ((hend - iH + dH - 1) /
-                                                      dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                                      dH); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
                                     if (wend > iW)
                                         wend -= dW * ((wend - iW + dW - 1) /
-                                                      dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                                      dW); //(Nd4jLong)sd::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
                                     sum = static_cast<T>(0.f);
                                     valO = gO[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3];
@@ -1425,37 +1425,37 @@ namespace nd4j {
 
                                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                                sum += nd4j::math::nd4j_pow<T, T, T>(
-                                                        nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                                sum += sd::math::nd4j_pow<T, T, T>(
+                                                        sd::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
 
-                                        valO *= nd4j::math::nd4j_pow<T, T, T>(sum,
+                                        valO *= sd::math::nd4j_pow<T, T, T>(sum,
                                                                               ((T) 1. - extraParam0) / extraParam0);
 
                                         for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                                pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T, T, T>(
-                                                        nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f) *
-                                                                nd4j::math::nd4j_sgn<T, T>(pIn[kh + kw]);
+                                                pgI[kh + kw] += valO * sd::math::nd4j_pow<T, T, T>(
+                                                        sd::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f) *
+                                                                sd::math::nd4j_sgn<T, T>(pIn[kh + kw]);
                                     } else {
 
                                         for (Nd4jLong kh = hstart; kh < hend; kh += dH)
                                             for (Nd4jLong kw = wstart; kw < wend; kw += dW)
-                                                sum += nd4j::math::nd4j_pow<T, T, T>(
-                                                        nd4j::math::nd4j_abs<T>(pIn[kh * iStride2 + kw * iStride3]),
+                                                sum += sd::math::nd4j_pow<T, T, T>(
+                                                        sd::math::nd4j_abs<T>(pIn[kh * iStride2 + kw * iStride3]),
                                                         extraParam0);
 
-                                        valO *= nd4j::math::nd4j_pow<T, T, T>(sum,
+                                        valO *= sd::math::nd4j_pow<T, T, T>(sum,
                                                                               ((T) 1. - extraParam0) / extraParam0);
 
                                         for (Nd4jLong kh = hstart; kh < hend; kh += dH) {
                                             for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
                                                 const auto inVal = pIn[kh * iStride2 + kw * iStride3];
                                                 pgI[kh * gIStride2 + kw * gIStride3] += valO *
-                                                                                        nd4j::math::nd4j_pow<T, T, T>(
-                                                                                                nd4j::math::nd4j_abs<T>(
+                                                                                        sd::math::nd4j_pow<T, T, T>(
+                                                                                                sd::math::nd4j_abs<T>(
                                                                                                         inVal),
                                                                                                 extraParam0 - 1.f) *
-                                                                                        nd4j::math::nd4j_sgn<T, T>(
+                                                                                        sd::math::nd4j_sgn<T, T>(
                                                                                                 inVal);
                                             }
                                         }
@@ -1476,7 +1476,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename T>
-        static void pooling3dBP_(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+        static void pooling3dBP_(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
             // input [bS, iC, iD, iH, iW]
             // gradI [bS, iC, iD, iH, iW] -> gradI is output in this function
             // gradO [bS, iC, oD, oH, oW]
@@ -1664,7 +1664,7 @@ namespace nd4j {
                                         valO = gO[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4];
 
                                         if (extraParam0 == 0)         //Exclude padding
-                                            valO /= nd4j::math::nd4j_ceil<double, T>(static_cast<double>(dend - dstart) / static_cast<double>(gIStep2)) * nd4j::math::nd4j_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(gIStep3)) * nd4j::math::nd4j_ceil<double, T>(static_cast<double>(wend - wstart) / static_cast<double>(gIStep4));   //Accounts for dilation
+                                            valO /= sd::math::nd4j_ceil<double, T>(static_cast<double>(dend - dstart) / static_cast<double>(gIStep2)) * sd::math::nd4j_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(gIStep3)) * sd::math::nd4j_ceil<double, T>(static_cast<double>(wend - wstart) / static_cast<double>(gIStep4));   //Accounts for dilation
                                         else if (extraParam0 == 1)    //Include padding
                                             valO /= kProd;
 
@@ -1731,27 +1731,27 @@ namespace nd4j {
                                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
                                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
                                                     for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                        sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
+                                                        sum += sd::math::nd4j_pow<T, T, T>(sd::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
 
-                                            valO *= nd4j::math::nd4j_pow<T, T, T>(sum, ((T) 1.f - extraParam0) / extraParam0);
+                                            valO *= sd::math::nd4j_pow<T, T, T>(sum, ((T) 1.f - extraParam0) / extraParam0);
 
                                             for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
                                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
                                                     for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                        pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]),extraParam0 - (T) 1.f) * nd4j::math::nd4j_sgn<T, T>(pIn[kd + kh + kw]);
+                                                        pgI[kd + kh + kw] += valO * sd::math::nd4j_pow<T, T, T>(sd::math::nd4j_abs<T>(pIn[kd + kh + kw]),extraParam0 - (T) 1.f) * sd::math::nd4j_sgn<T, T>(pIn[kd + kh + kw]);
                                         } else {
                                             for (Nd4jLong kd = dstart; kd < dend; kd += dD)
                                                 for (Nd4jLong kh = hstart; kh < hend; kh += dH)
                                                     for (Nd4jLong kw = wstart; kw < wend; kw += dW)
-                                                        sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kd * iStride2 + kh * iStride3 + kw * iStride4]), extraParam0);
+                                                        sum += sd::math::nd4j_pow<T, T, T>(sd::math::nd4j_abs<T>(pIn[kd * iStride2 + kh * iStride3 + kw * iStride4]), extraParam0);
 
-                                            valO *= nd4j::math::nd4j_pow<T, T, T>(sum, ((T) 1.f - extraParam0) / extraParam0);
+                                            valO *= sd::math::nd4j_pow<T, T, T>(sum, ((T) 1.f - extraParam0) / extraParam0);
 
                                             for (Nd4jLong kd = dstart; kd < dend; kd += dD)
                                                 for (Nd4jLong kh = hstart; kh < hend; kh += dH)
                                                     for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
                                                         const auto inVal = pIn[kD * iStride2 + kh * iStride3 + kw * iStride4];
-                                                        pgI[kd * gIStride2 + kh * gIStride3 + kw * gIStride4] += valO * nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T, T>(inVal);
+                                                        pgI[kd * gIStride2 + kh * gIStride3 + kw * gIStride4] += valO * sd::math::nd4j_pow<T, T, T>(sd::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * sd::math::nd4j_sgn<T, T>(inVal);
                                                     }
                                         }
                                     }
@@ -1772,52 +1772,52 @@ namespace nd4j {
 
 
 
-        void ConvolutionUtils::conv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        void ConvolutionUtils::conv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::conv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        void ConvolutionUtils::conv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::depthwiseConv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        void ConvolutionUtils::depthwiseConv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::depthwiseConv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        void ConvolutionUtils::depthwiseConv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::sconv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+        void ConvolutionUtils::sconv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), sconv2d_, (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::vol2col(nd4j::graph::Context& block, const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+        void ConvolutionUtils::vol2col(sd::graph::Context& block, const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
             BUILD_SINGLE_SELECTOR(volume.dataType(), vol2col_, (volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::col2vol(nd4j::graph::Context& block, const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+        void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
             BUILD_SINGLE_SELECTOR(volume.dataType(), col2vol_, (columns, volume, sD, sH, sW, pD, pH, pW, dD, dH, dW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::upsampling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
+        void ConvolutionUtils::upsampling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
             BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2d_, (input, output, factorH, factorW, isNCHW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::upsampling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+        void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
             BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::upsampling2dBP(nd4j::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+        void ConvolutionUtils::upsampling2dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
             BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling2dBP_, (gradO, gradI, isNCHW), FLOAT_TYPES);
         }
-        void ConvolutionUtils::upsampling3dBP(nd4j::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+        void ConvolutionUtils::upsampling3dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
             BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling3dBP_, (gradO, gradI, isNCHW), FLOAT_TYPES);
         }
 
 
 
-        void ConvolutionUtils::pooling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0) {
+        void ConvolutionUtils::pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0) {
             BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_, (block, input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
         }
-        void ConvolutionUtils::pooling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+        void ConvolutionUtils::pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
             BUILD_SINGLE_SELECTOR(input.dataType(), pooling3d_, (block, input, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
         }
-        void ConvolutionUtils::pooling2dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+        void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
             BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBP_, (block, input, gradO, gradI, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
         }
-        void ConvolutionUtils::pooling3dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+        void ConvolutionUtils::pooling3dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
             BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBP_, (block, input, gradO, gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
         }
     }

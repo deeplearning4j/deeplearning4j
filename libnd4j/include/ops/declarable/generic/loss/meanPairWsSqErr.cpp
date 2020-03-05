@@ -22,14 +22,14 @@
 // @author Paul Dubs
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_mean_pairwssqerr_loss)
 
 #include <ops/declarable/CustomOperations.h>
 #include <numeric>
 #include <iostream>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
 
@@ -181,7 +181,7 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
         DECLARE_TYPES(mean_pairwssqerr_loss) {
 
-            getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+            getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -349,7 +349,7 @@ namespace nd4j {
         }
 
         DECLARE_TYPES(mean_pairwssqerr_loss_grad) {
-            getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+            getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
         }
 
         DECLARE_SHAPE_FN(mean_pairwssqerr_loss_grad) {

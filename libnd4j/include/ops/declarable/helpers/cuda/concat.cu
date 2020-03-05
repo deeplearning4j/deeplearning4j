@@ -23,13 +23,13 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -83,41 +83,110 @@ __host__ static void concatCudaLauncher(const int blocksPerGrid, const int threa
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
 
-    const int threadsPerBlock = 256;
-    const int blocksPerGrid = 512;
-    const int sharedMem = 512;
+    const int numOfInArrs = inArrs.size();
+    const auto sizeofT    = output.sizeOfT();
 
-    const int numOfArrs = inArrs.size();
+    NDArray::prepareSpecialUse({&output}, inArrs);
 
-    for(int i = 0; i < numOfArrs; ++i)
-        inArrs[i]->syncToDevice();
+    bool luckCase1 = ((axis == 0 && output.ordering() == 'c') || (axis == output.rankOf() - 1 && output.ordering() == 'f')) && output.ews() == 1;
 
-    output.syncToDevice();
-
-    // prepare arrays of pointers on buffers and shapes
-    std::vector<void*> hInBuffers(numOfArrs);
-    std::vector<Nd4jLong*> hInShapeInfo(numOfArrs);
-
-    for(int i = 0; i < numOfArrs; ++i) {
-        hInBuffers[i]   = inArrs[i]->getSpecialBuffer();
-        hInShapeInfo[i] = inArrs[i]->getSpecialShapeInfo();
+    if(luckCase1) {
+        for (uint i = 0; i < numOfInArrs; ++i) {
+            luckCase1 &= inArrs[i]->ordering() == output.ordering() && inArrs[i]->ews() == 1;
+            if(!luckCase1)
+                break;
+        }
     }
 
-    PointersManager manager(context, "helpers::concat");
+    if(luckCase1) {     // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6} order f
 
-    void* dInBuffers   = manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
-    void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
+        void* z = static_cast<int8_t*>(output.getSpecialBuffer());
 
-    BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo, output.specialBuffer(), output.specialShapeInfo(), axis), LIBND4J_TYPES);
+        for (uint i = 0; i < numOfInArrs; ++i) {
+            const auto memAmountToCopy = inArrs[i]->lengthOf() * sizeofT;
+            cudaMemcpyAsync(z, static_cast<int8_t*>(inArrs[i]->getSpecialBuffer()), memAmountToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
+            z = static_cast<int8_t*>(z) + memAmountToCopy;
+        }
 
-    manager.synchronize();
+        if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
+            throw std::runtime_error("concat cuda: luckCase1 failed!");
 
-    for(int i = 0; i < numOfArrs; ++i)
-        inArrs[i]->tickReadDevice();
+        for(int i = 0; i < numOfInArrs; ++i)
+            inArrs[i]->tickReadDevice();
+        output.tickWriteDevice();
 
-    output.tickWriteDevice();
+        return;
+    }
+
+    // const bool isZcontin = output.strideAt(axis) == 1;
+    // bool areInputsContin = true;
+    // bool allSameOrder    = true;
+    // std::vector<Nd4jLong> strideOfContigStride(numOfInArrs);
+
+    // if(isZcontin) {
+
+    //     for (uint i = 0; i < inArrs.size(); ++i) {
+
+    //         areInputsContin &= inArrs[i]->strideAt(axis) == 1;
+    //         allSameOrder    &= output.ordering() == inArrs[i]->ordering();
+    //         if(!areInputsContin || !allSameOrder)
+    //             break;
+
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->getShapeInfo());
+    //     }
+    // }
+
+    // const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
+
+    // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
+
+    //     const auto zStep = shape::strideOverContigAxis(axis, output.getShapeInfo());
+
+    //     for (uint i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
+
+    //         const auto iShift = i * sizeofT;
+    //         void* z = static_cast<int8_t*>(output.getSpecialBuffer()) + zStep * iShift;
+
+    //         for (uint j = 0; j < numOfInArrs; ++j) {
+    //             const auto xDim = inArrs[j]->sizeAt(axis);
+    //             void* x = static_cast<int8_t*>(inArrs[j]->getSpecialBuffer()) + strideOfContigStride[j] * iShift;
+    //             const auto memSizeToCopy = xDim * sizeofT;
+    //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
+    //             z = static_cast<int8_t*>(z) + memSizeToCopy;
+    //         }
+    //     }
+
+    //     if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
+    //         throw std::runtime_error("concat cuda: luckCase2 failed!");
+    // }
+    // else {      // general (slower) case
+
+        const int threadsPerBlock = 256;
+        const int blocksPerGrid = 512;
+        const int sharedMem = 512;
+
+        // prepare arrays of pointers on buffers and shapes
+        std::vector<void*> hInBuffers(numOfInArrs);
+        std::vector<Nd4jLong*> hInShapeInfo(numOfInArrs);
+
+        for(int i = 0; i < numOfInArrs; ++i) {
+            hInBuffers[i]   = inArrs[i]->getSpecialBuffer();
+            hInShapeInfo[i] = inArrs[i]->getSpecialShapeInfo();
+        }
+
+        PointersManager manager(context, "helpers::concat");
+
+        void* dInBuffers   = manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
+        void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
+
+        BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo, output.specialBuffer(), output.specialShapeInfo(), axis), LIBND4J_TYPES);
+
+        manager.synchronize();
+    // }
+
+    NDArray::registerSpecialUse({&output}, inArrs);
 }
 
 }

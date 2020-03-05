@@ -38,9 +38,11 @@ public class TestGraphHuffman extends BaseDL4JTest {
 
         gh.buildTree(vertexDegrees);
 
-        for (int i = 0; i < 7; i++)
-            System.out.println(i + "\t" + gh.getCodeLength(i) + "\t" + gh.getCodeString(i) + "\t\t" + gh.getCode(i)
-                            + "\t\t" + Arrays.toString(gh.getPathInnerNodes(i)));
+        for (int i = 0; i < 7; i++) {
+            String s = i + "\t" + gh.getCodeLength(i) + "\t" + gh.getCodeString(i) + "\t\t" + gh.getCode(i)
+                    + "\t\t" + Arrays.toString(gh.getPathInnerNodes(i));
+//            System.out.println(s);
+        }
 
         int[] expectedLengths = {3, 2, 2, 5, 4, 2, 5};
         for (int i = 0; i < vertexDegrees.length; i++) {

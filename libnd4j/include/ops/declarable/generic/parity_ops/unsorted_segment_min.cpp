@@ -21,7 +21,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/segment.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(unsorted_segment_min, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);

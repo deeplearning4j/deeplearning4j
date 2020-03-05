@@ -104,7 +104,7 @@ void _CUDA_H PairWiseIntTransform<X>::intermediateShaped(dim3& launchDims, cudaS
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X>
 void PairWiseIntTransform<X>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
-    auto xType = nd4j::DataTypeUtils::fromT<X>();
+    auto xType = sd::DataTypeUtils::fromT<X>();
 
 	DISPATCH_BY_OPNUM_T(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams), PAIRWISE_INT_OPS);
 }

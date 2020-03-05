@@ -33,7 +33,7 @@
 
 #endif
 
-namespace nd4j {
+namespace sd {
     std::mutex CublasHelper::_mutex;
 
     static void* handle_() {
@@ -105,7 +105,7 @@ namespace nd4j {
     CublasHelper* CublasHelper::getInstance() {
         _mutex.lock();
         if (!_INSTANCE)
-            _INSTANCE = new nd4j::CublasHelper();
+            _INSTANCE = new sd::CublasHelper();
         _mutex.unlock();
 
         return _INSTANCE;
@@ -140,5 +140,5 @@ namespace nd4j {
     }
 
 
-    nd4j::CublasHelper* nd4j::CublasHelper::_INSTANCE = 0;
+    sd::CublasHelper* sd::CublasHelper::_INSTANCE = 0;
 }

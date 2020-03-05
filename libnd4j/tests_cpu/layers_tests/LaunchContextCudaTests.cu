@@ -19,9 +19,9 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <ShapeUtils.h>
-#include <reduce3.h>
+#include <array/NDArray.h>
+#include <helpers/ShapeUtils.h>
+#include <loops/reduce3.h>
 #include <ops/declarable/LegacyTransformOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
@@ -34,8 +34,8 @@
 #include <thread>
 #include <execution/AffinityManager.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
+using namespace sd;
+using namespace sd::ops;
 
 class LaunchContextCudaTests : public testing::Test {
     //

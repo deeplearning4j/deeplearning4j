@@ -23,7 +23,7 @@
 #include <ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 #if NOT_EXCLUDED(OP_reduce_min)
@@ -84,7 +84,7 @@ DECLARE_SHAPE_FN(reduce_min) {
 
 DECLARE_TYPES(reduce_min) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setSameMode(true);
 }
 
@@ -119,12 +119,12 @@ CUSTOM_OP_IMPL(reduce_min_bp, 2, 1, false, 0, 0) {
 
     if(gradO->lengthOf() == 1) {
 
-        auto indOfMaxElem = input->indexReduceNumber(nd4j::indexreduce::IndexMin);
+        auto indOfMaxElem = input->indexReduceNumber(sd::indexreduce::IndexMin);
         gradI->p(indOfMaxElem.e<Nd4jLong>(0), gradO->e(0));
     }
     else {
 
-        auto indicesArr = input->applyIndexReduce(nd4j::indexreduce::IndexMin, dimensions);
+        auto indicesArr = input->applyIndexReduce(sd::indexreduce::IndexMin, dimensions);
         helpers::scatterSimple(block.launchContext(), 6, *gradI, *gradO, indicesArr, ShapeUtils::evalDimsToExclude(gradI->rankOf(), dimensions));  // 6 corresponds to copy operation
     }
 
@@ -153,7 +153,7 @@ DECLARE_SHAPE_FN(reduce_min_bp) {
 
 DECLARE_TYPES(reduce_min_bp) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

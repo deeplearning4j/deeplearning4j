@@ -20,7 +20,7 @@
 
 #include <ops/declarable/headers/broadcastable.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(not_equals, 0, 0) {
             auto x = INPUT_VARIABLE(0);

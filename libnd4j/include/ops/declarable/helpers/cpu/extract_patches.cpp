@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/axis.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -50,7 +50,7 @@ namespace helpers {
             colCast = 0;
 
        auto func = PRAGMA_THREADS_FOR {
-           for (auto batch = 0; batch < stop; batch += increment) {
+           for (auto batch = 0; batch < stop; batch++) {
                auto patch = listOfMatricies.at(batch);
                auto outMatrix = listOfOutputs.at(batch);
 
@@ -86,7 +86,7 @@ namespace helpers {
     }
 
 
-    void extractPatches(nd4j::LaunchContext * context, NDArray* images, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
+    void extractPatches(sd::LaunchContext * context, NDArray* images, NDArray* output, int sizeRow, int sizeCol, int stradeRow, int stradeCol, int rateRow, int rateCol, bool theSame){
         auto xType = images->dataType();
 
         BUILD_SINGLE_SELECTOR(xType, _extractPatches, (images, output, sizeRow, sizeCol, stradeRow, stradeCol, rateRow, rateCol, theSame), LIBND4J_TYPES);

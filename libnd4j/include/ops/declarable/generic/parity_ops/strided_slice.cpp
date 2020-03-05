@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_strided_slice)
 
 #include <array>
@@ -21,7 +21,7 @@ limitations under the License.
 #include <helpers/ShapeUtils.h>
 #include <helpers/BitwiseUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         constexpr int kShrinkAxis = -1, kNewAxis = -2;
@@ -70,7 +70,7 @@ namespace nd4j {
 
                         for (int e = 0; e < sparse_spec.dims; e++) {
                             if ((1 << e) & sparse_spec.ellipsis_mask) {
-                                int next_index = nd4j::math::nd4j_min<int>(this->dims - (sparse_spec.dims - e) + 1 + sparse_spec.num_add_axis_after_ellipsis, this->dims);
+                                int next_index = sd::math::nd4j_min<int>(this->dims - (sparse_spec.dims - e) + 1 + sparse_spec.num_add_axis_after_ellipsis, this->dims);
                             
                                 for (; full_index < next_index; full_index++) {
                                     // new_axis' aren't real axis so you have to skip
@@ -411,8 +411,24 @@ namespace nd4j {
 //            }
 //            else {
             if (indices.size()) {
-                auto sub = (*x)(indices, true, true);
-                z->assign(sub);
+                Nd4jLong* subArrShapeInfo = nullptr;
+                ALLOCATE(subArrShapeInfo, block.getWorkspace(), shape::shapeInfoLength(x->rankOf()), Nd4jLong);
+                Nd4jLong offset;
+
+                shape::calcSubArrShapeInfoAndOffset(indices.data(), x->getShapeInfo(), subArrShapeInfo, offset, true, true);
+                auto subArrShapeInfoPack = ConstantShapeHelper::getInstance()->bufferForShapeInfo(subArrShapeInfo);
+
+                NDArray::prepareSpecialUse({z}, {x});
+
+                NativeOpExecutioner::execTransformAny(block.launchContext(), sd::transform::Assign,
+                                                      x->bufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(subArrShapeInfoPack.primary()),
+                                                      x->specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(subArrShapeInfoPack.special()),
+                                                      z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                                                      nullptr, nullptr, nullptr, true);
+
+                NDArray::registerSpecialUse({z}, {x});
+
+                RELEASE(subArrShapeInfo,  block.getWorkspace());
             }
             else if (!z->isEmpty()){
                 z->assign(x->e(0));
@@ -646,13 +662,13 @@ namespace nd4j {
 
         DECLARE_TYPES(strided_slice) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
 
         DECLARE_TYPES(strided_slice_bp) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

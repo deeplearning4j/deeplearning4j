@@ -22,12 +22,12 @@
 //#include <vector>
 #include <memory>
 //#include <graph/Context.h>
-#include <ShapeUtils.h>
+#include <helpers/ShapeUtils.h>
 #include <helpers/RandomLauncher.h>
 #include <execution/Threads.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -57,10 +57,10 @@ namespace helpers {
         T* outputBuf = output->dataBuffer()->primaryAsT<T>();
 
         PRAGMA_OMP_PARALLEL_FOR
-        for (auto k = 0; k < shift; k++) {
+        for (Nd4jLong k = 0; k < shift; k++) {
             auto pos = k * step;
             auto u = rng.relativeT<T>(k, 0., 1.);
-            for (auto e = 0; e < step; e++)
+            for (Nd4jLong e = 0; e < step; e++)
                     if (directOutput) {
                         outputBuf[pos + e] = math::nd4j_igamma<T, T, T>(copyAlpha->t<T>(e),
                                                                         beta != nullptr ? copyBeta->t<T>(e) * u : u);
@@ -104,10 +104,10 @@ namespace helpers {
         bool directLa = lambda->ews() == 1 && lambda->ordering() == 'c';
         bool directOut = output->ews() == 1 && output->ordering() == 'c';
         PRAGMA_OMP_PARALLEL_FOR
-        for (auto k = 0; k < shift; k++) {
+        for (Nd4jLong k = 0; k < shift; k++) {
             auto pos = k * step;
             auto u = rng.relativeT<T>(k, 0., 1.);
-            for (auto e = 0; e < step; e++) {
+            for (Nd4jLong e = 0; e < step; e++) {
                 auto p = math::nd4j_exp<T, T>(-lambda->t<T>(e));
                 auto s = p;
                 auto x = T(0.f);
@@ -143,7 +143,7 @@ namespace helpers {
             RandomLauncher::fillUniform(context, rng, output, minVal, maxVal);
         else {
             PRAGMA_OMP_PARALLEL_FOR
-            for (auto i = 0; i < output->lengthOf(); i++) {
+            for (Nd4jLong i = 0; i < output->lengthOf(); i++) {
                 output->t<T>(i) = rng.relativeT<T>(i, minVal, maxVal);
             }
         }
@@ -184,9 +184,9 @@ namespace helpers {
 
                         auto nSamplesPerBatch = nBatchIndex * numOfClassX * numOfSamples;
                         auto nClassesPerSample = nSampleIndexInBatch * numOfClassX;
-                        for (auto nClass = 0; nClass < numOfClassX; nClass += 1) {
+                        for (Nd4jLong nClass = 0; nClass < numOfClassX; nClass += 1) {
                             auto nIndex = nSamplesPerBatch + nClassesPerSample + nClass;
-                            auto unifornLog = nd4j::math::nd4j_log<Tx, Tx>(-nd4j::math::nd4j_log<Tx, Tx>(rng.relativeT<Tx>(nIndex, minVal, maxVal)));
+                            auto unifornLog = sd::math::nd4j_log<Tx, Tx>(-sd::math::nd4j_log<Tx, Tx>(rng.relativeT<Tx>(nIndex, minVal, maxVal)));
                             Tx tValue = (xTad[nClass * xDimAstride] - unifornLog);
                             if (tValue > Max) {
                                 Max = tValue;

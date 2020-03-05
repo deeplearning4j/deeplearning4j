@@ -18,8 +18,8 @@
 //  @author  raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#include <Loops.h>
+#include <system/op_boilerplate.h>
+#include <helpers/Loops.h>
 #include <types/types.h>
 #include <loops/transform_any.h>
 #include <loops/legacy_ops.h>
@@ -52,7 +52,7 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 	auto z = reinterpret_cast<Z *>(vz);
 	auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-    nd4j::TransformLoops<X,Z,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
+    sd::TransformLoops<X,Z,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
 }
 
 

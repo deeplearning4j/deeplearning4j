@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_testop2i2o)
 
 #include <ops/declarable/headers/tests.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         //////////////////////////////////////////////////////////////////////////
         // test op, non-divergent
@@ -46,7 +46,7 @@ namespace nd4j {
 
         DECLARE_TYPES(testop2i2o) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

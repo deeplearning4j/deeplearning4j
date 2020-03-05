@@ -21,13 +21,13 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/ops.h>
-#include <GradCheck.h>
+#include <helpers/GradCheck.h>
 #include <array>
 
 
-using namespace nd4j;
+using namespace sd;
 
 
 class DeclarableOpsTests18 : public testing::Test {
@@ -44,8 +44,8 @@ TEST_F(DeclarableOpsTests18, test_bitcast_1) {
     auto z = NDArrayFactory::create<Nd4jLong>(0);
     auto e = NDArrayFactory::create<Nd4jLong>(4597464930322771456L);
 
-    nd4j::ops::bitcast op;
-    auto status = op.execute({&x}, {&z}, {}, {(Nd4jLong) nd4j::DataType::INT64}, {});
+    sd::ops::bitcast op;
+    auto status = op.execute({&x}, {&z}, {}, {(Nd4jLong) sd::DataType::INT64}, {});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(e, z);
@@ -56,7 +56,7 @@ TEST_F(DeclarableOpsTests18, test_tanh_1) {
     auto z = x.ulike();
     auto e = NDArrayFactory::create<float>('c', {8}, {0.226028f, -0.226028f, 0.336376f, -0.336376f, 0.564900f, -0.564900f, 1.f, -1.f});
 
-    nd4j::ops::tanh op;
+    sd::ops::tanh op;
     op.execute({&x}, {&z});
 
     ASSERT_EQ(e, z);

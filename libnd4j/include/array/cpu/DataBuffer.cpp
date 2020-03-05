@@ -19,10 +19,10 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include "../DataBuffer.h"
-#include <DataTypeUtils.h>
+#include <array/DataBuffer.h>
+#include <array/DataTypeUtils.h>
 
-namespace nd4j {
+namespace sd {
     void DataBuffer::expand(const uint64_t size) {
         if (size > _lenInBytes) {
             // allocate new buffer

@@ -127,7 +127,7 @@ public class BraninFunction {
                     BraninConfig candidate = (BraninConfig) c.getValue();
 
                     double score = scoreFunction.score(candidate, null, (Map) null);
-                    System.out.println(candidate.getX1() + "\t" + candidate.getX2() + "\t" + score);
+//                    System.out.println(candidate.getX1() + "\t" + candidate.getX2() + "\t" + score);
 
                     Thread.sleep(20);
 

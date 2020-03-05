@@ -35,7 +35,7 @@ public class TestTimeSource {
             long systemTime = System.currentTimeMillis();
             long ntpTime = timeSource.currentTimeMillis();
             long offset = ntpTime - systemTime;
-            System.out.println("System: " + systemTime + "\tNTPTimeSource: " + ntpTime + "\tOffset: " + offset);
+//            System.out.println("System: " + systemTime + "\tNTPTimeSource: " + ntpTime + "\tOffset: " + offset);
             Thread.sleep(500);
         }
     }
@@ -49,7 +49,7 @@ public class TestTimeSource {
             long systemTime = System.currentTimeMillis();
             long ntpTime = timeSource.currentTimeMillis();
             long offset = ntpTime - systemTime;
-            System.out.println("System: " + systemTime + "\tSystemClockTimeSource: " + ntpTime + "\tOffset: " + offset);
+//            System.out.println("System: " + systemTime + "\tSystemClockTimeSource: " + ntpTime + "\tOffset: " + offset);
             assertEquals(systemTime, ntpTime, 2); //Should be exact, but we might randomly tick over between one ms and the next
             Thread.sleep(500);
         }

@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_to_int64)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(to_int64, 1, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -39,8 +39,8 @@ namespace nd4j {
 
         DECLARE_TYPES(to_int64) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(nd4j::DataType::INT64);
+                    ->setAllowedInputTypes(sd::DataType::ANY)
+                    ->setAllowedOutputTypes(sd::DataType::INT64);
         }
         DECLARE_SHAPE_FN(to_int64) {
             auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::INT64, true, block.workspace());

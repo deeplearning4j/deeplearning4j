@@ -20,11 +20,11 @@
 
 
 #include "../BenchmarkHelper.h"
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <chrono>
 #include <helpers/ShapeUtils.h>
 
-namespace nd4j {
+namespace sd {
     BenchmarkHelper::BenchmarkHelper(unsigned int warmUpIterations, unsigned int runIterations) {
         _wIterations = warmUpIterations;
         _rIterations = runIterations;
@@ -59,9 +59,9 @@ namespace nd4j {
 
         auto n = NDArrayFactory::create(timings, LaunchContext::defaultContext());
 
-        auto stdev = n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
-        auto min = n.reduceNumber(nd4j::reduce::Min).e<Nd4jLong>(0);
-        auto max = n.reduceNumber(nd4j::reduce::Max).e<Nd4jLong>(0);
+        auto stdev = n.varianceNumber(sd::variance::SummaryStatsStandardDeviation, false).e<double>(0);
+        auto min = n.reduceNumber(sd::reduce::Min).e<Nd4jLong>(0);
+        auto max = n.reduceNumber(sd::reduce::Max).e<Nd4jLong>(0);
 
         // opNum, DataType, Shape, average time, median time
         auto t = benchmark.dataType();
@@ -77,7 +77,7 @@ namespace nd4j {
         // printing out stuff
         snprintf(const_cast<char *>(temp.data()), temp.length(), "%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\t%s\t%lld\t%lld\t%lld\t%lld\t%.2f\n", benchmark.testName().c_str(), benchmark.opNum(),
                     _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), strides.c_str(), a.c_str(), o.c_str(),
-                    nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
+                    sd::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
 
         auto pos = temp.find('\n');
         return temp.substr(0, pos + 1);
@@ -109,9 +109,9 @@ namespace nd4j {
         Nd4jLong median = timings[_rIterations / 2];
 
         NDArray n = NDArrayFactory::create(timings, nullptr);
-        double stdev = n.varianceNumber(nd4j::variance::SummaryStatsStandardDeviation, false).e<double>(0);
-        Nd4jLong min = n.reduceNumber(nd4j::reduce::Min).e<Nd4jLong>(0);
-        Nd4jLong max = n.reduceNumber(nd4j::reduce::Max).e<Nd4jLong>(0);
+        double stdev = n.varianceNumber(sd::variance::SummaryStatsStandardDeviation, false).e<double>(0);
+        Nd4jLong min = n.reduceNumber(sd::reduce::Min).e<Nd4jLong>(0);
+        Nd4jLong max = n.reduceNumber(sd::reduce::Max).e<Nd4jLong>(0);
 
         // opNum, DataType, Shape, average time, median time
         auto t = DataTypeUtils::asString(x.dataType());
@@ -129,7 +129,7 @@ namespace nd4j {
         // printing out stuff
         nd4j_printf("%s\t%i\t%i\t%i\t%s\t%s\t%s\t%s\t%s\tn/a\t%lld\t%lld\t%lld\t%lld\t%.2f\n", testName.c_str(), op,
                     _wIterations, _rIterations, t.c_str(), inpl.c_str(), s.c_str(), stride.c_str(), o.c_str(),
-                    nd4j::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
+                    sd::math::nd4j_floor<double, Nd4jLong>(sumT), median, min, max, stdev);
     }
 
     std::string BenchmarkHelper::runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg) {

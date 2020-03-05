@@ -18,12 +18,12 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_unstack_list)
 
 #include <ops/declarable/headers/list.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     LIST_OP_IMPL(unstack_list, 1, 1, 0, 0) {
         auto outputList = INPUT_LIST(0);

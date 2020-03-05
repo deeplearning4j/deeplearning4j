@@ -20,7 +20,7 @@
 
 #include "../ConstantDataBuffer.h"
 
-namespace nd4j {
+namespace sd {
     ConstantDataBuffer::ConstantDataBuffer(Nd4jPointer primary, Nd4jPointer special, Nd4jLong numEelements, Nd4jLong sizeOf) {
         _primaryBuffer = primary;
         _specialBuffer = special;

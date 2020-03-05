@@ -26,7 +26,7 @@
 #include <memory/MemoryCounter.h>
 #include <exceptions/allocation_exception.h>
 
-namespace nd4j {
+namespace sd {
     ///// IMLEMENTATION OF COMMON METHODS /////
 
 
@@ -41,7 +41,7 @@ namespace nd4j {
         _workspace = nullptr;
         _isOwnerPrimary = false;
         _isOwnerSpecial = false;
-        _deviceId = nd4j::AffinityManager::currentDeviceId();
+        _deviceId = sd::AffinityManager::currentDeviceId();
 
         setCountersToZero();
     }
@@ -83,7 +83,7 @@ namespace nd4j {
         _workspace      = workspace;
         _isOwnerPrimary = isOwnerPrimary;
         _isOwnerSpecial = isOwnerSpecial;
-        _deviceId = nd4j::AffinityManager::currentDeviceId();
+        _deviceId = sd::AffinityManager::currentDeviceId();
 
         setCountersToZero();
 
@@ -115,7 +115,7 @@ namespace nd4j {
         _dataType       = dataType;
         _workspace      = workspace;
 
-        _deviceId = nd4j::AffinityManager::currentDeviceId();
+        _deviceId = sd::AffinityManager::currentDeviceId();
 
         setCountersToZero();
 
@@ -134,7 +134,7 @@ namespace nd4j {
         _primaryBuffer = nullptr;
         _specialBuffer = nullptr;
 
-        _deviceId = nd4j::AffinityManager::currentDeviceId();
+        _deviceId = sd::AffinityManager::currentDeviceId();
 
         setCountersToZero();
 
@@ -234,17 +234,17 @@ namespace nd4j {
     void DataBuffer::allocatePrimary() {
 
         if (_primaryBuffer == nullptr && getLenInBytes() > 0) {
-            auto deviceId = nd4j::AffinityManager::currentDeviceId();
+            auto deviceId = sd::AffinityManager::currentDeviceId();
             // check if this allocation won't bring us above limit
             if (_workspace == nullptr) {
                 if (Environment::getInstance()->isCPU()) {
                     // on cpu backend we validate against device 0 for now
-                    if (!nd4j::memory::MemoryCounter::getInstance()->validate(getLenInBytes()))
-                        throw nd4j::allocation_exception::build("Requested amount exceeds HOST device limits", nd4j::memory::MemoryCounter::getInstance()->deviceLimit(deviceId), getLenInBytes());
+                    if (!sd::memory::MemoryCounter::getInstance()->validate(getLenInBytes()))
+                        throw sd::allocation_exception::build("Requested amount exceeds HOST device limits", sd::memory::MemoryCounter::getInstance()->deviceLimit(deviceId), getLenInBytes());
                 } else {
                     // in heterogenous mode we valdate against device group
-                    if (!nd4j::memory::MemoryCounter::getInstance()->validateGroup(nd4j::memory::MemoryType::HOST, getLenInBytes()))
-                        throw nd4j::allocation_exception::build("Requested amount exceeds HOST group limits", nd4j::memory::MemoryCounter::getInstance()->groupLimit(nd4j::memory::MemoryType::HOST), getLenInBytes());
+                    if (!sd::memory::MemoryCounter::getInstance()->validateGroup(sd::memory::MemoryType::HOST, getLenInBytes()))
+                        throw sd::allocation_exception::build("Requested amount exceeds HOST group limits", sd::memory::MemoryCounter::getInstance()->groupLimit(sd::memory::MemoryType::HOST), getLenInBytes());
                 }
             }
 
@@ -254,9 +254,9 @@ namespace nd4j {
             // count in towards current deviceId if we're not in workspace mode
             if (_workspace == nullptr) {
                 if (Environment::getInstance()->isCPU()) // we don't want this counter to be added to CUDA device
-                    nd4j::memory::MemoryCounter::getInstance()->countIn(deviceId, getLenInBytes());
+                    sd::memory::MemoryCounter::getInstance()->countIn(deviceId, getLenInBytes());
 
-                nd4j::memory::MemoryCounter::getInstance()->countIn(nd4j::memory::MemoryType::HOST, getLenInBytes());
+                sd::memory::MemoryCounter::getInstance()->countIn(sd::memory::MemoryType::HOST, getLenInBytes());
             }
         }
     }
@@ -280,9 +280,9 @@ namespace nd4j {
             // count out towards DataBuffer device, only if we're not in workspace
             if (_workspace == nullptr) {
                 if (Environment::getInstance()->isCPU())
-                    nd4j::memory::MemoryCounter::getInstance()->countOut(_deviceId, getLenInBytes());
+                    sd::memory::MemoryCounter::getInstance()->countOut(_deviceId, getLenInBytes());
 
-                nd4j::memory::MemoryCounter::getInstance()->countOut(nd4j::memory::MemoryType::HOST, getLenInBytes());
+                sd::memory::MemoryCounter::getInstance()->countOut(sd::memory::MemoryType::HOST, getLenInBytes());
             }
         }
     }

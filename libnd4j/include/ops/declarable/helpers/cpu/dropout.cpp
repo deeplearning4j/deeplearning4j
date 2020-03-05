@@ -19,23 +19,23 @@
 //
 
 #include <ops/declarable/helpers/dropout.h>
-#include <NativeOps.h>
+#include <legacy/NativeOps.h>
 #include <vector>
 #include <memory>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
     template <typename T>
     static void dropoutSimple(NDArray const* input, NDArray* output, double probValue, int seed) {
 
-        nd4j::graph::RandomGenerator nodeRng(3019L, seed);
+        sd::graph::RandomGenerator nodeRng(3019L, seed);
         int inLen = input->lengthOf();
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment) {
+            for (auto e = start; e < stop; e++) {
                 float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
 
                 if (val < probValue)
@@ -50,7 +50,7 @@ namespace helpers {
     template <typename T>
     int dropOutFunctor_(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
         //NativeOps native;
-        //nd4j::graph::RandomGenerator nodeRng(seed);   //static int dropOutFunctor_(nd4j::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
+        //sd::graph::RandomGenerator nodeRng(seed);   //static int dropOutFunctor_(sd::random::RandomBuffer* rng, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
         //NativeOps native;
         //native.reSeedBuffer(nullptr, (long)seed, rng);
         //if (newRng )
@@ -63,7 +63,7 @@ namespace helpers {
             std::vector<Nd4jLong> dims(reduceShape->lengthOf());
 
             bool fit = true;
-            for( int i = 0; i < dims.size(); i++ ) {
+            for(auto i = 0; i < dims.size(); i++ ) {
                 if (fit) {
                     dims[i] = reduceShape->e<Nd4jLong>(i);
                     for (int e = 0; e < input->rankOf(); ++e)
@@ -127,10 +127,10 @@ namespace helpers {
         //    return ND4J_STATUS_BAD_RNG;
         //T probValueArr[] = {probValue, alpha, alpha1, beta};
         //input->template applyRandom<randomOps::AlphaDropOut<T>>(rng, nullptr, output, probValueArr);
-        nd4j::graph::RandomGenerator nodeRng(3019L, seed);
+        sd::graph::RandomGenerator nodeRng(3019L, seed);
 
         auto func = PRAGMA_THREADS_FOR {
-            for (auto e = start; e < stop; e += increment) {
+            for (auto e = start; e < stop; e++) {
                 float randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
                 float xVal = input->e<float>(e);
                 output->p<float>(e, randVal >= probValue ? alpha * beta + alpha1 : alpha * xVal + alpha1);

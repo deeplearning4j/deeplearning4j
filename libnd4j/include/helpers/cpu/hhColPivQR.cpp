@@ -18,11 +18,11 @@
 // Created by Yurii Shyrma on 11.01.2018
 //
 
-#include <hhColPivQR.h>
-#include <householder.h>
-#include <NDArrayFactory.h>
+#include <helpers/hhColPivQR.h>
+#include <helpers/householder.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

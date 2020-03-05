@@ -23,10 +23,10 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/LegacyTransformOp.h>
 #include <ops/declarable/LegacyReduceOp.h>
-#include <NativeOps.h>
+#include <legacy/NativeOps.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class GraphStateTests : public testing::Test {
 public:
@@ -57,8 +57,8 @@ TEST_F(GraphStateTests, Basic_Tests_1) {
     // this call will create scope internally
     state->registerScope(119);
 
-    nd4j::ops::add opA;
-    nd4j::ops::LegacyTransformSameOp opB(transform::Neg); // simdOps::Neg
+    sd::ops::add opA;
+    sd::ops::LegacyTransformSameOp opB(transform::Neg); // simdOps::Neg
 
     ArgumentsList argsA;
     ArgumentsList argsB;
@@ -81,8 +81,8 @@ TEST_F(GraphStateTests, Basic_Tests_2) {
     // this call will create scope internally
     state->registerScope(119);
 
-    nd4j::ops::add opA;
-    nd4j::ops::LegacyTransformSameOp opB(transform::Neg); // simdOps::Neg
+    sd::ops::add opA;
+    sd::ops::LegacyTransformSameOp opB(transform::Neg); // simdOps::Neg
 
     ArgumentsList argsA;
     ArgumentsList argsB;
@@ -147,8 +147,8 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceSameOp op1(reduce::Sum);
-    nd4j::ops::lt_scalar op2;
+    sd::ops::LegacyReduceSameOp op1(reduce::Sum);
+    sd::ops::lt_scalar op2;
 
     // while sum(var0) < var1
     // this op takes sum
@@ -170,8 +170,8 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // this op is result of previous op + 1
     ArgumentsList args4({{3, 0}, {0, 2}});
 
-    nd4j::ops::add op3;
-    nd4j::ops::add op4;
+    sd::ops::add op3;
+    sd::ops::add op4;
 
     state->attachOpToScope(33, 3, &op3, args3);
     state->attachOpToScope(33, 4, &op4, args4);
@@ -225,8 +225,8 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceSameOp op1(reduce::Sum);
-    nd4j::ops::lt_scalar op2;
+    sd::ops::LegacyReduceSameOp op1(reduce::Sum);
+    sd::ops::lt_scalar op2;
 
     // if sum(var0) < var1
     // this op takes sum
@@ -242,7 +242,7 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     state->registerScope(33);
 
     ArgumentsList args3({{0, 0}, {0, 1}});
-    nd4j::ops::subtract op3;
+    sd::ops::subtract op3;
     state->attachOpToScope(33, 3, &op3, args3);
 
     // return for false scope
@@ -253,7 +253,7 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     state->registerScope(44);
 
     ArgumentsList args4({{0, 0}, {0, 1}});
-    nd4j::ops::add op4;
+    sd::ops::add op4;
     state->attachOpToScope(44, 4, &op4, args4);
 
     // return for false scope
@@ -299,8 +299,8 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     // conditional scope
     state->registerScope(22);
 
-    nd4j::ops::LegacyReduceSameOp op1(reduce::Sum);
-    nd4j::ops::gt_scalar op2;
+    sd::ops::LegacyReduceSameOp op1(reduce::Sum);
+    sd::ops::gt_scalar op2;
 
     // if sum(var0) < var1
     // this op takes sum
@@ -316,7 +316,7 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     state->registerScope(33);
 
     ArgumentsList args3({{0, 0}, {0, 1}});
-    nd4j::ops::subtract op3;
+    sd::ops::subtract op3;
     state->attachOpToScope(33, 3, &op3, args3);
 
     // return for false scope
@@ -327,7 +327,7 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     state->registerScope(44);
 
     ArgumentsList args4({{0, 0}, {0, 1}});
-    nd4j::ops::add op4;
+    sd::ops::add op4;
     state->attachOpToScope(44, 4, &op4, args4);
 
     // return for false scope

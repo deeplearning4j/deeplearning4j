@@ -21,10 +21,10 @@
 
 #include <ops/declarable/helpers/gather.h>
 #include <numeric>
-#include <PointersManager.h>
-#include <ShapeUtils.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ShapeUtils.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -105,7 +105,7 @@ __host__ static void gatherCudaLauncher(const cudaStream_t *stream, const int nu
 }
 
 //////////////////////////////////////////////////////////////////////
-void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
+void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
 
     const int inputRank = input->rankOf();
     const int numOfIntArgs = intArgs.size();

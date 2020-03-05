@@ -19,13 +19,13 @@
 #define LIBND4J_COMPARE_ELEM_H
 
 #include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include "array/NDArray.h"
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
-            void compare_elem(nd4j::LaunchContext * context, NDArray* input, bool isStrictlyIncreasing, bool& output);
+            void compare_elem(sd::LaunchContext * context, NDArray* input, bool isStrictlyIncreasing, bool& output);
         }
     }
 }

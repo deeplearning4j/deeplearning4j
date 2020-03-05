@@ -18,17 +18,17 @@
 // @author @cpuheater
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_confusion_matrix)
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/ShapeUtils.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <array/NDArrayList.h>
 #include <array>
 #include <ops/declarable/helpers/confusion.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         DECLARE_TYPES(confusion_matrix) {
             getOpDescriptor()
@@ -65,9 +65,9 @@ namespace nd4j {
             auto labels = INPUT_VARIABLE(0);
             auto predictions = INPUT_VARIABLE(1);
             auto dtype = block.dataType();
-            dtype = nd4j::DataType::INT64; // dtype - should be a param with int argument
+            dtype = sd::DataType::INT64; // dtype - should be a param with int argument
             if (block.numI() > 1)
-                dtype = (nd4j::DataType)INT_ARG(1);
+                dtype = (sd::DataType)INT_ARG(1);
 
             int numClasses = 0;
 

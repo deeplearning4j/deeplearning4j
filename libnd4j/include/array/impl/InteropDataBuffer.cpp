@@ -23,7 +23,7 @@
 #include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 
-namespace nd4j {
+namespace sd {
     InteropDataBuffer::InteropDataBuffer(InteropDataBuffer &dataBuffer, uint64_t length, uint64_t offset) {
         _dataBuffer = dataBuffer.getDataBuffer();
 
@@ -39,7 +39,7 @@ namespace nd4j {
         _dataBuffer = databuffer;
     }
 
-    InteropDataBuffer::InteropDataBuffer(size_t elements, nd4j::DataType dtype, bool allocateBoth) {
+    InteropDataBuffer::InteropDataBuffer(size_t elements, sd::DataType dtype, bool allocateBoth) {
         if (elements == 0) {
             _dataBuffer = std::make_shared<DataBuffer>();
             _dataBuffer->setDataType(dtype);
@@ -95,7 +95,7 @@ namespace nd4j {
     }
 
     void InteropDataBuffer::prepareSpecialUse(const std::vector<const InteropDataBuffer*>& writeList, const std::vector<const InteropDataBuffer*>& readList, bool synchronizeWritables) {
-        auto currentDeviceId = nd4j::AffinityManager::currentDeviceId();
+        auto currentDeviceId = sd::AffinityManager::currentDeviceId();
         for (const auto &v:readList) {
             if (v == nullptr)
                 continue;

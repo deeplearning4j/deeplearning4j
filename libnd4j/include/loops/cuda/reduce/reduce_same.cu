@@ -19,7 +19,7 @@
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/reduce_same.h>
 #include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
@@ -145,7 +145,7 @@ __device__ void ReduceSameFunction<X>::transformCudaXD( void *vx, Nd4jLong *xSha
         __syncthreads();
 
         // aggregate. do NOT reduce for elements > tadLength
-        aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
         __syncthreads();
 
         if (threadIdx.x == 0)
@@ -200,7 +200,7 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void *vx, Nd4jLong *xShape
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
 
     __syncthreads();
-    aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, len), extraParams);
+    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, len), extraParams);
     __syncthreads();
 
     if (gridDim.x > 1) {
@@ -230,7 +230,7 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void *vx, Nd4jLong *xShape
                 sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
 
             __syncthreads();
-            aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
+            aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
             __syncthreads();
 
             if (threadIdx.x == 0) {
@@ -260,11 +260,11 @@ __host__ void ReduceSameFunction<X>::intermediateXD(dim3 launchDims, cudaStream_
 
         const auto startingVal = static_cast<X>(OpType::startingValue(reinterpret_cast<X*>(x)));
 
-        auto res = cudaMemcpyAsync(nd4j::LaunchContext::defaultContext()->getScalarPointer(), &startingVal, sizeof(X), cudaMemcpyHostToDevice, *stream);
+        auto res = cudaMemcpyAsync(sd::LaunchContext::defaultContext()->getScalarPointer(), &startingVal, sizeof(X), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
-            throw nd4j::cuda_exception::build("ReduceSameFunction<X,Z>::intermediateXD: failed to copy temporary scalar", res);
+            throw sd::cuda_exception::build("ReduceSameFunction<X,Z>::intermediateXD: failed to copy temporary scalar", res);
 
-        auto ptr = nd4j::LaunchContext::defaultContext()->getScalarPointer();
+        auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
 
         // scalar assign
         functions::scalar::ScalarTransform<X, X, X>::executeCudaShaped(launchDims, stream, 14, z, zShapeInfo, hXShapeInfo, z, zShapeInfo, hZShapeInfo, ptr, nullptr);
@@ -288,7 +288,7 @@ __host__ void ReduceSameFunction<X>::intermediateScalar(dim3 launchDims, cudaStr
 
         auto res = cudaMemcpyAsync(z, &startingVal, sizeof(X), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
-            throw nd4j::cuda_exception::build("ReduceSameFunction<X>::intermediateScalar: failed to copy resulting scalar", res);
+            throw sd::cuda_exception::build("ReduceSameFunction<X>::intermediateScalar: failed to copy resulting scalar", res);
     }
     else {
         simpleScalar<X, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
@@ -300,7 +300,7 @@ template <typename X>
 _CUDA_H void ReduceSameFunction<X>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong* hXShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, Nd4jLong* hZShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
 
         DISPATCH_BY_OPNUM_T(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, hXShapeInfo, extraParams, z, zShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), REDUCE_SAME_OPS);
-        nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarSame(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "execReduceScalarSame(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////

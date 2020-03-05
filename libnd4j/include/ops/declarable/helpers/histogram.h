@@ -21,12 +21,12 @@
 #ifndef LIBND4J_HISTOGRAM_H
 #define LIBND4J_HISTOGRAM_H
 
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
-            void histogramHelper(nd4j::LaunchContext *context, NDArray &input, NDArray &output);
+            void histogramHelper(sd::LaunchContext *context, NDArray &input, NDArray &output);
         }
     }
 }

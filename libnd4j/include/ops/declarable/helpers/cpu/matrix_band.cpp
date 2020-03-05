@@ -19,7 +19,7 @@
 //
 #include <ops/declarable/helpers/matrix_band.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -32,7 +32,7 @@ namespace helpers {
         Nd4jLong preLastDim = input->rankOf() - 2;
         ResultSet listOut = output->allTensorsAlongDimension({(int)preLastDim, (int)lastDim});
         ResultSet listDiag = input->allTensorsAlongDimension({(int)preLastDim, (int)lastDim});
-        for (Nd4jLong e = 0; e < listOut.size(); ++e) {
+        for (Nd4jLong e = 0; e < static_cast<Nd4jLong>(listOut.size()); ++e) {
             NDArray* inputMatrix = listDiag.at(e);
             NDArray* outputMatrix = listOut.at(e);
             if (outputMatrix != inputMatrix) // if not inplace
@@ -63,7 +63,7 @@ namespace helpers {
         }
     }
 
-    void matrixBandPart(nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    void matrixBandPart(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (input, output, lowerBand, upperBand), FLOAT_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);

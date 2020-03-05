@@ -19,12 +19,12 @@
 //
 
 #include <ops/declarable/helpers/nth_element.h>
-#include <TAD.h>
-#include <ShapeUtils.h>
+#include <helpers/TAD.h>
+#include <helpers/ShapeUtils.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -47,7 +47,7 @@ namespace helpers {
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
 
-            auto pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.shapeInfo(), lastDims);
+            auto pack = sd::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.shapeInfo(), lastDims);
 
             SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), pack.primaryShapeInfo(), pack.primaryOffsets(), reverse);
 
@@ -55,7 +55,7 @@ namespace helpers {
             Nd4jLong oL = output->lengthOf();
 
             auto func = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+                for (auto e = start; e < stop; e++) {
                     auto row = rows.at(e);
                     output->p(e, row->e<T>(n));
                 }
@@ -65,7 +65,7 @@ namespace helpers {
         }
     }
 
-    void nthElementFunctor(nd4j::LaunchContext  *launchContext, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
+    void nthElementFunctor(sd::LaunchContext  *launchContext, NDArray* input, Nd4jLong n, NDArray* output, bool reverse) {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (input, n, output, reverse), LIBND4J_TYPES);
 
     }

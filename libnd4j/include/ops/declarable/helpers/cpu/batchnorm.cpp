@@ -19,12 +19,12 @@
 //
 
 
-#include<ops/declarable/helpers/batchnorm.h>
+#include <ops/declarable/helpers/batchnorm.h>
 #include <helpers/ShapeUtils.h>
-#include <OmpLaunchHelper.h>
+#include <helpers/OmpLaunchHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
@@ -66,7 +66,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
         Nd4jLong* zOffsets = xzSameOffset ? xOffsets : new Nd4jLong[steps];
         Nd4jLong* auxBuff = new Nd4jLong[2 * input->rankOf()];
 
-        for (int j = 0; j < lenSmall; ++j) {
+        for (Nd4jLong j = 0; j < lenSmall; ++j) {
 
             const bool isOwner = (j < info._numThreads) ? thread_id == j : thread_id == (j % info._numThreads);
 
@@ -77,7 +77,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
             const auto varOffset  = paramSameOffset ? meanOffset : shape::getIndexOffset(j, variance->getShapeInfo());
 
             const auto meanVal = m[meanOffset];
-            auto sigmaInvGam   = static_cast<T>(1) / nd4j::math::nd4j_sqrt<T, T>(v[varOffset] + epsilon);
+            auto sigmaInvGam   = static_cast<T>(1) / sd::math::nd4j_sqrt<T, T>(v[varOffset] + epsilon);
 
             if(g != nullptr) {
                 const auto gammaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, gamma->getShapeInfo());
@@ -96,7 +96,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
                 shape::outerArrayOffsets(zOffsets, j, output->getShapeInfo(), mean->getShapeInfo(), auxBuff, dimsToExclude.data());
 
             PRAGMA_OMP_SIMD
-            for (uint i = 0; i < steps; ++i)
+            for (Nd4jLong i = 0; i < steps; ++i)
                 z[zOffsets[i]] = (x[xOffsets[i]] - meanVal) * sigmaInvGam + betaVal;
         }
 
@@ -141,7 +141,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
 
         Nd4jLong coords[MAX_RANK];
 
-        for (auto i = start; i < stop; i += increment) {
+        for (auto i = start; i < stop; i++) {
 
             shape::index2coords(i, input->getShapeInfo(), coords);
 
@@ -162,7 +162,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
             const auto meanOffset     = shape::getOffset(mean->getShapeInfo(), coords);
             const auto varianceOffset = paramSameOffset ? meanOffset : shape::getOffset(variance->getShapeInfo(), coords);
 
-            T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(v[varianceOffset] + epsilon);
+            T sigmaInvGam = 1. / sd::math::nd4j_sqrt<T, T>(v[varianceOffset] + epsilon);
 
             if(g != nullptr) {
                 const auto gammaOffset = paramSameOffset ? meanOffset : shape::getOffset(gamma->getShapeInfo(), coords);

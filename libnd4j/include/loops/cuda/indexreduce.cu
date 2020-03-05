@@ -18,9 +18,9 @@
 // Created by raver on 4/9/2018.
 //
 
-#include <Environment.h>
+#include <system/Environment.h>
 #include "../indexreduce.h"
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <helpers/DebugHelper.h>
 #include <types/types.h>
 
@@ -230,9 +230,9 @@ namespace functions {
             }
             __syncthreads();
 
-            if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
+            if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
 
-                if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+                if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
                     return;
 
                 for (uint i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x)
@@ -268,7 +268,7 @@ namespace functions {
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -289,7 +289,7 @@ namespace functions {
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -320,7 +320,7 @@ namespace functions {
                 sPartials[threadIdx.x] = reduction;
                 __syncthreads();
 
-                aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, (int) n),extraParams);
+                aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, (int) n),extraParams);
                 __syncthreads();
 
                 if (gridDim.x > 1) {
@@ -352,7 +352,7 @@ namespace functions {
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x),extraParams);
+                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(gridDim.x, blockDim.x),extraParams);
 
                         __syncthreads();
                         if (tid == 0) {

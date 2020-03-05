@@ -20,7 +20,7 @@
 
 #include <types/int8.h>
 
-namespace nd4j {
+namespace sd {
 
 /*
     template int8::int8(const float& rhs);

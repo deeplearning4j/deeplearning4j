@@ -19,9 +19,9 @@
 //
 
 #include <ops/declarable/helpers/fake_quantization.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -47,7 +47,7 @@ namespace helpers {
             if (zeroPointFromMin > quantMaxF) {
                 return static_cast<uint16_t>(quantMax);
             }
-            return nd4j::math::nd4j_round<T,uint16_t>(zeroPointFromMin);
+            return sd::math::nd4j_round<T,uint16_t>(zeroPointFromMin);
         }();
         *nudgedMax = (quantMaxF - static_cast<T>(nudgedZeroPoint)) * (*scale);
         *nudgedMin = (quantMinF - static_cast<T>(nudgedZeroPoint)) * (*scale);

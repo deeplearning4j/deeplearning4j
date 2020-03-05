@@ -23,12 +23,12 @@
 
 #include <ops/declarable/helpers/helpers.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
 	// be careful: outVector must have c-order and ews = 1 !!!
-	void range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector);
+	void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector);
 
 }
 }

@@ -27,7 +27,7 @@
 
 #if defined(HAVE_MKLDNN)
 
-namespace nd4j {
+namespace sd {
     class MKLDNNStream {
     protected:
         std::string _opName;
@@ -47,7 +47,7 @@ namespace nd4j {
         static bool isSupported(const std::vector<const NDArray*> &arrays) {
             // FIXME: strict float support doesn't work anymore
             for (auto v:arrays) {
-                if (v != nullptr && v->dataType() != nd4j::DataType::FLOAT32) {
+                if (v != nullptr && v->dataType() != sd::DataType::FLOAT32) {
                     return false;
                 }
             }

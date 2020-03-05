@@ -19,12 +19,12 @@
 //
 
 #include <ops/declarable/helpers/sg_cb.h>
-#include <specials.h>
+#include <ops/specials.h>
 #include <execution/Threads.h>
 
 #define HS_MAX_EXP 6.0f
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
@@ -172,7 +172,7 @@ namespace nd4j {
                             // target is known in advance
                         } else {
                             randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                            auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
+                            auto idx = sd::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
                             irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -247,7 +247,7 @@ namespace nd4j {
                             // target is known in advance
                         } else {
                             randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                            auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
+                            auto idx = sd::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
                             irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                             if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
@@ -276,7 +276,7 @@ namespace nd4j {
             int binarySearch(const int *haystack, const int needle, const int totalElements) {
                 int firstIndex = 0;
                 int lastIndex = totalElements - 1;
-                int halfIndex = nd4j::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
+                int halfIndex = sd::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
 
                 while(haystack[halfIndex] != needle && firstIndex < lastIndex) {
                     if (needle < haystack[halfIndex]) {
@@ -284,7 +284,7 @@ namespace nd4j {
                     } else if (needle > haystack[halfIndex]) {
                         firstIndex = halfIndex + 1;
                     }
-                    halfIndex = nd4j::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
+                    halfIndex = sd::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
                 }
 
                 return (haystack[halfIndex] == needle) ? halfIndex : -1;
@@ -310,8 +310,8 @@ namespace nd4j {
                 int irow = 0;
                 unsigned long long randomValue = rv;
                 for (int r = 0; r < nsRounds; r++) {
-                    randomValue = nd4j::math::nd4j_abs<Nd4jLong>(randomValue * (unsigned long long) 25214903917 + 11);
-                    auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
+                    randomValue = sd::math::nd4j_abs<Nd4jLong>(randomValue * (unsigned long long) 25214903917 + 11);
+                    auto idx = sd::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
                     irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                     if (irow < 0 || irow >= vocabSize)
@@ -364,7 +364,7 @@ namespace nd4j {
                     auto func = PRAGMA_THREADS_FOR {
                         T sneu1e[600];
 
-                        for (auto t = start; t < stop; t += increment) {
+                        for (auto t = start; t < stop; t++) {
                             T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
                             memset(neu1e, 0, vectorLength * sizeof(T));
 
@@ -378,7 +378,7 @@ namespace nd4j {
                                 int irow = 0;
                                 auto cShift = t * idxShift;
 
-                                for (int e = 0; e < hsRounds; e++) {
+                                for (Nd4jLong e = 0; e < hsRounds; e++) {
                                     irow = bIndices[e + cShift];
                                     if (irow < 0 || irow >= vocabSize)
                                         continue;
@@ -401,7 +401,7 @@ namespace nd4j {
                                         // target is known in advance
                                     } else {
                                         randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                                        auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
+                                        auto idx = sd::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
                                         irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                                         if (irow < 0 || irow >= vocabSize)
@@ -457,7 +457,7 @@ namespace nd4j {
                     T sneu1[600];
                     T sneu1e[600];
 
-                    for (int e = start; e < stop; e += increment) {
+                    for (auto e = start; e < stop; e++) {
                         T *neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
                         T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
 
@@ -500,7 +500,7 @@ namespace nd4j {
 
                         // hierarchic softmax step
                         if (!indices.isEmpty()) {
-                            for (int i = 0; i < numIndices; i++) {
+                            for (Nd4jLong i = 0; i < numIndices; i++) {
                                 const int cIndex = bIndices[(e * numIndices) + i];
                                 const int cCode = bCodes[(e * numIndices) + i];
 
@@ -526,7 +526,7 @@ namespace nd4j {
                                 // we're skipping rng on 0 step
                                 if (r != 0) {
                                     randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                                    auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
+                                    auto idx = sd::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
                                     irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
 
                                     if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;

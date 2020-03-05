@@ -21,7 +21,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/nth_element.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(nth_element, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -70,8 +70,8 @@ namespace nd4j {
         }
         DECLARE_TYPES(nth_element) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                    ->setAllowedInputTypes(sd::DataType::ANY)
+                    ->setAllowedOutputTypes(sd::DataType::ANY);
         }
 
     }

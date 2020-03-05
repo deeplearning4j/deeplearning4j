@@ -21,11 +21,11 @@
 #ifndef DEV_TESTS_SHIFT_H
 #define DEV_TESTS_SHIFT_H
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/types.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             void rshift_bits(LaunchContext* launchContext, NDArray &x, NDArray &z, uint32_t shift);

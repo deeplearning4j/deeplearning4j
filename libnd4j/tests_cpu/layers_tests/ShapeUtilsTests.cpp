@@ -20,11 +20,11 @@
 
 #include "testlayers.h"
 #include <helpers/ShapeUtils.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class ShapeUtilsTests : public testing::Test {
 public:

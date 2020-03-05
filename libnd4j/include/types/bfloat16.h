@@ -43,7 +43,7 @@
 #define local_def inline
 #endif
 
-//namespace nd4j
+//namespace sd
 //{
   struct bfloat16
   {

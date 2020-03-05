@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_random_exponential)
 
 #include <ops/declarable/headers/random.h>
 #include <helpers/RandomLauncher.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(random_exponential, 1, 1, true, 1, 0) {
             // uniform distribution
@@ -69,7 +69,7 @@ namespace nd4j {
 
         DECLARE_TYPES(random_exponential) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

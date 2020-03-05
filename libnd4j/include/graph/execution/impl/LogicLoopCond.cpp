@@ -21,7 +21,7 @@
 #include <graph/execution/LogicLoopCond.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicLoopCond::processNode(Graph *graph, Node *node) {
             auto __variableSpace = graph->getVariableSpace();

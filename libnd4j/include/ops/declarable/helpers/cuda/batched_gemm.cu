@@ -21,14 +21,14 @@
 
 #include <exceptions/cuda_exception.h>
 #include <cublas_v2.h>
-#include <specials_cuda.h>
-#include <op_boilerplate.h>
+#include <ops/specials_cuda.h>
+#include <system/op_boilerplate.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/batched_gemm.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -92,7 +92,7 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
         pCbuffs[i] = pC[i]->getSpecialBuffer();
     }
 
-    nd4j::LaunchContext* context = vA[0]->getContext();
+    sd::LaunchContext* context = vA[0]->getContext();
     PointersManager manager(context, "helpers::bgemm cuda");
 
     const void** aBuffers = reinterpret_cast<const void**>(manager.replicatePointer(pAbuffs.data(), bS * sizeof(void*)));

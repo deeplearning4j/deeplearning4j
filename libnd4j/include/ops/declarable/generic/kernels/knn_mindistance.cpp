@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_knn_mindistance)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/knn.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(knn_mindistance, 3, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);

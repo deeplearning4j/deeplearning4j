@@ -18,14 +18,14 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_depth_to_space)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/d_t_s.h>
 #include <array>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(depth_to_space, 1, 1, false, 0, 2) {
         int block_size = INT_ARG(0);
@@ -53,7 +53,7 @@ namespace ops {
 
     DECLARE_TYPES(depth_to_space) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
     }
     

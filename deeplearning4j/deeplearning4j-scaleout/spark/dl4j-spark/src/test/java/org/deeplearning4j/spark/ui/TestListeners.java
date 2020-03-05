@@ -87,7 +87,7 @@ public class TestListeners extends BaseSparkTest {
         net.fit(rdd);
 
         List<String> sessions = ss.listSessionIDs();
-        System.out.println("Sessions: " + sessions);
+//        System.out.println("Sessions: " + sessions);
         assertEquals(1, sessions.size());
 
         String sid = sessions.get(0);
@@ -95,15 +95,15 @@ public class TestListeners extends BaseSparkTest {
         List<String> typeIDs = ss.listTypeIDsForSession(sid);
         List<String> workers = ss.listWorkerIDsForSession(sid);
 
-        System.out.println(sid + "\t" + typeIDs + "\t" + workers);
+//        System.out.println(sid + "\t" + typeIDs + "\t" + workers);
 
         List<Persistable> lastUpdates = ss.getLatestUpdateAllWorkers(sid, StatsListener.TYPE_ID);
-        System.out.println(lastUpdates);
+//        System.out.println(lastUpdates);
 
-        System.out.println("Static info:");
+//        System.out.println("Static info:");
         for (String wid : workers) {
             Persistable staticInfo = ss.getStaticInfo(sid, StatsListener.TYPE_ID, wid);
-            System.out.println(sid + "\t" + wid);
+//            System.out.println(sid + "\t" + wid);
         }
 
         assertEquals(1, typeIDs.size());

@@ -17,7 +17,7 @@
 #include <ops/declarable/helpers/compare_elem.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template<typename T>
@@ -25,8 +25,8 @@ namespace nd4j {
                 auto length = shape::length(input->getShapeInfo());
 
                 int elementsPerThread = length / ELEMENT_THRESHOLD;
-                int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                int num_threads = sd::math::nd4j_max<int>(1, elementsPerThread);
+                num_threads = sd::math::nd4j_min<int>(num_threads, omp_get_max_threads());
                 Nd4jLong sumt = 0;
 
                 if(isStrictlyIncreasing) {
@@ -62,7 +62,7 @@ namespace nd4j {
 
             }
 
-            void compare_elem(nd4j::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
+            void compare_elem(sd::LaunchContext * context, NDArray *input, bool isStrictlyIncreasing, bool& output) {
                 auto xType = input->dataType();
 
                 BUILD_SINGLE_SELECTOR(xType, _compare_elem, (input, isStrictlyIncreasing, output), LIBND4J_TYPES);

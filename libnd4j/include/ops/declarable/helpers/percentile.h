@@ -22,13 +22,13 @@
 #define LIBND4J_PERCENTILE_H
 
 #include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include "array/NDArray.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    void percentile(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation);
+    void percentile(sd::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation);
     
 
 }

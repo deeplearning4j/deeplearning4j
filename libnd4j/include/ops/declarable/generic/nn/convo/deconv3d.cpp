@@ -18,15 +18,15 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 05.09.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_deconv3d)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/addBias.h>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
@@ -75,7 +75,7 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
     //----- calculation of output -----//
     // NDHWC: [kD, kH, kW, oC, iC] x [bS, iD, iH, iW, iC] = [kD, kH, kW, oC, bS, iD, iH, iW]
     // NCDHW: [kD, kH, kW, oC, iC] x [bS, iC, iD, iH, iW] = [kD, kH, kW, oC, bS, iD, iH, iW]
-    nd4j::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 4, 1, 0, 5, 6, 7});   // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
+    sd::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 4, 1, 0, 5, 6, 7});   // [bS, oC, kD, kH, kW, iD, iH, iW] -> [kD, kH, kW, oC, bS, iD, iH, iW]
     ConvolutionUtils::col2vol(block, columns, *output, sD, sH, sW, pD, pH, pW, dD, dH, dW);                   // [bS, oC, kD, kH, kW, iD, iH, iW] is de-convoluted to [bS, oC, oD, oH, oW]
 
     //----- add biases if required -----//
@@ -92,7 +92,7 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
    DECLARE_TYPES(deconv3d) {
         getOpDescriptor()
-                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0, sd::DataType::ANY)
                 ->setAllowedInputTypes(1, {ALL_FLOATS})
                 ->setAllowedInputTypes(2, {ALL_FLOATS})
                 ->setAllowedOutputTypes({ALL_FLOATS});
@@ -220,7 +220,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
         ConvolutionUtils::calcPadding3D(pD, pH, pW, iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
 
      // ----- calculation of gradI -> pass it through conv3d_ff ----- //
-    nd4j::ops::conv3dnew conv3d;
+    sd::ops::conv3dnew conv3d;
     const Nd4jStatus status = conv3d.execute({gradO, weights}, {gradI}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  isSameMode,  !isNCDHW}, {});
     if (status != ND4J_STATUS_OK)
         return status;
@@ -257,7 +257,7 @@ CUSTOM_OP_IMPL(deconv3d_bp, 3, 2, false, 0, 13) {
 
  DECLARE_TYPES(deconv3d_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0, sd::DataType::ANY)
                 ->setAllowedInputTypes(1, {ALL_FLOATS})
                 ->setAllowedInputTypes(2, {ALL_FLOATS})
                 ->setAllowedInputTypes(3, {ALL_FLOATS})

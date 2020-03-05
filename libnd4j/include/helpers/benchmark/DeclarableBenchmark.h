@@ -22,25 +22,25 @@
 #ifndef DEV_TESTS_DECLARABLEBENCHMARK_H
 #define DEV_TESTS_DECLARABLEBENCHMARK_H
 
-#include <NDArray.h>
-#include <Context.h>
-#include <OpBenchmark.h>
-#include <declarable/DeclarableOp.h>
-#include <declarable/OpRegistrator.h>
-#include <PointersManager.h>
+#include <array/NDArray.h>
+#include <graph/Context.h>
+#include <helpers/OpBenchmark.h>
+#include <ops/declarable/DeclarableOp.h>
+#include <ops/declarable/OpRegistrator.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT DeclarableBenchmark : public OpBenchmark  {
     protected:
-        nd4j::ops::DeclarableOp *_op = nullptr;
-        nd4j::graph::Context *_context = nullptr;
+        sd::ops::DeclarableOp *_op = nullptr;
+        sd::graph::Context *_context = nullptr;
     public:
-        DeclarableBenchmark(nd4j::ops::DeclarableOp &op, std::string name = 0) : OpBenchmark() {
+        DeclarableBenchmark(sd::ops::DeclarableOp &op, std::string name = 0) : OpBenchmark() {
             _op = &op; //ops::OpRegistrator::getInstance()->getOperation(op.getOpHash());
             _testName = name;
         }
 
-        void setContext(nd4j::graph::Context *ctx) {
+        void setContext(sd::graph::Context *ctx) {
             _context = ctx;
         }
 

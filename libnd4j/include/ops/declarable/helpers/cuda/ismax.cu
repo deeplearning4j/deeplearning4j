@@ -24,16 +24,16 @@
 #include<ops/declarable/helpers/ismax.h>
 #include<loops/special_kernels.h>
 #include <helpers/DebugHelper.h>
-#include <cuda_exception.h>
-#include <PointersManager.h>
+#include <exceptions/cuda_exception.h>
+#include <helpers/PointersManager.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
 template <typename T>
-static void ismax_(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
+static void ismax_(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
     auto stream = context->getCudaStream();
 
     auto xRank = input->rankOf();
@@ -61,7 +61,7 @@ static void ismax_(nd4j::LaunchContext * context, const NDArray* input, NDArray*
         int dimensionLength = dimensions.size();
         std::vector<int> copy(dimensions);
 
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), copy.data(), copy.size());
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), copy.data(), copy.size());
 
         // we launch legacy IndexMax op, to get indices of max values along dimension
         auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
@@ -76,7 +76,7 @@ static void ismax_(nd4j::LaunchContext * context, const NDArray* input, NDArray*
 }
 
 
-void ismax(nd4j::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
+void ismax(sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions) {
     NDArray::prepareSpecialUse({output}, {input});
 
     BUILD_SINGLE_SELECTOR(input->dataType(), ismax_, (context, input, output, dimensions), LIBND4J_TYPES);
@@ -84,7 +84,7 @@ void ismax(nd4j::LaunchContext * context, const NDArray *input, NDArray *output,
     NDArray::registerSpecialUse({output}, {input});
 }
 
-BUILD_SINGLE_TEMPLATE(template void ismax_, (nd4j::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ismax_, (sd::LaunchContext * context, const NDArray *input, NDArray *output, const std::vector<int>& dimensions), LIBND4J_TYPES);
 
 }
 }

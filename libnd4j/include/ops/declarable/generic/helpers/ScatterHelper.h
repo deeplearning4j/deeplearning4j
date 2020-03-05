@@ -22,14 +22,14 @@
 #ifndef LIBND4J_SCATTERHELPER_H
 #define LIBND4J_SCATTERHELPER_H
 
-#include <pointercast.h>
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 #include <numeric>
 #include <ops/declarable/helpers/scatter.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 

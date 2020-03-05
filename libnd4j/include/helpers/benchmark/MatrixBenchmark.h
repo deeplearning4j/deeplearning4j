@@ -18,13 +18,13 @@
 // @author raver119@gmail.com
 //
 
-#include "../OpBenchmark.h"
-#include <MmulHelper.h>
+#include <helpers/OpBenchmark.h>
+#include <helpers/MmulHelper.h>
 
 #ifndef DEV_TESTS_MATRIXBENCHMARK_H
 #define DEV_TESTS_MATRIXBENCHMARK_H
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT MatrixBenchmark : public OpBenchmark {
     private:
         float _alpha = 1.0f;

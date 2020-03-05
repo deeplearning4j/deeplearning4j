@@ -20,14 +20,14 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/ops.h>
-#include <GradCheck.h>
+#include <helpers/GradCheck.h>
 #include <helpers/RandomLauncher.h>
 #include <exceptions/cuda_exception.h>
 
 
-using namespace nd4j;
+using namespace sd;
 
 
 class AtomicTests : public testing::Test {
@@ -48,16 +48,16 @@ static _CUDA_G void multiplyKernel(void *vbuffer, uint64_t length, void *vresult
         auto rem = e % 4;
         auto i = (e - rem) / 4;
 
-        nd4j::math::atomics::nd4j_atomicMul<T>(&result[i], buffer[e]);
+        sd::math::atomics::nd4j_atomicMul<T>(&result[i], buffer[e]);
     }
 }
 
 template <typename T>
 static void multiplyLauncher(void *vbuffer, uint64_t length, void *vresult) {
-    multiplyKernel<T><<<256, 256, 1024, *nd4j::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
-    auto err = cudaStreamSynchronize(*nd4j::LaunchContext::defaultContext()->getCudaStream());
+    multiplyKernel<T><<<256, 256, 1024, *sd::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
+    auto err = cudaStreamSynchronize(*sd::LaunchContext::defaultContext()->getCudaStream());
     if (err != 0)
-        nd4j::cuda_exception::build("multiply failed", err);
+        sd::cuda_exception::build("multiply failed", err);
 }
 
 template <typename T>
@@ -71,16 +71,16 @@ static _CUDA_G void sumKernel(void *vbuffer, uint64_t length, void *vresult) {
         auto rem = e % 4;
         auto i = (e - rem) / 4;
 
-        nd4j::math::atomics::nd4j_atomicAdd<T>(&result[i], buffer[e]);
+        sd::math::atomics::nd4j_atomicAdd<T>(&result[i], buffer[e]);
     }
 }
 
 template <typename T>
 static void sumLauncher(void *vbuffer, uint64_t length, void *vresult) {
-    sumKernel<T><<<256, 256, 1024, *nd4j::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
-    auto err = cudaStreamSynchronize(*nd4j::LaunchContext::defaultContext()->getCudaStream());
+    sumKernel<T><<<256, 256, 1024, *sd::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
+    auto err = cudaStreamSynchronize(*sd::LaunchContext::defaultContext()->getCudaStream());
     if (err != 0)
-        nd4j::cuda_exception::build("sum failed", err);
+        sd::cuda_exception::build("sum failed", err);
 }
 
 template <typename T>
@@ -94,16 +94,16 @@ static _CUDA_G void subKernel(void *vbuffer, uint64_t length, void *vresult) {
         auto rem = e % 4;
         auto i = (e - rem) / 4;
 
-        nd4j::math::atomics::nd4j_atomicSub<T>(&result[i], buffer[e]);
+        sd::math::atomics::nd4j_atomicSub<T>(&result[i], buffer[e]);
     }
 }
 
 template <typename T>
 static void subLauncher(void *vbuffer, uint64_t length, void *vresult) {
-    subKernel<T><<<256, 256, 1024, *nd4j::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
-    auto err = cudaStreamSynchronize(*nd4j::LaunchContext::defaultContext()->getCudaStream());
+    subKernel<T><<<256, 256, 1024, *sd::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
+    auto err = cudaStreamSynchronize(*sd::LaunchContext::defaultContext()->getCudaStream());
     if (err != 0)
-        nd4j::cuda_exception::build("sub failed", err);
+        sd::cuda_exception::build("sub failed", err);
 }
 
 template <typename T>
@@ -117,16 +117,16 @@ static _CUDA_G void divKernel(void *vbuffer, uint64_t length, void *vresult) {
         auto rem = e % 4;
         auto i = (e - rem) / 4;
 
-        nd4j::math::atomics::nd4j_atomicDiv<T>(&result[i], buffer[e]);
+        sd::math::atomics::nd4j_atomicDiv<T>(&result[i], buffer[e]);
     }
 }
 
 template <typename T>
 static void divLauncher(void *vbuffer, uint64_t length, void *vresult) {
-    divKernel<T><<<256, 256, 1024, *nd4j::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
-    auto err = cudaStreamSynchronize(*nd4j::LaunchContext::defaultContext()->getCudaStream());
+    divKernel<T><<<256, 256, 1024, *sd::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
+    auto err = cudaStreamSynchronize(*sd::LaunchContext::defaultContext()->getCudaStream());
     if (err != 0)
-        nd4j::cuda_exception::build("div failed", err);
+        sd::cuda_exception::build("div failed", err);
 }
 
 static void multiplyHost(NDArray &input, NDArray &output) {
@@ -146,7 +146,7 @@ static void divHost(NDArray &input, NDArray &output) {
 }
 
 TEST_F(AtomicTests, test_multiply) {
-    std::vector<nd4j::DataType> dtypes = {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE, nd4j::DataType::INT16, nd4j::DataType::HALF};
+    std::vector<sd::DataType> dtypes = {sd::DataType::FLOAT32, sd::DataType::DOUBLE, sd::DataType::INT16, sd::DataType::HALF};
 
     for (auto t:dtypes) {
         nd4j_printf("Trying data type [%s]\n", DataTypeUtils::asString(t).c_str());
@@ -164,7 +164,7 @@ TEST_F(AtomicTests, test_multiply) {
 }
 
 TEST_F(AtomicTests, test_multiply_2) {
-    std::vector<nd4j::DataType> dtypes = {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE, nd4j::DataType::HALF, nd4j::DataType::BFLOAT16};
+    std::vector<sd::DataType> dtypes = {sd::DataType::FLOAT32, sd::DataType::DOUBLE, sd::DataType::HALF, sd::DataType::BFLOAT16};
 
     for (auto t:dtypes) {
         nd4j_printf("Trying data type [%s]\n", DataTypeUtils::asString(t).c_str());
@@ -183,7 +183,7 @@ TEST_F(AtomicTests, test_multiply_2) {
 }
 
 TEST_F(AtomicTests, test_sum) {
-    std::vector<nd4j::DataType> dtypes = {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE, nd4j::DataType::BFLOAT16, nd4j::DataType::HALF, nd4j::DataType::INT16};
+    std::vector<sd::DataType> dtypes = {sd::DataType::FLOAT32, sd::DataType::DOUBLE, sd::DataType::BFLOAT16, sd::DataType::HALF, sd::DataType::INT16};
 
     for (auto t:dtypes) {
         nd4j_printf("Trying data type [%s]\n", DataTypeUtils::asString(t).c_str());
@@ -202,7 +202,7 @@ TEST_F(AtomicTests, test_sum) {
 }
 
 TEST_F(AtomicTests, test_sub) {
-    std::vector<nd4j::DataType> dtypes = {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE, nd4j::DataType::HALF};
+    std::vector<sd::DataType> dtypes = {sd::DataType::FLOAT32, sd::DataType::DOUBLE, sd::DataType::HALF};
 
     for (auto t:dtypes) {
         nd4j_printf("Trying data type [%s]\n", DataTypeUtils::asString(t).c_str());
@@ -222,7 +222,7 @@ TEST_F(AtomicTests, test_sub) {
 }
 
 TEST_F(AtomicTests, test_div) {
-    std::vector<nd4j::DataType> dtypes = {nd4j::DataType::FLOAT32, nd4j::DataType::DOUBLE, nd4j::DataType::BFLOAT16, nd4j::DataType::HALF};
+    std::vector<sd::DataType> dtypes = {sd::DataType::FLOAT32, sd::DataType::DOUBLE, sd::DataType::BFLOAT16, sd::DataType::HALF};
 
     for (auto t:dtypes) {
         nd4j_printf("Trying data type [%s]\n", DataTypeUtils::asString(t).c_str());

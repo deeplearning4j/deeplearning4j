@@ -22,13 +22,13 @@
 #define LIBND4J_MATRIXSETDIAG_H
 
 #include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include "array/NDArray.h"
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-    void matrixSetDiag(nd4j::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad);
+    void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad);
 
 }
 }

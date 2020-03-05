@@ -23,7 +23,7 @@
 
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         #if NOT_EXCLUDED(OP_permute)
         DECLARE_CUSTOM_OP(permute, 1, 1, false, 0, -2);

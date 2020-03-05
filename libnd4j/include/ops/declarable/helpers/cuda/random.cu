@@ -24,13 +24,13 @@
 #include <memory>
 #include <graph/Context.h>
 #include <helpers/RandomLauncher.h>
-#include <ShapeUtils.h>
-#include <NDArrayFactory.h>
-#include <cuda_exception.h>
+#include <helpers/ShapeUtils.h>
+#include <array/NDArrayFactory.h>
+#include <exceptions/cuda_exception.h>
 #include <helpers/ConstantTadHelper.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -291,7 +291,7 @@ __global__ static void fillMultiNomialCuda_(graph::RandomGenerator* devRng, cons
         
         for (Nd4jLong nClass = 0; nClass < numOfClassX; nClass++) {
             Nd4jLong nIndex = nSamplesPerBatch + nClassPerSamples + nClass;
-            X tValue = (xTad[nClass * xDimAstride] - nd4j::math::nd4j_log<X, X>(-nd4j::math::nd4j_log<X, X>(devRng->relativeT<X>(nIndex, minVal, maxVal))));
+            X tValue = (xTad[nClass * xDimAstride] - sd::math::nd4j_log<X, X>(-sd::math::nd4j_log<X, X>(devRng->relativeT<X>(nIndex, minVal, maxVal))));
             if (tValue > Max) {
                 Max = tValue; 
                 arg = nClass;

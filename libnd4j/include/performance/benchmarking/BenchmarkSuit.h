@@ -22,12 +22,12 @@
 #define LIBND4J_BENCHMARKSUIT_H
 
 #include <string>
-#include <pointercast.h>
-#include <dll.h>
-#include <BenchmarkHelper.h>
-#include <NDArrayFactory.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
+#include <helpers/BenchmarkHelper.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT BenchmarkSuit {
     public:
         BenchmarkSuit() = default;

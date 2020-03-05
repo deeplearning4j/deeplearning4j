@@ -22,7 +22,7 @@
 #include <loops/special_kernels.h>
 #include <ops/declarable/helpers/flatten.h>
 
-namespace nd4j {
+namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -62,7 +62,7 @@ __host__ void flattenKernelGeneric(dim3& launchDims, cudaStream_t *stream,
                             void *vy, Nd4jLong *yShapeInfo) {
 
     flattenKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(extraPointers, dOffset, order, vz, zShapeInfo, vy, yShapeInfo);
-    nd4j::DebugHelper::checkErrorCode(stream, "flattenGeneric(...) failed");
+    sd::DebugHelper::checkErrorCode(stream, "flattenGeneric(...) failed");
 }
 
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT flattenKernelGeneric, (dim3& launchDims, cudaStream_t *stream, Nd4jPointer *extraPointers, int dOffset, char order, void *vz, Nd4jLong *zShapeInfo, void *vy, Nd4jLong *yShapeInfo), LIBND4J_TYPES);

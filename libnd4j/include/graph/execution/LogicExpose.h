@@ -21,11 +21,11 @@
 #ifndef LIBND4J_LOGICEXPOSE_H
 #define LIBND4J_LOGICEXPOSE_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class LogicExpose {
         public:

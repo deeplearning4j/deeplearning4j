@@ -32,31 +32,31 @@
 #include <graph/execution/LogicNextIteration.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicExecutor::processNode(Graph *graph, Node *node) {
             switch (node->opNum()) {
-                case nd4j::logic::While:
+                case sd::logic::While:
                     return LogicWhile::processNode(graph, node);
-                case nd4j::logic::Scope:
+                case sd::logic::Scope:
                     return LogicScope::processNode(graph, node);
-                case nd4j::logic::Conditional:
+                case sd::logic::Conditional:
                     return LogicConditional::processNode(graph, node);
-                case nd4j::logic::Switch:
+                case sd::logic::Switch:
                     return LogicSwitch::processNode(graph, node);
-                case nd4j::logic::Return:
+                case sd::logic::Return:
                     return LogicReturn::processNode(graph, node);
-                case nd4j::logic::Expose:
+                case sd::logic::Expose:
                     return LogicExpose::processNode(graph, node);
-                case nd4j::logic::Merge:
+                case sd::logic::Merge:
                     return LogicMerge::processNode(graph, node);
-                case nd4j::logic::LoopCond:
+                case sd::logic::LoopCond:
                     return LogicLoopCond::processNode(graph, node);
-                case nd4j::logic::NextIteration:
+                case sd::logic::NextIteration:
                     return LogicNextIeration::processNode(graph, node);
-                case nd4j::logic::Exit:
+                case sd::logic::Exit:
                     return LogicExit::processNode(graph, node);
-                case nd4j::logic::Enter:
+                case sd::logic::Enter:
                     return LogicEnter::processNode(graph, node);
             }
 
