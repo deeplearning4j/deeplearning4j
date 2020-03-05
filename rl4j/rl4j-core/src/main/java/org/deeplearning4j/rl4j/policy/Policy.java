@@ -89,7 +89,7 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
         getNeuralNet().reset();
     }
 
-    private <AS extends ActionSpace<A>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<O, A, AS> mdpWrapper, IHistoryProcessor hp, RefacEpochStepCounter epochStepCounter) {
+    protected <AS extends ActionSpace<A>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<O, A, AS> mdpWrapper, IHistoryProcessor hp, RefacEpochStepCounter epochStepCounter) {
         epochStepCounter.setCurrentEpochStep(0);
 
         double reward = 0;
