@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.loss;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
@@ -44,11 +45,11 @@ import java.util.*;
 @NoArgsConstructor
 public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
 
-    public SparseSoftmaxCrossEntropyLossWithLogits(SameDiff sameDiff, SDVariable logits, SDVariable labels) {
+    public SparseSoftmaxCrossEntropyLossWithLogits(@NonNull SameDiff sameDiff, @NonNull SDVariable logits, @NonNull SDVariable labels) {
         super(null, sameDiff, new SDVariable[]{labels, logits}, false);
     }
 
-    public SparseSoftmaxCrossEntropyLossWithLogits(INDArray logits, INDArray labels){
+    public SparseSoftmaxCrossEntropyLossWithLogits(@NonNull INDArray logits, @NonNull INDArray labels){
         super(new INDArray[]{labels, logits}, null);
     }
 

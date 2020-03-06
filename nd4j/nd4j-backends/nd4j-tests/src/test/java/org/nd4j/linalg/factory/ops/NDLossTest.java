@@ -1,5 +1,5 @@
 /* *****************************************************************************
- * Copyright (c) 2015-2018 Konduit k.k.
+ * Copyright (c) 2019-2020 Konduit k.k.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
