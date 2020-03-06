@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
@@ -34,6 +35,10 @@ public class L2Loss extends DynamicCustomOp {
 
     public L2Loss(SameDiff sameDiff, SDVariable var) {
         super(sameDiff, new SDVariable[]{var});
+    }
+
+    public L2Loss(INDArray var){
+        super(new INDArray[]{var}, null);
     }
 
     @Override

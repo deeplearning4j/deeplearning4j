@@ -22,7 +22,9 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +38,16 @@ public abstract class BaseLoss extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{predictions, weights, labels});
         this.lossReduce = lossReduce;
         addArgs();
+    }
+
+    public BaseLoss(@NonNull LossReduce lossReduce, @NonNull INDArray predictions, INDArray weights, @NonNull INDArray labels){
+        super(new INDArray[]{predictions, getWeights(weights, predictions), labels}, null);
+        this.lossReduce = lossReduce;
+        addArgs();
+    }
+
+    protected static INDArray getWeights(INDArray weights, INDArray predictions){
+        return (weights != null) ? weights : Nd4j.scalar(predictions.dataType(), 1.0);
     }
 
     protected BaseLoss(){ }
