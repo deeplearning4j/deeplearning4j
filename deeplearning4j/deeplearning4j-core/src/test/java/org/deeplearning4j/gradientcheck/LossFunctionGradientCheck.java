@@ -535,6 +535,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 break;
             case "LossMAE":
             case "LossMSE":
+            case "SDLossMAE":
+            case "SDLossMSE":
             case "LossL1":
             case "LossL2":
                 ret[1] = Nd4j.rand(labelsShape).muli(2).subi(1);
