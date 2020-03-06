@@ -196,6 +196,11 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
         // 0-> [0,0,0], 1-> [1,0,0], 2-> [2,0,0], 3-> [0,1,0] etc
         //Based on: Nd4j Shape.ind2sub
 
+        int countNon1 = 0;
+        for( int i : numValuesPerParam)
+            if(i > 1)
+                countNon1++;
+
         int denom = product;
         int num = candidateIdx;
         int[] index = new int[numValuesPerParam.length];
@@ -209,12 +214,11 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
         //Now: convert indexes to values in range [0,1]
         //min value -> 0
         //max value -> 1
-        double[] out = new double[numValuesPerParam.length];
-        for (int i = 0; i < out.length; i++) {
-            if (numValuesPerParam[i] <= 1)
-                out[i] = 0.0;
-            else {
-                out[i] = index[i] / ((double) (numValuesPerParam[i] - 1));
+        double[] out = new double[countNon1];
+        int outIdx = 0;
+        for (int i = 0; i < numValuesPerParam.length; i++) {
+            if (numValuesPerParam[i] > 1){
+                out[outIdx++] = index[i] / ((double) (numValuesPerParam[i] - 1));
             }
         }
 
