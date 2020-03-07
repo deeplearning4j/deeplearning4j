@@ -138,6 +138,7 @@ public class AsyncThreadTest {
             asyncGlobal.setMaxLoops(numEpochs);
             listeners.add(listener);
             sut.setHistoryProcessor(historyProcessor);
+            sut.getLegacyMDPWrapper().setTransformProcess(MockMDP.buildTransformProcess(observationSpace.getShape(), hpConf.getSkipFrame(), hpConf.getHistoryLength()));
         }
     }
 
@@ -209,7 +210,4 @@ public class AsyncThreadTest {
             int nstep;
         }
     }
-
-
-
 }

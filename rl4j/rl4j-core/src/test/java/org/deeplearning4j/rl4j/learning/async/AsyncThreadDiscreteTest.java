@@ -34,6 +34,7 @@ public class AsyncThreadDiscreteTest {
         MockPolicy policyMock = new MockPolicy();
         MockAsyncConfiguration config = new MockAsyncConfiguration(5, 100, 0, 0, 2, 5,0, 0, 0, 0);
         TestAsyncThreadDiscrete sut = new TestAsyncThreadDiscrete(asyncGlobalMock, mdpMock, listeners, 0, 0, policyMock, config, hpMock);
+        sut.getLegacyMDPWrapper().setTransformProcess(MockMDP.buildTransformProcess(observationSpace.getShape(), hpConf.getSkipFrame(), hpConf.getHistoryLength()));
 
         // Act
         sut.run();
@@ -60,12 +61,6 @@ public class AsyncThreadDiscreteTest {
         assertEquals(2, asyncGlobalMock.enqueueCallCount);
 
         // HistoryProcessor
-        double[] expectedAddValues = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0 };
-        assertEquals(expectedAddValues.length, hpMock.addCalls.size());
-        for(int i = 0; i < expectedAddValues.length; ++i) {
-            assertEquals(expectedAddValues[i], hpMock.addCalls.get(i).getDouble(0), 0.00001);
-        }
-
         double[] expectedRecordValues = new double[] { 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, };
         assertEquals(expectedRecordValues.length, hpMock.recordCalls.size());
         for(int i = 0; i < expectedRecordValues.length; ++i) {
