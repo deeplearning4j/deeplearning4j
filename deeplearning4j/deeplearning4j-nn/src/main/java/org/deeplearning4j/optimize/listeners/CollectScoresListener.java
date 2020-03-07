@@ -19,6 +19,7 @@ package org.deeplearning4j.optimize.listeners;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
@@ -32,6 +33,7 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Slf4j
 public class CollectScoresListener extends BaseTrainingListener implements Serializable {
 

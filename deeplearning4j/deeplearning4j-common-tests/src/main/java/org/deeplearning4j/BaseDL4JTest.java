@@ -89,12 +89,12 @@ public abstract class BaseDL4JTest {
         return getDataType();
     }
 
-    protected Boolean integrationTest;
+    protected static Boolean integrationTest;
 
     /**
      * @return True if integration tests maven profile is enabled, false otherwise.
      */
-    public boolean isIntegrationTests(){
+    public static boolean isIntegrationTests(){
         if(integrationTest == null){
             String prop = System.getenv("DL4J_INTEGRATION_TESTS");
             integrationTest = Boolean.parseBoolean(prop);
@@ -107,7 +107,7 @@ public abstract class BaseDL4JTest {
      * This can be used to dynamically skip integration tests when the integration test profile is not enabled.
      * Note that the integration test profile is not enabled by default - "integration-tests" profile
      */
-    public void skipUnlessIntegrationTests(){
+    public static void skipUnlessIntegrationTests(){
         assumeTrue("Skipping integration test - integration profile is not enabled", isIntegrationTests());
     }
 

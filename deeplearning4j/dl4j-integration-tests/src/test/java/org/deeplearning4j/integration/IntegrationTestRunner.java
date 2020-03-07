@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17,14 +18,12 @@
 package org.deeplearning4j.integration;
 
 
-import org.nd4j.shade.guava.collect.ImmutableSet;
-import org.nd4j.shade.guava.reflect.ClassPath;
-import org.deeplearning4j.integration.util.CountingMultiDataSetIterator;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
-import org.deeplearning4j.eval.*;
+import org.deeplearning4j.integration.util.CountingMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -42,9 +41,16 @@ import org.deeplearning4j.parallelism.ParallelInference;
 import org.deeplearning4j.parallelism.inference.InferenceMode;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.autodiff.listeners.records.History;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.*;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
@@ -55,12 +61,15 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.resources.Resources;
+import org.nd4j.shade.guava.collect.ImmutableSet;
+import org.nd4j.shade.guava.reflect.ClassPath;
 
 import java.io.*;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -79,6 +88,7 @@ public class IntegrationTestRunner {
     public static final String FLAT_GRADIENTS_FILENAME = "flattenedGradients.bin";
     public static final String TRAINING_CURVE_FILENAME = "trainingCurve.csv";
     public static final String PARAMS_POST_TRAIN_FILENAME = "paramsPostTrain.bin";
+    public static final String PARAMS_POST_TRAIN_SAMEDIFF_DIR = "paramsPostTrain";
     public static final String PARAMS_POST_UNSUPERVISED_FILENAME = "paramsPostUnsupervised.bin";
 
     public static final double MAX_REL_ERROR_SCORES = 1e-4;
@@ -148,21 +158,25 @@ public class IntegrationTestRunner {
     }
 
     public static void runTest(TestCase tc, TemporaryFolder testDir) throws Exception {
-        Preconditions.checkState(Nd4j.dataType() == DataType.FLOAT, "Integration tests must be run with float precision!");
-        log.info("Starting test case: {}", tc.getTestName());
+        BaseDL4JTest.skipUnlessIntegrationTests();      //Tests will ONLY be run if integration test profile is enabled.
+        //This could alternatively be done via maven surefire configuration
+
+        final ModelType modelType = tc.modelType();
+        log.info("Starting test case: {} - type = {}", tc.getTestName(), modelType);
         long start = System.currentTimeMillis();
 
         File workingDir = testDir.newFolder();
         tc.initialize(workingDir);
 
         File testBaseDir = testDir.newFolder();
-        new ClassPathResource("dl4j-integration-tests/" + tc.getTestName()).copyDirectory(testBaseDir);
+//        new ClassPathResource("dl4j-integration-tests/" + tc.getTestName()).copyDirectory(testBaseDir);
+        Resources.copyDirectory((modelType == ModelType.SAMEDIFF ? "samediff-integration-tests/" : "dl4j-integration-tests/") + tc.getTestName(), testBaseDir);
 
 
         MultiLayerNetwork mln = null;
         ComputationGraph cg = null;
-        Model m;
-        boolean isMLN;
+        SameDiff sd = null;
+        Model m = null;
         if (tc.getTestType() == TestCase.TestType.RANDOM_INIT) {
             log.info("Checking RANDOM_INIT test case: saved model vs. initialized model");
             //Checking randomly initialized model:
@@ -173,36 +187,46 @@ public class IntegrationTestRunner {
                 mln = new MultiLayerNetwork(mlc);
                 mln.init();
                 m = mln;
-                isMLN = true;
 
                 MultiLayerNetwork loaded = MultiLayerNetwork.load(savedModel, true);
                 assertEquals("Configs not equal", loaded.getLayerWiseConfigurations(), mln.getLayerWiseConfigurations());
                 assertEquals("Params not equal", loaded.params(), mln.params());
                 assertEquals("Param table not equal", loaded.paramTable(), mln.paramTable());
-            } else {
+            } else if(config instanceof ComputationGraphConfiguration ){
                 ComputationGraphConfiguration cgc = (ComputationGraphConfiguration) config;
                 cg = new ComputationGraph(cgc);
                 cg.init();
                 m = cg;
-                isMLN = false;
 
                 ComputationGraph loaded = ComputationGraph.load(savedModel, true);
                 assertEquals("Configs not equal", loaded.getConfiguration(), cg.getConfiguration());
                 assertEquals("Params not equal", loaded.params(), cg.params());
                 assertEquals("Param table not equal", loaded.paramTable(), cg.paramTable());
+            } else if(config instanceof SameDiff){
+                sd = (SameDiff)config;
+                SameDiff loaded = SameDiff.load(savedModel, true);
+
+                assertSameDiffEquals(sd, loaded);
+            } else {
+                throw new IllegalStateException("Unknown configuration/model type: " + config.getClass());
             }
         } else {
             m = tc.getPretrainedModel();
-            isMLN = (m instanceof MultiLayerNetwork);
-            if (isMLN) {
+            if (m instanceof MultiLayerNetwork) {
                 mln = (MultiLayerNetwork) m;
-            } else {
+            } else if(m instanceof ComputationGraph) {
                 cg = (ComputationGraph) m;
+            } else if(m instanceof SameDiff){
+                sd = (SameDiff)m;
+            } else {
+                throw new IllegalStateException("Unknown model type: " + m.getClass());
             }
         }
 
         //Collect information for test coverage
-        collectCoverageInformation(m);
+        if(modelType != ModelType.SAMEDIFF) {
+            collectCoverageInformation(m);
+        }
 
 
         //Check network output (predictions)
@@ -210,15 +234,16 @@ public class IntegrationTestRunner {
             log.info("Checking predictions: saved output vs. initialized model");
 
 
-            List<Pair<INDArray[], INDArray[]>> inputs = tc.getPredictionsTestData();
-            Preconditions.checkState(inputs != null && inputs.size() > 0, "Input data is null or length 0 for test: %s", tc.getTestName());
+            List<Pair<INDArray[], INDArray[]>> inputs = modelType != ModelType.SAMEDIFF ? tc.getPredictionsTestData() : null;
+            List<Map<String,INDArray>> inputsSd = modelType == ModelType.SAMEDIFF ? tc.getPredictionsTestDataSameDiff() : null;
+            Preconditions.checkState(modelType == ModelType.SAMEDIFF || inputs != null && inputs.size() > 0, "Input data is null or length 0 for test: %s", tc.getTestName());
 
 
             File predictionsTestDir = new File(testBaseDir, "predictions");
             predictionsTestDir.mkdirs();
 
             int count = 0;
-            if (isMLN) {
+            if (modelType == ModelType.MLN) {
                 for (Pair<INDArray[], INDArray[]> p : inputs) {
                     INDArray f = p.getFirst()[0];
                     INDArray fm = (p.getSecond() == null ? null : p.getSecond()[0]);
@@ -231,15 +256,15 @@ public class IntegrationTestRunner {
                         outSaved = Nd4j.read(dis);
                     }
 
-                    INDArray gradExceedsRE = exceedsRelError(outSaved, out, tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
-                    int countExceeds = gradExceedsRE.sumNumber().intValue();
+                    INDArray predictionExceedsRE = exceedsRelError(outSaved, out, tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
+                    int countExceeds = predictionExceedsRE.sumNumber().intValue();
                     assertEquals("Predictions do not match saved predictions - output", 0, countExceeds);
                 }
-            } else {
+            } else if(modelType == ModelType.CG){
                 for (Pair<INDArray[], INDArray[]> p : inputs) {
                     INDArray[] out = cg.output(false, p.getFirst(), p.getSecond(), null);
 
-                    //Save the array(s)...
+                    //Load the previously saved arrays
                     INDArray[] outSaved = new INDArray[out.length];
                     for (int i = 0; i < out.length; i++) {
                         File outFile = new File(predictionsTestDir, "output_" + (count++) + "_" + i + ".bin");
@@ -249,14 +274,36 @@ public class IntegrationTestRunner {
                     }
 
                     for( int i=0; i<outSaved.length; i++ ){
-                        INDArray gradExceedsRE = exceedsRelError(outSaved[i], out[i], tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
-                        int countExceeds = gradExceedsRE.sumNumber().intValue();
+                        INDArray predictionExceedsRE = exceedsRelError(outSaved[i], out[i], tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
+                        int countExceeds = predictionExceedsRE.sumNumber().intValue();
                         assertEquals("Predictions do not match saved predictions - output " + i, 0, countExceeds);
+                    }
+                }
+            } else {
+                List<String> outNames = tc.getPredictionsNamesSameDiff();
+                for( Map<String,INDArray> ph : inputsSd ){
+                    Map<String,INDArray> out = sd.output(ph, outNames);
+
+                    //Load the previously saved placeholder arrays
+                    Map<String,INDArray> outSaved = new HashMap<>();
+                    for(String s : outNames){
+                        File f = new File(predictionsTestDir, "output_" + (count++) + "_" + s + ".bin");
+                        try (DataInputStream dis = new DataInputStream(new FileInputStream(f))) {
+                            outSaved.put(s, Nd4j.read(dis));
+                        }
+                    }
+
+                    for(String s : outNames){
+                        INDArray predictionExceedsRE = exceedsRelError(outSaved.get(s), out.get(s), tc.getMaxRelativeErrorOutput(), tc.getMinAbsErrorOutput());
+                        int countExceeds = predictionExceedsRE.sumNumber().intValue();
+                        assertEquals("Predictions do not match saved predictions - output \"" + s + "\"", 0, countExceeds);
                     }
                 }
             }
 
-            checkLayerClearance(m);
+            if(modelType != ModelType.SAMEDIFF) {
+                checkLayerClearance(m);
+            }
         }
 
 
@@ -264,34 +311,49 @@ public class IntegrationTestRunner {
         if (tc.isTestGradients()) {
             log.info("Checking gradients: saved output vs. initialized model");
 
-            MultiDataSet data = tc.getGradientsTestData();
-            INDArray gradientFlat;
-            org.deeplearning4j.nn.api.Layer[] layers;
-            if (isMLN) {
+            INDArray gradientFlat = null;
+            org.deeplearning4j.nn.api.Layer[] layers = null;
+            Map<String,INDArray> grad;
+            if (modelType == ModelType.MLN) {
+                MultiDataSet data = tc.getGradientsTestData();
                 mln.setInput(data.getFeatures(0));
                 mln.setLabels(data.getLabels(0));
                 mln.setLayerMaskArrays(data.getFeaturesMaskArray(0), data.getLabelsMaskArray(0));
                 mln.computeGradientAndScore();
                 gradientFlat = mln.getFlattenedGradients();
                 layers = mln.getLayers();
-            } else {
+                grad = mln.gradient().gradientForVariable();
+            } else if(modelType == ModelType.CG) {
+                MultiDataSet data = tc.getGradientsTestData();
                 cg.setInputs(data.getFeatures());
                 cg.setLabels(data.getLabels());
                 cg.setLayerMaskArrays(data.getFeaturesMaskArrays(), data.getLabelsMaskArrays());
                 cg.computeGradientAndScore();
                 gradientFlat = cg.getFlattenedGradients();
                 layers = cg.getLayers();
+                grad = cg.gradient().gradientForVariable();
+            } else {
+                Map<String,INDArray> ph = tc.getGradientsTestDataSameDiff();
+                List<String> allVars = new ArrayList<>();
+                for(SDVariable v : sd.variables()){
+                    if(v.getVariableType() == VariableType.VARIABLE){
+                        allVars.add(v.name());
+                    }
+                }
+                grad = sd.calculateGradients(ph, allVars);
             }
 
-            File gFlatFile = new File(testBaseDir, IntegrationTestRunner.FLAT_GRADIENTS_FILENAME);
-            INDArray gradientFlatSaved = read(gFlatFile);
+            if(modelType != ModelType.SAMEDIFF) {
+                File gFlatFile = new File(testBaseDir, IntegrationTestRunner.FLAT_GRADIENTS_FILENAME);
+                INDArray gradientFlatSaved = read(gFlatFile);
 
-            INDArray gradExceedsRE = exceedsRelError(gradientFlatSaved, gradientFlat, tc.getMaxRelativeErrorGradients(), tc.getMinAbsErrorGradients());
-            int count = gradExceedsRE.sumNumber().intValue();
-            if(count > 0){
-                logFailedParams(20, "Gradient", layers, gradExceedsRE, gradientFlatSaved, gradientFlat);
+                INDArray gradExceedsRE = exceedsRelError(gradientFlatSaved, gradientFlat, tc.getMaxRelativeErrorGradients(), tc.getMinAbsErrorGradients());
+                int count = gradExceedsRE.sumNumber().intValue();
+                if (count > 0) {
+                    logFailedParams(20, "Gradient", layers, gradExceedsRE, gradientFlatSaved, gradientFlat);
+                }
+                assertEquals("Saved flattened gradients: not equal (using relative error)", 0, count);
             }
-            assertEquals("Saved flattened gradients: not equal (using relative error)", 0, count);
 
             //Load the gradient table:
             File gradientDir = new File(testBaseDir, "gradients");
@@ -302,12 +364,12 @@ public class IntegrationTestRunner {
                 String key = f.getName();
                 key = key.substring(0, key.length() - 4); //remove ".bin"
                 INDArray loaded = read(f);
-                INDArray now = m.gradient().gradientForVariable().get(key);
+                INDArray now = grad.get(key);
 
 
-                gradExceedsRE = exceedsRelError(gradientFlatSaved, gradientFlat, tc.getMaxRelativeErrorGradients(), tc.getMinAbsErrorGradients());
-                count = gradExceedsRE.sumNumber().intValue();
-                assertEquals("Saved flattened gradients: not equal (using relative error) for parameter: " + key, 0, count);
+                INDArray gradExceedsRE = exceedsRelError(loaded, now, tc.getMaxRelativeErrorGradients(), tc.getMinAbsErrorGradients());
+                int count = gradExceedsRE.sumNumber().intValue();
+                assertEquals("Gradients: not equal (using relative error) for parameter: " + key, 0, count);
             }
         }
 
@@ -318,7 +380,7 @@ public class IntegrationTestRunner {
 
             INDArray paramsPostTraining;
             org.deeplearning4j.nn.api.Layer[] layers;
-            if(isMLN){
+            if(modelType == ModelType.MLN){
                 int[] layersToTrain = tc.getUnsupervisedTrainLayersMLN();
                 Preconditions.checkState(layersToTrain != null, "Layer indices must not be null");
                 DataSetIterator dsi = new MultiDataSetWrapperIterator(iter);
@@ -328,7 +390,7 @@ public class IntegrationTestRunner {
                 }
                 paramsPostTraining = mln.params();
                 layers = mln.getLayers();
-            } else {
+            } else if(modelType == ModelType.CG) {
                 String[] layersToTrain = tc.getUnsupervisedTrainLayersCG();
                 Preconditions.checkState(layersToTrain != null, "Layer names must not be null");
 
@@ -337,6 +399,8 @@ public class IntegrationTestRunner {
                 }
                 paramsPostTraining = cg.params();
                 layers = cg.getLayers();
+            } else {
+                throw new UnsupportedOperationException("Unsupported layerwise pretraining not supported for SameDiff models");
             }
 
             File f = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_UNSUPERVISED_FILENAME);
@@ -360,53 +424,78 @@ public class IntegrationTestRunner {
             MultiDataSetIterator trainData = tc.getTrainingData();
             boolean isTbptt;
             int tbpttLength;
-            if(isMLN){
+            if(modelType == ModelType.MLN){
                 isTbptt = mln.getLayerWiseConfigurations().getBackpropType() == BackpropType.TruncatedBPTT;
                 tbpttLength = mln.getLayerWiseConfigurations().getTbpttFwdLength();
-            } else {
+            } else if(modelType == ModelType.CG) {
                 isTbptt = cg.getConfiguration().getBackpropType() == BackpropType.TruncatedBPTT;
                 tbpttLength = cg.getConfiguration().getTbpttFwdLength();
+            } else {
+                isTbptt = false;
+                tbpttLength = 0;
             }
 
             CountingMultiDataSetIterator countingIter = new CountingMultiDataSetIterator(trainData, isTbptt, tbpttLength);
             CollectScoresListener l = new CollectScoresListener(1);
-            m.setListeners(l);
+            if(modelType != ModelType.SAMEDIFF) {
+                m.setListeners(l);
+            }
 
             int iterBefore;
             int epochBefore;
             int iterAfter;
             int epochAfter;
 
-            Map<String,INDArray> frozenParamsBefore = getFrozenLayerParamCopies(m);
-            org.deeplearning4j.nn.api.Layer[] layers;
-            if (isMLN) {
+            Map<String,INDArray> frozenParamsBefore = modelType != ModelType.SAMEDIFF ? getFrozenLayerParamCopies(m) : getConstantCopies(sd);
+            org.deeplearning4j.nn.api.Layer[] layers = null;
+            History h = null;
+            if (modelType == ModelType.MLN) {
                 iterBefore = mln.getIterationCount();
                 epochBefore = mln.getEpochCount();
                 mln.fit(countingIter);
                 iterAfter = mln.getIterationCount();
                 epochAfter = mln.getEpochCount();
                 layers = mln.getLayers();
-            } else {
+            } else if(modelType == ModelType.CG){
                 iterBefore = cg.getConfiguration().getIterationCount();
                 epochBefore = cg.getConfiguration().getEpochCount();
                 cg.fit(countingIter);
                 iterAfter = cg.getConfiguration().getIterationCount();
                 epochAfter = cg.getConfiguration().getEpochCount();
                 layers = cg.getLayers();
+            } else {
+                iterBefore = sd.getTrainingConfig().getIterationCount();
+                epochBefore = sd.getTrainingConfig().getEpochCount();
+                h = sd.fit(countingIter, 1);
+                iterAfter = sd.getTrainingConfig().getIterationCount();
+                epochAfter = sd.getTrainingConfig().getEpochCount();
             }
 
             //Check that frozen params (if any) haven't changed during training:
-            checkFrozenParams(frozenParamsBefore, m);
+            if(modelType == ModelType.SAMEDIFF) {
+                checkConstants(frozenParamsBefore, sd);
+            } else {
+                checkFrozenParams(frozenParamsBefore, m);
+            }
 
             //Validate the iteration and epoch counts - both for the net, and for the layers
             int newIters = countingIter.getCurrIter();
             assertEquals(iterBefore + newIters, iterAfter);
             assertEquals(epochBefore + 1, epochAfter);
-            validateLayerIterCounts(m, epochBefore + 1, iterBefore+newIters);   //TODO CURRENTLY FAILING
-            double[] scores = l.getListScore().toDoubleArray();
+            if(modelType != ModelType.SAMEDIFF) {
+                validateLayerIterCounts(m, epochBefore + 1, iterBefore + newIters);
+            }
+
+
+            double[] scores;
+            if(modelType == ModelType.SAMEDIFF){
+                scores = h.lossCurve().getLossValues().toDoubleVector();
+            } else {
+                scores = l.getListScore().toDoubleArray();
+            }
 
             File f = new File(testBaseDir, IntegrationTestRunner.TRAINING_CURVE_FILENAME);
-            String[] s = FileUtils.readFileToString(f).split(",");
+            String[] s = FileUtils.readFileToString(f, StandardCharsets.UTF_8).split(",");
 
             if(tc.isTestTrainingCurves()) {
                 assertEquals("Different number of scores", s.length, scores.length);
@@ -426,17 +515,36 @@ public class IntegrationTestRunner {
             }
 
             if (tc.isTestParamsPostTraining()) {
-                File p = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_TRAIN_FILENAME);
-                INDArray paramsExp = read(p);
-                INDArray z = exceedsRelError(m.params(), paramsExp, tc.getMaxRelativeErrorParamsPostTraining(), tc.getMinAbsErrorParamsPostTraining());
-                int count = z.sumNumber().intValue();
-                if(count > 0){
-                    logFailedParams(20, "Parameter", layers, z, paramsExp, m.params());
+                if(modelType != ModelType.SAMEDIFF) {
+                    File p = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_TRAIN_FILENAME);
+                    INDArray paramsExp = read(p);
+                    INDArray z = exceedsRelError(m.params(), paramsExp, tc.getMaxRelativeErrorParamsPostTraining(), tc.getMinAbsErrorParamsPostTraining());
+                    int count = z.sumNumber().intValue();
+                    if (count > 0) {
+                        logFailedParams(20, "Parameter", layers, z, paramsExp, m.params());
+                    }
+                    assertEquals("Number of params exceeded max relative error", 0, count);
+                } else {
+                    File dir = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_TRAIN_SAMEDIFF_DIR);
+                    for(SDVariable v : sd.variables()){
+                        if(v.getVariableType() != VariableType.VARIABLE)
+                            continue;
+                        INDArray paramNow = v.getArr();
+                        File paramFile = new File(dir, v.name() + ".bin");
+                        INDArray exp = read(paramFile);
+                        INDArray z = exceedsRelError(paramNow, exp, tc.getMaxRelativeErrorParamsPostTraining(), tc.getMinAbsErrorParamsPostTraining());
+                        int count = z.sumNumber().intValue();
+                        if (count > 0) {
+                            logFailedParams(20, "Parameter: " + v.name(), layers, z, exp, paramNow);
+                        }
+                        assertEquals("Number of params exceeded max relative error for parameter: \"" + v.name() + "\"", 0, count);
+                    }
                 }
-                assertEquals("Number of params exceeded max relative error", 0, count);
             }
 
-            checkLayerClearance(m);
+            if(modelType != ModelType.SAMEDIFF) {
+                checkLayerClearance(m);
+            }
         }
 
         //Check evaluation:
@@ -445,17 +553,19 @@ public class IntegrationTestRunner {
             IEvaluation[] evals = tc.getNewEvaluations();
             MultiDataSetIterator iter = tc.getEvaluationTestData();
 
-            if (isMLN) {
+            if (modelType == ModelType.MLN) {
                 DataSetIterator dsi = new MultiDataSetWrapperIterator(iter);
                 mln.doEvaluation(dsi, evals);
-            } else {
+            } else if(modelType == ModelType.CG){
                 cg.doEvaluation(iter, evals);
+            } else {
+                evals = tc.doEvaluationSameDiff(sd, iter, evals);
             }
 
             File evalDir = new File(testBaseDir, "evaluation");
             for (int i = 0; i < evals.length; i++) {
                 File f = new File(evalDir, i + "." + evals[i].getClass().getSimpleName() + ".json");
-                String json = FileUtils.readFileToString(f);
+                String json = FileUtils.readFileToString(f, StandardCharsets.UTF_8);
                 IEvaluation e;
                 if (evals[i].getClass() == Evaluation.class) {
                     e = Evaluation.fromJson(json);
@@ -479,7 +589,9 @@ public class IntegrationTestRunner {
                 //Evaluation coverage information:
                 evaluationClassesSeen.put(evals[i].getClass(), evaluationClassesSeen.getOrDefault(evals[i].getClass(), 0) + 1);
 
-                checkLayerClearance(m);
+                if(modelType != ModelType.SAMEDIFF) {
+                    checkLayerClearance(m);
+                }
             }
         }
 
@@ -490,15 +602,20 @@ public class IntegrationTestRunner {
             File f = testDir.newFile();
             f.delete();
 
-            ModelSerializer.writeModel(m, f, true);
-            if (isMLN) {
+            if (modelType == ModelType.MLN) {
+                ModelSerializer.writeModel(m, f, true);
                 MultiLayerNetwork restored = MultiLayerNetwork.load(f, true);
                 assertEquals(mln.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
                 assertEquals(mln.params(), restored.params());
-            } else {
+            } else if(modelType == ModelType.CG){
+                ModelSerializer.writeModel(m, f, true);
                 ComputationGraph restored = ComputationGraph.load(f, true);
                 assertEquals(cg.getConfiguration(), restored.getConfiguration());
                 assertEquals(cg.params(), restored.params());
+            } else {
+                sd.save(f, true);
+                SameDiff restored = SameDiff.load(f, true);
+                assertSameDiffEquals(sd, restored);
             }
 
             System.gc();
@@ -506,7 +623,7 @@ public class IntegrationTestRunner {
 
 
         //Check parallel inference
-        if (tc.isTestParallelInference()) {
+        if (modelType != ModelType.SAMEDIFF && tc.isTestParallelInference()) {
 
             List<Pair<INDArray[], INDArray[]>> inputs = tc.getPredictionsTestData();
 
@@ -515,7 +632,7 @@ public class IntegrationTestRunner {
             List<INDArray[]> exp = new ArrayList<>();
             for(Pair<INDArray[], INDArray[]> p : inputs){
                 INDArray[] out;
-                if(isMLN){
+                if(modelType == ModelType.MLN){
                     INDArray fm = p.getSecond() == null ? null : p.getSecond()[0];
                     out = new INDArray[]{mln.output(p.getFirst()[0], false, fm, null)};
                 } else {
@@ -547,37 +664,54 @@ public class IntegrationTestRunner {
 
             MultiDataSet toOverfit = tc.getOverfittingData();
             for (int i = 0; i < tc.getOverfitNumIterations(); i++) {
-                if (isMLN) {
+                if (modelType == ModelType.MLN) {
                     mln.fit(toOverfit);
-                } else {
+                } else if(modelType == ModelType.CG){
                     cg.fit(toOverfit);
+                } else {
+                    sd.fit(toOverfit);
                 }
             }
 
             //Check:
-            INDArray[] output;
-            if (isMLN) {
+            INDArray[] output = null;
+            Map<String,INDArray> outSd = null;
+            if (modelType == ModelType.MLN) {
                 mln.setLayerMaskArrays(toOverfit.getFeaturesMaskArray(0), null);
                 output = new INDArray[]{mln.output(toOverfit.getFeatures(0))};
-            } else {
+            } else if(modelType == ModelType.CG ){
                 cg.setLayerMaskArrays(toOverfit.getFeaturesMaskArrays(), null);
                 output = cg.output(toOverfit.getFeatures());
+            } else {
+                List<String> l = sd.getTrainingConfig().getDataSetFeatureMapping();
+                Map<String,INDArray> phMap = new HashMap<>();
+                int i=0;
+                for(String s : l){
+                    phMap.put(s, toOverfit.getFeatures(i++));
+                }
+                outSd = sd.output(phMap, tc.getPredictionsNamesSameDiff());
             }
 
-            for (int i = 0; i < output.length; i++) {
-                INDArray z = exceedsRelError(output[i], toOverfit.getLabels(i), tc.getMaxRelativeErrorOverfit(), tc.getMinAbsErrorOverfit());
+            int n = modelType == ModelType.SAMEDIFF ? outSd.size() : output.length;
+            for (int i = 0; i < n; i++) {
+                INDArray out = modelType == ModelType.SAMEDIFF ? outSd.get(tc.getPredictionsNamesSameDiff().get(i)) : output[i];
+                INDArray label = toOverfit.getLabels(i);
+
+                INDArray z = exceedsRelError(out, label, tc.getMaxRelativeErrorOverfit(), tc.getMinAbsErrorOverfit());
                 int count = z.sumNumber().intValue();
                 if (count > 0) {
-                    System.out.println(output[i]);
-                    System.out.println(toOverfit.getLabels(i));
-                    INDArray re = relativeError(output[i], toOverfit.getLabels(i), tc.getMinAbsErrorOverfit());
+                    System.out.println(out);
+                    System.out.println(label);
+                    INDArray re = relativeError(out, label, tc.getMinAbsErrorOverfit());
                     System.out.println("Relative error:");
                     System.out.println(re);
                 }
                 assertEquals("Number of outputs exceeded max relative error", 0, count);
             }
 
-            checkLayerClearance(m);
+            if(modelType != ModelType.SAMEDIFF) {
+                checkLayerClearance(m);
+            }
         }
 
         long end = System.currentTimeMillis();
@@ -709,9 +843,26 @@ public class IntegrationTestRunner {
         return out;
     }
 
+    private static Map<String,INDArray> getConstantCopies(SameDiff sd){
+        Map<String,INDArray> out = new HashMap<>();
+        for(SDVariable v : sd.variables()){
+            if(v.isConstant()){
+                out.put(v.name(), v.getArr());
+            }
+        }
+        return out;
+    }
+
     public static void checkFrozenParams(Map<String,INDArray> copiesBeforeTraining, Model m){
         for(Map.Entry<String,INDArray> e : copiesBeforeTraining.entrySet()){
             INDArray actual = m.getParam(e.getKey());
+            assertEquals(e.getKey(), e.getValue(), actual);
+        }
+    }
+
+    public static void checkConstants(Map<String,INDArray> copiesBefore, SameDiff sd){
+        for(Map.Entry<String,INDArray> e : copiesBefore.entrySet()){
+            INDArray actual = sd.getArrForVarName(e.getKey());
             assertEquals(e.getKey(), e.getValue(), actual);
         }
     }
@@ -918,7 +1069,7 @@ public class IntegrationTestRunner {
     }
 
 
-    public static void logFailedParams(int maxNum, String prefix, org.deeplearning4j.nn.api.Layer[] layers, INDArray exceedsRelError, INDArray exp, INDArray act){
+    public static void logFailedParams(int maxNumToPrintOnFailure, String prefix, org.deeplearning4j.nn.api.Layer[] layers, INDArray exceedsRelError, INDArray exp, INDArray act){
         long length = exceedsRelError.length();
         int logCount = 0;
         for(int i=0; i<length; i++ ){
@@ -947,10 +1098,33 @@ public class IntegrationTestRunner {
                 }
 
                 log.info("{} {} ({}) failed: expected {} vs actual {} (RelativeError: {}, AbsError: {})", i, prefix, pName, dExp, dAct, re, ae);
-                if(++logCount >= maxNum){
+                if(++logCount >= maxNumToPrintOnFailure){
                     break;
                 }
             }
+        }
+    }
+
+    public static void assertSameDiffEquals(SameDiff sd1, SameDiff sd2){
+        assertEquals(sd1.variableMap().keySet(), sd2.variableMap().keySet());
+        assertEquals(sd1.getOps().keySet(), sd2.getOps().keySet());
+        assertEquals(sd1.inputs(), sd2.inputs());
+
+        //Check constant and variable arrays:
+        for(SDVariable v : sd1.variables()){
+            String n = v.name();
+            assertEquals(n, v.getVariableType(), sd2.getVariable(n).getVariableType());
+            if(v.isConstant() || v.getVariableType() == VariableType.VARIABLE){
+                INDArray a1 = v.getArr();
+                INDArray a2 = sd2.getVariable(n).getArr();
+                assertEquals(n, a1, a2);
+            }
+        }
+
+        //Check ops:
+        for(SameDiffOp o : sd1.getOps().values()){
+            SameDiffOp o2 = sd2.getOps().get(o.getName());
+            assertEquals(o.getOp().getClass(), o2.getOp().getClass());
         }
     }
 }
