@@ -21,6 +21,12 @@ set -eu
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
+setwindows_msys() {
+  if [[ $KERNEL == *"windows"* ]]; then
+  export CMAKE_COMMAND="$CMAKE_COMMAND -G \"MSYS Makefiles\""
+  fi
+}
+
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
@@ -170,6 +176,8 @@ if [[ -z ${ANDROID_NDK:-} ]]; then
     export ANDROID_NDK=$HOME/Android/android-ndk/
 fi
 
+echo "RUNNING BUILD FOR OS $OS"
+
 case "$OS" in
     linux-armhf)
       export RPI_BIN=$RPI_HOME/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf
@@ -195,23 +203,27 @@ case "$OS" in
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
       export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DSD_ANDROID_BUILD=true"
+      setwindows_msys
     ;;
 
     android-arm64)
       if [ -z "$ARCH" ]; then
         ARCH="armv8-a"
       fi
+      echo "BUILDING ANDROID ARM with KERNEL $KERNEL"
       export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
       export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true"
+      export CMAKE_COMMAND="$CMAKE_COMMAND  -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true -DCMAKE_CXX_COMPILER=$ANDROID_CPP -DCMAKE_C_COMPILER=$ANDROID_CC"
+      setwindows_msys
     ;;
 
     android-x86)
       if [ -z "$ARCH" ]; then
         ARCH="i686"
       fi
+      echo "BUILDING ANDROID x86"
       export ANDROID_BIN="$ANDROID_NDK/toolchains/x86-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
@@ -223,6 +235,7 @@ case "$OS" in
       if [ -z "$ARCH" ]; then
         ARCH="x86-64"
       fi
+      echo "BUILDING ANDROID x86_64"
       export ANDROID_BIN="$ANDROID_NDK/toolchains/x86_64-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
@@ -312,6 +325,7 @@ case "$OS" in
         PARALLEL="true"
         VERBOSE_ARG="-v"
       else
+        echo "SETTING UP WINDOWS"
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
         export MAKE_COMMAND="make"
         export CC=/mingw64/bin/gcc
@@ -485,6 +499,7 @@ fi
 # replace any backslash with a slash
 OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 
+
 mkbuilddir() {
     if [ "$CLEAN" == "true" ]; then
         echo "Removing blasbuild"
@@ -537,7 +552,8 @@ echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
 echo HELPERS = "$HELPERS"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}"  $HELPERS "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+echo "CMAKE COMMAND IS $CMAKE_COMMAND"
+eval "$CMAKE_COMMAND"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}"  $HELPERS "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
