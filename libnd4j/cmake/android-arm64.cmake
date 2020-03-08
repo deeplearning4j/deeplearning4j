@@ -9,9 +9,14 @@
 set(CMAKE_SYSTEM_NAME UnixPaths)
 set(CMAKE_SYSTEM_PROCESSOR arm64)
 set(ANDROID TRUE)
-message ("SET ANDROID C COMPILER $ENV{ANDROID_CC} $ENV{ANDROID_CC}++")
-set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}")
-set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++")
+if (WIN32)
+   set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}.exe")
+   set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++.exe")
+   else()
+   set(CMAKE_C_COMPILER   "$ENV{ANDROID_CC}")
+   set(CMAKE_CXX_COMPILER "$ENV{ANDROID_CC}++")
+endif (WIN32)
+
 
 set(CMAKE_C_LINK_EXECUTABLE    "<CMAKE_C_COMPILER>   <FLAGS> <CMAKE_C_LINK_FLAGS>   <LINK_FLAGS> <OBJECTS> -target aarch64-none-linux-android -Wl,--no-undefined -z text -o <TARGET> <LINK_LIBRARIES> -gcc-toolchain $ENV{ANDROID_BIN} --sysroot=$ENV{ANDROID_ROOT} -lm -lc")
 set(CMAKE_CXX_LINK_EXECUTABLE  "<CMAKE_CXX_COMPILER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -target aarch64-none-linux-android -Wl,--no-undefined -z text -o <TARGET> <LINK_LIBRARIES> -gcc-toolchain $ENV{ANDROID_BIN} --sysroot=$ENV{ANDROID_ROOT} -L$ENV{ANDROID_CPP}/libs/arm64-v8a/ -nostdlib++ -lc++_static -lc++abi -lm -lc")

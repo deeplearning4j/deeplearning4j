@@ -215,7 +215,7 @@ case "$OS" in
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
       export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND  -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true -DCMAKE_CXX_COMPILER=$ANDROID_CPP -DCMAKE_C_COMPILER=$ANDROID_CC"
+      export CMAKE_COMMAND="$CMAKE_COMMAND  -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true"
       setwindows_msys
     ;;
 
