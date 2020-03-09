@@ -90,6 +90,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
+@Ignore
 public class ImportModelDebugger {
 
     @Test

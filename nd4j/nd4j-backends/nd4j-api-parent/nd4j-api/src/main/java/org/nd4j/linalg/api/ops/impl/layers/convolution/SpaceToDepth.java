@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -24,6 +25,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.enums.DataFormat;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -64,6 +66,13 @@ public class SpaceToDepth extends DynamicCustomOp {
         boolean isNHWC = dataFormat.equals("NHWC");
         addIArgument(blockSize, isNHWC ? 1 : 0);
     }
+
+
+
+    public SpaceToDepth(@NonNull INDArray x, int blockSize, @NonNull DataFormat dataFormat) {
+        this(x, null, blockSize,dataFormat.toString());
+    }
+
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

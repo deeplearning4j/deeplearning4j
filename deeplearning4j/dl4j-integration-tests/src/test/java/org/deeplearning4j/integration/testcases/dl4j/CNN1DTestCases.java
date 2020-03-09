@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,22 +15,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.integration.testcases;
+package org.deeplearning4j.integration.testcases.dl4j;
 
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.integration.ModelType;
 import org.deeplearning4j.integration.TestCase;
-import org.deeplearning4j.integration.testcases.misc.CharacterIterator;
+import org.deeplearning4j.integration.testcases.dl4j.misc.CharacterIterator;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -65,11 +68,17 @@ public class CNN1DTestCases {
             int exampleLength = 128;
 
             @Override
+            public ModelType modelType() {
+                return ModelType.CG;
+            }
+
+            @Override
             public Object getConfiguration() throws Exception {
                 CharacterIterator iter = CharacterIterator.getShakespeareIterator(miniBatchSize,exampleLength);
                 int nOut = iter.totalOutcomes();
 
                 return new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.FLOAT)
                         .seed(12345)
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Adam(0.01))

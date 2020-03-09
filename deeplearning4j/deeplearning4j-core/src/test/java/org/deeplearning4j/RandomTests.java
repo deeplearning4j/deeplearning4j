@@ -17,7 +17,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.concurrent.CountDownLatch;
 
 @Ignore
-public class RandomTests {
+public class RandomTests extends BaseDL4JTest {
 
     @Test
     public void testReproduce() throws Exception {

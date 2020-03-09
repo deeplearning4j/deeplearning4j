@@ -90,6 +90,8 @@ namespace sd {
 
             DECLARE_PLATFORM(softmax, ENGINE_CPU);
 
+            DECLARE_PLATFORM(tanh, ENGINE_CPU);
+
         }
     }
 

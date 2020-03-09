@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.updater.custom;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
@@ -35,7 +36,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 09/05/2017.
  */
-public class TestCustomUpdater {
+public class TestCustomUpdater extends BaseDL4JTest {
 
     @Test
     public void testCustomUpdater() {

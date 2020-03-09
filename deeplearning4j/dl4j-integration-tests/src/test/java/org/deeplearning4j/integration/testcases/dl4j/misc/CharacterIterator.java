@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.integration.testcases.misc;
+package org.deeplearning4j.integration.testcases.dl4j.misc;
 
 import org.apache.commons.io.FileUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -37,6 +38,7 @@ import java.util.*;
  * Pooling3D operation
  */
 @Slf4j
+@NoArgsConstructor
 public abstract class Pooling3D extends DynamicCustomOp {
     protected Pooling3DConfig config;
 
@@ -51,8 +53,6 @@ public abstract class Pooling3D extends DynamicCustomOp {
 
         return super.iArgs();
     }
-
-    public Pooling3D() {}
 
     public Pooling3D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,
                      Pooling3DConfig pooling3DConfig, Pooling3DType type) {

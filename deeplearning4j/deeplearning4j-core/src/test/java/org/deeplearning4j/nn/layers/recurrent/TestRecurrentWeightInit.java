@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
@@ -27,7 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import static org.junit.Assert.assertTrue;
 
-public class TestRecurrentWeightInit {
+public class TestRecurrentWeightInit extends BaseDL4JTest {
 
     @Test
     public void testRWInit() {

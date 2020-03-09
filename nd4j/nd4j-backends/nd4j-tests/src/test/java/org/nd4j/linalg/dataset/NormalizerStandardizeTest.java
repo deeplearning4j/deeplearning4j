@@ -40,6 +40,11 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
         super(backend);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 60_000L;
+    }
+
     @Test
     public void testBruteForce() {
         /* This test creates a dataset where feature values are multiples of consecutive natural numbers

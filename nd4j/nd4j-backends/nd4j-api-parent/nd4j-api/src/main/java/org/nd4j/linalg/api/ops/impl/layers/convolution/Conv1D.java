@@ -64,6 +64,14 @@ public class Conv1D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
+    public Conv1D( @NonNull INDArray input, @NonNull INDArray weights, INDArray bias, Conv1DConfig conv1DConfig) {
+        this(wrapFilterNull(input, weights, bias), null, conv1DConfig);
+    }
+
+    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights, Conv1DConfig conv1DConfig) {
+        this(new INDArray[]{input, weights}, null, conv1DConfig);
+    }
+
     private void initConfig(Conv1DConfig config){
         this.config = config;
         Preconditions.checkState(config.getS() >= 1 && config.getP() >= 0, INVALID_CONFIGURATION, config.getS(), config.getP());

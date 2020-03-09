@@ -71,6 +71,8 @@ TEST_F(MklDnnTests, helpers_includer) {
 
     sd::ops::platforms::PLATFORM_softmax_ENGINE_CPU softmax;
 
-    printer({&conv2d, &conv2d_bp, &conv3d, &conv3d_bp, &avgpool2d, &avgpool2d_bp, &maxpool2d, &maxpool2d_bp, &avgpool3d, &avgpool3d_bp, &maxpool3d, &maxpool3d_bp, &lrn, &batchnorm, &matmul, &softmax });
+    sd::ops::platforms::PLATFORM_tanh_ENGINE_CPU tanh;
+
+    printer({&conv2d, &conv2d_bp, &conv3d, &conv3d_bp, &avgpool2d, &avgpool2d_bp, &maxpool2d, &maxpool2d_bp, &avgpool3d, &avgpool3d_bp, &maxpool3d, &maxpool3d_bp, &lrn, &batchnorm, &matmul, &softmax, &tanh });
 #endif
 }

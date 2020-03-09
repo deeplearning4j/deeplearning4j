@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,22 +15,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.integration.testcases;
+package org.deeplearning4j.integration.testcases.dl4j;
 
+import org.deeplearning4j.integration.ModelType;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.EvaluationCalibration;
+import org.nd4j.evaluation.classification.ROCMultiClass;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.dataset.api.preprocessor.CompositeMultiDataSetPreProcessor;
 import org.nd4j.shade.guava.io.Files;
 import org.deeplearning4j.integration.TestCase;
-import org.deeplearning4j.integration.testcases.misc.CharacterIterator;
-import org.deeplearning4j.integration.testcases.misc.CompositeMultiDataSetPreProcessor;
+import org.deeplearning4j.integration.testcases.dl4j.misc.CharacterIterator;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.EvaluationCalibration;
-import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -92,6 +95,11 @@ public class RNNTestCases {
 
 
             @Override
+            public ModelType modelType() {
+                return ModelType.MLN;
+            }
+
+            @Override
             public Object getConfiguration() throws Exception {
 
                 CharacterIterator iter = CharacterIterator.getShakespeareIterator(miniBatchSize,exampleLength);
@@ -101,6 +109,7 @@ public class RNNTestCases {
                 int tbpttLength = 50;                       //Length for truncated backpropagation through time. i.e., do parameter updates ever 50 characters
 
                 return new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.FLOAT)
                         .seed(12345)
                         .l2(0.001)
                         .weightInit(WeightInit.XAVIER)
@@ -176,8 +185,14 @@ public class RNNTestCases {
         }
 
         @Override
+        public ModelType modelType() {
+            return ModelType.MLN;
+        }
+
+        @Override
         public Object getConfiguration() throws Exception {
             return new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.FLOAT)
                     .seed(12345)
                     .updater(new Adam(5e-2))
                     .l1(1e-3).l2(1e-3)
@@ -298,6 +313,7 @@ public class RNNTestCases {
         @Override
         public Object getConfiguration() throws Exception {
             return new NeuralNetConfiguration.Builder()
+                    .dataType(DataType.FLOAT)
                     .seed(12345)
                     .updater(new Adam(5e-2))
                     .l1(1e-3).l2(1e-3)

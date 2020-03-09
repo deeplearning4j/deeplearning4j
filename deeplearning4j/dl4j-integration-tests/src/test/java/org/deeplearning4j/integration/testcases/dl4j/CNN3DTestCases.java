@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,35 +15,31 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.integration.testcases;
+package org.deeplearning4j.integration.testcases.dl4j;
 
-import org.apache.commons.math3.stat.inference.TestUtils;
-import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.integration.ModelType;
 import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.conf.layers.Subsampling3DLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.primitives.Pair;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -64,6 +61,11 @@ public class CNN3DTestCases {
                 testParamsPostTraining = true;
                 testEvaluation = true;
                 testOverfitting = false;
+            }
+
+            @Override
+            public ModelType modelType() {
+                return ModelType.MLN;
             }
 
             public Object getConfiguration() throws Exception {

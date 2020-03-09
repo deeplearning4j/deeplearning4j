@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,8 +15,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.integration.testcases;
+package org.deeplearning4j.integration.testcases.dl4j;
 
+import org.deeplearning4j.integration.ModelType;
 import org.deeplearning4j.integration.TestCase;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
@@ -24,10 +26,6 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.EvaluationCalibration;
-import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -35,7 +33,12 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.EvaluationCalibration;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -77,8 +80,14 @@ public class MLPTestCases {
             }
 
             @Override
+            public ModelType modelType() {
+                return ModelType.MLN;
+            }
+
+            @Override
             public Object getConfiguration() {
                 return new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.FLOAT)
                         .seed(12345)
                         .updater(new Adam(new MapSchedule.Builder(ScheduleType.ITERATION)
                                 .add(0, 5e-2)
@@ -169,6 +178,11 @@ public class MLPTestCases {
             }
 
             @Override
+            public ModelType modelType() {
+                return ModelType.MLN;
+            }
+
+            @Override
             public Object getConfiguration() {
                 int seed = 123;
                 double learningRate = 0.005;
@@ -179,6 +193,7 @@ public class MLPTestCases {
 
                 //log.info("Build model....");
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.FLOAT)
                         .seed(seed)
                         .updater(new Nesterovs(learningRate, 0.9))
                         .list()

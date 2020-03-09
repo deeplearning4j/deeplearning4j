@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -33,6 +34,7 @@ import java.util.List;
  * Pooling3DDerivative operation
  */
 @Slf4j
+@NoArgsConstructor
 public class Pooling3DDerivative extends Pooling3D {
 
     @Builder(builderMethodName = "derivativeBuilder")
@@ -40,9 +42,6 @@ public class Pooling3DDerivative extends Pooling3D {
                                boolean inPlace, Pooling3DConfig pooling3DConfig, Pooling3DType type) {
         super(sameDiff, inputs, inputArrays, outputs, inPlace, pooling3DConfig, type);
     }
-
-    public Pooling3DDerivative() {}
-
 
 
     @Override

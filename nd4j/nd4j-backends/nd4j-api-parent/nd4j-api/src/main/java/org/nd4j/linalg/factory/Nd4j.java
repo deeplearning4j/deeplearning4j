@@ -16,10 +16,7 @@
 
 package org.nd4j.linalg.factory;
 
-import org.nd4j.linalg.factory.ops.NDBitwise;
-import org.nd4j.linalg.factory.ops.NDMath;
-import org.nd4j.linalg.factory.ops.NDNN;
-import org.nd4j.linalg.factory.ops.NDRandom;
+import org.nd4j.linalg.factory.ops.*;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
@@ -135,6 +132,26 @@ public class Nd4j {
     public static final NDNN nn = new NDNN();
 
     /**
+     * Loss function namespace - operations related to loss functions.
+     */
+    public static final NDLoss loss = new NDLoss();
+
+    /**
+     * Convolutional network namespace - operations related to convolutional neural networks
+     */
+    public static final NDCNN cnn = new NDCNN();
+
+    /**
+     * Recurrent neural network namespace - operations related to recurrent neural networks
+     */
+    public static final NDRNN rnn = new NDRNN();
+
+    /**
+     * Image namespace - operations related to images
+     */
+    public static final NDImage image = new NDImage();
+
+    /**
      * Bitwise namespace - operations related to bitwise manipulation of arrays
      */
     public static NDBitwise bitwise() {
@@ -160,6 +177,32 @@ public class Nd4j {
      */
     public static NDNN nn() {
         return nn;
+    }
+
+    /**
+     * Loss function namespace - operations related to loss functions.
+     */
+    public static NDLoss loss(){ return loss; }
+
+    /**
+     * Convolutional network namespace - operations related to convolutional neural networks
+     */
+    public static NDCNN cnn(){
+        return cnn;
+    }
+
+    /**
+     * Recurrent neural network namespace - operations related to recurrent neural networks
+     */
+    public static NDRNN rnn(){
+        return rnn;
+    }
+
+    /**
+     * Image namespace - operations related to images
+     */
+    public static NDImage image(){
+        return image;
     }
 
     private final static String DATA_BUFFER_OPS = "databufferfactory";
@@ -3304,8 +3347,9 @@ public class Nd4j {
      */
     public static INDArray randomExponential(double lambda, INDArray target) {
         Preconditions.checkArgument(lambda > 0, "Lambda argument must be >= 0 - got %s", lambda);
-        INDArray shapeArr = Nd4j.create(ArrayUtil.toDouble(target.shape()));
-        Nd4j.getExecutioner().execAndReturn(new RandomExponential(shapeArr, target, lambda));
+        INDArray shapeArr = Nd4j.createFromArray(target.shape());
+        RandomExponential r = new RandomExponential(shapeArr, target, lambda);
+        Nd4j.exec(r);
         return target;
     }
 

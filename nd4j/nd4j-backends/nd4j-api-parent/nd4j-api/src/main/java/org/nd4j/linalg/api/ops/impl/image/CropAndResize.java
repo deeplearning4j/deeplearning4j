@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -36,6 +37,7 @@ import java.util.*;
  */
 @NoArgsConstructor
 public class CropAndResize extends DynamicCustomOp {
+
     public enum Method {BILINEAR, NEAREST};
     protected Method method = Method.BILINEAR;
     protected double extrapolationValue = 0.0;
@@ -47,6 +49,7 @@ public class CropAndResize extends DynamicCustomOp {
         this.extrapolationValue = extrapolationValue;
         addArgs();
     }
+
 
     public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
                          @NonNull INDArray cropOutSize, @NonNull Method method, double extrapolationValue,
@@ -61,6 +64,12 @@ public class CropAndResize extends DynamicCustomOp {
         addArgs();
         outputArguments.add(output);
     }
+
+    public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
+                         @NonNull INDArray cropOutSize, double extrapolationValue) {
+        this(image, cropBoxes, boxIndices, cropOutSize, Method.BILINEAR, extrapolationValue, null);
+    }
+
 
     @Override
     public String opName() {

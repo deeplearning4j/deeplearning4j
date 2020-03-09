@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,23 +14,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.integration.testcases.misc;
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
-import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
+package org.nd4j.linalg.factory.enums;
 
-public class CompositeMultiDataSetPreProcessor implements MultiDataSetPreProcessor {
+/**
+ * Data format: "NCHW" or "NHWC" */
+public enum DataFormat {
+  NCHW,
 
-    private MultiDataSetPreProcessor[] preProcessors;
-
-    public CompositeMultiDataSetPreProcessor(MultiDataSetPreProcessor... preProcessors){
-        this.preProcessors = preProcessors;
-    }
-
-    @Override
-    public void preProcess(MultiDataSet multiDataSet) {
-        for(MultiDataSetPreProcessor p : preProcessors){
-            p.preProcess(multiDataSet);
-        }
-    }
+  NHWC
 }

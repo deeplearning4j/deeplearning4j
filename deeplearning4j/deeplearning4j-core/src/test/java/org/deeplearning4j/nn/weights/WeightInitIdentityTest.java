@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.weights;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author Christian Skarby
  */
-public class WeightInitIdentityTest {
+public class WeightInitIdentityTest extends BaseDL4JTest {
 
     /**
      * Test identity mapping for 1d convolution

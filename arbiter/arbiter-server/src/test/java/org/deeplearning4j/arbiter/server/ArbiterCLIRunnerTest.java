@@ -55,6 +55,10 @@ import static org.junit.Assert.assertEquals;
 @Slf4j
 public class ArbiterCLIRunnerTest extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000;
+    }
 
     @Test
     public void testCliRunner() throws Exception {
@@ -67,7 +71,7 @@ public class ArbiterCLIRunnerTest extends BaseDL4JTest {
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
                 .addLayer(new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2,10))
                         .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
-                        .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
+                        .build())
                 .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .numEpochs(3).build();

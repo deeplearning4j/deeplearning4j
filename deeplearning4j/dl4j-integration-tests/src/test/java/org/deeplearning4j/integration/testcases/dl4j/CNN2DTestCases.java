@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,7 +15,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.integration.testcases;
+package org.deeplearning4j.integration.testcases.dl4j;
 
 import org.datavec.api.split.FileSplit;
 import org.datavec.image.loader.NativeImageLoader;
@@ -22,16 +23,13 @@ import org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader;
 import org.datavec.image.recordreader.objdetect.impl.SvhnLabelProvider;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.fetchers.SvhnDataFetcher;
+import org.deeplearning4j.integration.ModelType;
 import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.datasets.iterator.impl.TinyImageNetDataSetIterator;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.EvaluationCalibration;
-import org.deeplearning4j.eval.IEvaluation;
-import org.deeplearning4j.eval.ROCMultiClass;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -47,7 +45,12 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.model.TinyYOLO;
 import org.deeplearning4j.zoo.model.VGG16;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.EvaluationCalibration;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -82,12 +85,18 @@ public class CNN2DTestCases {
                 testOverfitting = false;
             }
 
+            @Override
+            public ModelType modelType() {
+                return ModelType.MLN;
+            }
+
             public Object getConfiguration() throws Exception {
                 int nChannels = 1; // Number of input channels
                 int outputNum = 10; // The number of possible outcomes
                 int seed = 123;
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.FLOAT)
                         .seed(seed)
                         .l2(0.0005)
                         .weightInit(WeightInit.XAVIER)
@@ -188,6 +197,11 @@ public class CNN2DTestCases {
             }
 
             @Override
+            public ModelType modelType() {
+                return ModelType.CG;
+            }
+
+            @Override
             public Model getPretrainedModel() throws Exception {
                 VGG16 vgg16 = VGG16.builder()
                         .seed(12345)
@@ -267,6 +281,11 @@ public class CNN2DTestCases {
                 testParamsPostTraining = false;     //Skip - requires saving all params (approx 500mb)
                 testEvaluation = false;
                 testOverfitting = false;
+            }
+
+            @Override
+            public ModelType modelType() {
+                return ModelType.CG;
             }
 
             @Override
@@ -373,6 +392,11 @@ public class CNN2DTestCases {
             }
 
             @Override
+            public ModelType modelType() {
+                return ModelType.CG;
+            }
+
+            @Override
             public Model getPretrainedModel() throws Exception {
 
                 Map<Integer, Double> lrSchedule = new HashMap<>();
@@ -381,6 +405,7 @@ public class CNN2DTestCases {
                 lrSchedule.put(3000, 0.001);
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .dataType(DataType.FLOAT)
                         .seed(12345)
                         .l2(0.0005)
                         .weightInit(WeightInit.XAVIER)

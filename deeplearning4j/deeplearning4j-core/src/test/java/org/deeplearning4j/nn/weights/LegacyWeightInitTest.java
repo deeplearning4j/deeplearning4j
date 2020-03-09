@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.weights;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.distribution.*;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.junit.After;
@@ -40,7 +41,7 @@ import static org.junit.Assert.*;
  *
  * @author Christian Skarby
  */
-public class LegacyWeightInitTest {
+public class LegacyWeightInitTest extends BaseDL4JTest {
 
     private RandomFactory prevFactory;
     private final static int SEED = 666;
