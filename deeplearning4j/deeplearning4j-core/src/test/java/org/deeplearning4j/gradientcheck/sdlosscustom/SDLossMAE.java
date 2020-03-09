@@ -25,8 +25,6 @@ public class SDLossMAE extends SameDiffLoss {
 
     @Override
     public SDVariable defineLoss(SameDiff sd, SDVariable layerInput, SDVariable labels) {
-
         return sd.math.abs(labels.sub(layerInput)).mean(1);
-
     }
 }

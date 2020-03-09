@@ -25,7 +25,17 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.HashMap;
 import java.util.Map;
 
-
+/**
+ * SameDiff loss function.
+ *
+ * This class can be extended to create Deeplearning4j loss functions by defining one single method only:
+ * {@link #defineLoss(SameDiff, SDVariable, SDVariable)}. This method is used to define the loss function on a
+ * <i>per example</i> basis - i.e., the output should be an array with shape [minibatch].<br>
+ * <br>
+ * For example, the mean squared error (MSE) loss function can be defined using:<br>
+ * {@code return labels.squaredDifference(layerInput).mean(1);}
+ *
+ */
 public abstract class SameDiffLoss implements ILossFunction {
     protected transient SameDiff sd;
     protected transient SDVariable scoreVariable;
@@ -34,7 +44,16 @@ public abstract class SameDiffLoss implements ILossFunction {
 
     }
 
-
+    /**
+     * Define the loss function.<br>
+     * <b>NOTE</b>: The score on a *per example* basis - should return a SDVariable with shape [minibatch], where out[i]
+     * is the score for the ith minibatch
+     *
+     * @param sd         SameDiff instance to define the loss on
+     * @param layerInput Input to the SameDiff loss function
+     * @param labels     Labels placeholder
+     * @return The score on a per example basis (SDVariable with shape [minibatch])
+     */
     public abstract SDVariable defineLoss(SameDiff sd, SDVariable layerInput, SDVariable labels);
 
     protected void createSameDiffInstance(DataType dataType){
