@@ -16,14 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
-import java.util.Arrays;
-import java.util.List;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.SRUWeights;
 import org.tensorflow.framework.AttrValue;
@@ -37,6 +37,7 @@ import java.util.Map;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class SRU extends DynamicCustomOp {
 
     @Getter
@@ -45,12 +46,21 @@ public class SRU extends DynamicCustomOp {
     @Getter
     private SDVariable mask;
 
-    public SRU() { }
-
     public SRU(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable initialC, SDVariable mask, @NonNull SRUWeights weights) {
         super(null, sameDiff, wrapFilterNull(x, weights.getWeights(), weights.getBias(), initialC, mask));
         this.mask = mask;
         this.weights = weights;
+    }
+
+    public SRU(INDArray x, INDArray initialC, INDArray mask, SRUWeights sruWeights) {
+        super(wrapFilterNull(x, sruWeights.getIWeights(), sruWeights.getIBias(), initialC, mask), null);
+        this.mask = (SDVariable) mask;
+        this.weights = sruWeights;
+    }
+
+    public SRU(INDArray x, INDArray initialC, SRUWeights sruWeights) {
+        super(wrapFilterNull(x, sruWeights.getIWeights(), sruWeights.getIBias(), initialC), null);
+        this.weights = sruWeights;
     }
 
     @Override

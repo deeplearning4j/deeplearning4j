@@ -17,6 +17,8 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -38,9 +40,8 @@ import java.util.Map;
  */
 @Slf4j
 @Getter
+@NoArgsConstructor
 public class AvgPooling3D extends Pooling3D {
-    public AvgPooling3D() {
-    }
 
     public AvgPooling3D(SameDiff sameDiff, SDVariable input, Pooling3DConfig config) {
         super(sameDiff, new SDVariable[]{input}, null, null, false, config, Pooling3DType.AVG);
@@ -49,6 +50,11 @@ public class AvgPooling3D extends Pooling3D {
     public AvgPooling3D(SameDiff sameDiff,INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
         super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.AVG);
     }
+
+    public AvgPooling3D(@NonNull INDArray input, Pooling3DConfig pooling3DConfig) {
+        super(null,null,new INDArray[]{input},null,false, pooling3DConfig, Pooling3DType.AVG);
+    }
+
 
     @Override
     public boolean isConfigProperties() {

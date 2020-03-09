@@ -75,6 +75,14 @@ public class Conv2D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
+    public Conv2D(@NonNull INDArray layerInput, @NonNull INDArray weights, @NonNull Conv2DConfig conv2DConfig) {
+        this(new INDArray[]{layerInput, weights}, null, conv2DConfig);
+    }
+
+    public Conv2D(@NonNull INDArray layerInput, @NonNull INDArray weights, INDArray bias, @NonNull Conv2DConfig conv2DConfig) {
+        this(wrapFilterNull(layerInput, weights,bias), null, conv2DConfig);
+    }
+
     protected void initConfig(Conv2DConfig config){
         this.config = config;
 

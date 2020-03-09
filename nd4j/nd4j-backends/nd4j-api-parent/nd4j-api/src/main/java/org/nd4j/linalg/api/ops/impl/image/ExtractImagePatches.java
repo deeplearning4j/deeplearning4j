@@ -72,6 +72,18 @@ public class ExtractImagePatches extends DynamicCustomOp {
         addArgs();
     }
 
+    public ExtractImagePatches(INDArray input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode) {
+        super(new INDArray[]{input},null);
+        int[] kSises = {kH,kW};
+        int[] strides = {sH,sW};
+        int[] rates = {rH, rW};
+        this.kSizes = kSises;
+        this.strides = strides;
+        this.rates = rates;
+        this.isSameMode = sameMode;
+        addArgs();
+    }
+
 
     @Override
     public String opName() {

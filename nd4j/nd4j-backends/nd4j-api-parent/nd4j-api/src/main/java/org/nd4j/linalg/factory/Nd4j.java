@@ -137,6 +137,21 @@ public class Nd4j {
     public static final NDLoss loss = new NDLoss();
 
     /**
+     * Convolutional network namespace - operations related to convolutional neural networks
+     */
+    public static final NDCNN cnn = new NDCNN();
+
+    /**
+     * Recurrent neural network namespace - operations related to recurrent neural networks
+     */
+    public static final NDRNN rnn = new NDRNN();
+
+    /**
+     * Image namespace - operations related to images
+     */
+    public static final NDImage image = new NDImage();
+
+    /**
      * Bitwise namespace - operations related to bitwise manipulation of arrays
      */
     public static NDBitwise bitwise() {
@@ -168,6 +183,27 @@ public class Nd4j {
      * Loss function namespace - operations related to loss functions.
      */
     public static NDLoss loss(){ return loss; }
+
+    /**
+     * Convolutional network namespace - operations related to convolutional neural networks
+     */
+    public static NDCNN cnn(){
+        return cnn;
+    }
+
+    /**
+     * Recurrent neural network namespace - operations related to recurrent neural networks
+     */
+    public static NDRNN rnn(){
+        return rnn;
+    }
+
+    /**
+     * Image namespace - operations related to images
+     */
+    public static NDImage image(){
+        return image;
+    }
 
     private final static String DATA_BUFFER_OPS = "databufferfactory";
     private final static String CONVOLUTION_OPS = "convops";

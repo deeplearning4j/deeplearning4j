@@ -16,11 +16,8 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -52,6 +49,7 @@ import java.util.*;
  */
 @Slf4j
 @Getter
+@NoArgsConstructor
 public class DepthwiseConv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
@@ -77,7 +75,16 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public DepthwiseConv2D() {
+    public DepthwiseConv2D(INDArray layerInput, INDArray depthWeights, Conv2DConfig conv2DConfig) {
+        this(wrapFilterNull(layerInput, depthWeights), null, conv2DConfig);
+    }
+
+    public DepthwiseConv2D(INDArray layerInput, INDArray depthWeights, INDArray bias, Conv2DConfig conv2DConfig) {
+        this(wrapFilterNull(layerInput, depthWeights, bias), null, conv2DConfig);
+    }
+
+    public DepthwiseConv2D(INDArray inputs, Conv2DConfig conv2DConfig) {
+        this(wrapFilterNull(inputs), null, conv2DConfig);
     }
 
     @Override

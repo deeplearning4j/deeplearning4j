@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 
 /**
@@ -21,31 +22,36 @@ public class GRUWeights extends RNNWeights {
      *
      * The reset weights are the [:, 0:numUnits] subset and the update weights are the [:, numUnits:2*numUnits] subset.
      */
-    @NonNull
     private SDVariable ruWeight;
+    private INDArray iRuWeights;
 
     /**
      * Cell gate weights, with a shape of [inSize + numUnits, numUnits]
      */
-    @NonNull
     private SDVariable cWeight;
+    private INDArray iCWeight;
 
     /**
      * Reset and Update gate bias, with a shape of [2*numUnits].  May be null.
      *
      * The reset bias is the [0:numUnits] subset and the update bias is the [numUnits:2*numUnits] subset.
      */
-    @NonNull
     private SDVariable ruBias;
+    private INDArray iRUBias;
 
     /**
      * Cell gate bias, with a shape of [numUnits].  May be null.
      */
-    @NonNull
     private SDVariable cBias;
+    private INDArray iCBias;
 
     @Override
     public SDVariable[] args() {
         return filterNonNull(ruWeight, cWeight, ruBias, cBias);
+    }
+
+    @Override
+    public INDArray[] arrayArgs() {
+        return filterNonNull(iRuWeights, iCWeight, iRUBias, iCBias);
     }
 }
