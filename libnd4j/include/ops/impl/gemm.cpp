@@ -44,7 +44,7 @@ namespace sd {
                 }
             };
 
-            sd::Threads::parallel_for(func, 0, rows);
+            samediff::Threads::parallel_for(func, 0, rows);
 
             return ret;
         }
@@ -76,7 +76,7 @@ namespace sd {
                         for (auto r = start; r < stop; r++)
                             C[r] = z;
                     };
-                    sd::Threads::parallel_for(func, 0, length);
+                    samediff::Threads::parallel_for(func, 0, length);
                 }
             }
 
@@ -108,7 +108,7 @@ namespace sd {
                 }
             };
 
-            sd::Threads::parallel_for(func, 0, M, 1, 0, N, 1);
+            samediff::Threads::parallel_for(func, 0, M, 1, 0, N, 1);
         }
 
 
@@ -138,7 +138,7 @@ namespace sd {
                     z[r] = beta == 0.0f ? dot : dot + static_cast<Z>(beta) * z[r];
                 }
             };
-            sd::Threads::parallel_for(func, 0, M);
+            samediff::Threads::parallel_for(func, 0, M);
 
             if (TRANS == CblasTrans)
                 delete[] aT;

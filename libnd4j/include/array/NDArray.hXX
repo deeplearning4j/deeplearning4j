@@ -515,7 +515,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
         }
     };
 
-    sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
     tickWriteHost();
     syncToDevice();
@@ -582,7 +582,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::stri
         }
     };
 
-    sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
 
     tickWriteHost();
@@ -648,7 +648,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u16s
              }
         }
     };
-    sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
     tickWriteHost();
     syncToDevice();
@@ -714,7 +714,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
              }
         }
     };
-    sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
     tickWriteHost();
     syncToDevice();
@@ -780,7 +780,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<std::u32s
             }
         }
     };
-    sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
     tickWriteHost();
     syncToDevice();
@@ -846,7 +846,7 @@ NDArray::NDArray(const std::vector<Nd4jLong>& shape, const std::vector<const cha
             }
         }
     };
-    sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
     tickWriteHost();
     syncToDevice();
@@ -2393,7 +2393,7 @@ NDArray NDArray::asS() const {
         }
     };
 
-    sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+    samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
     registerPrimaryUse({ &res }, { this });
 
@@ -3466,7 +3466,7 @@ NDArray NDArray::dup(const char newOrder) const {
                     }
             };
 
-            sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+            samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
             return NDArray(getShapeAsVector(), strings, dataType(), getContext());
         }
@@ -3479,7 +3479,7 @@ NDArray NDArray::dup(const char newOrder) const {
                     }
             };
 
-            sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+            samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
             return NDArray(getShapeAsVector(), strings, dataType(), getContext());
         }
@@ -3491,7 +3491,7 @@ NDArray NDArray::dup(const char newOrder) const {
                }
         };
 
-        sd::Threads::parallel_for(func, 0, lengthOf(), 1);
+        samediff::Threads::parallel_for(func, 0, lengthOf(), 1);
 
         return NDArray(getShapeAsVector(), strings, dataType(), getContext());
     }

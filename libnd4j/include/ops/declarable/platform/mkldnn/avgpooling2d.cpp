@@ -29,7 +29,7 @@
 #include <ops/declarable/helpers/convolutions.h>
 
 using namespace dnnl;
-using namespace sd;
+using namespace samediff;
 
 namespace sd      {
 namespace ops       {

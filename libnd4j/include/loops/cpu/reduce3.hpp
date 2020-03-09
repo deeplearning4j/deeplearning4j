@@ -93,7 +93,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
             }
         };
 
-        maxThreads = sd::Threads::parallel_for(func, 0, length, 1, maxThreads);
+        maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
     } else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
 
@@ -104,7 +104,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
             }
         };
 
-        maxThreads = sd::Threads::parallel_for(func, 0, length, 1, maxThreads);
+        maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
     } else {
         uint yShapeInfoCast[MAX_RANK];
         const bool canCastY = sd::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
@@ -117,7 +117,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
             }
         };
 
-        maxThreads = sd::Threads::parallel_for(func, 0, length, 1, maxThreads);
+        maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
     }
 
     // merge step

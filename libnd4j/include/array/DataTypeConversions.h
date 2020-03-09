@@ -56,7 +56,7 @@ namespace sd {
                         buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                 };
 
-                sd::Threads::parallel_for(func, 0, length);
+                samediff::Threads::parallel_for(func, 0, length);
 #endif
 
                 delete[] tmp;
@@ -114,7 +114,7 @@ namespace sd {
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 
-                            sd::Threads::parallel_for(func, 0, length);
+                            samediff::Threads::parallel_for(func, 0, length);
 #endif
 
                             delete[] tmp;
@@ -142,7 +142,7 @@ namespace sd {
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 
-                            sd::Threads::parallel_for(func, 0, length);
+                            samediff::Threads::parallel_for(func, 0, length);
 #endif
                             delete[] tmp;
                         }
@@ -168,7 +168,7 @@ namespace sd {
                                     buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
                             };
 
-                            sd::Threads::parallel_for(func, 0, length);
+                            samediff::Threads::parallel_for(func, 0, length);
 #endif
                             delete[] tmp;
                         }

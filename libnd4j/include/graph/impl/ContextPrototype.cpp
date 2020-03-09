@@ -59,7 +59,7 @@ namespace sd {
             }
         }
 
-        sd::Engine ContextPrototype::engine() {
+        samediff::Engine ContextPrototype::engine() {
             return _engine;
         }
 

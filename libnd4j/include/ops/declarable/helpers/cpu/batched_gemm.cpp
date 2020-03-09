@@ -114,7 +114,7 @@ void bgemm_(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, st
             }
         };
 
-        sd::Threads::parallel_tad(func, 0, vaSize);
+        samediff::Threads::parallel_tad(func, 0, vaSize);
     }
 }
 

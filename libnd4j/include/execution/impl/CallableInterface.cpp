@@ -21,7 +21,7 @@
 #include <execution/CallableInterface.h>
 #include <helpers/logger.h>
 
-namespace sd {
+namespace samediff {
     CallableInterface::CallableInterface() {
         // initial state is available
         _available = true;

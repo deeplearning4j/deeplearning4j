@@ -40,7 +40,7 @@ namespace helpers {
             }
         };
 
-        sd::Threads::parallel_for(func, 0, lLen);
+        samediff::Threads::parallel_for(func, 0, lLen);
     }
 
     void confusionFunctor(sd::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {

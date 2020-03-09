@@ -149,7 +149,7 @@ namespace helpers {
                 }
             }
         };
-        sd::Threads::parallel_tad(func, 0, batchSize);
+        samediff::Threads::parallel_tad(func, 0, batchSize);
 
     }
 

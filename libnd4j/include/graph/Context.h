@@ -112,7 +112,7 @@ namespace sd {
             sd::random::RandomBuffer* getRNG();
             void setRNG(sd::random::RandomBuffer* rng);
 
-            void setTargetEngine(sd::Engine engine);
+            void setTargetEngine(samediff::Engine engine);
 
             VariableSpace *getVariableSpace();
 
@@ -228,8 +228,8 @@ namespace sd {
             void setShapeFunctionOverride(bool reallyOverride);
             bool shapeFunctionOverride();
 
-            sd::ExecutionMode executionMode();
-            void setExecutionMode(sd::ExecutionMode executionMode);
+            samediff::ExecutionMode executionMode();
+            void setExecutionMode(samediff::ExecutionMode executionMode);
 
             bool isTraining();
             bool isInference();

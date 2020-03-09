@@ -112,7 +112,7 @@ namespace sd {
             */
             int prepareOutputs(Context& block);
 
-            virtual sd::EmptyHandling emptyHandling();
+            virtual samediff::EmptyHandling emptyHandling();
         public:
             // for special cases, like BooleanOps
             DeclarableOp();

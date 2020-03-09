@@ -80,7 +80,7 @@ static void polyGamma_(sd::LaunchContext * context, const NDArray& n, const NDAr
             	output.p(i, polyGammaScalar<T>(context, order, x.e<T>(i)));
         }
     };
-	sd::Threads::parallel_for(func, 0, x.lengthOf());
+	samediff::Threads::parallel_for(func, 0, x.lengthOf());
 }
 
 	void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {

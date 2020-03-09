@@ -64,9 +64,9 @@ namespace sd {
             bool _useMKLDNN = sd::Environment::getInstance()->isUseMKLDNN();
 
             // target engine for execution
-            sd::Engine _engine = DEFAULT_ENGINE;
+            samediff::Engine _engine = DEFAULT_ENGINE;
 
-            sd::ExecutionMode _execMode = sd::ExecutionMode::MODE_UNDEFINED;
+            samediff::ExecutionMode _execMode = samediff::ExecutionMode::MODE_UNDEFINED;
         public:
             explicit ContextPrototype(sd::ops::OpDescriptor* opDescriptor = nullptr, int nodeId = 1, bool inPlace = false);
             ~ContextPrototype() = default;
@@ -99,7 +99,7 @@ namespace sd {
             std::vector<sd::DataType>* getDArguments();
             std::vector<int>* getAxis();
 
-            sd::Engine engine();
+            samediff::Engine engine();
 
             size_t numT();
             size_t numI();

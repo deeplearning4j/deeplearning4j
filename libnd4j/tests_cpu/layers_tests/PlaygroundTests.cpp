@@ -112,22 +112,14 @@ TEST_F(PlaygroundTests, test_bert_full_1) {
 
 /*
     // validating graph now
-    auto timeStart = std::chrono::system_clock::now();
-
     auto status = GraphExecutioner::execute(graph);
-
-    auto timeEnd = std::chrono::system_clock::now();
-    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
-
     ASSERT_EQ(Status::OK(), status);
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1620));
 
     auto array = graph->getVariableSpace()->getVariable(1620)->getNDArray();
     ASSERT_EQ(z, *array);
 
-    nd4j_printf("BERT execution time: [%lld]\n", outerTime);
 */
-
 
     sd::Environment::getInstance()->setProfiling(true);
     auto profile = GraphProfilingHelper::profile(graph, 1);
@@ -542,14 +534,14 @@ TEST_F(PlaygroundTests, test_s_2) {
         s++;
     };
 
-    sd::Threads::parallel_for(func, 0, 8192, 1, 4);
+    samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
     std::vector<Nd4jLong> values;
 
     for (int e = 0; e < 100000; e++) {
         s = 0;
 
         auto timeStart = std::chrono::system_clock::now();
-        //sd::Threads::parallel_for(func, 0, 8192, 1, 4);
+        //samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
         PRAGMA_OMP_PARALLEL_THREADS(4) {
             s++;
         }
@@ -574,7 +566,7 @@ TEST_F(PlaygroundTests, test_s_4) {
         s++;
     };
 
-    sd::Threads::parallel_for(func, 0, 8192, 1, 4);
+    samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
 
     ////////
 
@@ -623,7 +615,7 @@ TEST_F(PlaygroundTests, test_s_4) {
                 }
             }
         };
-        sd::Threads::parallel_for(f2d, 0, xs0, 1, 0, xs1, 1);
+        samediff::Threads::parallel_for(f2d, 0, xs0, 1, 0, xs1, 1);
 
         auto timeEnd = std::chrono::system_clock::now();
         auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
@@ -670,8 +662,8 @@ TEST_F(PlaygroundTests, test_s_5) {
         auto timeStart = std::chrono::system_clock::now();
 
         // picking best fit here
-        auto splitLoop = sd::ThreadsHelper::pickLoop2d(numThreads, itersX, itersY);
-        auto span = sd::Span2::build(splitLoop, 0, numThreads, startX, stopX, incX, startY, stopY, incY);
+        auto splitLoop = samediff::ThreadsHelper::pickLoop2d(numThreads, itersX, itersY);
+        auto span = samediff::Span2::build(splitLoop, 0, numThreads, startX, stopX, incX, startY, stopY, incY);
 
         auto timeEnd = std::chrono::system_clock::now();
         auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
@@ -719,7 +711,7 @@ TEST_F(PlaygroundTests, test_s_3) {
 
     for (int e = 0; e < 10000; e++) {
 
-        sd::Threads::parallel_for(func, 0, 8192, 1, 4);
+        samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
     }
 }
  */

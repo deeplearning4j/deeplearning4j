@@ -187,7 +187,7 @@ namespace functions {
                 }
             };
 
-            sd::Threads::parallel_tad(func,  0, resultLength, 1);
+            samediff::Threads::parallel_tad(func,  0, resultLength, 1);
         }
 
 

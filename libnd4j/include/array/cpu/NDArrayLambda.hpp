@@ -26,7 +26,7 @@ void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third, const std::
                 z[e] = func(f[e], s[e], t[e]);
         };
 
-        sd::Threads::parallel_for(loop, 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -40,7 +40,7 @@ void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third, const std::
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -54,7 +54,7 @@ void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third, const std::
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -97,7 +97,7 @@ void NDArray::applyPairwiseLambda(const NDArray& other, const std::function<T(T,
                 z[e] = func(f[e], s[e]);
         };
 
-        sd::Threads::parallel_for(loop, 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -110,7 +110,7 @@ void NDArray::applyPairwiseLambda(const NDArray& other, const std::function<T(T,
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -123,7 +123,7 @@ void NDArray::applyPairwiseLambda(const NDArray& other, const std::function<T(T,
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -160,7 +160,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray& target) {
                 z[e] = func(f[e]);
         };
 
-        sd::Threads::parallel_for(loop, 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -172,7 +172,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray& target) {
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -184,7 +184,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray& target) {
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -221,7 +221,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
                 z[e] = func(e, f[e]);
         };
 
-        sd::Threads::parallel_for(loop, 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -233,7 +233,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -245,7 +245,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -287,7 +287,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray& other, const std::function<T(N
                 z[e] = func((Nd4jLong) e, f[e], s[e]);
         };
 
-        sd::Threads::parallel_for(loop, 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -300,7 +300,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray& other, const std::function<T(N
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -313,7 +313,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray& other, const std::function<T(N
                 }
             };
 
-            sd::Threads::parallel_for(loop, 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }

@@ -77,7 +77,7 @@ void FORCEINLINE cross(sd::LaunchContext * context, NDArray *a, NDArray *b, NDAr
             }
         };
 
-        sd::Threads::parallel_tad(func,  0, tads);
+        samediff::Threads::parallel_tad(func,  0, tads);
     }
 
     void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);

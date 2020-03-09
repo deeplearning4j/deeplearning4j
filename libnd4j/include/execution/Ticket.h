@@ -28,7 +28,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace sd {
+namespace samediff {
     class ND4J_EXPORT Ticket {
     private:
         bool _acquired = false;

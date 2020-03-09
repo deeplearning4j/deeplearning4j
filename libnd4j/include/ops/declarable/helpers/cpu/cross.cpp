@@ -48,7 +48,7 @@ void crossBatched(sd::LaunchContext * context, NDArray *a, NDArray *b, NDArray *
         }
     };
 
-    sd::Threads::parallel_tad(func, 0, tads);
+    samediff::Threads::parallel_tad(func, 0, tads);
 }
 
 }

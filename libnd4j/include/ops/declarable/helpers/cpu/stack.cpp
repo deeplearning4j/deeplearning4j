@@ -43,7 +43,7 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, c
                 output.p<T>(i, inArrs[i]->t<T>(0));
         };
 
-        sd::Threads::parallel_for(func, 0, numOfSubArrs);
+        samediff::Threads::parallel_for(func, 0, numOfSubArrs);
 	}
 	else {
 
@@ -63,7 +63,7 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, c
             }
         };
 
-        sd::Threads::parallel_tad(func, 0, numOfSubArrs);
+        samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
     }
 
 }
@@ -88,7 +88,7 @@ static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs,
                 outArrs[i]->p<T>(0, input.t<T>(i));
         };
 
-        sd::Threads::parallel_for(func, 0, numOfSubArrs);
+        samediff::Threads::parallel_for(func, 0, numOfSubArrs);
 	}
 	else {
 
@@ -107,7 +107,7 @@ static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs,
             }
         };
 
-        sd::Threads::parallel_tad(func, 0, numOfSubArrs);
+        samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
 	}
 }
 

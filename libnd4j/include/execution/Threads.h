@@ -14,9 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// @author raver119@gmail.com
-//
+ //
+ // @author raver119@gmail.com
+ //
 #ifndef SAMEDIFF_THREADS_H
 #define SAMEDIFF_THREADS_H
 
@@ -26,7 +26,7 @@
 #include <system/Environment.h>
 #include <system/op_enums.h>
 
-namespace sd {
+namespace samediff {
     class ND4J_EXPORT ThreadsHelper {
     public:
         static int numberOfThreads(int maxThreads, uint64_t numberOfElements);
@@ -95,14 +95,6 @@ namespace sd {
     };
 
     class ND4J_EXPORT Threads {
-#ifdef _OPENMP
-    public:
-        static std::mutex gThreadmutex;
-        static uint64_t _nFreeThreads;
-        static bool   tryAcquire(int numThreads);
-        static bool   freeThreads(int numThreads);
-#endif
-
     public:
         /**
          * This function executes 1 dimensional loop for a given number of threads

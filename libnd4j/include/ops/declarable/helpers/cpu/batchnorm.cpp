@@ -106,7 +106,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
             delete []zOffsets;
     };
 
-    sd::Threads::parallel_do(func, info._numThreads);
+    samediff::Threads::parallel_do(func, info._numThreads);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -178,7 +178,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
         }
     };
 
-    sd::Threads::parallel_for(func, 0, input->lengthOf());
+    samediff::Threads::parallel_for(func, 0, input->lengthOf());
 }
 
 //////////////////////////////////////////////////////////////////////////

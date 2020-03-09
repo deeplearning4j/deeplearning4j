@@ -45,7 +45,7 @@ namespace sd {
             }
         };
 
-        sd::Threads::parallel_for(func, 0, N);
+        samediff::Threads::parallel_for(func, 0, N);
     };
 
 
@@ -240,7 +240,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
             }
         };
 
-        sd::Threads::parallel_tad(func, 0, numTads);
+        samediff::Threads::parallel_tad(func, 0, numTads);
     }
 
     template <typename X, typename Y>
@@ -264,7 +264,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
             }
         };
 
-        sd::Threads::parallel_tad(func, 0, numTads);
+        samediff::Threads::parallel_tad(func, 0, numTads);
     }
 }
 

@@ -32,7 +32,7 @@
 #include <execution/Ticket.h>
 #include <queue>
 
-namespace sd {
+namespace samediff {
     class ND4J_EXPORT ThreadPool {
     private:
         static ThreadPool* _INSTANCE;

@@ -34,7 +34,7 @@ namespace helpers {
                         output->t<B>(k * maxIndex + i) = B(true); //,  T(1.0f));
         };
 
-        sd::Threads::parallel_for(func, 0, maxIndex, 1, 0, input->lengthOf(), 1);
+        samediff::Threads::parallel_for(func, 0, maxIndex, 1, 0, input->lengthOf(), 1);
     }
 
     void sequenceMask(sd::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {

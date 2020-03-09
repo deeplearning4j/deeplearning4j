@@ -64,7 +64,7 @@ namespace sd {
                         }
                     };
 
-                    maxThreads = sd::Threads::parallel_for(func, 0, lengthOf);
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 } else if (xEws > 1 && yEws > 1 && x.ordering() == y.ordering()) {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e++) {
@@ -75,7 +75,7 @@ namespace sd {
                         }
                     };
 
-                    maxThreads = sd::Threads::parallel_for(func, 0, lengthOf);
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 } else {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e++) {
@@ -86,7 +86,7 @@ namespace sd {
                         }
                     };
 
-                    maxThreads = sd::Threads::parallel_for(func, 0, lengthOf);
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 }
 
                 // accumulate intermediate variables into output array

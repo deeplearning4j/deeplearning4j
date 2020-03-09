@@ -27,7 +27,7 @@
 #include <condition_variable>
 #include <system/op_boilerplate.h>
 
-namespace sd {
+namespace samediff {
     class CallableWithArguments {
         FUNC_DO _function_do;
         FUNC_1D _function_1d;

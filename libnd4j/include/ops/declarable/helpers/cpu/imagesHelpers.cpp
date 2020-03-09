@@ -45,7 +45,7 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
              }
         };
 
-        sd::Threads::parallel_for(func, 0, output.lengthOf(), 1);
+        samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
         return;
     }
 
@@ -62,7 +62,7 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
          }
      };
 
-     sd::Threads::parallel_for(func, 0, output.lengthOf(), 1);
+     samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
      return;
 }
 
@@ -87,7 +87,7 @@ FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, con
             }
         };
 
-        sd::Threads::parallel_for(func, 0, input.lengthOf(), 3);
+        samediff::Threads::parallel_for(func, 0, input.lengthOf(), 3);
         return;
     }
 
@@ -106,7 +106,7 @@ FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, con
         }
     };
 
-    sd::Threads::parallel_tad(func, 0, numOfTads);
+    samediff::Threads::parallel_tad(func, 0, numOfTads);
     return;
 }
 
@@ -146,7 +146,7 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
             }
         };
 
-        sd::Threads::parallel_for(func, 0, input->lengthOf(), 3);
+        samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
         auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
@@ -165,7 +165,7 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
             }
         };
 
-        sd::Threads::parallel_tad(func, 0, numOfTads);
+        samediff::Threads::parallel_tad(func, 0, numOfTads);
     }
 }
 
@@ -196,7 +196,7 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
             }
         };
 
-        sd::Threads::parallel_for(func, 0, input->lengthOf(), 3);
+        samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
         auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
@@ -222,7 +222,7 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
             }
         };
 
-        sd::Threads::parallel_tad(func, 0, numOfTads);
+        samediff::Threads::parallel_tad(func, 0, numOfTads);
     }
 }
 

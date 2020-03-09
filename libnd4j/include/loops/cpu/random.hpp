@@ -67,7 +67,7 @@ namespace functions {
                             z[i] = OpClass::op(x[i], y[i], i, length, rng, extraArguments);
                         }
                     };
-                    sd::Threads::parallel_for(func,  0, length, 1);
+                    samediff::Threads::parallel_for(func,  0, length, 1);
                 }
                 else{
                     uint xShapeInfoCast[MAX_RANK];
@@ -81,7 +81,7 @@ namespace functions {
                         }
                     };
 
-                    sd::Threads::parallel_for(func,  0, length, 1);
+                    samediff::Threads::parallel_for(func,  0, length, 1);
                 }
             }
             else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
@@ -100,7 +100,7 @@ namespace functions {
                     }
                 };
 
-                sd::Threads::parallel_for(func,  0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
@@ -118,7 +118,7 @@ namespace functions {
                     }
                 };
 
-                sd::Threads::parallel_for(func,  0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
 
@@ -136,7 +136,7 @@ namespace functions {
                     }
                 };
 
-                sd::Threads::parallel_for(func,  0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else {
 
@@ -157,7 +157,7 @@ namespace functions {
                     }
                 };
 
-                sd::Threads::parallel_for(func,  0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
         };
 
@@ -192,7 +192,7 @@ namespace functions {
                             z[i] = OpClass::op(x[i], i, length, rng, extraArguments);
                         }
                     };
-                    sd::Threads::parallel_for(func,  0, length, 1);
+                    samediff::Threads::parallel_for(func,  0, length, 1);
                 }
                 else{
                     auto func = PRAGMA_THREADS_FOR {
@@ -203,7 +203,7 @@ namespace functions {
                         }
                     };
 
-                    sd::Threads::parallel_for(func,  0, length, 1);
+                    samediff::Threads::parallel_for(func,  0, length, 1);
                 }
             }
             else {
@@ -220,7 +220,7 @@ namespace functions {
                     }
                 };
 
-                sd::Threads::parallel_for(func,  0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
         }
 
@@ -245,7 +245,7 @@ namespace functions {
                         }
                 };
 
-                sd::Threads::parallel_for(func,  0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1); 
             }
             else{
                 sd::OmpLaunchHelper info(length);
@@ -261,7 +261,7 @@ namespace functions {
                     }
                 };
 
-                sd::Threads::parallel_for(func,  0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
         }
 

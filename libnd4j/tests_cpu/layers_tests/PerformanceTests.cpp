@@ -53,7 +53,7 @@ public:
     int numIterations = 100;
 
     PerformanceTests() {
-        sd::ThreadPool::getInstance();
+        samediff::ThreadPool::getInstance();
     }
 };
 

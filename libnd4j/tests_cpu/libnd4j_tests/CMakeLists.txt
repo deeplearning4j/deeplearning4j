@@ -150,7 +150,7 @@ if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
 endif()
 
 # tests are always compiled with all ops included
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=true -DDEFAULT_ENGINE=sd::ENGINE_CPU")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=true -DDEFAULT_ENGINE=samediff::ENGINE_CPU")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang

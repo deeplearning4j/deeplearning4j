@@ -20,7 +20,7 @@
 
 #include <execution/CallableWithArguments.h>
 
-namespace sd {
+namespace samediff {
     CallableWithArguments::CallableWithArguments(FUNC_DO func, uint64_t thread_id, uint64_t numThreads) {
         _function_do = func;
         _finished = false;

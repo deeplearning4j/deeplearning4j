@@ -67,7 +67,7 @@ namespace sd {
                         }
                     };
 
-                    sd::Threads::parallel_tad(func, 0, numTads);
+                    samediff::Threads::parallel_tad(func, 0, numTads);
                 } else {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e++) {
@@ -88,7 +88,7 @@ namespace sd {
                         }
                     };
 
-                    sd::Threads::parallel_tad(func, 0, numTads);
+                    samediff::Threads::parallel_tad(func, 0, numTads);
                 }
             }
 

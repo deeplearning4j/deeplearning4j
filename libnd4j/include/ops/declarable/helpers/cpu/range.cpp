@@ -42,7 +42,7 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
         for (auto i = start; i < stop; i++)
             buff[i] = s + i * d;
     };
-    sd::Threads::parallel_for(func, 0, len);
+    samediff::Threads::parallel_for(func, 0, len);
 }
 
     void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {

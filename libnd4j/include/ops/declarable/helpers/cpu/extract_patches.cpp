@@ -82,7 +82,7 @@ namespace helpers {
            }
        };
 
-       sd::Threads::parallel_tad(func, 0, batchCount);
+       samediff::Threads::parallel_tad(func, 0, batchCount);
     }
 
 

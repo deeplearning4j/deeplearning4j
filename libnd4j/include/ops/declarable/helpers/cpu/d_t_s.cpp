@@ -65,7 +65,7 @@ namespace helpers {
                 }
             };
 
-            sd::Threads::parallel_for(func, 0, total_count);
+            samediff::Threads::parallel_for(func, 0, total_count);
         } else {
             const int total_count = batch_size * input_depth_by_input_area;
 
@@ -89,7 +89,7 @@ namespace helpers {
                 }
             };
 
-            sd::Threads::parallel_for(func, 0, total_count);
+            samediff::Threads::parallel_for(func, 0, total_count);
         }
     }
 

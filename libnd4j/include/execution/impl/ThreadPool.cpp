@@ -26,7 +26,7 @@
 //#include <windows.h>
 #endif
 
-namespace sd {
+namespace samediff {
 
     // this function executed once per thread, it polls functions from queue, and executes them via wrapper
     static void executionLoop_(int thread_id, BlockingQueue<CallableWithArguments*> *queue) {
@@ -183,7 +183,7 @@ namespace sd {
         }
     }
 
-    void ThreadPool::release(sd::Ticket *ticket) {
+    void ThreadPool::release(samediff::Ticket *ticket) {
         // returning ticket back to the queue
         std::unique_lock<std::mutex> lock(_lock);
         _tickets.push(ticket);

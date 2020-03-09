@@ -173,7 +173,7 @@ namespace helpers {
                             meanV.p<T>(e, meanV.e<T>(e) + listOfTensors.at(i)->e<T>(e));
                         }
                     };
-                    sd::Threads::parallel_for(func, 0, meanT->lengthOf());
+                    samediff::Threads::parallel_for(func, 0, meanT->lengthOf());
 
                     count++;
                 }
@@ -227,7 +227,7 @@ namespace helpers {
                             sumT->p(e, sumT->e<T>(e) + listOfTensors.at(i)->e<T>(e));
                         }
                     };
-                    sd::Threads::parallel_for(func, 0, sumT->lengthOf());
+                    samediff::Threads::parallel_for(func, 0, sumT->lengthOf());
                 }
                 else {
                     idx = indices->e<int>(i);
@@ -276,7 +276,7 @@ namespace helpers {
                             sumT->p(e, sumT->e<T>(e) * listOfTensors.at(i)->e<T>(e));
                         }
                     };
-                    sd::Threads::parallel_for(func, 0, sumT->lengthOf());
+                    samediff::Threads::parallel_for(func, 0, sumT->lengthOf());
                 }
                 else {
                     idx = indices->e<int>(i);
@@ -631,7 +631,7 @@ namespace helpers {
                         output->p(e, gradOut->e<T>(classNum));
                 }
             };
-            sd::Threads::parallel_for(func, 0, loop_size);
+            samediff::Threads::parallel_for(func, 0, loop_size);
         }
         else {
             std::vector<int> restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
@@ -658,7 +658,7 @@ namespace helpers {
                 }
             };
 
-            sd::Threads::parallel_tad(func, 0, indices->lengthOf());
+            samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
         }
 
         return ND4J_STATUS_OK;
@@ -681,7 +681,7 @@ namespace helpers {
                         output->p(e, gradOut->e<double>(classNum));
                 }
             };
-            sd::Threads::parallel_for(func, 0, input->lengthOf());
+            samediff::Threads::parallel_for(func, 0, input->lengthOf());
         }
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
@@ -711,7 +711,7 @@ namespace helpers {
                 }
             };
 
-            sd::Threads::parallel_tad(func, 0, indices->lengthOf());
+            samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
         }
         return ND4J_STATUS_OK;
     }
@@ -758,7 +758,7 @@ namespace helpers {
                 }
             //};
 
-            //sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         return ND4J_STATUS_OK;
     }
@@ -791,7 +791,7 @@ namespace helpers {
                 }
             //};
 
-            //sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         return Status::OK();
     }
@@ -828,7 +828,7 @@ namespace helpers {
                 }
             //};
 
-            //sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
 
         return ND4J_STATUS_OK;
@@ -894,7 +894,7 @@ namespace helpers {
                 }
             };
 
-            sd::Threads::parallel_for(func, 0, input->lengthOf());
+            samediff::Threads::parallel_for(func, 0, input->lengthOf());
         }
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
@@ -918,7 +918,7 @@ namespace helpers {
                 }
             //};
 
-            //sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
 
         return ND4J_STATUS_OK;
@@ -993,7 +993,7 @@ namespace helpers {
                 }
             //};
 
-            //sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         return Status::OK();
     }
@@ -1010,7 +1010,7 @@ namespace helpers {
                 }
             };
 
-            sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
@@ -1032,7 +1032,7 @@ namespace helpers {
                 }
             //};
 
-            //sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
 
         return Status::OK();
@@ -1059,7 +1059,7 @@ namespace helpers {
                 }
             //};
 
-            //sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
@@ -1081,7 +1081,7 @@ namespace helpers {
                 }
             //};
 
-            //sd::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         return Status::OK();
     }

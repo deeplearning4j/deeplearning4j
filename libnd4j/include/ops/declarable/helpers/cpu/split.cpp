@@ -115,7 +115,7 @@ namespace helpers {
                     }
                 };
 
-                sd::Threads::parallel_for(func, 0, input.lengthOf());
+                samediff::Threads::parallel_for(func, 0, input.lengthOf());
             }
 
             void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis) {

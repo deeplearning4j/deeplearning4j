@@ -40,7 +40,7 @@ namespace sd {
                         }
                         return sum;
                     };
-                    sumt = sd::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
+                    sumt = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
                 } else {
                     //PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
                     auto func = PRAGMA_REDUCE_LONG {
@@ -53,7 +53,7 @@ namespace sd {
 
                         return sum;
                     };
-                    sumt = sd::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
+                    sumt = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
                 }
 
                 //nd4j_printf("Sum: %lld\n", sumt)

@@ -54,7 +54,7 @@ namespace helpers {
                 }
             };
 
-            sd::Threads::parallel_tad(loop, 0, n, 1);
+            samediff::Threads::parallel_tad(loop, 0, n, 1);
         }
     }
 
@@ -79,8 +79,8 @@ namespace helpers {
                 invertedMatrix->t<T>(i, i - 1) -= (inputMatrix->t<T>(i, i - 1) * invertedMatrix->t<T>(i - 1, i - 1) / inputMatrix->t<T>(i, i));
         };
 
-        sd::Threads::parallel_for(invertDiagonals, 0, n, 1);
-        sd::Threads::parallel_for(invertSubDiagonals, 1, n, 1);
+        samediff::Threads::parallel_for(invertDiagonals, 0, n, 1);
+        samediff::Threads::parallel_for(invertSubDiagonals, 1, n, 1);
 
 //        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (int i = 1; i < n; i++) {
@@ -118,8 +118,8 @@ namespace helpers {
                                                    inputMatrix->t<T>(i, i));
         };
 
-        sd::Threads::parallel_for(invertDiagonals, 0, n, 1);
-        sd::Threads::parallel_for(invertUpDiagonals, 0, n - 1, 1);
+        samediff::Threads::parallel_for(invertDiagonals, 0, n, 1);
+        samediff::Threads::parallel_for(invertUpDiagonals, 0, n - 1, 1);
 
 //        PRAGMA_OMP_PARALLEL_FOR_SIMD
         for (auto i = n - 2; i >= 0; i--) {
@@ -225,7 +225,7 @@ namespace helpers {
                 }
             }
         //};
-        //sd::Threads::parallel_for(loop, column, rowNum, 1);
+        //samediff::Threads::parallel_for(loop, column, rowNum, 1);
         return result;
     }
 
@@ -247,7 +247,7 @@ namespace helpers {
                 }
             }
         };
-        sd::Threads::parallel_tad(loop, currentRow + 1, rowNum, 1);
+        samediff::Threads::parallel_tad(loop, currentRow + 1, rowNum, 1);
     }
 
     template <typename T>
@@ -327,7 +327,7 @@ namespace helpers {
                 luNN_<T, I>(context, outputs.at(i), permutationVectors?permutations.at(i):nullptr, n);
             }
         };
-        sd::Threads::parallel_for(loop, 0, outputs.size(), 1);
+        samediff::Threads::parallel_for(loop, 0, outputs.size(), 1);
     }
 
     void lu(LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation) {

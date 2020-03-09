@@ -197,7 +197,7 @@ namespace helpers {
                 }
         };
 
-        sd::Threads::parallel_for(func, 0, batchValue, 1, 0, numOfSamples, 1);
+        samediff::Threads::parallel_for(func, 0, batchValue, 1, 0, numOfSamples, 1);
         rng.rewindH(output.lengthOf()*numOfClassX);
 
         return;

@@ -59,7 +59,7 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                             swap(inArr, e, idx);
                         }
                     };
-                    sd::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
                 }
                 else if (inEWS > 1) {
                     auto func = PRAGMA_THREADS_FOR {
@@ -70,7 +70,7 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                         }
                     };
 
-                    sd::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
                 }
                 else {
 
@@ -82,7 +82,7 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                         }
                     };
 
-                    sd::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
                 }
             }
             else {
@@ -96,14 +96,14 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                         for (Nd4jLong e = start; e < stop; e++)
                             outArr[sLength - e] = inArr[e];
                     };
-                    sd::Threads::parallel_for(func, 0, numOfElemsToReverse);
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
                         auto f2 = PRAGMA_THREADS_FOR {
                             for (auto e = start; e < stop; e++)
                                 outArr[e] = inArr[e];
                         };
-                        sd::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
+                        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
                     }
                 }
                 else if (inEWS >= 1 && outEWS >= 1 && inOrder == outOrder) {
@@ -112,14 +112,14 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                         for (auto e = start; e < stop; e++)
                             outArr[(sLength - e) * outEWS] = inArr[e * inEWS];
                     };
-                    sd::Threads::parallel_for(func, 0, numOfElemsToReverse);
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
                         auto f2 = PRAGMA_THREADS_FOR {
                             for (auto e = start; e < stop; e++)
                                 outArr[e * outEWS] = inArr[e * inEWS];
                         };
-                        sd::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
+                        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
                     }
                 }
                 else {
@@ -131,7 +131,7 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                             outArr[outOffset] = inArr[inOffset];
                         }
                     };
-                    sd::Threads::parallel_for(func, 0, numOfElemsToReverse);
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
 
@@ -142,7 +142,7 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                                 outArr[outOffset] = inArr[inOffset];
                             }
                         };
-                        sd::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
+                        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
                     }
                 }
             }

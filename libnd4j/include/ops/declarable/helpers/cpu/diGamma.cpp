@@ -35,7 +35,7 @@ static void diGamma_(const NDArray& x, NDArray& z) {
         for (auto i = start; i < stop; i++)
             z.p(i, diGammaScalar<T>(x.e<T>(i)));
     };
-	sd::Threads::parallel_for(func, 0, x.lengthOf());
+	samediff::Threads::parallel_for(func, 0, x.lengthOf());
 }
 
 void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {

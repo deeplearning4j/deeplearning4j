@@ -1318,7 +1318,7 @@ void pullRowsGeneric(void *vx,
         }
     };
 
-    sd::Threads::parallel_tad(func, 0, n, 1, _threads);
+    samediff::Threads::parallel_tad(func, 0, n, 1, _threads);
 }
 
 void pullRows(Nd4jPointer *extraPointers,
@@ -1377,7 +1377,7 @@ void tearGeneric(void *vx,
         }
     };
 
-    sd::Threads::parallel_tad(func,0, numTads);
+    samediff::Threads::parallel_tad(func,0, numTads);
 }
 
 void tear(Nd4jPointer *extraPointers,
@@ -1530,7 +1530,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
         }
     };
 
-    sd::Threads::parallel_tad(func, 0, N);
+    samediff::Threads::parallel_tad(func, 0, N);
 }
 
 void shuffle(Nd4jPointer *extras,
@@ -1944,7 +1944,7 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
         return cnt;
     };
 
-    return sd::Threads::parallel_long(func, LAMBDA_AL { return _old + _new; }, 0, N);
+    return samediff::Threads::parallel_long(func, LAMBDA_AL { return _old + _new; }, 0, N);
 }
 
 
@@ -2653,7 +2653,7 @@ static void  _scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSub
             }
         };
 
-        sd::Threads::parallel_do(func);
+        samediff::Threads::parallel_do(func);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2812,7 +2812,7 @@ void ctxSetExecutionMode(OpaqueContext* ptr, int execMode) {
     if (execMode < 0 || execMode > 2)
         execMode = 0;
 
-    ptr->setExecutionMode((sd::ExecutionMode) execMode);
+    ptr->setExecutionMode((samediff::ExecutionMode) execMode);
 }
 
 void ctxPurge(OpaqueContext* ptr) {

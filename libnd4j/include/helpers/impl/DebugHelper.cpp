@@ -99,7 +99,7 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) reduction(+:_nanCount,_infCount,_m
 
                 return _stdDevValue;
             };
-            _stdDevValue = sd::Threads::parallel_double(func, LAMBDA_AD { return _old + _new; }, 0, input->lengthOf());
+            _stdDevValue = samediff::Threads::parallel_double(func, LAMBDA_AD { return _old + _new; }, 0, input->lengthOf());
 
             info->_stdDevValue = math::nd4j_sqrt<double, double>(_stdDevValue / input->lengthOf());
 

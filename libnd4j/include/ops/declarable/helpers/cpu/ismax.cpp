@@ -195,7 +195,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
             }
         };
 
-        sd::Threads::parallel_tad(func, 0, tads);
+        samediff::Threads::parallel_tad(func, 0, tads);
     }
 }
 

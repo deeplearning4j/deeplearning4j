@@ -48,7 +48,7 @@ namespace helpers {
                 }
             }
         };
-        sd::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
+        samediff::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
     }
 
 // --------------------------------------------------------------------------------------------------------------------------------------- //

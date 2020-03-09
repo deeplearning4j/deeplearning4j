@@ -29,7 +29,7 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace sd {
+namespace samediff {
     /**
      * This class is suited for passing functions to execution threads without queues
      */

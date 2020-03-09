@@ -1107,8 +1107,8 @@ namespace sd {
             return ND4J_STATUS_OK;
         }
 
-        sd::EmptyHandling DeclarableOp::emptyHandling() {
-            return sd::EmptyHandling::EMPTY_SKIP;
+        samediff::EmptyHandling DeclarableOp::emptyHandling() {
+            return samediff::EmptyHandling::EMPTY_SKIP;
         }
 
         void DeclarableOp::registerTypes() {

@@ -71,7 +71,7 @@ namespace sd {
                         }
                     };
 
-                    sd::Threads::parallel_tad(func, 0, outSize);
+                    samediff::Threads::parallel_tad(func, 0, outSize);
                 }
             }
             template <typename T>
@@ -177,7 +177,7 @@ namespace sd {
                         }
                     };
 
-                    sd::Threads::parallel_tad(func, 0, gradsSize);
+                    samediff::Threads::parallel_tad(func, 0, gradsSize);
                 }
 
                 outputList[1]->assign(indices);

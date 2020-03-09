@@ -69,7 +69,7 @@ static void batchToSpace_(const NDArray& input, NDArray& output, const uint crop
         }
     };
 
-    sd::Threads::parallel_for(func, 0, bS, 1, cropBottom, iH - cropTop, 1, cropLeft, iW - cropRight, 1);
+    samediff::Threads::parallel_for(func, 0, bS, 1, cropBottom, iH - cropTop, 1, cropLeft, iW - cropRight, 1);
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpace_, (const NDArray& input, NDArray& output, const uint cropBottom, const uint cropTop, const uint cropLeft, const uint cropRight), LIBND4J_TYPES);
@@ -128,7 +128,7 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
         }
     };
 
-    sd::Threads::parallel_tad(func, 0, zLen);
+    samediff::Threads::parallel_tad(func, 0, zLen);
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_, (const NDArray& input, const NDArray& crop, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);
@@ -234,7 +234,7 @@ static void spaceToBatch_(const NDArray& input, NDArray& output, const uint padB
         }
     };
 
-    sd::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
+    samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
 }
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatch_, (const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight), LIBND4J_TYPES);
@@ -327,7 +327,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
         }
     };
 
-    sd::Threads::parallel_tad(func, 0, zLen);
+    samediff::Threads::parallel_tad(func, 0, zLen);
 }
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchND_, (const NDArray& input, const NDArray& padding, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);

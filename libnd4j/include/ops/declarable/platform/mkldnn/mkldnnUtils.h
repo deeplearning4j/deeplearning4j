@@ -31,7 +31,7 @@
 #include <ops/declarable/PlatformHelper.h>
 #include <system/platform_boilerplate.h>
 
-using namespace sd;
+using namespace samediff;
 
 
 namespace sd {
