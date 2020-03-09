@@ -90,7 +90,7 @@ static void im2col_(sd::LaunchContext & context, const NDArray& input,  NDArray&
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+        sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
     }
     else {
 
@@ -124,7 +124,7 @@ static void im2col_(sd::LaunchContext & context, const NDArray& input,  NDArray&
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
+        sd::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
     }
 }
 

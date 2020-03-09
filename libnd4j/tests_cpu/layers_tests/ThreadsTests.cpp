@@ -25,7 +25,7 @@
 #include <chrono>
 #include <execution/ThreadPool.h>
 
-using namespace samediff;
+using namespace sd;
 using namespace sd;
 using namespace sd::ops;
 using namespace sd::graph;
@@ -182,7 +182,7 @@ TEST_F(ThreadsTests, validation_test_2d_1) {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, e, 1, 0, i, 1, t, true);
+                sd::Threads::parallel_for(func, 0, e, 1, 0, i, 1, t, true);
 
                 ASSERT_EQ(e * i, sum.load());
             }
@@ -204,7 +204,7 @@ TEST_F(ThreadsTests, reduction_test_1) {
         return sum;
     };
 
-    auto sum = samediff::Threads::parallel_long(func, LAMBDA_AL {return _old + _new;}, 0, 8192, 1, 4);
+    auto sum = sd::Threads::parallel_long(func, LAMBDA_AL {return _old + _new;}, 0, 8192, 1, 4);
     ASSERT_EQ(8192, sum);
 }
 
@@ -213,7 +213,7 @@ TEST_F(ThreadsTests, basic_test_1) {
     if (!Environment::getInstance()->isCPU())
         return;
 
-    auto instance = samediff::ThreadPool::getInstance();
+    auto instance = sd::ThreadPool::getInstance();
 
     auto array = NDArrayFactory::create<float>('c', {512, 768});
     auto like = array.like();
@@ -228,7 +228,7 @@ TEST_F(ThreadsTests, basic_test_1) {
     };
 
     auto timeStartThreads = std::chrono::system_clock::now();
-    samediff::Threads::parallel_for(func, 0, array.lengthOf());
+    sd::Threads::parallel_for(func, 0, array.lengthOf());
     auto timeEndThreads = std::chrono::system_clock::now();
     auto outerTimeThreads = std::chrono::duration_cast<std::chrono::microseconds> (timeEndThreads - timeStartThreads).count();
 

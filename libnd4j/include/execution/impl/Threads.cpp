@@ -25,8 +25,14 @@
 #include <math/templatemath.h>
 #include <helpers/shape.h>
 
+#ifdef _OPENMP
 
-namespace samediff {
+#include <omp.h>
+
+#endif
+
+
+namespace sd {
 
     int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
         // let's see how many threads we actually need first
@@ -51,34 +57,34 @@ namespace samediff {
     Span3 Span3::build(int loop, uint64_t threadID, uint64_t numThreads, int64_t startX, int64_t stopX, int64_t incX, int64_t startY, int64_t stopY, int64_t incY, int64_t startZ, int64_t stopZ, int64_t incZ) {
         switch (loop) {
             case 1: {
-                    auto span = (stopX - startX) / numThreads;
-                    auto s = span * threadID;
-                    auto e = s + span;
-                    if (threadID == numThreads - 1)
-                        e = stopX;
+                auto span = (stopX - startX) / numThreads;
+                auto s = span * threadID;
+                auto e = s + span;
+                if (threadID == numThreads - 1)
+                    e = stopX;
 
-                    return Span3(s, e, incX, startY, stopY, incY, startZ, stopZ, incZ);
-                }
+                return Span3(s, e, incX, startY, stopY, incY, startZ, stopZ, incZ);
+            }
                 break;
             case 2: {
-                    auto span = (stopY - startY) / numThreads;
-                    auto s = span * threadID;
-                    auto e = s + span;
-                    if (threadID == numThreads - 1)
-                        e = stopY;
+                auto span = (stopY - startY) / numThreads;
+                auto s = span * threadID;
+                auto e = s + span;
+                if (threadID == numThreads - 1)
+                    e = stopY;
 
-                    return Span3(startX, stopX, incX, s, e, incY, startZ, stopZ, incZ);
-                }
+                return Span3(startX, stopX, incX, s, e, incY, startZ, stopZ, incZ);
+            }
                 break;
             case 3: {
-                    auto span = (stopZ - startZ) / numThreads;
-                    auto s = span * threadID;
-                    auto e = s + span;
-                    if (threadID == numThreads - 1)
-                        e = stopZ;
+                auto span = (stopZ - startZ) / numThreads;
+                auto s = span * threadID;
+                auto e = s + span;
+                if (threadID == numThreads - 1)
+                    e = stopZ;
 
-                    return Span3(startX, stopX, incX, startY, stopY, incY, s, e, incZ);
-                }
+                return Span3(startX, stopX, incX, startY, stopY, incY, s, e, incZ);
+            }
                 break;
             default:
                 throw std::runtime_error("");
@@ -116,24 +122,24 @@ namespace samediff {
 
         switch (loop) {
             case 1: {
-                    auto span = (stopX - startX) / numThreads;
-                    auto s = span * threadID;
-                    auto e = s + span;
-                    if (threadID == numThreads - 1)
-                        e = stopX;
+                auto span = (stopX - startX) / numThreads;
+                auto s = span * threadID;
+                auto e = s + span;
+                if (threadID == numThreads - 1)
+                    e = stopX;
 
-                    return Span2(s, e, incX, startY, stopY, incY);
-                }
+                return Span2(s, e, incX, startY, stopY, incY);
+            }
                 break;
             case 2: {
-                    auto span = (stopY - startY) / numThreads;
-                    auto s = span * threadID;
-                    auto e = s + span;
-                    if (threadID == numThreads - 1)
-                        e = stopY;
+                auto span = (stopY - startY) / numThreads;
+                auto s = span * threadID;
+                auto e = s + span;
+                if (threadID == numThreads - 1)
+                    e = stopY;
 
-                    return Span2(startX, stopX, incX, s, e, incY);
-                }
+                return Span2(startX, stopX, incX, s, e, incY);
+            }
                 break;
             default:
                 throw std::runtime_error("");
@@ -270,7 +276,7 @@ namespace samediff {
         auto remY = iters_y % maxThreads;
 
         // in some cases there's nothing to think about, part 2
-        if ((iters_x >= maxThreads && remX == 0 )|| (iters_y >= maxThreads && remY == 0))
+        if ((iters_x >= maxThreads && remX == 0) || (iters_y >= maxThreads && remY == 0))
             return maxThreads;
 
         // at this point we suppose that there's no loop perfectly matches number of our threads
@@ -339,11 +345,35 @@ namespace samediff {
         return 1;
     }
 
+#ifdef _OPENMP
+
+    std::mutex Threads::gThreadmutex;
+    uint64_t Threads::_nFreeThreads = sd::Environment::getInstance()->maxThreads();
+
+    bool   Threads::tryAcquire(int numThreads){
+        std::lock_guard<std::mutex> lock( gThreadmutex );
+        auto nThreads = _nFreeThreads - numThreads;
+        if(nThreads >= 1){
+            _nFreeThreads = nThreads;
+
+            return true;
+        }
+        return false;
+    }
+
+    bool  Threads::freeThreads(int numThreads){
+        std::lock_guard<std::mutex> lock( gThreadmutex );
+        _nFreeThreads += numThreads;
+        // check if correct number of threads
+        return _nFreeThreads > sd::Environment::getInstance()->maxThreads();
+    }
+#endif
+
     int Threads::parallel_tad(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, uint32_t numThreads) {
         if (start > stop)
             throw std::runtime_error("Threads::parallel_for got start > stop");
 
-        auto delta = (stop - start);
+        auto delta = (stop - start) / increment;
 
         if (numThreads > delta)
             numThreads = delta;
@@ -357,35 +387,57 @@ namespace samediff {
             return 1;
         }
 
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
-        if (ticket != nullptr) {
-            // if we got our threads - we'll run our jobs here
-            auto span = delta / numThreads;
+#ifdef _OPENMP
 
-            for (uint32_t e = 0; e < numThreads; e++) {
-                auto start_ = span * e + start;
-                auto stop_  = start_ + span;
-
-                // last thread will process tail
-                if (e == numThreads - 1)
-                    stop_ = stop;
-
-                // putting the task into the queue for a given thread
-                ticket->enqueue(e, numThreads, function, start_, stop_, increment);
+        if (tryAcquire(numThreads)) {
+#pragma omp parallel for num_threads(numThreads)
+            for (auto e = start; e < stop; e += increment) {
+                function(omp_get_thread_num(), e, e + 1, 1);
             }
-
-            // block and wait till all threads finished the job
-            ticket->waitAndRelease();
-
-            // we tell that parallelism request succeeded
+            freeThreads(numThreads);
             return numThreads;
-        } else {
+        }
+        else {
             // if there were no threads available - we'll execute function right within current thread
             function(0, start, stop, increment);
 
             // we tell that parallelism request declined
             return 1;
         }
+#else
+
+        sd::Environment::getInstance()->maxThreads();
+		auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+		if (ticket != nullptr) {
+			// if we got our threads - we'll run our jobs here
+			auto span = delta / numThreads;
+
+			for (uint32_t e = 0; e < numThreads; e++) {
+				auto start_ = span * e + start;
+				auto stop_ = start_ + span;
+
+				// last thread will process tail
+				if (e == numThreads - 1)
+					stop_ = stop;
+
+				// putting the task into the queue for a given thread
+				ticket->enqueue(e, numThreads, function, start_, stop_, increment);
+			}
+
+			// block and wait till all threads finished the job
+			ticket->waitAndRelease();
+
+			// we tell that parallelism request succeeded
+			return numThreads;
+		}
+		else {
+			// if there were no threads available - we'll execute function right within current thread
+			function(0, start, stop, increment);
+
+			// we tell that parallelism request declined
+			return 1;
+		}
+#endif
     }
 
     int Threads::parallel_for(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, uint32_t numThreads) {
@@ -448,28 +500,53 @@ namespace samediff {
 
             // but we still mimic multithreaded execution
             return numThreads;
-        } else {
-            auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
-            if (ticket != nullptr) {
+        }
+        else {
+#ifdef _OPENMP
 
-                for (int e = 0; e < numThreads; e++) {
-                    auto threadId = numThreads - e - 1;
-                    auto span = Span2::build(splitLoop, threadId, numThreads, startX, stopX, incX, startY, stopY, incY);
-
-                    ticket->enqueue(e, numThreads, function, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY());
+            if (tryAcquire(numThreads)) {
+#pragma omp parallel for num_threads(numThreads) collapse(2)
+                for (auto x = startX; x < stopX; x += incX) {
+                    for (auto y = startY; y < stopY; y += incY) {
+                        function(omp_get_thread_num(), x, x+1, 1, y, y+1, 1);
+                    }
                 }
-
-                // block until all threads finish their job
-                ticket->waitAndRelease();
-
+                freeThreads(numThreads);
                 return numThreads;
-            } else {
+            }
+            else {
                 // if there were no threads available - we'll execute function right within current thread
                 function(0, startX, stopX, incX, startY, stopY, incY);
 
                 // we tell that parallelism request declined
                 return 1;
             }
+
+#else
+
+            auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+			if (ticket != nullptr) {
+
+				for (int e = 0; e < numThreads; e++) {
+					auto threadId = numThreads - e - 1;
+					auto span = Span2::build(splitLoop, threadId, numThreads, startX, stopX, incX, startY, stopY, incY);
+
+					ticket->enqueue(e, numThreads, function, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY());
+				}
+
+				// block until all threads finish their job
+				ticket->waitAndRelease();
+
+				return numThreads;
+			}
+			else {
+				// if there were no threads available - we'll execute function right within current thread
+				function(0, startX, stopX, incX, startY, stopY, incY);
+
+				// we tell that parallelism request declined
+				return 1;
+			}
+#endif
         };
     }
 
@@ -484,6 +561,35 @@ namespace samediff {
         if (startZ > stopZ)
             throw std::runtime_error("Threads::parallel_for got startZ > stopZ");
 
+        if (numThreads == 1) {
+            // loop is too small - executing function as is
+            function(0, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
+            return 1;
+        }
+
+#ifdef _OPENMP
+
+        if (tryAcquire(numThreads)) {
+#pragma omp parallel for num_threads(numThreads) collapse(3)
+            for (auto x = startX; x < stopX; x += incX) {
+                for (auto y = startY; y < stopY; y += incY) {
+                    for (auto z = startZ; z < stopZ; z += incZ) {
+                        function(omp_get_thread_num(), x, x+1, 1, y, y+1, 1, z, z+1, 1);
+                    }
+                }
+            }
+
+            freeThreads(numThreads);
+            return numThreads;
+        }
+        else {
+            // if there were no threads available - we'll execute function right within current thread
+            function(0, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
+
+            // we tell that parallelism request declined
+            return 1;
+        }
+#else
         auto delta_x = stopX - startX;
         auto delta_y = stopY - startY;
         auto delta_z = stopZ - startZ;
@@ -500,52 +606,79 @@ namespace samediff {
         }
 
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
-        if (ticket != nullptr) {
-            auto splitLoop = ThreadsHelper::pickLoop3d(numThreads, itersX, itersY, itersZ);
+		if (ticket != nullptr) {
+			auto splitLoop = ThreadsHelper::pickLoop3d(numThreads, itersX, itersY, itersZ);
 
-            for (int e = 0; e < numThreads; e++) {
-                auto thread_id = numThreads - e - 1;
-                auto span = Span3::build(splitLoop, thread_id, numThreads, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
+			for (int e = 0; e < numThreads; e++) {
+				auto thread_id = numThreads - e - 1;
+				auto span = Span3::build(splitLoop, thread_id, numThreads, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
 
-                ticket->enqueue(e, numThreads, function, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY(), span.startZ(), span.stopZ(), span.incZ());
-            }
+				ticket->enqueue(e, numThreads, function, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY(), span.startZ(), span.stopZ(), span.incZ());
+			}
 
-            // block until we're done
-            ticket->waitAndRelease();
+			// block until we're done
+			ticket->waitAndRelease();
 
-            // we tell that parallelism request succeeded
-            return numThreads;
-        } else {
-            // if there were no threads available - we'll execute function right within current thread
-            function(0, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
+			// we tell that parallelism request succeeded
+			return numThreads;
+		}
+		else {
+			// if there were no threads available - we'll execute function right within current thread
+			function(0, startX, stopX, incX, startY, stopY, incY, startZ, stopZ, incZ);
 
-            // we tell that parallelism request declined
-            return 1;
-        }
-
+			// we tell that parallelism request declined
+			return 1;
+		}
+#endif
     }
 
     int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
-        if (ticket != nullptr) {
 
-            // submit tasks one by one
-            for (uint64_t e = 0; e < numThreads - 1; e++)
-                ticket->enqueue(e, numThreads, function);
+        if (numThreads == 1) {
+            function(0, numThreads);
+            return 1;
+        }
 
-            function(numThreads - 1, numThreads);
+#ifdef _OPENMP
 
-            ticket->waitAndRelease();
+        if (tryAcquire(numThreads)) {
+#pragma omp parallel for num_threads(numThreads)
+            for (int e = 0; e < numThreads; e++) {
+                function(e, numThreads);
+            }
 
+            freeThreads(numThreads);
             return numThreads;
-        } else {
+        }
+        else {
             // if there's no threads available - we'll execute function sequentially one by one
             for (uint64_t e = 0; e < numThreads; e++)
                 function(e, numThreads);
 
             return numThreads;
         }
+#else
+        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+		if (ticket != nullptr) {
 
+			// submit tasks one by one
+			for (uint64_t e = 0; e < numThreads - 1; e++)
+				ticket->enqueue(e, numThreads, function);
+
+			function(numThreads - 1, numThreads);
+
+			ticket->waitAndRelease();
+
+			return numThreads;
+		}
+		else {
+			// if there's no threads available - we'll execute function sequentially one by one
+			for (uint64_t e = 0; e < numThreads; e++)
+				function(e, numThreads);
+
+			return numThreads;
+		}
+#endif
 
         return numThreads;
     }
@@ -565,26 +698,44 @@ namespace samediff {
         if (numThreads == 1)
             return function(0, start, stop, increment);
 
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
-        if (ticket == nullptr)
-            return function(0, start, stop, increment);
-
         // create temporary array
         int64_t intermediatery[256];
         auto span = delta / numThreads;
 
-        // execute threads in parallel
-        for (uint32_t e = 0; e < numThreads; e++) {
-            auto start_ = span * e + start;
-            auto stop_ = span * (e + 1) + start;
+#ifdef _OPENMP
+        if (tryAcquire(numThreads)) {
+#pragma omp parallel for num_threads(numThreads)
+            for (int e = 0; e < numThreads; e++) {
+                auto start_ = span * e + start;
+                auto stop_ = span * (e + 1) + start;
 
-            if (e == numThreads - 1)
-                intermediatery[e] = function(e, start_, stop, increment);
-            else
-                ticket->enqueue(e, numThreads, &intermediatery[e], function, start_, stop_, increment);
+                intermediatery[e] = function(e, start_, e == numThreads - 1 ? stop : stop_, increment);
+            }
+            freeThreads(numThreads);
         }
+        else{
+            // if there were no thre ads available - we'll execute function right within current thread
+            return	function(0, start, stop, increment);
+        }
+#else
+        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+        if (ticket == nullptr)
+            return function(0, start, stop, increment);
 
-        ticket->waitAndRelease();
+		// execute threads in parallel
+		for (uint32_t e = 0; e < numThreads; e++) {
+			auto start_ = span * e + start;
+			auto stop_ = span * (e + 1) + start;
+
+			if (e == numThreads - 1)
+				intermediatery[e] = function(e, start_, stop, increment);
+			else
+				ticket->enqueue(e, numThreads, &intermediatery[e], function, start_, stop_, increment);
+		}
+
+		ticket->waitAndRelease();
+
+#endif
 
         // aggregate results in single thread
         for (uint64_t e = 1; e < numThreads; e++)
@@ -609,26 +760,47 @@ namespace samediff {
         if (numThreads == 1)
             return function(0, start, stop, increment);
 
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
-        if (ticket == nullptr)
-            return function(0, start, stop, increment);
-
         // create temporary array
         double intermediatery[256];
         auto span = delta / numThreads;
 
-        // execute threads in parallel
-        for (uint32_t e = 0; e < numThreads; e++) {
-            auto start_ = span * e + start;
-            auto stop_ = span * (e + 1) + start;
+#ifdef _OPENMP
 
-            if (e == numThreads - 1)
-                intermediatery[e] = function(e, start_, stop, increment);
-            else
-                ticket->enqueue(e, numThreads, &intermediatery[e], function, start_, stop_, increment);
+        if (tryAcquire(numThreads)) {
+#pragma omp parallel for num_threads(numThreads)
+            for (int e = 0; e < numThreads; e++) {
+                auto start_ = span * e + start;
+                auto stop_ = span * (e + 1) + start;
+
+                intermediatery[e] = function(e, start_, e == numThreads - 1 ? stop : stop_, increment);
+            }
+            freeThreads(numThreads);
+        }
+        else{
+            // if there were no thre ads available - we'll execute function right within current thread
+            return	function(0, start, stop, increment);
         }
 
-        ticket->waitAndRelease();
+#else
+
+        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+        if (ticket == nullptr)
+            return function(0, start, stop, increment);
+
+		// execute threads in parallel
+		for (uint32_t e = 0; e < numThreads; e++) {
+			auto start_ = span * e + start;
+			auto stop_ = span * (e + 1) + start;
+
+			if (e == numThreads - 1)
+				intermediatery[e] = function(e, start_, stop, increment);
+			else
+				ticket->enqueue(e, numThreads, &intermediatery[e], function, start_, stop_, increment);
+		}
+
+		ticket->waitAndRelease();
+
+#endif
 
         // aggregate results in single thread
         for (uint64_t e = 1; e < numThreads; e++)
@@ -639,13 +811,14 @@ namespace samediff {
     }
 
 
-    int  Threads::parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, size_t type_size , uint32_t req_numThreads) {
+    int  Threads::parallel_aligned_increment(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, size_t type_size, uint32_t req_numThreads) {
         if (start > stop)
             throw std::runtime_error("Threads::parallel_for got start > stop");
         auto num_elements = (stop - start);
         //this way we preserve increment starts offset
         //so we will parition considering delta but not total elements
         auto delta = (stop - start) / increment;
+
 
         // in some cases we just fire func as is
         if (delta == 0 || req_numThreads == 1) {
@@ -654,7 +827,24 @@ namespace samediff {
         }
         int numThreads = 0;
 
-        int adjusted_numThreads = samediff::ThreadsHelper::numberOfThreads(req_numThreads, (num_elements * sizeof(double)) / (200 * type_size));
+        struct th_span {
+            Nd4jLong start;
+            Nd4jLong end;
+        };
+#ifdef _OPENMP
+        constexpr int max_thread_count = 8;
+#else
+        constexpr int max_thread_count = 1024;
+#endif
+        th_span thread_spans[max_thread_count];
+
+        req_numThreads = req_numThreads > max_thread_count ? max_thread_count : req_numThreads;
+
+#ifdef _OPENMP
+        int adjusted_numThreads = max_thread_count;
+#else
+        int adjusted_numThreads = sd::ThreadsHelper::numberOfThreads(req_numThreads, (num_elements * sizeof(double)) / (200 * type_size));
+#endif
 
         if (adjusted_numThreads > delta)
             adjusted_numThreads = delta;
@@ -663,61 +853,89 @@ namespace samediff {
             function(0, start, stop, increment);
             return 1;
         }
-        //take span as ceil  
+
+
+
+        //take span as ceil
         auto spand = std::ceil((double)delta / (double)adjusted_numThreads);
         numThreads = static_cast<int>(std::ceil((double)delta / spand));
-        auto span  = static_cast<Nd4jLong>(spand);
+        auto span = static_cast<Nd4jLong>(spand);
 
-        auto ticket = samediff::ThreadPool::getInstance()->tryAcquire(numThreads);
-        if (ticket != nullptr) {
-            //tail_add is additional value of the last part
-            //it could be negative or positive
-            //we will spread that value across
-            auto tail_add = delta - numThreads * span;
-            Nd4jLong begin = 0;
-            Nd4jLong end = 0;
 
-            //we will try enqueu bigger parts first
-            decltype(span) span1, span2;
-            int last = 0;
-            if (tail_add >= 0) {
-                //for span == 1  , tail_add is  0 
-                last = tail_add;
-                span1 = span + 1;
-                span2 = span;
+        //tail_add is additional value of the last part
+        //it could be negative or positive
+        //we will spread that value across
+        auto tail_add = delta - numThreads * span;
+        Nd4jLong begin = 0;
+        Nd4jLong end = 0;
+
+        //we will try enqueu bigger parts first
+        decltype(span) span1, span2;
+        int last = 0;
+        if (tail_add >= 0) {
+            //for span == 1  , tail_add is  0
+            last = tail_add;
+            span1 = span + 1;
+            span2 = span;
+        }
+        else {
+            last = numThreads + tail_add;// -std::abs(tail_add);
+            span1 = span;
+            span2 = span - 1;
+        }
+        for (int i = 0; i < last; i++) {
+            end = begin + span1 * increment;
+            // putting the task into the queue for a given thread
+            thread_spans[i].start = begin;
+            thread_spans[i].end = end;
+            begin = end;
+        }
+        for (int i = last; i < numThreads - 1; i++) {
+            end = begin + span2 * increment;
+            // putting the task into the queue for a given thread
+            thread_spans[i].start = begin;
+            thread_spans[i].end = end;
+            begin = end;
+        }
+        //for last one enqueue last offset as stop
+        //we need it in case our ((stop-start) % increment ) > 0
+        thread_spans[numThreads - 1].start = begin;
+        thread_spans[numThreads - 1].end = stop;
+
+#ifdef _OPENMP
+        if (tryAcquire(numThreads)) {
+#pragma omp parallel for num_threads(numThreads)
+            for (size_t j = 0; j < numThreads; j++) {
+                function(j, thread_spans[j].start, thread_spans[j].end, increment);
             }
-            else {
-                last = numThreads + tail_add;// -std::abs(tail_add);
-                span1 = span;
-                span2 = span - 1;
-            }
-            for (int i = 0; i < last; i++) {
-                end = begin + span1 * increment;
-                // putting the task into the queue for a given thread
-                ticket->enqueue(i, numThreads, function, begin, end, increment);
-                begin = end;
-            }
-            for (int i = last; i < numThreads - 1; i++) {
-                end = begin + span2 * increment;
-                // putting the task into the queue for a given thread
-                ticket->enqueue(i, numThreads, function, begin, end, increment);
-                begin = end;
-            }
-            //for last one enqueue last offset as stop
-            //we need it in case our ((stop-start) % increment ) > 0
-            ticket->enqueue(numThreads - 1, numThreads, function, begin, stop, increment);
-            // block and wait till all threads finished the job
-            ticket->waitAndRelease();
-            // we tell that parallelism request succeeded
+            freeThreads(numThreads);
             return numThreads;
         }
         else {
-            // if there were no threads available - we'll execute function right within current thread
             function(0, start, stop, increment);
             // we tell that parallelism request declined
             return 1;
         }
+#else
+        auto ticket = sd::ThreadPool::getInstance()->tryAcquire(numThreads);
+		if (ticket != nullptr) {
+
+			for (size_t j = 0; j < numThreads; j++) {
+				ticket->enqueue(j, numThreads, function, thread_spans[j].start, thread_spans[j].end, increment);
+			}
+			// block and wait till all threads finished the job
+			ticket->waitAndRelease();
+			// we tell that parallelism request succeeded
+			return numThreads;
+		}
+		else {
+			// if there were no threads available - we'll execute function right within current thread
+			function(0, start, stop, increment);
+			// we tell that parallelism request declined
+			return 1;
+		}
+#endif
     }
-
-
 }
+
+

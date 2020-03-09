@@ -38,15 +38,15 @@
 namespace std {
 
     template <>
-    class hash<std::pair<Nd4jLong, samediff::Engine>> {
+    class hash<std::pair<Nd4jLong, sd::Engine>> {
     public:
-        size_t operator()(const std::pair<Nd4jLong, samediff::Engine>& k) const;
+        size_t operator()(const std::pair<Nd4jLong, sd::Engine>& k) const;
     };
 
     template <>
-    class hash<std::pair<std::string, samediff::Engine>> {
+    class hash<std::pair<std::string, sd::Engine>> {
     public:
-        size_t operator()(const std::pair<std::string, samediff::Engine>& k) const;
+        size_t operator()(const std::pair<std::string, sd::Engine>& k) const;
     };
 };
 
@@ -87,8 +87,8 @@ namespace sd {
             std::vector<sd::ops::DeclarableOp *> _uniqueD;
 
             // pointers to platform-specific helpers
-            MAP_IMPL<std::pair<Nd4jLong, samediff::Engine>, sd::ops::platforms::PlatformHelper*> _helpersLH;
-            MAP_IMPL<std::pair<std::string, samediff::Engine>, sd::ops::platforms::PlatformHelper*> _helpersH;
+            MAP_IMPL<std::pair<Nd4jLong, sd::Engine>, sd::ops::platforms::PlatformHelper*> _helpersLH;
+            MAP_IMPL<std::pair<std::string, sd::Engine>, sd::ops::platforms::PlatformHelper*> _helpersH;
             std::vector<sd::ops::platforms::PlatformHelper*> _uniqueH;
 
             std::mutex _locker;
@@ -119,13 +119,13 @@ namespace sd {
 
             void registerHelper(sd::ops::platforms::PlatformHelper* op);
 
-            bool hasHelper(Nd4jLong hash, samediff::Engine engine);
+            bool hasHelper(Nd4jLong hash, sd::Engine engine);
 
             sd::ops::DeclarableOp* getOperation(const char *name);
             sd::ops::DeclarableOp* getOperation(Nd4jLong hash);
             sd::ops::DeclarableOp* getOperation(std::string &name);
 
-            sd::ops::platforms::PlatformHelper* getPlatformHelper(Nd4jLong hash, samediff::Engine engine);
+            sd::ops::platforms::PlatformHelper* getPlatformHelper(Nd4jLong hash, sd::Engine engine);
 
             std::vector<Nd4jLong> getAllHashes();
 

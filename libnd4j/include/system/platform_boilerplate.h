@@ -30,7 +30,7 @@
 
 #define DECLARE_PLATFORM_F(NAME, ENGINE, CNAME)      class ND4J_EXPORT PLATFORM_##CNAME : public PlatformHelper {\
                                                      public: \
-                                                        PLATFORM_##CNAME() :  PlatformHelper(#NAME, samediff::Engine::ENGINE) { } \
+                                                        PLATFORM_##CNAME() :  PlatformHelper(#NAME, sd::Engine::ENGINE) { } \
                                                         bool isUsable(graph::Context &context) override; \
                                                         Nd4jStatus invokeHelper(graph::Context &context) override; \
                                                     };

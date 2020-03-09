@@ -21,7 +21,7 @@
 #ifndef SD_ENGINE_H
 #define SD_ENGINE_H
 
-namespace samediff {
+namespace sd {
     enum Engine {
         ENGINE_CPU = 0,
         ENGINE_CUDA = 1,

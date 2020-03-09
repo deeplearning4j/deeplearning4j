@@ -89,7 +89,7 @@ void col2im_(sd::LaunchContext & context, const NDArray& input,  NDArray& output
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+        sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
     }
     else {
 
@@ -127,7 +127,7 @@ void col2im_(sd::LaunchContext & context, const NDArray& input,  NDArray& output
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, bS);
+        sd::Threads::parallel_tad(func, 0, bS);
     }
 }
 

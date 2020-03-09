@@ -565,7 +565,7 @@ namespace sd {
 						}
 					};
 					//
-					samediff::Threads::parallel_aligned_increment(func, 0, total_num, inc);
+					sd::Threads::parallel_aligned_increment(func, 0, total_num, inc);
 				}
 				else {
 					//NC...HW case here
@@ -631,7 +631,7 @@ namespace sd {
 						}
 					};
 					//
-					samediff::Threads::parallel_aligned_increment(func, 0, total_num, inc);
+					sd::Threads::parallel_aligned_increment(func, 0, total_num, inc);
 				}
 			}
 			//////////////////////////////////////////////////////////////////////////

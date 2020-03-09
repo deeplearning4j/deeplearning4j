@@ -60,7 +60,7 @@ namespace sd {
                        }
                    }
                 };
-                samediff::Threads::parallel_tad(func, 0, xArr.lengthOf());
+                sd::Threads::parallel_tad(func, 0, xArr.lengthOf());
                 return;
             }
 
@@ -95,7 +95,7 @@ namespace sd {
                         }
                     }
                 };
-                samediff::Threads::parallel_tad(func, 0, nLen, 1);
+                sd::Threads::parallel_tad(func, 0, nLen, 1);
                 return;
             }
 
@@ -137,7 +137,7 @@ namespace sd {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, zLen);
+            sd::Threads::parallel_for(func, 0, zLen);
         }
 
         template <typename X, typename  Y, typename Z>
@@ -200,7 +200,7 @@ namespace sd {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, zLen);
+            sd::Threads::parallel_for(func, 0, zLen);
         }
 
         template <typename X, typename  Y>
@@ -263,7 +263,7 @@ namespace sd {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, zLen);
+            sd::Threads::parallel_for(func, 0, zLen);
         }
 
         template <typename X>

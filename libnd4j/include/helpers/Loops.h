@@ -511,7 +511,7 @@ namespace sd {
 
             //*********************************************//
         case LoopKind::EWS1: {
-            auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+            auto span = sd::Span::build(threadId, numThreads, 0, len, 1);
             int64_t start = span.startX(), stop = span.stopX();
 
             for (auto i = start; i < stop; i++)
@@ -524,7 +524,7 @@ namespace sd {
             const uint xEws = shape::elementWiseStride(xShapeInfo);
             const uint zEws = shape::elementWiseStride(zShapeInfo);
 
-            auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+            auto span = sd::Span::build(threadId, numThreads, 0, len, 1);
             int64_t start = span.startX(), stop = span.stopX();
 
             for (auto i = start; i < stop; i++)
@@ -538,7 +538,7 @@ namespace sd {
             uint castXShapeInfo[MAX_RANK];
             const bool canCastX = sd::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
 
-            auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+            auto span = sd::Span::build(threadId, numThreads, 0, len, 1);
             int64_t start = span.startX(), stop = span.stopX();
 
             if (zEws > 1) {
@@ -558,7 +558,7 @@ namespace sd {
 
         //*********************************************//
         case LoopKind::RANK1: {
-            auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+            auto span = sd::Span::build(threadId, numThreads, 0, len, 1);
 
             for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
                 z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
@@ -570,8 +570,8 @@ namespace sd {
             auto uXShape0 = static_cast<uint>(xShape[0]);
             auto uXShape1 = static_cast<uint>(xShape[1]);
 
-            auto loop = samediff::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
-            auto span = samediff::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
+            auto loop = sd::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
+            auto span = sd::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
 
             for (auto i0 = span.startX(); i0 < span.stopX(); i0++) {
                 auto z0 = i0 * zStride[0];
@@ -589,8 +589,8 @@ namespace sd {
             auto uXShape1 = xShape[1];
             auto uXShape2 = xShape[2];
 
-            auto loop = samediff::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
-            auto span = samediff::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
+            auto loop = sd::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
+            auto span = sd::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
 
 
             for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
@@ -611,8 +611,8 @@ namespace sd {
             auto uXShape2 = xShape[2];
             auto uXShape3 = xShape[3];
 
-            auto loop = samediff::ThreadsHelper::pickLoop3d(numThreads, uXShape0, uXShape1, uXShape2);
-            auto span = samediff::Span3::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
+            auto loop = sd::ThreadsHelper::pickLoop3d(numThreads, uXShape0, uXShape1, uXShape2);
+            auto span = sd::Span3::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
 
             for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
                 for (auto i1 = span.startY(); i1 < span.stopY(); i1++)
@@ -634,8 +634,8 @@ namespace sd {
             auto uXShape3 = xShape[3];
             auto uXShape4 = xShape[4];
 
-            auto loop = samediff::ThreadsHelper::pickLoop3d(numThreads, uXShape0, uXShape1, uXShape2);
-            auto span = samediff::Span3::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
+            auto loop = sd::ThreadsHelper::pickLoop3d(numThreads, uXShape0, uXShape1, uXShape2);
+            auto span = sd::Span3::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
 
 
             for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
@@ -666,7 +666,7 @@ namespace sd {
             bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
             bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-            auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+            auto span = sd::Span::build(threadId, numThreads, 0, len, 1);
 
             for (auto i = span.startX(); i < span.stopX(); i++) {
                 auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);

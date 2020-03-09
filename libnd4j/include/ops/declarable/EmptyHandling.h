@@ -21,7 +21,7 @@
 #ifndef SAMEDIFF_EMPTYHANDLING_H
 #define SAMEDIFF_EMPTYHANDLING_H
 
-namespace samediff {
+namespace sd {
     enum EmptyHandling {
         EMPTY_SKIP = 1,
         EMPTY_EXCEPTION = 2,

@@ -121,7 +121,7 @@ static void betaIncForArray(sd::LaunchContext * context, const NDArray& a, const
             output.t<T>(i) = betaIncCore<T>(a.t<T>(i), b.t<T>(i), x.t<T>(i));
     };
 
-    samediff::Threads::parallel_for(func, 0, xLen);
+    sd::Threads::parallel_for(func, 0, xLen);
 }
 
 ///////////////////////////////////////////////////////////////////

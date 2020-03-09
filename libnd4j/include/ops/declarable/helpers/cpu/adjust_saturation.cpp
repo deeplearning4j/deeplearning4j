@@ -56,7 +56,7 @@ static void adjustSaturation_(const NDArray *input, const NDArray* factorScalarA
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
+        sd::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     } else {
         auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  dimC);
         auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
@@ -84,7 +84,7 @@ static void adjustSaturation_(const NDArray *input, const NDArray* factorScalarA
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, numOfTads);
+        sd::Threads::parallel_tad(func, 0, numOfTads);
     }
 }
 

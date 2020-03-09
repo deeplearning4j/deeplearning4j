@@ -130,7 +130,7 @@ static void fusedTanh(NDArray *z, NDArray *i, NDArray *c, const NDArray *cLast, 
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, uLen);
+    sd::Threads::parallel_for(func, 0, uLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

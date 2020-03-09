@@ -58,7 +58,7 @@ Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output, const int 
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, indices.lengthOf());
+    sd::Threads::parallel_for(func, 0, indices.lengthOf());
 
     return numOfBadIndx;
 }
@@ -87,7 +87,7 @@ void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indic
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
+        sd::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
     }
     else {      // outRank > 1
 
@@ -107,7 +107,7 @@ void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indic
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
+        sd::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
     }
 }
 
@@ -129,7 +129,7 @@ void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
+        sd::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
     }
     else {
         std::vector<int> dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank-1});
@@ -154,7 +154,7 @@ void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen / indLastDim, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
+        sd::Threads::parallel_tad(func, 0, indLen / indLastDim, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
     }
 }
 
@@ -176,7 +176,7 @@ void scatterForLoss(sd::LaunchContext  *context, const NDArray& indices, NDArray
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, indicesLen);
+        sd::Threads::parallel_for(func, 0, indicesLen);
     } else {
         auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i++) {
@@ -186,7 +186,7 @@ void scatterForLoss(sd::LaunchContext  *context, const NDArray& indices, NDArray
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, indicesLen);
+        sd::Threads::parallel_for(func, 0, indicesLen);
     }
 }
 

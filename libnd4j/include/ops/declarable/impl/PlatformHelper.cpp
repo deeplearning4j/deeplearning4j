@@ -24,7 +24,7 @@
 namespace sd {
     namespace ops {
         namespace platforms {
-            PlatformHelper::PlatformHelper(const char *name, samediff::Engine engine) {
+            PlatformHelper::PlatformHelper(const char *name, sd::Engine engine) {
                 // we just store name/hash of target operation
                 _name = std::string(name);
                 _hash = HashHelper::getInstance()->getLongHash(_name);
@@ -75,7 +75,7 @@ namespace sd {
                 return z;
             }
 
-            samediff::Engine PlatformHelper::engine() {
+            sd::Engine PlatformHelper::engine() {
                 return _engine;
             }
 

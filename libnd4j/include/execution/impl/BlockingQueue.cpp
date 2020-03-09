@@ -22,7 +22,7 @@
 #include <execution/CallableWithArguments.h>
 #include <thread>
 
-namespace samediff {
+namespace sd {
     template <typename T>
     BlockingQueue<T>::BlockingQueue(int queueSize) {
         _size = 0;

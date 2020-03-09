@@ -154,7 +154,7 @@ void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alp
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, inputLen);
+    sd::Threads::parallel_for(func, 0, inputLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

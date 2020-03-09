@@ -21,7 +21,7 @@
 #ifndef SD_EXECUTIONMODE_H
 #define SD_EXECUTIONMODE_H
 
-namespace samediff {
+namespace sd {
     enum ExecutionMode {
         MODE_UNDEFINED = 0,
         MODE_TRAINING = 1,

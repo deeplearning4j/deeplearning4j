@@ -115,7 +115,7 @@ namespace sd {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, cropHeight);
+                    sd::Threads::parallel_for(func, 0, cropHeight);
                 }
             }
         }

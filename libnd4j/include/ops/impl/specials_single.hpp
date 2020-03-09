@@ -79,7 +79,7 @@ namespace sd {
 //                     }
 //                 };
 
-//                 samediff::Threads::parallel_tad(func, 0, numOfArrs);
+//                 sd::Threads::parallel_tad(func, 0, numOfArrs);
 //                 return;
 //             }
 //         }
@@ -104,7 +104,7 @@ namespace sd {
 //             }
 //         };
 
-//         samediff::Threads::parallel_tad(func, 0, numOfArrs);
+//         sd::Threads::parallel_tad(func, 0, numOfArrs);
 // }
 
 template <typename T>
@@ -175,6 +175,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
     //     return;
     // }
 
+    auto oShapeInfo = output.getShapeInfo();
+
     // general case
     auto func = PRAGMA_THREADS_FOR {
 
@@ -182,8 +184,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
 
         for (auto i = start; i < stop; i += increment) {
 
-            shape::index2coords(i, output.getShapeInfo(), coords);
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+            shape::index2coords(i, oShapeInfo, coords);
+            const auto zOffset = shape::getOffset(oShapeInfo, coords);
 
             uint inArrIdx = 0;
             uint xDim = inArrs[inArrIdx]->sizeAt(axis);
@@ -200,7 +202,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, output.lengthOf());
+    sd::Threads::parallel_for(func, 0, output.lengthOf());
 }
 
 /**
@@ -317,7 +319,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, input.lengthOf());
+    sd::Threads::parallel_for(func, 0, input.lengthOf());
 }
 
 
@@ -343,7 +345,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, length);
+        sd::Threads::parallel_for(func, 0, length);
     }
 
 
@@ -378,7 +380,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
                     }
                 }
             };
-            samediff::Threads::parallel_for(func, 0, length);
+            sd::Threads::parallel_for(func, 0, length);
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
             for (Nd4jLong ar = 1; ar < n; ar++) {
@@ -398,7 +400,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
                     }
                 }
             };
-            samediff::Threads::parallel_for(func, 0, length);
+            sd::Threads::parallel_for(func, 0, length);
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
             for (Nd4jLong ar = 0; ar < n; ar++) {
@@ -535,7 +537,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
                 quickSort_parallel(dx, tadShapeInfo, xTadLength, 1, descending);
             }
         };
-        samediff::Threads::parallel_tad(func, 0, numTads);
+        sd::Threads::parallel_tad(func, 0, numTads);
     }
 
 
@@ -568,7 +570,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
             }
         };
 
-        samediff::Threads::parallel_for(func, 4, lim);
+        sd::Threads::parallel_for(func, 4, lim);
     }
 
     template<typename T>
@@ -617,7 +619,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 
             return retVal;
         };
-        return samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
+        return sd::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
     }
 }
 

@@ -48,7 +48,7 @@ static void triuBP_(sd::LaunchContext * context, const NDArray& input, const NDA
                 dOdI.t<T>(i) = static_cast<T>(1.f);
         }
     };
-    samediff::Threads::parallel_for(func, 0, dLen);
+    sd::Threads::parallel_for(func, 0, dLen);
 
     // FIXME: !!!
     gradI.assign(dOdI * gradO);                          // chain rule: dLoss/dI = dO/dI * dLoss/dO
@@ -68,7 +68,7 @@ static void trace_(const NDArray& input, NDArray& output) {
         for (auto i = start; i < stop; i++)
             output.p(i, setOfSubArrs.at(i)->getTrace());
     };
-    samediff::Threads::parallel_for(func, 0, setOfSubArrs.size());
+    sd::Threads::parallel_for(func, 0, setOfSubArrs.size());
 }
 
     void trace(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
@@ -211,7 +211,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, zLen);
+        sd::Threads::parallel_tad(func, 0, zLen);
     }
     else {  // REFLECT and SYMMETRIC cases
 
@@ -237,7 +237,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, zLen);
+        sd::Threads::parallel_tad(func, 0, zLen);
     }
 }
 
@@ -606,7 +606,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
         }
     };
 
-    samediff::Threads::parallel_tad(func, 0, zLen);
+    sd::Threads::parallel_tad(func, 0, zLen);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -654,7 +654,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                     output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
             };
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            sd::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         else {
 
@@ -670,7 +670,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+            sd::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     }
     else {
@@ -694,7 +694,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+            sd::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     }
 }
@@ -714,7 +714,7 @@ void eye(sd::LaunchContext * context, NDArray& output) {
             arrs.at(i)->setIdentity();
     };
 
-    samediff::Threads::parallel_tad(func, 0, arrs.size());
+    sd::Threads::parallel_tad(func, 0, arrs.size());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -772,7 +772,7 @@ void scatterUpdate(sd::LaunchContext * context, NDArray& input, NDArray& updates
         }
     };
 
-    samediff::Threads::parallel_tad(func, 0, indices.size());
+    sd::Threads::parallel_tad(func, 0, indices.size());
 }
 
 
@@ -792,7 +792,7 @@ void scatterSimple(sd::LaunchContext * context, const int opId, NDArray& input, 
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, len);
+            sd::Threads::parallel_for(func, 0, len);
         }
             break;
 
@@ -824,7 +824,7 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, x->lengthOf());
+    sd::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
 void mergeMaxIndex(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -850,7 +850,7 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, x->lengthOf());
+    sd::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
 void mergeMax(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -875,7 +875,7 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, x->lengthOf());
+    sd::Threads::parallel_for(func, 0, x->lengthOf());
 }
 
 void mergeAvg(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -900,7 +900,7 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, x->lengthOf());
+    sd::Threads::parallel_for(func, 0, x->lengthOf());
 }
     void mergeAdd(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (inArrs, output), LIBND4J_TYPES);
@@ -934,7 +934,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
                         *listOfInSubArrs.at(i) *= normClip / iNormActual;
                 }
             };
-            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs.size());
+            sd::Threads::parallel_tad(func, 0, listOfInSubArrs.size());
         }
     }
     else {
@@ -963,7 +963,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
                         *outputSubArr *= clipNorm / iNormActual;
                 }
             };
-            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs.size());
+            sd::Threads::parallel_tad(func, 0, listOfInSubArrs.size());
         }
     }
 }
@@ -1079,7 +1079,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
                     gradISubArr->assign(gradOSubArr);
             }
         };
-        samediff::Threads::parallel_tad(func, 0, gradISubArrs.size());
+        sd::Threads::parallel_tad(func, 0, gradISubArrs.size());
     }
 }
 
@@ -1215,7 +1215,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, outLen);
+        sd::Threads::parallel_for(func, 0, outLen);
     }
 }
 

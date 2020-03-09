@@ -21,9 +21,9 @@ if (SD_CUDA)
     enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD 11)
 
-    set(DEFAULT_ENGINE "samediff::ENGINE_CUDA")
+    set(DEFAULT_ENGINE "sd::ENGINE_CUDA")
 else()
-    set(DEFAULT_ENGINE "samediff::ENGINE_CPU")
+    set(DEFAULT_ENGINE "sd::ENGINE_CPU")
 endif()
 
 # MSVC runtime lib can be either "MultiThreaded" or "MultiThreadedDLL", /MT and /MD respectively

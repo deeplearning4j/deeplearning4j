@@ -178,7 +178,7 @@ namespace helpers {
                 interpolationData[i]._interpolarValue = in - in_f;
      	    }
 	    };
-	    samediff::Threads::parallel_for(func, 0, outSize);
+	    sd::Threads::parallel_for(func, 0, outSize);
     }
 
 /**
@@ -240,7 +240,7 @@ namespace helpers {
                 }
             }
         };
-        samediff::Threads::parallel_tad(func, 0, batchSize);
+        sd::Threads::parallel_tad(func, 0, batchSize);
     }
 
     template<typename X, typename Z>
@@ -285,7 +285,7 @@ namespace helpers {
                 xs[i]._topIndex *= channels;
             }
         };
-        samediff::Threads::parallel_for(func, 0, xsSize);
+        sd::Threads::parallel_for(func, 0, xsSize);
 
         resizeImage_<X,Z>(images->getDataBuffer()->primaryAsT<X>(), batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs, ys, output->dataBuffer()->primaryAsT<Z>());
         return Status::OK();
@@ -323,7 +323,7 @@ namespace helpers {
                 }
             }
         };
-        samediff::Threads::parallel_for(func, 0, batchSize, 1, 0, outHeight, 1);
+        sd::Threads::parallel_for(func, 0, batchSize, 1, 0, outHeight, 1);
     }
 
     template<typename T>
@@ -427,7 +427,7 @@ namespace helpers {
                 coeffs_table[i * 2 + 1] = ((a * x - 5 * a) * x + 8 * a) * x - 4 * a;
             }
         };
-        samediff::Threads::parallel_for(func, 0, kTableSize);
+        sd::Threads::parallel_for(func, 0, kTableSize);
         return coeffs_table;
     }
 
@@ -541,7 +541,7 @@ namespace helpers {
                                                       x_wai._index3);
                     }
                 };
-                samediff::Threads::parallel_for(func, 0, resizer_state.outWidth);
+                sd::Threads::parallel_for(func, 0, resizer_state.outWidth);
             } else {
                 auto func = PRAGMA_THREADS_FOR {
                     for (auto x = start; x < stop; ++x) {
@@ -552,7 +552,7 @@ namespace helpers {
                                                       x_wai._index3);
                     }
                 };
-                samediff::Threads::parallel_for(func, 0, resizer_state.outWidth);
+                sd::Threads::parallel_for(func, 0, resizer_state.outWidth);
             }
             // Scale the values so they can be used as offsets into buffers.
             auto func = PRAGMA_THREADS_FOR {
@@ -563,7 +563,7 @@ namespace helpers {
                     (*x_wais)[x]._index3 *= resizer_state.channels;
                 }
             };
-            samediff::Threads::parallel_for(func, 0, resizer_state.outWidth);
+            sd::Threads::parallel_for(func, 0, resizer_state.outWidth);
         }
 
         template <typename T>
@@ -774,7 +774,7 @@ namespace helpers {
                 }
             }
         };
-        samediff::Threads::parallel_tad(func, 0, batchNum);
+        sd::Threads::parallel_tad(func, 0, batchNum);
     }
 
 // simplified bicubic resize without antialiasing
@@ -950,7 +950,7 @@ namespace helpers {
                 }
             }
         };
-        samediff::Threads::parallel_tad(batchProcess, 0, st.batchSize, 1);
+        sd::Threads::parallel_tad(batchProcess, 0, st.batchSize, 1);
     }
 
     template <typename X>
@@ -981,7 +981,7 @@ namespace helpers {
 
                     }
                 };
-                samediff::Threads::parallel_for(cachingProcedure, 0, xCached.size(), 1);
+                sd::Threads::parallel_for(cachingProcedure, 0, xCached.size(), 1);
 
                 resizeArea<X>(st, xCached, image, output);
             }

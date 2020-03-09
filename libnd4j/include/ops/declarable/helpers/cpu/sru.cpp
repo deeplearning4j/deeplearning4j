@@ -184,7 +184,7 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
         }
     };
 
-    samediff::Threads::parallel_tad(func, 0, ncols);
+    sd::Threads::parallel_tad(func, 0, ncols);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -303,7 +303,7 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
         }
     };
 
-    samediff::Threads::parallel_tad(func, 0, ncols);
+    sd::Threads::parallel_tad(func, 0, ncols);
 
     // gradB
     gradBias.reduceAlongDimension(reduce::Sum, *gradB, {0});    // [4*K]

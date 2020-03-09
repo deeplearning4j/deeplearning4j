@@ -75,7 +75,7 @@ namespace helpers {
                     counts->p(e, countsMap[valuesVector[e]]);
             }
         };
-        samediff::Threads::parallel_for(func, 0, values->lengthOf());
+        sd::Threads::parallel_for(func, 0, values->lengthOf());
 
         for (Nd4jLong e = 0; e < indices->lengthOf(); e++) {
             auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->e<T>(e));

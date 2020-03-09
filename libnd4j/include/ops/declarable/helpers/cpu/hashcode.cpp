@@ -54,7 +54,7 @@ namespace sd {
                         tempBuffer[b] = r;
                     }
                 };
-                samediff::Threads::parallel_tad(func, 0, numBlocks);
+                sd::Threads::parallel_tad(func, 0, numBlocks);
 
                 // we replace pointer with intermediate one, and repeat only one chunk left
                 int iterationCount = 0;
@@ -76,7 +76,7 @@ namespace sd {
                             tempResult[b] = r;
                         }
                     };
-                    samediff::Threads::parallel_tad(func2, 0, numBlocks);
+                    sd::Threads::parallel_tad(func2, 0, numBlocks);
 
 
                     iterationCount++;

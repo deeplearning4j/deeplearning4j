@@ -61,7 +61,7 @@ namespace helpers {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, oL);
+            sd::Threads::parallel_for(func, 0, oL);
         }
     }
 

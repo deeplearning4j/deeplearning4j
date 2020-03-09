@@ -96,7 +96,7 @@ static int lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray* outpu
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, numOfTads);
+        sd::Threads::parallel_tad(func, 0, numOfTads);
     }
     else {
         auto func = PRAGMA_THREADS_FOR {
@@ -134,7 +134,7 @@ static int lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray* outpu
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, numOfTads);
+        sd::Threads::parallel_tad(func, 0, numOfTads);
     }    
     return Status::OK();
 }
@@ -242,7 +242,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, numOfTads);
+        sd::Threads::parallel_tad(func, 0, numOfTads);
     }
     else {
 
@@ -317,7 +317,7 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, numOfTads);
+        sd::Threads::parallel_tad(func, 0, numOfTads);
     }    
     gradI *= gradO;
 }

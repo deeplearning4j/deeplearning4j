@@ -107,7 +107,7 @@ namespace sd {
                 delete _context;
         }
 
-        void Context::setTargetEngine(samediff::Engine engine) {
+        void Context::setTargetEngine(sd::Engine engine) {
             _engine = engine;
         }
 
@@ -548,20 +548,20 @@ namespace sd {
             return _shapeFunctionOverride;
         }
 
-        samediff::ExecutionMode Context::executionMode() {
+        sd::ExecutionMode Context::executionMode() {
             return _execMode;
         }
 
-        void Context::setExecutionMode(samediff::ExecutionMode executionMode) {
+        void Context::setExecutionMode(sd::ExecutionMode executionMode) {
             _execMode = executionMode;
         }
 
         bool Context::isTraining() {
-            return _execMode == samediff::ExecutionMode::MODE_TRAINING;
+            return _execMode == sd::ExecutionMode::MODE_TRAINING;
         }
 
         bool Context::isInference() {
-            return _execMode == samediff::ExecutionMode::MODE_INFERENCE;
+            return _execMode == sd::ExecutionMode::MODE_INFERENCE;
         }
 
         void Context::setDArguments(sd::DataType *arguments, int numberOfArguments) {

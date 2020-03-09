@@ -136,7 +136,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_tad(func,0, numOfSubArrs);
+                sd::Threads::parallel_tad(func,0, numOfSubArrs);
             }
 
 #endif
@@ -168,7 +168,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_tad(func,0, numOfSubArrs);
+                sd::Threads::parallel_tad(func,0, numOfSubArrs);
             }
 
 //////////////////////////////////////////////////////////////////////////
@@ -228,7 +228,7 @@ namespace sd {
                             }
                         };
 
-                        samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+                        sd::Threads::parallel_tad(func, 0, numOfSubArrs);
 
                         delete []offsets;
                     }

@@ -48,7 +48,7 @@ namespace helpers {
                     resBuf[i * n + j] = -2 * vBuf[i] * vBuf[j] + (i == j ? T(1) : T(0));
         };
 
-        samediff::Threads::parallel_for(interloop, 0, n, 1, 0, n, 1);
+        sd::Threads::parallel_for(interloop, 0, n, 1, 0, n, 1);
         return res;
     }
 
@@ -119,7 +119,7 @@ namespace helpers {
             }
         };
 
-        samediff::Threads::parallel_tad(batching, 0, listOutQ.size(), 1);
+        sd::Threads::parallel_tad(batching, 0, listOutQ.size(), 1);
 
     }
 

@@ -37,7 +37,7 @@ namespace sd {
             class ND4J_EXPORT PlatformHelper {
             protected:
                 // target engine for this impl
-                samediff::Engine _engine;
+                sd::Engine _engine;
 
                 // name of the operation this helper is built for
                 std::string _name;
@@ -45,13 +45,13 @@ namespace sd {
                 // hash of the operation this helper is built for
                 Nd4jLong _hash;
             public:
-                PlatformHelper(const char *name, samediff::Engine engine);
+                PlatformHelper(const char *name, sd::Engine engine);
 
                 ~PlatformHelper() = default;
 
                 std::string name();
 
-                samediff::Engine engine();
+                sd::Engine engine();
 
                 Nd4jLong hash();
 

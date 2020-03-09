@@ -163,7 +163,7 @@ namespace helpers {
                     }
                 };
 
-                samediff::Threads::parallel_tad(func, 0, target->lengthOf());
+                sd::Threads::parallel_tad(func, 0, target->lengthOf());
             }
             return status;
 

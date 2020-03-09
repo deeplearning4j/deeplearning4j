@@ -182,7 +182,7 @@ namespace randomOps {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
+                sd::Threads::parallel_for(func, 0, zLength, 1, _threads);
             }
             else {
 
@@ -209,7 +209,7 @@ namespace randomOps {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
+                sd::Threads::parallel_for(func, 0, zLength, 1, _threads);
             }
         }
     };
@@ -352,7 +352,7 @@ namespace randomOps {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, middle, 1, _threads);
+            sd::Threads::parallel_for(func, 0, middle, 1, _threads);
         }
     };
 
@@ -459,7 +459,7 @@ namespace randomOps {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
+            sd::Threads::parallel_for(func, 0, zLength, 1, _threads);
         }
     };
 
@@ -568,7 +568,7 @@ namespace randomOps {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
+            sd::Threads::parallel_for(func, 0, zLength, 1, _threads);
         }
     };
 
@@ -700,7 +700,7 @@ namespace randomOps {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
+            sd::Threads::parallel_for(func, 0, zLength, 1, _threads);
         }
     };
 
@@ -836,7 +836,7 @@ namespace randomOps {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, middle, 1, _threads);
+            sd::Threads::parallel_for(func, 0, middle, 1, _threads);
         }
     };
 

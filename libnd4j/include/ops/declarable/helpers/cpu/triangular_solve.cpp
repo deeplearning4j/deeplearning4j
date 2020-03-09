@@ -99,7 +99,7 @@ namespace helpers {
             }
         };
 
-        samediff::Threads::parallel_tad(batchLoop, 0, leftPart.size(), 1);
+        sd::Threads::parallel_tad(batchLoop, 0, leftPart.size(), 1);
 
         return Status::OK();
 
@@ -128,7 +128,7 @@ namespace helpers {
                 }
             }
         };
-        samediff::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
+        sd::Threads::parallel_tad(batchLoop, 0, inputPart.size(), 1);
     }
 
     int triangularSolveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {

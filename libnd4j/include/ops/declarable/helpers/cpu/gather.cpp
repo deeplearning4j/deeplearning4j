@@ -63,7 +63,7 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
                         output->p(i, input->e(indices->e<Nd4jLong>(i)));
                 };
 
-                samediff::Threads::parallel_for(func, 0, output->lengthOf());
+                sd::Threads::parallel_for(func, 0, output->lengthOf());
 
             }
             else {
@@ -96,7 +96,7 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
                             memcpy(outBuff, inBuff, shape::length(inTadShapeInfo) * input->sizeOfT());
                         }
                     };
-                    samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+                    sd::Threads::parallel_tad(func, 0, numOfSubArrs);
                 }
                 else {
                     auto func = PRAGMA_THREADS_FOR {
@@ -112,7 +112,7 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
                         }
                     };
 
-                    samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+                    sd::Threads::parallel_tad(func, 0, numOfSubArrs);
                 }
             }
         }
@@ -148,7 +148,7 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
                         std::memcpy(outBuff, inBuff, shape::length(inTadShapeInfo) * input->sizeOfT());
                     }
                 };
-                samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+                sd::Threads::parallel_tad(func, 0, numOfSubArrs);
 
             }
             else {
@@ -167,7 +167,7 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
 
                     }
                 };
-                samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+                sd::Threads::parallel_tad(func, 0, numOfSubArrs);
             }
 
         }

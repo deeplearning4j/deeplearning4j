@@ -119,7 +119,7 @@ TEST_F(CuDnnTests, mixed_helpers_test_1) {
 
     // cuDNN part
     Context cuda(1);
-    cuda.setTargetEngine(samediff::Engine::ENGINE_CUDA);
+    cuda.setTargetEngine(sd::Engine::ENGINE_CUDA);
     cuda.setInputArray(0, &input);
     cuda.setInputArray(1, &weights);
     cuda.setInputArray(2, &bias);
@@ -132,7 +132,7 @@ TEST_F(CuDnnTests, mixed_helpers_test_1) {
 
     // MKL-DNN part
     Context mkl(1);
-    mkl.setTargetEngine(samediff::Engine::ENGINE_CPU);
+    mkl.setTargetEngine(sd::Engine::ENGINE_CPU);
     mkl.setInputArray(0, &input);
     mkl.setInputArray(1, &weights);
     mkl.setInputArray(2, &bias);

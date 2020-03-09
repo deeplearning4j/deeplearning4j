@@ -174,7 +174,7 @@ namespace helpers {
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, N);
+        sd::Threads::parallel_tad(func, 0, N);
     }
 
     void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {

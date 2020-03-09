@@ -68,7 +68,7 @@ static void zeta_(sd::LaunchContext * context, const NDArray& x, const NDArray& 
             z.p(i, zetaScalar<T>(x.e<T>(i), q.e<T>(i)));
     };
 
-	samediff::Threads::parallel_for(func, 0, xLen);
+	sd::Threads::parallel_for(func, 0, xLen);
 }
 
 void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {

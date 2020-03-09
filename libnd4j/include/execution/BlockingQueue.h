@@ -27,7 +27,7 @@
 #include <atomic>
 #include <condition_variable>
 
-namespace samediff {
+namespace sd {
     template <typename T>
     class BlockingQueue {
     private:

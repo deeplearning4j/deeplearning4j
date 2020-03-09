@@ -63,7 +63,7 @@ void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& outp
                 z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
         }
     };
-    samediff::Threads::parallel_for(func, 0, xLen);
+    sd::Threads::parallel_for(func, 0, xLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

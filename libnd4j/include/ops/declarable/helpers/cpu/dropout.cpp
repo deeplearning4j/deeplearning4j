@@ -43,7 +43,7 @@ namespace helpers {
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, inLen);
+        sd::Threads::parallel_for(func, 0, inLen);
     }
     BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray const* input, NDArray* output, double probValue, int seed), FLOAT_TYPES);
 
@@ -137,7 +137,7 @@ namespace helpers {
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, input->lengthOf());
+        sd::Threads::parallel_for(func, 0, input->lengthOf());
 
         return Status::OK();
     }

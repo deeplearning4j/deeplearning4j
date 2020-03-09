@@ -101,7 +101,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, kD, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, kD, 1);
 
             } else {
 
@@ -139,7 +139,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, oD, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, oD, 1);
                 //func(0, 0, bS, 1, 0, oD, 1);
             }
         }
@@ -215,7 +215,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_tad(func, 0, bS);
+                sd::Threads::parallel_tad(func, 0, bS);
 
             } else {
 
@@ -251,7 +251,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_tad(func, 0, bS);
+                sd::Threads::parallel_tad(func, 0, bS);
             }
         }
 
@@ -606,7 +606,7 @@ namespace sd {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oH, 1);
+            sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oH, 1);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -663,7 +663,7 @@ namespace sd {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
+            sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -716,7 +716,7 @@ namespace sd {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, iH, 1);
+            sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, iH, 1);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -777,7 +777,7 @@ namespace sd {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, iD, 1);
+            sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, iD, 1);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -860,7 +860,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 1) {      // avg
@@ -914,7 +914,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 2) {  // pnorm
@@ -963,7 +963,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
             else {
                 nd4j_printf("ConvolutionUtils::pooling2d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
@@ -1068,7 +1068,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 1) {     // avg
@@ -1131,7 +1131,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 2) {  // pnorm
@@ -1191,7 +1191,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
             else {
                 nd4j_printf("ConvolutionUtils::pooling3d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
@@ -1321,7 +1321,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 1) {     // avg
@@ -1379,7 +1379,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 2) {  // pnorm
@@ -1466,7 +1466,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
             else {
                 nd4j_printf("ConvolutionUtils::pooling2dBP: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
@@ -1618,7 +1618,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 1) {     // avg
@@ -1679,7 +1679,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 2) {  // pnorm
@@ -1761,7 +1761,7 @@ namespace sd {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
+                sd::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
             else {
                 nd4j_printf("ConvolutionUtils::pooling3dBP: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);

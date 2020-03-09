@@ -115,7 +115,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, zLen);
+    sd::Threads::parallel_for(func, 0, zLen);
 }
 BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, int lower, int upper, NDArray& target, const char direction), LIBND4J_TYPES);
 
@@ -159,7 +159,7 @@ static void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, length);
+    sd::Threads::parallel_for(func, 0, length);
 }
 BUILD_SINGLE_TEMPLATE(template void templatedSwap, (void *xBuffer, void *yBuffer, Nd4jLong length), LIBND4J_TYPES);
 
@@ -272,7 +272,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, resultLen);
+        sd::Threads::parallel_for(func, 0, resultLen);
     }
     else {
 
@@ -284,7 +284,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, resultLen);
+        sd::Threads::parallel_for(func, 0, resultLen);
     }
     result.tickWriteHost();
     return result;
@@ -397,7 +397,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, zLen);
+    sd::Threads::parallel_for(func, 0, zLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

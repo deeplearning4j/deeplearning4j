@@ -23,7 +23,7 @@
 #include <helpers/logger.h>
 #include <array>
 
-namespace samediff {
+namespace sd {
     Ticket::Ticket(const std::vector<BlockingQueue<CallableWithArguments*>*> &queues) {
         _acquired = true;
         _queues = queues;
@@ -38,7 +38,7 @@ namespace samediff {
         return _acquired;
     }
 
-    void Ticket::enqueue(int thread_id, samediff::CallableWithArguments *callable) {
+    void Ticket::enqueue(int thread_id, sd::CallableWithArguments *callable) {
         _queues[thread_id]->put(callable);
         _callables.emplace_back(callable);
     }
@@ -88,7 +88,7 @@ namespace samediff {
     }
 
 
-    void Ticket::attach(uint32_t thread_id, samediff::CallableInterface *interface) {
+    void Ticket::attach(uint32_t thread_id, sd::CallableInterface *interface) {
         _interfaces[thread_id] = interface;
     }
 }

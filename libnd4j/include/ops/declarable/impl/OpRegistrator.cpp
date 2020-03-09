@@ -173,7 +173,7 @@ namespace sd {
         }
 
         void OpRegistrator::registerHelper(sd::ops::platforms::PlatformHelper* op) {
-            std::pair<Nd4jLong, samediff::Engine> p = {op->hash(), op->engine()};
+            std::pair<Nd4jLong, sd::Engine> p = {op->hash(), op->engine()};
             if (_helpersLH.count(p) > 0)
                 throw std::runtime_error("Tried to double register PlatformHelper");
 
@@ -181,10 +181,10 @@ namespace sd {
 
             nd4j_debug("Adding helper for op \"%s\": [%lld - %i]\n", op->name().c_str(), op->hash(), (int) op->engine());
 
-            std::pair<std::pair<std::string, samediff::Engine>, sd::ops::platforms::PlatformHelper*> pair({op->name(), op->engine()}, op);
+            std::pair<std::pair<std::string, sd::Engine>, sd::ops::platforms::PlatformHelper*> pair({op->name(), op->engine()}, op);
             _helpersH.insert(pair);
 
-            std::pair<std::pair<Nd4jLong, samediff::Engine>, sd::ops::platforms::PlatformHelper*> pair2(p, op);
+            std::pair<std::pair<Nd4jLong, sd::Engine>, sd::ops::platforms::PlatformHelper*> pair2(p, op);
             _helpersLH.insert(pair2);
         }
 
@@ -230,16 +230,16 @@ namespace sd {
             return _declarablesD.at(name);
         }
 
-        sd::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash, samediff::Engine engine) {
-            std::pair<Nd4jLong, samediff::Engine> p = {hash, engine};
+        sd::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash, sd::Engine engine) {
+            std::pair<Nd4jLong, sd::Engine> p = {hash, engine};
             if (_helpersLH.count(p) == 0)
                 throw std::runtime_error("Requested helper can't be found");
 
             return _helpersLH[p];
         }
 
-        bool OpRegistrator::hasHelper(Nd4jLong hash, samediff::Engine engine) {
-            std::pair<Nd4jLong, samediff::Engine> p = {hash, engine};
+        bool OpRegistrator::hasHelper(Nd4jLong hash, sd::Engine engine) {
+            std::pair<Nd4jLong, sd::Engine> p = {hash, engine};
             return _helpersLH.count(p) > 0;
         }
 
@@ -262,14 +262,14 @@ namespace sd {
 }
 
 namespace std {
-    size_t hash<std::pair<Nd4jLong, samediff::Engine>>::operator()(const std::pair<Nd4jLong, samediff::Engine>& k) const {
+    size_t hash<std::pair<Nd4jLong, sd::Engine>>::operator()(const std::pair<Nd4jLong, sd::Engine>& k) const {
         using std::hash;
         auto res = std::hash<Nd4jLong>()(k.first);
         res ^= std::hash<int>()((int) k.second)  + 0x9e3779b9 + (res << 6) + (res >> 2);
         return res;
     }
 
-    size_t hash<std::pair<std::string, samediff::Engine>>::operator()(const std::pair<std::string, samediff::Engine>& k) const {
+    size_t hash<std::pair<std::string, sd::Engine>>::operator()(const std::pair<std::string, sd::Engine>& k) const {
         using std::hash;
         auto res = std::hash<std::string>()(k.first);
         res ^= std::hash<int>()((int) k.second)  + 0x9e3779b9 + (res << 6) + (res >> 2);

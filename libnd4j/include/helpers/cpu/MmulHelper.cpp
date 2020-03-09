@@ -93,7 +93,7 @@ static  void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC,
         }
     };
 
-    samediff::Threads::parallel_tad(func, 0, cLen);
+    sd::Threads::parallel_tad(func, 0, cLen);
 }
 
 
@@ -146,7 +146,7 @@ static  void usualGemv(const NDArray* vA, const NDArray* vX, NDArray* vY, const 
         }
     };
 
-    samediff::Threads::parallel_tad(func, 0, M);
+    sd::Threads::parallel_tad(func, 0, M);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -477,7 +477,7 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB,  NDArray* vC,
         }
     };
 
-    samediff::Threads::parallel_tad(func, 0, cLen);
+    sd::Threads::parallel_tad(func, 0, cLen);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -669,7 +669,7 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
         }
     };
 
-    samediff::Threads::parallel_tad(func, 0, M, 1, 0, N, 1);
+    sd::Threads::parallel_tad(func, 0, M, 1, 0, N, 1);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -703,7 +703,7 @@ static void usualGemv(const char aOrder, const int M, const int N, const double 
         }
     };
 
-        samediff::Threads::parallel_tad(func, 0, M);
+        sd::Threads::parallel_tad(func, 0, M);
 }
 */
 
