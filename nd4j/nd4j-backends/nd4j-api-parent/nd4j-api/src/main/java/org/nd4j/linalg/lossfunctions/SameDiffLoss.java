@@ -27,22 +27,23 @@ import java.util.Map;
 
 
 public abstract class SameDiffLoss implements ILossFunction {
-
-    protected SameDiff sd = SameDiff.create();
-
+    protected transient SameDiff sd;
+    protected transient SDVariable scoreVariable;
 
     protected SameDiffLoss() {
-
-
-        SDVariable layerInput = sd.placeHolder("layerInput", DataType.FLOAT, -1);
-        SDVariable labels = sd.placeHolder("labels", DataType.FLOAT, -1);
-        this.defineLoss(sd, layerInput, labels);
-
 
     }
 
 
     public abstract SDVariable defineLoss(SameDiff sd, SDVariable layerInput, SDVariable labels);
+
+    protected void createSameDiffInstance(DataType dataType){
+        sd = SameDiff.create();
+        SDVariable layerInput = sd.placeHolder("layerInput", dataType, -1);
+        SDVariable labels = sd.placeHolder("labels", dataType, -1);
+        scoreVariable = this.defineLoss(sd, layerInput, labels);
+        sd.createGradFunction("layerInput");
+    }
 
     /**
      * Compute the score (loss function value) for the given inputs.
@@ -53,12 +54,11 @@ public abstract class SameDiffLoss implements ILossFunction {
      * @param mask         Mask array; may be null
      * @param average      Whether the score should be averaged (divided by number of rows in labels/preOutput) or not   @return Loss function value
      */
+    @Override
     public double computeScore(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average) {
-
-        // The score overall consists of the
-        // sum of the negative log likelihoods for each
-        // of the individual labels.
-
+        if(sd == null){
+            createSameDiffInstance(preOutput.dataType());
+        }
 
         INDArray scoreArr = computeScoreArray(labels, preOutput, activationFn, mask);
 
@@ -79,9 +79,13 @@ public abstract class SameDiffLoss implements ILossFunction {
      * @param activationFn Activation function that should be applied to preOutput
      * @param mask         @return Loss function value for each example; column vector
      */
+    @Override
     public INDArray computeScoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if(sd == null){
+            createSameDiffInstance(preOutput.dataType());
+        }
 
-        Preconditions.checkArgument((labels.size(1) != preOutput.size(1)), "Labels array numColumns (size(1) = %s) does not match output layer number of outputs (nOut = %s)", labels.size(1), preOutput.size(1));
+        Preconditions.checkArgument((labels.size(1) == preOutput.size(1)), "Labels array numColumns (size(1) = %s) does not match output layer number of outputs (nOut = %s)", labels.size(1), preOutput.size(1));
 
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
@@ -89,14 +93,12 @@ public abstract class SameDiffLoss implements ILossFunction {
         m.put("labels", labels);
         m.put("layerInput", output);
 
-        INDArray scoreArr = sd.outputSingle(m,"scoreArr");
+        INDArray scoreArr = sd.outputSingle(m,scoreVariable.name());
 
         if (mask != null) {
             LossUtil.applyMask(scoreArr, mask);
         }
         return scoreArr;
-
-
     }
 
 
@@ -109,7 +111,11 @@ public abstract class SameDiffLoss implements ILossFunction {
      * @param mask         Mask array; may be null
      * @return Gradient dL/dPreOut
      */
+    @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if(sd == null){
+            createSameDiffInstance(preOutput.dataType());
+        }
 
 
         Map<String, INDArray> m = new HashMap<>();
@@ -119,10 +125,13 @@ public abstract class SameDiffLoss implements ILossFunction {
 
         Map<String, INDArray> grads = sd.calculateGradients(m, "layerInput");
 
+        INDArray gradAtActivationOutput = grads.get("layerInput");
+        INDArray gradAtInput = activationFn.backprop(preOutput.dup(), gradAtActivationOutput).getFirst();
+
         if (mask != null) {
-            LossUtil.applyMask(grads.get("layerInput"), mask);
+            LossUtil.applyMask(gradAtInput, mask);
         }
-        return grads.get("layerInput");
+        return gradAtInput;
     }
 
     /**
@@ -136,6 +145,7 @@ public abstract class SameDiffLoss implements ILossFunction {
      * @param average      Whether the score should be averaged (divided by number of rows in labels/output) or not
      * @return The score (loss function value) and gradient
      */
+    @Override
     public Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn,
                                                           INDArray mask, boolean average) {
 
@@ -146,10 +156,10 @@ public abstract class SameDiffLoss implements ILossFunction {
         return GradientAndScore;
     }
 
+    @Override
     public String name() {
         return getClass().getSimpleName();
     }
-
 }
 
 
