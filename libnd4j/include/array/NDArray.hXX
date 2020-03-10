@@ -26,7 +26,6 @@
 #include <helpers/ConstantTadHelper.h>
 #include <loops/BroadcastPairwiseConverter.h>
 #include <helpers/PointersManager.h>
-#include <loops/TrueBroadcastHelper.h>
 
 namespace sd {
 
@@ -2801,15 +2800,15 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray& other,
     if (isEmpty() || other.isEmpty())
         return;
 
-    if (lengthOf() == 1) {
-        target.assign(this);
-        target.applyPairwiseTransform(op.p, other, extraArgs);
-        return;
-    }
-    if (other.lengthOf() == 1) {
-        const_cast<NDArray*>(this)->applyScalarArr(op.s, other, target, extraArgs);
-        return;
-    }
+    // if (lengthOf() == 1) {
+    //     target.assign(this);
+    //     target.applyPairwiseTransform(op.p, other, extraArgs);
+    //     return;
+    // }
+    // if (other.lengthOf() == 1) {
+    //     const_cast<NDArray*>(this)->applyScalarArr(op.s, other, target, extraArgs);
+    //     return;
+    // }
 
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
@@ -2819,36 +2818,46 @@ void NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, const NDArray& other,
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
     }
 
-    if(target.isSameShape(this) || target.isSameShape(other)) {
-        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, other), other, target, extraArgs);
-        return;
+    Nd4jLong* xShapeInfoH = getShapeInfo();
+    Nd4jLong* yShapeInfoH = other.getShapeInfo();
+    Nd4jLong* xShapeInfoD = getSpecialShapeInfo();
+    Nd4jLong* yShapeInfoD = other.getSpecialShapeInfo();
+
+    if(!isSameShape(target)) {
+        auto xPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), getShapeInfo(), getContext()->getWorkspace());
+        xShapeInfoH = reinterpret_cast<Nd4jLong*>(xPack.primary());
+        xShapeInfoD = reinterpret_cast<Nd4jLong*>(xPack.special());
+    }
+    if(!other.isSameShape(target)) {
+        auto yPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), other.getShapeInfo(), other.getContext()->getWorkspace());
+        yShapeInfoH = reinterpret_cast<Nd4jLong*>(yPack.primary());
+        yShapeInfoD = reinterpret_cast<Nd4jLong*>(yPack.special());
     }
 
-    #ifdef __ND4J_EXPERIMENTAL__
-        BUILD_PAIRWISE_SELECTOR(dataType(), other.dataType(), target.dataType(), helpers::TrueBroadcastHelper, ::exec(op.b, *this, other, target), LIBND4J_TYPES, LIBND4J_TYPES);
-    #else
-        BUILD_SINGLE_SELECTOR_THRICE(dataType(), helpers::TrueBroadcastHelper, ::exec(op.b, *this, other, target), LIBND4J_TYPES);
-    #endif
+    NDArray::prepareSpecialUse({&target}, {this, &other});
+    NativeOpExecutioner::execBroadcast(getContext(), op.b, getBuffer(), xShapeInfoH, getSpecialBuffer(), xShapeInfoD, other.getBuffer(), yShapeInfoH, other.getSpecialBuffer(), yShapeInfoD, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
+    registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyTrueBroadcast(sd::BroadcastBoolOpsTuple op, const NDArray& other, NDArray& target, const bool checkTargetShape, ExtraArguments *extraArgs) const {
+
     if (isS())
         throw std::runtime_error("NDArray::applyTrueBroadcast bool: you can't use this method on String array!");
 
     if (isEmpty() || other.isEmpty())
         return;
 
-    if (lengthOf() == 1) {
-        NDArray temp(target._shapeInfo, dataType(), false, getContext());
-        temp.assign(this);
-        temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
-        return;
-    }
-    if (other.lengthOf() == 1) {
-        this->applyScalarArr(op.s, other, target, extraArgs);
-        return;
-    }
+    // if (lengthOf() == 1) {
+    //     NDArray temp(target._shapeInfo, dataType(), false, getContext());
+    //     temp.assign(this);
+    //     temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
+    //     return;
+    // }
+    // if (other.lengthOf() == 1) {
+    //     this->applyScalarArr(op.s, other, target, extraArgs);
+    //     return;
+    // }
 
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
@@ -2860,12 +2869,25 @@ void NDArray::applyTrueBroadcast(sd::BroadcastBoolOpsTuple op, const NDArray& ot
             throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
     }
 
-    if(target.isSameShape(this) || target.isSameShape(other)) {
-        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, other), other, target, extraArgs);
-        return;
+    Nd4jLong* xShapeInfoH = getShapeInfo();
+    Nd4jLong* yShapeInfoH = other.getShapeInfo();
+    Nd4jLong* xShapeInfoD = getSpecialShapeInfo();
+    Nd4jLong* yShapeInfoD = other.getSpecialShapeInfo();
+
+    if(!isSameShape(target)) {
+        auto xPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), getShapeInfo(), getContext()->getWorkspace());
+        xShapeInfoH = reinterpret_cast<Nd4jLong*>(xPack.primary());
+        xShapeInfoD = reinterpret_cast<Nd4jLong*>(xPack.special());
+    }
+    if(!other.isSameShape(target)) {
+        auto yPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), other.getShapeInfo(), other.getContext()->getWorkspace());
+        yShapeInfoH = reinterpret_cast<Nd4jLong*>(yPack.primary());
+        yShapeInfoD = reinterpret_cast<Nd4jLong*>(yPack.special());
     }
 
-    BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), helpers::TrueBroadcastBoolHelper, ::exec(op.b, *this, other, target), LIBND4J_TYPES, BOOL_TYPES);
+    NDArray::prepareSpecialUse({&target}, {this, &other});
+    NativeOpExecutioner::execBroadcastBool(getContext(), op.b, getBuffer(), xShapeInfoH, getSpecialBuffer(), xShapeInfoD, other.getBuffer(), yShapeInfoH, other.getSpecialBuffer(), yShapeInfoD, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
+    registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2877,16 +2899,16 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, const NDArray& oth
     if (isEmpty() || other.isEmpty())
         return;
 
-    if (lengthOf() == 1) {
-        NDArray temp(target._shapeInfo, dataType(), false, getContext());
-        temp.assign(this);
-        temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
-        return;
-    }
-    if (other.lengthOf() == 1) {
-        this->applyScalarArr(op.s, other, target, extraArgs);
-        return;
-    }
+    // if (lengthOf() == 1) {
+    //     NDArray temp(target._shapeInfo, dataType(), false, getContext());
+    //     temp.assign(this);
+    //     temp.applyPairwiseTransform(op.p, other, target,  extraArgs);
+    //     return;
+    // }
+    // if (other.lengthOf() == 1) {
+    //     this->applyScalarArr(op.s, other, target, extraArgs);
+    //     return;
+    // }
 
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
@@ -2898,12 +2920,25 @@ void NDArray::applyTrueBroadcast(sd::BroadcastIntOpsTuple op, const NDArray& oth
             throw std::invalid_argument("NDArray::applyTrueBroadcast int method: this and other arrays must have the same type !");
     }
 
-    if(target.isSameShape(this) || target.isSameShape(other)) {
-        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*this, other), other, target, extraArgs);
-        return;
+    Nd4jLong* xShapeInfoH = getShapeInfo();
+    Nd4jLong* yShapeInfoH = other.getShapeInfo();
+    Nd4jLong* xShapeInfoD = getSpecialShapeInfo();
+    Nd4jLong* yShapeInfoD = other.getSpecialShapeInfo();
+
+    if(!isSameShape(target)) {
+        auto xPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), getShapeInfo(), getContext()->getWorkspace());
+        xShapeInfoH = reinterpret_cast<Nd4jLong*>(xPack.primary());
+        xShapeInfoD = reinterpret_cast<Nd4jLong*>(xPack.special());
+    }
+    if(!other.isSameShape(target)) {
+        auto yPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), other.getShapeInfo(), other.getContext()->getWorkspace());
+        yShapeInfoH = reinterpret_cast<Nd4jLong*>(yPack.primary());
+        yShapeInfoD = reinterpret_cast<Nd4jLong*>(yPack.special());
     }
 
-    BUILD_SINGLE_SELECTOR(dataType(), helpers::TrueBroadcastIntHelper, ::exec(op.b, *this, other, target), INTEGER_TYPES);
+    NDArray::prepareSpecialUse({&target}, {this, &other});
+    NativeOpExecutioner::execBroadcastInt(getContext(), op.b, getBuffer(), xShapeInfoH, getSpecialBuffer(), xShapeInfoD, other.getBuffer(), yShapeInfoH, other.getSpecialBuffer(), yShapeInfoD, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
+    registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3008,6 +3043,10 @@ NDArray NDArray::applyTrueBroadcast(sd::BroadcastOpsTuple op, NDArray&& other, E
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyBroadcast(sd::broadcast::Ops op, const std::vector<int>& dimensions, const NDArray& other, NDArray& target, ExtraArguments* extraArgs) {
+
+    if (dimensions.size() == 0)
+        return;
+
     if (isS())
         throw std::runtime_error("NDArray::applyBroadcast: you can't use this method on String array!");
     if(((op == broadcast::Divide || op == broadcast::FloorDiv || op == broadcast::FloorMod) && other.isB()) || (op == broadcast::ReverseDivide && this->isB()))
@@ -3018,53 +3057,50 @@ void NDArray::applyBroadcast(sd::broadcast::Ops op, const std::vector<int>& dime
         return;
     }
 
-    if (dimensions.size() == 0)
-        return;
-
-    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        NDArray::prepareSpecialUse({&target}, {this, &other});
-        NativeOpExecutioner::execPairwiseTransform(getContext(), fromBroadcastToPairwise(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({&target}, {this, &other});
-        return;
-    }
-
-    NDArray *min(nullptr), *max(nullptr);
-    if((lengthOf() > other.lengthOf()) || (lengthOf() == other.lengthOf() && rankOf() >= other.rankOf()))  {
-        max = this;
-        min = const_cast<NDArray*>(&other);
-    }
-    else {
-        max = const_cast<NDArray*>(&other);
-        min = this;
-    }
+    // if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+    //     NDArray::prepareSpecialUse({&target}, {this, &other});
+    //     NativeOpExecutioner::execPairwiseTransform(getContext(), fromBroadcastToPairwise(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
+    //     NDArray::registerSpecialUse({&target}, {this, &other});
+    //     return;
+    // }
 
     if(target.dataType() != DataTypeUtils::pickPairwiseResultType(shapeInfo(), other.getShapeInfo()))
         throw std::invalid_argument("NDArray::applyBroadcast method: wrong type of target array !");
-    if(!target.isSameShape(max))
-        throw std::invalid_argument("NDArray::applyBroadcast method: max and target arrays must have the same shape !");
+    if(!target.isSameShape(this) && !target.isSameShape(other))
+        throw std::invalid_argument("NDArray::applyBroadcast method: one of of two input arrays (this or other) should has the same shape as target array!");
 
     std::vector<int> copy(dimensions);
 
     if (dimensions.size() > 1)
         std::sort(copy.begin(), copy.end());
 
-    Nd4jLong tadLength = shape::tadLength(max->shapeInfo(), copy.data(), (int) copy.size());
-    if (tadLength != min->lengthOf())
-        throw std::runtime_error("NDArray::applyBroadcast method: tad length mismatch !");
+    Nd4jLong* xShapeInfoH = getShapeInfo();
+    Nd4jLong* yShapeInfoH = other.getShapeInfo();
+    Nd4jLong* xShapeInfoD = getSpecialShapeInfo();
+    Nd4jLong* yShapeInfoD = other.getSpecialShapeInfo();
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(max->shapeInfo(), copy);
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(target.shapeInfo(), copy);
+    if(!isSameShape(target)) {
+        auto xPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), getShapeInfo(), getContext()->getWorkspace(), copy);
+        xShapeInfoH = reinterpret_cast<Nd4jLong*>(xPack.primary());
+        xShapeInfoD = reinterpret_cast<Nd4jLong*>(xPack.special());
+    }
+    if(!other.isSameShape(target)) {
+        auto yPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), other.getShapeInfo(), other.getContext()->getWorkspace(), copy);
+        yShapeInfoH = reinterpret_cast<Nd4jLong*>(yPack.primary());
+        yShapeInfoD = reinterpret_cast<Nd4jLong*>(yPack.special());
+    }
 
     NDArray::prepareSpecialUse({&target}, {this, &other});
-    if(max == this)
-        NativeOpExecutioner::execBroadcast(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
-    else
-        NativeOpExecutioner::execInverseBroadcast(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+    NativeOpExecutioner::execBroadcast(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD, other.getBuffer(), yShapeInfoH, other.getSpecialBuffer(), yShapeInfoD, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     registerSpecialUse({&target}, {this, &other});
 }
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyBroadcast(sd::broadcast::BoolOps op, const std::vector<int>& dimensions, const NDArray& other, NDArray& target, ExtraArguments* extraArgs) {
+
+    if (dimensions.size() == 0)
+        return;
+
     if (isS())
         throw std::runtime_error("NDArray::applyBroadcast BoolOps: you can't use this method on String array!");
     if(isEmpty() || other.isEmpty()) {
@@ -3073,30 +3109,17 @@ void NDArray::applyBroadcast(sd::broadcast::BoolOps op, const std::vector<int>& 
         return;
     }
 
-    if (dimensions.size() == 0)
-        return;
-
-    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        NDArray::prepareSpecialUse({&target}, {this, &other});
-        NativeOpExecutioner::execPairwiseBoolTransform(getContext(), fromBroadcastToPairwiseBool(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({&target}, {this, &other});
-        return;
-    }
-
-    NDArray *min(nullptr), *max(nullptr);
-    if((lengthOf() > other.lengthOf()) || (lengthOf() == other.lengthOf() && rankOf() >= other.rankOf()))  {
-        max = this;
-        min = const_cast<NDArray*>(&other);
-    }
-    else {
-        max = const_cast<NDArray*>(&other);
-        min = this;
-    }
+    // if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+    //     NDArray::prepareSpecialUse({&target}, {this, &other});
+    //     NativeOpExecutioner::execPairwiseBoolTransform(getContext(), fromBroadcastToPairwiseBool(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
+    //     NDArray::registerSpecialUse({&target}, {this, &other});
+    //     return;
+    // }
 
     if(target.dataType() != DataType::BOOL)
         throw std::invalid_argument("NDArray::applyBroadcast bool method: type of target array must be BOOL!");
-    if(!target.isSameShape(max))
-        throw std::invalid_argument("NDArray::applyBroadcast bool method: max and target arrays must have the same shape !");
+    if(!target.isSameShape(this) && !target.isSameShape(other))
+        throw std::invalid_argument("NDArray::applyBroadcast bool method: one of of two input arrays (this or other) should has the same shape as target array!");
     if(_dataType != other._dataType)
         throw std::invalid_argument("NDArray::applyBroadcast bool method: this and other arrays must have the same type !");
 
@@ -3105,25 +3128,34 @@ void NDArray::applyBroadcast(sd::broadcast::BoolOps op, const std::vector<int>& 
     if (dimensions.size() > 1)
         std::sort(copy.begin(), copy.end());
 
-    Nd4jLong tadLength = shape::tadLength(max->shapeInfo(), copy.data(), (int) copy.size());
-    if (tadLength != min->lengthOf())
-        throw std::runtime_error("Tad length mismatch");
+    Nd4jLong* xShapeInfoH = getShapeInfo();
+    Nd4jLong* yShapeInfoH = other.getShapeInfo();
+    Nd4jLong* xShapeInfoD = getSpecialShapeInfo();
+    Nd4jLong* yShapeInfoD = other.getSpecialShapeInfo();
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(max->shapeInfo(), copy);
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(target.shapeInfo(), copy);
+    if(!isSameShape(target)) {
+        auto xPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), getShapeInfo(), getContext()->getWorkspace(), copy);
+        xShapeInfoH = reinterpret_cast<Nd4jLong*>(xPack.primary());
+        xShapeInfoD = reinterpret_cast<Nd4jLong*>(xPack.special());
+    }
+    if(!other.isSameShape(target)) {
+        auto yPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), other.getShapeInfo(), other.getContext()->getWorkspace(), copy);
+        yShapeInfoH = reinterpret_cast<Nd4jLong*>(yPack.primary());
+        yShapeInfoD = reinterpret_cast<Nd4jLong*>(yPack.special());
+    }
 
-    // TODO: eventually we want separate tads here
     NDArray::prepareSpecialUse({&target}, {this, &other});
-    if(max == this)
-        NativeOpExecutioner::execBroadcastBool(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
-    else
-        NativeOpExecutioner::execInverseBroadcastBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr, copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+    NativeOpExecutioner::execBroadcastBool(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD, other.getBuffer(), yShapeInfoH, other.getSpecialBuffer(), yShapeInfoD, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
     registerSpecialUse({&target}, {this, &other});
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<int>& dimensions, const NDArray& other, NDArray& target, ExtraArguments* extraArgs) {
+
+    if (dimensions.empty())
+        return;
+
     if (!isZ())
         throw std::runtime_error("NDArray::applyBroadcast IntOps: you can't use this method on non-Integer array!");
     if(isEmpty() || other.isEmpty()) {
@@ -3132,30 +3164,17 @@ void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<int>& d
         return;
     }
 
-    if (dimensions.empty())
-        return;
-
-    if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
-        NDArray::prepareSpecialUse({&target}, {this, &other});
-        NativeOpExecutioner::execPairwiseIntTransform(getContext(), fromBroadcastToPairwiseInt(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
-        NDArray::registerSpecialUse({&target}, {this, &other});
-        return;
-    }
-
-    NDArray *min(nullptr), *max(nullptr);
-    if((lengthOf() > other.lengthOf()) || (lengthOf() == other.lengthOf() && rankOf() >= other.rankOf()))  {
-        max = this;
-        min = const_cast<NDArray*>(&other);
-    }
-    else {
-        max = const_cast<NDArray*>(&other);
-        min = this;
-    }
+    // if (other.lengthOf() == lengthOf() && this->rankOf() == other.rankOf()) {
+    //     NDArray::prepareSpecialUse({&target}, {this, &other});
+    //     NativeOpExecutioner::execPairwiseIntTransform(getContext(), fromBroadcastToPairwiseInt(op), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), nullptr);
+    //     NDArray::registerSpecialUse({&target}, {this, &other});
+    //     return;
+    // }
 
     if(target.dataType() != dataType())
         throw std::invalid_argument("NDArray::applyBroadcast int method: type of target array must be the same as input!");
-    if(!target.isSameShape(max))
-        throw std::invalid_argument("NDArray::applyBroadcast int method: max and target arrays must have the same shape !");
+    if(!target.isSameShape(this) && !target.isSameShape(other))
+        throw std::invalid_argument("NDArray::applyBroadcast int method: one of of two input arrays (this or other) should has the same shape as target array!");
     if(_dataType != other._dataType)
         throw std::invalid_argument("NDArray::applyBroadcast int method: this and other arrays must have the same type !");
 
@@ -3164,19 +3183,24 @@ void NDArray::applyBroadcast(sd::broadcast::IntOps op, const std::vector<int>& d
     if (dimensions.size() > 1)
         std::sort(copy.begin(), copy.end());
 
-    Nd4jLong tadLength = shape::tadLength(max->shapeInfo(), copy.data(), (int) copy.size());
-    if (tadLength != min->lengthOf())
-        throw std::runtime_error("Tad length mismatch");
+    Nd4jLong* xShapeInfoH = getShapeInfo();
+    Nd4jLong* yShapeInfoH = other.getShapeInfo();
+    Nd4jLong* xShapeInfoD = getSpecialShapeInfo();
+    Nd4jLong* yShapeInfoD = other.getSpecialShapeInfo();
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(max->shapeInfo(), copy);
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(target.shapeInfo(), copy);
+    if(!isSameShape(target)) {
+        auto xPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), getShapeInfo(), getContext()->getWorkspace(), copy);
+        xShapeInfoH = reinterpret_cast<Nd4jLong*>(xPack.primary());
+        xShapeInfoD = reinterpret_cast<Nd4jLong*>(xPack.special());
+    }
+    if(!other.isSameShape(target)) {
+        auto yPack = ConstantShapeHelper::getInstance()->createShapeInfoWithUnitiesForBroadcast(target.getShapeInfo(), other.getShapeInfo(), other.getContext()->getWorkspace(), copy);
+        yShapeInfoH = reinterpret_cast<Nd4jLong*>(yPack.primary());
+        yShapeInfoD = reinterpret_cast<Nd4jLong*>(yPack.special());
+    }
 
-    // TODO: eventually we want separate tads here
     NDArray::prepareSpecialUse({&target}, {this, &other});
-    if(max == this)
-        NativeOpExecutioner::execBroadcastInt(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
-    else
-        NativeOpExecutioner::execInverseBroadcastInt(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.getBuffer(), other.getShapeInfo(), other.getSpecialBuffer(), other.getSpecialShapeInfo(), target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+    NativeOpExecutioner::execBroadcastInt(getContext(), op, buffer(), xShapeInfoH, specialBuffer(), xShapeInfoD, other.getBuffer(), yShapeInfoH, other.getSpecialBuffer(), yShapeInfoD, target.buffer(), target.shapeInfo(), target.specialBuffer(), target.specialShapeInfo());
     registerSpecialUse({&target}, {this, &other});
 }
 

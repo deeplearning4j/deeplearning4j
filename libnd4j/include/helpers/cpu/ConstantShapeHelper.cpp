@@ -146,7 +146,62 @@ namespace sd {
         return result;
     }
 
-    sd::ConstantShapeHelper* sd::ConstantShapeHelper::_INSTANCE = 0;
+
+////////////////////////////////////////////////////////////////////////
+ConstantDataBuffer ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, sd::memory::Workspace* workspace, const std::vector<int> dimensions) {
+
+    Nd4jLong* newShapeInfo = nullptr;
+    ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo)), Nd4jLong);
+
+    newShapeInfo[0] = shape::rank(maxShapeInfo);
+
+    sd::ArrayOptions::copyDataType(newShapeInfo, minShapeInfo);                     // type
+    newShapeInfo[2 * newShapeInfo[0] + 2] = shape::elementWiseStride(minShapeInfo); // ews
+    newShapeInfo[2 * newShapeInfo[0] + 3] = shape::order(minShapeInfo);             // order
+
+    if(!dimensions.empty()) {
+
+        for(uint k = 0, j = 0, i = 0; i < shape::rank(maxShapeInfo); ++i) {
+
+            if(j < dimensions.size() && dimensions[j] == i) {
+                shape::shapeOf(newShapeInfo)[i] = shape::shapeOf(minShapeInfo)[k];
+                shape::stride(newShapeInfo)[i]  = shape::stride(minShapeInfo)[k++];
+                ++j;
+            }
+            else{
+                shape::shapeOf(newShapeInfo)[i] = 1;
+                shape::stride(newShapeInfo)[i]  = 0;
+                if(shape::sizeAt(minShapeInfo, k) == 1 && dimensions.size() != shape::rank(minShapeInfo))
+                    ++k;
+            }
+        }
+    }
+    else{
+
+        for(int j = shape::rank(minShapeInfo) - 1, i = shape::rank(maxShapeInfo) - 1; i >=0 ; --i) {
+
+            if(j >= 0) {
+                shape::shapeOf(newShapeInfo)[i] = shape::shapeOf(minShapeInfo)[j];
+                shape::stride(newShapeInfo)[i]  = shape::shapeOf(minShapeInfo)[j] == 1 ? 0 : shape::stride(minShapeInfo)[j];
+                --j;
+            }
+            else {
+                shape::shapeOf(newShapeInfo)[i] = 1;
+                shape::stride(newShapeInfo)[i]  = 0;
+            }
+        }
+    }
+
+    ShapeDescriptor descriptor(newShapeInfo);
+
+    RELEASE(newShapeInfo, workspace);
+
+    return bufferForShapeInfo(descriptor);
+}
+
+
+sd::ConstantShapeHelper* sd::ConstantShapeHelper::_INSTANCE = 0;
+
 }
 
 #endif

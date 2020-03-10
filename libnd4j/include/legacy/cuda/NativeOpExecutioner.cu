@@ -265,6 +265,39 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext  *lc,
         throw cuda_exception::build("execBroadcastBool failed", res);
 }
 
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, const int opNum,
+                                        const void *hX, const Nd4jLong *hXShapeInfo,
+                                        const void *dX, const Nd4jLong *dXShapeInfo,
+                                        const void *hY, const Nd4jLong *hYShapeInfo,
+                                        const void *dY, const Nd4jLong *dYShapeInfo,
+                                              void *hZ, const Nd4jLong *hZShapeInfo,
+                                              void *dZ, const Nd4jLong *dZShapeInfo,
+                                              void *extraParams) {
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
+    auto stream = lc->getCudaStream();
+
+    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+    dim3 launchDims;
+
+    launchDims.y = MAX_NUM_THREADS / 4; // threadsPerBlock
+    launchDims.x = (shape::length(hZShapeInfo) + launchDims.y - 1) / launchDims.y; // blocksPerGrid
+    launchDims.z = 1024; // shared memory
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execBroadcastBool failed", res);
+}
+
+
 void NativeOpExecutioner::execInverseBroadcastBool(sd::LaunchContext  *lc,
                                                    int opNum,
                                                    void *hX, Nd4jLong *hXShapeInfo,
@@ -302,7 +335,6 @@ void NativeOpExecutioner::execInverseBroadcastBool(sd::LaunchContext  *lc,
         throw cuda_exception::build("execInverseBroadcastBool failed", res);
 }
 
-
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext  *lc,
                                             int opNum,
@@ -334,6 +366,44 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext  *lc,
     dim3 launchDims(256, 256, 1024);
 
     BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), INTEGER_TYPES)
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execBroadcastBool failed", res);
+}
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext* lc, const int opNum,
+                                           const void *hX, const Nd4jLong *hXShapeInfo,
+                                           const void *dX, const Nd4jLong *dXShapeInfo,
+                                           const void *hY, const Nd4jLong *hYShapeInfo,
+                                           const void *dY, const Nd4jLong *dYShapeInfo,
+                                                 void *hZ, const Nd4jLong *hZShapeInfo,
+                                                 void *dZ, const Nd4jLong *dZShapeInfo) {
+
+    auto stream = lc->getCudaStream();
+
+    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
+    if (!DataTypeUtils::isZ(zType))
+        throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
+
+    if (yType != xType || zType != xType)
+        throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
+
+    dim3 launchDims;
+
+    launchDims.y = MAX_NUM_THREADS / 4; // threadsPerBlock
+    launchDims.x = (shape::length(hZShapeInfo) + launchDims.y - 1) / launchDims.y; // blocksPerGrid
+    launchDims.z = 1024; // shared memory
+
+    BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo), INTEGER_TYPES)
 
     // TODO: remove after the release
     auto res = cudaStreamSynchronize(*stream);
@@ -420,6 +490,42 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext  *lc,
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+#endif
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execBroadcast failed", res);
+}
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execBroadcast(sd::LaunchContext  *lc, const int opNum,
+                                      const void *hX, const Nd4jLong *hXShapeInfo,
+                                      const void *dX, const Nd4jLong *dXShapeInfo,
+                                      const void *hY, const Nd4jLong *hYShapeInfo,
+                                      const void *dY, const Nd4jLong *dYShapeInfo,
+                                            void *hZ, const Nd4jLong *hZShapeInfo,
+                                            void *dZ, const Nd4jLong *dZShapeInfo) {
+
+    auto stream = lc->getCudaStream();
+
+    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
+    dim3 launchDims;
+
+    launchDims.y = MAX_NUM_THREADS / 4; // threadsPerBlock
+    launchDims.x = (shape::length(hZShapeInfo) + launchDims.y - 1) / launchDims.y; // blocksPerGrid
+    launchDims.z = 1024; // shared memory
+
+#ifdef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES, LIBND4J_TYPES);
+#else
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
 #endif
 
     // TODO: remove after the release

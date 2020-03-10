@@ -118,6 +118,7 @@ namespace shape {
     ND4J_EXPORT _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, const Nd4jLong *shapeInfo2, const Nd4jLong *shapeInfo3);
 
     ND4J_EXPORT _CUDA_HD int sizeAt(const Nd4jLong *shapeInfo, const int dim);
+    ND4J_EXPORT _CUDA_HD Nd4jLong strideAt(const Nd4jLong *shapeInfo, const int dim);
 
     template <typename T>
     ND4J_EXPORT _CUDA_HD void fill(T* buffer, T value, Nd4jLong length);
@@ -2989,6 +2990,15 @@ INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, cons
             return shapeInfo[1+(rank(shapeInfo) + dim)];
     }
 
+    INLINEDEF _CUDA_HD Nd4jLong strideAt(const Nd4jLong *shapeInfo, const int dim) {
+        if (0 == rank(shapeInfo))
+            return 1;
+        if (dim >= 0)
+            return shapeInfo[1 + rank(shapeInfo) + dim];
+        else
+            return shapeInfo[1 + 2*rank(shapeInfo) + dim];
+    }
+
     /**
      * This method does SOFT comparison for two shape buffers, we compare only rank & shapes
      *
@@ -4117,7 +4127,7 @@ INLINEDEF _CUDA_HD bool reshapeC(const Nd4jLong* oldShapeInfo, Nd4jLong* newShap
         *shape::ews(newShapeInfo) = oldEws;                         // ews
     }
 
-    newShapeInfo[2 * newRank + 1] = shape::type(oldShapeInfo);      // type
+    sd::ArrayOptions::copyDataType(newShapeInfo, oldShapeInfo); // type
 
     return true;
 }
@@ -4742,7 +4752,7 @@ INLINEDEF _CUDA_HD void calcSubArrsShapeInfoAndOffsets(const Nd4jLong* wholeShap
     const int subArrRank = keepUnitiesInShape ? rank : rank - dimsSize;
 
     subArrShapeInfo[0] = subArrRank;                                    // rank
-    subArrShapeInfo[2 * subArrRank + 1] = shape::type(wholeShapeInfo);  // type
+    sd::ArrayOptions::copyDataType(subArrShapeInfo, wholeShapeInfo);    // type
     subArrShapeInfo[2 * subArrRank + 3] = shape::order(wholeShapeInfo); // order
 
     Nd4jLong* shape   = new Nd4jLong[dimsSize];
@@ -4820,7 +4830,7 @@ INLINEDEF void calcSubArrShapeInfoAndOffset(const Nd4jLong* idx, const Nd4jLong*
     }
 
     minShapeInfo[2 * shape::rank(minShapeInfo) + 3] = shape::order(maxShapeInfo);   // order
-    minShapeInfo[2 * shape::rank(minShapeInfo) + 1] = shape::type(maxShapeInfo);    // type
+    sd::ArrayOptions::copyDataType(minShapeInfo, maxShapeInfo);                     // type
 
     shape::checkStridesEwsAndOrder(minShapeInfo);
 }
@@ -5114,9 +5124,9 @@ INLINEDEF _CUDA_HD void excludeUnitiesFromShapeInfo(const Nd4jLong* inShapeInfo,
         shape::stride(outShapeInfo)[k++] = shape::stride(inShapeInfo)[i];
     }
 
-    outShapeInfo[2 * outShapeInfo[0] + 1] = shape::type(inShapeInfo);   // type
-    *shape::ews(outShapeInfo)             = shape::elementWiseStride(inShapeInfo);   // ews
-    outShapeInfo[2 * outShapeInfo[0] + 3] = shape::order(inShapeInfo);  // order
+    sd::ArrayOptions::copyDataType(outShapeInfo, inShapeInfo);                      // type
+    *shape::ews(outShapeInfo)             = shape::elementWiseStride(inShapeInfo);  // ews
+    outShapeInfo[2 * outShapeInfo[0] + 3] = shape::order(inShapeInfo);              // order
 }
 
 

@@ -47,6 +47,15 @@ static __global__ void broadcastSimple(
 }
 
 template<typename X, typename Y, typename Z, typename OpClass>
+static __global__ void broadcastSimple(const void *x, const Nd4jLong *xShapeInfo,
+                                       const void *y, const Nd4jLong *yShapeInfo,
+                                             void *z, const Nd4jLong *zShapeInfo ) {
+
+    functions::broadcast::Broadcast<X,Y,Z>::template transformCuda<OpClass>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo);
+}
+
+
+template<typename X, typename Y, typename Z, typename OpClass>
 static __global__ void broadcastInverseSimple(
         void *x,
         Nd4jLong *xShapeInfo,
@@ -64,11 +73,11 @@ static __global__ void broadcastInverseSimple(
 namespace functions {
     namespace broadcast {
 
-        static Nd4jLong __device__ __noinline__ _getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo) {
+        static Nd4jLong __device__ __noinline__ getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo) {
             return shape::getIndexOffset(index, shapeInfo);
         }
 
-        static Nd4jLong __device__ __noinline__ _length(Nd4jLong *shapeInfo) {
+        static Nd4jLong __device__ __noinline__ length(Nd4jLong *shapeInfo) {
             return shape::length(shapeInfo);
         }
 
@@ -79,10 +88,23 @@ namespace functions {
         }
 
         template<typename X, typename Y, typename Z>
+        template <typename OpClass>
+        __host__ void Broadcast<X,Y,Z>::intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, const void *x, const Nd4jLong *xShapeInfo, const void *y, const Nd4jLong *yShapeInfo, void *z, const Nd4jLong *zShapeInfo) {
+            broadcastSimple<X, Y, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo);
+        }
+
+        template<typename X, typename Y, typename Z>
         __host__ void Broadcast<X,Y,Z>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
             DISPATCH_BY_OPNUM_TTT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_OPS))
 
 	        DEBUG_KERNEL(stream, opNum);
+        }
+
+        template<typename X, typename Y, typename Z>
+        __host__ void Broadcast<X,Y,Z>::execBroadcast(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *x, const Nd4jLong *xShapeInfo, const void *y, const Nd4jLong *yShapeInfo, void *z, const Nd4jLong *zShapeInfo) {
+            DISPATCH_BY_OPNUM_TTT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo), OPS_A(BROADCAST_OPS))
+
+            DEBUG_KERNEL(stream, opNum);
         }
 
         template<typename X, typename Y, typename Z>
@@ -128,9 +150,9 @@ namespace functions {
 
 
             if (threadIdx.x == 0) {
-                tadLength = _length(tadOnlyShapeInfo);
+                tadLength = length(tadOnlyShapeInfo);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                numTads = _length(yShapeInfo) / tadLength;
+                numTads = length(yShapeInfo) / tadLength;
                 xEWS = shape::elementWiseStride(xShapeInfo);
                 zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
             }
@@ -154,9 +176,9 @@ namespace functions {
                 else {
                     // it is expected that x and z tads and y array all have the same length
                     for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                        auto xOffset = _getIndexOffset(i, xShapeInfo);
-                        auto yOffset = _getIndexOffset(i, tadOnlyShapeInfo);
-                        auto zOffset = _getIndexOffset(i, tadOnlyShapeInfoZ);
+                        auto xOffset = getIndexOffset(i, xShapeInfo);
+                        auto yOffset = getIndexOffset(i, tadOnlyShapeInfo);
+                        auto zOffset = getIndexOffset(i, tadOnlyShapeInfoZ);
                         rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset]);
                     }
                 }
@@ -193,9 +215,9 @@ namespace functions {
             __shared__ Nd4jLong zEWS;
 
             if (threadIdx.x == 0) {
-   	            tadLength = _length(tadOnlyShapeInfo);
+   	            tadLength = length(tadOnlyShapeInfo);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                numTads = _length(xShapeInfo) / tadLength;
+                numTads = length(xShapeInfo) / tadLength;
                 yEWS = shape::elementWiseStride(yShapeInfo);
                 zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
             }
@@ -219,14 +241,58 @@ namespace functions {
                     // it is expected that x and z tads and y array all have the same length
                     for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
 
-                        auto xOffset = _getIndexOffset(i, tadOnlyShapeInfo);
-                        auto yOffset = _getIndexOffset(i, yShapeInfo);
-                        auto zOffset = _getIndexOffset(i, tadOnlyShapeInfoZ);
+                        auto xOffset = getIndexOffset(i, tadOnlyShapeInfo);
+                        auto yOffset = getIndexOffset(i, yShapeInfo);
+                        auto zOffset = getIndexOffset(i, tadOnlyShapeInfoZ);
                         rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
                     }
                 }
             }
         }
+
+////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y, typename Z>
+template <typename OpType>
+__device__ void Broadcast<X,Y,Z>::transformCuda(
+                              const void *vx, const Nd4jLong *xShapeInfo,
+                              const void *vy, const Nd4jLong *yShapeInfo,
+                                    void *vz, const Nd4jLong *zShapeInfo) {
+
+    const X* x = reinterpret_cast<const X*>(vx);
+    const Y* y = reinterpret_cast<const Y*>(vy);
+          Z* z = reinterpret_cast<Z*>(vz);
+
+    __shared__ Nd4jLong zLen;
+    __shared__ int rank;
+
+    if (threadIdx.x == 0) {
+
+        zLen  = shape::length(zShapeInfo);
+        rank = shape::rank(zShapeInfo);
+    }
+    __syncthreads();
+
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    Nd4jLong xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
+
+    for (int i = tid; i < zLen; i += blockDim.x * gridDim.x) {
+
+        shape::index2coords(i, zShapeInfo, zCoords);
+
+        for (uint j = 0; j < rank; ++j) {
+            xCoords[j] = shape::sizeAt(xShapeInfo, j) == 1 ? 0 : zCoords[j];
+            yCoords[j] = shape::sizeAt(yShapeInfo, j) == 1 ? 0 : zCoords[j];
+        }
+
+        const auto xOffset = shape::getOffset(xShapeInfo, xCoords);
+        const auto yOffset = shape::getOffset(yShapeInfo, yCoords);
+        const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
+
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+    }
+}
 
 /*
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT Broadcast, , PAIRWISE_TYPES_0);

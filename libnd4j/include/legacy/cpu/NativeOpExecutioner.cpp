@@ -204,6 +204,30 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext  *lc,
 #endif
 }
 
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum,
+                                        const void *hX, const Nd4jLong *hXShapeInfo,
+                                        const void *dX, const Nd4jLong *dXShapeInfo,
+                                        const void *hY, const Nd4jLong *hYShapeInfo,
+                                        const void *dY, const Nd4jLong *dYShapeInfo,
+                                              void *hZ, const Nd4jLong *hZShapeInfo,
+                                              void *dZ, const Nd4jLong *dZShapeInfo) {
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
+
+    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+    #ifdef __ND4J_EXPERIMENTAL__
+    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo), LIBND4J_TYPES, LIBND4J_TYPES);
+    #else
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo), LIBND4J_TYPES);
+    #endif
+}
+
 void NativeOpExecutioner::execInverseBroadcast(sd::LaunchContext  *lc,
                                                int opNum,
                                                void *hX, Nd4jLong *hXShapeInfo,
@@ -258,12 +282,11 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext  *lc,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
 
 
-    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-    auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
-    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-
     if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
         return;
+
+    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
     auto func = PRAGMA_THREADS_FOR {
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, start, stop), LIBND4J_TYPES, BOOL_TYPES);
@@ -275,6 +298,26 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext  *lc,
 
     samediff::Threads::parallel_tad(func, 0, numTads);
 }
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, const int opNum,
+                                        const void *hX, const Nd4jLong *hXShapeInfo,
+                                        const void *dX, const Nd4jLong *dXShapeInfo,
+                                        const void *hY, const Nd4jLong *hYShapeInfo,
+                                        const void *dY, const Nd4jLong *dYShapeInfo,
+                                              void *hZ, const Nd4jLong *hZShapeInfo,
+                                              void *dZ, const Nd4jLong *dZShapeInfo,
+                                              void *extraParams) {
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
+    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES);
+}
+
 
 void NativeOpExecutioner::execInverseBroadcastBool(sd::LaunchContext  *lc,
                                                   int opNum,
@@ -349,6 +392,33 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext  *lc,
     auto numTads = xLen / yLen;
 
     samediff::Threads::parallel_tad(func, 0, numTads);
+}
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext  *lc, const int opNum,
+                                            const void *hX, const Nd4jLong *hXShapeInfo,
+                                            const void *dX, const Nd4jLong *dXShapeInfo,
+                                            const void *hY, const Nd4jLong *hYShapeInfo,
+                                            const void *dY, const Nd4jLong *dYShapeInfo,
+                                                  void *hZ, const Nd4jLong *hZShapeInfo,
+                                                  void *dZ, const Nd4jLong *dZShapeInfo) {
+
+
+    auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
+    if (xType != yType || xType != zType)
+        throw sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType);
+
+    if (!sd::DataTypeUtils::isZ(zType))
+        throw sd::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo), INTEGER_TYPES);
+
 }
 
 void NativeOpExecutioner::execInverseBroadcastInt(sd::LaunchContext  *lc,

@@ -46,7 +46,7 @@ public:
      * @param resultShapeInfo
      */
     static void execIndexReduceScalar(sd::LaunchContext  *lc,
-                                    int opNum, 
+                                    int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
                                     void *dX, Nd4jLong *dXShapeInfo,
                                     void *extraParams,
@@ -75,7 +75,7 @@ public:
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo);
-    
+
 
     /**
      *
@@ -263,6 +263,15 @@ static void execScalarInt(sd::LaunchContext  *lc,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
 
+    static void execBroadcast(sd::LaunchContext* lc,
+                            const int opNum,
+                            const void *hX, const Nd4jLong *hXShapeInfo,
+                            const void *dX, const Nd4jLong *dXShapeInfo,
+                            const void *hY, const Nd4jLong *hYShapeInfo,
+                            const void *dY, const Nd4jLong *dYShapeInfo,
+                                  void *hZ, const Nd4jLong *hZShapeInfo,
+                                  void *dZ, const Nd4jLong *dZShapeInfo);
+
     static void execInverseBroadcast(sd::LaunchContext  *lc,
                                      int opNum,
                                      void *x, Nd4jLong *xShapeInfo,
@@ -289,6 +298,15 @@ static void execScalarInt(sd::LaunchContext  *lc,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
 
+    static void execBroadcastBool(sd::LaunchContext* lc, const int opNum,
+                            const void *hX, const Nd4jLong *hXShapeInfo,
+                            const void *dX, const Nd4jLong *dXShapeInfo,
+                            const void *hY, const Nd4jLong *hYShapeInfo,
+                            const void *dY, const Nd4jLong *dYShapeInfo,
+                                  void *hZ, const Nd4jLong *hZShapeInfo,
+                                  void *dZ, const Nd4jLong *dZShapeInfo,
+                                  void *extraParams);
+
     static void execInverseBroadcastBool(sd::LaunchContext  *lc,
                                      int opNum,
                                      void *x, Nd4jLong *xShapeInfo,
@@ -314,6 +332,14 @@ static void execScalarInt(sd::LaunchContext  *lc,
                                   Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                   Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
 
+    static void execBroadcastInt(sd::LaunchContext* lc, const int opNum,
+                                  const void *hX, const Nd4jLong *hXShapeInfo,
+                                  const void *dX, const Nd4jLong *dXShapeInfo,
+                                  const void *hY, const Nd4jLong *hYShapeInfo,
+                                  const void *dY, const Nd4jLong *dYShapeInfo,
+                                        void *hZ, const Nd4jLong *hZShapeInfo,
+                                        void *dZ, const Nd4jLong *dZShapeInfo);
+
     static void execInverseBroadcastInt(sd::LaunchContext  *lc,
                                          int opNum,
                                          void *x, Nd4jLong *xShapeInfo,
@@ -325,7 +351,7 @@ static void execScalarInt(sd::LaunchContext  *lc,
                                          int *dimension, int dimensionLength,
                                          Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                          Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
-    
+
 /**
   *
   * @param opNum
@@ -421,7 +447,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);    
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
     /**
      *
      * @param opNum
@@ -509,7 +535,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                     void *dX, Nd4jLong *dXShapeInfo,
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo);    
+                                    void *dZ, Nd4jLong *dZShapeInfo);
 
     static void execReduce3TAD(sd::LaunchContext  *lc,
                             int opNum,
@@ -520,7 +546,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength, 
+                            int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *yTadShapeInfo, Nd4jLong *yTadOffsets);
 
@@ -544,7 +570,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension, int dimensionLength,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                bool biasCorrected);    
+                                bool biasCorrected);
 
     /**
      *
@@ -580,7 +606,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
-                                    bool biasCorrected);   
+                                    bool biasCorrected);
 
 
     static void execRandom(sd::LaunchContext  *lc,
@@ -627,7 +653,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                               int numRealArguments) {
 
     }
-    
+
 
     inline static void execSort(void *x, Nd4jLong *xShapeInfo, bool descending) {
         auto xType = sd::ArrayOptions::dataType(xShapeInfo);

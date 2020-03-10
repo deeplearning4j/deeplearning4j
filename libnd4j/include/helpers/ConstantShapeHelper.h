@@ -52,6 +52,7 @@ namespace sd {
         ConstantDataBuffer bufferForShapeInfo(const ShapeDescriptor &descriptor);
         ConstantDataBuffer bufferForShapeInfo(const Nd4jLong *shapeInfo);
         ConstantDataBuffer bufferForShapeInfo(const sd::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
+        ConstantDataBuffer createShapeInfoWithUnitiesForBroadcast(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, sd::memory::Workspace* workspace = nullptr, const std::vector<int> dimensions = {});
 
 
         Nd4jLong* emptyShapeInfo(const sd::DataType dataType);
