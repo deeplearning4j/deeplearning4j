@@ -95,8 +95,8 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     // forward steps
     sd::ops::dynamic_rnn dynamicRnn;
     auto resultsFW = dynamicRnn.evaluate({x, WxFW, WhFW, bFW, h0FW, maxTimeStep}, {timeMajor});
-    hFW->assign(resultsFW->at(0));                              // [time x bS x numUnitsFW] or [bS x time x numUnitsFW]
-    hFWFinal->assign(resultsFW->at(1));
+    hFW->assign(resultsFW.at(0));                              // [time x bS x numUnitsFW] or [bS x time x numUnitsFW]
+    hFWFinal->assign(resultsFW.at(1));
 
     auto seqLen = maxTimeStep;
     if(seqLen == nullptr) {
@@ -108,22 +108,17 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     // reverse x     
     sd::ops::reverse_sequence reverse;
     auto resultsIn = timeMajor ? reverse.evaluate({x, seqLen}, {0, 1}) : reverse.evaluate({x, seqLen}, {1, 0});
-    REQUIRE_TRUE (resultsIn->status() == ND4J_STATUS_OK, 0, "dynamic_bidirectional_rnn: there is a problem with reverse on the sequence.");
-    auto revInput = resultsIn->at(0);
+    REQUIRE_TRUE (resultsIn.status() == ND4J_STATUS_OK, 0, "dynamic_bidirectional_rnn: there is a problem with reverse on the sequence.");
+    auto revInput = resultsIn.at(0);
 
     // backward steps
     auto resultsBW = dynamicRnn.evaluate({revInput, WxBW, WhBW, bBW, h0BW, maxTimeStep}, {timeMajor});
-    auto hBWtemp = resultsBW->at(0);					           // [time x bS x numUnitsBW] or [ bS x time xnumUnitsBW]
-    hBWFinal->assign(resultsBW->at(1));
+    auto hBWtemp = resultsBW.at(0);					           // [time x bS x numUnitsBW] or [ bS x time xnumUnitsBW]
+    hBWFinal->assign(resultsBW.at(1));
 
     // reverse hBWtemp
     auto resultsOut = timeMajor ? reverse.evaluate({hBWtemp, seqLen}, {0, 1}) : reverse.evaluate({hBWtemp, seqLen}, {1, 0});
-    hBW->assign(resultsOut->at(0));
-
-	delete resultsOut;
-	delete resultsBW;
-	delete resultsIn;
-    delete resultsFW;
+    hBW->assign(resultsOut.at(0));
 
     if(seqLen != maxTimeStep)
     	delete seqLen;
@@ -226,12 +221,6 @@ DECLARE_SHAPE_FN(dynamic_bidirectional_rnn) {
 
     return SHAPELIST(CONSTANT(hFWShapeInfo), CONSTANT(hBWShapeInfo), CONSTANT(hFWFinalPrevShapeInfo), CONSTANT(hBWFinalPrevShapeInfo));
 }
-
-
-
-
-
-
 
 
 }

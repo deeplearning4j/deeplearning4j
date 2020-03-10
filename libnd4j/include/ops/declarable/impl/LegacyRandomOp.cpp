@@ -357,20 +357,20 @@ namespace sd {
             return DeclarableOp::execute(block);
         }
 
-        sd::ResultSet*  LegacyRandomOp::execute(sd::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
+        sd::ResultSet  LegacyRandomOp::execute(sd::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace) {
             std::vector<NDArray*> ins(inputs);
             std::vector<double> tas(tArgs);
             std::vector<int> ias(iArgs);
             return this->execute(rng, ins, tas, ias, isInplace);
         }
 
-        sd::ResultSet*  LegacyRandomOp::execute(sd::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace) {
+        sd::ResultSet  LegacyRandomOp::execute(sd::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace) {
             VariableSpace variableSpace;
-            auto arrayList = new ResultSet();
+            ResultSet arrayList;
             //ResultSet arrayList;
 
             if (isInplace)
-                arrayList->setNonRemovable();
+                arrayList.setNonRemovable();
 
             int cnt = -1;
             std::vector<int> in;
@@ -398,7 +398,7 @@ namespace sd {
                 block.getIArguments()->emplace_back(iArgs.at(e));
 
             Nd4jStatus status = this->execute(&block);
-            arrayList->setStatus(status);
+            arrayList.setStatus(status);
             if (status != ND4J_STATUS_OK)
                 return arrayList;
 
@@ -410,9 +410,9 @@ namespace sd {
                     auto arr = var->getNDArray();
                     if (!arr->isAttached()) {
                         var->markRemovable(false);
-                        arrayList->push_back(arr);
+                        arrayList.push_back(arr);
                     } else {
-                        arrayList->push_back(arr->detach());
+                        arrayList.push_back(arr->detach());
                     }
                 } else
                     break;

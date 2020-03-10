@@ -49,9 +49,7 @@ TEST_F(DeclarableOpsTests17, test_sparse_to_dense_1) {
 
     sd::ops::compat_sparse_to_dense op;
     auto result = op.evaluate({&ranges, &shape, &values, &def});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    delete result;
+    ASSERT_EQ(Status::OK(), result.status());
 }
 
 TEST_F(DeclarableOpsTests17, test_sparse_to_dense_2) {
@@ -64,9 +62,8 @@ TEST_F(DeclarableOpsTests17, test_sparse_to_dense_2) {
 
     sd::ops::compat_sparse_to_dense op;
     auto result = op.evaluate({&ranges, &shape, &values, &def});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests17, test_compat_string_split_1) {
@@ -78,11 +75,11 @@ TEST_F(DeclarableOpsTests17, test_compat_string_split_1) {
 
     sd::ops::compat_string_split op;
     auto result = op.evaluate({&x, &delimiter});
-    ASSERT_EQ(Status::OK(), result->status());
-    ASSERT_EQ(2, result->size());
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_EQ(2, result.size());
 
-    auto z0 = result->at(0);
-    auto z1 = result->at(1);
+    auto z0 = result.at(0);
+    auto z1 = result.at(1);
 
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp1.isSameShape(z1));
@@ -90,5 +87,4 @@ TEST_F(DeclarableOpsTests17, test_compat_string_split_1) {
     ASSERT_EQ(exp0, *z0);
     ASSERT_EQ(exp1, *z1);
 
-    delete result;
 }

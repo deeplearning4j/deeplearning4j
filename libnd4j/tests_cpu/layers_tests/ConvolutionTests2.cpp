@@ -80,14 +80,13 @@ TEST_F(ConvolutionTests2, im2col_1) {
 
     sd::ops::im2col op;
     auto results = op.evaluate({&image}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode});
-    auto column = results->at(0);
+    auto column = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expected.isSameShape(column));
     ASSERT_TRUE(expected.equalsTo(column));
 
-    delete results;
 }
 
 template <typename T>
@@ -123,13 +122,12 @@ TYPED_TEST(TypedConvolutionTests2, deconv2d_tf_test2) {
 
     sd::ops::deconv2d_tf op;
     auto results = op.evaluate({&outShape, &weights, &input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -141,11 +139,10 @@ TYPED_TEST(TypedConvolutionTests2, Test_DeConv2D_TF_1) {
 
     sd::ops::deconv2d_tf op;
     auto result = op.evaluate({&input0, &input1, &input2}, {}, {2, 2, 1, 1, 0, 0, 1, 1, 0, 1});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    ASSERT_EQ(exp, *result->at(0));
+    ASSERT_EQ(exp, *result.at(0));
 
-    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -171,14 +168,13 @@ TYPED_TEST(TypedConvolutionTests2, Test_DeConv2D_TF_2) {
 
     sd::ops::deconv2d_tf op;
     auto result = op.evaluate({&input0, &input1, &input2}, {}, {7,7,  2,2,  0,0,  1,1,  1,1});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -190,13 +186,11 @@ TEST_F(ConvolutionTests2, Test_Dilation2D_Again_1) {
 
     sd::ops::dilation2d op;
     auto result = op.evaluate({&x, &w}, {}, {1, 1,5,7,1, 1,2,3,1});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
-
-    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -206,9 +200,8 @@ TEST_F(ConvolutionTests2, Test_Dilation2D_Again_2) {
 
     sd::ops::dilation2d op;
     auto result = op.evaluate({&x, &w}, {}, {0, 1,2,3,1, 1,3,2,1});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    delete result;
 }
 
 TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
@@ -248,11 +241,11 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
     sd::ops::sconv2d_bp op;
     auto resultBP = op.evaluate({&input, &epsilonNext, &weightsD, &weightsP },{}, {5, 5, 1, 1, 0, 0, 1, 1, 0}, {});
 
-    ASSERT_EQ(3, resultBP->size());
+    ASSERT_EQ(3, resultBP.size());
 
-    auto _epsilon = resultBP->at(0);
-    auto _gradWD = resultBP->at(1);
-    auto _gradWP = resultBP->at(2);
+    auto _epsilon = resultBP.at(0);
+    auto _gradWD = resultBP.at(1);
+    auto _gradWP = resultBP.at(2);
 
     //_gradWP->printBuffer("gradWP");
 
@@ -273,7 +266,6 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_1) {
 
     ASSERT_TRUE(_epsilon->equalsTo(&expE));
 
-    delete resultBP;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -344,14 +336,12 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_3) {
     sd::ops::sconv2d_bp op;
     auto result = op.evaluate({&input, &epsilonNext, &weightsD, &weightsP}, {}, {2, 2, 1, 1, 0, 0, 2, 2, 0});
 
-    auto eps = result->at(0);
-    auto gWD = result->at(1);
-    auto gWP = result->at(2);
+    auto eps = result.at(0);
+    auto gWD = result.at(1);
+    auto gWP = result.at(2);
 
 
     ASSERT_TRUE(epsilon.isSameShape(eps));
-
-    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -379,10 +369,10 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_4) {
 
     sd::ops::sconv2d_bp op;
     auto results = op.evaluate({&input, &gradO, &weightsDepth, &bias}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto* gradI = results->at(0);
-    auto* gradWD = results->at(1);
+    auto* gradI = results.at(0);
+    auto* gradWD = results.at(1);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));
@@ -390,7 +380,6 @@ TYPED_TEST(TypedConvolutionTests2, sconv2d_bp_4) {
     ASSERT_TRUE(expGradW.isSameShape(gradWD));
     ASSERT_TRUE(expGradW.equalsTo(gradWD));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -464,15 +453,14 @@ TEST_F(ConvolutionTests2, deconv3d_test1) {
 
     sd::ops::deconv3d op;
     auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
     // output->printBuffer();
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -498,13 +486,12 @@ TEST_F(ConvolutionTests2, deconv3d_test2) {
 
     sd::ops::deconv3d op;
     auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -531,13 +518,12 @@ TEST_F(ConvolutionTests2, deconv3d_test3) {
 
     sd::ops::deconv3d op;
     auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -558,13 +544,12 @@ TEST_F(ConvolutionTests2, deconv3d_test4) {
 
     sd::ops::deconv3d op;
     auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -601,14 +586,13 @@ TEST_F(ConvolutionTests2, deconv3d_test5) {
 
     sd::ops::deconv3d op;
     auto results = op.evaluate({&input, &weights}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
-    auto output = results->at(0);
+    auto output = results.at(0);
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -635,11 +619,11 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test1) {
     sd::ops::deconv3d_bp op;
     auto results = op.evaluate({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
 
-    auto gradI = results->at(0);
-    auto gradW = results->at(1);
-    auto gradB = results->at(2);
+    auto gradI = results.at(0);
+    auto gradW = results.at(1);
+    auto gradB = results.at(2);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));
@@ -650,8 +634,7 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test1) {
     ASSERT_TRUE(expGradB.isSameShape(gradB));
     ASSERT_TRUE(expGradB.equalsTo(gradB));
 
-    delete results;
-}
+ }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(ConvolutionTests2, deconv3d_bp_test2) {
@@ -675,10 +658,10 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test2) {
     sd::ops::deconv3d_bp op;
     auto results = op.evaluate({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
 
-    auto gradI = results->at(0);
-    auto gradW = results->at(1);
+    auto gradI = results.at(0);
+    auto gradW = results.at(1);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));
@@ -686,7 +669,6 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test2) {
     ASSERT_TRUE(expGradW.isSameShape(gradW));
     ASSERT_TRUE(expGradW.equalsTo(gradW));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -710,10 +692,10 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test3) {
     sd::ops::deconv3d_bp op;
     auto results = op.evaluate({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
 
-    auto gradI = results->at(0);
-    auto gradW = results->at(1);
+    auto gradI = results.at(0);
+    auto gradW = results.at(1);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));
@@ -721,7 +703,6 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test3) {
     ASSERT_TRUE(expGradW.isSameShape(gradW));
     ASSERT_TRUE(expGradW.equalsTo(gradW));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -745,18 +726,16 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test4) {
     sd::ops::deconv3d_bp op;
     auto results = op.evaluate({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
 
-    auto gradI = results->at(0);
-    auto gradW = results->at(1);
+    auto gradI = results.at(0);
+    auto gradW = results.at(1);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));
 
     ASSERT_TRUE(expGradW.isSameShape(gradW));
     ASSERT_TRUE(expGradW.equalsTo(gradW));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -780,7 +759,7 @@ TEST_F(ConvolutionTests2, maxpool2d_1) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
+    // result.printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -824,7 +803,7 @@ TEST_F(ConvolutionTests2, maxpool2d_2) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
+    // result.printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -868,7 +847,7 @@ TEST_F(ConvolutionTests2, maxpool2d_3) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
+    // result.printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -912,7 +891,7 @@ TEST_F(ConvolutionTests2, maxpool2d_4) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
+    // result.printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -956,7 +935,7 @@ TEST_F(ConvolutionTests2, maxpool2d_5) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
+    // result.printShapeInfo();
     ASSERT_TRUE(exp.isSameShape(result));
 
     delete variableSpace;
@@ -973,14 +952,13 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_6) {
     sd::ops::maxpool2d op;
     auto result = op.evaluate({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 1, 1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -993,14 +971,13 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_7) {
     sd::ops::maxpool2d op;
     auto result = op.evaluate({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1013,14 +990,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_8) {
     sd::ops::maxpool2d op;
     auto result = op.evaluate({&x}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 0, 1, 0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1042,12 +1017,11 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_9) {
 
     sd::ops::maxpool2d op;
     auto results = op.evaluate({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, isSameMode, 1, 0});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(output->isSameShape({bS, iC, oH, oW}));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1069,14 +1043,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_10) {
 
     sd::ops::maxpool2d op;
     auto results = op.evaluate({&input}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode});
-    auto* output = results->at(0);
+    auto* output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1090,9 +1062,8 @@ TEST_F(ConvolutionTests2, maxpool2d_11) {
     sd::ops::maxpool2d op;
     auto results = op.evaluate({&input}, {}, {2,2,  1,1,  1,1,  2,2,  1,0,0});
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1111,13 +1082,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_test1) {
 
     sd::ops::avgpool3dnew op;
     auto results = op.evaluate({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1139,13 +1109,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_test2) {
 
     sd::ops::avgpool3dnew op;
     auto results = op.evaluate({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1164,13 +1133,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_test3) {
 
     sd::ops::avgpool3dnew op;
     auto results = op.evaluate({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1204,13 +1172,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_test4) {
 
     sd::ops::avgpool3dnew op;
     auto results = op.evaluate({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1228,13 +1195,11 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_test1) {
 
     sd::ops::maxpool3dnew op;
     auto results = op.evaluate({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1256,13 +1221,11 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_test2) {
 
     sd::ops::maxpool3dnew op;
     auto results = op.evaluate({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1280,13 +1243,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_test3) {
 
     sd::ops::maxpool3dnew op;
     auto results = op.evaluate({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1310,13 +1272,11 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_test4) {
 
     sd::ops::maxpool3dnew op;
     auto results = op.evaluate({&input}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1343,13 +1303,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test1) {
 
     sd::ops::avgpool3dnew_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 
@@ -1377,15 +1336,14 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test2) {
 
     sd::ops::avgpool3dnew_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
     // output->printBuffer();
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 
@@ -1412,13 +1370,11 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test3) {
 
     sd::ops::avgpool3dnew_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1444,13 +1400,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool3d_bp_test4) {
 
     sd::ops::avgpool3dnew_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW,  paddingMode, 0, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1475,13 +1430,11 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_bp_test1) {
 
     sd::ops::maxpool3dnew_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1508,13 +1461,11 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_bp_test2) {
 
     sd::ops::maxpool3dnew_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1540,13 +1491,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_bp_test3) {
 
     sd::ops::maxpool3dnew_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 
@@ -1572,13 +1522,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool3d_bp_test4) {
 
     sd::ops::maxpool3dnew_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW, dD,dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1631,12 +1580,11 @@ TEST_F(ConvolutionTests2, maxpool2d_bp_2) {
 
     sd::ops::maxpool2d_bp op;
     auto results = op.evaluate({&input, &epsilon}, {}, argI);
-    auto output = results->at(0);
+    auto output = results.at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1657,13 +1605,11 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_bp_3) {
 
     sd::ops::maxpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1684,13 +1630,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_bp_4) {
 
     sd::ops::maxpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1711,13 +1656,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_bp_5) {
 
     sd::ops::maxpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1738,13 +1682,12 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_bp_6) {
 
     sd::ops::maxpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1763,13 +1706,12 @@ TEST_F(ConvolutionTests2, maxpool2d_bp_7) {
 
     sd::ops::maxpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    // auto output = results->at(0);
+    // auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     // ASSERT_TRUE(expected.isSameShape(output));
     // ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1821,12 +1763,11 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_2) {
 
     sd::ops::avgpool2d_bp op;
     auto results = op.evaluate({&input, &epsilon}, {}, argI);
-    auto output = results->at(0);
+    auto output = results.at(0);
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1850,13 +1791,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_3) {
 
     sd::ops::avgpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 
@@ -1881,13 +1821,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_4) {
 
     sd::ops::avgpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 
@@ -1910,13 +1849,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_5) {
 
     sd::ops::avgpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 0, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 
@@ -1939,13 +1877,12 @@ TYPED_TEST(TypedConvolutionTests2, avgpool2d_bp_6) {
 
     sd::ops::avgpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, 1, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2003,13 +1940,12 @@ TYPED_TEST(TypedConvolutionTests2, pnormpool2d_bp_2) {
 
     sd::ops::pnormpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {eps}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, pnorm, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2036,13 +1972,12 @@ TYPED_TEST(TypedConvolutionTests2, pnormpool2d_bp_3) {
 
     sd::ops::pnormpool2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {eps}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  paddingMode, pnorm, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete results;
 }
 
 
@@ -2062,13 +1997,12 @@ TEST_F(ConvolutionTests2, upsampling2d_bp_1) {
 
     sd::ops::upsampling2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {isNCHW});
-    auto* gradI = results->at(0);
+    auto* gradI = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2087,13 +2021,12 @@ TEST_F(ConvolutionTests2, upsampling2d_bp_2) {
 
     sd::ops::upsampling2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {isNCHW});
-    auto* gradI = results->at(0);
+    auto* gradI = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2118,13 +2051,12 @@ TEST_F(ConvolutionTests2, upsampling2d_bp_3) {
 
     sd::ops::upsampling2d_bp op;
     auto results = op.evaluate({&input, &gradO}, {}, {isNCHW});
-    auto* gradI = results->at(0);
+    auto* gradI = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(expGradI.isSameShape(gradI));
     ASSERT_TRUE(expGradI.equalsTo(gradI));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2149,14 +2081,12 @@ TYPED_TEST(TypedConvolutionTests2, depthwise_conv2d_1) {
 
     sd::ops::depthwise_conv2d op;
     auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto* output = results->at(0);
+    auto* output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2179,14 +2109,13 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_2) {
 
     sd::ops::depthwise_conv2d op;
     auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto* output = results->at(0);
+    auto* output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 
-    delete results;
 }
 
 
@@ -2211,14 +2140,13 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_3) {
 
     sd::ops::depthwise_conv2d op;
     auto results = op.evaluate({&input, &weights, &biases}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto* output = results->at(0);
+    auto* output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2268,14 +2196,13 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_5) {
 
     sd::ops::depthwise_conv2d op;
     auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2296,15 +2223,14 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_6) {
 
     sd::ops::depthwise_conv2d op;
     auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    NDArray* output = results->at(0);
+    NDArray* output = results.at(0);
     // output.printIndexedBuffer();
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2331,14 +2257,13 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_7) {
 
     sd::ops::depthwise_conv2d op;
     auto results = op.evaluate({&input, &weights, &biases}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto* output = results->at(0);
+    auto* output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2369,15 +2294,13 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_8) {
 
     sd::ops::depthwise_conv2d op;
     auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
     // output->printBuffer();
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
-
-    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2409,14 +2332,13 @@ TEST_F(ConvolutionTests2, depthwise_conv2d_9) {
 
     sd::ops::depthwise_conv2d op;
     auto results = op.evaluate({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto output = results->at(0);
+    auto output = results.at(0);
 
-    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_EQ(Status::OK(), results.status());
 
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output, 1e-4));
 
-    delete results;
 }
 
 #endif //LIBND4J_CONVOLUTIONTESTS2_H

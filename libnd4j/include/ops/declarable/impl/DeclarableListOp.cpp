@@ -64,7 +64,7 @@ namespace sd {
             block.pushNDArrayListToVariableSpace(block.getNodeId(), 0, arrayList);
         }
 
-        ResultSet* DeclarableListOp::execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+        ResultSet DeclarableListOp::execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             std::vector<NDArray*> ins(inputs);
             std::vector<double> tas(tArgs);
             std::vector<int> ias(iArgs);
@@ -94,7 +94,7 @@ namespace sd {
             return status;
         }
 
-        ResultSet* DeclarableListOp::execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs) {
+        ResultSet DeclarableListOp::execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs) {
             VariableSpace varSpace;
             int nodeId = 119;
 
@@ -132,8 +132,8 @@ namespace sd {
 
 
             Nd4jStatus result = this->validateAndExecute(block);
-            auto res = new ResultSet();
-            res->setStatus(result);
+            ResultSet res;
+            res.setStatus(result);
 
             for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
                 std::pair<int,int> pair(1, e);
@@ -143,10 +143,10 @@ namespace sd {
                         auto arr = var->getNDArray();
                         if (arr->isAttached()) {
                             auto d = arr->detach();
-                            res->push_back(d);
+                            res.push_back(d);
                         } else {
                             var->markRemovable(false);
-                            res->push_back(arr);
+                            res.push_back(arr);
                         }
                     }
                 } else

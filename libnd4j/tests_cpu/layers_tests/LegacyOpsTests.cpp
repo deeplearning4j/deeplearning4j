@@ -64,13 +64,13 @@ TEST_F(LegacyOpsTests, TransformTests_2) {
     sd::ops::LegacyTransformSameOp op(transform::Neg); // Neg
     auto result = op.evaluate({&x}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(LegacyOpsTests,  Reciprocal_1) {
@@ -121,12 +121,12 @@ TEST_F(LegacyOpsTests,  PWT_Tests_2) {
     sd::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
     auto result = op.evaluate({&x, &y}, {}, {});
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     //z->printBuffer("Z");
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(LegacyOpsTests, Scalar_Test_1) {
@@ -154,10 +154,10 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
     sd::ops::LegacyScalarOp op(scalar::Add, y);
     auto result = op.evaluate({&x}, {}, {});
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -169,14 +169,14 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
 
     auto result = op.evaluate({&x}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer("ReduceTest1");
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.sumNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
-    delete result;
+    
 }
 
 
@@ -188,16 +188,16 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
     auto axis = NDArrayFactory::create<Nd4jLong>('c', {1}, {1});
     auto result = op.evaluate({&x, &axis}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     auto exp = x.reduceAlongDimension(reduce::Sum, {1});
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -209,15 +209,15 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 
     sd::ops::LegacyReduceSameOp op(reduce::Sum);
     auto result = op.evaluate({&x, &indices}, {}, {});
-    auto z = result->at(0);
+    auto z = result.at(0);
     auto exp = x.reduceAlongDimension(reduce::Sum,{1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -229,16 +229,16 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
 
     sd::ops::LegacyReduceSameOp op(reduce::Sum);
     auto result = op.evaluate({&x, &indices}, {}, {}, {true});
-    auto z = result->at(0);
+    auto z = result.at(0);
     auto exp = x.reduceAlongDimension(reduce::Sum, {1}, true);
     // indices.printShapeInfo("Indices shape");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
     // z->printIndexedBuffer("Output reduce 4");
     // exp.printIndexedBuffer("Expected reduce 4");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(LegacyOpsTests, ReduceTests_5) {
@@ -249,14 +249,14 @@ TEST_F(LegacyOpsTests, ReduceTests_5) {
 
     auto result = op.evaluate({&x});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer("ReduceTest1");
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.meanNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
-    delete result;
+    
 }
 
 
@@ -268,16 +268,16 @@ TEST_F(LegacyOpsTests, ReduceTests_6) {
 
     auto result = op.evaluate({&x, &axis}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     auto exp = x.reduceAlongDimension(reduce::Mean, {1});
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -289,15 +289,15 @@ TEST_F(LegacyOpsTests, ReduceTests_7) {
 
     sd::ops::LegacyReduceFloatOp op(reduce::Mean);
     auto result = op.evaluate({&x, &indices}, {}, {});
-    auto z = result->at(0);
+    auto z = result.at(0);
     auto exp = x.reduceAlongDimension(reduce::Mean,{1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -309,17 +309,17 @@ TEST_F(LegacyOpsTests, ReduceTests_8) {
 
     sd::ops::LegacyReduceFloatOp op(reduce::Mean);
     auto result = op.evaluate({&x, &indices}, {}, {}, {true});
-    auto z = result->at(0);
+    auto z = result.at(0);
     auto exp = x.reduceAlongDimension(reduce::Mean, {1}, true);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
     // z->printIndexedBuffer("Reduce8 output");
     // z->printShapeInfo("Reduce8 shape");
     // exp.printShapeInfo("Reduce8 expected shape");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -331,14 +331,14 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
 
     auto result = op.evaluate({&x}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(z->isScalar());
     ASSERT_EQ(24, z->e<int>(0));
 
-    delete result;
+    
 }
 
 
@@ -351,9 +351,9 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
 
     auto result = op.evaluate({&x, &indices}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printIndexedBuffer("Hello indexreduce2");
     ASSERT_TRUE(exp.equalsTo(z));
     //ASSERT_EQ(4, z->e<int>(0));
@@ -362,7 +362,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     //ASSERT_EQ(4, z->e<int>(3));
     //ASSERT_EQ(4, z->e<int>(4));
 
-    delete result;
+    
 }
 
 TEST_F(LegacyOpsTests, BroadcastingTests_1) {

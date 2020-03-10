@@ -176,17 +176,17 @@ namespace sd {
 
             Nd4jStatus execute(const std::vector<NDArray*> &inputs, const std::vector<NDArray*> &outputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<sd::DataType> &dArgs = std::vector<sd::DataType>(), bool isInplace = false);
 
-
-            sd::ResultSet* evaluate(const std::vector<NDArray*> &inputs);
+            sd::ResultSet evaluate(const std::vector<NDArray*> &inputs);
 
             template <class T, typename = std::enable_if<DataTypeUtils::scalarTypesForExecution<T>::value>>
-            sd::ResultSet* evaluate(const std::vector<NDArray*> &inputs, std::initializer_list<T> args);
+            sd::ResultSet evaluate(const std::vector<NDArray*> &inputs, std::initializer_list<T> args);
 
-            sd::ResultSet* evaluate(const std::vector<NDArray*> &inputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<sd::DataType> &dArgs = std::vector<sd::DataType>(), bool isInplace = false);
+            sd::ResultSet evaluate(const std::vector<NDArray*> &inputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs = std::vector<bool>(), const std::vector<sd::DataType> &dArgs = std::vector<sd::DataType>(), bool isInplace = false);
 
             Nd4jStatus execute(sd::graph::RandomGenerator& rng, const std::vector<NDArray*>& inputs, const std::vector<NDArray*>& outputs, const std::vector<double>& tArgs, const std::vector<Nd4jLong>& iArgs, const std::vector<bool>& bArgs, const std::vector<sd::DataType> &dArgs = std::vector<sd::DataType>(), bool isInplace = false, sd::DataType type = sd::DataType::FLOAT32);
 
-            sd::ResultSet* execute(const sd::OpArgsHolder& holder, bool isInplace = false);
+            sd::ResultSet execute(const sd::OpArgsHolder& holder, bool isInplace = false);
+
 
             // There methods provide various validation options
             Nd4jStatus validateNonEmptyInput(Context& block);

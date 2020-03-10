@@ -308,14 +308,13 @@ TEST_F(ShapeTests, Tests_Transpose_119_2) {
 
     sd::ops::transpose op;
     auto result = op.evaluate({&x});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 TEST_F(ShapeTests, Tests_Transpose_119_3) {

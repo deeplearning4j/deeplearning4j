@@ -62,10 +62,8 @@ TEST_F(DeclarableOpsTests19, test_conv1d_bp_1) {
 
     sd::ops::conv1d_bp op;
     auto result = op.evaluate({&t, &u, &v}, {3, 2, 0, 1, 2,0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests19, test_squeeze_1) {

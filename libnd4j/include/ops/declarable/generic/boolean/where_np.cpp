@@ -102,10 +102,12 @@ namespace sd {
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
 //                if (output->isEmpty())
                 Nd4jLong width = condition->rankOf();
+
                 sd::ops::Where op;
-                std::unique_ptr<ResultSet> res(op.evaluate({condition}));
-                REQUIRE_OK(res->status());
-                NDArray* whereTrue = res->at(0);
+                auto res(op.evaluate({condition}));
+                REQUIRE_OK(res.status());
+                NDArray* whereTrue = res.at(0);
+
                 if (whereTrue->isEmpty())
                     return ND4J_STATUS_OK;
                 for (Nd4jLong outNext = 0; outNext < width; ++outNext) {

@@ -51,14 +51,12 @@ TEST_F(DeclarableOpsTestsCuda1, Test_CHOOSE_SCALAR_LARGE) {
     sd::ops::choose op;
     //greater than test
     auto result = op.evaluate({&x}, {0.0},{3});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(1);
+    auto z = result.at(1);
 
     ASSERT_EQ(148,z->e<double>(0));
     //ASSERT_TRUE(exp.isSameShape(z));
-
-    delete result;
 }
 
 /*

@@ -47,13 +47,11 @@ TEST_F(DeclarableOpsTests16, scatter_upd_1) {
 
     sd::ops::scatter_upd op;
     auto result = op.evaluate({ &x, &y, &w });
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(e, *z);
-
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests16, scatter_upd_2) {
@@ -67,13 +65,11 @@ TEST_F(DeclarableOpsTests16, scatter_upd_2) {
 
     sd::ops::scatter_upd op;
     auto result = op.evaluate({ &x, &indices, &updates });
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(e, *z);
-
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests16, scatter_upd_3) {
@@ -136,13 +132,11 @@ TEST_F(DeclarableOpsTests16, test_hamming_distance_1) {
 
     sd::ops::bits_hamming_distance op;
     auto result = op.evaluate({ &x, &y });
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(e, *z);
-
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests16, test_knn_mindistance_1) {
@@ -167,10 +161,8 @@ TEST_F(DeclarableOpsTests16, test_empty_cast_1) {
 
     sd::ops::cast op;
     auto result = op.evaluate({&x},  {10});
-    ASSERT_EQ(Status::OK(), result->status());
-    ASSERT_EQ(e, *result->at(0));
-
-    delete result;
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_EQ(e, *result.at(0));
 }
 
 TEST_F(DeclarableOpsTests16, test_range_1) {
@@ -717,8 +709,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_1) {
 
 }
 
-
-
 TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_2) {
 
     auto rgb = NDArrayFactory::create<float>('c', { 5, 3, 4 },
@@ -767,7 +757,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_2) {
 
 }
 
-
 TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_3) {
 
     auto rgb = NDArrayFactory::create<float>('c', { 4, 3 },
@@ -798,7 +787,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_3) {
 
 }
 
-
 TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_4) {
 
     auto rgb = NDArrayFactory::create<float>('c', { 3, 4 },
@@ -826,7 +814,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_4) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(expected.equalsTo(actual));
-
 }
 
 
@@ -850,7 +837,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_5) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(expected.equalsTo(actual));
-
 }
 
 TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_6) {
@@ -890,8 +876,6 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_6) {
     ASSERT_TRUE(expected.equalsTo(actual));
 
 }
-
-
 
 TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_1) {
 
@@ -937,8 +921,6 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_1) {
 
 }
 
-
-
 TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_2) {
 
     auto yiqs = NDArrayFactory::create<float>('c', { 5, 3, 4 }, {
@@ -983,7 +965,6 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_2) {
 
 }
 
-
 TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_3) {
 
     auto yiqs = NDArrayFactory::create<float>('c', { 4, 3 }, {
@@ -1009,7 +990,6 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_3) {
     ASSERT_TRUE(expected.equalsTo(actual));
 
 }
-
 
 TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_4) {
 
@@ -1037,8 +1017,6 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_4) {
 
 }
 
-
-
 TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_5) {
 
     auto yiqs = NDArrayFactory::create<float>('c', { 3 }, {
@@ -1061,7 +1039,6 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_5) {
 #endif
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(expected.equalsTo(actual));
-
 }
 
 TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_6) {
@@ -1096,5 +1073,4 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_6) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(expected.equalsTo(actual));
-
 }

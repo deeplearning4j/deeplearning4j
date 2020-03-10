@@ -96,14 +96,14 @@ TEST_F(ScalarTests, Test_Concat_1) {
     sd::ops::concat op;
     auto result = op.evaluate({&t, &u, &v}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -116,15 +116,15 @@ TEST_F(ScalarTests, Test_Concat_2) {
     sd::ops::concat op;
     auto result = op.evaluate({&t, &u, &v}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -137,16 +137,16 @@ TEST_F(ScalarTests, Test_Concat_3) {
     sd::ops::concat op;
     auto result = op.evaluate({&t, &u, &v}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     //z->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ScalarTests, Test_ExpandDims_1) {
@@ -156,14 +156,14 @@ TEST_F(ScalarTests, Test_ExpandDims_1) {
     sd::ops::expand_dims op;
     auto result = op.evaluate({&x}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ScalarTests, Test_Squeeze_1) {
@@ -172,14 +172,14 @@ TEST_F(ScalarTests, Test_Squeeze_1) {
 
     sd::ops::squeeze op;
     auto result = op.evaluate({&x}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -189,14 +189,14 @@ TEST_F(ScalarTests, Test_Reshape_1) {
 
     sd::ops::reshape op;
     auto result = op.evaluate({&x}, {}, {-99, 1, 1, 1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -206,14 +206,14 @@ TEST_F(ScalarTests, Test_Permute_1) {
 
     sd::ops::permute op;
     auto result = op.evaluate({&x}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ScalarTests, Test_Concat_Scalar_1) {
@@ -225,14 +225,13 @@ TEST_F(ScalarTests, Test_Concat_Scalar_1) {
 
     sd::ops::concat op;
     auto result = op.evaluate({&t, &u, &v, &w}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 
@@ -245,12 +244,11 @@ TEST_F(ScalarTests, Test_Concat_Scalar_2) {
 
     sd::ops::concat op;
     auto result = op.evaluate({&t, &u, &v, &w}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }

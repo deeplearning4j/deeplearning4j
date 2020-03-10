@@ -65,11 +65,12 @@ namespace sd {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
             gradX->assign(epsNext);
+
             sd::ops::floormod op;
-            std::unique_ptr<ResultSet> tmpResult(op.evaluate({x, y}));
+            auto tmpResult(op.evaluate({x, y}));
 
             if (gradY->rankOf() == gradX->rankOf())
-                epsNext->applyPairwiseTransform(pairwise::Multiply, *tmpResult->at(0), *gradY);
+                epsNext->applyPairwiseTransform(pairwise::Multiply, *tmpResult.at(0), *gradY);
             else // epsNext is greater than gradY
             {
                 std::vector<Nd4jLong> dims(epsNext->rankOf() * 2);
@@ -77,7 +78,7 @@ namespace sd {
                 for (Nd4jLong d = 0; d < gap; d++) {
                     dims[d * 2 + 1] = 1;
                 }
-                auto tempIn((*tmpResult->at(0))(dims));
+                auto tempIn((*tmpResult.at(0))(dims));
                 (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, tempIn, *gradY);
             }
             return Status::OK();

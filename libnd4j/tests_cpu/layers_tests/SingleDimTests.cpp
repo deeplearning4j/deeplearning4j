@@ -70,14 +70,14 @@ TEST_F(SingleDimTests, Test_Concat_1) {
     sd::ops::concat op;
     auto result = op.evaluate({&x, &y}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(SingleDimTests, Test_Reduce_1) {
@@ -104,14 +104,14 @@ TEST_F(SingleDimTests, Test_ExpandDims_1) {
     sd::ops::expand_dims op;
     auto result = op.evaluate({&x}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -122,14 +122,14 @@ TEST_F(SingleDimTests, Test_ExpandDims_2) {
     sd::ops::expand_dims op;
     auto result = op.evaluate({&x}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -142,14 +142,14 @@ TEST_F(SingleDimTests, Test_Squeeze_1) {
     sd::ops::squeeze op;
     auto result = op.evaluate({&x}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(exp.rankOf(), z->rankOf());
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(SingleDimTests, Test_Squeeze_2) {
@@ -158,14 +158,14 @@ TEST_F(SingleDimTests, Test_Squeeze_2) {
 
     sd::ops::squeeze op;
     auto result = op.evaluate({&x}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(SingleDimTests, Test_Reshape_1) {
@@ -174,14 +174,14 @@ TEST_F(SingleDimTests, Test_Reshape_1) {
 
     sd::ops::reshape op;
     auto result = op.evaluate({&x}, {}, {-99, 3});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(SingleDimTests, Test_Reshape_2) {
@@ -190,14 +190,14 @@ TEST_F(SingleDimTests, Test_Reshape_2) {
 
     sd::ops::reshape op;
     auto result = op.evaluate({&x}, {}, {-99, 1, 3});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -207,12 +207,12 @@ TEST_F(SingleDimTests, Test_Permute_1) {
 
     sd::ops::permute op;
     auto result = op.evaluate({&x}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }

@@ -39,13 +39,11 @@ TEST_F(BackpropTests, Test_Add_1) {
     sd::ops::add_bp op;
     auto result = op.evaluate({&x, &y, &e});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto eps = result->at(0);
-    auto grad = result->at(1);
+    auto eps = result.at(0);
+    auto grad = result.at(1);
 
     ASSERT_TRUE(x.isSameShape(eps));
     ASSERT_TRUE(y.isSameShape(grad));
-
-    delete result;
 }

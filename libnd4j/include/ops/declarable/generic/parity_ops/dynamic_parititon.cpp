@@ -113,23 +113,21 @@ namespace ops {
         originalIndices.linspace(0);
         ops::dynamic_partition op;
         auto res = op.evaluate({&originalIndices, indices}, {numPartition});
-        REQUIRE_TRUE(res->status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
+        REQUIRE_TRUE(res.status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
         ops::dynamic_stitch stichOp;
         std::vector<NDArray*> partitions(numPartition * 2);
-        for (size_t i = 0; i < res->size(); i++) {
-            partitions[i] = res->at(i);
+        for (size_t i = 0; i < res.size(); i++) {
+            partitions[i] = res.at(i);
             partitions[i + numPartition] = gradOutList[i];
         }
 
         auto result = stichOp.evaluate(partitions, {numPartition});
-        REQUIRE_TRUE(result->status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-        result->at(0)->reshapei(outputList[0]->getShapeAsVector());
+        REQUIRE_TRUE(result.status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
+        result.at(0)->reshapei(outputList[0]->getShapeAsVector());
         outputList[1]->assign(indices);
-        outputList[0]->assign(result->at(0));
+        outputList[0]->assign(result.at(0));
 
 //        helpers::dynamicPartitionFunctorBP(block.launchContext(), input, indices, gradOutList, outputList);
-        delete res;
-        delete result;
         return ND4J_STATUS_OK;
     }
 

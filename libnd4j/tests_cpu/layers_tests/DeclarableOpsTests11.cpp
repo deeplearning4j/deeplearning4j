@@ -45,9 +45,9 @@ TEST_F(DeclarableOpsTests11, test_listdiff_1) {
 
     sd::ops::listdiff op;
     auto result = op.evaluate({&x, &y}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    delete result;
+    
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -71,11 +71,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test1) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {0}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -83,8 +83,6 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test1) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -103,14 +101,12 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test2) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -133,11 +129,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test3) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -145,8 +141,6 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test3) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -165,16 +159,14 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test4) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
     // dLdw->printIndexedBuffer();
     // dLdw->printShapeInfo();
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -198,11 +190,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test5) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -210,8 +202,6 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test5) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -230,14 +220,12 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test6) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -256,14 +244,12 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test7) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -291,11 +277,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test8) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -303,8 +289,6 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test8) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -328,11 +312,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test9) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -340,8 +324,6 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test9) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -360,14 +342,12 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test10) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -386,14 +366,12 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test11) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -423,11 +401,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test12) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -435,8 +413,6 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test12) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -462,11 +438,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -474,8 +450,6 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
-
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test1) {
@@ -645,14 +619,13 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test1) {
     sd::ops::resize_bicubic op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-    NDArray* result = results->at(0);
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Resized to 30x30");
+//    result.printBuffer("Resized to 30x30");
 //    expected.printBuffer("Expect for 30x30");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test2) {
 
@@ -719,15 +692,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test2) {
     sd::ops::resize_bicubic op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Resized to 10x8");
+//    result.printBuffer("Resized to 10x8");
 //    expected.printBuffer("Expect for 10x8");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test3) {
@@ -756,15 +728,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test3) {
     sd::ops::resize_bicubic op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Resized to 6x6");
+//    result.printBuffer("Resized to 6x6");
 //    expected.printBuffer("Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test4) {
@@ -793,15 +764,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test4) {
     sd::ops::resize_bicubic op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Resized to 6x8");
+//    result.printBuffer("Resized to 6x8");
 //    expected.printBuffer("Expect for 6x8");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test5) {
@@ -836,15 +806,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test5) {
     sd::ops::resize_bicubic op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Resized to 8x8");
+//    result.printBuffer("Resized to 8x8");
 //    expected.printBuffer("Expect for 8x8");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test6) {
@@ -966,14 +935,13 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test6) {
     sd::ops::resize_bicubic op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-    NDArray* result = results->at(0);
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Resized to 30x30");
+//    result.printBuffer("Resized to 30x30");
 //    expected.printBuffer("Expect for 30x30");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test7) {
@@ -1024,15 +992,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test7) {
     sd::ops::resize_bicubic op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Resized to 9x9");
+//    result.printBuffer("Resized to 9x9");
 //    expected.printBuffer("Expect for 9x9");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test8) {
@@ -1077,15 +1044,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test8) {
     sd::ops::resize_bicubic op;
     auto results = op.evaluate({&input, &size}, {}, {}, {true, false});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Resized to 9x9");
+//    result.printBuffer("Resized to 9x9");
 //    testData.printBuffer("Expect for 9x9");
     ASSERT_TRUE(testData.isSameShape(result));
     ASSERT_TRUE(testData.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
@@ -1138,15 +1104,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x6");
+//    result.printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test2) {
@@ -1165,15 +1130,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test2) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x6");
+//    result.printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 
@@ -1193,15 +1157,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test3) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x6");
+//    result.printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test4) {
@@ -1231,15 +1194,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test4) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x6");
+//    result.printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test5) {
@@ -1269,15 +1231,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test5) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x6");
+//    result.printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test6) {
@@ -1307,15 +1268,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test6) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input, &size}, {}, {}, {true});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x6");
+//    result.printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test7) {
@@ -1345,15 +1305,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test7) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input}, {}, {6, 6}, {true});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x6");
+//    result.printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test8) {
@@ -1375,15 +1334,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test8) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input}, {}, {6, 6}, {true});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x6");
+//    result.printBuffer("Area Resized to 6x6");
 //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1402,15 +1360,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test9) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input, &size}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 10x10");
+//    result.printBuffer("Area Resized to 10x10");
     //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1429,15 +1386,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test10) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input}, {}, {10, 10});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 10x10");
+//    result.printBuffer("Area Resized to 10x10");
     //    expected.printBuffer("Area Expect for 6x6");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1456,15 +1412,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test11) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input}, {}, {6, 9});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x9");
+//    result.printBuffer("Area Resized to 6x9");
     //    expected.printBuffer("Area Expect for 6x6");
 //    ASSERT_TRUE(expected.isSameShape(result));
 //    ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1483,15 +1438,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test12) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input}, {}, {10, 15});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 6x9");
+//    result.printBuffer("Area Resized to 6x9");
     //    expected.printBuffer("Area Expect for 6x6");
 //    ASSERT_TRUE(expected.isSameShape(result));
 //    ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1510,15 +1464,14 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test13) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input}, {}, {9, 9});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
+    NDArray* result = results.at(0);
 
-//    result->printBuffer("Area Resized to 8x8");
+//    result.printBuffer("Area Resized to 8x8");
     //    expected.printBuffer("Area Expect for 6x6");
 //    ASSERT_TRUE(expected.isSameShape(result));
 //    ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test14) {
@@ -1541,14 +1494,13 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test14) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input, &size}, {}, {false});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
-//    result->printBuffer("Area Resized to 8x7");
+    NDArray* result = results.at(0);
+//    result.printBuffer("Area Resized to 8x7");
 //    expected.printBuffer("Area Expect for 8x7");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test15) {
@@ -1570,14 +1522,13 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test15) {
     sd::ops::resize_area op;
     auto results = op.evaluate({&input}, {}, {8, 7}, {false});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    NDArray* result = results->at(0);
-//    result->printBuffer("Area Resized to 8x7");
+    NDArray* result = results.at(0);
+//    result.printBuffer("Area Resized to 8x7");
 //    expected.printBuffer("Area Expect for 8x7");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1619,13 +1570,12 @@ TEST_F(DeclarableOpsTests11, Solve_Test_1) {
     sd::ops::solve op;
 
     auto res = op.evaluate({&a, &b});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printIndexedBuffer("Solve of 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1649,13 +1599,13 @@ TEST_F(DeclarableOpsTests11, Solve_Test_2) {
     sd::ops::solve op;
 
     auto res = op.evaluate({&a, &b});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printIndexedBuffer("Solve 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_3) {
@@ -1686,13 +1636,13 @@ TEST_F(DeclarableOpsTests11, Solve_Test_3) {
     sd::ops::solve op;
 
     auto res = op.evaluate({&a, &b});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printIndexedBuffer("Solve 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1718,14 +1668,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4) {
     sd::ops::solve op;
 
     auto res = op.evaluate({&a, &b});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4 Solve 4x4");
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_1) {
@@ -1747,14 +1697,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_1) {
     sd::ops::solve op;
 
     auto res = op.evaluate({&a, &b}, {true});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4 Solve 4x4");
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_2) {
@@ -1780,14 +1730,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_2) {
     sd::ops::triangular_solve op;
 
     auto res = op.evaluate({&a, &b}, {true, false});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4_2 Triangular_Solve 3x3");
 //    exp.printBuffer("4_2 Triangular_Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1814,14 +1764,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_3) {
     sd::ops::triangular_solve op;
 
     auto res = op.evaluate({&a, &b}, {true, true});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4_3 Triangular_Solve 3x3");
 //    exp.printBuffer("4_3 Triangular_Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1848,14 +1798,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_4) {
     sd::ops::solve op;
 
     auto res = op.evaluate({&a, &b}, {false});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4_4 Solve 3x3");
 //    exp.printBuffer("4_4 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1882,14 +1832,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_5) {
     sd::ops::solve op;
 
     auto res = op.evaluate({&a, &b}, {true, true});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4_5 Solve 3x3");
 //    exp.printBuffer("4_5 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1916,14 +1866,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_6) {
     sd::ops::triangular_solve op;
 
     auto res = op.evaluate({&a, &b}, {false, true});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4_6 Solve 3x3");
 //    exp.printBuffer("4_6 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_7) {
@@ -1953,14 +1903,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_7) {
     sd::ops::triangular_solve op;
 
     auto res = op.evaluate({&a, &b}, {true, false});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4_7 Solve 3x3");
 //    exp.printBuffer("4_7 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1987,14 +1937,14 @@ TEST_F(DeclarableOpsTests11, Solve_Test_5) {
     sd::ops::solve op;
 
     auto res = op.evaluate({&a, &b}, {true});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printBuffer("4 Solve 4x4");
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+    
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, SolveLS_Test_1) {
@@ -2015,14 +1965,13 @@ TEST_F(DeclarableOpsTests11, SolveLS_Test_1) {
     sd::ops::lstsq op;
 
     auto res = op.evaluate({&a, &b}, {0.5}, {}, {true});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printIndexedBuffer("LS Solve 2x2");
 //    exp.printIndexedBuffer("LS Expec 2x2");
 
     ASSERT_TRUE(exp.equalsTo(z, 1.e-4));
-    delete res;
 }
 
 TEST_F(DeclarableOpsTests11, SolveLS_Test_2) {
@@ -2043,14 +1992,13 @@ TEST_F(DeclarableOpsTests11, SolveLS_Test_2) {
     sd::ops::lstsq op;
 
     auto res = op.evaluate({&a, &b}, {0.5}, {}, {true});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printIndexedBuffer("2LS Solve 2x2");
 //    exp.printIndexedBuffer("2LS Expec 2x2");
 
     ASSERT_TRUE(exp.equalsTo(z, 1.e-4));
-    delete res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2072,14 +2020,14 @@ TEST_F(DeclarableOpsTests11, Cholesky_Test_2x2x2) {
     sd::ops::cholesky op;
 
     auto res = op.evaluate({&a});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
     z->printIndexedBuffer("L matrix is");
     exp.printIndexedBuffer("L expected is");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    delete res;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2101,14 +2049,13 @@ TEST_F(DeclarableOpsTests11, Cholesky_Test_2x2x2_2) {
     sd::ops::cholesky op;
 
     auto res = op.evaluate({&a});
-    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    auto z = res->at(0);
+    ASSERT_EQ(res.status(), ND4J_STATUS_OK);
+    auto z = res.at(0);
 
 //    z->printIndexedBuffer("L matrix is");
 //    exp.printIndexedBuffer("L expected is");
     MmulHelper::matmul(z, z, &exp, false, true);
     ASSERT_TRUE(exp.equalsTo(a));
-    delete res;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2130,11 +2077,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto dLdp = results->at(0);
-    auto dLdw = results->at(1);
-    auto dLdl = results->at(2);
+    auto dLdp = results.at(0);
+    auto dLdw = results.at(1);
+    auto dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2143,7 +2090,6 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2162,14 +2108,13 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test2) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2190,11 +2135,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test3) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2203,7 +2148,6 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test3) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2222,14 +2166,13 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test4) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2251,11 +2194,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test5) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2264,7 +2207,6 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test5) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2283,14 +2225,13 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test6) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2309,14 +2250,13 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test7) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2342,11 +2282,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test8) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2355,7 +2295,6 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test8) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2377,11 +2316,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test9) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2390,7 +2329,6 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test9) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2409,14 +2347,13 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test10) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2435,14 +2372,13 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test11) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2468,11 +2404,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2481,7 +2417,6 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2505,11 +2440,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2518,7 +2453,6 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test1) {
@@ -2527,10 +2461,10 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test1) {
     auto exp = NDArrayFactory::create<float>('c', {4}, {9, 1,1, 9});
     sd::ops::squaredsubtract op;
     auto result = op.evaluate({&x, &y}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_TRUE(exp.equalsTo(result.at(0)));
 
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test2) {
@@ -2539,9 +2473,9 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test2) {
     auto exp = NDArrayFactory::create<float>('c', {2, 4}, {9, 1,1, 9, 9, 1, 1, 9});
     sd::ops::squaredsubtract op;
     auto result = op.evaluate({&x, &y}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    ASSERT_TRUE(exp.equalsTo(result->at(0)));
-    delete result;
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_TRUE(exp.equalsTo(result.at(0)));
+    
 }
 
 TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
@@ -2551,9 +2485,9 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
     auto eps = NDArrayFactory::create<float>('c', {2, 4}, {1,2,3,4,5,6,7,8});
     sd::ops::squaredsubtract_bp op;
     auto result = op.evaluate({&x, &y, &eps}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    ASSERT_TRUE(exp.equalsTo(result->at(0)));
-    delete result;
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_TRUE(exp.equalsTo(result.at(0)));
+    
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2575,11 +2509,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test1) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto dLdp = results->at(0);
-    auto dLdw = results->at(1);
-    auto dLdl = results->at(2);
+    auto dLdp = results.at(0);
+    auto dLdw = results.at(1);
+    auto dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2587,8 +2521,6 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test1) {
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2607,14 +2539,13 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test2) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2635,11 +2566,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test3) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2648,7 +2579,6 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test3) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2667,14 +2597,13 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test4) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2696,11 +2625,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test5) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2709,7 +2638,6 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test5) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2728,14 +2656,13 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test6) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2754,14 +2681,13 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test7) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2787,11 +2713,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test8) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2800,7 +2726,6 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test8) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2822,11 +2747,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test9) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2835,7 +2760,6 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test9) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2854,14 +2778,13 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test10) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2880,14 +2803,13 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test11) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2913,11 +2835,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test12) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2926,7 +2848,6 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test12) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2950,11 +2871,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test13) {
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2963,7 +2884,6 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test13) {
     ASSERT_TRUE(dLdpExp.isSameShape(-*dLdl));
     ASSERT_TRUE(dLdpExp.equalsTo(-*dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2979,12 +2899,11 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_1) {
     sd::ops::add op;
     auto results = op.evaluate({&x, &y}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto res = results->at(0);
+    auto res = results.at(0);
     ASSERT_TRUE(res->equalsTo(exp));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3000,12 +2919,11 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_2) {
     sd::ops::add op;
     auto results = op.evaluate({&x, &y}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto res = results->at(0);
+    auto res = results.at(0);
     ASSERT_TRUE(res->equalsTo(exp));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3021,12 +2939,10 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_3) {
     sd::ops::add op;
     auto results = op.evaluate({&x, &y}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto res = results->at(0);
+    auto res = results.at(0);
     ASSERT_TRUE(res->equalsTo(exp));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3050,11 +2966,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test1) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -3063,7 +2979,6 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test1) {
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3086,11 +3001,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test2) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -3099,7 +3014,6 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test2) {
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3122,11 +3036,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test3) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -3135,7 +3049,6 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test3) {
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3154,14 +3067,13 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test4) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3185,11 +3097,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test5) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -3198,7 +3110,6 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test5) {
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3217,14 +3128,13 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test6) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3243,14 +3153,13 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test7) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3277,11 +3186,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test8) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -3290,7 +3199,6 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test8) {
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3313,11 +3221,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test9) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -3326,7 +3234,6 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test9) {
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3345,14 +3252,13 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test10) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3371,14 +3277,13 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test11) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdw = results->at(1);
+    auto *dLdw = results.at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3406,11 +3311,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test12) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -3419,7 +3324,6 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test12) {
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3444,11 +3348,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test13) {
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -3457,7 +3361,6 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test13) {
     ASSERT_TRUE(dLdlExp.isSameShape(dLdl));
     ASSERT_TRUE(dLdlExp.equalsTo(dLdl));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3473,12 +3376,10 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_4) {
     sd::ops::add op;
     auto results = op.evaluate({&x, &y}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto res = results->at(0);
+    auto res = results.at(0);
     ASSERT_TRUE(res->equalsTo(exp));
-
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3494,12 +3395,11 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_5) {
     sd::ops::subtract op;
     auto results = op.evaluate({&x, &y}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto res = results->at(0);
+    auto res = results.at(0);
     ASSERT_TRUE(res->equalsTo(exp));
 
-    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3515,12 +3415,10 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_6) {
     sd::ops::subtract op;
     auto results = op.evaluate({&x, &y}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto res = results->at(0);
+    auto res = results.at(0);
     ASSERT_TRUE(res->equalsTo(exp));
-
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3540,18 +3438,16 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test1) {
 
     auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3571,18 +3467,16 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test2) {
 
     auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3602,18 +3496,16 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test3) {
 
     auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
-
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3633,18 +3525,17 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test4) {
 
     auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3664,18 +3555,17 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test5) {
 
     auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3695,18 +3585,17 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test6) {
 
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3726,18 +3615,17 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test7) {
 
     auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3768,11 +3656,11 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
 
     auto results = op.evaluate({&logits, &weights, &labels}, {0.}, {2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
-    auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);
+    auto *dLdp = results.at(0);
+    auto *dLdw = results.at(1);
+    auto *dLdl = results.at(2);
 
     // dLdp->printIndexedBuffer();
 
@@ -3781,7 +3669,6 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
-    delete results;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3809,14 +3696,13 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test1) {
 
     auto results = op.evaluate({&logits, &labels}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3833,14 +3719,13 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test2) {
 
     auto results = op.evaluate({&logits, &labels}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3856,14 +3741,13 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test3) {
 
     auto results = op.evaluate({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3878,14 +3762,13 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test4) {
 
     auto results = op.evaluate({&logits, &labels}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3900,14 +3783,13 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test5) {
 
     auto results = op.evaluate({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3922,14 +3804,13 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test6) {
 
     auto results = op.evaluate({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3944,14 +3825,13 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test7) {
 
     auto results = op.evaluate({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3966,14 +3846,13 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test8) {
 
     auto results = op.evaluate({&logits, &labels}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -3993,13 +3872,12 @@ TEST_F(DeclarableOpsTests11, Multiply_BP_Test1) {
 
     auto results = op.evaluate({&x, &y, &dLdp}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdo = results->at(0);
+    auto *dLdo = results.at(0);
     ASSERT_TRUE(dLdpExp.isSameShape(dLdo));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdo));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -4016,14 +3894,13 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test1) {
 
     auto results = op.evaluate({&labels, &logits}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -4040,14 +3917,13 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test2) {
 
     auto results = op.evaluate({&labels, &logits}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -4062,14 +3938,13 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test3) {
 
     auto results = op.evaluate({&labels, &logits}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -4086,14 +3961,13 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test4) {
 
     auto results = op.evaluate({&labels, &logits}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
 
 /////////////////////////////////////////////////////////////////
@@ -4108,15 +3982,12 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test5) {
 
     auto results = op.evaluate({&labels, &logits}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto *dLdp = results->at(0);
+    auto *dLdp = results.at(0);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
-    delete results;
 }
-
-
 

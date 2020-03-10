@@ -43,12 +43,12 @@ TEST_F(ParityOpsTests, TestZeroAs1) {
 
     auto result = op.evaluate({&x}, {}, {});
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(z->isSameShape(&x));
     ASSERT_TRUE(z->equalsTo(&exp));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestMaximum1) {
@@ -62,11 +62,11 @@ TEST_F(ParityOpsTests, TestMaximum1) {
 
     auto result = op.evaluate({&x, &y}, {}, {});
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(y.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -82,11 +82,11 @@ TEST_F(ParityOpsTests, TestMinimum1) {
 
     auto result = op.evaluate({&x, &y}, {}, {});
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(y.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestTear1) {
@@ -101,12 +101,12 @@ TEST_F(ParityOpsTests, TestTear1) {
 
     auto result = op.evaluate({&input}, {}, {1});
 
-    ASSERT_EQ(10, result->size());
+    ASSERT_EQ(10, result.size());
 
-    for (int e = 0; e < result->size(); e++)
-        ASSERT_TRUE(tads.at(e)->equalsTo(result->at(e)));
+    for (int e = 0; e < result.size(); e++)
+        ASSERT_TRUE(tads.at(e)->equalsTo(result.at(e)));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestUnstack1) {
@@ -121,12 +121,12 @@ TEST_F(ParityOpsTests, TestUnstack1) {
 
     auto result = op.evaluate({&input}, {}, {0});
 
-    ASSERT_EQ(10, result->size());
+    ASSERT_EQ(10, result.size());
 
-    for (int e = 0; e < result->size(); e++)
-        ASSERT_TRUE(tads.at(e)->equalsTo(result->at(e)));
+    for (int e = 0; e < result.size(); e++)
+        ASSERT_TRUE(tads.at(e)->equalsTo(result.at(e)));
 
-    delete result;
+    
 }
 
 
@@ -143,12 +143,12 @@ TEST_F(ParityOpsTests, TestUnstack2) {
 
     auto result = op.evaluate({&input}, {}, {2});
 
-    ASSERT_EQ(6, result->size());
+    ASSERT_EQ(6, result.size());
 
-    for (int e = 0; e < result->size(); e++)
-        ASSERT_TRUE(tads.at(e)->equalsTo(result->at(e)));
+    for (int e = 0; e < result.size(); e++)
+        ASSERT_TRUE(tads.at(e)->equalsTo(result.at(e)));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestUnstack3) {
@@ -159,14 +159,14 @@ TEST_F(ParityOpsTests, TestUnstack3) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {2});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -178,14 +178,14 @@ TEST_F(ParityOpsTests, TestUnstack4) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestUnstack5) {
@@ -196,14 +196,14 @@ TEST_F(ParityOpsTests, TestUnstack5) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestUnstack6) {
@@ -214,14 +214,14 @@ TEST_F(ParityOpsTests, TestUnstack6) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestUnstack7) {
@@ -232,14 +232,14 @@ TEST_F(ParityOpsTests, TestUnstack7) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestUnstack8) {
@@ -250,14 +250,14 @@ TEST_F(ParityOpsTests, TestUnstack8) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestUnstack9) {
@@ -268,14 +268,14 @@ TEST_F(ParityOpsTests, TestUnstack9) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -287,13 +287,13 @@ TEST_F(ParityOpsTests, TestUnstack10) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {0});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    ASSERT_TRUE(exp.isSameShape(result->at(0)));
-    ASSERT_TRUE(exp.isSameShape(result->at(1)));
-    ASSERT_TRUE(exp.isSameShape(result->at(2)));
+    ASSERT_TRUE(exp.isSameShape(result.at(0)));
+    ASSERT_TRUE(exp.isSameShape(result.at(1)));
+    ASSERT_TRUE(exp.isSameShape(result.at(2)));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -305,12 +305,12 @@ TEST_F(ParityOpsTests, TestUnstack11) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {2});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    ASSERT_TRUE(exp.isSameShape(result->at(0)));
-    ASSERT_TRUE(exp.isSameShape(result->at(1)));
+    ASSERT_TRUE(exp.isSameShape(result.at(0)));
+    ASSERT_TRUE(exp.isSameShape(result.at(1)));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -321,11 +321,11 @@ TEST_F(ParityOpsTests, TestUnstack12) {
     sd::ops::unstack op;
 
     auto result = op.evaluate({&input}, {}, {1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    ASSERT_TRUE(result->size() == 0);
+    ASSERT_TRUE(result.size() == 0);
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, TestUnstack13) {
@@ -335,14 +335,13 @@ TEST_F(ParityOpsTests, TestUnstack13) {
     sd::ops::unstack op;
     auto result = op.evaluate({&x}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    ASSERT_EQ(3, result->size());
+    ASSERT_EQ(3, result.size());
 
     for (int e = 0; e < 3; e++)
-        ASSERT_EQ(1, result->at(e)->rankOf());
+        ASSERT_EQ(1, result.at(e)->rankOf());
 
-    delete result;
 }
 
 
@@ -355,14 +354,14 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
     sd::ops::expand_dims op;
     auto result = op.evaluate({&input}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(reshaped.isSameShape(z));
     ASSERT_TRUE(reshaped.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -374,14 +373,14 @@ TEST_F(ParityOpsTests, ExpandDimsTest2) {
     sd::ops::expand_dims op;
     auto result = op.evaluate({&input}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(reshaped.isSameShape(z));
     ASSERT_TRUE(reshaped.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -393,14 +392,14 @@ TEST_F(ParityOpsTests, ExpandDimsTest3) {
     sd::ops::expand_dims op;
     auto result = op.evaluate({&input}, {}, {-2});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(reshaped.isSameShape(z));
     ASSERT_TRUE(reshaped.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, ExpandDimsTest4) {
@@ -411,14 +410,14 @@ TEST_F(ParityOpsTests, ExpandDimsTest4) {
     sd::ops::expand_dims op;
     auto result = op.evaluate({&input}, {}, {-3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(reshaped.isSameShape(z));
     ASSERT_TRUE(reshaped.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -428,14 +427,14 @@ TEST_F(ParityOpsTests, Test_Shape_1) {
 
     sd::ops::shape_of op;
     auto result = op.evaluate({&x}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -446,14 +445,14 @@ TEST_F(ParityOpsTests, Test_Equals_1) {
 
     sd::ops::equals op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -464,14 +463,14 @@ TEST_F(ParityOpsTests, Test_NotEquals_1) {
 
     sd::ops::not_equals op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Less_1) {
@@ -481,14 +480,14 @@ TEST_F(ParityOpsTests, Test_Less_1) {
 
     sd::ops::less op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_LessEquals_1) {
@@ -498,14 +497,14 @@ TEST_F(ParityOpsTests, Test_LessEquals_1) {
 
     sd::ops::less_equal op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
@@ -515,14 +514,14 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
 
     sd::ops::greater_equal op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_GreaterEquals_2) {
@@ -532,14 +531,14 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_2) {
 
     sd::ops::greater_equal op;
     auto result = op.evaluate({&x, &y}, {}, {}, {}, {}, false);
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Greater_1) {
@@ -549,14 +548,14 @@ TEST_F(ParityOpsTests, Test_Greater_1) {
 
     sd::ops::greater op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Where_1) {
@@ -567,16 +566,16 @@ TEST_F(ParityOpsTests, Test_Where_1) {
 
     sd::ops::Where op;
     auto result = op.evaluate({&mask, &x, &y}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     // z->printIndexedBuffer("result");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Where_2) {
@@ -587,14 +586,14 @@ TEST_F(ParityOpsTests, Test_Where_2) {
 
     sd::ops::Where op;
     auto result = op.evaluate({&mask, &x, &y}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -604,16 +603,16 @@ TEST_F(ParityOpsTests, Test_Where_3) {
 
     sd::ops::Where op;
     auto result = op.evaluate({&mask}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     // z->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Select_1) {
@@ -624,14 +623,14 @@ TEST_F(ParityOpsTests, Test_Select_1) {
 
     sd::ops::select op;
     auto result = op.evaluate({&mask, &x, &y}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Select_2) {
@@ -642,14 +641,14 @@ TEST_F(ParityOpsTests, Test_Select_2) {
 
     sd::ops::select op;
     auto result = op.evaluate({&mask, &x, &y}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Select_3) {
@@ -661,14 +660,13 @@ TEST_F(ParityOpsTests, Test_Select_3) {
 
     sd::ops::select op;
     auto result = op.evaluate({&mask, &x, &y}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Reshape_TF_1) {
@@ -680,14 +678,13 @@ TEST_F(ParityOpsTests, Test_Reshape_TF_1) {
     sd::ops::reshape op;
 
     auto result = op.evaluate({&x, &shape}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Bias_Add_1) {
@@ -697,16 +694,15 @@ TEST_F(ParityOpsTests, Test_Bias_Add_1) {
     sd::ops::biasadd op;
 
     auto result = op.evaluate({&x, &bias}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     auto tads = z->allTensorsAlongDimension({1});
     for (int e = 0; e < tads.size(); e++) {
         ASSERT_TRUE(bias.equalsTo(tads.at(e)));
     }
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
@@ -717,13 +713,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
 
     sd::ops::scatter_add op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
@@ -735,13 +730,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
 
     sd::ops::scatter_add op;
     auto result = op.evaluate({&vec, &idc, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
@@ -752,13 +746,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
 
     sd::ops::scatter_add op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_4) {
@@ -769,13 +762,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_4) {
 
     sd::ops::scatter_add op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_5) {
@@ -786,14 +778,13 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_5) {
 
     sd::ops::scatter_add op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer();
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
@@ -804,13 +795,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
 
     sd::ops::scatter_add op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
@@ -821,13 +811,12 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
 
     sd::ops::scatter_add op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -870,13 +859,12 @@ TEST_F(ParityOpsTests, scatterMax_test1) {
 
     sd::ops::scatter_max op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, scatterMax_test2) {
@@ -887,13 +875,12 @@ TEST_F(ParityOpsTests, scatterMax_test2) {
 
     sd::ops::scatter_max op;
     auto result = op.evaluate({&vec, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, scatterMax_test3) {
@@ -904,13 +891,13 @@ TEST_F(ParityOpsTests, scatterMax_test3) {
 
     sd::ops::scatter_max op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, scatterMax_test4) {
@@ -921,13 +908,12 @@ TEST_F(ParityOpsTests, scatterMax_test4) {
 
     sd::ops::scatter_max op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {true}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, scatterMax_test5) {
@@ -938,13 +924,12 @@ TEST_F(ParityOpsTests, scatterMax_test5) {
 
     sd::ops::scatter_max op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, scatterMax_test6) {
@@ -955,13 +940,12 @@ TEST_F(ParityOpsTests, scatterMax_test6) {
 
     sd::ops::scatter_max op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 
@@ -973,13 +957,13 @@ TEST_F(ParityOpsTests, scatterMin_test1) {
 
     sd::ops::scatter_min op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, scatterMin_test2) {
@@ -990,13 +974,12 @@ TEST_F(ParityOpsTests, scatterMin_test2) {
 
     sd::ops::scatter_min op;
     auto result = op.evaluate({&vec, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, scatterMin_test3) {
@@ -1007,13 +990,12 @@ TEST_F(ParityOpsTests, scatterMin_test3) {
 
     sd::ops::scatter_min op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 TEST_F(ParityOpsTests, scatterMin_test4) {
@@ -1024,14 +1006,13 @@ TEST_F(ParityOpsTests, scatterMin_test4) {
 
     sd::ops::scatter_min op;
     auto result = op.evaluate({&matrix, &idc, &updates}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer();
 
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1056,15 +1037,14 @@ TEST_F(ParityOpsTests, scatterND_test1) {
 
     sd::ops::scatter_nd op;
     auto result = op.evaluate({&indices, &updates, &shape}, {}, {false, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1078,14 +1058,13 @@ TEST_F(ParityOpsTests, scatterND_test2) {
 
     sd::ops::scatter_nd op;
     auto result = op.evaluate({&indices, &updates, &shape}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1103,14 +1082,13 @@ TEST_F(ParityOpsTests, scatterND_test3) {
 
     sd::ops::scatter_nd op;
     auto result = op.evaluate({&indices, &updates, &shape}, {}, {false, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1123,14 +1101,13 @@ TEST_F(ParityOpsTests, scatterND_test4) {
 
     sd::ops::scatter_nd op;
     auto result = op.evaluate({&indices, &updates, &shape}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1143,15 +1120,14 @@ TEST_F(ParityOpsTests, scatterND_test5) {
 
     sd::ops::scatter_nd op;
     auto result = op.evaluate({&indices, &updates, &shape}, {}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1170,15 +1146,15 @@ TEST_F(ParityOpsTests, scatterND_test6) {
 
     sd::ops::scatter_nd op;
     auto result = op.evaluate({&indices, &updates, &shape}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1197,15 +1173,15 @@ TEST_F(ParityOpsTests, scatterND_test7) {
 
     sd::ops::scatter_nd op;
     auto result = op.evaluate({&indices, &updates, &shape}, {}, {}, {true, true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1218,15 +1194,15 @@ TEST_F(ParityOpsTests, scatterND_test8) {
 
     sd::ops::scatter_nd op;
     auto result = op.evaluate({&indices, &updates, &shape}, {}, {true});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1253,14 +1229,14 @@ TEST_F(ParityOpsTests, scatterND_add_test1) {
 
     sd::ops::scatter_nd_add op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1276,15 +1252,15 @@ TEST_F(ParityOpsTests, scatterND_add_test2) {
 
     sd::ops::scatter_nd_add op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1300,14 +1276,14 @@ TEST_F(ParityOpsTests, scatterND_add_test3) {
 
     sd::ops::scatter_nd_add op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1327,14 +1303,14 @@ TEST_F(ParityOpsTests, scatterND_add_test4) {
 
     sd::ops::scatter_nd_add op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1363,14 +1339,14 @@ TEST_F(ParityOpsTests, scatterND_add_test5) {
 
     sd::ops::scatter_nd_add op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1396,14 +1372,14 @@ TEST_F(ParityOpsTests, scatterND_sub_test1) {
 
     sd::ops::scatter_nd_sub op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1419,16 +1395,16 @@ TEST_F(ParityOpsTests, scatterND_sub_test2) {
 
     sd::ops::scatter_nd_sub op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     //exp.printIndexedBuffer("e");
     //z->printIndexedBuffer("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1444,14 +1420,14 @@ TEST_F(ParityOpsTests, scatterND_sub_test3) {
 
     sd::ops::scatter_nd_sub op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1471,14 +1447,14 @@ TEST_F(ParityOpsTests, scatterND_sub_test4) {
 
     sd::ops::scatter_nd_sub op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1507,14 +1483,14 @@ TEST_F(ParityOpsTests, scatterND_sub_test5) {
 
     sd::ops::scatter_nd_sub op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -1528,14 +1504,14 @@ TEST_F(ParityOpsTests, scatterND_update_test1) {
 
     sd::ops::scatter_nd_update op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1551,15 +1527,15 @@ TEST_F(ParityOpsTests, scatterND_update_test2) {
 
     sd::ops::scatter_nd_update op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1575,15 +1551,15 @@ TEST_F(ParityOpsTests, scatterND_update_test3) {
 
     sd::ops::scatter_nd_update op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1603,14 +1579,14 @@ TEST_F(ParityOpsTests, scatterND_update_test4) {
 
     sd::ops::scatter_nd_update op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1639,14 +1615,14 @@ TEST_F(ParityOpsTests, scatterND_update_test5) {
 
     sd::ops::scatter_nd_update op;
     auto result = op.evaluate({&input, &indices, &updates}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1673,13 +1649,13 @@ TEST_F(ParityOpsTests, scatter_update_1) {
     sd::ops::scatter_update op;
     auto results = op.evaluate({&x, &updates}, {}, {6,   1,1,  2,1,0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
     // x.printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 
-    delete results;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1693,12 +1669,12 @@ TEST_F(ParityOpsTests, scatter_update_2) {
     sd::ops::scatter_update op;
     auto results = op.evaluate({&x, &updates}, {}, {6,   1,0,  2,1,0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 
-    delete results;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1712,12 +1688,12 @@ TEST_F(ParityOpsTests, scatter_update_3) {
     sd::ops::scatter_update op;
     auto results = op.evaluate({&x, &updates}, {}, {6,  2,1,2,  2,1,0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 
-    delete results;
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1731,10 +1707,10 @@ TEST_F(ParityOpsTests, scatter_update_4) {
     sd::ops::scatter_update op;
     auto results = op.evaluate({&x, &updates}, {}, {6,  1,0,  2,3,0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 
-    delete results;
+    
 }

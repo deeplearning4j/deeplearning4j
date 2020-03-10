@@ -88,8 +88,8 @@ TEST_F(DeclarableOpsTests15, Test_standarize_bp_1) {
 
     sd::ops::standardize_bp op;
     auto result = op.evaluate({&x, &eps}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
-    delete result;
+    ASSERT_EQ(Status::OK(), result.status());
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_1) {
@@ -104,11 +104,11 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_1) {
     x.linspace(1.);
     sd::ops::adjust_contrast op;
     auto result = op.evaluate({&x, &factor}, {}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
 
     ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_2) {
@@ -122,11 +122,11 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_2) {
     x.linspace(1.);
     sd::ops::adjust_contrast op;
     auto result = op.evaluate({&x}, {2.});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
 //    out->printIndexedBuffer("Adjusted Constrast");
     ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_3) {
@@ -140,11 +140,11 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_3) {
     x.linspace(1.);
     sd::ops::adjust_contrast_v2 op;
     auto result = op.evaluate({&x}, {2.});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
 //    out->printIndexedBuffer("Adjusted Constrast");
     ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_4) {
@@ -158,11 +158,11 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_4) {
     x.linspace(1.);
     sd::ops::adjust_contrast_v2 op;
     auto result = op.evaluate({&x}, {2.}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
 //    out->printIndexedBuffer("Adjusted Constrast");
     ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_5) {
@@ -173,11 +173,11 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_5) {
     x.linspace(1.);
     sd::ops::adjust_contrast_v2 op;
     auto result = op.evaluate({&x}, {2.}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
 //    out->printIndexedBuffer("Adjusted Constrast");
     ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 /*
@@ -303,12 +303,12 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_6) {
 
     sd::ops::adjust_contrast op;
     auto result = op.evaluate({&x}, {2.}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
 //    out->printBuffer("Adjusted Constrast6");
 //    e.printBuffer("Adjusted Expected 6");
 //    ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_AdjustContrast_7) {
@@ -408,27 +408,28 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_7) {
 //    x.linspace(1.);
     sd::ops::adjust_contrast_v2 op;
     auto result = op.evaluate({&x}, {2.}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
 //    out->printBuffer("Adjusted Constrast7");
 //    e.printBuffer("Adjusted expected 7");
     auto diff = e - *out;
 //    diff.printBuffer("Adjusted subtract 7");
     ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_BitCast_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2, 2});
     auto e = NDArrayFactory::create<double>('c', {2, 2}, {2., 512., 8192., 131072.032 });
     x.linspace(1.);
+
     sd::ops::bitcast op;
     auto result = op.evaluate({&x}, {(int) sd::DataType::DOUBLE});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
 //    out->printIndexedBuffer("Casted result");
     ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_BitCast_2) {
@@ -436,12 +437,14 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_2) {
     auto e = NDArrayFactory::create<float16>('c', {2, 4, 2}, {0.f, 1.875f, 0.f, 2.f,    0.f, 2.125f, 0.f,  2.25f,
                                                                               0.f, 2.312f, 0.f, 2.375f, 0.f, 2.438f, 0.f, 2.5f});
     x.linspace(1.);
+
     sd::ops::bitcast op;
     auto result = op.evaluate({&x}, {(int) sd::DataType::HALF});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto out = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto out = result.at(0);
+
     ASSERT_TRUE(e.equalsTo(out));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_BitCast_3) {
@@ -451,8 +454,8 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_3) {
     sd::ops::bitcast op;
     try {
         auto result = op.evaluate({&x}, {(int) sd::DataType::INT64});
-        ASSERT_NE(Status::OK(), result->status());
-        delete result;
+        ASSERT_NE(Status::OK(), result.status());
+
     } catch (std::exception& e) {
         nd4j_printf("Error should be here `%s'. It's OK.\n", e.what());
     }
@@ -479,11 +482,12 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_4_1) {
     sd::ops::bitcast op;
 
     auto result = op.evaluate({&x}, {}, {sd::DataType::INT64}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
+
     //    e.printIndexedBuffer("Double to int64");
-    auto res = result->at(0);
+    auto res = result.at(0);
     ASSERT_EQ(*res, e);
-    delete result;
+    
 }
 
 
@@ -496,13 +500,15 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_5) {
 
     auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4260467851820808160LL, 3900173902914993008LL, 3566895990128523424LL,
                                                          3314989625590692528LL});
+
     sd::ops::bitcast op;
     auto result = op.evaluate({&x}, {}, {sd::DataType::INT64}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto res = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto res = result.at(0);
+
 //    res->printIndexedBuffer("BITCAST5");
     ASSERT_TRUE(e.equalsTo(res));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_BitCast_6) {
@@ -514,13 +520,15 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_6) {
 
     auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {4899988963420290048LL, 5188224837230806272LL, 5332342774136064128LL,
                                                          5476460161268730496LL});
+
     sd::ops::bitcast op;
     auto result = op.evaluate({&x}, {}, {sd::DataType::INT64}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto res = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto res = result.at(0);
+
 //    res->printIndexedBuffer("BITCAST6");
     ASSERT_TRUE(e.equalsTo(res));
-    delete result;
+    
 }
 TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
     auto x = NDArrayFactory::create<float16>('c', {4, 4}, {
@@ -531,13 +539,15 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_7) {
 
     auto e = NDArrayFactory::create<Nd4jLong>('c', {4}, {
         4928700072476425318LL, 5202580391758873882LL, 5346698272827918477LL,  5483778673873668736LL});
+
     sd::ops::bitcast op;
     auto result = op.evaluate({&x}, {}, {sd::DataType::INT64}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-    auto res = result->at(0);
+    ASSERT_EQ(Status::OK(), result.status());
+    auto res = result.at(0);
+
 //    res->printIndexedBuffer("BITCAST7");
     ASSERT_TRUE(e.equalsTo(res));
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, test_matmul_bp_1) {
@@ -574,13 +584,11 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_1) {
 
     sd::ops::check_numerics op;
     auto result = op.evaluate({&x, &y}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(x, *z);
-
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests15, test_check_numeric_2) {
@@ -628,8 +636,8 @@ TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
 
     sd::ops::layer_norm op;
     auto result = op.evaluate({&x, &g, &b}, {}, {0}, {false});
-    ASSERT_EQ(Status::OK(), result->status());
-    delete result;
+    ASSERT_EQ(Status::OK(), result.status());
+    
 }
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
@@ -640,8 +648,8 @@ TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
 
     sd::ops::layer_norm_bp op;
     auto result = op.evaluate({&x, &g, &b, &eps}, {}, {0}, {false});
-    ASSERT_EQ(Status::OK(), result->status());
-    delete result;
+    ASSERT_EQ(Status::OK(), result.status());
+    
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -678,12 +686,8 @@ TEST_F(DeclarableOpsTests15, test_hashCode_1) {
 //    resultA0->at(0)->printIndexedBuffer("A0");
 //    resultA1->at(0)->printIndexedBuffer("A1");
 //    resultB0->at(0)->printIndexedBuffer("B0");
-    ASSERT_EQ(*resultA0->at(0), *resultA1->at(0));
-    ASSERT_NE(*resultA0->at(0), *resultB0->at(0));
-
-    delete resultA0;
-    delete resultA1;
-    delete resultB0;
+    ASSERT_EQ(*resultA0.at(0), *resultA1.at(0));
+    ASSERT_NE(*resultA0.at(0), *resultB0.at(0));
 }
 
 TEST_F(DeclarableOpsTests15, test_hashCode_2) {
@@ -702,12 +706,8 @@ TEST_F(DeclarableOpsTests15, test_hashCode_2) {
 //    resultA1->at(0)->printIndexedBuffer("A1");
 //    resultB0->at(0)->printIndexedBuffer("B0");
 
-    ASSERT_EQ(*resultA0->at(0), *resultA1->at(0));
-    ASSERT_NE(*resultA0->at(0), *resultB0->at(0));
-
-    delete resultA0;
-    delete resultA1;
-    delete resultB0;
+    ASSERT_EQ(*resultA0.at(0), *resultA1.at(0));
+    ASSERT_NE(*resultA0.at(0), *resultB0.at(0));
 }
 
 TEST_F(DeclarableOpsTests15, test_reshape_to_scalar_1) {
@@ -716,13 +716,11 @@ TEST_F(DeclarableOpsTests15, test_reshape_to_scalar_1) {
 
     sd::ops::reshape op;
     auto result = op.evaluate({&array}, {}, {1, 1});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(e, *z);
-
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests15, test_reshape_to_scalar_2) {
@@ -753,13 +751,13 @@ TEST_F(DeclarableOpsTests15, test_rank_2) {
 
     sd::ops::rank op;
     auto result = op.evaluate({&array}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(e, *z);
 
-    delete result;
+    
 }
 
 TEST_F(DeclarableOpsTests15, test_lstmBlock_1) {
@@ -775,13 +773,11 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_1) {
 
     sd::ops::lstmBlock op;
     auto result = op.evaluate({&x0, &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8}, {2.0, 0.3}, {0, 0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     // z->printIndexedBuffer("Z");
-
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests15, test_lstmBlock_2) {
@@ -801,11 +797,10 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_2) {
 
     sd::ops::lstmBlock op;
     auto result = op.evaluate({&x0, &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8}, {1.0, 0.0}, {0, 1});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
-
-    delete result;
+    auto z = result.at(0);
+    
 }
 
 TEST_F(DeclarableOpsTests15, test_lstmBlock_3) {
@@ -871,13 +866,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_1) {
     NDArray expected('c', { 1 }, std::vector<double>{ 55 }, sd::DataType::INT32);
     sd::ops::rgb_to_grs op;
     auto result = op.evaluate({&rgbs}, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -887,13 +880,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_2) {
     auto expected = NDArrayFactory::create<int>('f', { 1 }, { 67 });
     sd::ops::rgb_to_grs op;
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -903,13 +894,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_3) {
     NDArray expected('c', { 4, 1 }, { 41, 105, 101, 101 }, sd::DataType::INT32);
     sd::ops::rgb_to_grs op;
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -921,13 +910,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_4) {
     NDArray expected('c', { 2, 1 }, { 138, 58 }, sd::DataType::INT32);
     sd::ops::rgb_to_grs op;
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -937,13 +924,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_5) {
     NDArray expected('c', { 1, 4 }, { 50, 100, 105, 94 }, sd::DataType::INT32);
     sd::ops::rgb_to_grs op;
     auto result = op.evaluate({ &rgbs }, {}, {0});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -954,13 +939,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_6) {
 
     sd::ops::rgb_to_grs op;
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -971,13 +954,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_7) {
 
     sd::ops::rgb_to_grs op;
     auto result = op.evaluate({ &rgbs }, {}, {1});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -987,8 +968,8 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_8) {
     try {
         sd::ops::rgb_to_grs op;
         auto result = op.evaluate({ &rgbs }, {}, {});
-        ASSERT_EQ(Status::THROW(), result->status());
-        delete result;
+        ASSERT_EQ(Status::THROW(), result.status());
+        
     } catch (std::exception& e) {
         nd4j_printf("Error should be here `%s'. It's OK.\n", e.what());
     }
@@ -1002,13 +983,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_grs_9) {
 
     sd::ops::rgb_to_grs op;
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1018,13 +997,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_1) {
     NDArray expected('f', { 3 }, { 55.14 , 71.2872001, -39.6005542 }, sd::DataType::FLOAT32);
     sd::ops::rgb_to_yuv op;
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1037,13 +1014,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_2) {
     sd::ops::rgb_to_yuv op;
 
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1054,12 +1029,10 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_3) {
 
     sd::ops::rgb_to_yuv op;
     auto result = op.evaluate({ &rgbs }, {}, { 0 });
-    auto output = result->at(0);
-    ASSERT_EQ(Status::OK(), result->status());
+    auto output = result.at(0);
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1070,13 +1043,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_4) {
 
     sd::ops::rgb_to_yuv op;
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1087,12 +1058,12 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_5) {
 
     sd::ops::rgb_to_yuv op;
     auto result = op.evaluate({ &rgbs }, {}, { 1 });
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1102,8 +1073,8 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_6) {
     try {
         sd::ops::rgb_to_yuv op;
         auto result = op.evaluate({ &rgbs }, {}, {});
-        ASSERT_EQ(Status::THROW(), result->status());
-        delete result;
+        ASSERT_EQ(Status::THROW(), result.status());
+        
     }
     catch (std::exception & e) {
         nd4j_printf("Error should be here `%s'. It's OK.\n", e.what());
@@ -1118,13 +1089,11 @@ TEST_F(DeclarableOpsTests15, test_rgb_to_yuv_7) {
 
     sd::ops::rgb_to_yuv op;
     auto result = op.evaluate({ &rgbs }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1134,13 +1103,13 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_1) {
     NDArray expected('c', { 3 }, { 10, 50, 200 }, sd::DataType::FLOAT32);
     sd::ops::yuv_to_rgb op;
     auto result = op.evaluate({ &yuv }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1150,13 +1119,11 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_2) {
     NDArray expected('f', { 3 }, { 10, 50, 200 }, sd::DataType::FLOAT32);
     sd::ops::yuv_to_rgb op;
     auto result = op.evaluate({ &yuv }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1167,12 +1134,10 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_3) {
 
     sd::ops::yuv_to_rgb op;
     auto result = op.evaluate({ &yuv }, {}, { 0 });
-    auto output = result->at(0);
-    ASSERT_EQ(Status::OK(), result->status());
+    auto output = result.at(0);
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1183,13 +1148,11 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_4) {
 
     sd::ops::yuv_to_rgb op;
     auto result = op.evaluate({ &yuv }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1200,12 +1163,12 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_5) {
 
     sd::ops::yuv_to_rgb op;
     auto result = op.evaluate({ &yuv }, {}, { 1 });
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-    delete result;
+    
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1215,8 +1178,8 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_6) {
     try {
         sd::ops::yuv_to_rgb op;
         auto result = op.evaluate({ &yuv }, {}, {});
-        ASSERT_EQ(Status::THROW(), result->status());
-        delete result;
+        ASSERT_EQ(Status::THROW(), result.status());
+        
     }
     catch (std::exception & e) {
         nd4j_printf("Error should be here `%s'. It's OK.\n", e.what());
@@ -1231,13 +1194,11 @@ TEST_F(DeclarableOpsTests15, test_yuv_to_rgb_7) {
 
     sd::ops::yuv_to_rgb op;
     auto result = op.evaluate({ &yuv }, {}, {});
-    auto output = result->at(0);
+    auto output = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1258,17 +1219,15 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test1) {
     sd::ops::Pow_bp op;
     auto results = op.evaluate({ &x, &y, &dLdz }, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto* dLdx = results->at(0);
-    auto* dLdy = results->at(1);
+    auto* dLdx = results.at(0);
+    auto* dLdy = results.at(1);
 
     ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
     ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
     ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
     ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
-
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test2) {
@@ -1286,17 +1245,15 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test2) {
 
     sd::ops::Pow_bp op;
     auto results = op.evaluate({ &x, &y, &dLdz }, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto* dLdx = results->at(0);
-    auto* dLdy = results->at(1);
+    auto* dLdx = results.at(0);
+    auto* dLdy = results.at(1);
 
     ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
     ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
     ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
     ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
-
-    delete results;
 
 }
 
@@ -1317,17 +1274,15 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test3) {
     sd::ops::Pow_bp op;
     auto resultsY = op.evaluate({ &xY, &yY, &dLdz }, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsY->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsY.status());
 
-    auto* dLdxY = resultsY->at(0);
-    auto* dLdyY = resultsY->at(1);
+    auto* dLdxY = resultsY.at(0);
+    auto* dLdyY = resultsY.at(1);
 
     ASSERT_TRUE(dLdxExpY.isSameShape(dLdxY));
     ASSERT_TRUE(dLdxExpY.equalsTo(dLdxY));
     ASSERT_TRUE(dLdyExpY.isSameShape(dLdyY));
     ASSERT_TRUE(dLdyExpY.equalsTo(dLdyY));
-
-    delete resultsY;
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test4) {
@@ -1349,17 +1304,15 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test4) {
 
     auto resultsX = op.evaluate({ &xX, &yX, &dLdz }, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsX->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsX.status());
 
-    auto* dLdxX = resultsX->at(0);
-    auto* dLdyX = resultsX->at(1);
+    auto* dLdxX = resultsX.at(0);
+    auto* dLdyX = resultsX.at(1);
 
     ASSERT_TRUE(dLdxExpX.isSameShape(dLdxX));
     ASSERT_TRUE(dLdxExpX.equalsTo(dLdxX));
     ASSERT_TRUE(dLdyExpX.isSameShape(dLdyX));
     ASSERT_TRUE(dLdyExpX.equalsTo(dLdyX));
-
-    delete resultsX;
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test5) {
@@ -1380,18 +1333,16 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test5) {
 
     sd::ops::Pow_bp op;
     auto results = op.evaluate({ &xConst, &yConst, &dLdz }, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto* dLdx = results->at(0);
-    auto* dLdy = results->at(1);
+    auto* dLdx = results.at(0);
+    auto* dLdy = results.at(1);
 
     ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
     ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
 
     ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
     ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
-
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test6) {
@@ -1410,17 +1361,16 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test6) {
 
     sd::ops::Pow_bp op;
     auto resultsXC = op.evaluate({ &xConst, &y, &dLdzC }, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, resultsXC->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsXC.status());
 
-    auto* dLdxXC = resultsXC->at(0);
-    auto* dLdyXC = resultsXC->at(1);
+    auto* dLdxXC = resultsXC.at(0);
+    auto* dLdyXC = resultsXC.at(1);
 
     ASSERT_TRUE(dLdxExpXC.isSameShape(dLdxXC));
     ASSERT_TRUE(dLdxExpXC.equalsTo(dLdxXC));
     ASSERT_TRUE(dLdyExpXC.isSameShape(dLdyXC));
     ASSERT_TRUE(dLdyExpXC.equalsTo(dLdyXC));
 
-    delete resultsXC;
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test7) {
@@ -1439,17 +1389,15 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test7) {
 
     sd::ops::Pow_bp op;
     auto resultsYs = op.evaluate({ &x, &Y, &dLdzC }, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, resultsYs->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsYs.status());
 
-    auto* dLdxY = resultsYs->at(0);
-    auto* dLdyY = resultsYs->at(1);
+    auto* dLdxY = resultsYs.at(0);
+    auto* dLdyY = resultsYs.at(1);
 
     ASSERT_TRUE(dLdxExpYs.isSameShape(dLdxY));
     ASSERT_TRUE(dLdxExpYs.equalsTo(dLdxY));
     ASSERT_TRUE(dLdyExpYs.isSameShape(dLdyY));
     ASSERT_TRUE(dLdyExpYs.equalsTo(dLdyY));
-
-    delete resultsYs;
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test8) {
@@ -1466,17 +1414,16 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test8) {
     sd::ops::Pow_bp op;
     auto results = op.evaluate({ &X, &Y, &dLdz }, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto* dLdx = results->at(0);
-    auto* dLdy = results->at(1);
+    auto* dLdx = results.at(0);
+    auto* dLdy = results.at(1);
 
     ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
     ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
     ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
     ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
-
-    delete results;
+    
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test9) {
@@ -1495,17 +1442,15 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test9) {
     dLdz.linspace(0.1, 0.1);
 
     auto results = op.evaluate({ &x, &y, &dLdz }, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto* dLdx = results->at(0);
-    auto* dLdy = results->at(1);
+    auto* dLdx = results.at(0);
+    auto* dLdy = results.at(1);
 
     ASSERT_TRUE(dLdxExp.isSameShape(dLdx));
     ASSERT_TRUE(dLdxExp.equalsTo(dLdx));
     ASSERT_TRUE(dLdyExp.isSameShape(dLdy));
     ASSERT_TRUE(dLdyExp.equalsTo(dLdy));
-
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test10) {
@@ -1525,18 +1470,16 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test10) {
     sd::ops::Pow_bp op;
     auto resultsB = op.evaluate({ &xB, &yB, &dLdzB }, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsB->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsB.status());
 
-    auto* dLdxB = resultsB->at(0);
-    auto* dLdyB = resultsB->at(1);
+    auto* dLdxB = resultsB.at(0);
+    auto* dLdyB = resultsB.at(1);
 
     ASSERT_TRUE(dLdxExpB.isSameShape(dLdxB));
     ASSERT_TRUE(dLdxExpB.equalsTo(dLdxB));
 
     ASSERT_TRUE(dLdyExpB.isSameShape(dLdyB));
     ASSERT_TRUE(dLdyExpB.equalsTo(dLdyB));
-
-    delete resultsB;
 }
 
 TEST_F(DeclarableOpsTests15, Pow_BP_Test11) {
@@ -1556,9 +1499,9 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test11) {
     sd::ops::Pow_bp op;
     auto resultsB = op.evaluate({ &xB, &yB, &dLdzB }, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsB->status());
-    auto* dLdxB = resultsB->at(0);
-    auto* dLdyB = resultsB->at(1);
+    ASSERT_EQ(ND4J_STATUS_OK, resultsB.status());
+    auto* dLdxB = resultsB.at(0);
+    auto* dLdyB = resultsB.at(1);
 
     ASSERT_TRUE(dLdxExpB.isSameShape(dLdxB));
     for (int i = 0; i < dLdxB->lengthOf(); ++i) {
@@ -1572,7 +1515,7 @@ TEST_F(DeclarableOpsTests15, Pow_BP_Test11) {
             ASSERT_NEAR(dLdyB->e<float>(i), dLdyExpB.e<float>(i), 0.00001);
     }
 
-    delete resultsB;
+    
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP1) {
@@ -1588,10 +1531,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP1) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,0,1, 2,0,1 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
     
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
     
     ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
@@ -1599,7 +1542,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP1) {
     ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP2) {
@@ -1611,10 +1553,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP2) {
     sd::ops::tensormmul_bp op_bp;
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
     
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
     
     ASSERT_TRUE(B.isSameShape(*dLdAbp));
     ASSERT_TRUE(B.equalsTo(*dLdAbp));
@@ -1622,7 +1564,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP2) {
     ASSERT_TRUE(A.isSameShape(*dLdBbp));
     ASSERT_TRUE(A.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP3) {
@@ -1638,10 +1579,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP3) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
 
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dA.equalsTo(*dLdAbp));
@@ -1649,7 +1590,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP3) {
     ASSERT_TRUE(dB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dB.equalsTo(*dLdBbp));
 
-     delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP4) {
@@ -1665,10 +1605,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP4) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
     
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
@@ -1676,7 +1616,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP4) {
     ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP5) {
@@ -1692,10 +1631,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP5) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
     
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
@@ -1703,7 +1642,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP5) {
     ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP6) {
@@ -1716,10 +1654,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP6) {
     sd::ops::tensormmul_bp op_bp;
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 3,0,1,2, 3,0,1,2 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
     
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(B.isSameShape(*dLdAbp));
     ASSERT_TRUE(B.equalsTo(*dLdAbp));
@@ -1727,7 +1665,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP6) {
     ASSERT_TRUE(A.isSameShape(*dLdBbp));
     ASSERT_TRUE(A.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP7) {
@@ -1743,9 +1680,9 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP7) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 1,1, 1,1 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
@@ -1753,7 +1690,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP7) {
     ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP8) {
@@ -1769,10 +1705,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP8) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 3,0,1,2, 3,0,1,2 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
     
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dLdA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dLdA.equalsTo(*dLdAbp));
@@ -1780,7 +1716,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP8) {
     ASSERT_TRUE(dLdB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dLdB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP9) {
@@ -1796,10 +1731,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP9) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
 
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dA.equalsTo(*dLdAbp));
@@ -1807,7 +1742,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP9) {
     ASSERT_TRUE(dB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP10) {
@@ -1824,10 +1758,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP10) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2, 2,1,2 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
 
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dA.equalsTo(*dLdAbp));
@@ -1835,7 +1769,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP10) {
     ASSERT_TRUE(dB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP11) {
@@ -1852,10 +1785,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP11) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 2,0,1, 2,0,1 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
 
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dA.equalsTo(*dLdAbp));
@@ -1863,7 +1796,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP11) {
     ASSERT_TRUE(dB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP12) {
@@ -1881,10 +1813,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP12) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 1,1, 1,1 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
 
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dA.equalsTo(*dLdAbp));
@@ -1892,7 +1824,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP12) {
     ASSERT_TRUE(dB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP13) {
@@ -1910,10 +1841,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP13) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 1,1, 1,1 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
 
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dA.equalsTo(*dLdAbp));
@@ -1921,7 +1852,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP13) {
     ASSERT_TRUE(dB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP14) {
@@ -1943,10 +1873,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP14) {
 
     auto resultsBP = op_bp.evaluate({ &A, &B, &dLdC }, {}, { 1,1, 1,1 }, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, resultsBP->status());
+    ASSERT_EQ(ND4J_STATUS_OK, resultsBP.status());
 
-    auto* dLdAbp = resultsBP->at(0);
-    auto* dLdBbp = resultsBP->at(1);
+    auto* dLdAbp = resultsBP.at(0);
+    auto* dLdBbp = resultsBP.at(1);
 
     ASSERT_TRUE(dA.isSameShape(*dLdAbp));
     ASSERT_TRUE(dA.equalsTo(*dLdAbp));
@@ -1954,7 +1884,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP14) {
     ASSERT_TRUE(dB.isSameShape(*dLdBbp));
     ASSERT_TRUE(dB.equalsTo(*dLdBbp));
 
-    delete resultsBP;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP15) {
@@ -1970,10 +1899,10 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP15) {
     sd::ops::tensormmul_bp op;
     auto results = op.evaluate({ &A, &B, &dLdC }, {}, { 2,1,2,2,1,2 });
 
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
 
-    auto* dLdA = results->at(0);
-    auto* dLdB = results->at(1);
+    auto* dLdA = results.at(0);
+    auto* dLdB = results.at(1);
 
     ASSERT_TRUE(dA.isSameShape(*dLdA));
     ASSERT_TRUE(dA.equalsTo(*dLdA));
@@ -1981,7 +1910,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP15) {
     ASSERT_TRUE(dB.isSameShape(*dLdB));
     ASSERT_TRUE(dB.equalsTo(*dLdB));
 
-    delete results;
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP16) {

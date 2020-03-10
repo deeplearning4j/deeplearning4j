@@ -77,15 +77,16 @@ namespace sd {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // move assignment operator
+// move assignment operator
     ResultSet& ResultSet::operator=(ResultSet&& other) noexcept {
 
-        if (this == &other) 
+        if (this == &other)
             return *this;
 
-        this->~ResultSet();
+        delContent();
 
         _content = std::move(other._content);
+
         _status = other._status;
         _removable = other._removable;
         other._removable = false;
@@ -98,10 +99,10 @@ namespace sd {
         if (this == &other)
             return *this;
 
-        this->~ResultSet();
+        delContent();
 
-        for (const auto v:other._content)
-            _content.emplace_back(v);
+        for (const auto v : other._content)
+            _content.push_back(v);
 
         _status = other._status;
         _removable = false;
@@ -109,11 +110,15 @@ namespace sd {
         return *this;
     }
 
+    void ResultSet::delContent() {
+        if (_removable)
+            for (auto v : _content)
+                delete v;
+    }
 
     ResultSet::~ResultSet() {
-        if (_removable)
-            for (auto v: _content)
-                delete v;
+
+        delContent();
     }
 
     void ResultSet::setNonRemovable() {

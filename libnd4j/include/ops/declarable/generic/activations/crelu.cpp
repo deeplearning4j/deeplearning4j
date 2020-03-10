@@ -74,10 +74,10 @@ namespace sd {
             // at first step we build fwd activation
             sd::ops::crelu op;
             auto tmpResult = op.evaluate({input});
-            if (tmpResult->status() != ND4J_STATUS_OK)
-                return tmpResult->status();
+            if (tmpResult.status() != ND4J_STATUS_OK)
+                return tmpResult.status();
 
-            auto actv = tmpResult->at(0);
+            auto actv = tmpResult.at(0);
 
             // now we do RELU backward pass
             //actv->applyPairwiseTransform(pairwise::RELUDerivativeE, *epsilon, nullptr);
@@ -85,17 +85,15 @@ namespace sd {
             // now we split updated array into 2 chunks along last dimension
             sd::ops::concat_bp opc;
             auto dec = opc.evaluate({input, input, actv}, {-1});
-            if (dec->status() != ND4J_STATUS_OK)
-                return dec->status();
+            if (dec.status() != ND4J_STATUS_OK)
+                return dec.status();
 
             // and now we subtract two parts of epsilons and pass result out
-            auto pos = dec->at(0);
-            auto neg = dec->at(1);
+            auto pos = dec.at(0);
+            auto neg = dec.at(1);
 
             pos->applyPairwiseTransform(sd::pairwise::Subtract, *neg, *epsilon);
 
-            delete tmpResult;
-            delete dec;
             return ND4J_STATUS_OK;
         }
 

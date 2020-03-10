@@ -134,13 +134,11 @@ TEST_F(MultiDataTypeTests, Basic_Test_7) {
 
     sd::ops::add op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(e, *z);
-
-    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

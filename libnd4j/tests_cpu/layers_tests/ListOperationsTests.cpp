@@ -39,7 +39,7 @@ TEST_F(ListOperationsTests, BasicTest_Write_1) {
 
     auto result = op.execute(&list, {&x}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     ASSERT_EQ(1, list.elements());
 
@@ -47,8 +47,8 @@ TEST_F(ListOperationsTests, BasicTest_Write_1) {
 
     ASSERT_EQ(2, list.elements());
 
-    delete result;
-    delete result2;
+    
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Stack_1) {
@@ -66,15 +66,15 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
 
     auto result = op.execute(&list, {}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printShapeInfo();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
@@ -93,10 +93,10 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
 
     auto result = op.execute(&list, {&x}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
     ASSERT_EQ(list.elements(), 10);
 
-//    auto z = result->at(0);
+//    auto z = result.at(0);
 //    z->printShapeInfo("The first of");
 //    ASSERT_TRUE(exp.isSameShape(z));
 //    ASSERT_TRUE(exp.equalsTo(z));
@@ -107,7 +107,7 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
         delete row;
     }
 
-    delete result;
+    
 }
 
 //TEST_F(ListOperationsTests, BasicTest_UnStackList_2) {
@@ -126,20 +126,20 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
 //
 //    auto result = op.execute(nullptr, {&x}, {}, {0});
 //
-//    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+//    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 //    ASSERT_EQ(result->size(), 10);
 //
-//    //    auto z = result->at(0);
+//    //    auto z = result.at(0);
 ////    z->printShapeInfo("The first of");
 ////    ASSERT_TRUE(exp.isSameShape(z));
 ////    ASSERT_TRUE(exp.equalsTo(z));
 //    for (int e = 0; e < 10; e++) {
-//        auto row = result->at(e);
+//        auto row = result.at(e);
 //        ASSERT_TRUE(row->equalsTo(tads->at(e)));
 //        //list.write(e, row);
 //    }
 //
-//    delete result;
+//    
 //    delete tads;
 //}
 
@@ -160,14 +160,14 @@ TEST_F(ListOperationsTests, BasicTest_Read_1) {
 
     auto result = op.execute(&list, {}, {}, {4});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Pick_1) {
@@ -192,14 +192,14 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
     sd::ops::pick_list op;
     auto result = op.execute(&list, {}, {}, {1, 1, 3, 3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Size_1) {
@@ -217,14 +217,14 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
 
     auto result = op.execute(&list, {}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Create_1) {
@@ -235,12 +235,12 @@ TEST_F(ListOperationsTests, BasicTest_Create_1) {
 
     auto result = op.execute(nullptr, {&matrix}, {}, {1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     // we return flow as well
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Split_1) {
@@ -283,7 +283,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
 
     sd::ops::split_list op;
     auto result = op.execute(&list, {&matrix, &lengths}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     ASSERT_EQ(3, list.height());
 
@@ -296,7 +296,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     ASSERT_TRUE(exp2.isSameShape(list.readRaw(2)));
     ASSERT_TRUE(exp2.equalsTo(list.readRaw(2)));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
@@ -319,7 +319,7 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
     sd::ops::scatter_list op;
     auto result = op.execute(&list, {&indices, &matrix, &s}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     for (int e = 0; e < 10; e++) {
         auto row = tads.at(9 - e);
@@ -329,7 +329,7 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
 
         ASSERT_TRUE(chunk->equalsTo(row));
     }
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Clone_1) {
@@ -385,10 +385,10 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
     sd::ops::gather_list op;
     auto result = op.execute(&list, {&indices}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
 
@@ -397,7 +397,7 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, GraphTests_Sequential_1) {

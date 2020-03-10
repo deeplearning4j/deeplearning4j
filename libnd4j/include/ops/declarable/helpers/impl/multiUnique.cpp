@@ -52,14 +52,13 @@ namespace helpers {
 
         sd::ops::unique opUnique;
         auto uResult = opUnique.evaluate({&arrayFull});
-        if (Status::OK() != uResult->status())
+        if (Status::OK() != uResult.status())
             throw std::runtime_error("multiUnique: cannot execute unique op properly.");
 
-        auto uniqueVals = uResult->at(0);
+        auto uniqueVals = uResult.at(0);
 
         bool res = uniqueVals->lengthOf() == arrayFull.lengthOf();
 
-        delete uResult;        
         return res;
     }
 

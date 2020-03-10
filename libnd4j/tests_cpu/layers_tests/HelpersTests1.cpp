@@ -1889,20 +1889,19 @@ TEST_F(HelpersTests1, OpArgsHolder_test3) {
     OpArgsHolder holderFF({&input}, {}, {2, 3});
     sd::ops::tile opFF;                                              // the kind of op doesn't matter, we simply check here whether op.execute() works with OpArgsHolder correctly
     auto results = opFF.execute(holderFF);
-    auto tiled = results->at(0);
-    ASSERT_EQ(Status::OK(), results->status());
+    auto tiled = results.at(0);
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(tiled));
     ASSERT_TRUE(exp.equalsTo(tiled));
-    delete results;
-
+   
     OpArgsHolder holderBP = holderFF.createArgsHolderForBP({&gradO}, true);
     sd::ops::tile_bp opBP;
     results = opBP.execute(holderBP);
-    auto gradI = results->at(0);
-    ASSERT_EQ(Status::OK(), results->status());
+    auto gradI = results.at(0);
+    ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(gradIExp.isSameShape(gradI));
     ASSERT_TRUE(gradIExp.equalsTo(gradI));
-    delete results;
+
 }
 
 

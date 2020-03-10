@@ -48,9 +48,7 @@ TEST_F(DataTypesValidationTests, Basic_Test_1) {
     sd::ops::conv2d op;
     auto result = op.evaluate({&input, &weights}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
 
-    ASSERT_EQ(ND4J_STATUS_VALIDATION, result->status());
-
-    delete result;
+    ASSERT_EQ(ND4J_STATUS_VALIDATION, result.status());
 }
 
 TEST_F(DataTypesValidationTests, Basic_Test_2) {
@@ -63,13 +61,12 @@ TEST_F(DataTypesValidationTests, Basic_Test_2) {
 
     sd::ops::conv2d op;
     auto result = op.evaluate({&input, &weights}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 

@@ -962,12 +962,12 @@ namespace sd {
             return execute(&ctx);
         }
 
-        sd::ResultSet *DeclarableOp::evaluate(const std::vector<NDArray *> &inputs) {
+        sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs) {
             return evaluate(inputs, std::vector<double>(), std::vector<Nd4jLong>(), std::vector<bool>(), std::vector<sd::DataType>());
         }
 
         template <>
-        sd::ResultSet *DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<int> iArgs) {
+        sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<int> iArgs) {
             std::vector<Nd4jLong> realArgs;
             for (auto v:iArgs)
                 realArgs.emplace_back(v);
@@ -976,12 +976,12 @@ namespace sd {
         }
 
         template <>
-        sd::ResultSet *DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<Nd4jLong> iArgs) {
+        sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<Nd4jLong> iArgs) {
             return evaluate(inputs, std::vector<double>(), iArgs, std::vector<bool>(), std::vector<sd::DataType>());
         }
 
         template <>
-        sd::ResultSet *DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<float> tArgs) {
+        sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<float> tArgs) {
             std::vector<double> realArgs;
             for (auto v:tArgs)
                 realArgs.emplace_back(v);
@@ -990,21 +990,21 @@ namespace sd {
         }
 
         template <>
-        sd::ResultSet *DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<double> tArgs) {
+        sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<double> tArgs) {
             return evaluate(inputs, tArgs, std::vector<Nd4jLong>(), std::vector<bool>(), std::vector<sd::DataType>());
         }
 
         template <>
-        sd::ResultSet *DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<bool> bArgs) {
+        sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<bool> bArgs) {
             return evaluate(inputs, std::vector<double>(), std::vector<Nd4jLong>(), bArgs, std::vector<sd::DataType>());
         }
 
         template <>
-        sd::ResultSet *DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<sd::DataType> bArgs) {
+        sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, std::initializer_list<sd::DataType> bArgs) {
             return evaluate(inputs, std::vector<double>(), std::vector<Nd4jLong>(), std::vector<bool>(), bArgs);
         }
 
-        sd::ResultSet *DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs, const std::vector<sd::DataType> &dArgs, bool isInplace) {
+        sd::ResultSet DeclarableOp::evaluate(const std::vector<NDArray *> &inputs, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs, const std::vector<sd::DataType> &dArgs, bool isInplace) {
             VariableSpace variableSpace;
             //ResultSet arrayList;
             FlowPath fp;
@@ -1041,11 +1041,11 @@ namespace sd {
                 block.getDArguments()->push_back(dArgs.at(e));
 
             Nd4jStatus status = this->execute(&block);
-            auto arrayList = new ResultSet();
+            ResultSet arrayList;
             if (isInplace)
-                arrayList->setNonRemovable();
+                arrayList.setNonRemovable();
 
-            arrayList->setStatus(status);
+            arrayList.setStatus(status);
             if (status != ND4J_STATUS_OK)
                 return arrayList;
 
@@ -1058,23 +1058,23 @@ namespace sd {
                         if (!arr->isAttached()) {
                             var->markRemovable(false);
                             arr->setContext(sd::LaunchContext::defaultContext());
-                            arrayList->push_back(arr);
+                            arrayList.push_back(arr);
                         } else {
-                            arrayList->push_back(arr->detach());
+                            arrayList.push_back(arr->detach());
                         }
                     } else
                         break;
                 }
             } else {
                 for (auto v:inputs) {
-                    arrayList->push_back(v);
+                    arrayList.push_back(v);
                 }
             }
 
             return arrayList;
         }
 
-        sd::ResultSet* sd::ops::DeclarableOp::execute(const sd::OpArgsHolder& holder, bool isInplace) {
+        sd::ResultSet sd::ops::DeclarableOp::execute(const sd::OpArgsHolder& holder, bool isInplace) {
             // FIXME: add DArgs to OpArgsHolder
             return evaluate(holder.getInArrs(), holder.getTArgs(), holder.getIArgs(), holder.getBArgs(), std::vector<sd::DataType>(), isInplace);
         }

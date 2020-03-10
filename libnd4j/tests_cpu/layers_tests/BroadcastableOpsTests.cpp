@@ -48,9 +48,9 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
     sd::ops::add op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     //exp.printIndexedBuffer("E A");
     //z->printIndexedBuffer("Z");
@@ -58,7 +58,6 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 
@@ -75,14 +74,12 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_1) {
     sd::ops::multiply op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
 }
 
 
@@ -100,14 +97,13 @@ TEST_F(BroadcastableOpsTests, Test_SquaredSubtract_1) {
     sd::ops::squaredsubtract op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 
@@ -119,14 +115,12 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_1) {
     sd::ops::subtract op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
 }
 
 
@@ -138,14 +132,12 @@ TEST_F(BroadcastableOpsTests, Test_ScalarBroadcast_2) {
     sd::ops::add op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
 }
 
 
@@ -156,14 +148,12 @@ TEST_F(BroadcastableOpsTests, Test_Maximum_1) {
 
     sd::ops::maximum op;
     auto result = op.evaluate({&x, &row});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
 }
 
 
@@ -174,15 +164,14 @@ TEST_F(BroadcastableOpsTests, Test_Minimum_1) {
 
     sd::ops::minimum op;
     auto result = op.evaluate({&x, &col});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 
@@ -283,14 +272,13 @@ TEST_F(BroadcastableOpsTests, Test_Scalar_Add_1) {
 
     sd::ops::add op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
 }
 
 
@@ -333,11 +321,9 @@ TEST_F(BroadcastableOpsTests, Test_Subtract_2) {
 
     sd::ops::subtract op;
     auto result = op.evaluate({&x, &y});
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.equalsTo(z));
-
-    delete result;
 }
 
 TEST_F(BroadcastableOpsTests, Test_Subtract_3) {
@@ -511,13 +497,12 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_7) {
 
     sd::ops::multiply op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.equalsTo(z));
 
-    delete result;
 }
 
 TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
@@ -527,13 +512,11 @@ TEST_F(BroadcastableOpsTests, Test_Multiply_8) {
 
     sd::ops::multiply op;
     auto result = op.evaluate({&x, &y});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.equalsTo(z));
-
-    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -606,14 +589,12 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_3) {
     sd::ops::maximum op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(*z));
-
-    delete result;
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_empty_4) {
@@ -625,14 +606,13 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_4) {
     sd::ops::maximum op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(*z));
 
-    delete result;
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_empty_5) {
@@ -644,14 +624,13 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_5) {
     sd::ops::realdiv op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(*z));
 
-    delete result;
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_empty_6) {
@@ -663,14 +642,13 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_6) {
     sd::ops::realdiv op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(*z));
 
-    delete result;
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_empty_7) {
@@ -682,14 +660,12 @@ TEST_F(BroadcastableOpsTests, broadcast_empty_7) {
     sd::ops::realdiv op;
     auto result = op.evaluate({&x, &y});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(*z));
-
-    delete result;
 }
 
 
@@ -718,15 +694,13 @@ TEST_F(BroadcastableOpsTests, broadcast_bool_empty_2) {
     sd::ops::greater op;
     auto result  = op.evaluate({&x, &y});
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     // z->printShapeInfo("z");
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(*z));
-
-    delete result;
 }
 
 TEST_F(BroadcastableOpsTests, broadcast_bool_1) {

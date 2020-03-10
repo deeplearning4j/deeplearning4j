@@ -66,7 +66,7 @@ TEST_F(NlpTests, basic_sg_hs_test_1) {
 
     sd::ops::skipgram op;
     auto result = op.evaluate({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {}, {false}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     auto row0 = syn0({0,1, 0,0}, true);
     auto row1 = syn1({1,2, 0,0}, true);
@@ -74,7 +74,7 @@ TEST_F(NlpTests, basic_sg_hs_test_1) {
     ASSERT_EQ(exp0, row0);
     ASSERT_EQ(exp1, row1);
 
-    delete result;
+    
 }
 
 TEST_F(NlpTests, basic_sg_hs_test_2) {
@@ -107,7 +107,7 @@ TEST_F(NlpTests, basic_sg_hs_test_2) {
 
     sd::ops::skipgram op;
     auto result = op.evaluate({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {}, {false}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     auto row0 = syn0({0,1, 0,0}, true);
     auto row1 = syn1({1,2, 0,0}, true);
@@ -117,7 +117,7 @@ TEST_F(NlpTests, basic_sg_hs_test_2) {
     ASSERT_EQ(exp1, row1);
     ASSERT_EQ(exp2, row2);
 
-    delete result;
+    
 }
 
 TEST_F(NlpTests, basic_sg_hs_test_3) {
@@ -159,7 +159,7 @@ TEST_F(NlpTests, basic_sg_hs_test_3) {
     sd::ops::skipgram op;
     auto result0 = op.evaluate({&target, &ngStarter, &indices0, &codes00, &syn00, &syn10, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {}, {false}, {}, true);
     auto result1 = op.evaluate({&target, &ngStarter, &indices1, &codes01, &syn01, &syn11, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {}, {false}, {}, true);
-    ASSERT_EQ(Status::OK(), result0->status());
+    ASSERT_EQ(Status::OK(), result0.status());
 
     auto row00 = syn00({0,1, 0,0}, true);
     auto row01 = syn01({0,1, 0,0}, true);
@@ -168,9 +168,6 @@ TEST_F(NlpTests, basic_sg_hs_test_3) {
 
     ASSERT_EQ(row2, row1);
     ASSERT_EQ(row00, row01);
-
-    delete result0;
-    delete result1;
 }
 
 TEST_F(NlpTests, basic_sg_hs_ns_test_1) {
@@ -192,9 +189,9 @@ TEST_F(NlpTests, basic_sg_hs_ns_test_1) {
 
     sd::ops::skipgram op;
     auto result = op.evaluate({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {3}, {false}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    delete result;
+    
 }
 
 TEST_F(NlpTests, basic_sg_ns_test_1) {
@@ -227,14 +224,14 @@ TEST_F(NlpTests, basic_sg_ns_test_1) {
 
     sd::ops::skipgram op;
     auto result = op.evaluate({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {1, 1}, {false}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     auto row0 = syn0({1,2, 0,0}, true);
 
     ASSERT_EQ(exp0, row0);
     ASSERT_FALSE(syn1Neg2.equalsTo(syn1Neg, 1e-6));
 
-    delete result;
+    
 }
 
 TEST_F(NlpTests, basic_cb_hs_test_1) {
@@ -269,7 +266,7 @@ TEST_F(NlpTests, basic_cb_hs_test_1) {
 
     sd::ops::cbow op;
     auto result = op.evaluate({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &locked, &inferenceVector}, {}, {}, {true}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     auto row_s0_0 = syn0({0,1, 0,0}, true);
     auto row_s0_1 = syn0({1,2, 0,0}, true);
@@ -287,7 +284,7 @@ TEST_F(NlpTests, basic_cb_hs_test_1) {
     ASSERT_EQ(exp1, row_s1_5);
     ASSERT_EQ(exp2, row_s1_6);
 
-    delete result;
+    
 }
 
 TEST_F(NlpTests, basic_cb_ns_test_1) {
@@ -323,7 +320,7 @@ TEST_F(NlpTests, basic_cb_ns_test_1) {
 
     sd::ops::cbow op;
     auto result = op.evaluate({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &locked, &inferenceVector}, {}, {1, 2, 0}, {true}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     auto row_s0_0 = syn0({0,1, 0,0}, true);
     auto row_s0_1 = syn0({1,2, 0,0}, true);
@@ -339,7 +336,7 @@ TEST_F(NlpTests, basic_cb_ns_test_1) {
     ASSERT_EQ(exp0, row_s0_2);
     ASSERT_EQ(exp2, row_s1_6);
 
-    delete result;
+    
 }
 
 TEST_F(NlpTests, test_sg_hs_batch_1) {
@@ -372,7 +369,7 @@ TEST_F(NlpTests, test_sg_hs_batch_1) {
 
     sd::ops::skipgram op;
     auto result = op.evaluate({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {}, {false, true}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     auto row0 = syn0({0,1, 0,0}, true);
     auto row1 = syn1({1,2, 0,0}, true);
@@ -382,7 +379,7 @@ TEST_F(NlpTests, test_sg_hs_batch_1) {
     ASSERT_TRUE(exp1.equalsTo(row1, 1e-6));
     ASSERT_TRUE(exp2.equalsTo(row2, 1e-6));
 
-    delete result;
+    
 }
 
 TEST_F(NlpTests, test_sg_ns_batch_1) {
@@ -416,9 +413,9 @@ TEST_F(NlpTests, test_sg_ns_batch_1) {
 
     sd::ops::skipgram op;
     auto result = op.evaluate({&target, &ngStarter, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &inferenceVector, &neu1e}, {}, {4, 5}, {false, true}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    delete result;
+    
 }
 
 TEST_F(NlpTests, test_cbow_hs_batch_1) {
@@ -449,7 +446,7 @@ TEST_F(NlpTests, test_cbow_hs_batch_1) {
 
     sd::ops::cbow op;
     auto result = op.evaluate({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &locked, &inferenceVector}, {}, {}, {true}, {}, true);
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     auto exp0 = NDArrayFactory::create<float>('c', {1, 10});
     auto exp1 = NDArrayFactory::create<float>('c', {1, 10});
@@ -473,6 +470,5 @@ TEST_F(NlpTests, test_cbow_hs_batch_1) {
     ASSERT_EQ(exp1, row_s1_4);
     ASSERT_EQ(exp1, row_s1_5);
     ASSERT_EQ(exp2, row_s1_6);
-
-    delete result;
+   
 }

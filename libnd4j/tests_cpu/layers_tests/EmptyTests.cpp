@@ -67,9 +67,9 @@ TEST_F(EmptyTests, Test_Concat_1) {
 
     sd::ops::concat op;
     auto result = op.evaluate({empty, vector}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
 //    z->printShapeInfo("z shape");
 //    z->printIndexedBuffer("z buffr");
@@ -78,7 +78,6 @@ TEST_F(EmptyTests, Test_Concat_1) {
 
     delete empty;
     delete vector;
-    delete result;
 }
 
 
@@ -92,9 +91,9 @@ TEST_F(EmptyTests, Test_Concat_2) {
 
     sd::ops::concat op;
     auto result = op.evaluate({empty, scalar1, scalar2}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
 //    z->printShapeInfo("z shape");
 //    z->printIndexedBuffer("z buffr");
@@ -104,7 +103,6 @@ TEST_F(EmptyTests, Test_Concat_2) {
     delete empty;
     delete scalar1;
     delete scalar2;
-    delete result;
 }
 
 TEST_F(EmptyTests, Test_Concat_3) {
@@ -117,13 +115,12 @@ TEST_F(EmptyTests, Test_Concat_3) {
 
     sd::ops::concat op;
     auto result = op.evaluate({&empty, &scalar1, &scalar2}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(exp, *z);
 
-    delete result;
 }
 
 TEST_F(EmptyTests, Test_Concat_4) {
@@ -136,13 +133,11 @@ TEST_F(EmptyTests, Test_Concat_4) {
 
     sd::ops::concat op;
     auto result = op.evaluate({&scalar1, &empty, &scalar2}, {}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_EQ(exp, *z);
-
-    delete result;
 }
 
 TEST_F(EmptyTests, Test_Reshape_1) {
@@ -153,12 +148,11 @@ TEST_F(EmptyTests, Test_Reshape_1) {
     sd::ops::reshape op;
     auto result = op.evaluate({&vector, empty}, {}, {});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    ASSERT_EQ(exp, *result->at(0));
+    ASSERT_EQ(exp, *result.at(0));
 
     delete empty;
-    delete result;
 }
 
 TEST_F(EmptyTests, Test_Reshape_3) {
@@ -168,14 +162,13 @@ TEST_F(EmptyTests, Test_Reshape_3) {
 
     sd::ops::reshape op;
     auto result = op.evaluate({&x, &y}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_EQ(e, *z);
 
-    delete result;
 }
 
 TEST_F(EmptyTests, Test_dup_1) {
@@ -197,12 +190,11 @@ TEST_F(EmptyTests, test_empty_scatter_1) {
 
     sd::ops::scatter_upd op;
     auto result = op.evaluate({&x, &indices, &updates}, {}, {}, {true});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_EQ(x, *z);
 
-    delete result;
 }
 
 TEST_F(EmptyTests, test_empty_scatter_2) {
@@ -288,17 +280,15 @@ TEST_F(EmptyTests, test_empty_reshape_1) {
 
     sd::ops::reshape op;
     auto result0 = op.evaluate({&x0, &shape0}, {}, {});
-    ASSERT_EQ(Status::OK(), result0->status());
-    auto z0 = result0->at(0);
+    ASSERT_EQ(Status::OK(), result0.status());
+    auto z0 = result0.at(0);
     ASSERT_EQ(e0, *z0);
 
     auto result1 = op.evaluate({&x1, &shape1}, {}, {});
-    ASSERT_EQ(Status::OK(), result1->status());
-    auto z1 = result1->at(0);
+    ASSERT_EQ(Status::OK(), result1.status());
+    auto z1 = result1.at(0);
     ASSERT_EQ(e1, *z1);
 
-    delete result0;
-    delete result1;
 }
 
 
@@ -309,12 +299,11 @@ TEST_F(EmptyTests, test_empty_matmul_1) {
 
     sd::ops::matmul op;
     auto result = op.evaluate({&x, &y}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_EQ(e, *z);
 
-    delete result;
 }
 
 TEST_F(EmptyTests, test_empty_matmul_2) {
@@ -324,10 +313,8 @@ TEST_F(EmptyTests, test_empty_matmul_2) {
 
     sd::ops::matmul op;
     auto result = op.evaluate({&x, &y}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_EQ(e, *z);
-
-    delete result;
 }

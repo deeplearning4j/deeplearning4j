@@ -15,8 +15,8 @@
  ******************************************************************************/
 
 //
-// This class is suited for execution results representation. 
-// 
+// This class is suited for execution results representation.
+//
 // PLESE NOTE: It will delete all stored NDArrays upon destructor call
 //
 // @author raver119@gmail.com
@@ -33,12 +33,14 @@
 namespace sd {
 
     class NDArray; // forward declaration of template class NDArray
-    
+
     class ND4J_EXPORT ResultSet {
     private:
         std::vector<sd::NDArray *> _content;
         Nd4jStatus _status = ND4J_STATUS_OK;
         bool _removable = true;
+
+        void delContent();
 
     public:
         explicit ResultSet();
@@ -56,7 +58,7 @@ namespace sd {
 
         // move assignment operator
         ResultSet& operator=(ResultSet&& other) noexcept;
-        
+
         ~ResultSet();
 
         int size();

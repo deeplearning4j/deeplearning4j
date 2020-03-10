@@ -260,9 +260,9 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     auto result = op.evaluate({&x0}, {}, {});
     //x0.printIndexedBuffer("X0 Normal");
     //x1.printIndexedBuffer("X1 Normal");
-    ASSERT_TRUE(result->status() == Status::OK());
-    auto mean = result->at(0);
-    auto variance = result->at(1);
+    ASSERT_TRUE(result.status() == Status::OK());
+    auto mean = result.at(0);
+    auto variance = result.at(1);
 
     // mean->printIndexedBuffer("Mean");
     // variance->printIndexedBuffer("Variance");
@@ -270,7 +270,7 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     ASSERT_NEAR(sd::math::nd4j_abs(mean->e<float>(0)), 0.f, 0.2f);
     ASSERT_NEAR(variance->e<float>(0), 1.0f, 0.2f);
 
-    delete result;
+    
 }
 
 #ifdef DEBUG_BUILD
@@ -292,15 +292,15 @@ TEST_F(RNGTests, Test_Gaussian_22) {
     auto result = op.evaluate({&x0}, {}, {});
     //x0.printIndexedBuffer("X0 Normal");
     //x1.printIndexedBuffer("X1 Normal");
-    ASSERT_TRUE(result->status() == Status::OK());
-    auto mean0 = result->at(0);
-    auto variance0 = result->at(1);
+    ASSERT_TRUE(result.status() == Status::OK());
+    auto mean0 = result.at(0);
+    auto variance0 = result.at(1);
 
     //mean0->printIndexedBuffer("Mean");
     //variance0->printIndexedBuffer("Variance");
     ASSERT_NEAR(sd::math::nd4j_abs(mean0->e<float>(0)), 0.f, 1.0e-3f);
     ASSERT_NEAR(variance0->e<float>(0), 1.0f, 1.e-3f);
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_Gaussian_3) {
@@ -413,18 +413,17 @@ TEST_F(RNGTests, Test_Truncated_21) {
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.5);
     sd::ops::moments op;
     auto result = op.evaluate({&x0}, {}, {}, {}, {}, false);
-    // result->at(0)->printBuffer("MEAN");
-    // result->at(1)->printBuffer("VARIANCE");
-    delete result;
+
+    // result.at(0)->printBuffer("MEAN");
+    // result.at(1)->printBuffer("VARIANCE");
+    
     sd::ops::reduce_min minOp;
     sd::ops::reduce_max maxOp;
+
     auto minRes = minOp.evaluate({&x1}, {}, {}, {});
     auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
     // minRes->at(0)->printBuffer("MIN for Truncated");
     // maxRes->at(0)->printBuffer("MAX for Truncated");
-
-    delete minRes;
-    delete maxRes;
 }
 
 TEST_F(RNGTests, Test_Truncated_22) {
@@ -460,18 +459,15 @@ TEST_F(RNGTests, Test_Truncated_22) {
     ASSERT_NEAR(deviation.e<float>(0), 4.f, 0.52);
     sd::ops::moments op;
     auto result = op.evaluate({&x0}, {}, {}, {}, {}, false);
-    // result->at(0)->printBuffer("MEAN");
-    // result->at(1)->printBuffer("VARIANCE");
-    delete result;
+
     sd::ops::reduce_min minOp;
     sd::ops::reduce_max maxOp;
+
     auto minRes = minOp.evaluate({&x1}, {}, {}, {});
     auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
     // minRes->at(0)->printBuffer("MIN for Truncated2");
     // maxRes->at(0)->printBuffer("MAX for Truncated2");
 
-    delete minRes;
-    delete maxRes;
 }
 
 TEST_F(RNGTests, Test_Truncated_23) {
@@ -509,16 +505,14 @@ TEST_F(RNGTests, Test_Truncated_23) {
     auto result = op.evaluate({&x0});
     // result->at(0)->printBuffer("MEAN");
     // result->at(1)->printBuffer("VARIANCE");
-    delete result;
     sd::ops::reduce_min minOp;
     sd::ops::reduce_max maxOp;
+
     auto minRes = minOp.evaluate({&x1}, {}, {}, {});
     auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
     // minRes->at(0)->printBuffer("MIN for Truncated3");
     // maxRes->at(0)->printBuffer("MAX for Truncated3");
 
-    delete minRes;
-    delete maxRes;
 }
 
 TEST_F(RNGTests, Test_Truncated_3) {
@@ -568,15 +562,15 @@ TEST_F(RNGTests, Test_Uniform_2) {
     auto op = new sd::ops::LegacyRandomOp(0);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(x1.isSameShape(z));
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_Gaussian_2) {
@@ -588,15 +582,15 @@ TEST_F(RNGTests, Test_Gaussian_2) {
     auto op = new sd::ops::LegacyRandomOp(random::GaussianDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(x1.isSameShape(z));
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_LogNorm_2) {
@@ -608,15 +602,15 @@ TEST_F(RNGTests, Test_LogNorm_2) {
     auto op = new sd::ops::LegacyRandomOp(random::LogNormalDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(x1.isSameShape(z));
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_TruncatedNorm_2) {
@@ -628,14 +622,14 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
     auto op = new sd::ops::LegacyRandomOp(random::TruncatedNormalDistribution);
     auto result = op->execute(_rngA, {&input}, {1.0f, 2.0f}, {});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(x1.isSameShape(z));
     ASSERT_TRUE(x1.equalsTo(z));
     delete op;
-    delete result;
+    
 }
 
 
@@ -648,15 +642,15 @@ TEST_F(RNGTests, Test_Binomial_2) {
     auto op = new sd::ops::LegacyRandomOp(random::BinomialDistributionEx);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {3});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(x1.isSameShape(z));
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    delete result;
+    
 }
 
 
@@ -669,15 +663,15 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
     auto op = new sd::ops::LegacyRandomOp(random::BernoulliDistribution);
     auto result = op->execute(_rngA, {&input}, {0.5f}, {});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(x1.isSameShape(z));
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_GaussianDistribution_1) {
@@ -687,9 +681,9 @@ TEST_F(RNGTests, Test_GaussianDistribution_1) {
 
     sd::ops::random_normal op;
     auto result = op.evaluate({&x}, {0.0, 1.0f}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
@@ -698,7 +692,7 @@ TEST_F(RNGTests, Test_GaussianDistribution_1) {
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_BernoulliDistribution_1) {
@@ -708,9 +702,9 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
 
     sd::ops::random_bernoulli op;
     auto result = op.evaluate({&x}, {0.5f}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_FALSE(exp0.equalsTo(z));
 
@@ -718,7 +712,7 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -729,9 +723,9 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1) {
 
     sd::ops::random_exponential op;
     auto result = op.evaluate({&x}, {0.25f}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
@@ -740,7 +734,7 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1) {
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_2) {
@@ -753,9 +747,9 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2) {
 
     sd::ops::random_exponential op;
     auto result = op.evaluate({&x, &y}, {0.25f}, {0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
@@ -764,7 +758,7 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2) {
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_PoissonDistribution_1) {
@@ -777,14 +771,14 @@ TEST_F(RNGTests, Test_PoissonDistribution_1) {
 
     sd::ops::random_poisson op;
     auto result = op.evaluate({&x, &la}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 //    z->printIndexedBuffer("Poisson distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_1) {
@@ -797,14 +791,14 @@ TEST_F(RNGTests, Test_GammaDistribution_1) {
 
     sd::ops::random_gamma op;
     auto result = op.evaluate({&x, &al}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 //    z->printIndexedBuffer("Gamma distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_2) {
@@ -818,14 +812,14 @@ TEST_F(RNGTests, Test_GammaDistribution_2) {
 
     sd::ops::random_gamma op;
     auto result = op.evaluate({&x, &al, &be}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 //    z->printIndexedBuffer("Gamma distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_3) {
@@ -839,14 +833,14 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
 
     sd::ops::random_gamma op;
     auto result = op.evaluate({&x, &al, &be}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 //    z->printIndexedBuffer("Gamma distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(RNGTests, Test_UniformDistribution_04) {
@@ -858,13 +852,13 @@ TEST_F(RNGTests, Test_UniformDistribution_04) {
 
     sd::ops::randomuniform op;
     auto result = op.evaluate({&x, &al, &be}, {}, {DataType::INT32});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    delete result;
+    
 }
 
 namespace sd {
@@ -1021,12 +1015,12 @@ TEST_F(RNGTests, test_multinomial_1) {
     NDArray expectedZ('c', { 3, 3 }, { 0., 0, 0,  0, 0, 0,  0, 0, 0 }, sd::DataType::INT64);
 
     auto result = op.evaluate({ &probsZ, &samples }, { }, { 1, INT64 });
-    auto outputZ = result->at(0);
+    auto outputZ = result.at(0);
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expectedZ.isSameShape(outputZ));
     ASSERT_TRUE(expectedZ.equalsTo(outputZ));
-    delete result;
+    
 }
 
 TEST_F(RNGTests, test_multinomial_2) {
@@ -1117,8 +1111,8 @@ TEST_F(RNGTests, test_multinomial_5) {
     }
 
     auto resultR = op.evaluate({ &probs, &samples }, { }, { 1 });
-    auto outputR = resultR->at(0);
-    ASSERT_EQ(Status::OK(), resultR->status());
+    auto outputR = resultR.at(0);
+    ASSERT_EQ(Status::OK(), resultR.status());
 
     deviation = outputR->varianceNumber(variance::SummaryStatsStandardDeviation, false);
     mean = outputR->meanNumber();
@@ -1131,7 +1125,6 @@ TEST_F(RNGTests, test_multinomial_5) {
         ASSERT_TRUE(value >= 0 && value < ClassValue);
     }
 
-    delete resultR;
 }
 
 
@@ -1150,8 +1143,8 @@ TEST_F(RNGTests, test_multinomial_6) {
     NDArray probsR('c', { batchValue,  ClassValue }, { 1., 1.5, 2., 2.5, 3. }, sd::DataType::FLOAT32);
 
     auto resultR = op.evaluate({ &probsR, &samples }, { }, { 0 });
-    auto outputR = resultR->at(0);
-    ASSERT_EQ(Status::OK(), resultR->status());
+    auto outputR = resultR.at(0);
+    ASSERT_EQ(Status::OK(), resultR.status());
 
     NDArray countsR('c', { ClassValue }, { 0., 0, 0, 0, 0 }, sd::DataType::DOUBLE);
 
@@ -1175,7 +1168,7 @@ TEST_F(RNGTests, test_multinomial_6) {
     ASSERT_NEAR(1.2175, deviation.e<double>(0), 45e-3); // 1000000 35e-3);
     ASSERT_NEAR(2.906, mean.e<double>(0), 45e-3); // 1000000 35e-3);
 
-    delete resultR;
+    
 
     RandomGenerator rng(1234, 1234);
     NDArray probs('c', { batchValue, ClassValue }, { 1., 1.5, 2., 2.5, 3. }, sd::DataType::FLOAT32);

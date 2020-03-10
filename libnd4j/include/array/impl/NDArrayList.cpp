@@ -160,9 +160,7 @@ namespace sd {
 
         auto result = op.evaluate(inputs);
 
-        auto array = new NDArray(result->at(0)->dup());
-
-        delete result;
+        auto array = new NDArray(result.at(0)->dup());
 
         return array;
     }
