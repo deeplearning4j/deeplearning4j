@@ -158,7 +158,8 @@ public class IntegrationTestRunner {
     }
 
     public static void runTest(TestCase tc, TemporaryFolder testDir) throws Exception {
-        BaseDL4JTest.skipUnlessIntegrationTests();      //Tests will ONLY be run if integration test profile is enabled.
+//        BaseDL4JTest.skipUnlessIntegrationTests();
+        //Tests will ONLY be run if integration test profile is enabled.
         //This could alternatively be done via maven surefire configuration
 
         final ModelType modelType = tc.modelType();
