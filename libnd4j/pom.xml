@@ -394,7 +394,9 @@
         <!-- Build on windows can use sh rather than bash due to WSL clashing with msys2 -->
         <profile>
             <id>build-windows</id>
-            <activation><os>windows</os></activation>
+            <activation>
+            <os>windows</os>
+            </activation>
             <properties>
                 <libnd4j.buildprogram>sh</libnd4j.buildprogram>
             </properties>
