@@ -235,7 +235,7 @@
     <profiles>
         <!-- Use -Dlibnd4j.singlethread to use single threaded build (multi-threaded by default) -->
         <profile>
-            <id>libnd4-single-thread</id>
+            <id>libnd4j-single-thread</id>
             <activation>
                 <property>
                     <name>libnd4j.singlethread</name>

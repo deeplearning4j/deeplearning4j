@@ -177,6 +177,8 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     HOST="windows"
     KERNEL="windows-x86_64"
+    # need to set build path separator, it ends up being wrong on msys2
+    BUILD_PATH_SEPARATOR=";"
     echo "Running windows"
 elif [ "$(uname -m)" == "ppc64le" ]; then
     if [ -z "$ARCH" ]; then
@@ -500,13 +502,17 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     esac
 fi
 
+
 [[ -z ${OPENBLAS_PATH:-} ]] && OPENBLAS_PATH=""
+OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 
 if [[ -n "${BUILD_PATH:-}" ]]; then
     PREVIFS="$IFS"
     IFS="$BUILD_PATH_SEPARATOR"
+    echo "BUILD PATH BUILD_PATH_SEPARATOR IS $BUILD_PATH_SEPARATOR"
     for P in $BUILD_PATH; do
         if [[ -f "$P/include/openblas_config.h" ]]; then
+              echo "PATH is $P"
             OPENBLAS_PATH="$P"
         fi
     done
