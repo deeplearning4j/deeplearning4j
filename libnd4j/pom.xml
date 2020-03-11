@@ -75,7 +75,6 @@
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
         <libnd4j.buildthreads></libnd4j.buildthreads>
         <libnd4j.helper></libnd4j.helper>
-        <libnd4j.buildprogram></libnd4j.buildprogram>
     </properties>
 
     <build>
@@ -391,29 +390,7 @@
             </build>
         </profile>
 
-        <!-- Build on windows can use sh rather than bash due to WSL clashing with msys2 -->
-        <profile>
-            <id>build-windows</id>
-            <activation>
-                <os>
-                    <family>Windows</family>
-                </os>
-            </activation>
-            <properties>
-                <libnd4j.buildprogram>sh</libnd4j.buildprogram>
-            </properties>
-        </profile>
 
-        <!-- Default build program should be bash on non windows platforms -->
-        <profile>
-            <id>build-unix</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <libnd4j.buildprogram>bash</libnd4j.buildprogram>
-            </properties>
-        </profile>
 
         <!-- Profiles to set the default libnd4j.helper property, example: mkdnn -->
         <profile>
