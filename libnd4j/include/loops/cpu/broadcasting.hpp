@@ -623,12 +623,22 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo, const 
 
             auto func = PRAGMA_THREADS_FOR{
 
-                if(zStrd0 == 1 && xStrd0 <= 1 && yStrd0 <= 1)
+                if(zStrd0 == 1 && xStrd0 == 1 && yStrd0 == 0) {
                     for (auto i0 = start; i0 < stop; ++i0)
-                        z[i0] = OpType::op(x[xStrd0 ? i0 : 0], y[yStrd0 ? i0 : 0]);
-                else
+                        z[i0] = OpType::op(x[i0], *y);
+                }
+                else if(zStrd0 == 1 && xStrd0 == 0 && yStrd0 == 1) {
+                    for (auto i0 = start; i0 < stop; ++i0)
+                        z[i0] = OpType::op(*x, y[i0]);
+                }
+                else if(zStrd0 == 1 && xStrd0 == 1 && yStrd0 == 1) {
+                    for (auto i0 = start; i0 < stop; ++i0)
+                        z[i0] = OpType::op(x[i0], y[i0]);
+                }
+                else {
                     for (auto i0 = start; i0 < stop; ++i0)
                         z[i0 * zStrd0] = OpType::op(x[i0 * xStrd0], y[i0 * yStrd0]);
+                }
             };
             samediff::Threads::parallel_tad(func, 0, zAxis0);
         }
@@ -644,9 +654,15 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo, const 
                     auto y0 = y + i0 * yStrd0;
                     auto z0 = z + i0 * zStrd0;
 
-                    if(zStrd1 == 1 && xStrd1 <= 1 && yStrd1 <= 1)
+                    if(zStrd1 == 1 && xStrd1 == 1 && yStrd1 == 0)
                         for (uint i1 = 0; i1 < zAxis1; ++i1)
-                            z0[i1] = OpType::op(x0[xStrd1 ? i1 : 0], y0[yStrd1 ? i1 : 0]);
+                            z0[i1] = OpType::op(x0[i1], *y0);
+                    else if(zStrd1 == 1 && xStrd1 == 0 && yStrd1 == 1)
+                        for (uint i1 = 0; i1 < zAxis1; ++i1)
+                            z0[i1] = OpType::op(*x0, y0[i1]);
+                    else if(zStrd1 == 1 && xStrd1 == 1 && yStrd1 == 1)
+                        for (uint i1 = 0; i1 < zAxis1; ++i1)
+                            z0[i1] = OpType::op(x0[i1], y0[i1]);
                     else
                         for (uint i1 = 0; i1 < zAxis1; ++i1)
                             z0[i1 * zStrd1] = OpType::op(x0[i1 * xStrd1], y0[i1 * yStrd1]);
@@ -658,7 +674,6 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo, const 
 
         case 3: {
 
-
             auto func = PRAGMA_THREADS_FOR_2D {
 
                 for (auto i0 = start_x; i0 < stop_x; ++i0) {
@@ -668,9 +683,15 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo, const 
                         auto y1 = y + i0 * yStrd0 + i1 * yStrd1;
                         auto z1 = z + i0 * zStrd0 + i1 * zStrd1;
 
-                        if(zStrd2 == 1 && xStrd2 <= 1 && yStrd2 <= 1)
+                        if(zStrd2 == 1 && xStrd2 == 1 && yStrd2 == 0)
                             for (uint i2 = 0; i2 < zAxis2; ++i2)
-                                z1[i2] = OpType::op(x1[xStrd2 ? i2 : 0], y1[yStrd2 ? i2 : 0]);
+                                z1[i2] = OpType::op(x1[i2], *y1);
+                        else if(zStrd2 == 1 && xStrd2 == 0 && yStrd2 == 1)
+                            for (uint i2 = 0; i2 < zAxis2; ++i2)
+                                z1[i2] = OpType::op(*x1, y1[i2]);
+                        else if(zStrd2 == 1 && xStrd2 == 1 && yStrd2 == 1)
+                            for (uint i2 = 0; i2 < zAxis2; ++i2)
+                                z1[i2] = OpType::op(x1[i2], y1[i2]);
                         else
                             for (uint i2 = 0; i2 < zAxis2; ++i2)
                                 z1[i2 * zStrd2] = OpType::op(x1[i2 * xStrd2], y1[i2 * yStrd2]);
@@ -693,9 +714,15 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo, const 
                             auto y2 = y + i0 * yStrd0 + i1 * yStrd1 + i2 * yStrd2;
                             auto z2 = z + i0 * zStrd0 + i1 * zStrd1 + i2 * zStrd2;
 
-                            if(zStrd3 == 1 && xStrd3 <= 1 && yStrd3 <= 1)
+                            if(zStrd3 == 1 && xStrd3 == 1 && yStrd3 == 0)
                                 for (uint i3 = 0; i3 < zAxis3; ++i3)
-                                    z2[i3] = OpType::op(x2[xStrd3 ? i3 : 0], y2[yStrd3 ? i3 : 0]);
+                                    z2[i3] = OpType::op(x2[i3], *y2);
+                            else if(zStrd3 == 1 && xStrd3 == 0 && yStrd3 == 1)
+                                for (uint i3 = 0; i3 < zAxis3; ++i3)
+                                    z2[i3] = OpType::op(*x2, y2[i3]);
+                            else if(zStrd3 == 1 && xStrd3 == 1 && yStrd3 == 1)
+                                for (uint i3 = 0; i3 < zAxis3; ++i3)
+                                    z2[i3] = OpType::op(x2[i3], y2[i3]);
                             else
                                 for (uint i3 = 0; i3 < zAxis3; ++i3)
                                     z2[i3 * zStrd3] = OpType::op(x2[i3 * xStrd3], y2[i3 * yStrd3]);
@@ -720,9 +747,15 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo, const 
                                 auto y3 = y + i0 * yStrd0 + i1 * yStrd1 + i2 * yStrd2 + i3 * yStrd3;
                                 auto z3 = z + i0 * zStrd0 + i1 * zStrd1 + i2 * zStrd2 + i3 * zStrd3;
 
-                                if(zStrd4 == 1 && xStrd4 <= 1 && yStrd4 <= 1)
+                               if(zStrd4 == 1 && xStrd4 == 1 && yStrd4 == 0)
                                     for (uint i4 = 0; i4 < zAxis4; ++i4)
-                                        z3[i4] = OpType::op(x3[xStrd4 ? i4 : 0], y3[yStrd4 ? i4 : 0]);
+                                        z3[i4] = OpType::op(x3[i4], *y3);
+                                else if(zStrd4 == 1 && xStrd4 == 0 && yStrd4 == 1)
+                                    for (uint i4 = 0; i4 < zAxis4; ++i4)
+                                        z3[i4] = OpType::op(*x3, y3[i4]);
+                                else if(zStrd4 == 1 && xStrd4 == 1 && yStrd4 == 1)
+                                    for (uint i4 = 0; i4 < zAxis4; ++i4)
+                                        z3[i4] = OpType::op(x3[i4], y3[i4]);
                                 else
                                     for (uint i4 = 0; i4 < zAxis4; ++i4)
                                         z3[i4 * zStrd4] = OpType::op(x3[i4 * xStrd4], y3[i4 * yStrd4]);
@@ -737,6 +770,9 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo, const 
 
         default: {
 
+            const bool xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
+            const bool yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
+
             auto func = PRAGMA_THREADS_FOR{
 
                 int xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
@@ -750,9 +786,9 @@ void Broadcast<X, Y, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo, const 
                         yCoords[j] = shape::sizeAt(yShapeInfo, j) == 1 ? 0 : zCoords[j];
                     }
 
-                    const auto xOffset = shape::getOffset(xShapeInfo, xCoords);
-                    const auto yOffset = shape::getOffset(yShapeInfo, yCoords);
                     const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
+                    const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, xCoords);
+                    const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, yCoords);
 
                     z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
                 }

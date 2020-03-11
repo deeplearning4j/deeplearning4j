@@ -2969,10 +2969,8 @@ INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, cons
     if (shapeInfo1[0] == 0)
         return true;
 
-    int range = 2 * shapeInfo1[0];
-
-    for (int e = 1; e <= range; e++)
-            if (shapeInfo1[e] != shapeInfo2[e])
+    for (uint e = 0; e < static_cast<uint>(shape::rank(shapeInfo1)); ++e)
+        if (shape::shapeOf(shapeInfo1)[e] != shape::shapeOf(shapeInfo2)[e] || shape::stride(shapeInfo1)[e] != shape::stride(shapeInfo2)[e])
             return false;
 
     return true;

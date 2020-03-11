@@ -260,11 +260,15 @@ __device__ void BroadcastInt<X>::transformCuda(const void *vx, const Nd4jLong *x
 
     __shared__ Nd4jLong zLen;
     __shared__ int rank;
+    __shared__ bool xzSameOffsets, yzSameOffsets;
 
     if (threadIdx.x == 0) {
 
         zLen  = shape::length(zShapeInfo);
         rank = shape::rank(zShapeInfo);
+
+        xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
+        yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
     }
     __syncthreads();
 
@@ -282,9 +286,9 @@ __device__ void BroadcastInt<X>::transformCuda(const void *vx, const Nd4jLong *x
             yCoords[j] = shape::sizeAt(yShapeInfo, j) == 1 ? 0 : zCoords[j];
         }
 
-        const auto xOffset = shape::getOffset(xShapeInfo, xCoords);
-        const auto yOffset = shape::getOffset(yShapeInfo, yCoords);
         const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
+        const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, xCoords);
+        const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, yCoords);
 
         z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
     }
