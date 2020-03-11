@@ -19,7 +19,7 @@
 //
 
 #include <system/op_boilerplate.h>
-#include <loops/broadcasting_int.h>
+#include <loops/broadcasting_bool.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
 #include <helpers/LoopKind.h>
@@ -31,14 +31,15 @@ using namespace simdOps;
 namespace functions {
     namespace broadcast {
 
-        template <typename X>
-        void BroadcastInt<X>::exec(const int opNum,
+        template <typename X, typename Y>
+        void BroadcastBool<X, Y>::exec(const int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *y,
                              Nd4jLong *yShapeInfo,
                              void *z,
                              Nd4jLong *zShapeInfo,
+                             void *extraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *xTadShapeInfo,
@@ -47,37 +48,40 @@ namespace functions {
                              Nd4jLong *zTadOffset,
                              uint64_t start,
                              uint64_t stop) {
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(x,
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xShapeInfo,
                                                y,
                                                yShapeInfo,
                                                z,
                                                zShapeInfo,
+                                               extraParams,
                                                dimension,
                                                dimensionLength,
                                                xTadShapeInfo,
                                                xTadOffset,
                                                zTadShapeInfo,
-                                               zTadOffset, start, stop), BROADCAST_INT_OPS);
+                                               zTadOffset, start, stop), BROADCAST_BOOL_OPS);
         }
 
-        template <typename X>
-        void BroadcastInt<X>::exec(const int opNum,
-                             const void *x, const Nd4jLong *xShapeInfo,
-                             const void *y, const Nd4jLong *yShapeInfo,
-                                   void *z, const Nd4jLong *zShapeInfo) {
+        template <typename X, typename Y>
+        void BroadcastBool<X, Y>::exec(const int opNum,
+                                       const void *x, const Nd4jLong *xShapeInfo,
+                                       const void *y, const Nd4jLong *yShapeInfo,
+                                             void *z, const Nd4jLong *zShapeInfo,
+                                             void* extraParams) {
 
-            DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo), BROADCAST_INT_OPS);
+            DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams), BROADCAST_BOOL_OPS);
         }
 
-        template <typename X>
-        void BroadcastInt<X>::execInverse(const int opNum,
+        template <typename X, typename Y>
+        void BroadcastBool<X, Y>::execInverse(const int opNum,
                              void *x,
                              Nd4jLong *xShapeInfo,
                              void *y,
                              Nd4jLong *yShapeInfo,
                              void *z,
                              Nd4jLong *zShapeInfo,
+                             void *extraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *xTadShapeInfo,
@@ -86,28 +90,30 @@ namespace functions {
                              Nd4jLong *zTadOffset,
                              uint64_t start,
                              uint64_t stop) {
-            DISPATCH_BY_OPNUM_T(execInverse, PARAMS(x,
+            DISPATCH_BY_OPNUM_TT(execInverse, PARAMS(x,
                                                xShapeInfo,
                                                y,
                                                yShapeInfo,
                                                z,
                                                zShapeInfo,
+                                               extraParams,
                                                dimension,
                                                dimensionLength,
                                                xTadShapeInfo,
                                                xTadOffset,
                                                zTadShapeInfo,
-                                               zTadOffset, start, stop), BROADCAST_INT_OPS);
+                                               zTadOffset, start, stop), BROADCAST_BOOL_OPS);
         }
 
-        template <typename X>
+        template <typename X, typename Z>
         template<typename OpType>
-        void BroadcastInt<X>::exec(void *vx,
+        void BroadcastBool<X, Z>::exec(void *vx,
                              Nd4jLong *xShapeInfo,
                              void *vy,
                              Nd4jLong *yShapeInfo,
                              void *vz,
                              Nd4jLong *zShapeInfo,
+                             void *vextraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *xTadShapeInfo,
@@ -119,7 +125,8 @@ namespace functions {
 
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<X *>(vy);
-                auto z = reinterpret_cast<X *>(vz);
+                auto z = reinterpret_cast<Z *>(vz);
+                auto extraParams = reinterpret_cast<X*>(vextraParams);
 
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
@@ -158,14 +165,14 @@ namespace functions {
                 const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
 
                 if (kindOfLoop == sd::LoopKind::EWS1) {
-                    for (auto i = start; i < stop; i ++) {
+                    for (auto i = start; i < stop; i++) {
                         auto oX = x + tadOffsets[i];
                         auto oZ = z + zTadOffset[i];
 
                         PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++)
-                            oZ[f] = OpType::op(oX[f], y[f]);
-                    };
+                            oZ[f] = OpType::op(oX[f], y[f], extraParams);
+                    }
                 }
                 else if(kindOfLoop == sd::LoopKind::EWSNONZERO) {
                     for (auto i = start; i < stop; i ++) {
@@ -174,7 +181,7 @@ namespace functions {
 
                         PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++)
-                            oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
+                            oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws], extraParams);
                     };
                 }
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
@@ -188,7 +195,7 @@ namespace functions {
                         PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
-                            oZ[offset] = OpType::op(oX[offset], y[offset]);
+                            oZ[offset] = OpType::op(oX[offset], y[offset], extraParams);
                         }
                     };
                 }
@@ -206,7 +213,7 @@ namespace functions {
                         for (unsigned int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
                             auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
-                            oZ[zOffset] = OpType::op(oX[offset], y[offset]);
+                            oZ[zOffset] = OpType::op(oX[offset], y[offset], extraParams);
                         }
                     };
                 }
@@ -224,9 +231,10 @@ namespace functions {
                         for (unsigned int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
                             auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
-                            oZ[offset] = OpType::op(oX[offset], y[yOffset]);
+                            oZ[offset] = OpType::op(oX[offset], y[yOffset], extraParams);
                         }
                     };
+
                 }
                 else if(shape::haveSameShapeAndStrides(yShapeInfo, zTadShapeInfo)) {
                     uint tadShapeShapeInfoCast[MAX_RANK];
@@ -242,7 +250,7 @@ namespace functions {
                         for (unsigned int f = 0; f < tadLength; f++) {
                             auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
                             auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
-                            oZ[offset] = OpType::op(oX[xOffset], y[offset]);
+                            oZ[offset] = OpType::op(oX[xOffset], y[offset], extraParams);
                         }
                     };
                 }
@@ -263,193 +271,25 @@ namespace functions {
                             auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
                             auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
                             auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
-                            oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset]);
+                            oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset], extraParams);
                         }
                     };
                 }
         }
-
-
-        template <typename X>
-        template<typename OpType>
-        void BroadcastInt<X>::execInverse(void *vx,
-                             Nd4jLong *xShapeInfo,
-                             void *vy,
-                             Nd4jLong *yShapeInfo,
-                             void *vz,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *yTadShapeInfo,
-                             Nd4jLong *yTadOffset,
-                             Nd4jLong *zTadShapeInfo,
-                             Nd4jLong *zTadOffset,
-                             uint64_t start,
-                             uint64_t stop) {
-
-                auto x = reinterpret_cast<X *>(vx);
-                auto y = reinterpret_cast<X *>(vy);
-                auto z = reinterpret_cast<X *>(vz);
-
-                //decompose in to several sub tads after
-                //moving all dimensions (in sorted order)
-                //to the back.
-                //permuted version of the x shape info for setting up the tad problem
-                auto yTadShapeShapeInfo = yTadShapeInfo;
-                auto tadOffsets = yTadOffset;
-
-                if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
-
-                    yTadShapeShapeInfo = tadPack.primaryShapeInfo();
-                    tadOffsets = tadPack.primaryOffsets();
-                }
-
-                //int *resultStride = shape::stride(yTadShapeShapeInfo);
-                unsigned int tadLength = shape::length(yTadShapeShapeInfo);
-                unsigned int tads = shape::length(yShapeInfo) / tadLength;
-
-                if (zTadShapeInfo == nullptr) {
-                    zTadShapeInfo = yTadShapeShapeInfo;
-                    zTadOffset = tadOffsets;
-                }
-
-                auto lenZ = shape::length(zTadShapeInfo);
-                auto lenX = shape::length(xShapeInfo);
-
-                int tadsPerThread = tads / TAD_THRESHOLD;
-                int threads = sd::math::nd4j_max<int>(1, tadsPerThread);
-                threads = sd::math::nd4j_min<int>(threads, sd::Environment::getInstance()->maxThreads());
-
-                auto yEws = shape::elementWiseStride(yTadShapeShapeInfo);
-                auto xEws = shape::elementWiseStride(xShapeInfo);
-                auto zEws = shape::elementWiseStride(zTadShapeInfo);
-
-                const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
-
-                if (kindOfLoop == sd::LoopKind::EWS1) {
-                    for (auto i = start; i < stop; i ++) {
-                        auto oY = y + tadOffsets[i];
-                        auto oZ = z + zTadOffset[i];
-
-                        PRAGMA_OMP_SIMD
-                        for (unsigned int f = 0; f < tadLength; f++)
-                            oZ[f] = OpType::op(x[f], oY[f]);
-                    };
-                }
-                else if(kindOfLoop == sd::LoopKind::EWSNONZERO) {
-                    for (auto i = start; i < stop; i ++) {
-                        auto oY = y + tadOffsets[i];
-                        auto oZ = z + zTadOffset[i];
-
-                        PRAGMA_OMP_SIMD
-                        for (uint f = 0; f < tadLength; f++)
-                            oZ[f * zEws] = OpType::op(x[f * xEws], oY[f * yEws]);
-                    };
-                }
-                else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) && shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
-                    uint tadShapeShapeInfoCast[MAX_RANK];
-                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
-
-                    for (auto i = start; i < stop; i ++) {
-                        auto oY = y + tadOffsets[i];
-                        auto oZ = z + zTadOffset[i];
-
-                        PRAGMA_OMP_SIMD
-                        for (uint f = 0; f < tadLength; f++) {
-                            auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
-                            oZ[offset] = OpType::op(x[offset], oY[offset]);
-                        }
-                    };
-                }
-                else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo)) {
-
-                    uint tadShapeShapeInfoCast[MAX_RANK];
-                    uint tadShapeInfoZCast[MAX_RANK];
-                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
-                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
-
-                    for (auto i = start; i < stop; i ++) {
-                        auto oZ = z + zTadOffset[i];
-                        auto oY = y + tadOffsets[i];
-
-                        for (uint f = 0; f < tadLength; f++) {
-                            auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
-                            auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
-                            oZ[zOffset] = OpType::op(x[offset], oY[offset]);
-                        }
-                    };
-                }
-                else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
-                    uint tadShapeShapeInfoCast[MAX_RANK];
-                    uint xShapeInfoCast[MAX_RANK];
-                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
-
-                    for (auto i = start; i < stop; i ++) {
-                        auto oZ = z + zTadOffset[i];
-                        auto oY = y + tadOffsets[i];
-
-                        PRAGMA_OMP_SIMD
-                        for (uint f = 0; f < tadLength; f++) {
-                            auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
-                            auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
-                            oZ[offset] = OpType::op(x[xOffset], oY[offset]);
-                        }
-                    };
-                }
-                else if(shape::haveSameShapeAndStrides(xShapeInfo, zTadShapeInfo)) {
-                    uint tadShapeShapeInfoCast[MAX_RANK];
-                    uint xShapeInfoCast[MAX_RANK];
-                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
-
-                    for (auto i = start; i < stop; i ++) {
-                        auto oZ = z + zTadOffset[i];
-                        auto oY = y + tadOffsets[i];
-
-                        PRAGMA_OMP_SIMD
-                        for (uint f = 0; f < tadLength; f++) {
-                            auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
-                            auto offset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
-                            oZ[offset] = OpType::op(x[offset], oY[yOffset]);
-                        }
-                    };
-                }
-                else {
-                    uint xShapeInfoCast[MAX_RANK];
-                    uint tadShapeShapeInfoCast[MAX_RANK];
-                    uint tadShapeInfoZCast[MAX_RANK];
-                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
-                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
-
-                    for (auto i = start; i < stop; i ++) {
-                        auto oZ = z + zTadOffset[i];
-                        auto oY = y + tadOffsets[i];
-
-                        PRAGMA_OMP_SIMD
-                        for (uint f = 0; f < tadLength; f++) {
-                            auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
-                            auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
-                            auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
-                            oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset]);
-                        }
-                    };
-                }
-        }
-
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X>
+template <typename X, typename Z>
 template<typename OpType>
-void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
-                                 const void *vy, const Nd4jLong *yShapeInfo,
-                                       void *vz, const Nd4jLong *zShapeInfo) {
+void BroadcastBool<X, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
+                               const void *vy, const Nd4jLong *yShapeInfo,
+                                     void *vz, const Nd4jLong *zShapeInfo,
+                                     void *vextraParams) {
 
     const X* x = reinterpret_cast<const X*>(vx);
     const X* y = reinterpret_cast<const X*>(vy);
-          X* z = reinterpret_cast<X*>(vz);
+          Z* z = reinterpret_cast<Z*>(vz);
+
+    X* extraParams = reinterpret_cast<X*>(vextraParams);
 
     const int rank   = shape::rank(zShapeInfo);    // xRank = yRank = zRank
     const char zOrder = shape::order(zShapeInfo);
@@ -495,10 +335,10 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
 
                 if(zStrd0 == 1 && xStrd0 <= 1 && yStrd0 <= 1)
                     for (auto i0 = start; i0 < stop; ++i0)
-                        z[i0] = OpType::op(x[xStrd0 ? i0 : 0], y[yStrd0 ? i0 : 0]);
+                        z[i0] = OpType::op(x[xStrd0 ? i0 : 0], y[yStrd0 ? i0 : 0], extraParams);
                 else
                     for (auto i0 = start; i0 < stop; ++i0)
-                        z[i0 * zStrd0] = OpType::op(x[i0 * xStrd0], y[i0 * yStrd0]);
+                        z[i0 * zStrd0] = OpType::op(x[i0 * xStrd0], y[i0 * yStrd0], extraParams);
             };
             samediff::Threads::parallel_tad(func, 0, zAxis0);
         }
@@ -516,10 +356,10 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
 
                     if(zStrd1 == 1 && xStrd1 <= 1 && yStrd1 <= 1)
                         for (uint i1 = 0; i1 < zAxis1; ++i1)
-                            z0[i1] = OpType::op(x0[xStrd1 ? i1 : 0], y0[yStrd1 ? i1 : 0]);
+                            z0[i1] = OpType::op(x0[xStrd1 ? i1 : 0], y0[yStrd1 ? i1 : 0], extraParams);
                     else
                         for (uint i1 = 0; i1 < zAxis1; ++i1)
-                            z0[i1 * zStrd1] = OpType::op(x0[i1 * xStrd1], y0[i1 * yStrd1]);
+                            z0[i1 * zStrd1] = OpType::op(x0[i1 * xStrd1], y0[i1 * yStrd1], extraParams);
                 }
             };
             samediff::Threads::parallel_tad(func, 0, zAxis0);
@@ -540,10 +380,10 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
 
                         if(zStrd2 == 1 && xStrd2 <= 1 && yStrd2 <= 1)
                             for (uint i2 = 0; i2 < zAxis2; ++i2)
-                                z1[i2] = OpType::op(x1[xStrd2 ? i2 : 0], y1[yStrd2 ? i2 : 0]);
+                                z1[i2] = OpType::op(x1[xStrd2 ? i2 : 0], y1[yStrd2 ? i2 : 0], extraParams);
                         else
                             for (uint i2 = 0; i2 < zAxis2; ++i2)
-                                z1[i2 * zStrd2] = OpType::op(x1[i2 * xStrd2], y1[i2 * yStrd2]);
+                                z1[i2 * zStrd2] = OpType::op(x1[i2 * xStrd2], y1[i2 * yStrd2], extraParams);
                     }
                 }
             };
@@ -565,10 +405,10 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
 
                             if(zStrd3 == 1 && xStrd3 <= 1 && yStrd3 <= 1)
                                 for (uint i3 = 0; i3 < zAxis3; ++i3)
-                                    z2[i3] = OpType::op(x2[xStrd3 ? i3 : 0], y2[yStrd3 ? i3 : 0]);
+                                    z2[i3] = OpType::op(x2[xStrd3 ? i3 : 0], y2[yStrd3 ? i3 : 0], extraParams);
                             else
                                 for (uint i3 = 0; i3 < zAxis3; ++i3)
-                                    z2[i3 * zStrd3] = OpType::op(x2[i3 * xStrd3], y2[i3 * yStrd3]);
+                                    z2[i3 * zStrd3] = OpType::op(x2[i3 * xStrd3], y2[i3 * yStrd3], extraParams);
                         }
                     }
                 }
@@ -592,10 +432,10 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
 
                                 if(zStrd4 == 1 && xStrd4 <= 1 && yStrd4 <= 1)
                                     for (uint i4 = 0; i4 < zAxis4; ++i4)
-                                        z3[i4] = OpType::op(x3[xStrd4 ? i4 : 0], y3[yStrd4 ? i4 : 0]);
+                                        z3[i4] = OpType::op(x3[xStrd4 ? i4 : 0], y3[yStrd4 ? i4 : 0], extraParams);
                                 else
                                     for (uint i4 = 0; i4 < zAxis4; ++i4)
-                                        z3[i4 * zStrd4] = OpType::op(x3[i4 * xStrd4], y3[i4 * yStrd4]);
+                                        z3[i4 * zStrd4] = OpType::op(x3[i4 * xStrd4], y3[i4 * yStrd4], extraParams);
                             }
                         }
                     }
@@ -624,7 +464,7 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
                     const auto yOffset = shape::getOffset(yShapeInfo, yCoords);
                     const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
 
-                    z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+                    z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
                 }
             };
 
@@ -633,6 +473,182 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
     }
 }
 
-BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT BroadcastInt, , INTEGER_TYPES);
-}
+        template <typename X, typename Z>
+        template<typename OpType>
+        void BroadcastBool<X, Z>::execInverse(void *vx,
+                             Nd4jLong *xShapeInfo,
+                             void *vy,
+                             Nd4jLong *yShapeInfo,
+                             void *vz,
+                             Nd4jLong *zShapeInfo,
+                             void *vextraParams,
+                             int *dimension,
+                             int dimensionLength,
+                             Nd4jLong *yTadShapeInfo,
+                             Nd4jLong *yTadOffset,
+                             Nd4jLong *zTadShapeInfo,
+                             Nd4jLong *zTadOffset,
+                             uint64_t start,
+                             uint64_t stop) {
+
+                auto x = reinterpret_cast<X *>(vx);
+                auto y = reinterpret_cast<X *>(vy);
+                auto z = reinterpret_cast<Z *>(vz);
+                auto extraParams = reinterpret_cast<X*>(vextraParams);
+
+                //decompose in to several sub tads after
+                //moving all dimensions (in sorted order)
+                //to the back.
+                //permuted version of the x shape info for setting up the tad problem
+                auto yTadShapeShapeInfo = yTadShapeInfo;
+                auto tadOffsets = yTadOffset;
+
+                if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
+                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
+
+                    yTadShapeShapeInfo = tadPack.primaryShapeInfo();
+                    tadOffsets = tadPack.primaryOffsets();
+                }
+
+                //int *resultStride = shape::stride(yTadShapeShapeInfo);
+                unsigned int tadLength = shape::length(yTadShapeShapeInfo);
+                unsigned int tads = shape::length(yShapeInfo) / tadLength;
+
+                if (zTadShapeInfo == nullptr) {
+                    zTadShapeInfo = yTadShapeShapeInfo;
+                    zTadOffset = tadOffsets;
+                }
+
+                auto lenZ = shape::length(zTadShapeInfo);
+                auto lenX = shape::length(xShapeInfo);
+
+                int tadsPerThread = tads / TAD_THRESHOLD;
+                int threads = sd::math::nd4j_max<int>(1, tadsPerThread);
+                threads = sd::math::nd4j_min<int>(threads, sd::Environment::getInstance()->maxThreads());
+
+                auto yEws = shape::elementWiseStride(yTadShapeShapeInfo);
+                auto xEws = shape::elementWiseStride(xShapeInfo);
+                auto zEws = shape::elementWiseStride(zTadShapeInfo);
+
+                const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
+
+                if (kindOfLoop == sd::LoopKind::EWS1) {
+                    for (auto i = start; i < stop; i ++) {
+                        auto oY = y + tadOffsets[i];
+                        auto oZ = z + zTadOffset[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (unsigned int f = 0; f < tadLength; f++)
+                            oZ[f] = OpType::op(x[f], oY[f], extraParams);
+                    }
+                }
+                else if(kindOfLoop == sd::LoopKind::EWSNONZERO) {
+                    for (auto i = start; i < stop; i ++) {
+                        auto oY = y + tadOffsets[i];
+                        auto oZ = z + zTadOffset[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (uint f = 0; f < tadLength; f++)
+                            oZ[f * zEws] = OpType::op(x[f * xEws], oY[f * yEws], extraParams);
+                    }
+                }
+                else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) && shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+
+                    for (auto i = start; i < stop; i ++) {
+                        auto oY = y + tadOffsets[i];
+                        auto oZ = z + zTadOffset[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (unsigned int f = 0; f < tadLength; f++) {
+                            auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
+                            oZ[offset] = OpType::op(x[offset], oY[offset], extraParams);
+                        }
+                    }
+                }
+                else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo)) {
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    uint tadShapeInfoZCast[MAX_RANK];
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
+
+                    for (auto i = start; i < stop; i ++) {
+                        auto oZ = z + zTadOffset[i];
+                        auto oY = y + tadOffsets[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (unsigned int f = 0; f < tadLength; f++) {
+                            auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
+                            auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
+                            oZ[zOffset] = OpType::op(x[offset], oY[offset], extraParams);
+                        }
+                    }
+                }
+                else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    uint xShapeInfoCast[MAX_RANK];
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+
+                    for (auto i = start; i < stop; i ++) {
+                        auto oZ = z + zTadOffset[i];
+                        auto oY = y + tadOffsets[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (unsigned int f = 0; f < tadLength; f++) {
+                            auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
+                            auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
+                            oZ[offset] = OpType::op(x[xOffset], oY[offset], extraParams);
+                        }
+                    }
+                }
+                else if(shape::haveSameShapeAndStrides(xShapeInfo, zTadShapeInfo)) {
+
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    uint xShapeInfoCast[MAX_RANK];
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+
+                    for (auto i = start; i < stop; i ++) {
+                        auto oZ = z + zTadOffset[i];
+                        auto oY = y + tadOffsets[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (unsigned int f = 0; f < tadLength; f++) {
+                            auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
+                            auto offset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
+                            oZ[offset] = OpType::op(x[offset], oY[yOffset], extraParams);
+                        }
+                    }
+                }
+                else {
+
+                    uint xShapeInfoCast[MAX_RANK];
+                    uint tadShapeShapeInfoCast[MAX_RANK];
+                    uint tadShapeInfoZCast[MAX_RANK];
+                    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastY = sd::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
+                    bool canCastZ = sd::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
+
+                    for (auto i = start; i < stop; i ++) {
+                        auto oZ = z + zTadOffset[i];
+                        auto oY = y + tadOffsets[i];
+
+                        PRAGMA_OMP_SIMD
+                        for (unsigned int f = 0; f < tadLength; f++) {
+                            auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
+                            auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
+                            auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
+                            oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset], extraParams);
+                        }
+                    }
+                }
+        }
+
+        //BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT BroadcastBool, , LIBND4J_TYPES, BOOL_TYPES);
+    }
 }

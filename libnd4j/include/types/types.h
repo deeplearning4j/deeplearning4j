@@ -144,6 +144,30 @@
         (sd::DataType::INT32, int32_t), \
         (sd::DataType::INT64, Nd4jLong)
 
+#define INTEGER_TYPES_0 \
+        (sd::DataType::INT8, int8_t)
+
+#define INTEGER_TYPES_1 \
+        (sd::DataType::UINT8, uint8_t)
+
+#define INTEGER_TYPES_2 \
+        (sd::DataType::UINT16, uint16_t)
+
+#define INTEGER_TYPES_3 \
+        (sd::DataType::UINT32, uint32_t)
+
+#define INTEGER_TYPES_4 \
+        (sd::DataType::UINT64, uint64_t)
+
+#define INTEGER_TYPES_5 \
+        (sd::DataType::INT16, int16_t)
+
+#define INTEGER_TYPES_6 \
+        (sd::DataType::INT32, int32_t)
+
+#define INTEGER_TYPES_7 \
+        (sd::DataType::INT64, Nd4jLong)
+
 
 #define NUMERIC_TYPES \
         (sd::DataType::HALF, float16), \
