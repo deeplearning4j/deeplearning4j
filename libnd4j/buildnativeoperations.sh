@@ -27,6 +27,23 @@ setwindows_msys() {
   fi
 }
 
+setandroid_defaults() {
+  if [[ -z ${ANDROID_NDK:-} ]]; then
+    export ANDROID_NDK=$HOME/Android/android-ndk/
+    echo "No ANDROID_NDK variable set. Setting to default of $ANDROID_NDK"
+    else
+        echo "USING ANDROID NDK $ANDROID_NDK"
+fi
+
+  if [[ -z ${ANDROID_VERSION:-} ]]; then
+    export ANDROID_VERSION=21
+    echo "No ANDROID_VERSION variable set. Setting to default of $ANDROID_VERSION"
+    else
+       echo "USING ANDROID VERSION $ANDROID_VERSION"
+fi
+}
+
+
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
@@ -172,9 +189,7 @@ if [ -z "$OS" ]; then
     OS="$HOST"
 fi
 
-if [[ -z ${ANDROID_NDK:-} ]]; then
-    export ANDROID_NDK=$HOME/Android/android-ndk/
-fi
+
 
 echo "RUNNING BUILD FOR OS $OS"
 
@@ -198,10 +213,14 @@ case "$OS" in
       if [ -z "$ARCH" ]; then
         ARCH="armv7-a"
       fi
+
+      setandroid_defaults
+
+
       export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DSD_ANDROID_BUILD=true"
       setwindows_msys
     ;;
@@ -210,11 +229,14 @@ case "$OS" in
       if [ -z "$ARCH" ]; then
         ARCH="armv8-a"
       fi
+
+      setandroid_defaults
+
       echo "BUILDING ANDROID ARM with KERNEL $KERNEL"
       export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm64/"
       export CMAKE_COMMAND="$CMAKE_COMMAND  -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true"
       setwindows_msys
     ;;

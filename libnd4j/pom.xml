@@ -150,8 +150,8 @@
                         <configuration>
                             <skip>${libnd4j.cpu.compile.skip}</skip>
                             <buildCommand>
-                                <program>bash</program>
-                                <argument>${project.basedir}/buildnativeoperations.sh</argument>
+                                <program>sh</program>
+                                <argument>buildnativeoperations.sh</argument>
                                 <argument>--build-type</argument>
                                 <argument>${libnd4j.build}</argument>
                                 <argument>--chip</argument>
@@ -183,7 +183,7 @@
                             <skip>${libnd4j.test.skip}</skip>
                             <workingDirectory>${basedir}/tests_cpu</workingDirectory>
                             <buildCommand>
-                                <program>bash</program>
+                                <program>sh</program>
                                 <argument>run_tests.sh</argument>
                                 <argument>--chip</argument>
                                 <argument>${libnd4j.chip}</argument>
@@ -310,8 +310,8 @@
                                 <configuration>
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <buildCommand>
-                                        <program>bash</program>
-                                        <argument>${project.basedir}/buildnativeoperations.sh
+                                        <program>sh</program>
+                                        <argument>buildnativeoperations.sh
                                         </argument>
                                         <argument>--build-type</argument>
                                         <argument>${libnd4j.build}</argument>

@@ -79,7 +79,7 @@ if(NOT SD_CUDA)
     if ("${OPENBLAS_PATH}" STREQUAL "")
         #we don't want OpenBLAS on Apple
         if (NOT APPLE)
-            set(BLA_VENDOR "OpenBLAS")
+            set(BLAS_VENDOR "OpenBLAS")
         endif()
 
         # look around for system blas instead
@@ -91,6 +91,7 @@ if(NOT SD_CUDA)
     else()
         # if we have externally provided OPENBLAS_PATH - let's use it
         set(HAVE_OPENBLAS 1)
+        message("Setting openblas")
         include_directories(${OPENBLAS_PATH}/include/)
         link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
         set(OPENBLAS_LIBRARIES openblas)
