@@ -297,23 +297,6 @@
                 <javacpp.platform.extension>-avx512</javacpp.platform.extension>
             </properties>
         </profile>
-        <profile>
-            <id>mingw</id>
-            <activation>
-                <os><family>windows</family></os>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <configuration>
-                            <properties>${javacpp.platform}-mingw</properties>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
 
         <profile>
             <id>libnd4j-assembly</id>
