@@ -706,7 +706,7 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
           T* z = reinterpret_cast<T*>(vz);
 
     __shared__ int rank, kDeff, kHeff, kWeff, iD, iH, iW, kProd;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -858,7 +858,7 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
     Nd4jLong coord2, coord3;
     __shared__ int rank, kHeff, kWeff, iH, iW, kProd;
-    __shared__ Nd4jLong *sharedMem, yLen;
+    __shared__ Nd4jLong yLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1017,7 +1017,7 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
     Nd4jLong coord2, coord3, coord4;
     __shared__ int rank, kDeff, kHeff, kWeff, iD, iH, iW, kProd;
-    __shared__ Nd4jLong *sharedMem, yLen;
+    __shared__ Nd4jLong yLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1342,7 +1342,7 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
           T* z = reinterpret_cast<T*>(vz);
 
     __shared__ int rank, dimIH;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1410,7 +1410,7 @@ __global__ static void upsampling3dCuda(const void* vx, const Nd4jLong* xShapeIn
           T* z = reinterpret_cast<T*>(vz);
 
     __shared__ int rank, dimID;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1480,7 +1480,7 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
 
     __shared__ int rank, dimIH;
     __shared__ uint factorH, factorW;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1554,7 +1554,7 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
 
     __shared__ int rank, dimID;
     __shared__ uint factorD, factorH, factorW;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];

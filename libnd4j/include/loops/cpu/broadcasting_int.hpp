@@ -609,11 +609,11 @@ void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
 
             auto func = PRAGMA_THREADS_FOR{
 
-                Nd4jLong xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
+                int xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
 
                 for (auto i = start; i < stop; ++i) {
 
-                    shape::index2coords(i, zShapeInfo, zCoords);
+                    shape::index2coordsCPU(start, i, zShapeInfo, zCoords);
 
                     for (uint j = 0; j < rank; ++j) {
                         xCoords[j] = shape::sizeAt(xShapeInfo, j) == 1 ? 0 : zCoords[j];

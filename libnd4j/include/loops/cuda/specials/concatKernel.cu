@@ -137,7 +137,7 @@ namespace sd {
                     T *dataTAD = currentData + inputOffset;
                     T *resultTAD = result + resultOffset;
 
-                    Nd4jLong sub[MAX_RANK];
+                    int sub[MAX_RANK];
 
                     shape::index2coords(arrOffset, zTadShape, sub);
 
@@ -166,7 +166,7 @@ namespace sd {
                     auto dataTAD = currentData + inputOffset;
                     auto resultTAD = result + resultOffset;
 
-                    Nd4jLong sub[MAX_RANK];
+                    int sub[MAX_RANK];
 
                     shape::index2coords(arrOffset, zTadShape, sub);
                     Nd4jLong baseOffset = shape::getOffset(zTadShape, sub);
@@ -199,7 +199,7 @@ namespace sd {
                                     resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
                                 }
                             } else {
-                                Nd4jLong yIdx[MAX_RANK];
+                                int yIdx[MAX_RANK];
                                 auto yRank = shape::rank(currentTad);
 
                                 for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
@@ -214,8 +214,8 @@ namespace sd {
                             //if (threadIdx.x == 0 && blockIdx.x  == 0)
                             //    printf("Branch C; yLength: %i;\n", yLength);
 
-                            Nd4jLong zIdx[MAX_RANK];
-                            Nd4jLong yIdx[MAX_RANK];
+                            int zIdx[MAX_RANK];
+                            int yIdx[MAX_RANK];
                             auto yRank = shape::rank(currentTad);
                             auto tadRank = shape::rank(zTadShape);
 

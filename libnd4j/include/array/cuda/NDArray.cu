@@ -85,12 +85,12 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
     const auto x = reinterpret_cast<const T*>(vx);
           auto z = reinterpret_cast<T*>(vz);
 
-    __shared__ int zRank, xRank, areSameOffsets;        // xRank == zRank always, except when xRank = 1, in this case zRank = 2
-    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
+    __shared__ int zRank, xRank, areSameOffsets, *sharedMem;    // xRank == zRank always, except when xRank = 1, in this case zRank = 2
+    __shared__ Nd4jLong zLen, totalThreads;                     // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
         areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
         xRank = shape::rank(xShapeInfo);
         zRank = shape::rank(zShapeInfo);
@@ -137,7 +137,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(decltype(*target.getShapeInfo())) * target.rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(int) * target.rankOf() + 128;
 
     PointersManager manager(getContext(), "NDArray::fillAsTriangular");
 
@@ -155,12 +155,12 @@ __global__ static void identityMatrixCuda(void* vx, const Nd4jLong* xShapeInfo, 
 
     auto x = reinterpret_cast<T*>(vx);
 
-    __shared__ int rank;
-    __shared__ Nd4jLong len, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong len, totalThreads;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
         rank = shape::rank(xShapeInfo);
         len  = shape::length(xShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
@@ -201,7 +201,7 @@ void NDArray::setIdentity() {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(decltype(getShapeInfo())) * rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(int) * rankOf() + 128;
 
     PointersManager manager(getContext(), "NDArray::setIdentity");
 
@@ -398,13 +398,13 @@ __global__ static void repeatCuda(const void* vx, const Nd4jLong* xShapeInfo,
     const X* x = reinterpret_cast<const X*>(vx);
           Z* z = reinterpret_cast<Z*>(vz);
 
-    __shared__ int rank;
-    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen = zLen
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong zLen, totalThreads;  // xLen = zLen
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank = shape::rank(zShapeInfo);     // xRank = zRank
         zLen = shape::length(zShapeInfo);    // xLen <= zLen
@@ -460,7 +460,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = output.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+    const int sharedMem = output.rankOf() * sizeof(int) * threadsPerBlock  + 128;
 
     PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
 
@@ -484,7 +484,7 @@ void NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& t
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = target.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+    const int sharedMem = target.rankOf() * sizeof(int) * threadsPerBlock  + 128;
 
     PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
 

@@ -64,7 +64,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
 
         Nd4jLong* xOffsets = new Nd4jLong[steps];
         Nd4jLong* zOffsets = xzSameOffset ? xOffsets : new Nd4jLong[steps];
-        Nd4jLong* auxBuff = new Nd4jLong[2 * input->rankOf()];
+        int* auxBuff = new int[2 * input->rankOf()];
 
         for (Nd4jLong j = 0; j < lenSmall; ++j) {
 
@@ -139,40 +139,42 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
 
     auto func = PRAGMA_THREADS_FOR {
 
-        Nd4jLong coords[MAX_RANK];
+        int xzCoords[MAX_RANK], minCoords[MAX_RANK];
+
+        for (uint i = 0, j = 0; i < xRank; ++i)
+            if(j < numAxes && i != axes[j])
+                minCoords[i] = 0;
+            else
+                ++j;
 
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coords(i, input->getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, input->getShapeInfo(), xzCoords);
 
-            const auto xOffset = shape::getOffset(input->getShapeInfo(), coords);
-            const auto zOffset = xzSameOffset ? xOffset : shape::getOffset(output->getShapeInfo(), coords);
+            const auto xOffset = shape::getOffset(input->getShapeInfo(), xzCoords);
+            const auto zOffset = xzSameOffset ? xOffset : shape::getOffset(output->getShapeInfo(), xzCoords);
 
             if(minRank == xRank) {
-                for (uint i = 0, j = 0; i < xRank; ++i) {
-                    if(j < numAxes && i != axes[j])
-                        coords[i] = 0;
-                    else
-                        ++j;
-                }
+                for (uint j = 0; j < numAxes; ++j)
+                    minCoords[axes[j]] = xzCoords[axes[j]];
             }
             else    // minRank = numAxes = 1 in this case
-                coords[0] = coords[axes[0]];
+                minCoords[0] = xzCoords[axes[0]];
 
-            const auto meanOffset     = shape::getOffset(mean->getShapeInfo(), coords);
-            const auto varianceOffset = paramSameOffset ? meanOffset : shape::getOffset(variance->getShapeInfo(), coords);
+            const auto meanOffset     = shape::getOffset(mean->getShapeInfo(), minCoords);
+            const auto varianceOffset = paramSameOffset ? meanOffset : shape::getOffset(variance->getShapeInfo(), minCoords);
 
             T sigmaInvGam = 1. / sd::math::nd4j_sqrt<T, T>(v[varianceOffset] + epsilon);
 
             if(g != nullptr) {
-                const auto gammaOffset = paramSameOffset ? meanOffset : shape::getOffset(gamma->getShapeInfo(), coords);
+                const auto gammaOffset = paramSameOffset ? meanOffset : shape::getOffset(gamma->getShapeInfo(), minCoords);
                 sigmaInvGam *= g[gammaOffset];
             }
 
             z[zOffset] = (x[xOffset] - m[meanOffset]) * sigmaInvGam;
 
             if(b != nullptr) {
-                const auto betaOffset = paramSameOffset ? meanOffset : shape::getOffset(beta->getShapeInfo(), coords);
+                const auto betaOffset = paramSameOffset ? meanOffset : shape::getOffset(beta->getShapeInfo(), minCoords);
                 z[zOffset] += b[betaOffset];
             }
         }
@@ -184,7 +186,7 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
 //////////////////////////////////////////////////////////////////////////
 void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
-    // batchnorm2_ is slower
+    // batchnorm2_ is still slower ?
     BUILD_SINGLE_SELECTOR(input->dataType(), batchnorm_, (input, mean, variance, gamma, beta, output, axes, epsilon), FLOAT_TYPES);
 }
 

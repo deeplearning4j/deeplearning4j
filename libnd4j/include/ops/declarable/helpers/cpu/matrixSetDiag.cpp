@@ -49,9 +49,12 @@ void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& outp
     const auto xLen = input.lengthOf();
 
     auto func = PRAGMA_THREADS_FOR {
-        Nd4jLong coords[MAX_RANK];
+
+        int coords[MAX_RANK];
+
         for (Nd4jLong i = 0; i < xLen; ++i) {
-            shape::index2coords(i, xShapeInfo, coords);
+
+            shape::index2coordsCPU(start, i, xShapeInfo, coords);
 
             const auto xOffset = shape::getOffset(xShapeInfo, coords);
             const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(zShapeInfo, coords);

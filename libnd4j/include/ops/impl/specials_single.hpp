@@ -178,16 +178,18 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
     // general case
     auto func = PRAGMA_THREADS_FOR {
 
-        Nd4jLong coords[MAX_RANK];
+        int coords[MAX_RANK], temp;
 
         for (auto i = start; i < stop; i += increment) {
 
-            shape::index2coords(i, output.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, output.getShapeInfo(), coords);
+
             const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
             uint inArrIdx = 0;
             uint xDim = inArrs[inArrIdx]->sizeAt(axis);
 
+            temp = coords[axis];
             while (coords[axis] >= xDim) {
                 coords[axis] -= xDim;
                 xDim = inArrs[++inArrIdx]->sizeAt(axis);
@@ -197,6 +199,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
             const auto xOffset = shape::getOffset(inArrs[inArrIdx]->getShapeInfo(), coords);
 
             zBuff[zOffset] = x[xOffset];
+
+            coords[axis] = temp;
         }
     };
 
@@ -298,13 +302,15 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
 
     auto func = PRAGMA_THREADS_FOR{
 
-        Nd4jLong coords[MAX_RANK];
+        int coords[MAX_RANK], temp;
+
         for (auto i = start; i < stop; i += increment) {
 
-            shape::index2coords(i, input.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, input.getShapeInfo(), coords);
             const auto xOffset = shape::getOffset(input.getShapeInfo(), coords);
 
             uint outArrIdx = 0;
+            temp = coords[axis];
 
             while (coords[axis] >= zDim) {
                 coords[axis] -= zDim;
@@ -314,6 +320,8 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
             T* z = outArrs[outArrIdx]->bufferAsT<T>();
             const auto zOffset = shape::getOffset(outArrs[outArrIdx]->getShapeInfo(), coords);
             z[zOffset] = xBuff[xOffset];
+
+            coords[axis] = temp;
         }
     };
 

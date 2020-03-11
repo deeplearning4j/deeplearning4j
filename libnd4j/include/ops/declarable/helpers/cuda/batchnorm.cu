@@ -124,7 +124,7 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
     }
     __syncthreads();
 
-    Nd4jLong coords[MAX_RANK];
+    int coords[MAX_RANK];
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 

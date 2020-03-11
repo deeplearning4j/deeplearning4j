@@ -54,7 +54,7 @@ __global__ static void splitCuda(const void* vx, const Nd4jLong* xShapeInfo, voi
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    Nd4jLong coords[MAX_RANK];
+    int coords[MAX_RANK];
 
     for (uint64_t i = tid; i < xLen; i += totalThreads) {
 

@@ -40,15 +40,15 @@ static __global__ void usualCudaGemm(const void* vA, const Nd4jLong* aShapeInfo,
     const T2* B = reinterpret_cast<const T2*>(vB);
           T3* C = reinterpret_cast<      T3*>(vC);
 
-    __shared__ int K;
+    __shared__ int K, *coords;
     __shared__ bool betaPresent;
-    __shared__ Nd4jLong cLen, totalThreads, *coords;
+    __shared__ Nd4jLong cLen, totalThreads;
     __shared__ T3 alphaZ, betaZ;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        coords = reinterpret_cast<Nd4jLong*>(shmem);
+        coords = reinterpret_cast<int*>(shmem);
         cLen = shape::length(cShapeInfo);
 
         K = shape::shapeOf(const_cast<Nd4jLong*>(aShapeInfo))[aKaxis];
@@ -263,7 +263,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 
         const int threadsPerBlock = MAX_NUM_THREADS / 2;
         const int blocksPerGrid = (C->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * 6 + 128;                             // 6 = aRank + bRank + cRank
+        const int sharedMem = threadsPerBlock * sizeof(int) * 6 + 128;                             // 6 = aRank + bRank + cRank
 
         NDArray::prepareSpecialUse({C}, {A, B});
         // BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (blocksPerGrid, threadsPerBlock, sharedMem, stream, A->getSpecialBuffer(), A->getSpecialShapeInfo(), B->getSpecialBuffer(), B->getSpecialShapeInfo(), C->getSpecialBuffer(), C->getSpecialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta), NUMERIC_TYPES, NUMERIC_TYPES, FLOAT_TYPES);
@@ -529,14 +529,14 @@ static __global__ void batchedCudaGemm(const void* vA, const Nd4jLong* aShapeInf
           T3* C = reinterpret_cast<      T3*>(vC);
 
     __shared__ bool betaPresent;
-    __shared__ int aRank, bRank, cRank, K;
-    __shared__ Nd4jLong cLen, totalThreads, *coords;
+    __shared__ int aRank, bRank, cRank, K, *coords;
+    __shared__ Nd4jLong cLen, totalThreads;
     __shared__ T3 alphaZ, betaZ;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        coords = reinterpret_cast<Nd4jLong*>(shmem);
+        coords = reinterpret_cast<int*>(shmem);
         cLen = shape::length(cShapeInfo);
 
         K = shape::shapeOf(const_cast<Nd4jLong*>(aShapeInfo))[aKaxis];
@@ -649,7 +649,7 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
     const int threadsPerBlock = MAX_NUM_THREADS / 8;
     const int blocksPerGrid = (C->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * (aRank + bRank + cRank) + 128;
+    const int sharedMem = threadsPerBlock * sizeof(int) * (aRank + bRank + cRank) + 128;
 
     PointersManager manager(A->getContext(), "MmulHelper::mmulNxN");
 

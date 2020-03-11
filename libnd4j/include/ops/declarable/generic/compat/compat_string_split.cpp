@@ -39,8 +39,7 @@ namespace sd {
             delim->syncToHost();
 
             // output rank N+1 wrt input rank
-            std::vector<Nd4jLong> ocoords(input->rankOf() + 1);
-            std::vector<Nd4jLong> icoords(input->rankOf());
+            std::vector<int> icoords(input->rankOf());
 
             // getting buffer lengths
             // FIXME: it'll be bigger, since it'll include delimiters,
@@ -54,7 +53,7 @@ namespace sd {
                 auto s = input->e<std::string>(e);
 
                 // getting base index
-                shape::index2coords(e, input->shapeInfo(), icoords.data());
+                shape::index2coordsCPU(0, e, input->shapeInfo(), icoords.data());
 
                 // getting number of substrings
                 auto cnt = StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length()) + 1;

@@ -93,13 +93,13 @@ __global__ static void traceCuda(const void* vx, const Nd4jLong* xShapeInfo, voi
           auto z = reinterpret_cast<T*>(vz);
 
     __shared__ T* sharedMem;
-    __shared__ int xRank, zRank;        // xRank = zRank + 2
-    __shared__ Nd4jLong xLen, zLen, *coordsMem;
+    __shared__ int xRank, zRank, *coordsMem;        // xRank = zRank + 2
+    __shared__ Nd4jLong xLen, zLen;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<T*>(shmem);
-        coordsMem = reinterpret_cast<Nd4jLong*>(shmem + blockDim.x * sizeof(T));
+        coordsMem = reinterpret_cast<int*>(shmem + blockDim.x * sizeof(T));
 
         xRank = shape::rank(xShapeInfo);
         zRank = shape::rank(zShapeInfo);
@@ -109,7 +109,7 @@ __global__ static void traceCuda(const void* vx, const Nd4jLong* xShapeInfo, voi
     }
     __syncthreads();
 
-    Nd4jLong* coords = coordsMem + threadIdx.x * xRank;
+    auto coords = coordsMem + threadIdx.x * xRank;
 
     for (uint m = blockIdx.x; m < zLen; m += gridDim.x) {   // one block per each element of z, that is per each matrix
 
@@ -160,7 +160,7 @@ void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
     const uint diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * (sizeof(Nd4jLong) * input.rankOf() + input.sizeOfT()) + 128;
+    const int sharedMem = threadsPerBlock * (sizeof(int) * input.rankOf() + input.sizeOfT()) + 128;
 
     NDArray::prepareSpecialUse({&output}, {&input});
     BUILD_SINGLE_SELECTOR(input.dataType(), traceCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), diagLen), LIBND4J_TYPES);
@@ -177,13 +177,13 @@ __global__ static void triuBPCuda(const void* vx, const Nd4jLong* xShapeInfo, vo
     const auto x = reinterpret_cast<const T*>(vx);  // gradO
           auto z = reinterpret_cast<T*>(vz);        // gradI
 
-    __shared__ int rank, areSameOffsets;                // xRank = zRank
-    __shared__ Nd4jLong len, totalThreads, *sharedMem;  // xLen = zLen
+    __shared__ int rank, areSameOffsets, *sharedMem;                // xRank = zRank
+    __shared__ Nd4jLong len, totalThreads;  // xLen = zLen
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
         areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
         rank = shape::rank(xShapeInfo);
         len  = shape::length(zShapeInfo);
@@ -221,7 +221,7 @@ void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gra
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * gradO.rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(int) * gradO.rankOf() + 128;
 
     PointersManager manager(context, "triuBP");
 
@@ -240,13 +240,13 @@ __global__ static void tileBPCuda(const void* vx, const Nd4jLong* xShapeInfo, vo
     const auto x = reinterpret_cast<const T*>(vx);  // gradO
           auto z = reinterpret_cast<T*>(vz);        // gradI
 
-    __shared__ int xRank, zRank;                // xRank >= zRank
-    __shared__ Nd4jLong numOfXOffsets, zLen, totalThreads, *sharedMem;  // xLen >= zLen
+    __shared__ int xRank, zRank, *sharedMem;                // xRank >= zRank
+    __shared__ Nd4jLong numOfXOffsets, zLen, totalThreads;  // xLen >= zLen
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         xRank = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -289,7 +289,7 @@ void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (gradI.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * 2 * gradO.rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(int) * 2 * gradO.rankOf() + 128;
 
     PointersManager manager(context, "tileBP");
 

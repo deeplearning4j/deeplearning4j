@@ -289,7 +289,7 @@ TEST_F(TadTests, calcOffsets_1) {
 TEST_F(TadTests, outerArrayIndexes_1) {
 
     NDArray x('c', {2,3,4,5}, sd::DataType::FLOAT32);
-    Nd4jLong maxIdxs[120];
+    int maxIdxs[120];
 
     NDArray y1('c', {3,5}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude1 = {0,2};

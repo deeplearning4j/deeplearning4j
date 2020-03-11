@@ -43,11 +43,11 @@ Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output, const int 
 
     auto func = PRAGMA_THREADS_FOR {
 
-        Nd4jLong xCoords[MAX_RANK];
+        int xCoords[MAX_RANK];
 
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coords(i, xShapeInfo, xCoords);
+            shape::index2coordsCPU(start, i, xShapeInfo, xCoords);
 
             const Nd4jLong currentInd = x[shape::getOffset(xShapeInfo, xCoords)];
 

@@ -45,7 +45,7 @@ __global__ static void addBiasCuda( const void* vx, const Nd4jLong* xShapeInfo,
           X* z = reinterpret_cast<X*>(vz);
 
     __shared__ int rank, channelPosition, posOfNonUnityDim;
-    __shared__ Nd4jLong *sharedMem, len;
+    __shared__ Nd4jLong len, *sharedMem;
     __shared__ bool xzSameOffsets, xzAreSame;
 
     if (threadIdx.x == 0) {
@@ -130,7 +130,7 @@ void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bia
                               FLOAT_TYPES, FLOAT_TYPES);
     } else {
         // default case
-        const int threadsPerBlock = MAX_NUM_THREADS / 2;
+        const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
         const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 

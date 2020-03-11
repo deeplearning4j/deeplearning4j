@@ -628,12 +628,12 @@ __global__ void scatterForLossCuda(const void *vx, const Nd4jLong *xShapeInfo,
           auto y = reinterpret_cast<Z*>(vy);
           auto z = reinterpret_cast<Z*>(vz);
 
-    __shared__ Nd4jLong xLen, *sharedMem;
-    __shared__ int xRank;   // xRank = zRank, yRank = xRank + 1
+    __shared__ Nd4jLong xLen;
+    __shared__ int xRank, *sharedMem;   // xRank = zRank, yRank = xRank + 1
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         xLen  = shape::length(xShapeInfo);
         xRank = shape::rank(xShapeInfo);
@@ -678,7 +678,7 @@ void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray&
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = updates.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+    const int sharedMem = updates.rankOf() * sizeof(int) * threadsPerBlock  + 128;
 
     if(calcGrad) {
         NDArray::prepareSpecialUse({&updates}, {&indices});

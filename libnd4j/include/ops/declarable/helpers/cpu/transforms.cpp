@@ -188,24 +188,35 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
         const T padVal = padValue.e<T>(0);
 
         auto func = PRAGMA_THREADS_FOR {
-            Nd4jLong coords[MAX_RANK];
+
+            int zCoords[MAX_RANK], xCoords[MAX_RANK];
+
             for (auto i = start; i < stop; i++) {
-                shape::index2coords(i, output.getShapeInfo(), coords);
-                const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+
+                shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
+                const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
+
+                memcpy(xCoords, zCoords, rank * sizeof(int));
 
                 bool within = true;
+
                 for (int j = rankMinusOne; j >= 0; --j) {
-                    if (xShape[j] == zShape[j]) continue;
+
+                    if (xShape[j] == zShape[j])
+                        continue;
+
                     const auto left = paddings.e<Nd4jLong>(j, 0);
-                    if (coords[j] < left || coords[j] >= left + xShape[j]) {
+
+                    if (zCoords[j] < left || zCoords[j] >= left + xShape[j]) {
                         within = false;
                         break;
                     }
-                    else { coords[j] = coords[j] - left; }
+                    else
+                        xCoords[j] = zCoords[j] - left;
                 }
 
                 if (within)
-                    z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+                    z[zOffset] = x[shape::getOffset(input.getShapeInfo(), xCoords)];
                 else
                     z[zOffset] = padVal;
             }
@@ -219,20 +230,30 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
         const Nd4jLong shift2 = mode == 1 ? 2 : 1;         // REFLECT : SYMMETRIC
 
         auto func = PRAGMA_THREADS_FOR {
-            Nd4jLong coords[MAX_RANK];
+
+            int zCoords[MAX_RANK], xCoords[MAX_RANK];
+
             for (auto i = start; i < stop; i++) {
-                shape::index2coords(i, output.getShapeInfo(), coords);
-                const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+
+                shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
+                const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
+
+                memcpy(xCoords, zCoords, rank * sizeof(int));
 
                 for (int j = rankMinusOne; j >= 0; --j) {
 
-                    if (xShape[j] == zShape[j]) continue;
-                    coords[j] = coords[j] - paddings.e<Nd4jLong>(j, 0);                             // are ready to fill middle (within input dimension range)
-                    if (coords[j] < 0) coords[j] = -coords[j] - shift1;                // means fill from left
-                    else if (coords[j] >= xShape[j]) coords[j] = 2 * xShape[j] - coords[j] - shift2; // means fill from right
+                    if (xShape[j] == zShape[j])
+                        continue;
+
+                    xCoords[j] = zCoords[j] - paddings.e<Nd4jLong>(j, 0);                             // are ready to fill middle (within input dimension range)
+
+                    if (xCoords[j] < 0)
+                        xCoords[j] = -xCoords[j] - shift1;                // means fill from left
+                    else if (xCoords[j] >= xShape[j])
+                        xCoords[j] = 2 * xShape[j] - xCoords[j] - shift2; // means fill from right
                 }
 
-                const auto xOffset = shape::getOffset(input.getShapeInfo(), coords);
+                const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoords);
                 z[zOffset] = x[xOffset];
             }
         };
@@ -562,45 +583,37 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
     const Nd4jLong zLen = output.lengthOf();
 
-    const int yLastDim = indices.sizeAt(-1);
+    const uint yLastDim = indices.sizeAt(-1);
+
+    const int diff = zRank - xRank;
+    const bool bEqual = yLastDim == xRank;
 
     auto func = PRAGMA_THREADS_FOR {
-        Nd4jLong coords[MAX_RANK * 3];
+
+        int xCoords[MAX_RANK], zCoords[MAX_RANK], temp;
+
         for (auto i = start; i < stop; i++) {
-            Nd4jLong *zCoordStart, *xCoordStart;
 
-            if (yLastDim == xRank) {
-                zCoordStart = coords;
-                xCoordStart = coords;
-            } else if (zRank >= xRank) {
-                zCoordStart = coords;
-                xCoordStart = coords + zRank - xRank;
-            } else {
-                zCoordStart = coords + xRank - zRank;
-                xCoordStart = coords;
-            }
+            shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
 
-            shape::index2coords(i, output.getShapeInfo(), zCoordStart);
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
 
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoordStart);
+            temp = zCoords[yRank - 1];
+            zCoords[yRank - 1] = 0;
+            const auto yOffset = shape::getOffset(indices.getShapeInfo(), zCoords);
+            zCoords[yRank - 1] = temp;
 
-            // last y coordinate
-            uint coordToRestore;
-            if (yLastDim != xRank)
-                coordToRestore = static_cast<uint>(zCoordStart[yRank - 1]);
+            if(bEqual)
+                memcpy(xCoords, zCoords, zRank * sizeof(int));
+            else if(diff >= 0)
+                memcpy(xCoords, zCoords + diff, xRank * sizeof(int));
+            else
+                memcpy(xCoords - diff, zCoords, zRank * sizeof(int));
 
-            zCoordStart[yRank - 1] = 0;
-            const auto yOffset = shape::getOffset(indices.getShapeInfo(), zCoordStart);
+            for (uint j = 0; j < yLastDim; ++j)
+                xCoords[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
 
-            //restore z coordinate
-            if (yLastDim != xRank)
-                zCoordStart[yRank - 1] = coordToRestore;
-
-            // construct coordinates for x
-            for (int j = 0; j < yLastDim; ++j)
-                xCoordStart[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
-
-            const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoordStart);
+            const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoords);
 
             z[zOffset] = x[xOffset];
         }
@@ -1188,10 +1201,12 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     else {
 
         auto func = PRAGMA_THREADS_FOR {
-            Nd4jLong inIdx[MAX_RANK];
-            Nd4jLong outIdx[MAX_RANK];
+
+            int inIdx[MAX_RANK], outIdx[MAX_RANK];
+
             for (auto i = start; i < stop; i++) {
-                shape::index2coords(i, output.getShapeInfo(), outIdx);
+
+                shape::index2coordsCPU(start, i, output.getShapeInfo(), outIdx);
 
                 for (int j = 0; j < rank; ++j) {
                     const Nd4jLong inLen = input.sizeAt(j);

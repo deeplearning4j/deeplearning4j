@@ -46,7 +46,7 @@ namespace sd {
             int totalIterations = 1;
 
             // hehe
-            Nd4jLong xCoords[MAX_RANK];
+            int xCoords[MAX_RANK];
             Nd4jLong xShape[MAX_RANK];
             int xRank = _spaces.size();
 

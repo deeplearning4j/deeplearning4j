@@ -40,12 +40,12 @@ __global__ static void im2colCuda(const void *image, void *columns,
     const auto im  = reinterpret_cast<const T*>(image);
           auto col = reinterpret_cast<T*>(columns);
 
-    __shared__ Nd4jLong colLen, *sharedMem, iH, iW;
-    __shared__ int imRank, colRank;
+    __shared__ Nd4jLong colLen, iH, iW;
+    __shared__ int imRank, colRank, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         colRank = 6;
         imRank  = 4;
@@ -81,7 +81,7 @@ __global__ static void im2colCuda(const void *image, void *columns,
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void im2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, sd::LaunchContext & context, const void *image, void *columns, const Nd4jLong *imShapeInfo, const Nd4jLong *colShapeInfo, int sH, int sW, int pH, int pW, int dH, int dW, double zeroPadVal) {
-    im2colCuda<T><<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(Nd4jLong) * 6 /* rank of columns = 6 */, *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
+    im2colCuda<T><<<blocksPerGrid, threadsPerBlock, threadsPerBlock * sizeof(int) * 6 /* rank of columns = 6 */, *context.getCudaStream()>>>(image, columns, imShapeInfo, colShapeInfo, sH, sW, pH, pW, dH, dW, zeroPadVal);
 }
 
 //////////////////////////////////////////////////////////////////////////

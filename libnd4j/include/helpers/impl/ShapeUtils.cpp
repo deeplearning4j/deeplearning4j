@@ -306,7 +306,6 @@ std::vector<Nd4jLong> ShapeUtils::evalRepeatShape(int axis, const std::vector<in
 
     if(repeats.size() == 1)
         outShape[axis] *= repeats[0];
-
     else
         outShape[axis] = std::accumulate(repeats.begin(), repeats.end(), 0);
 

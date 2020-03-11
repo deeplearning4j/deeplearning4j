@@ -36,8 +36,8 @@ __global__ static void crossCuda(const void* vx, const Nd4jLong* xShapeInfo,
     __shared__ const T* x;
     __shared__ const T* y;
     __shared__ 		 T* z;
-    __shared__ int rank;
-    __shared__ Nd4jLong lenWithoutLastDim, totalThreads, *sharedMem;
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong lenWithoutLastDim, totalThreads;
 
     if (threadIdx.x == 0) {
     	x = reinterpret_cast<const T*>(vx);
@@ -45,7 +45,7 @@ __global__ static void crossCuda(const void* vx, const Nd4jLong* xShapeInfo,
     	z = reinterpret_cast<T*>(vz);
 
         extern __shared__ unsigned char shmem[];
-        sharedMem    = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem    = reinterpret_cast<int*>(shmem);
         totalThreads = gridDim.x * blockDim.x;
 
         rank              = shape::rank(xShapeInfo);
@@ -106,7 +106,7 @@ void crossBatched(sd::LaunchContext* context, NDArray *x, NDArray *y, NDArray *z
 
 	const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (x->lengthOf() / x->sizeAt(-1) + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = sizeof(Nd4jLong) * threadsPerBlock * x->rankOf() + 128;
+    const int sharedMem = sizeof(int) * threadsPerBlock * x->rankOf() + 128;
 
     PointersManager manager(context, "cross");
 

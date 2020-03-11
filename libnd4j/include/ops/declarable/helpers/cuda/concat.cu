@@ -51,7 +51,7 @@ __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jL
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    Nd4jLong coords[MAX_RANK];
+    int coords[MAX_RANK];
 
     for (uint64_t i = tid; i < zLen; i += totalThreads) {
         shape::index2coords(i, zShapeInfo, coords);

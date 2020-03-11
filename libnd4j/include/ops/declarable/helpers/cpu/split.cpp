@@ -96,13 +96,16 @@ namespace helpers {
 
                 auto func = PRAGMA_THREADS_FOR{
 
-                    Nd4jLong coords[MAX_RANK];
+                    int coords[MAX_RANK], temp;
+
                     for (auto i = start; i < stop; i += increment) {
 
-                        shape::index2coords(i, input.getShapeInfo(), coords);
+                        shape::index2coordsCPU(start, i, input.getShapeInfo(), coords);
                         const auto xOffset = shape::getOffset(input.getShapeInfo(), coords);
 
                         uint outArrIdx = 0;
+
+                        temp = coords[axis];
 
                         while (coords[axis] >= zDim) {
                             coords[axis] -= zDim;
@@ -112,6 +115,8 @@ namespace helpers {
                         T* z = outArrs[outArrIdx]->bufferAsT<T>();
                         const auto zOffset = shape::getOffset(outArrs[outArrIdx]->getShapeInfo(), coords);
                         z[zOffset] = xBuff[xOffset];
+
+                        coords[axis] = temp;
                     }
                 };
 

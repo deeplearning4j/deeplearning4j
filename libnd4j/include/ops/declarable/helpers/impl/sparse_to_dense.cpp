@@ -32,7 +32,7 @@ namespace sd {
                 auto indices = reinterpret_cast<const I*>(vindices);
                 auto output = reinterpret_cast<X*>(voutput);
 
-                Nd4jLong coords[MAX_RANK];
+                int coords[MAX_RANK];
                 uint64_t pos = 0;
                 for (uint64_t e = 0L; e < length; e++) {
                     // indices come in blocks

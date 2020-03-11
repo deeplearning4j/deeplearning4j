@@ -271,7 +271,7 @@ __device__ void BroadcastInt<X>::transformCuda(const void *vx, const Nd4jLong *x
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    Nd4jLong xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
+    int xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
 
     for (int i = tid; i < zLen; i += blockDim.x * gridDim.x) {
 

@@ -135,13 +135,13 @@ __global__ static void sruBICuda(const void* vx,    const Nd4jLong* xShapeInfo,
 
     const int rank = 3;
 
-    __shared__ int time, K;
-    __shared__ Nd4jLong len, totalThreads, *sharedMem;
+    __shared__ int time, K, *sharedMem;
+    __shared__ Nd4jLong len, totalThreads;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         time = xShapeInfo[1];
         K    = xShapeInfo[3] / 2;
@@ -152,7 +152,7 @@ __global__ static void sruBICuda(const void* vx,    const Nd4jLong* xShapeInfo,
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-    Nd4jLong* coords = sharedMem + threadIdx.x * rank;
+    auto coords = sharedMem + threadIdx.x * rank;
 
     if(tid >= len)
         return;
@@ -245,7 +245,7 @@ void sruBI(sd::LaunchContext * context, NDArray* x, const NDArray* w, const NDAr
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (x->sizeAt(1) * x->sizeAt(2) + threadsPerBlock - 1) / threadsPerBlock;      // loop through last two dimensions of x array -> bS, 2*K
-    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * x->rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(int) * x->rankOf() + 128;
 
     NDArray::prepareSpecialUse({ht, ct}, {x, &wi, b, c0, mask});
     BUILD_SINGLE_SELECTOR(x->dataType(), sruBICudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->getSpecialBuffer(), x->getSpecialShapeInfo(), wi.getSpecialBuffer(), wi.getSpecialShapeInfo(), b->getSpecialBuffer(), b->getSpecialShapeInfo(), c0->getSpecialBuffer(), c0->getSpecialShapeInfo(), mask ? mask->getSpecialBuffer() : nullptr, mask ? mask->getSpecialShapeInfo() : nullptr, ht->specialBuffer(), ht->specialShapeInfo(), ct->specialBuffer(), ct->specialShapeInfo()), FLOAT_TYPES);
@@ -340,13 +340,13 @@ __global__ static void sruBIBPCuda(const void* vx,       const Nd4jLong* xShapeI
 
     const int rank = 3;
 
-    __shared__ int time, K;
-    __shared__ Nd4jLong len, totalThreads, *sharedMem;
+    __shared__ int time, K, *sharedMem;
+    __shared__ Nd4jLong len, totalThreads;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         time = xShapeInfo[1];
         K    = xShapeInfo[3] / 2;
@@ -358,7 +358,7 @@ __global__ static void sruBIBPCuda(const void* vx,       const Nd4jLong* xShapeI
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-    Nd4jLong* coords = sharedMem + threadIdx.x * rank;
+    auto coords = sharedMem + threadIdx.x * rank;
 
     if(tid >= len)
         return;
@@ -513,7 +513,7 @@ void sruBIBP(sd::LaunchContext* context, NDArray* x, const NDArray* w, const NDA
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (x->sizeAt(1) * x->sizeAt(2) + threadsPerBlock - 1) / threadsPerBlock;      // loop through last two dimensions of x array -> bS, 2*K
-    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * x->rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(int) * x->rankOf() + 128;
 
     NDArray::prepareSpecialUse({gradI, &gradWi, &gradBias, gradC0}, {x, &wi, b, c0, ct, gradCt, gradHt, mask});
     BUILD_SINGLE_SELECTOR(x->dataType(), sruBIBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->getSpecialBuffer(), x->getSpecialShapeInfo(), wi.getSpecialBuffer(), wi.getSpecialShapeInfo(), b->getSpecialBuffer(), b->getSpecialShapeInfo(), c0->getSpecialBuffer(), c0->getSpecialShapeInfo(), mask ? mask->getSpecialBuffer() : nullptr, mask ? mask->getSpecialShapeInfo() : nullptr, ct->getSpecialBuffer(), ct->getSpecialShapeInfo(), gradHt->getSpecialBuffer(), gradHt->getSpecialShapeInfo(), gradCt->getSpecialBuffer(), gradCt->getSpecialShapeInfo(), gradI->specialBuffer(), gradI->specialShapeInfo(), gradWi.specialBuffer(), gradWi.specialShapeInfo(), gradBias.specialBuffer(), gradBias.specialShapeInfo(), gradC0->specialBuffer(), gradC0->specialShapeInfo()), FLOAT_TYPES);

@@ -43,12 +43,12 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
     const auto x = reinterpret_cast<const T*>(vx);
           auto z = reinterpret_cast<T*>(vz);
 
-    __shared__ int rank;
-    __shared__ Nd4jLong zLen, *sharedMem;
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong zLen;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -103,7 +103,7 @@ void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& out
 
         const int threadsPerBlock = MAX_NUM_THREADS / 2;
         const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+        const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
 
         PointersManager manager(context, "batchToSpace");
 
@@ -138,13 +138,13 @@ __global__ static void batchToSpaceNDCuda(const void* vx, const Nd4jLong* xShape
     const auto y = reinterpret_cast<const Y*>(vy);
           auto z = reinterpret_cast<X*>(vz);
 
-    __shared__ int rank;
-    __shared__ Nd4jLong zLen, *sharedMem;
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong zLen;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -234,7 +234,7 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+        const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
 
         PointersManager manager(context, "batchToSpaceND");
 
@@ -264,12 +264,12 @@ __global__ static void spaceToBatchCuda(const void* vx, const Nd4jLong* xShapeIn
     const auto x = reinterpret_cast<const T*>(vx);
           auto z = reinterpret_cast<T*>(vz);
 
-    __shared__ int rank;
-    __shared__ Nd4jLong zLen, *sharedMem;
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong zLen;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -326,7 +326,7 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
 
         const int threadsPerBlock = MAX_NUM_THREADS / 2;
         const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+        const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
 
         PointersManager manager(context, "spaceToBatch");
 
@@ -364,13 +364,13 @@ __global__ static void spaceToBatchNDCuda(const void* vx, const Nd4jLong* xShape
     const auto y = reinterpret_cast<const Y*>(vy);
           auto z = reinterpret_cast<X*>(vz);
 
-    __shared__ int rank;    // xRank = zRank, yRank = 2;
-    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
+    __shared__ int rank, *sharedMem;    // xRank = zRank, yRank = 2;
+    __shared__ Nd4jLong zLen, totalThreads;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -473,7 +473,7 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+        const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
 
         PointersManager manager(context, "spaceToBatchND");
 

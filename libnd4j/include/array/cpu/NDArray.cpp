@@ -95,22 +95,29 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
     const bool areSameOffsets = shape::haveSameShapeAndStrides(getShapeInfo(), target.getShapeInfo());
 
-
     auto func = PRAGMA_THREADS_FOR {
-        Nd4jLong coords[MAX_RANK];
+
+        int coords[MAX_RANK], temp;
+
         for (auto i = start; i < stop; i++) {
-            shape::index2coords(i, target.getShapeInfo(), coords);
+
+            shape::index2coordsCPU(start, i, target.getShapeInfo(), coords);
             const auto zOffset = shape::getOffset(target.getShapeInfo(), coords);
 
             // if( (row + upper < col) || (row + lower > col) )
             if ((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
                 z[zOffset] = value;
             else if (this != &target) {      // when this and target are different arrays
-                if (xRank != zRank)
+                if (xRank != zRank) {
+                    temp = coords[0];
                     coords[0] = coords[1];
+                }
 
                 const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(getShapeInfo(), coords);
                 z[zOffset] = x[xOffset];
+
+                if (xRank != zRank)     // restore first coordinate
+                    coords[0] = temp;
             }
         }
     };
@@ -376,11 +383,15 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
 
     // loop through input array
     auto func = PRAGMA_THREADS_FOR {
-        Nd4jLong coords[MAX_RANK];
-        for (auto i = start; i < stop; i++) {
-            shape::index2coords(i, output.getShapeInfo(), coords);
 
+        int coords[MAX_RANK], temp;
+
+        for (auto i = start; i < stop; i++) {
+
+            shape::index2coordsCPU(start, i, output.getShapeInfo(), coords);
             const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+
+            temp = coords[axis];
 
             if (repSize > 1) {
                 for (uint j = 0; j < repSize; ++j) {
@@ -394,6 +405,8 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
                 coords[axis] /= repeats[0];
 
             z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+
+            coords[axis] = temp;
         }
     };
 

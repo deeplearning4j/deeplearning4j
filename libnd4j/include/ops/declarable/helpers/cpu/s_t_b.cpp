@@ -113,18 +113,23 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
 
     // loop through input array
     auto func = PRAGMA_THREADS_FOR {
-        Nd4jLong coords[MAX_RANK];
+
+        int zCoords[MAX_RANK], xCoords[MAX_RANK];
+
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coords(i, output.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
 
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+            memcpy(xCoords, zCoords, rank * sizeof(int));
 
             // evaluate spatial coordinates for x
             for (uint j = 1; j <= numOfSpatialDims; ++j)
-                coords[j] += crop.e<uint>(j - 1, 0);       // add crop left
+                xCoords[j] += crop.e<uint>(j - 1, 0);       // add crop left
 
-            z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
+            const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoords);
+
+            z[zOffset] = x[xOffset];
         }
     };
 
@@ -299,11 +304,16 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 
     // loop through output array
     auto func = PRAGMA_THREADS_FOR {
-        Nd4jLong coords[MAX_RANK];
-        for (auto i = start; i < stop; i++) {
-            shape::index2coords(i, output.getShapeInfo(), coords);
 
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+        int zCoords[MAX_RANK], xCoords[MAX_RANK];
+
+        for (auto i = start; i < stop; i++) {
+
+            shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
+
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
+
+            memcpy(xCoords, zCoords, rank * sizeof(int));
 
             bool within = true;
 
@@ -312,16 +322,16 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
                 const auto padLeft = padding.e<uint>(j - 1, 0);
                 const auto padRight = padding.e<uint>(j - 1, 1);
 
-                within &= (coords[j] >= padLeft && coords[j] < output.sizeAt(j) - padRight);
+                within &= zCoords[j] >= padLeft && zCoords[j] < output.sizeAt(j) - padRight;
 
                 if (!within)
                     break;
 
-                coords[j] -= padLeft;       // get coordinates for x
+                xCoords[j] = zCoords[j] - padLeft;       // get coordinates for x
             }
 
             if (within)
-                z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+                z[zOffset] = x[shape::getOffset(input.getShapeInfo(), xCoords)];
             else
                 z[zOffset] = 0.f;
         }

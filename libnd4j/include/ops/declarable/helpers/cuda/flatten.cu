@@ -27,7 +27,7 @@ namespace sd {
             template <typename T>
             void _CUDA_G flattenKernel(void **xBuffers, Nd4jLong **xShapeInfos, Nd4jLong *offsets, Nd4jLong numInputs, void *zBuffer, Nd4jLong *zShapeInfo, char order) {
 
-                Nd4jLong xCoord[MAX_RANK];
+                int xCoord[MAX_RANK];
 
                 // each block of threads works on 1 input array
                 for (Nd4jLong e = blockIdx.x; e < numInputs; e += gridDim.x) {

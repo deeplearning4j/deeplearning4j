@@ -63,7 +63,7 @@ static  void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC,
         for (auto i = start; i < stop; ++i) {
 
             // evaluate C coordinates
-            shape::index2coords(i, cShapeInfo, cCoords.data());
+            shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
 
             // evaluate A coordinates
             aCoords[aMaxis] = cCoords[cMaxis];
@@ -433,12 +433,12 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB,  NDArray* vC,
 
     auto func = PRAGMA_THREADS_FOR {
 
-        std::vector<Nd4jLong> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+        std::vector<int> aCoords(aRank), bCoords(bRank), cCoords(cRank);
 
         for (auto i = start; i < stop; ++i) {
 
             // evaluate C coordinates
-            shape::index2coords(i, cShapeInfo, cCoords.data());
+            shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
 
             // calculate index of current batch
             Nd4jLong batchInd;

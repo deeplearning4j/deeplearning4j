@@ -52,7 +52,7 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-	Nd4jLong coords[MAX_RANK];
+	int coords[MAX_RANK];
 
 	for (int i = tid; i < xzLen; i += blockDim.x * gridDim.x) {
     	shape::index2coords(i, xShapeInfo, coords);
@@ -124,7 +124,7 @@ __global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeI
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-	Nd4jLong coords[MAX_RANK];
+	int coords[MAX_RANK];
 
 	for (int i = tid; i < inLen; i += totalThreads) {
     	shape::index2coords(i, inShapeInfo, coords);

@@ -149,19 +149,19 @@ __global__ void rgbToGrsCuda(const void *vx, const Nd4jLong *xShapeInfo, void *v
 	const auto x = reinterpret_cast<const T*>(vx);
 		  auto z = reinterpret_cast<T*>(vz);
 
-	__shared__ Nd4jLong zLen, *sharedMem;
-	__shared__ int rank;	// xRank == zRank
+	__shared__ Nd4jLong zLen;
+	__shared__ int rank, *sharedMem;	// xRank == zRank
 
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
 		zLen = shape::length(zShapeInfo);
 		rank = shape::rank(zShapeInfo);
 	}
 	__syncthreads();
 
-	Nd4jLong* coords = sharedMem + threadIdx.x * rank;
+	auto coords = sharedMem + threadIdx.x * rank;
 
 	for (Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i +=  gridDim.x * blockDim.x) {
 
@@ -197,7 +197,7 @@ void transformRgbGrs(sd::LaunchContext* context, const NDArray& input, NDArray& 
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
+    const int sharedMem = input.rankOf() * sizeof(int) * threadsPerBlock + 128;
 
 	NDArray::prepareSpecialUse({&output}, {&input});
 	BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrsCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), dimC), NUMERIC_TYPES);

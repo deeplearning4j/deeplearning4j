@@ -43,13 +43,13 @@ __global__ static void dilation2dCuda(const void* vx, const Nd4jLong* xShapeInfo
     const X* y = reinterpret_cast<const X*>(vy);
           Z* z = reinterpret_cast<Z*>(vz);
 
-    __shared__ int xzRank, yRank;
+    __shared__ int xzRank, yRank, *sharedMem;
     __shared__ uint iH, iW, kH, kW;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         zLen = shape::length(zShapeInfo);
 
@@ -119,7 +119,7 @@ void dilation2d(sd::LaunchContext* context, NDArray *input, NDArray *weights, ND
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (output->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = (weights->rankOf() + output->rankOf()) * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+    const int sharedMem = (weights->rankOf() + output->rankOf()) * sizeof(int) * threadsPerBlock  + 128;
 
     NDArray::prepareSpecialUse({output}, {input, weights});
     BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), dilation2dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), weights->getSpecialBuffer(), weights->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), sH, sW, pH, pW, dH, dW), FLOAT_TYPES);
