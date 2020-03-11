@@ -395,7 +395,9 @@
         <profile>
             <id>build-windows</id>
             <activation>
-            <os>windows</os>
+                <os>
+                    <family>Windows</family>
+                </os>
             </activation>
             <properties>
                 <libnd4j.buildprogram>sh</libnd4j.buildprogram>
