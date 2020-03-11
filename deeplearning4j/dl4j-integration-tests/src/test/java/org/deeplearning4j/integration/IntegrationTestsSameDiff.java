@@ -37,4 +37,10 @@ public class IntegrationTestsSameDiff extends BaseDL4JTest {
         IntegrationTestRunner.runTest(SameDiffMLPTestCases.getMLPMnist(), testDir);
     }
 
+    @Test
+    public void testMLPMoon() throws Exception {
+        IntegrationTestRunner.runTest(SameDiffMLPTestCases.getMLPMoon(), testDir);
+    }
+
+
 }

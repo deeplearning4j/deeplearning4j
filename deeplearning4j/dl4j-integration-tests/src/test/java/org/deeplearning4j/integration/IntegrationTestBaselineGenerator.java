@@ -66,7 +66,7 @@ public class IntegrationTestBaselineGenerator {
         }
 
         runGeneration(
-                SameDiffMLPTestCases.getMLPMnist()
+                SameDiffMLPTestCases.getMLPMnist(), SameDiffMLPTestCases.getMLPMoon()
         );
 
     }
