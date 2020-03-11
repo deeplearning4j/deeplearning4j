@@ -50,6 +50,7 @@ public class QLearningDiscreteTest {
         IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
         MockHistoryProcessor hp = new MockHistoryProcessor(hpConf);
         sut.setHistoryProcessor(hp);
+        sut.getLegacyMDPWrapper().setTransformProcess(MockMDP.buildTransformProcess(observationSpace.getShape(), hpConf.getSkipFrame(), hpConf.getHistoryLength()));
         List<QLearning.QLStepReturn<MockEncodable>> results = new ArrayList<>();
 
         // Act
@@ -62,11 +63,7 @@ public class QLearningDiscreteTest {
         for(int i = 0; i < expectedRecords.length; ++i) {
             assertEquals(expectedRecords[i], hp.recordCalls.get(i).getDouble(0), 0.0001);
         }
-        double[] expectedAdds = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0 };
-        assertEquals(expectedAdds.length, hp.addCalls.size());
-        for(int i = 0; i < expectedAdds.length; ++i) {
-            assertEquals(expectedAdds[i], hp.addCalls.get(i).getDouble(0), 0.0001);
-        }
+
         assertEquals(0, hp.startMonitorCallCount);
         assertEquals(0, hp.stopMonitorCallCount);
 

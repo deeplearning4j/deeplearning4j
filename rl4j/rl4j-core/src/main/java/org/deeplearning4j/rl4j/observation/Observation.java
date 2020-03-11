@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17,57 +17,43 @@
 package org.deeplearning4j.rl4j.observation;
 
 import lombok.Getter;
-import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Presently only a dummy container. Will contain observation channels when done.
+ * Represent an observation from the environment
+ *
+ * @author Alexandre Boulanger
  */
 public class Observation {
-    // TODO: Presently only a dummy container. Will contain observation channels when done.
 
-    private final DataSet data;
+    /**
+     * A singleton representing a skipped observation
+     */
+    public static Observation SkippedObservation = new Observation(null);
 
-    @Getter @Setter
-    private boolean skipped;
+    /**
+     * @return A INDArray containing the data of the observation
+     */
+    @Getter
+    private final INDArray data;
 
-    public Observation(INDArray[] data) {
-        this(data, false);
+    public boolean isSkipped() {
+        return data == null;
     }
 
-    public Observation(INDArray[] data, boolean shouldReshape) {
-        INDArray features = Nd4j.concat(0, data);
-        if(shouldReshape) {
-            features = reshape(features);
-        }
-        this.data = new org.nd4j.linalg.dataset.DataSet(features, null);
-    }
-
-    // FIXME: Remove -- only used in unit tests
     public Observation(INDArray data) {
-        this.data = new org.nd4j.linalg.dataset.DataSet(data, null);
-    }
-
-    private INDArray reshape(INDArray source) {
-        long[] shape = source.shape();
-        long[] nshape = new long[shape.length + 1];
-        nshape[0] = 1;
-        System.arraycopy(shape, 0, nshape, 1, shape.length);
-
-        return source.reshape(nshape);
-    }
-
-    private Observation(DataSet data) {
         this.data = data;
     }
 
+    /**
+     * Creates a duplicate instance of the current observation
+     * @return
+     */
     public Observation dup() {
-        return new Observation(new org.nd4j.linalg.dataset.DataSet(data.getFeatures().dup(), null));
-    }
+        if(data == null) {
+            return SkippedObservation;
+        }
 
-    public INDArray getData() {
-        return data.getFeatures();
+        return new Observation(data.dup());
     }
 }

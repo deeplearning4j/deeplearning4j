@@ -15,34 +15,38 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.observation.transform.legacy;
 
-import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.bytedeco.opencv.opencv_core.Mat;
 import org.datavec.api.transform.Operation;
 import org.datavec.image.data.ImageWritable;
+import org.datavec.image.loader.NativeImageLoader;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.bytedeco.opencv.global.opencv_core.CV_32FC;
+import java.io.IOException;
 
-public class EncodableToImageWriteableTransform implements Operation<Encodable, ImageWritable> {
+public class ImageWritableToINDArrayTransform implements Operation<ImageWritable, INDArray> {
 
-    private final OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
     private final int height;
     private final int width;
-    private final int colorChannels;
+    private final NativeImageLoader loader;
 
-    public EncodableToImageWriteableTransform(int height, int width, int colorChannels) {
+    public ImageWritableToINDArrayTransform(int height, int width) {
         this.height = height;
         this.width = width;
-        this.colorChannels = colorChannels;
+        this.loader = new NativeImageLoader(height, width);
     }
 
     @Override
-    public ImageWritable transform(Encodable encodable) {
-        INDArray indArray = Nd4j.create((encodable).toArray()).reshape(height, width, colorChannels);
-        Mat mat = new Mat(height, width, CV_32FC(3), indArray.data().pointer());
-        return new ImageWritable(converter.convert(mat));
+    public INDArray transform(ImageWritable imageWritable) {
+        INDArray out = null;
+        try {
+            out = loader.asMatrix(imageWritable);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        out = out.reshape(1, height, width);
+        INDArray compressed = out.castTo(DataType.UINT8);
+        return compressed;
     }
-
 }

@@ -106,7 +106,7 @@ public class DoubleDQNTest {
     }
 
     private Observation buildObservation(double[] data) {
-        return new Observation(new INDArray[]{Nd4j.create(data).reshape(1, 2)});
+        return new Observation(Nd4j.create(data).reshape(1, 2));
     }
 
     private Transition<Integer> builtTransition(Observation observation, Integer action, double reward, boolean isTerminal, Observation nextObservation) {

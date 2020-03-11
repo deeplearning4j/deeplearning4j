@@ -193,11 +193,11 @@ public class TransitionTest {
                 Nd4j.create(obs[1]).reshape(1, 3),
                 Nd4j.create(obs[2]).reshape(1, 3),
         };
-        return new Observation(history);
+        return new Observation(Nd4j.concat(0, history));
     }
 
     private Observation buildObservation(double[] obs) {
-        return new Observation(new INDArray[] { Nd4j.create(obs).reshape(1, 3) });
+        return new Observation(Nd4j.create(obs).reshape(1, 3));
     }
 
     private Observation buildNextObservation(double[][] obs, double[] nextObs) {
@@ -206,7 +206,7 @@ public class TransitionTest {
                 Nd4j.create(obs[0]).reshape(1, 3),
                 Nd4j.create(obs[1]).reshape(1, 3),
         };
-        return new Observation(nextHistory);
+        return new Observation(Nd4j.concat(0, nextHistory));
     }
 
     private Transition buildTransition(Observation observation, int action, double reward, Observation nextObservation) {
