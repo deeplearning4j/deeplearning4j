@@ -248,11 +248,16 @@ case "$OS" in
         ARCH="i686"
       fi
       echo "BUILDING ANDROID x86"
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/x86-4.9/prebuilt/$KERNEL/"
+
+      setandroid_defaults
+
+
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake -DSD_ANDROID_BUILD=true"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm/"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DSD_ANDROID_BUILD=true"
+      setwindows_msys
     ;;
 
     android-x86_64)
@@ -260,11 +265,16 @@ case "$OS" in
         ARCH="x86-64"
       fi
       echo "BUILDING ANDROID x86_64"
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/x86_64-4.9/prebuilt/$KERNEL/"
+
+      setandroid_defaults
+
+
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86_64/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DSD_ANDROID_BUILD=true"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm/"
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DSD_ANDROID_BUILD=true"
+      setwindows_msys
     ;;
 
     ios-x86_64)
