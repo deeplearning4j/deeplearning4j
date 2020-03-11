@@ -75,6 +75,7 @@
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
         <libnd4j.buildthreads></libnd4j.buildthreads>
         <libnd4j.helper></libnd4j.helper>
+        <libnd4j.buildprogram></libnd4j.buildprogram>
     </properties>
 
     <build>
@@ -150,7 +151,7 @@
                         <configuration>
                             <skip>${libnd4j.cpu.compile.skip}</skip>
                             <buildCommand>
-                                <program>sh</program>
+                                <program>${libnd4j.buildprogram}</program>
                                 <argument>buildnativeoperations.sh</argument>
                                 <argument>--build-type</argument>
                                 <argument>${libnd4j.build}</argument>
@@ -310,7 +311,7 @@
                                 <configuration>
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <buildCommand>
-                                        <program>sh</program>
+                                        <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh
                                         </argument>
                                         <argument>--build-type</argument>
@@ -389,6 +390,29 @@
                 </plugins>
             </build>
         </profile>
+
+        <!-- Build on windows can use sh rather than bash due to WSL clashing with msys2 -->
+        <profile>
+            <id>build-windows</id>
+            <activation>
+                 <os>windows</os>
+            </activation>
+            <properties>
+                <libnd4j.buildprogram>sh</libnd4j.buildprogram>
+            </properties>
+        </profile>
+
+        <!-- Default build program should be bash on non windows platforms -->
+        <profile>
+            <id>build-unix</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.buildprogram>bash</libnd4j.buildprogram>
+            </properties>
+        </profile>
+
         <!-- Profiles to set the default libnd4j.helper property, example: mkdnn -->
         <profile>
             <id>libnd4j-helper-avx2</id>
