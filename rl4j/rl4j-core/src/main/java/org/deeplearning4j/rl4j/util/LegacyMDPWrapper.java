@@ -141,7 +141,7 @@ public class LegacyMDPWrapper<O, A, AS extends ActionSpace<A>> implements MDP<Ob
         }
     }
 
-    private Map<String, Object> buildChannelsData(O obs) {
+    private Map<String, Object> buildChannelsData(final O obs) {
         return new HashMap<String, Object>() {{
             put("data", obs);
         }};

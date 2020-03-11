@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.15)
 project(libnd4j)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 option(NATIVE "Optimize for build machine (might not work on others)" OFF)

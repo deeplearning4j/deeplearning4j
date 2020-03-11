@@ -171,7 +171,7 @@ public class TransformProcess {
         public Builder filter(FilterOperation filterOperation) {
             Preconditions.checkNotNull(filterOperation, "The filterOperation must not be null");
 
-            operations.add(Maps.immutableEntry(null, filterOperation));
+            operations.add((Map.Entry)Maps.immutableEntry(null, filterOperation));
             return this;
         }
 
@@ -187,7 +187,7 @@ public class TransformProcess {
             Preconditions.checkNotNull(transformOperation, "The transformOperation must not be null");
 
             requiredChannelNames.add(targetChannel);
-            operations.add(Maps.immutableEntry(targetChannel, transformOperation));
+            operations.add((Map.Entry)Maps.immutableEntry(targetChannel, transformOperation));
             return this;
         }
 
@@ -201,7 +201,7 @@ public class TransformProcess {
             Preconditions.checkNotNull(dataSetPreProcessor, "The dataSetPreProcessor must not be null");
 
             requiredChannelNames.add(targetChannel);
-            operations.add(Maps.immutableEntry(targetChannel, dataSetPreProcessor));
+            operations.add((Map.Entry)Maps.immutableEntry(targetChannel, dataSetPreProcessor));
             return this;
         }
 
