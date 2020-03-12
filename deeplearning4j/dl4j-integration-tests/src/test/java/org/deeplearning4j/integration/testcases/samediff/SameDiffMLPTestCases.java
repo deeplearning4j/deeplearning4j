@@ -43,6 +43,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.resources.Resources;
 
 import java.io.File;
@@ -53,7 +54,7 @@ import static org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfi
 public class SameDiffMLPTestCases {
 
 
-    public static TestCase getMLPMnist(){
+    public static TestCase getMLPMnist() {
         return new TestCase() {
             {
                 testName = "MLPMnistSD";
@@ -104,7 +105,7 @@ public class SameDiffMLPTestCases {
 
             @Override
             public List<Map<String, INDArray>> getPredictionsTestDataSameDiff() throws Exception {
-                List<Map<String,INDArray>> out = new ArrayList<>();
+                List<Map<String, INDArray>> out = new ArrayList<>();
 
                 DataSetIterator iter = new MnistDataSetIterator(1, true, 12345);
                 out.add(Collections.singletonMap("in", iter.next().getFeatures()));
@@ -123,7 +124,7 @@ public class SameDiffMLPTestCases {
             @Override
             public Map<String, INDArray> getGradientsTestDataSameDiff() throws Exception {
                 DataSet ds = new MnistDataSetIterator(8, true, 12345).next();
-                Map<String,INDArray> map = new HashMap<>();
+                Map<String, INDArray> map = new HashMap<>();
                 map.put("in", ds.getFeatures());
                 map.put("label", ds.getLabels());
                 return map;
@@ -165,7 +166,6 @@ public class SameDiffMLPTestCases {
             }
         };
     }
-
 
 
     public static TestCase getMLPMoon() {
@@ -309,144 +309,195 @@ public class SameDiffMLPTestCases {
             }
         };
 
+    }
 
 
-        public static TestCase getLenetMnist() {
-            return new TestCase() {
-                {
-                    testName = "LenetMnistSD";
-                    testType = TestType.RANDOM_INIT;
-                    testPredictions = true;
-                    testTrainingCurves = true;
-                    testGradients = true;
-                    testParamsPostTraining = true;
-                    testEvaluation = true;
-                    testOverfitting = false;
-                }
+    public static TestCase getLenetMnist() {
+        return new TestCase() {
+            {
+                testName = "LenetMnistSD";
+                testType = TestType.RANDOM_INIT;
+                testPredictions = true;
+                testTrainingCurves = true;
+                testGradients = true;
+                testParamsPostTraining = true;
+                testEvaluation = true;
+                testOverfitting = false;
+            }
 
-                @Override
-                public ModelType modelType() {
-                    return ModelType.SAMEDIFF;
-                }
+            @Override
+            public ModelType modelType() {
+                return ModelType.SAMEDIFF;
+            }
 
-                public Object getConfiguration() throws Exception {
-                    int nChannels = 1; // Number of input channels
-                    int outputNum = 10; // The number of possible outcomes
-                    int seed = 123;
+            public Object getConfiguration() throws Exception {
+                int nChannels = 1; // Number of input channels
+                int outputNum = 10; // The number of possible outcomes
+                int seed = 123;
 
-                    SameDiff sd = SameDiff.create();
-                    SDVariable in = sd.placeHolder("in", DataType.FLOAT, nChannels, 784);
-                    SDVariable label = sd.placeHolder("label", DataType.FLOAT, nChannels, outputNum);
-                    SDVariable in4d = in.reshape(-1, nChannels, 28, 28);
+                SameDiff sd = SameDiff.create();
+                SDVariable in = sd.placeHolder("in", DataType.FLOAT, nChannels, 784);
+                SDVariable label = sd.placeHolder("label", DataType.FLOAT, nChannels, outputNum);
 
-                    int kernelHeight = 5;
-                    int kernelWidth = 5;
+                //input [minibatch, channels=1, Height = 28, Width = 28]
+                SDVariable in4d = in.reshape(-1, nChannels, 28, 28);
 
-                    //  for conv2d method: weight arrays must have shape:
-                    //[kernelHeight, kernelWidth, inputChannels, outputChannels]
-                    SDVariable w0 = sd.var("w0", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, 20));
-
-                    SDVariable layer0 = sd.cnn.conv2d("layer0", in4d, w0, Conv2DConfig.builder()
-                            .kH(kernelHeight)
-                            .kW(kernelWidth)
-                            .build());
-
-                    SDVariable w1 = sd.var("w1", Nd4j.rand(DataType.FLOAT, 20, 50));
-                    SDVariable b1 = sd.var("b1", Nd4j.rand(DataType.FLOAT, 20));
-
-                    SDVariable layer1 = sd.cnn.maxPooling2d("layer1", layer0.mmul(w1).add(b1),  Pooling2DConfig.builder()
-                            .kH(2).kW(2)
-                            .sH(2).sW(2)
-                            .build());
+                int kernelHeight = 5;
+                int kernelWidth = 5;
 
 
-                    SDVariable w2 = sd.var("w0", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, 50));
-                    SDVariable layer2 = sd.cnn.conv2d("layer2", layer1, w2, Conv2DConfig.builder()
-                            .kH(kernelHeight)
-                            .kW(kernelWidth)
-                            .build());
-
-                    SDVariable w3 = sd.var("w3", Nd4j.rand(DataType.FLOAT, 20, 50));
-                    SDVariable b3 = sd.var("b3", Nd4j.rand(DataType.FLOAT, 20));
-
-                    SDVariable layer3 = sd.cnn.maxPooling2d("layer1", layer2.mmul(w3).add(b3),  Pooling2DConfig.builder()
-                            .kH(2).kW(2)
-                            .sH(2).sW(2)
-                            .build());
-
-                    SDVariable w4 = sd.var("w4", Nd4j.rand(DataType.FLOAT, 50, 500));
-                    SDVariable b4 = sd.var("b4", Nd4j.rand(DataType.FLOAT, 50));
-
-                    SDVariable w5 = sd.var("w5", Nd4j.rand(DataType.FLOAT, 500, outputNum));
-                    SDVariable b5 = sd.var("b5", Nd4j.rand(DataType.FLOAT, 500));
-
-                    SDVariable layer4 = sd.nn.relu("layer4", layer3.mmul(w4).add(b4), 0);
-                    SDVariable out = sd.nn.softmax("out", layer4.mmul(w5).add(b5));
-                    SDVariable loss = sd.loss.logLoss("loss", label, out);
+                // w0 [kernelHeight = 5, kernelWidth = 5 , inputChannels = 1, outputChannels = 20]
+                // b0 [20]
+                SDVariable w0 = sd.var("w0", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, nChannels, 20));
+                SDVariable b0 = sd.var("b0", Nd4j.rand(DataType.FLOAT, 20));
 
 
-                    return sd;
+                SDVariable layer0 = sd.nn.relu(sd.cnn.conv2d("layer0", in4d, w0, b0, Conv2DConfig.builder()
+                        .kH(kernelHeight)
+                        .kW(kernelWidth)
+                        .sH(1)
+                        .sW(1)
+                        .dataFormat("NCHW")
+                        .build()), 0);
+
+                // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
+                // outputsize_H(W) = ( 28 - 5 + 2*0 ) / 1 + 1 = 24
+                // [minibatch,20,24,24]
 
 
-                    //                Pooling2DConfig pooling2DConfig = new Pooling2DConfig();
-//                pooling2DConfig.setType(Pooling2D.Pooling2DType.MAX);
-//                pooling2DConfig.setKH(2);
-//                pooling2DConfig.setKW(2);
-//                pooling2DConfig.setSH(1);
-//                pooling2DConfig.setSW(1);
-//
-//                SDVariable layer1 = sd.cnn.avgPooling2d("layer1",layer0,pooling2DConfig)
-//
-//
-//                SDVariable a0 = sd.nn.relu(in.mmul(w0).add(b0),0);
-//                SDVariable out = sd.nn.softmax("out", a0.mmul(w1).add(b1));
-//                SDVariable loss = sd.loss.logLoss("loss", label, out);
+                SDVariable layer1 = sd.cnn.maxPooling2d("layer1", layer0, Pooling2DConfig.builder()
+                        .kH(2).kW(2)
+                        .sH(2).sW(2)
+                        .isNHWC(false)
+                        .build());
+
+                // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
+                // outputsize_H(W) = ( 24 - 2 + 2*0 ) / 2 + 1 = 12
+                // [minibatch,12,12,20]
 
 
-//             STRUCTURE TO MAP
-//                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-//                        .dataType(DataType.FLOAT)
-//                        .seed(seed)
-//                        .l2(0.0005)
-//                        .weightInit(WeightInit.XAVIER)
-//                        .updater(new Nesterovs(0.01, 0.9))
-//                        .list()
-//                        .layer(0, new ConvolutionLayer.Builder(5, 5)
-//                                //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
-//                                .nIn(nChannels)
-//                                .stride(1, 1)
-//                                .nOut(20)
-//                                .activation(Activation.IDENTITY)
-//                                .build())
-//                        .layer(1, new SubsamplingLayer.Builder(PoolingType.MAX)
-//                                .kernelSize(2, 2)
-//                                .stride(2, 2)
-//                                .build())
-//                        .layer(2, new ConvolutionLayer.Builder(5, 5)
-//                                //Note that nIn need not be specified in later layers
-//                                .stride(1, 1)
-//                                .nOut(50)
-//                                .activation(Activation.IDENTITY)
-//                                .build())
-//                        .layer(3, new SubsamplingLayer.Builder(PoolingType.MAX)
-//                                .kernelSize(2, 2)
-//                                .stride(2, 2)
-//                                .build())
-//                        .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
-//                                .nOut(500).build())
-//                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-//                                .nOut(outputNum)
-//                                .activation(Activation.SOFTMAX)
-//                                .build())
-//                        .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
-//                        .build();
+                SDVariable w2 = sd.var("w2", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, 20, 50));
+                SDVariable b2 = sd.var("b2", Nd4j.rand(DataType.FLOAT, 50));
 
 
+                SDVariable layer2 = sd.nn.relu(sd.cnn.conv2d("layer2", layer1, w2, b2, Conv2DConfig.builder()
+                        .kH(kernelHeight)
+                        .kW(kernelWidth)
+                        .sH(1)
+                        .sW(1)
+                        .dataFormat("NCHW")
+                        .build()), 0);
 
-                }
+                // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
+                // outputsize_H(W) = ( 12 - 2 + 2*0 ) / 1 + 1 = 6
+                // [minibatch,11,11,50]
+
+
+                SDVariable layer3 = sd.cnn.maxPooling2d("layer3", layer2, Pooling2DConfig.builder()
+                        .kH(2).kW(2)
+                        .sH(2).sW(2)
+                        .isNHWC(false)
+                        .build());
+
+
+                // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
+                // outputsize_H(W) = ( 11 - 2 + 2*0 ) / 2 + 1 = 5.5 ( ceil(5.5)=6 )
+                // [minibatch,6,6,50]
+
+                int channels_height_width = 6 * 6 * 50;
+                layer3.reshape(-1, channels_height_width);
+
+                SDVariable w4 = sd.var("w4", Nd4j.rand(DataType.FLOAT, channels_height_width, 500));
+                SDVariable b4 = sd.var("b4", Nd4j.rand(DataType.FLOAT, 500));
+
+
+                SDVariable layer4 = sd.nn.relu("layer4", layer3.mmul(w4).add(b4), 0);
+
+                SDVariable w5 = sd.var("w5", Nd4j.rand(DataType.FLOAT, 500, 2));
+                SDVariable b5 = sd.var("b5", Nd4j.rand(DataType.FLOAT, 2));
+
+                SDVariable out = sd.nn.softmax("out", layer4.mmul(w5).add(b5));
+                SDVariable loss = sd.loss.logLoss("loss", label, out);
+
+                //Also set the training configuration:
+                sd.setTrainingConfig(TrainingConfig.builder()
+                        .updater(new Nesterovs(0.01, 0.9))
+                        .weightDecay(1e-3, true)
+                        .dataSetFeatureMapping("in")            //features[0] -> "in" placeholder
+                        .dataSetLabelMapping("label")           //labels[0]   -> "label" placeholder
+                        .build());
+
+                return sd;
+
+
 
             }
-        }
+
+            @Override
+            public MultiDataSet getGradientsTestData() throws Exception {
+                org.nd4j.linalg.dataset.DataSet ds = new MnistDataSetIterator(8, false, 12345).next();
+                return new org.nd4j.linalg.dataset.MultiDataSet(ds.getFeatures(), ds.getLabels());
+            }
+
+            @Override
+            public MultiDataSetIterator getTrainingData() throws Exception {
+                DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
+
+                iter = new EarlyTerminationDataSetIterator(iter, 60);
+                return new MultiDataSetIteratorAdapter(iter);
+            }
+
+            @Override
+            public MultiDataSetIterator getEvaluationTestData() throws Exception {
+                return new MultiDataSetIteratorAdapter(new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10));
+            }
+
+            @Override
+            public List<Map<String,INDArray>> getPredictionsTestDataSameDiff() throws Exception {
+                DataSetIterator iter = new MnistDataSetIterator(8, true, 12345);
+                
+                List<Map<String,INDArray>> list = new ArrayList<>();
+
+                org.nd4j.linalg.dataset.DataSet ds = iter.next();
+                ds = ds.asList().get(0);
+
+                HashMap<String, INDArray> myHashMap = new HashMap<String, INDArray>();
+                myHashMap.put(ds.getFeatures().toStringFull(),null);
+                list.add(myHashMap);
+
+                ds = iter.next();
+                myHashMap.put(ds.getFeatures().toStringFull(),null);
+                list.add(myHashMap);
+                return list;
+            }
+
+            @Override
+            public List<String> getPredictionsNamesSameDiff() {
+                List<String> list = new ArrayList<>();
+                list.add("out");
+                return list;
+            }
+
+            @Override
+            public IEvaluation[] getNewEvaluations() {
+                return new IEvaluation[]{
+                        new Evaluation(),
+                        new ROCMultiClass()};
+            }
+
+        };
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
