@@ -49,7 +49,7 @@ namespace ops {
                 input = a;
             }
         }
-		
+
 		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
 		if(input->isEmpty()){
 			for( int i=0; i< num_splits; i++ ){
@@ -112,17 +112,17 @@ namespace ops {
 				inputVar = 0;
             }
         }
-		
+
 		auto shapes = SHAPELIST();
-		
+
 		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
-		if(INPUT_VARIABLE(inputVar)->isEmpty()){
-			for (int e = 0; e < num_splits; e++) {
-                auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(dataType);
-				shapes->push_back(empty);
-			}
-			return shapes;
-		}
+		// if(INPUT_VARIABLE(inputVar)->isEmpty()){
+		// 	for (int e = 0; e < num_splits; e++) {
+  //               auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(dataType);
+		// 		shapes->push_back(empty);
+		// 	}
+		// 	return shapes;
+		// }
 
         if (block.numI() == 2)
             axis = INT_ARG(1);
@@ -135,9 +135,9 @@ namespace ops {
         for (int e = 0; e < shape::rank(input); e++)
             if (e == axis)
                 shape[e] = shape::sizeAt(input, e) / num_splits;
-            else 
+            else
                 shape[e] = shape::sizeAt(input, e);
-        
+
         for (int e = 0; e < num_splits; e++) {
             auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dataType, shape::order(input), shape);
             shapes->push_back(newShape);
