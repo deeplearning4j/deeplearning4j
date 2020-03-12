@@ -376,6 +376,8 @@ public class SameDiffMLPTestCases {
                 // [minibatch,12,12,20]
 
 
+                // w2 [kernelHeight = 5, kernelWidth = 5 , inputChannels = 20, outputChannels = 50]
+                // b0 [50]
                 SDVariable w2 = sd.var("w2", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, 20, 50));
                 SDVariable b2 = sd.var("b2", Nd4j.rand(DataType.FLOAT, 50));
 
@@ -389,8 +391,8 @@ public class SameDiffMLPTestCases {
                         .build()), 0);
 
                 // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
-                // outputsize_H(W) = ( 12 - 2 + 2*0 ) / 1 + 1 = 6
-                // [minibatch,11,11,50]
+                // outputsize_H(W) = ( 12 - 5 + 2*0 ) / 1 + 1 = 8
+                // [minibatch,8,8,50]
 
 
                 SDVariable layer3 = sd.cnn.maxPooling2d("layer3", layer2, Pooling2DConfig.builder()
@@ -401,10 +403,10 @@ public class SameDiffMLPTestCases {
 
 
                 // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
-                // outputsize_H(W) = ( 11 - 2 + 2*0 ) / 2 + 1 = 5.5 ( ceil(5.5)=6 )
-                // [minibatch,6,6,50]
+                // outputsize_H(W) = ( 8 - 2 + 2*0 ) / 2 + 1 = 4
+                // [minibatch,4,4,50]
 
-                int channels_height_width = 6 * 6 * 50;
+                int channels_height_width = 4 * 4 * 50;
                 layer3.reshape(-1, channels_height_width);
 
                 SDVariable w4 = sd.var("w4", Nd4j.rand(DataType.FLOAT, channels_height_width, 500));
