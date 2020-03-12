@@ -90,32 +90,13 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     // x
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(dims, type, format);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(dims, type, format);
-    if(x->ews() != 1 || x->ordering() != 'c') {
-        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        x_user_md.data.format_desc.blocking.strides[0] = x->strideAt(0);
-        x_user_md.data.format_desc.blocking.strides[1] = x->strideAt(1);
-        if(xRank > 2) {
-            x_user_md.data.format_desc.blocking.strides[2] = x->strideAt(2);
-            x_user_md.data.format_desc.blocking.strides[3] = x->strideAt(3);
-        }
-        if(xRank > 4)
-            x_user_md.data.format_desc.blocking.strides[4] = x->strideAt(4);
-    }
 
+    mkldnnUtils::setBlockStrides(x, xRank, x_user_md);
     // z, output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, format);
-    if(z->ews() != 1 || z->ordering() != 'c') {
-        z_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        z_user_md.data.format_desc.blocking.strides[0] = z->strideAt(0);
-        z_user_md.data.format_desc.blocking.strides[1] = z->strideAt(1);
-        if(xRank > 2) {
-            z_user_md.data.format_desc.blocking.strides[2] = z->strideAt(2);
-            z_user_md.data.format_desc.blocking.strides[3] = z->strideAt(3);
-        }
-        if(xRank > 4)
-            z_user_md.data.format_desc.blocking.strides[4] = z->strideAt(4);
-    }
+
+    mkldnnUtils::setBlockStrides(z, xRank, z_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -131,14 +112,9 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     // provide memory and check whether reorder is required
 
     // x
-    auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
-    const bool xReorder = op_ff_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? dnnl::memory(op_ff_prim_desc.src_desc(), engine) : x_user_mem;
-    if (xReorder)
-        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[DNNL_ARG_SRC] = x_mkl_mem;
-
-    // z
+    mkldnnUtils::loadDataToMklStream(x, engine, stream, args, x_user_md, op_ff_prim_desc.src_desc(), DNNL_ARG_SRC);
+    
+    // z 
     auto z_user_mem = dnnl::memory(z_user_md, engine, z->getBuffer());
     const bool zReorder = op_ff_prim_desc.dst_desc() != z_user_mem.get_desc();
     auto z_mkl_mem = zReorder ? dnnl::memory(op_ff_prim_desc.dst_desc(), engine) : z_user_mem;
@@ -230,47 +206,20 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     // x
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(dims, type, format);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(dims, type, format);
-    if(x->ews() != 1 || x->ordering() != 'c') {
-        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        x_user_md.data.format_desc.blocking.strides[0] = x->strideAt(0);
-        x_user_md.data.format_desc.blocking.strides[1] = x->strideAt(1);
-        if(xRank > 2) {
-            x_user_md.data.format_desc.blocking.strides[2] = x->strideAt(2);
-            x_user_md.data.format_desc.blocking.strides[3] = x->strideAt(3);
-        }
-        if(xRank > 4)
-            x_user_md.data.format_desc.blocking.strides[4] = x->strideAt(4);
-    }
 
+    mkldnnUtils::setBlockStrides(x, xRank, x_user_md);
+    
     // dLdO
     dnnl::memory::desc dLdO_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc dLdO_user_md = dnnl::memory::desc(dims, type, format);
-    if(dLdO->ews() != 1 || dLdO->ordering() != 'c') {
-        dLdO_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        dLdO_user_md.data.format_desc.blocking.strides[0] = dLdO->strideAt(0);
-        dLdO_user_md.data.format_desc.blocking.strides[1] = dLdO->strideAt(1);
-        if(xRank > 2) {
-            dLdO_user_md.data.format_desc.blocking.strides[2] = dLdO->strideAt(2);
-            dLdO_user_md.data.format_desc.blocking.strides[3] = dLdO->strideAt(3);
-        }
-        if(xRank > 4)
-            dLdO_user_md.data.format_desc.blocking.strides[4] = dLdO->strideAt(4);
-    }
+
+    mkldnnUtils::setBlockStrides(dLdO, xRank, dLdO_user_md);
 
     // dLdI
     dnnl::memory::desc dLdI_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc dLdI_user_md = dnnl::memory::desc(dims, type, format);
-    if(dLdI->ews() != 1 || dLdI->ordering() != 'c') {
-        dLdI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        dLdI_user_md.data.format_desc.blocking.strides[0] = dLdI->strideAt(0);
-        dLdI_user_md.data.format_desc.blocking.strides[1] = dLdI->strideAt(1);
-        if(xRank > 2) {
-            dLdI_user_md.data.format_desc.blocking.strides[2] = dLdI->strideAt(2);
-            dLdI_user_md.data.format_desc.blocking.strides[3] = dLdI->strideAt(3);
-        }
-        if(xRank > 4)
-            dLdI_user_md.data.format_desc.blocking.strides[4] = dLdI->strideAt(4);
-    }
+
+    mkldnnUtils::setBlockStrides(dLdI, xRank, dLdI_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -290,20 +239,10 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     // provide memory and check whether reorder is required
 
     // x
-    auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
-    const bool xReorder = op_bp_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? dnnl::memory(op_bp_prim_desc.src_desc(), engine) : x_user_mem;
-    if (xReorder)
-        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[DNNL_ARG_SRC] = x_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(x, engine, stream, args, x_user_md, op_bp_prim_desc.src_desc(), DNNL_ARG_SRC);
 
     // dLdO
-    auto dLdO_user_mem = dnnl::memory(dLdO_user_md, engine, dLdO->getBuffer());
-    const bool dLdOReorder = op_bp_prim_desc.diff_dst_desc() != dLdO_user_mem.get_desc();
-    auto dLdO_mkl_mem = dLdOReorder ? dnnl::memory(op_bp_prim_desc.diff_dst_desc(), engine) : dLdO_user_mem;
-    if (dLdOReorder)
-        dnnl::reorder(dLdO_user_mem, dLdO_mkl_mem).execute(stream, dLdO_user_mem, dLdO_mkl_mem);
-    args[DNNL_ARG_DIFF_DST] = dLdO_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(dLdO, engine, stream, args, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(), DNNL_ARG_DIFF_DST);
 
     // mean
     auto mean_mkl_mem = dnnl::memory(op_bp_prim_desc.mean_desc(), engine, mean->getBuffer());

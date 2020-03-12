@@ -31,69 +31,36 @@ namespace sd {
     namespace ops {
         namespace platforms {
 
+
             //////////////////////////////////////////////////////////////////////
             static void softmaxMKLDNN(const NDArray* x, NDArray* z, const int axis) {
 
                 const auto xRank = x->rankOf();
-                const auto zRank = z->rankOf();
+                dnnl::memory::dims xShape, zShape;
 
-                std::vector<int64_t> dimsX(xRank), dimsZ(zRank);
-                for (auto i = 0; i < xRank; i++) {
-                    dimsX[i] = x->sizeAt(i);
-                    dimsZ[i] = z->sizeAt(i);
-                }
+                mkldnnUtils::getDims(x, xRank, xShape);
+                mkldnnUtils::getDims(z, xRank, zShape);
 
-                dnnl::memory::dims xShape = dnnl::memory::dims(dimsX);
-                dnnl::memory::dims zShape = dnnl::memory::dims(dimsZ);
 
-                dnnl::memory::format_tag format = dnnl::memory::format_tag::a; // 1 == xRank
-                if (2 == xRank && 1 == axis) {
-                    format = dnnl::memory::format_tag::ab;
-                }
-                else if (2 == xRank && 0 == axis) {
+                dnnl::memory::format_tag format = mkldnnUtils::getFormat(xRank);
+                // optimized cases
+                if (2 == xRank && 0 == axis) {
                     format = dnnl::memory::format_tag::ba;
                 }
-                else if (3 == xRank) {
-                    format = dnnl::memory::format_tag::abc;
-                }
-                else if (4 == xRank && 3 == axis) {
-                    format = dnnl::memory::format_tag::abcd;
-                }
-                else if (4 == xRank && 1 == axis && dimsX[2] * dimsX[3] > 1) {
+                else if (4 == xRank && 1 == axis && (x->sizeAt(2) * x->sizeAt(3)) > 1) {
                     format = dnnl::memory::format_tag::acdb;
-                }
-                else if (4 == xRank) {
-                    format = dnnl::memory::format_tag::abcd;
-                }
-                else if (5 == xRank) {
-                    format = dnnl::memory::format_tag::abcde;
-                }
-                else if (6 == xRank) {
-                    format = dnnl::memory::format_tag::abcdef;
                 }
 
                 dnnl::memory::data_type xType = dnnl::memory::data_type::f32;
-                dnnl::memory::data_type zType = dnnl::memory::data_type::f32;
 
                 dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xShape, xType, format);
                 dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, xType, format);
-
-                if (x->ews() != 1 || x->ordering() != 'c') {
-                    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-                    for (auto i = 0; i < xRank; ++i) {
-                        x_user_md.data.format_desc.blocking.strides[i] = x->strideAt(i);
-                    }
-                }
+                mkldnnUtils::setBlockStrides(x, xRank, x_user_md);
 
                 // z
-                dnnl::memory::desc z_mkl_md = dnnl::memory::desc(zShape, zType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, zType, format);
-                if (z->ews() != 1 || z->ordering() != 'c') {
-                    z_user_md.data.format_kind = dnnl_blocked;    // overrides format
-                    for (auto i = 0; i < xRank; ++i) {
-                        z_user_md.data.format_desc.blocking.strides[i] = z->strideAt(i);
-                    }
-                }
+                dnnl::memory::desc z_mkl_md = dnnl::memory::desc(zShape, xType, format);
+                dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, xType, format);
+                mkldnnUtils::setBlockStrides(z, xRank, z_user_md);
 
                 auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -101,7 +68,6 @@ namespace sd {
                 dnnl::primitive_attr attr; // it is empty since we have usual values for alpha (=1) and beta (=0)
 
                 // operation primitive description
-                // todo check this
                 dnnl::softmax_forward::desc op_desc(dnnl::prop_kind::forward_inference, x_mkl_md, axis);
 
                 dnnl::softmax_forward::primitive_desc op_prim_desc(op_desc, attr, engine);
@@ -114,12 +80,7 @@ namespace sd {
                 // provide memory buffers and check whether reorder is required
 
                 // input
-                auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
-                const bool xReorder = op_prim_desc.src_desc() != x_user_mem.get_desc();
-                auto x_mkl_mem = xReorder ? dnnl::memory(op_prim_desc.src_desc(), engine) : x_user_mem;
-                if (xReorder)
-                    dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-                args[DNNL_ARG_SRC] = x_mkl_mem;
+                mkldnnUtils::loadDataToMklStream(x, engine, stream, args, x_user_md, op_prim_desc.src_desc(), DNNL_ARG_SRC);
 
                 // z
                 auto z_user_mem = dnnl::memory(z_user_md, engine, z->getBuffer());
@@ -176,6 +137,136 @@ namespace sd {
                 */
                 return  !x->isEmpty() && block.isUseMKLDNN() && bSupportedRanks && (xType == DataType::FLOAT32 && zType == DataType::FLOAT32);
 
+            }
+
+            //////////////////////////////////////////////////////////////////////
+            static void softmaxBpMKLDNN(const NDArray* x, const NDArray* dLdz, NDArray* dLdx, const int axis) {
+
+                const auto xRank = x->rankOf();
+                const auto dLdzRank = dLdz->rankOf();
+
+                dnnl::memory::dims xShape, dLdxShape, dLdzShape;
+
+                mkldnnUtils::getDims(x, xRank, xShape);
+                mkldnnUtils::getDims(dLdx, xRank, dLdxShape);
+                mkldnnUtils::getDims(dLdz, dLdzRank, dLdzShape);
+
+                dnnl::memory::format_tag format = mkldnnUtils::getFormat(xRank);
+
+                // x
+                dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xShape, dnnl::memory::data_type::f32, format);
+                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, dnnl::memory::data_type::f32, format);
+                mkldnnUtils::setBlockStrides(x, xRank, x_user_md);
+
+                // dLdx
+                dnnl::memory::desc dLdx_mkl_md = dnnl::memory::desc(dLdxShape, dnnl::memory::data_type::f32, format);
+                dnnl::memory::desc dLdx_user_md = dnnl::memory::desc(dLdxShape, dnnl::memory::data_type::f32, format);
+                mkldnnUtils::setBlockStrides(dLdx, xRank, dLdx_user_md);
+                // todo if mkl does not support broadcast we can remove this
+                format = mkldnnUtils::getFormat(dLdzRank);
+
+                // dLdz
+                dnnl::memory::desc dLdz_mkl_md = dnnl::memory::desc(dLdzShape, dnnl::memory::data_type::f32, format);
+                dnnl::memory::desc dLdz_user_md = dnnl::memory::desc(dLdzShape, dnnl::memory::data_type::f32, format);
+                mkldnnUtils::setBlockStrides(dLdz, dLdzRank, dLdz_user_md);
+
+                auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+
+                // operation primitive description
+                // forward description
+                dnnl::softmax_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, axis);
+                dnnl::softmax_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+
+                // backward description
+                dnnl::softmax_backward::desc op_bp_desc(dLdz_mkl_md, dLdx_mkl_md, axis);
+                dnnl::softmax_backward::primitive_desc op_bp_prim_desc(op_bp_desc, engine, op_ff_prim_desc);
+
+                // arguments (memory buffers) necessary for calculations
+                std::unordered_map<int, dnnl::memory> argsbp, argsff;
+
+                dnnl::stream stream(engine);
+
+                // provide memory buffers and check whether reorder is required for forward
+                // input
+                mkldnnUtils::loadDataToMklStream(x, engine, stream, argsff, x_user_md, op_ff_prim_desc.src_desc(), DNNL_ARG_SRC);
+
+                // dLdx
+                auto dLdx_user_mem = dnnl::memory(dLdx_user_md, engine, dLdx->getBuffer());
+                const bool dLdxReorder = op_ff_prim_desc.dst_desc() != dLdx_user_mem.get_desc();
+                auto dLdx_mkl_mem = dLdxReorder ? dnnl::memory(op_ff_prim_desc.dst_desc(), engine) : dLdx_user_mem;
+                argsff[DNNL_ARG_DST] = dLdx_mkl_mem;
+
+                // check and arg set for backprob
+                argsbp[DNNL_ARG_DIFF_SRC] = dLdx_mkl_mem;
+                argsbp[DNNL_ARG_DST] = dLdx_mkl_mem;
+                // dLdz
+                mkldnnUtils::loadDataToMklStream(dLdz, engine, stream, argsbp, dLdz_user_md, op_bp_prim_desc.diff_dst_desc(), DNNL_ARG_DIFF_DST);
+
+                // run calculations forward
+                dnnl::softmax_forward(op_ff_prim_desc).execute(stream, argsff);
+
+                // run calculations backward
+                dnnl::softmax_backward(op_bp_prim_desc).execute(stream, argsbp);
+
+                // reorder outputs if necessary
+                if (dLdxReorder)
+                    dnnl::reorder(dLdx_mkl_mem, dLdx_user_mem).execute(stream, dLdx_mkl_mem, dLdx_user_mem);
+
+                stream.wait();
+            }
+
+
+            PLATFORM_IMPL(softmax_bp, ENGINE_CPU) {
+
+                auto input = INPUT_VARIABLE(0);
+                auto dLdz = INPUT_VARIABLE(1);
+                auto dLdx = OUTPUT_VARIABLE(0);
+
+                const int rank = input->rankOf();
+                const int dLdzRank = dLdz->rankOf();
+                int dim = block.getIArguments()->size() > 0 ? INT_ARG(0) : rank - 1;
+
+                if (dim < 0) {
+                    dim += rank;
+                }
+
+                REQUIRE_TRUE(dim < rank && dim >= 0, 0, "SOFTMAX_MKLDNN_BP OP: the value of input integer parameter (dimension) must be less than input array rank %i, but got dimension = %i instead !", rank, dim);
+
+                REQUIRE_TRUE(rank <= 6 && dLdzRank <= 6, 0, "SOFTMAX_MKLDNN_BP OP: the rank of input and dLdz must be less or qual 6, but got input rank = %i and dLdz rank rank = %i instead !", rank, dLdzRank);
+
+                // mkldnnSoftMax
+                softmaxBpMKLDNN(input, dLdz, dLdx, dim);
+
+                return Status::OK();
+            }
+
+            PLATFORM_CHECK(softmax_bp, ENGINE_CPU) {
+
+                auto x = INPUT_VARIABLE(0);
+                auto dLdz = INPUT_VARIABLE(1);
+                auto dLdx = OUTPUT_VARIABLE(0);
+
+                const DataType xType = x->dataType();
+                const DataType dLdzType = dLdz->dataType();
+                const DataType dLdxType = dLdx->dataType();
+
+                const int xRank = x->rankOf();
+                const int dLdzRank = dLdz->rankOf();
+
+                bool bSupportedRanks = xRank < 7 && dLdzRank == xRank && (!x->isEmpty() && !dLdz->isEmpty());
+
+                if (bSupportedRanks) {
+                    for (int i = 0; i < xRank; i++) {
+                        if (x->sizeAt(i) != dLdz->sizeAt(i)) {
+                            bSupportedRanks = false;
+                            break;
+                        }
+                    }
+                }
+
+                //Source     Destination
+                //f32 	    f32
+                return block.isUseMKLDNN() && bSupportedRanks && (xType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32);
             }
 
         }

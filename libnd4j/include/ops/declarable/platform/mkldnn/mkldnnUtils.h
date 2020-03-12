@@ -90,6 +90,8 @@ namespace sd {
 
             DECLARE_PLATFORM(softmax, ENGINE_CPU);
 
+            DECLARE_PLATFORM(softmax_bp, ENGINE_CPU);
+
             DECLARE_PLATFORM(tanh, ENGINE_CPU);
 
         }
@@ -106,6 +108,41 @@ namespace sd {
             dnnl::memory::desc* user_src_md, dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis);
 
         dnnl::engine& getEngine(void* ptr);
+
+        /**
+        * This function creates memory dimentions
+        * @param const pointer to array
+        * @param const array rank
+        * @param reference to memory dimentions
+        */
+        void getDims(const NDArray* array, const int rank, dnnl::memory::dims& mklDims);
+        /**
+         * This function generate memory format tag based on rank
+         * @param const array rank
+         * @return memory format
+         */
+        dnnl::memory::format_tag   getFormat(const int rank);
+        /**
+         * This function generate memory format tag based on rank
+         * @param const pointer to dataset
+         * @param const dataset rank
+         * @param reference to memory descriptor
+         * @return memory format
+         */
+        void   setBlockStrides(const NDArray* array, const int rank, dnnl::memory::desc& mklMd);
+        //////////////////////////////////////////////////////////////////////
+        /**
+        * This function load and reorder user memory to mkl
+        * @param const pointer to dataset
+        * @param reference to mkl engine
+        * @param reference to mkl stream
+        * @param reference to args container for dnnl
+        * @param reference to user memory description
+        * @param primitive memory descriptor
+        * @param dnnl arg activation enumerator
+        */
+        void loadDataToMklStream(const NDArray* array, dnnl::engine& engine, dnnl::stream& stream,
+             std::unordered_map<int, dnnl::memory>& args, dnnl::memory::desc& user_md, dnnl::memory::desc primitive_md, int DNNL_ARG);
 
         /**
          * Utility methods for MKLDNN

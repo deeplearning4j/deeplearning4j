@@ -29,6 +29,55 @@ namespace sd        {
 namespace mkldnnUtils {
 
 //////////////////////////////////////////////////////////////////////
+void getDims(const NDArray* array, const int rank, dnnl::memory::dims& mklDims){
+    
+    std::vector<int64_t> vDims(rank);
+    for (auto i = 0; i < rank; i++) {
+        vDims[i] = array->sizeAt(i);
+    }
+    mklDims = dnnl::memory::dims(vDims);
+}
+//////////////////////////////////////////////////////////////////////
+dnnl::memory::format_tag   getFormat(const int rank){
+        if (2 == rank) {
+            return dnnl::memory::format_tag::ab;
+        }
+        else if (3 == rank) {
+            return dnnl::memory::format_tag::abc;
+        }
+        else if (4 == rank) {
+            return dnnl::memory::format_tag::abcd;
+        }
+        else if (5 == rank) {
+            return dnnl::memory::format_tag::abcde;
+        }
+        else if (6 == rank) {
+            return dnnl::memory::format_tag::abcdef;
+        }
+        return dnnl::memory::format_tag::a; // 1 == dataSetRank
+}
+//////////////////////////////////////////////////////////////////////
+void   setBlockStrides(const NDArray* array, const int rank, dnnl::memory::desc& mklMd){
+        if (array->ews() != 1 || array->ordering() != 'c') {
+            mklMd.data.format_kind = dnnl_blocked;    // overrides format
+            for (auto i = 0; i < rank; ++i) {
+                mklMd.data.format_desc.blocking.strides[i] = array->strideAt(i);
+            }
+        }
+}
+////////////////////////////////////////////////////////////////////////////////////////////////
+void loadDataToMklStream(const NDArray* array, dnnl::engine& engine, dnnl::stream& stream, 
+                         std::unordered_map<int, dnnl::memory>& args, dnnl::memory::desc& user_md, dnnl::memory::desc primitive_md, int DNNL_ARG ){
+                
+                auto user_mem = dnnl::memory(user_md, engine, array->getBuffer());
+                const bool bReorder = primitive_md != user_mem.get_desc();
+                auto mkl_mem = bReorder ? dnnl::memory(primitive_md, engine) : user_mem;
+                if (bReorder)
+                    dnnl::reorder(user_mem, mkl_mem).execute(stream, user_mem, mkl_mem);
+                args[DNNL_ARG] = mkl_mem;
+}
+
+//////////////////////////////////////////////////////////////////////
 void poolingMKLDNN(const NDArray *input, NDArray *output,
                 const int kD, const int kH, const int kW,
                 const int sD, const int sH, const int sW,
@@ -113,12 +162,7 @@ void poolingMKLDNN(const NDArray *input, NDArray *output,
     // provide memory buffers and check whether reorder is required
 
     // input
-    auto x_user_mem = dnnl::memory(x_user_md, engine, input->getBuffer());
-    const bool xReorder = op_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? dnnl::memory(op_prim_desc.src_desc(), engine) : x_user_mem;
-    if (xReorder)
-        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[DNNL_ARG_SRC] = x_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(input, engine, stream, args, x_user_md, op_prim_desc.src_desc(), DNNL_ARG_SRC);
 
     // output
     auto z_user_mem = dnnl::memory(z_user_md, engine, output->getBuffer());
@@ -236,13 +280,8 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
     std::unordered_map<int, dnnl::memory> args;
 
     // gradO
-    auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, gradO->getBuffer());
-    const bool gradOReorder = op_bp_prim_desc.diff_dst_desc()    != gradO_user_mem.get_desc();
-    auto gradO_mkl_mem = gradOReorder ? dnnl::memory(op_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
-    if (gradOReorder)
-        dnnl::reorder(gradO_user_mem, gradO_mkl_mem).execute(stream, gradO_user_mem, gradO_mkl_mem);
-    args[DNNL_ARG_DIFF_DST] = gradO_mkl_mem;
-
+    mkldnnUtils::loadDataToMklStream(gradO, engine, stream, args, gradO_user_md, op_bp_prim_desc.diff_dst_desc(), DNNL_ARG_DIFF_DST);
+    
     // gradI
     auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
     const bool gradIReorder = op_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc();
@@ -252,13 +291,8 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
     if(mode == algorithm::pooling_max) {
 
         // input
-        auto x_user_mem = dnnl::memory(x_user_md, engine, input->getBuffer());
-        const bool xReorder = op_ff_prim_desc.src_desc() != x_user_mem.get_desc();
-        auto x_mkl_mem = xReorder ? dnnl::memory(op_ff_prim_desc.src_desc(), engine) : x_user_mem;
-        if (xReorder)
-            dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-        args[DNNL_ARG_SRC] = x_mkl_mem;
-
+        mkldnnUtils::loadDataToMklStream(input, engine, stream, args, x_user_md, op_ff_prim_desc.src_desc(), DNNL_ARG_SRC);
+        
         // z
         auto z_mkl_mem = dnnl::memory(op_ff_prim_desc.dst_desc(), engine);
         args[DNNL_ARG_DST] = z_mkl_mem;

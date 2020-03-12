@@ -35,52 +35,21 @@ namespace sd {
             static void tanhMKLDNN(const NDArray* x, NDArray* z) {
 
                 const auto xRank = x->rankOf();
+                dnnl::memory::dims xShape, zShape;
 
-                std::vector<int64_t> dimsX(xRank), dimsZ(xRank);
-                for (auto i = 0; i < xRank; i++) {
-                    dimsX[i] = x->sizeAt(i);
-                    dimsZ[i] = z->sizeAt(i);
-                }
+                mkldnnUtils::getDims(x, xRank, xShape);
+                mkldnnUtils::getDims(z, xRank, zShape);
 
-                dnnl::memory::dims xShape = dnnl::memory::dims(dimsX);
-                dnnl::memory::dims zShape = dnnl::memory::dims(dimsZ);
-
-                dnnl::memory::format_tag format = dnnl::memory::format_tag::a;
-                if (2 == xRank) {
-                    format = dnnl::memory::format_tag::ab;
-                }
-                else if (3 == xRank) {
-                    format = dnnl::memory::format_tag::abc;
-                }
-                else if (4 == xRank) {
-                    format = dnnl::memory::format_tag::abcd;
-                }
-                else if (5 == xRank) {
-                    format = dnnl::memory::format_tag::abcde;
-                }
-                else if (6 == xRank) {
-                    format = dnnl::memory::format_tag::abcdef;
-                }
+                dnnl::memory::format_tag format = mkldnnUtils::getFormat(xRank);
 
                 dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xShape, dnnl::memory::data_type::f32, format);
                 dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, dnnl::memory::data_type::f32, format);
-
-                if (x->ews() != 1 || x->ordering() != 'c') {
-                    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-                    for (auto i = 0; i < xRank; ++i) {
-                        x_user_md.data.format_desc.blocking.strides[i] = x->strideAt(i);
-                    }
-                }
+                mkldnnUtils::setBlockStrides(x, xRank, x_user_md);
 
                 // z
                 dnnl::memory::desc z_mkl_md = dnnl::memory::desc(zShape, dnnl::memory::data_type::f32, format);
                 dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, dnnl::memory::data_type::f32, format);
-                if (z->ews() != 1 || z->ordering() != 'c') {
-                    z_user_md.data.format_kind = dnnl_blocked;    // overrides format
-                    for (auto i = 0; i < xRank; ++i) {
-                        z_user_md.data.format_desc.blocking.strides[i] = z->strideAt(i);
-                    }
-                }
+                mkldnnUtils::setBlockStrides(z, xRank, z_user_md);
 
                 auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -99,12 +68,7 @@ namespace sd {
 
                 // provide memory buffers and check whether reorder is required
                 // input
-                auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
-                const bool xReorder = op_prim_desc.src_desc() != x_user_mem.get_desc();
-                auto x_mkl_mem = xReorder ? dnnl::memory(op_prim_desc.src_desc(), engine) : x_user_mem;
-                if (xReorder)
-                    dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-                args[DNNL_ARG_SRC] = x_mkl_mem;
+                mkldnnUtils::loadDataToMklStream(x, engine, stream, args, x_user_md, op_prim_desc.src_desc(), DNNL_ARG_SRC);
 
                 // z
                 auto z_user_mem = dnnl::memory(z_user_md, engine, z->getBuffer());
