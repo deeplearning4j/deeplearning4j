@@ -94,6 +94,8 @@ namespace sd {
 
             DECLARE_PLATFORM(tanh, ENGINE_CPU);
 
+            DECLARE_PLATFORM(tanh_bp, ENGINE_CPU);
+
         }
     }
 
