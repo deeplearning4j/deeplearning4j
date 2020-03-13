@@ -415,8 +415,8 @@ public class SameDiffMLPTestCases {
 
                 SDVariable layer4 = sd.nn.relu("layer4", layer3.mmul(w4).add(b4), 0);
 
-                SDVariable w5 = sd.var("w5", Nd4j.rand(DataType.FLOAT, 500, 2));
-                SDVariable b5 = sd.var("b5", Nd4j.rand(DataType.FLOAT, 2));
+                SDVariable w5 = sd.var("w5", Nd4j.rand(DataType.FLOAT, 500, outputNum));
+                SDVariable b5 = sd.var("b5", Nd4j.rand(DataType.FLOAT, outputNum));
 
                 SDVariable out = sd.nn.softmax("out", layer4.mmul(w5).add(b5));
                 SDVariable loss = sd.loss.logLoss("loss", label, out);
@@ -428,6 +428,7 @@ public class SameDiffMLPTestCases {
                         .dataSetFeatureMapping("in")            //features[0] -> "in" placeholder
                         .dataSetLabelMapping("label")           //labels[0]   -> "label" placeholder
                         .build());
+
 
                 return sd;
 
@@ -475,9 +476,8 @@ public class SameDiffMLPTestCases {
 
             @Override
             public List<String> getPredictionsNamesSameDiff() {
-                List<String> list = new ArrayList<>();
-                list.add("out");
-                return list;
+                return Collections.singletonList("out");
+
             }
 
             @Override
