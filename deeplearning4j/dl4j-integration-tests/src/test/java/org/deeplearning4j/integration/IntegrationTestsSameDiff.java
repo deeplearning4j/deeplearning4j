@@ -16,6 +16,7 @@
 package org.deeplearning4j.integration;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.integration.testcases.samediff.SameDiffCNNCases;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffMLPTestCases;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,7 +45,12 @@ public class IntegrationTestsSameDiff extends BaseDL4JTest {
 
     @Test
     public void testLenetMnist() throws Exception {
-        IntegrationTestRunner.runTest(SameDiffMLPTestCases.getLenetMnist(), testDir);
+        IntegrationTestRunner.runTest(SameDiffCNNCases.getLenetMnist(), testDir);
+    }
+
+    @Test
+    public void testCnn3dSynthetic() throws Exception {
+        IntegrationTestRunner.runTest(SameDiffCNNCases.getCnn3dSynthetic(), testDir);
     }
 
 

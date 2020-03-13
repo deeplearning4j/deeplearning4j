@@ -22,6 +22,7 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
+import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.integration.ModelType;
 import org.deeplearning4j.integration.TestCase;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -34,7 +35,9 @@ import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -288,6 +291,7 @@ public class SameDiffMLPTestCases {
                 return new MultiDataSetIteratorAdapter(iter);
             }
 
+
             @Override
             public IEvaluation[] doEvaluationSameDiff(SameDiff sd, MultiDataSetIterator iter, IEvaluation[] evaluations) {
                 sd.evaluate(iter, "out", 0, evaluations);
@@ -310,186 +314,6 @@ public class SameDiffMLPTestCases {
         };
 
     }
-
-
-    public static TestCase getLenetMnist() {
-        return new TestCase() {
-            {
-                testName = "LenetMnistSD";
-                testType = TestType.RANDOM_INIT;
-                testPredictions = true;
-                testTrainingCurves = true;
-                testGradients = true;
-                testParamsPostTraining = true;
-                testEvaluation = true;
-                testOverfitting = false;
-            }
-
-            @Override
-            public ModelType modelType() {
-                return ModelType.SAMEDIFF;
-            }
-
-            public Object getConfiguration() throws Exception {
-                int nChannels = 1; // Number of input channels
-                int outputNum = 10; // The number of possible outcomes
-                int seed = 123;
-
-                SameDiff sd = SameDiff.create();
-                SDVariable in = sd.placeHolder("in", DataType.FLOAT, nChannels, 784);
-                SDVariable label = sd.placeHolder("label", DataType.FLOAT, nChannels, outputNum);
-
-                //input [minibatch, channels=1, Height = 28, Width = 28]
-                SDVariable in4d = in.reshape(-1, nChannels, 28, 28);
-
-                int kernelHeight = 5;
-                int kernelWidth = 5;
-
-
-                // w0 [kernelHeight = 5, kernelWidth = 5 , inputChannels = 1, outputChannels = 20]
-                // b0 [20]
-                SDVariable w0 = sd.var("w0", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, nChannels, 20));
-                SDVariable b0 = sd.var("b0", Nd4j.rand(DataType.FLOAT, 20));
-
-
-                SDVariable layer0 = sd.nn.relu(sd.cnn.conv2d("layer0", in4d, w0, b0, Conv2DConfig.builder()
-                        .kH(kernelHeight)
-                        .kW(kernelWidth)
-                        .sH(1)
-                        .sW(1)
-                        .dataFormat("NCHW")
-                        .build()), 0);
-
-                // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
-                // outputsize_H(W) = ( 28 - 5 + 2*0 ) / 1 + 1 = 24
-                // [minibatch,20,24,24]
-
-
-                SDVariable layer1 = sd.cnn.maxPooling2d("layer1", layer0, Pooling2DConfig.builder()
-                        .kH(2).kW(2)
-                        .sH(2).sW(2)
-                        .isNHWC(false)
-                        .build());
-
-                // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
-                // outputsize_H(W) = ( 24 - 2 + 2*0 ) / 2 + 1 = 12
-                // [minibatch,12,12,20]
-
-
-                // w2 [kernelHeight = 5, kernelWidth = 5 , inputChannels = 20, outputChannels = 50]
-                // b0 [50]
-                SDVariable w2 = sd.var("w2", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, 20, 50));
-                SDVariable b2 = sd.var("b2", Nd4j.rand(DataType.FLOAT, 50));
-
-
-                SDVariable layer2 = sd.nn.relu(sd.cnn.conv2d("layer2", layer1, w2, b2, Conv2DConfig.builder()
-                        .kH(kernelHeight)
-                        .kW(kernelWidth)
-                        .sH(1)
-                        .sW(1)
-                        .dataFormat("NCHW")
-                        .build()), 0);
-
-                // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
-                // outputsize_H(W) = ( 12 - 5 + 2*0 ) / 1 + 1 = 8
-                // [minibatch,8,8,50]
-
-
-                SDVariable layer3 = sd.cnn.maxPooling2d("layer3", layer2, Pooling2DConfig.builder()
-                        .kH(2).kW(2)
-                        .sH(2).sW(2)
-                        .isNHWC(false)
-                        .build());
-
-
-                // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
-                // outputsize_H(W) = ( 8 - 2 + 2*0 ) / 2 + 1 = 4
-                // [minibatch,4,4,50]
-
-                int channels_height_width = 4 * 4 * 50;
-                layer3.reshape(-1, channels_height_width);
-
-                SDVariable w4 = sd.var("w4", Nd4j.rand(DataType.FLOAT, channels_height_width, 500));
-                SDVariable b4 = sd.var("b4", Nd4j.rand(DataType.FLOAT, 500));
-
-
-                SDVariable layer4 = sd.nn.relu("layer4", layer3.mmul(w4).add(b4), 0);
-
-                SDVariable w5 = sd.var("w5", Nd4j.rand(DataType.FLOAT, 500, outputNum));
-                SDVariable b5 = sd.var("b5", Nd4j.rand(DataType.FLOAT, outputNum));
-
-                SDVariable out = sd.nn.softmax("out", layer4.mmul(w5).add(b5));
-                SDVariable loss = sd.loss.logLoss("loss", label, out);
-
-                //Also set the training configuration:
-                sd.setTrainingConfig(TrainingConfig.builder()
-                        .updater(new Nesterovs(0.01, 0.9))
-                        .weightDecay(1e-3, true)
-                        .dataSetFeatureMapping("in")            //features[0] -> "in" placeholder
-                        .dataSetLabelMapping("label")           //labels[0]   -> "label" placeholder
-                        .build());
-
-
-                return sd;
-
-
-
-            }
-
-            @Override
-            public MultiDataSet getGradientsTestData() throws Exception {
-                org.nd4j.linalg.dataset.DataSet ds = new MnistDataSetIterator(8, false, 12345).next();
-                return new org.nd4j.linalg.dataset.MultiDataSet(ds.getFeatures(), ds.getLabels());
-            }
-
-            @Override
-            public MultiDataSetIterator getTrainingData() throws Exception {
-                DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
-
-                iter = new EarlyTerminationDataSetIterator(iter, 60);
-                return new MultiDataSetIteratorAdapter(iter);
-            }
-
-            @Override
-            public MultiDataSetIterator getEvaluationTestData() throws Exception {
-                return new MultiDataSetIteratorAdapter(new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10));
-            }
-
-            @Override
-            public List<Map<String,INDArray>> getPredictionsTestDataSameDiff() throws Exception {
-                DataSetIterator iter = new MnistDataSetIterator(8, true, 12345);
-                
-                List<Map<String,INDArray>> list = new ArrayList<>();
-
-                org.nd4j.linalg.dataset.DataSet ds = iter.next();
-                ds = ds.asList().get(0);
-
-                HashMap<String, INDArray> myHashMap = new HashMap<String, INDArray>();
-                myHashMap.put(ds.getFeatures().toStringFull(),null);
-                list.add(myHashMap);
-
-                ds = iter.next();
-                myHashMap.put(ds.getFeatures().toStringFull(),null);
-                list.add(myHashMap);
-                return list;
-            }
-
-            @Override
-            public List<String> getPredictionsNamesSameDiff() {
-                return Collections.singletonList("out");
-
-            }
-
-            @Override
-            public IEvaluation[] getNewEvaluations() {
-                return new IEvaluation[]{
-                        new Evaluation(),
-                        new ROCMultiClass()};
-            }
-
-        };
-    }
-
 }
 
 

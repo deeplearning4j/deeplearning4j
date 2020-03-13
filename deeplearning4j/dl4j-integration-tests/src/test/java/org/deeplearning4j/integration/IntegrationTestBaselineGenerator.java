@@ -20,6 +20,7 @@ package org.deeplearning4j.integration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
+import org.deeplearning4j.integration.testcases.samediff.SameDiffCNNCases;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffMLPTestCases;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -66,7 +67,10 @@ public class IntegrationTestBaselineGenerator {
         }
 
         runGeneration(
-                SameDiffMLPTestCases.getMLPMnist(), SameDiffMLPTestCases.getMLPMoon(), SameDiffMLPTestCases.getLenetMnist()
+//                SameDiffMLPTestCases.getMLPMnist(),
+//                SameDiffMLPTestCases.getMLPMoon(),
+//                SameDiffCNNCases.getLenetMnist(),
+                SameDiffCNNCases.getCnn3dSynthetic()
         );
 
     }
