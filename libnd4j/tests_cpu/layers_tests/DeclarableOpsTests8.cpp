@@ -3514,23 +3514,6 @@ TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_4_119) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_5) {
-
-    auto x = NDArrayFactory::create<TypeParam>('f', {8, 32, 64, 64});
-    x.linspace(1);
-
-    sd::ops::lrn op;
-    auto results = op.evaluate({&x}, {1.0, 1.0, 0.5}, {2});
-    auto out = results.at(0);
-
-    ASSERT_EQ(Status::OK(), results.status());
-//    ASSERT_TRUE(exp.isSameShape(out));
-//    ASSERT_TRUE(exp.equalsTo(out));
-
-    
-}
-
-////////////////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests8, LrnTest_BP_01) {
 
     auto x = NDArrayFactory::create<double>( 'c', {1, 1, 1, 10});
