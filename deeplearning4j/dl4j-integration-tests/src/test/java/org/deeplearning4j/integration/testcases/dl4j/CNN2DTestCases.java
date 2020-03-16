@@ -285,7 +285,7 @@ public class CNN2DTestCases {
 
             @Override
             public ModelType modelType() {
-                return ModelType.CG;
+                return ModelType.MLN;
             }
 
             @Override

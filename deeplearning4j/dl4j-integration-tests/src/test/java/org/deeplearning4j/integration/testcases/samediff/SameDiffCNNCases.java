@@ -204,6 +204,8 @@ public class SameDiffCNNCases {
                         new EvaluationCalibration()};
             }
 
+
+
             @Override
             public IEvaluation[] doEvaluationSameDiff(SameDiff sd, MultiDataSetIterator iter, IEvaluation[] evaluations) {
                 sd.evaluate(iter, "out", 0, evaluations);
@@ -334,10 +336,20 @@ public class SameDiffCNNCases {
                 INDArray labels = org.deeplearning4j.integration.TestUtils.randomOneHot(2, 10);
 
                 list.add(Collections.singletonMap("in", arr));
-                list.add(Collections.singletonMap("label", labels));
 
                 return list;
             }
+
+            @Override
+            public MultiDataSetIterator getTrainingData() throws Exception {
+                DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
+
+                iter = new EarlyTerminationDataSetIterator(iter, 60);
+                return new MultiDataSetIteratorAdapter(iter);
+            }
+
+
+
 
             @Override
             public IEvaluation[] getNewEvaluations(){
