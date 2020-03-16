@@ -1571,7 +1571,7 @@ namespace sd {
             if(p.getIntParam("inplace") == 1){
                 z.push_back(view);
             } else {
-                z.push_back(NDArrayFactory::create_<float>('c', {r,r}));
+                z.push_back(NDArrayFactory::create_<float>('c', {view->sizeAt(0),view->sizeAt(1)}));
             }
             delete arr;
         };

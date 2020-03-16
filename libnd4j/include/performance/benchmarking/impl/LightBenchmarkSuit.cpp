@@ -609,7 +609,7 @@ namespace sd {
 
             nd4j_printf("Running LightBenchmarkSuite.pairwiseBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += pairwiseBenchmark, (), LIBND4J_TYPES);
-/*
+
             nd4j_printf("Running LightBenchmarkSuite.reduceFullBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += reduceFullBenchmark, (), LIBND4J_TYPES);
 
@@ -627,13 +627,13 @@ namespace sd {
 
             nd4j_printf("Running LightBenchmarkSuite.lstmBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += lstmBenchmark, (), LIBND4J_TYPES);
-            */
+
         }
 
         nd4j_printf("Running LightBenchmarkSuite.broadcast2d\n", "");
-        //result += broadcast2d();
+        result += broadcast2d();
         nd4j_printf("Running LightBenchmarkSuite.mismatchedOrderAssign\n", "");
-        //result += mismatchedOrderAssign();
+        result += mismatchedOrderAssign();
 
         return result;
     }

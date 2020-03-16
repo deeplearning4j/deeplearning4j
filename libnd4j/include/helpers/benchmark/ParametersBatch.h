@@ -61,10 +61,9 @@ namespace sd {
 
             //nd4j_printf("Total Iterations: %i\n", totalIterations);
 
-
-
             for (int i = 0; i < totalIterations; i++) {
-                shape::index2coords(i, xRank, xShape, xCoords);
+                if (xRank > 0)
+                    shape::index2coords(i, xRank, xShape, xCoords);
 
                 Parameters params;
                 for (int j = 0; j < xRank; j++) {

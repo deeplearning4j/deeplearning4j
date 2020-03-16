@@ -57,6 +57,7 @@ public:
     }
 };
 
+
 #ifdef RELEASE_BUILD
 
 TEST_F(PerformanceTests, test_maxpooling2d_1) {

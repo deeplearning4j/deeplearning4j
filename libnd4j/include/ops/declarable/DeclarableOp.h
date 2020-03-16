@@ -132,7 +132,7 @@ namespace sd {
             // this method returns OpDescriptor, describing this Op instance
             OpDescriptor *getOpDescriptor();
 
-            Nd4jStatus validateDataTypes(Context& block);
+            virtual Nd4jStatus validateDataTypes(Context& block);
 
             /**
             *   This method should be available in each implemented Op, and should return Op output shape(s), for a given input shape(s)

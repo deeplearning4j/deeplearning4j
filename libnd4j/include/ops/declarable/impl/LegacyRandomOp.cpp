@@ -266,9 +266,6 @@ namespace sd {
                     auto z = OUTPUT_VARIABLE(0); // NDArrayFactory::create_<T>('c', shape, block.getWorkspace());
 
                     RandomLauncher::fillTruncatedNormal(block.launchContext(), block.randomGenerator(), z, mean, stdev);
-
-                    // FIXME: !!!
-                    //OVERWRITE_RESULT(z);
                 }
                     break;
                 case sd::random::AlphaDropOut: {
@@ -419,6 +416,32 @@ namespace sd {
             }
 
             return arrayList;
+        }
+
+        Nd4jStatus LegacyRandomOp::validateDataTypes(Context& block) {
+            if (block.isFastPath()) {
+                // in this case we'll roll through pre-defined outputs
+                auto fpo = block.fastpath_out();
+                for (auto v:fpo) {
+                    if (v != nullptr) {
+                        if (!v->isR())
+                            return ND4J_STATUS_BAD_ARGUMENTS;
+                    }
+                }
+            } else {
+                std::pair<int,int> pair(block.nodeId(), 0);
+                if (block.getVariableSpace()->hasVariable(pair)) {
+                    auto var = block.variable(pair);
+                    if (!var->hasNDArray())
+                        return ND4J_STATUS_BAD_ARGUMENTS;
+
+                    auto arr = var->getNDArray();
+                    if (!arr->isR())
+                        return ND4J_STATUS_BAD_ARGUMENTS;
+                }
+            }
+
+            return Status::OK();
         }
 
         BUILD_SINGLE_TEMPLATE(template Nd4jStatus LegacyRandomOp::validateAndExecute_, (Context&), FLOAT_TYPES);

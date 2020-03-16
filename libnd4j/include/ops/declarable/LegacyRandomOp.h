@@ -46,6 +46,7 @@ namespace sd {
 
             Nd4jStatus execute(Context* block) override;
 
+            Nd4jStatus validateDataTypes(Context& block) override;
             ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
             LegacyOp* clone() override;
         };
