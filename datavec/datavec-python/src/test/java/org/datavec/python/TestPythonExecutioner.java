@@ -20,10 +20,13 @@ import org.bytedeco.javacpp.BytePointer;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
+import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -223,6 +226,35 @@ public class TestPythonExecutioner {
 
     }
 
+
+    @Test
+    public void testNDArrayNoCopy() throws Exception{
+        PythonVariables pyInputs = new PythonVariables();
+        PythonVariables pyOutputs = new PythonVariables();
+        INDArray arr = Nd4j.rand(3, 2);
+        ((BaseDataBuffer)arr.data()).syncToPrimary();
+        pyInputs.addNDArray("x", arr);
+        pyOutputs.addNDArray("x");
+        INDArray expected = arr.mul(2.3);
+        String code = "x *= 2.3";
+        Python.exec(code, pyInputs, pyOutputs);
+        Assert.assertEquals(pyInputs.getNDArrayValue("x"), pyOutputs.getNDArrayValue("x"));
+        Assert.assertEquals(expected, pyOutputs.getNDArrayValue("x"));
+        Assert.assertEquals(arr.data().address(), pyOutputs.getNDArrayValue("x").data().address());
+    }
+
+    @Test
+    public void testNDArrayInplace() throws Exception{
+        PythonVariables pyInputs = new PythonVariables();
+        INDArray arr = Nd4j.rand(3, 2);
+        ((BaseDataBuffer)arr.data()).syncToPrimary();
+        pyInputs.addNDArray("x", arr);
+        INDArray expected = arr.mul(2.3);
+        String code = "x *= 2.3";
+        Python.exec(code, pyInputs, null);
+        Assert.assertEquals(expected, arr);
+    }
+
     @Test
     public void testByteBufferInput() throws Exception{
         //ByteBuffer buff = ByteBuffer.allocateDirect(3);
@@ -230,8 +262,7 @@ public class TestPythonExecutioner {
         buff.putScalar(0, 97); // a
         buff.putScalar(1, 98); // b
         buff.putScalar(2, 99); // c
-
-
+        ((BaseDataBuffer)buff.data()).syncToPrimary();
         PythonVariables pyInputs = new PythonVariables();
         pyInputs.addBytes("buff", new BytePointer(buff.data().pointer()));
 
@@ -251,6 +282,7 @@ public class TestPythonExecutioner {
           buff.putScalar(0, 97); // a
           buff.putScalar(1, 98); // b
           buff.putScalar(2, 99); // c
+          ((BaseDataBuffer)buff.data()).syncToPrimary();
 
 
           PythonVariables pyInputs = new PythonVariables();
@@ -262,6 +294,7 @@ public class TestPythonExecutioner {
           String code = "buff[0]=99\nbuff[1]=98\nbuff[2]=97";
           Python.exec(code, pyInputs, pyOutputs);
           Assert.assertEquals("cba", pyOutputs.getBytesValue("buff").getString());
+          Assert.assertEquals(buff.data().address(), pyOutputs.getBytesValue("buff").address());
       }
 
     @Test
@@ -270,6 +303,8 @@ public class TestPythonExecutioner {
         buff.putScalar(0, 97); // a
         buff.putScalar(1, 98); // b
         buff.putScalar(2, 99); // c
+        ((BaseDataBuffer)buff.data()).syncToPrimary();
+
         PythonVariables pyInputs = new PythonVariables();
         pyInputs.addBytes("buff", new BytePointer(buff.data().pointer()));
         String code = "buff[0]+=2\nbuff[2]-=2";
@@ -288,6 +323,7 @@ public class TestPythonExecutioner {
         buff.putScalar(0, 97); // a
         buff.putScalar(1, 98); // b
         buff.putScalar(2, 99); // c
+        ((BaseDataBuffer)buff.data()).syncToPrimary();
 
 
         PythonVariables pyInputs = new PythonVariables();
@@ -300,6 +336,30 @@ public class TestPythonExecutioner {
         Python.exec(code, pyInputs, pyOutputs);
         Assert.assertEquals("cba", pyOutputs.getBytesValue("out").getString());
     }
+
+    @Test
+    public void testDoubleDeviceAllocation() throws Exception{
+        if(!"CUDA".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"))){
+            return;
+        }
+        // Test to make sure that multiple device buffers are not allocated
+        // for the same host buffer
+        INDArray arr = Nd4j.rand(3, 2);
+        ((BaseDataBuffer)arr.data()).syncToPrimary();
+        long deviceAddress1 = getDeviceAddress(arr);
+        PythonVariables pyInputs = new PythonVariables();
+        pyInputs.addNDArray("arr", arr);
+        PythonVariables pyOutputs = new PythonVariables();
+        pyOutputs.addNDArray("arr");
+        String code = "arr += 2";
+        Python.exec(code, pyInputs, pyOutputs);
+        INDArray arr2 = pyOutputs.getNDArrayValue("arr");
+        long deviceAddress2 = getDeviceAddress(arr2);
+        Assert.assertEquals(deviceAddress1, deviceAddress2);
+
+
+    }
+
     @Test
     public void testBadCode() throws Exception{
         Python.setContext("badcode");
@@ -333,5 +393,22 @@ public class TestPythonExecutioner {
         Assert.assertEquals("y", notNone.toString());
     }
 
+    private static long getDeviceAddress(INDArray array){
+        if(!"CUDA".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"))){
+            throw new IllegalStateException("Cannot ge device pointer for non-CUDA device");
+        }
+
+        //Use reflection here as OpaqueDataBuffer is only available on BaseCudaDataBuffer and BaseCpuDataBuffer - not DataBuffer/BaseDataBuffer
+        // due to it being defined in nd4j-native-api, not nd4j-api
+        try {
+            Class<?> c = Class.forName("org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer");
+            Method m = c.getMethod("getOpaqueDataBuffer");
+            OpaqueDataBuffer db = (OpaqueDataBuffer) m.invoke(array.data());
+            long address = db.specialBuffer().address();
+            return address;
+        } catch (Throwable t){
+            throw new RuntimeException("Error getting OpaqueDataBuffer", t);
+        }
+    }
 
 }

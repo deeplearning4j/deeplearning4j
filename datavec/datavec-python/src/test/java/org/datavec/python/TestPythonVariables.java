@@ -24,6 +24,7 @@ package org.datavec.python;
 
 import org.bytedeco.javacpp.BytePointer;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -55,6 +56,7 @@ public class TestPythonVariables {
         };
 
         INDArray arr = Nd4j.scalar(1.0);
+        ((BaseDataBuffer)arr.data()).syncToPrimary();
         BytePointer bp = new BytePointer(arr.data().pointer());
         Object[] values = {
                 1L,1.0,"1",true, Collections.singletonMap("1",1),
