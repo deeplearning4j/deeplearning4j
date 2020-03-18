@@ -18,11 +18,15 @@
 package org.datavec.python;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.cpython.PyObject;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.SizeTPointer;
+import org.bytedeco.numpy.PyArrayObject;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -30,7 +34,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.*;
 
 import static org.bytedeco.cpython.global.python.*;
-import static org.bytedeco.cpython.global.python.PyObject_SetItem;
+import static org.bytedeco.numpy.global.numpy.*;
 
 /**
  * Swift like python wrapper for J
@@ -38,6 +42,7 @@ import static org.bytedeco.cpython.global.python.PyObject_SetItem;
  * @author Fariz Rahman
  */
 
+@Slf4j
 public class PythonObject {
     private PyObject nativePythonObject;
 
@@ -77,78 +82,69 @@ public class PythonObject {
     }
 
     public PythonObject(NumpyArray npArray) {
-        PyObject ctypes = PyImport_ImportModule("ctypes");
-        PyObject np = PyImport_ImportModule("numpy");
-        PyObject ctype;
-        switch (npArray.getDtype()) {
+        int numpyType;
+        INDArray indArray = npArray.getNd4jArray();
+        DataType dataType = indArray.dataType();
+
+        switch (dataType) {
             case DOUBLE:
-                ctype = PyObject_GetAttrString(ctypes, "c_double");
+                numpyType = NPY_DOUBLE;
                 break;
             case FLOAT:
-                ctype = PyObject_GetAttrString(ctypes, "c_float");
-                break;
-            case LONG:
-                ctype = PyObject_GetAttrString(ctypes, "c_int64");
-                break;
-            case INT:
-                ctype = PyObject_GetAttrString(ctypes, "c_int32");
+            case BFLOAT16:
+                numpyType = NPY_FLOAT;
                 break;
             case SHORT:
-                ctype = PyObject_GetAttrString(ctypes, "c_int16");
+                numpyType = NPY_SHORT;
+                break;
+            case INT:
+                numpyType = NPY_INT;
+                break;
+            case LONG:
+                numpyType = NPY_INT64;
                 break;
             case UINT16:
-                ctype = PyObject_GetAttrString(ctypes, "c_uint16");
+                numpyType = NPY_USHORT;
                 break;
             case UINT32:
-                ctype = PyObject_GetAttrString(ctypes, "c_uint32");
+                numpyType = NPY_UINT;
                 break;
             case UINT64:
-                ctype = PyObject_GetAttrString(ctypes, "c_uint64");
+                numpyType = NPY_UINT64;
                 break;
             case BOOL:
-                ctype = PyObject_GetAttrString(ctypes, "c_bool");
+                numpyType = NPY_BOOL;
                 break;
             case BYTE:
-                ctype = PyObject_GetAttrString(ctypes, "c_byte");
+                numpyType = NPY_BYTE;
                 break;
             case UBYTE:
-                ctype = PyObject_GetAttrString(ctypes, "c_ubyte");
+                numpyType = NPY_UBYTE;
+                break;
+            case HALF:
+                numpyType = NPY_HALF;
                 break;
             default:
                 throw new RuntimeException("Unsupported dtype: " + npArray.getDtype());
         }
 
-        PyObject ctypesPointer = PyObject_GetAttrString(ctypes, "POINTER");
-        PyObject argsTuple = PyTuple_New(1);
-        PyTuple_SetItem(argsTuple, 0, ctype);
-        PyObject ptrType = PyObject_Call(ctypesPointer, argsTuple, null);
-
-        PyObject cast = PyObject_GetAttrString(ctypes, "cast");
-        PyObject address = PyLong_FromLong(npArray.getAddress());
-        PyObject argsTuple2 = PyTuple_New(2);
-        PyTuple_SetItem(argsTuple2, 0, address);
-        PyTuple_SetItem(argsTuple2, 1, ptrType);
-        PyObject ptr = PyObject_Call(cast, argsTuple2, null);
-        PyObject shapeTuple = PyTuple_New(npArray.getShape().length);
-        for (int i = 0; i < npArray.getShape().length; i++) {
-            PyObject dim = PyLong_FromLong(npArray.getShape()[i]);
-            PyTuple_SetItem(shapeTuple, i, dim);
-            Py_DecRef(dim);
+        long[] shape = indArray.shape();
+        INDArray inputArray = indArray;
+        if(dataType == DataType.BFLOAT16) {
+            log.warn("\n\nThe given nd4j array \n\n{}\n\n is of BFLOAT16 datatype. " +
+                    "Casting a copy of it to FLOAT and creating the respective numpy array from it.\n", indArray);
+            inputArray = indArray.castTo(DataType.FLOAT);
         }
-        PyObject ctypesLib = PyObject_GetAttrString(np, "ctypeslib");
-        PyObject asArray = PyObject_GetAttrString(ctypesLib, "as_array");
-        PyObject argsTuple3 = PyTuple_New(2);
-        PyTuple_SetItem(argsTuple3, 0, ptr);
-        PyTuple_SetItem(argsTuple3, 1, shapeTuple);
-        nativePythonObject = PyObject_Call(asArray, argsTuple3, null);
 
-        Py_DecRef(ctypesPointer);
-        Py_DecRef(ctypesLib);
-        Py_DecRef(argsTuple);
-        Py_DecRef(argsTuple2);
-        Py_DecRef(argsTuple3);
-        Py_DecRef(cast);
-        Py_DecRef(asArray);
+        //Sync to host memory in the case of CUDA, before passing the host memory pointer to Python
+        if(inputArray.data() instanceof BaseDataBuffer){
+            ((BaseDataBuffer)inputArray.data()).syncToPrimary();
+        }
+
+        nativePythonObject = PyArray_New(PyArray_Type(), shape.length, new SizeTPointer(shape),
+                numpyType, null,
+                inputArray.data().addressPointer(),
+                0, NPY_ARRAY_CARRAY, null);
 
     }
 
@@ -321,57 +317,60 @@ public class PythonObject {
         return toInt() != 0;
     }
 
-    public NumpyArray toNumpy() {
-        PyObject arrInterface = PyObject_GetAttrString(nativePythonObject, "__array_interface__"); // borrowed reference; DO NOT Py_DecRef() !
-        PyObject data = PyDict_GetItemString(arrInterface, "data");
-        PyObject pyAddress = PyTuple_GetItem(data, 0);
-        long address = PyLong_AsLong(pyAddress);
-        PyObject pyDtype = PyObject_GetAttrString(nativePythonObject, "dtype");
-        PyObject pyDtypeName = PyObject_GetAttrString(pyDtype, "name");
-        String dtypeName = pyObjectToString(pyDtypeName);
-        Py_DecRef(pyDtype);
-        Py_DecRef(pyDtypeName);
-        PyObject shape = PyObject_GetAttrString(nativePythonObject, "shape");
-        PyObject strides = PyObject_GetAttrString(nativePythonObject, "strides");
-        int ndim = (int) PyObject_Size(shape);
-        long[] jshape = new long[ndim];
-        long[] jstrides = new long[ndim];
-        for (int i = 0; i < ndim; i++) {
-            jshape[i] = PyLong_AsLong(PyTuple_GetItem(shape, i));
-            jstrides[i] = PyLong_AsLong(PyTuple_GetItem(strides, i));
+    public NumpyArray toNumpy() throws PythonException{
+        PyObject np = PyImport_ImportModule("numpy");
+        PyObject ndarray = PyObject_GetAttrString(np, "ndarray");
+        if (PyObject_IsInstance(nativePythonObject, ndarray) == 0){
+            throw new PythonException("Object is not a numpy array! Use Python.ndarray() to convert object to a numpy array.");
         }
-        Py_DecRef(shape);
-        Py_DecRef(strides);
+        Py_DecRef(ndarray);
+        Py_DecRef(np);
+        Pointer objPtr = new Pointer(nativePythonObject);
+        PyArrayObject npArr = new PyArrayObject(objPtr);
+        Pointer ptr = PyArray_DATA(npArr);
+        SizeTPointer shapePtr = PyArray_SHAPE(npArr);
+        long[] shape = new long[PyArray_NDIM(npArr)];
+        shapePtr.get(shape, 0, shape.length);
+        SizeTPointer stridesPtr = PyArray_STRIDES(npArr);
+        long[] strides = new long[shape.length];
+        stridesPtr.get(strides, 0, strides.length);
+        int npdtype = PyArray_TYPE(npArr);
+
         DataType dtype;
-        if (dtypeName.equals("float64")) {
-            dtype = DataType.DOUBLE;
-        } else if (dtypeName.equals("float32")) {
-            dtype = DataType.FLOAT;
-        } else if (dtypeName.equals("int8")){
-            dtype = DataType.INT8;
-        }else if (dtypeName.equals("int16")) {
-            dtype = DataType.SHORT;
-        } else if (dtypeName.equals("int32")) {
-            dtype = DataType.INT;
-        } else if (dtypeName.equals("int64")) {
-            dtype = DataType.LONG;
+        switch (npdtype){
+            case NPY_DOUBLE:
+                dtype = DataType.DOUBLE; break;
+            case NPY_FLOAT:
+                dtype = DataType.FLOAT; break;
+            case NPY_SHORT:
+                dtype = DataType.SHORT; break;
+            case NPY_INT:
+                dtype = DataType.INT; break;
+            case NPY_LONG:
+                dtype = DataType.LONG; break;
+            case NPY_UINT:
+                dtype = DataType.UINT32; break;
+            case NPY_BYTE:
+                dtype = DataType.BYTE; break;
+            case NPY_UBYTE:
+                dtype = DataType.UBYTE; break;
+            case NPY_BOOL:
+                dtype = DataType.BOOL; break;
+            case NPY_HALF:
+                dtype = DataType.HALF; break;
+            case NPY_LONGLONG:
+                dtype = DataType.INT64; break;
+            case NPY_USHORT:
+                dtype = DataType.UINT16; break;
+            case NPY_ULONG:
+                dtype = DataType.UINT64; break;
+            case NPY_ULONGLONG:
+                dtype = DataType.UINT64; break;
+                default:
+                    throw new PythonException("Unsupported array data type: " + npdtype);
         }
-        else if (dtypeName.equals("uint8")){
-            dtype = DataType.UINT8;
-        }
-        else if (dtypeName.equals("uint16")){
-            dtype = DataType.UINT16;
-        }
-        else if (dtypeName.equals("uint32")){
-            dtype = DataType.UINT32;
-        }
-        else if (dtypeName.equals("uint64")){
-            dtype = DataType.UINT64;
-        }
-        else {
-            throw new RuntimeException("Unsupported array type " + dtypeName + ".");
-        }
-        return new NumpyArray(address, jshape, jstrides, dtype);
+
+        return new NumpyArray(ptr.address(), shape, strides, dtype);
 
     }
 
@@ -442,7 +441,6 @@ public class PythonObject {
         return get(key.nativePythonObject);
     }
 
-
     public PythonObject get(int key) {
         return get(PyLong_FromLong((long) key));
     }
@@ -450,14 +448,12 @@ public class PythonObject {
     public PythonObject get(long key) {
         return new PythonObject(
                 PyObject_GetItem(nativePythonObject, PyLong_FromLong(key))
-
         );
     }
 
     public PythonObject get(double key) {
         return new PythonObject(
                 PyObject_GetItem(nativePythonObject, PyFloat_FromDouble(key))
-
         );
     }
 
@@ -479,7 +475,6 @@ public class PythonObject {
         PythonObject serialized = json.attr("dumps").call(this, _getNDArraySerializer());
         String jsonString = serialized.toString();
         return new JSONArray(jsonString);
-
     }
 
     public JSONObject toJSONObject() throws PythonException {
@@ -547,13 +542,16 @@ public class PythonObject {
             String originalContext = Python.getCurrentContext();
             Python.setContext(tempContext);
             PythonExecutioner.setVariable("memview", this);
-            PythonExecutioner.exec("import numpy as np\narr = np.array(memview)");
-            BytePointer ret = new BytePointer(PythonExecutioner.getVariable("arr").toNumpy().getNd4jArray().data().pointer());
+            PythonExecutioner.exec("import numpy as np\narr = np.frombuffer(memview, dtype='int8')");
+            INDArray arr = PythonExecutioner.getVariable("arr").toNumpy().getNd4jArray();
+            if(arr.data() instanceof BaseDataBuffer){
+                ((BaseDataBuffer)arr.data()).syncToPrimary();
+            }
+            BytePointer ret = new BytePointer(arr.data().pointer());
             Python.setContext(originalContext);
             Python.deleteContext(tempContext);
             return ret;
-        }
-        else{
+        } else {
             PyObject ctypes = PyImport_ImportModule("ctypes");
             PyObject cArrType = PyObject_GetAttrString(ctypes, "Array");
             if (PyObject_IsInstance(nativePythonObject, cArrType) != 0){
@@ -579,13 +577,10 @@ public class PythonObject {
             else{
                 throw new PythonException("Expected bytes, bytearray, memoryview or ctypesArray. Received " + Python.type(this).toString());
             }
-
         }
     }
     public boolean isNone() {
        return (nativePythonObject == null)||
                (toString().equals("None") && Python.type(this).toString().equals("<class 'NoneType'>"));
-
     }
-
 }

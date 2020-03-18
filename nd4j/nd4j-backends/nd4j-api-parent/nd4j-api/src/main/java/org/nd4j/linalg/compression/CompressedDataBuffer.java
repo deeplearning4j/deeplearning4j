@@ -212,6 +212,16 @@ public class CompressedDataBuffer extends BaseDataBuffer {
     }
 
     @Override
+    public void syncToPrimary() {
+        //No-op
+    }
+
+    @Override
+    public void syncToSpecial() {
+        //No-op
+    }
+
+    @Override
     protected double getDoubleUnsynced(long index) {
         return super.getDouble(index);
     }

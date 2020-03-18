@@ -21,6 +21,7 @@ package org.datavec.python;
 import org.bytedeco.cpython.PyObject;
 
 import static org.bytedeco.cpython.global.python.*;
+import static org.bytedeco.numpy.global.numpy.PyArray_EnsureArray;
 
 /**
  * Swift like python wrapper for Java
@@ -230,6 +231,10 @@ public class Python {
     public static PythonObject False() {
         return boolType().call(0);
 
+    }
+
+    public static PythonObject ndarray(PythonObject pythonObject){
+        return new PythonObject(PyArray_EnsureArray(pythonObject.getNativePythonObject()));
     }
 
     public static boolean callable(PythonObject pythonObject) {
