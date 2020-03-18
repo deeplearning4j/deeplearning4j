@@ -158,7 +158,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         accuReward += stepReply.getReward() * configuration.getRewardFactor();
 
         //if it's not a skipped frame, you can do a step of training
-        if (!obs.isSkipped() || stepReply.isDone()) {
+        if (!obs.isSkipped()) {
 
             // Add experience
             if(pendingTransition != null) {

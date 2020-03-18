@@ -90,7 +90,7 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
             accuReward += stepReply.getReward() * getConf().getRewardFactor();
 
             //if it's not a skipped frame, you can do a step of training
-            if (!obs.isSkipped() || stepReply.isDone()) {
+            if (!obs.isSkipped()) {
 
                 INDArray[] output = current.outputAll(obs.getData());
                 rewards.add(new MiniTrans(obs.getData(), action, output, accuReward));
@@ -99,7 +99,6 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
             }
 
             obs = stepReply.getObservation();
-
             reward += stepReply.getReward();
 
             incrementStep();

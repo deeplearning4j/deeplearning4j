@@ -62,7 +62,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
     private static PyObject globals;
     static {
         try {
-            Py_SetPath(org.bytedeco.gym.presets.gym.cachePackages());
+            Py_AddPath(org.bytedeco.gym.presets.gym.cachePackages());
             program = Py_DecodeLocale(GymEnv.class.getSimpleName(), null);
             Py_SetProgramName(program);
             Py_Initialize();

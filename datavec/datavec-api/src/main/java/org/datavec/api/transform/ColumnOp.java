@@ -26,10 +26,7 @@ import org.datavec.api.transform.schema.Schema;
  *
  * @author Adam Gibson
  */
-public interface ColumnOp {
-    /** Get the output schema for this transformation, given an input schema */
-    Schema transform(Schema inputSchema);
-
+public interface ColumnOp extends Operation<Schema, Schema> {
 
     /** Set the input schema.
      */
