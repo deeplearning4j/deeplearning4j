@@ -23,6 +23,7 @@ import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.integration.testcases.dl4j.*;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffCNNCases;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffMLPTestCases;
+import org.deeplearning4j.integration.testcases.samediff.SameDiffRNNTestCases;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -71,27 +72,27 @@ public class IntegrationTestBaselineGenerator {
 
                 //  DL4J integration test cases.
 
-                CNN1DTestCases.getCnn1dTestCaseCharRNN(),
-                CNN2DTestCases.testLenetTransferDropoutRepeatability(),
-//                CNN2DTestCases.getCnn2DSynthetic(), not implemented yet
-                CNN2DTestCases.getLenetMnist(),
-                CNN2DTestCases.getVGG16TransferTinyImagenet(),
-                CNN2DTestCases.getYoloHouseNumbers(),
-                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
-                MLPTestCases.getMLPMnist(),
-                MLPTestCases.getMLPMoon(),
-                RNNTestCases.getRnnCharacterTestCase(),
-                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
-                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
-                UnsupervisedTestCases.getVAEMnistAnomaly()
+//                CNN1DTestCases.getCnn1dTestCaseCharRNN(),
+//                CNN2DTestCases.testLenetTransferDropoutRepeatability(),
+////                CNN2DTestCases.getCnn2DSynthetic(), not implemented yet
+//                CNN2DTestCases.getLenetMnist(),
+//                CNN2DTestCases.getVGG16TransferTinyImagenet(),
+//                CNN2DTestCases.getYoloHouseNumbers(),
+//                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
+//                MLPTestCases.getMLPMnist(),
+//                MLPTestCases.getMLPMoon(),
+//                RNNTestCases.getRnnCharacterTestCase(),
+//                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
+//                RNNTestCases.getRnnCsvSequenceClassificationTestCase2() (fail)
+//                UnsupervisedTestCases.getVAEMnistAnomaly()
 
 
 
 //                Samediff test cases
 //                SameDiffMLPTestCases.getMLPMnist(),
 //                SameDiffMLPTestCases.getMLPMoon(),
-//                SameDiffCNNCases.getLenetMnist(),
-//                SameDiffCNNCases.getCnn3dSynthetic()
+//                SameDiffCNNCases.getLenetMnist()
+                SameDiffRNNTestCases.getRnnCsvSequenceClassificationTestCase1()
         );
 
     }

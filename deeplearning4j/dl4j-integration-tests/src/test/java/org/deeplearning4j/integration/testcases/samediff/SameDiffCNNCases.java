@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -341,15 +342,30 @@ public class SameDiffCNNCases {
             }
 
             @Override
-            public MultiDataSetIterator getTrainingData() throws Exception {
-                DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
+            public MultiDataSet getGradientsTestData() throws Exception {
+                Nd4j.getRandom().setSeed(12345);
+                //NCDHW format
+                INDArray arr = Nd4j.rand(new int[]{2, 3, 8, 8, 8});
+                INDArray labels = org.deeplearning4j.integration.TestUtils.randomOneHot(2, 10);
+                return new org.nd4j.linalg.dataset.MultiDataSet(arr, labels);
+            }
 
-                iter = new EarlyTerminationDataSetIterator(iter, 60);
-                return new MultiDataSetIteratorAdapter(iter);
+            @Override
+            public MultiDataSetIterator getTrainingData() throws Exception {
+                return new SingletonMultiDataSetIterator(getGradientsTestData());
             }
 
 
+            @Override
+            public MultiDataSetIterator getEvaluationTestData() throws Exception {
+                return getTrainingData();
+            }
 
+            @Override
+            public IEvaluation[] doEvaluationSameDiff(SameDiff sd, MultiDataSetIterator iter, IEvaluation[] evaluations){
+                sd.evaluate(iter, "out", 0, evaluations);
+                return evaluations;
+            }
 
             @Override
             public IEvaluation[] getNewEvaluations(){
