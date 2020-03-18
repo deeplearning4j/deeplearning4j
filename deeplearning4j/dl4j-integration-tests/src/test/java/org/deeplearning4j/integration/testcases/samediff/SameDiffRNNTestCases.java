@@ -119,7 +119,7 @@ public class SameDiffRNNTestCases {
             int numLabelClasses = 6;
             int numUnits = 10;
             int maxTSLength = 64;
-            
+
             int inSize = 60;
 
             SameDiff sd = SameDiff.create();
@@ -136,9 +136,9 @@ public class SameDiffRNNTestCases {
                     maxTSLength, in, cLast, yLast,
                     LSTMWeights.builder()
                             .weights(sd.var("weights", Nd4j.rand(inSize + numUnits, 4 * numUnits)))
-//                           .inputPeepholeWeights(sd.var("inputPeepholeWeights", Nd4j.rand(DataType.FLOAT, numUnits)))
-//                            .forgetPeepholeWeights(sd.var("forgetPeepholeWeights", Nd4j.rand(DataType.FLOAT,numUnits)))
-//                            .outputPeepholeWeights(sd.var("outputPeepholeWeights", Nd4j.rand(DataType.FLOAT, numUnits)))
+                           .inputPeepholeWeights(sd.var("inputPeepholeWeights", Nd4j.rand(DataType.FLOAT, numUnits)))
+                            .forgetPeepholeWeights(sd.var("forgetPeepholeWeights", Nd4j.rand(DataType.FLOAT,numUnits)))
+                            .outputPeepholeWeights(sd.var("outputPeepholeWeights", Nd4j.rand(DataType.FLOAT, numUnits)))
                             .bias(sd.var("bias", Nd4j.rand(DataType.FLOAT, 4 * numUnits))).build(),
                     LSTMConfiguration.builder()
                             .forgetBias(1.0)
@@ -147,12 +147,12 @@ public class SameDiffRNNTestCases {
                             .dataFormat(RnnDataFormat.TNS).build()
             ).getLastOutput();
 
-            SDVariable layer0_activated = sd.nn.tanh(layer0);
+            SDVariable layer0_activated = sd.nn.tanh("layer0",layer0);
 
 //           Behaviour with default settings: 3d (time series) input with shape
 //          [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output [miniBatchSize, vectorSize]
 
-            SDVariable layer1 = sd.cnn.avgPooling3d(layer0_activated, Pooling3DConfig.builder()
+            SDVariable layer1 = sd.cnn.avgPooling3d("avgPooling",layer0_activated, Pooling3DConfig.builder()
                     .type(Pooling3D.Pooling3DType.AVG)
                     .build());
 
@@ -177,10 +177,18 @@ public class SameDiffRNNTestCases {
 
 
         @Override
-        public List<Pair<INDArray[], INDArray[]>> getPredictionsTestData() throws Exception {
+        public List<Map<String,INDArray>> getPredictionsTestDataSameDiff() throws Exception {
+
             MultiDataSet mds = getTrainingData().next();
-            return Collections.singletonList(new Pair<>(mds.getFeatures(), mds.getFeaturesMaskArrays()));
+            List<Map<String, INDArray>> list = new ArrayList<>();
+            list.add(Collections.singletonMap("in", mds.getFeatures()[0]));
+
+            return list;
         }
+
+        @Override
+        public List<String> getPredictionsNamesSameDiff() throws Exception {
+            return Collections.singletonList("out");        }
 
         @Override
         public MultiDataSet getGradientsTestData() throws Exception {
