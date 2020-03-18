@@ -22,9 +22,9 @@
 #define LIBND4J_GRAPH_RNG_H
 
 #include <types/u64.h>
-#include <pointercast.h>
-#include <op_boilerplate.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/dll.h>
 #include <chrono>
 #include <array/DataTypeUtils.h>
 #include <helpers/logger.h>
@@ -35,7 +35,7 @@
 #include <cuda_runtime.h>
 #endif
 
-namespace nd4j {
+namespace sd {
     namespace graph {
 #ifdef __CUDACC__
         class ND4J_EXPORT CudaManagedRandomGenerator {

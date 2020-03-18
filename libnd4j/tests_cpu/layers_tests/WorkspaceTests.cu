@@ -19,13 +19,13 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <Workspace.h>
-#include <MemoryRegistrator.h>
-#include <MmulHelper.h>
+#include <array/NDArray.h>
+#include <memory/Workspace.h>
+#include <memory/MemoryRegistrator.h>
+#include <helpers/MmulHelper.h>
 
-using namespace nd4j;
-using namespace nd4j::memory;
+using namespace sd;
+using namespace sd::memory;
 
 class CudaWorkspaceTests : public testing::Test {
 

@@ -21,39 +21,40 @@
 #include <array/ResultSet.h>
 #include <graph/FlatUtils.h>
 
-namespace nd4j {
-    ResultSet::ResultSet(const nd4j::graph::FlatResult* result) {
-        if (result != nullptr) {
-            for (int e = 0; e < result->variables()->size(); e++) {
-                auto var = result->variables()->Get(e);
+namespace sd {
+    ResultSet::ResultSet() {
+        //
+    }
 
-                NDArray* array;
+    ResultSet::ResultSet(const sd::graph::FlatResult* result) {
+        for (int e = 0; e < result->variables()->size(); e++) {
+            auto var = result->variables()->Get(e);
 
-                if (var->ndarray() != nullptr) {
-                    array = nd4j::graph::FlatUtils::fromFlatArray(var->ndarray());
-                } else if (var->shape() != nullptr) {
-                    std::vector<Nd4jLong> shapeInfo;
-                    for (int i = 0; i < var->shape()->size(); i++) {
-                        shapeInfo.emplace_back(var->shape()->Get(i));
-                    }
+            NDArray* array;
 
-                    // we just create empty array here
-                    int s0 = shapeInfo.at(0);
-
-                    std::vector<Nd4jLong> shape;
-                    for (int i = 0; i < s0; i++) {
-                        shape.emplace_back(shapeInfo.at(i + 1));
-                    }
-
-                    array = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape, DataTypeUtils::fromFlatDataType(var->dtype()));
-                } else {
-                    nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
-                    throw std::runtime_error("Empty variable");
+            if (var->ndarray() != nullptr) {
+                array = sd::graph::FlatUtils::fromFlatArray(var->ndarray());
+            } else if (var->shape() != nullptr) {
+                std::vector<Nd4jLong> shapeInfo;
+                for (int i = 0; i < var->shape()->size(); i++) {
+                    shapeInfo.emplace_back(var->shape()->Get(i));
                 }
 
+                // we just create empty array here
+                int s0 = shapeInfo.at(0);
 
-                _content.push_back(array);
+                std::vector<Nd4jLong> shape;
+                for (int i = 0; i < s0; i++) {
+                    shape.emplace_back(shapeInfo.at(i + 1));
+                }
+
+                array = new NDArray((char) shapeInfo.at(shapeInfo.size() - 1), shape, DataTypeUtils::fromFlatDataType(var->dtype()));
+            } else {
+                nd4j_printf("Either shape or NDArray should be defined in FlatResult variable\n","");
+                throw std::runtime_error("Empty variable");
             }
+
+            _content.push_back(array);
         }
     }
 
@@ -76,15 +77,16 @@ namespace nd4j {
     }
 
     ////////////////////////////////////////////////////////////////////////
-    // move assignment operator
+// move assignment operator
     ResultSet& ResultSet::operator=(ResultSet&& other) noexcept {
 
-        if (this == &other) 
+        if (this == &other)
             return *this;
 
-        this->~ResultSet();
+        delContent();
 
         _content = std::move(other._content);
+
         _status = other._status;
         _removable = other._removable;
         other._removable = false;
@@ -97,10 +99,10 @@ namespace nd4j {
         if (this == &other)
             return *this;
 
-        this->~ResultSet();
+        delContent();
 
-        for (const auto v:other._content)
-            _content.emplace_back(v);
+        for (const auto v : other._content)
+            _content.push_back(v);
 
         _status = other._status;
         _removable = false;
@@ -108,11 +110,15 @@ namespace nd4j {
         return *this;
     }
 
+    void ResultSet::delContent() {
+        if (_removable)
+            for (auto v : _content)
+                delete v;
+    }
 
     ResultSet::~ResultSet() {
-        if (_removable)
-            for (auto v: _content)
-                delete v;
+
+        delContent();
     }
 
     void ResultSet::setNonRemovable() {
@@ -123,15 +129,15 @@ namespace nd4j {
         return (int) _content.size();
     }
 
-    nd4j::NDArray* ResultSet::at(const unsigned long idx) const {
+    sd::NDArray* ResultSet::at(const unsigned long idx) const {
         return _content.at(idx);
     }
 
-    nd4j::NDArray* ResultSet::operator[](const unsigned long idx) const {
+    sd::NDArray* ResultSet::operator[](const unsigned long idx) const {
         return _content[idx];
     }
 
-    void ResultSet::push_back(nd4j::NDArray *array) {
+    void ResultSet::push_back(sd::NDArray *array) {
         _content.emplace_back(array);
     }
 

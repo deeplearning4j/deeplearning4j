@@ -19,7 +19,7 @@
 //
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         #if NOT_EXCLUDED(OP_test_output_reshape)
         DECLARE_OP(test_output_reshape, 1, 1, true);

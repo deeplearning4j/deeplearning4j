@@ -22,14 +22,14 @@
 #define ND4J_GRAPH_PROFILE_H
 
 #include "NodeProfile.h"
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <vector>
 #include <string>
 #include <map>
 #include <chrono>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT GraphProfile {
         private:

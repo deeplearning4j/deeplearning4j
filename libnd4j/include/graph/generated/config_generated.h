@@ -6,7 +6,7 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct FlatConfiguration;
@@ -258,37 +258,37 @@ inline flatbuffers::Offset<FlatConfiguration> CreateFlatConfiguration(
   return builder_.Finish();
 }
 
-inline const nd4j::graph::FlatConfiguration *GetFlatConfiguration(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatConfiguration>(buf);
+inline const sd::graph::FlatConfiguration *GetFlatConfiguration(const void *buf) {
+  return flatbuffers::GetRoot<sd::graph::FlatConfiguration>(buf);
 }
 
-inline const nd4j::graph::FlatConfiguration *GetSizePrefixedFlatConfiguration(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatConfiguration>(buf);
+inline const sd::graph::FlatConfiguration *GetSizePrefixedFlatConfiguration(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatConfiguration>(buf);
 }
 
 inline bool VerifyFlatConfigurationBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatConfiguration>(nullptr);
+  return verifier.VerifyBuffer<sd::graph::FlatConfiguration>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatConfigurationBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatConfiguration>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatConfiguration>(nullptr);
 }
 
 inline void FinishFlatConfigurationBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatConfiguration> root) {
+    flatbuffers::Offset<sd::graph::FlatConfiguration> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatConfigurationBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatConfiguration> root) {
+    flatbuffers::Offset<sd::graph::FlatConfiguration> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_CONFIG_ND4J_GRAPH_H_

@@ -24,12 +24,12 @@
 #include <ops/declarable/helpers/col2im.h>
 #include<ops/declarable/helpers/addBias.h>
 #include <exceptions/cuda_exception.h>
-#include <NDArrayFactory.h>
-#include <MmulHelper.h>
-#include <PointersManager.h>
-#include <templatemath.h>
+#include <array/NDArrayFactory.h>
+#include <helpers/MmulHelper.h>
+#include <helpers/PointersManager.h>
+#include <math/templatemath.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ static void vol2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::vol2col(nd4j::graph::Context& block, const NDArray& vol, NDArray& col, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+void ConvolutionUtils::vol2col(sd::graph::Context& block, const NDArray& vol, NDArray& col, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     PointersManager manager(block.launchContext(), "vol2col");
 
@@ -161,9 +161,9 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
         const uint colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
         const uint colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
 
-        const uint colDend = nd4j::math::nd4j_min<uint>(imD / sD + 1, oD);
-        const uint colHend = nd4j::math::nd4j_min<uint>(imH / sH + 1, oH);
-        const uint colWend = nd4j::math::nd4j_min<uint>(imW / sW + 1, oW);
+        const uint colDend = sd::math::nd4j_min<uint>(imD / sD + 1, oD);
+        const uint colHend = sd::math::nd4j_min<uint>(imH / sH + 1, oH);
+        const uint colWend = sd::math::nd4j_min<uint>(imW / sW + 1, oW);
 
         T val = 0;
 
@@ -200,7 +200,7 @@ static void col2volCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::col2vol(nd4j::graph::Context& block, const NDArray& col, NDArray& vol, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
+void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, NDArray& vol, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
 
     PointersManager manager(block.launchContext(), "col2vol");
 
@@ -217,7 +217,7 @@ void ConvolutionUtils::col2vol(nd4j::graph::Context& block, const NDArray& col, 
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+static void conv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
 
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] always
@@ -275,13 +275,13 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::conv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+void ConvolutionUtils::conv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
     BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+static void depthwiseConv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
 
     // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights   [kH, kW, iC, mC] always
@@ -336,13 +336,13 @@ static void depthwiseConv2d_(nd4j::graph::Context& block, const NDArray* input, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::depthwiseConv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+void ConvolutionUtils::depthwiseConv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
     BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void sconv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+static void sconv2d_(sd::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
 
     // input         [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     // weightsDepth  [kH, kW, iC, mC]  always
@@ -381,7 +381,7 @@ static void sconv2d_(nd4j::graph::Context& block, const NDArray* input, const ND
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::sconv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+void ConvolutionUtils::sconv2d(sd::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
     BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), sconv2d_, (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
 }
 
@@ -438,24 +438,24 @@ static __global__ void avgPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
         int wend = wstart + kWEff;
 
         if(hstart < 0){
-            int f = nd4j::math::nd4j_ceil<Z,int>((Z) -hstart / (Z)dH);
+            int f = sd::math::nd4j_ceil<Z,int>((Z) -hstart / (Z)dH);
             hstart += f * dH;
         }
         if(wstart < 0){
-            int f = nd4j::math::nd4j_ceil<Z,int>((Z) -wstart / (Z) dW);
+            int f = sd::math::nd4j_ceil<Z,int>((Z) -wstart / (Z) dW);
             wstart += f * dW;
         }
         if(hend > iH){
-            int f = nd4j::math::nd4j_ceil<Z,int>((Z) (hend-iH) / (Z) dH);
+            int f = sd::math::nd4j_ceil<Z,int>((Z) (hend-iH) / (Z) dH);
             hend -= f * dH;
         }
         if(wend > iW){
-            int f = nd4j::math::nd4j_ceil<Z,int>((Z) (wend-iW) / (Z) dW);
+            int f = sd::math::nd4j_ceil<Z,int>((Z) (wend-iW) / (Z) dW);
             wend -= f * dW;
         }
 
         //Accounts for dilation
-        int pool_size = nd4j::math::nd4j_ceil<double,int>((double) (hend-hstart) / (double) dH) * nd4j::math::nd4j_ceil<double,int>((double) (wend-wstart) / (double) dW);
+        int pool_size = sd::math::nd4j_ceil<double,int>((double) (hend-hstart) / (double) dH) * sd::math::nd4j_ceil<double,int>((double) (wend-wstart) / (double) dW);
 
         Z sum = 0.0f;
 
@@ -475,7 +475,7 @@ static __global__ void avgPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-static void avgPooling2dCudaLauncher(nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
+static void avgPooling2dCudaLauncher(sd::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
     avgPooling2dCuda<X, Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
 }
 
@@ -533,24 +533,24 @@ static __global__ void pnormPooling2dCuda(const void *vx, const Nd4jLong *xShape
         int wend = wstart + kWEff;
 
         if (hstart < 0) {
-            int f = nd4j::math::nd4j_ceil<Z, int>((Z) -hstart / (Z) dH);
+            int f = sd::math::nd4j_ceil<Z, int>((Z) -hstart / (Z) dH);
             hstart += f * dH;
         }
         if (wstart < 0) {
-            int f = nd4j::math::nd4j_ceil<Z, int>((Z) -wstart / (Z) dW);
+            int f = sd::math::nd4j_ceil<Z, int>((Z) -wstart / (Z) dW);
             wstart += f * dW;
         }
         if (hend > iH) {
-            int f = nd4j::math::nd4j_ceil<Z, int>((Z) (hend - iH) / (Z) dH);
+            int f = sd::math::nd4j_ceil<Z, int>((Z) (hend - iH) / (Z) dH);
             hend -= f * dH;
         }
         if (wend > iW) {
-            int f = nd4j::math::nd4j_ceil<Z, int>((Z) (wend - iW) / (Z) dW);
+            int f = sd::math::nd4j_ceil<Z, int>((Z) (wend - iW) / (Z) dW);
             wend -= f * dW;
         }
         //Accounts for dilation
-        int pool_size = nd4j::math::nd4j_ceil<double, int>((double) (hend - hstart) / (double) dH) *
-                        nd4j::math::nd4j_ceil<double, int>((double) (wend - wstart) / (double) dW);
+        int pool_size = sd::math::nd4j_ceil<double, int>((double) (hend - hstart) / (double) dH) *
+                        sd::math::nd4j_ceil<double, int>((double) (wend - wstart) / (double) dW);
 
         Z sum = 0.f;
 
@@ -558,15 +558,15 @@ static __global__ void pnormPooling2dCuda(const void *vx, const Nd4jLong *xShape
 
         for (int h = hstart; h < hend; h += dH)
             for (int w = wstart; w < wend; w += dW)
-                sum += nd4j::math::nd4j_pow<Z, Z, Z>(static_cast<Z>(nd4j::math::nd4j_abs<X>(inSlice[h * strideY + w * strideX])), extraParam0);
+                sum += sd::math::nd4j_pow<Z, Z, Z>(static_cast<Z>(sd::math::nd4j_abs<X>(inSlice[h * strideY + w * strideX])), extraParam0);
 
-        z[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = nd4j::math::nd4j_pow<Z, Z, Z>(sum, (Z) 1.0f / extraParam0);
+        z[n * strideOB + c * strideOC + pw * strideOX + ph * strideOY] = sd::math::nd4j_pow<Z, Z, Z>(sum, (Z) 1.0f / extraParam0);
     }
 }
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-static void pnormPooling2dCudaLauncher(nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
+static void pnormPooling2dCudaLauncher(sd::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
     pnormPooling2dCuda<X, Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
 }
 
@@ -624,25 +624,25 @@ static __global__ void maxPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
         int wend = wstart + kWEff;
 
         if(hstart < 0){
-            int f = nd4j::math::nd4j_ceil<Z,int>((Z) -hstart / (Z)dH);
+            int f = sd::math::nd4j_ceil<Z,int>((Z) -hstart / (Z)dH);
             hstart += f * dH;
         }
         if(wstart < 0){
-            int f = nd4j::math::nd4j_ceil<Z,int>((Z) -wstart / (Z) dW);
+            int f = sd::math::nd4j_ceil<Z,int>((Z) -wstart / (Z) dW);
             wstart += f * dW;
         }
         if(hend > iH){
-            int f = nd4j::math::nd4j_ceil<Z,int>((Z) (hend-iH) / (Z) dH);
+            int f = sd::math::nd4j_ceil<Z,int>((Z) (hend-iH) / (Z) dH);
             hend -= f * dH;
         }
         if(wend > iW){
-            int f = nd4j::math::nd4j_ceil<Z,int>((Z) (wend-iW) / (Z) dW);
+            int f = sd::math::nd4j_ceil<Z,int>((Z) (wend-iW) / (Z) dW);
             wend -= f * dW;
         }
         //Accounts for dilation
-        int pool_size = nd4j::math::nd4j_ceil<double,int>((double) (hend-hstart) / (double) dH) * nd4j::math::nd4j_ceil<double,int>((double) (wend-wstart) / (double) dW);
+        int pool_size = sd::math::nd4j_ceil<double,int>((double) (hend-hstart) / (double) dH) * sd::math::nd4j_ceil<double,int>((double) (wend-wstart) / (double) dW);
 
-        Z max = -nd4j::DataTypeUtils::max<Z>();
+        Z max = -sd::DataTypeUtils::max<Z>();
 
         const X *inSlice = x + (n * strideB + c * strideC);
 
@@ -660,12 +660,12 @@ static __global__ void maxPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
-static void maxPooling2dCudaLauncher(nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
+static void maxPooling2dCudaLauncher(sd::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
     maxPooling2dCuda<X,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0) {
+void ConvolutionUtils::pooling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0) {
 
     if(!input.isActualOnDeviceSide()) input.syncToDevice();
 
@@ -706,7 +706,7 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
           T* z = reinterpret_cast<T*>(vz);
 
     __shared__ int rank, kDeff, kHeff, kWeff, iD, iH, iW, kProd;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -789,7 +789,7 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
                 uint a = (dend - dstart) / dD + ((dend - dstart) % dD == 0 ? 0 : 1);
                 uint b = (hend - hstart) / dH + ((hend - hstart) % dH == 0 ? 0 : 1);
                 uint c = (wend - wstart) / dW + ((wend - wstart) % dW == 0 ? 0 : 1);
-                sum /=  static_cast<T>(a * b * c);                                       //  /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend - dstart) / static_cast<double>(dD)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend - wstart) / static_cast<double>(dW));   //Accounts for dilation
+                sum /=  static_cast<T>(a * b * c);                                       //  /= sd::math::nd4j_ceil<double,T>(static_cast<double>(dend - dstart) / static_cast<double>(dD)) * sd::math::nd4j_ceil<double,T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) * sd::math::nd4j_ceil<double,T>(static_cast<double>(wend - wstart) / static_cast<double>(dW));   //Accounts for dilation
             }
             else if (extraParam0 == 1)    //Include padding
                 sum /= kProd;
@@ -804,9 +804,9 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
+                        sum += sd::math::nd4j_pow<T,T,T>(sd::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
-            sum = nd4j::math::nd4j_pow<T,T,T>(sum, (T) 1.f / extraParam0);
+            sum = sd::math::nd4j_pow<T,T,T>(sum, (T) 1.f / extraParam0);
 
             z[zOffset] = sum;
         }
@@ -829,7 +829,7 @@ static void pooling3dCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+void ConvolutionUtils::pooling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
 
     PointersManager manager(block.launchContext(), "pooling3d");
 
@@ -858,7 +858,7 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
     Nd4jLong coord2, coord3;
     __shared__ int rank, kHeff, kWeff, iH, iW, kProd;
-    __shared__ Nd4jLong *sharedMem, yLen;
+    __shared__ Nd4jLong yLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -923,7 +923,7 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             coords[2] = coord2;
             coords[3] = coord3;
             auto zOffset = shape::getOffset(zShapeInfo, coords);
-            nd4j::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], y[yOffset]);
+            sd::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], y[yOffset]);
             //z[zOffset] += y[yOffset];
         }
         break;
@@ -934,13 +934,13 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             T val = y[yOffset];
 
             if (extraParam0 == 0)         //Exclude padding
-                val /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend - wstart) / static_cast<double>(dW));   //Accounts for dilation
+                val /= sd::math::nd4j_ceil<double,T>(static_cast<double>(hend - hstart) / static_cast<double>(dH)) * sd::math::nd4j_ceil<double,T>(static_cast<double>(wend - wstart) / static_cast<double>(dW));   //Accounts for dilation
             else if (extraParam0 == 1)    //Include padding
                 val /= kProd;
 
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
                 for (coords[3] = wstart; coords[3] < wend; coords[3] += dW)
-                    nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], val);
+                    sd::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], val);
         }
         break;
 
@@ -952,15 +952,15 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
                 for (coords[3] = wstart; coords[3] < wend; coords[3] += dW)
-                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
+                    sum += sd::math::nd4j_pow<T,T,T>(sd::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
-            val *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+            val *= sd::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
 
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
                 for (coords[3] = wstart; coords[3] < wend; coords[3] += dW) {
                     const auto xOffset = shape::getOffset(xShapeInfo, coords);
                     const auto zOffset = shape::getOffset(zShapeInfo, coords);
-                    nd4j::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], val * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[xOffset]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(x[xOffset]));
+                    sd::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], val * sd::math::nd4j_pow<T,T,T>(sd::math::nd4j_abs<T>(x[xOffset]), extraParam0 - 1.f) * sd::math::nd4j_sgn<T,T>(x[xOffset]));
                 }
             }
         }
@@ -984,7 +984,7 @@ static void pooling2dBPCudaLauncher(const int blocksPerGrid, const int threadsPe
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling2dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+void ConvolutionUtils::pooling2dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
 
     // initial zeroing of gradI
     gradI.nullify();
@@ -1017,7 +1017,7 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
     Nd4jLong coord2, coord3, coord4;
     __shared__ int rank, kDeff, kHeff, kWeff, iD, iH, iW, kProd;
-    __shared__ Nd4jLong *sharedMem, yLen;
+    __shared__ Nd4jLong yLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1092,7 +1092,7 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             coords[2] = coord2;
             coords[3] = coord3;
             coords[4] = coord4;
-            nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], y[yOffset]);
+            sd::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], y[yOffset]);
         }
         break;
 
@@ -1102,14 +1102,14 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             T val = y[yOffset];
 
             if (extraParam0 == 0)         //Exclude padding
-                val /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend - dstart) / static_cast<double>(dD))  * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend - hstart) / static_cast<double>(dH))     * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend - wstart)    / static_cast<double>(dW));   //Accounts for dilation
+                val /= sd::math::nd4j_ceil<double,T>(static_cast<double>(dend - dstart) / static_cast<double>(dD))  * sd::math::nd4j_ceil<double,T>(static_cast<double>(hend - hstart) / static_cast<double>(dH))     * sd::math::nd4j_ceil<double,T>(static_cast<double>(wend - wstart)    / static_cast<double>(dW));   //Accounts for dilation
             else if (extraParam0 == 1)    //Include padding
                 val /= kProd;
 
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-                        nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], val);
+                        sd::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], val);
         }
         break;
 
@@ -1122,16 +1122,16 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
+                        sum += sd::math::nd4j_pow<T,T,T>(sd::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
-            val *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+            val *= sd::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
 
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD) {
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH) {
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
                         const auto xOffset = shape::getOffset(xShapeInfo, coords);
                         const auto zOffset = shape::getOffset(zShapeInfo, coords);
-                        nd4j::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], val * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[xOffset]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(x[xOffset]));
+                        sd::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], val * sd::math::nd4j_pow<T,T,T>(sd::math::nd4j_abs<T>(x[xOffset]), extraParam0 - 1.f) * sd::math::nd4j_sgn<T,T>(x[xOffset]));
                     }
                 }
             }
@@ -1156,7 +1156,7 @@ static void pooling3dBPCudaLauncher(const int blocksPerGrid, const int threadsPe
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::pooling3dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
+void ConvolutionUtils::pooling3dBP(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
 
     // initial zeroing of gradI
     gradI.nullify();
@@ -1176,7 +1176,7 @@ void ConvolutionUtils::pooling3dBP(nd4j::graph::Context& block, const NDArray& i
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+static void conv2dBP_(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
 
     // input   [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights [kH, kW, iC, oC] always
@@ -1220,7 +1220,7 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
     if(gradW) {
         auto ctx = block.launchContext();
         helpers::im2col(*ctx, *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));   // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-        nd4j::MmulHelper::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, {2, 0, 1, 3});       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
+        sd::MmulHelper::tensorDot(&columns, gradO, gradW, {0,4,5}, gradOaxesForDot, {2, 0, 1, 3});       // [bS, iC, kH, kW, oH, oW] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [iC, kH, kW, oC]
     }
 
     // ----- calculation of gradB ----- //
@@ -1234,7 +1234,7 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
     }
 
     //----- calculation of gradI -----//
-    nd4j::MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, {2, 3, 1, 0, 4, 5});  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
+    sd::MmulHelper::tensorDot(weights, gradO, &columns, {indWoC}, {indIOioC}, {2, 3, 1, 0, 4, 5});  // [kH, kW, iC, oC]/[oC, iC, kH, kW]] x [bS, oH, oW, oC]/[bS, oC, oH, oW] = [kH, kW, iC, bS, oH, oW]
 
     helpers::col2im(*block.launchContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                          // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
@@ -1245,7 +1245,7 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::conv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+void ConvolutionUtils::conv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
     BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
 }
 
@@ -1303,7 +1303,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
     // ----- calculation of gradW and gradB ----- //
 
     helpers::im2col(*input->getContext(), *input, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
-    nd4j::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
+    sd::MmulHelper::tensorDot(&columns, &gradOreshaped, gradW, modifColumns, modifGradO1, {{2,0,1,3},{iC,kH*kW,mC}});  // [iC, kW*kH, bS*oH*oW] x [iC, bS*oH*oW, mC] = [iC, kH*kW, mC]
 
     // ----- calculation of gradB ----- //
     if(gradB) {
@@ -1316,7 +1316,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
     }
 
     //----- calculation of gradI -----//
-    nd4j::MmulHelper::tensorDot(weights, gradO, &columns, {{2,0,1,3},{iC,kH*kW,mC}}, modifGradO2, modifColumns); // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
+    sd::MmulHelper::tensorDot(weights, gradO, &columns, {{2,0,1,3},{iC,kH*kW,mC}}, modifGradO2, modifColumns); // [iC, kH*kW, mC] x [iC, mC, bS*oH*oW] = [iC, kW*kH, bS*oH*oW]
     helpers::col2im(*input->getContext(), columns, *gradI, sH, sW, pH, pW, iH, iW, dH, dW);                                       // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 
     if(!isNCHW) {
@@ -1326,7 +1326,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::depthwiseConv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
+void ConvolutionUtils::depthwiseConv2dBP(sd::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int paddingMode, const int isNCHW) {
     BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW), FLOAT_TYPES);
 }
 
@@ -1342,7 +1342,7 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
           T* z = reinterpret_cast<T*>(vz);
 
     __shared__ int rank, dimIH;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1384,7 +1384,7 @@ static void upsampling2dCudaLauncher(const int blocksPerGrid, const int threadsP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
+void ConvolutionUtils::upsampling2d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
 
     PointersManager manager(block.launchContext(), "upsampling2d");
 
@@ -1410,7 +1410,7 @@ __global__ static void upsampling3dCuda(const void* vx, const Nd4jLong* xShapeIn
           T* z = reinterpret_cast<T*>(vz);
 
     __shared__ int rank, dimID;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1453,7 +1453,7 @@ static void upsampling3dCudaLauncher(const int blocksPerGrid, const int threadsP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
+void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
 
     PointersManager manager(block.launchContext(), "upsampling3d");
 
@@ -1480,7 +1480,7 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
 
     __shared__ int rank, dimIH;
     __shared__ uint factorH, factorW;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1527,7 +1527,7 @@ static void upsampling2dBPCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling2dBP(nd4j::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
+void ConvolutionUtils::upsampling2dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
 
     PointersManager manager(block.launchContext(), "upsampling2d_bp");
 
@@ -1554,7 +1554,7 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
 
     __shared__ int rank, dimID;
     __shared__ uint factorD, factorH, factorW;
-    __shared__ Nd4jLong *sharedMem, zLen;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1604,7 +1604,7 @@ static void upsampling3dBPCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 //////////////////////////////////////////////////////////////////////////
-void ConvolutionUtils::upsampling3dBP(nd4j::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCDHW) {
+void ConvolutionUtils::upsampling3dBP(sd::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCDHW) {
 
     PointersManager manager(block.launchContext(), "upsampling3d_bp");
 

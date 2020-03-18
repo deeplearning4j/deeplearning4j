@@ -22,13 +22,13 @@
 #include <execution/Threads.h>
 
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
+static void im2col_(sd::LaunchContext & context, const NDArray& input,  NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
 
     // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 
@@ -64,8 +64,8 @@ static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArra
     if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
         auto func = PRAGMA_THREADS_FOR_2D {
-            for (int b = start_x; b < stop_x; b++) {
-                for (int c = start_y; c < stop_y; c++) {
+            for (auto b = start_x; b < stop_x; b++) {
+                for (auto c = start_y; c < stop_y; c++) {
                     for (int kRow = 0; kRow < kH; ++kRow) {
                         for (int kCol = 0; kCol < kW; ++kCol) {
                             for (int colH = 0; colH < oH; ++colH) {
@@ -98,8 +98,8 @@ static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArra
             T *col, *im;
             int imRow, imCol;
 
-            for (int b = start_x; b < stop_x; b += inc_x) {
-                for (int colH = start_y; colH < stop_y; colH += inc_y) {
+            for (auto b = start_x; b < stop_x; b += inc_x) {
+                for (auto colH = start_y; colH < stop_y; colH += inc_y) {
                     for (int colW = 0; colW < oW; ++colW) {
                         for (int c = 0; c < iC; ++c) {
                             for (int kRow = 0; kRow < kH; ++kRow) {
@@ -129,7 +129,7 @@ static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArra
 }
 
 
-void im2col(nd4j::LaunchContext & context, const NDArray& im,  NDArray& col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
+void im2col(sd::LaunchContext & context, const NDArray& im,  NDArray& col, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const NDArray& arrZeroPadVal) {
 	BUILD_SINGLE_SELECTOR(im.dataType(), im2col_, (context, im, col, kH, kW, sH, sW, pH, pW, dH, dW, arrZeroPadVal), FLOAT_TYPES);
 }
 

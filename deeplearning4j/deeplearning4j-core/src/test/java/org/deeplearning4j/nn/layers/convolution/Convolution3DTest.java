@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -37,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author Max Pumperla
  */
-public class Convolution3DTest {
+public class Convolution3DTest extends BaseDL4JTest {
 
     private int nExamples = 1;
     private int nChannelsOut = 1;

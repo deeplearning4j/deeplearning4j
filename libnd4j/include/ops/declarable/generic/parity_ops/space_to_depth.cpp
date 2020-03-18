@@ -18,19 +18,19 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_space_to_depth)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <array>
 #include <ops/declarable/helpers/s_t_d.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
     DECLARE_TYPES(space_to_depth) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
     }
 

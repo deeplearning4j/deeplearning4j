@@ -20,12 +20,12 @@
 
 #include <graph/execution/LogicWhile.h>
 #include <graph/execution/LogicReturn.h>
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 #include <graph/execution/LogicExecutor.h>
-#include <Status.h>
+#include <graph/Status.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicWhile::processNode(Graph *graph, Node *node) {
             auto __variableSpace = graph->getVariableSpace();
@@ -138,7 +138,7 @@ namespace nd4j {
                 return ND4J_STATUS_KERNEL_FAILURE;
             }
 
-            return nd4j::Status::OK();
+            return sd::Status::OK();
         }
     }
 }

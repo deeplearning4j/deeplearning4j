@@ -19,17 +19,17 @@
 // @author Yurii Shyrma
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_deconv2d)
 
 #include <ops/declarable/CustomOperations.h>
-#include <MmulHelper.h>
-#include <declarable/helpers/convolutions.h>
+#include <helpers/MmulHelper.h>
+#include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
 #include <ops/declarable/helpers/addBias.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
@@ -74,7 +74,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     //----- calculation of output -----//
     // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
     // NCHW: [kH, kW, oC, iC] x [bS, iC, iH, iW] = [kH, kW, oC, bS, iH, iW]
-    nd4j::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 1, 0, 4, 5});
+    sd::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 1, 0, 4, 5});
     LaunchContext* ctx = block.launchContext();
     helpers::col2im(*ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH, dW);     // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
 
@@ -90,7 +90,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 }
     DECLARE_TYPES(deconv2d) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
@@ -155,7 +155,7 @@ DECLARE_SHAPE_FN(deconv2d) {
 
     DECLARE_TYPES(deconv2d_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 
@@ -208,7 +208,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
 
      // ----- calculation of gradI -> pass it through conv2d_ff ----- //
-    nd4j::ops::conv2d conv2d;
+    sd::ops::conv2d conv2d;
     const Nd4jStatus status = conv2d.execute({gradO, weights}, {gradI}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  isSameMode,  !isNCHW}, {});
     if (status != ND4J_STATUS_OK)
         return status;

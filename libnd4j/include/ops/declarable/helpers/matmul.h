@@ -21,13 +21,13 @@
 #ifndef LIBND4J_HELPERS_MATMUL_H
 #define LIBND4J_HELPERS_MATMUL_H
 
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
-            void _matmul(nd4j::LaunchContext * context, NDArray *A, NDArray *B, NDArray *C, int transA, int transB, double alpha = 1., double beta = 0.);
+            void _matmul(sd::LaunchContext * context, NDArray *A, NDArray *B, NDArray *C, int transA, int transB, double alpha = 1., double beta = 0.);
         }
     }
 }

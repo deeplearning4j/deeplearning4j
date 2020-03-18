@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_tile_to_shape)
 
 #include <ops/declarable/headers/shape.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(tile_to_shape, 1, 1, false, 0, -1) {
 
@@ -55,13 +55,13 @@ namespace ops {
 
     DECLARE_TYPES(tile_to_shape) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
     }
 
     DECLARE_TYPES(tile_to_shape_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

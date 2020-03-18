@@ -18,14 +18,14 @@
 // @author raver119@gmail.com
 //
 
-#include <logger.h>
+#include <helpers/logger.h>
 #include <execution/AffinityManager.h>
 #include <exceptions/cuda_exception.h>
-#include <LaunchContext.h>
+#include <execution/LaunchContext.h>
 
 thread_local int globalThreadToDevice = -1;
 
-namespace nd4j {
+namespace sd {
     std::mutex AffinityManager::_currentMutex;
     std::mutex AffinityManager::_numberMutex;
     int AffinityManager::_numberOfDevices = -1;

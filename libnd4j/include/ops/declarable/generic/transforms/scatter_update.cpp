@@ -18,13 +18,13 @@
 // Created by raver119 on 24.11.17.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_scatter_update)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
          * scatter update operation
@@ -51,7 +51,7 @@ namespace nd4j {
 
         DECLARE_TYPES(scatter_update) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

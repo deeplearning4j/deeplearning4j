@@ -25,7 +25,7 @@
 #include <string>
 #include <vector>
 
-namespace nd4j {
+namespace sd {
     class Parameters {
     private:
         std::map<std::string, int> _intParams;

@@ -24,8 +24,8 @@
 
 #include <ops.h>
 #include <types/types.h>
-#include <op_boilerplate.h>
-#include <shape.h>
+#include <system/op_boilerplate.h>
+#include <helpers/shape.h>
 
 using namespace simdOps;
 
@@ -118,7 +118,7 @@ namespace functions {
                     sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
 
             __syncthreads();
-            aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, len), extraParams);
+            aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, len), extraParams);
             __syncthreads();
 
 
@@ -150,7 +150,7 @@ namespace functions {
                         sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], reductionBuffer[i], extraParams);
 
                     __syncthreads();
-                    aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
+                    aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
                     __syncthreads();
 
                     if (threadIdx.x == 0) {

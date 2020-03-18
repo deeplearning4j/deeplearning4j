@@ -20,7 +20,7 @@
 
 #include <memory/AllocationEntry.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         AllocationEntry::AllocationEntry(MemoryType type, Nd4jLong ptr, Nd4jLong numBytes, std::string &stack) {
             _pointer = ptr;

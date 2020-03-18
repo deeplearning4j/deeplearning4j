@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
@@ -32,7 +33,7 @@ import java.util.Arrays;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class RepeatVectorTest {
+public class RepeatVectorTest extends BaseDL4JTest {
 
     private int REPEAT = 4;
 

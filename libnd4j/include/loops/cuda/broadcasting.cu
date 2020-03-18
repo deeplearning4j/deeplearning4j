@@ -18,17 +18,17 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/broadcasting.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
-#include <Environment.h>
+#include <system/Environment.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <string>
 #include <stdexcept>
-#include <StringUtils.h>
-#include <specials_cuda.h>
+#include <helpers/StringUtils.h>
+#include <ops/specials_cuda.h>
 
 namespace functions {
     namespace broadcast {

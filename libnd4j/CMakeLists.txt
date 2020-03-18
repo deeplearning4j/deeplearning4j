@@ -1,17 +1,23 @@
 cmake_minimum_required(VERSION 3.15)
 project(libnd4j)
 set(CMAKE_VERBOSE_MAKEFILE OFF)
-option(NATIVE "Optimize for build machine (might not work on others)" OFF)
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
-option(CHECK_VECTORIZATION "checks for vectorization" OFF)
-option(BUILD_TESTS "Build tests" OFF)
+
+option(SD_NATIVE "Optimize for build machine (might not work on others)" OFF)
+option(SD_CHECK_VECTORIZATION "checks for vectorization" OFF)
+option(SD_BUILD_TESTS "Build tests" OFF)
+option(SD_STATIC_LIB "Build static library" OFF)
+option(SD_SHARED_LIB "Build shared library" ON)
+option(SD_SANITIZE "Enable Address Sanitizer" ON)
+
 option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OFF)
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
 set(CMAKE_CXX_STANDARD 11)
-if (CUDA_BLAS)
+if (SD_CUDA)
     enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD 11)
 
@@ -23,23 +29,23 @@ endif()
 # MSVC runtime lib can be either "MultiThreaded" or "MultiThreadedDLL", /MT and /MD respectively
 set(MSVC_RT_LIB "MultiThreadedDLL")
 
-set(X86_BUILD false)
+set(SD_X86_BUILD false)
 
-if (NOT IOS_BUILD AND NOT ANDROID_BUILD AND NOT ${ARCH} MATCHES "power*" AND NOT ${ARCH} MATCHES "arm*")
-    set(X86_BUILD true)
+if (NOT SD_IOS_BUILD AND NOT SD_ANDROID_BUILD AND NOT ${SD_ARCH} MATCHES "power*" AND NOT ${SD_ARCH} MATCHES "arm*")
+    set(SD_X86_BUILD true)
 endif()
 
 # -fsanitize=address
 # -fsanitize=leak
-if (ANDROID_BUILD)
+if (SD_ANDROID_BUILD)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true")
 elseif(WIN32)
-    set(X86_BUILD true)
-    if (CUDA_BLAS)
+    set(SD_X86_BUILD true)
+    if (SD_CUDA)
         set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
     else()
@@ -50,14 +56,14 @@ else()
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -fmax-errors=2 -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -fmax-errors=2")
 
-    if (CPU_BLAS)
+    if (SD_CPU)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
     endif()
 endif()
 
-if(NATIVE)
+if(SD_NATIVE)
     IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
-        set(X86_BUILD false)
+        set(SD_X86_BUILD false)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
     ELSE()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
@@ -65,14 +71,13 @@ if(NATIVE)
 endif()
 
 
-if(NOT CUDA_BLAS)
+if(NOT SD_CUDA)
     # we need this definition to avoid global memory use within mkldnn
     add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
 
     # there's a chance, we have no BLAS provided externally
     if ("${OPENBLAS_PATH}" STREQUAL "")
-        #we don't want static OpenBLAS on Apple
-        set(BLA_STATIC ON)
+        #we don't want OpenBLAS on Apple
         if (NOT APPLE)
             set(BLA_VENDOR "OpenBLAS")
         endif()
@@ -80,22 +85,7 @@ if(NOT CUDA_BLAS)
         # look around for system blas instead
         find_package(BLAS REQUIRED)
         if (BLAS_FOUND)
-            message("Original library: ${BLAS_LIBRARIES}")
-            # workaround for for cmake being unable to find static blas library
-            SET(_TMP_B "")
-            if (APPLE)
-                string(REGEX REPLACE "\\.dylib$" ".lib" _TMP_B "${BLAS_LIBRARIES}")
-            elseif (WIN32)
-                string(REGEX REPLACE "\\.dll" ".lib" _TMP_B "${BLAS_LIBRARIES}")
-            else()
-                string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${BLAS_LIBRARIES}")
-            endif()
-            set(BLAS_LIBRARIES "${_TMP_B}")
-
             message("Found external BLAS implementation: ${BLAS_LIBRARIES} ")
-            add_definitions(-D__EXTERNAL_BLAS__=true)
-        elseif(WIN32)
-            message("BLAS not found, using downloaded OpenBLAS instead")
             add_definitions(-D__EXTERNAL_BLAS__=true)
         endif()
     else()
@@ -107,7 +97,7 @@ if(NOT CUDA_BLAS)
     endif()
 
     # building cpu_features
-    if (X86_BUILD)
+    if (SD_X86_BUILD)
         add_definitions(-DCPU_FEATURES=true)
         set(BUILD_PIC "ON" CACHE STRING "Hack to enforce fPIC mode" FORCE)
         configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
@@ -169,7 +159,7 @@ endif()
 
 
 if (${HELPERS_cudnn})
-    if (NOT CUDA_BLAS)
+    if (NOT SD_CUDA)
         message(FATAL_ERROR "Can't build cuDNN on non-CUDA platform")
     endif()
 
@@ -231,12 +221,12 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
 if (NOT DEFINED ENV{CLION_IDE})
     message("NOT CLION")
-    include_directories(blas/ include/ include/helpers include/loops include/graph include/execution include/ops include/types include/array include/cnpy include/exceptions)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
     add_subdirectory(blas)
-    if(BUILD_TESTS)
+    if(SD_BUILD_TESTS)
         # tests are always compiled with all ops included
-        set(LIBND4J_ALL_OPS true)
-        set(LIBND4J_BUILD_MINIFIER true)
+        set(SD_ALL_OPS true)
+        set(SD_BUILD_MINIFIER true)
         add_subdirectory(tests_cpu)
     endif()
 endif ()
@@ -246,7 +236,7 @@ if ($ENV{CLION_IDE})
 endif ()
 
 if (MSVC_DEV)
-    set(LIBND4J_BUILD_MINIFIER false)
+    set(SD_BUILD_MINIFIER false)
 endif ()
 
 set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/main/resources)

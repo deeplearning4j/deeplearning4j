@@ -6,7 +6,7 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct FlatArray;
@@ -236,7 +236,7 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
     const std::vector<int8_t> *buffer = nullptr,
     DType dtype = DType_INHERIT,
     ByteOrder byteOrder = ByteOrder_LE) {
-  return nd4j::graph::CreateFlatArray(
+  return sd::graph::CreateFlatArray(
       _fbb,
       shape ? _fbb.CreateVector<int64_t>(*shape) : 0,
       buffer ? _fbb.CreateVector<int8_t>(*buffer) : 0,
@@ -244,37 +244,37 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
       byteOrder);
 }
 
-inline const nd4j::graph::FlatArray *GetFlatArray(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatArray>(buf);
+inline const sd::graph::FlatArray *GetFlatArray(const void *buf) {
+  return flatbuffers::GetRoot<sd::graph::FlatArray>(buf);
 }
 
-inline const nd4j::graph::FlatArray *GetSizePrefixedFlatArray(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatArray>(buf);
+inline const sd::graph::FlatArray *GetSizePrefixedFlatArray(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatArray>(buf);
 }
 
 inline bool VerifyFlatArrayBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatArray>(nullptr);
+  return verifier.VerifyBuffer<sd::graph::FlatArray>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatArrayBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatArray>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatArray>(nullptr);
 }
 
 inline void FinishFlatArrayBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatArray> root) {
+    flatbuffers::Offset<sd::graph::FlatArray> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatArrayBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatArray> root) {
+    flatbuffers::Offset<sd::graph::FlatArray> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_ARRAY_ND4J_GRAPH_H_

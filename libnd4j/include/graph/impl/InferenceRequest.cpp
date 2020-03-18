@@ -21,7 +21,7 @@
 #include <graph/InferenceRequest.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         InferenceRequest::InferenceRequest(Nd4jLong graphId, ExecutorConfiguration *configuration) {
             this->_id = graphId;

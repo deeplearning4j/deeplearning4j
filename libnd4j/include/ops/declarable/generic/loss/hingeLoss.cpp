@@ -18,12 +18,12 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 23.11.2017
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_hinge_loss)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ namespace nd4j {
 //////////////////////////////////////////////////////////////////////////
         DECLARE_TYPES(hinge_loss) {
 
-            getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+            getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -176,7 +176,7 @@ namespace nd4j {
             // turn E into gradient mask
 
             NDArray gradientMask(E.getShapeInfo(), block.getWorkspace());
-            E.applyTransform(nd4j::transform::Sign, gradientMask);
+            E.applyTransform(sd::transform::Sign, gradientMask);
 
             dLdp->assign(-z * gradientMask);
             dLdl->assign(-2.f * (*logits) * gradientMask);
@@ -271,7 +271,7 @@ namespace nd4j {
 
         DECLARE_TYPES(hinge_loss_grad) {
 
-            getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+            getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
         }
 
         DECLARE_SHAPE_FN(hinge_loss_grad) {

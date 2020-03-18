@@ -10,7 +10,7 @@
 #include "utils_generated.h"
 #include "variable_generated.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct UIStaticInfoRecord;
@@ -232,7 +232,7 @@ inline flatbuffers::Offset<UIGraphStructure> CreateUIGraphStructureDirect(
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputs = nullptr,
     const std::vector<flatbuffers::Offset<UIVariable>> *variables = nullptr,
     const std::vector<flatbuffers::Offset<UIOp>> *ops = nullptr) {
-  return nd4j::graph::CreateUIGraphStructure(
+  return sd::graph::CreateUIGraphStructure(
       _fbb,
       inputs ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*inputs) : 0,
       inputsPair ? _fbb.CreateVector<flatbuffers::Offset<IntPair>>(*inputsPair) : 0,
@@ -431,7 +431,7 @@ inline flatbuffers::Offset<UIVariable> CreateUIVariableDirect(
     const char *gradientVariable = nullptr,
     const char *uiLabelExtra = nullptr,
     flatbuffers::Offset<FlatArray> constantValue = 0) {
-  return nd4j::graph::CreateUIVariable(
+  return sd::graph::CreateUIVariable(
       _fbb,
       id,
       name ? _fbb.CreateString(name) : 0,
@@ -555,7 +555,7 @@ inline flatbuffers::Offset<UIOp> CreateUIOpDirect(
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputs = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
     const char *uiLabelExtra = nullptr) {
-  return nd4j::graph::CreateUIOp(
+  return sd::graph::CreateUIOp(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       opName ? _fbb.CreateString(opName) : 0,
@@ -566,6 +566,6 @@ inline flatbuffers::Offset<UIOp> CreateUIOpDirect(
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_UIGRAPHSTATIC_ND4J_GRAPH_H_

@@ -21,10 +21,10 @@
 #include <graph/VariableType.h>
 #include <helpers/EnumUtils.h>
 
-using namespace nd4j::graph;
+using namespace sd::graph;
 
-namespace nd4j {
-    const char * EnumUtils::_VariableTypeToString(nd4j::graph::VariableType variableType) {
+namespace sd {
+    const char * EnumUtils::_VariableTypeToString(sd::graph::VariableType variableType) {
         switch (variableType) {
             case NDARRAY: return "NDARRAY";
             case ARRAY_LIST: return "ARRAY_LIST";
@@ -33,7 +33,7 @@ namespace nd4j {
         }
     }
 
-    const char * EnumUtils::_OpTypeToString(nd4j::graph::OpType opType) {
+    const char * EnumUtils::_OpTypeToString(sd::graph::OpType opType) {
         switch(opType) {
             case OpType_REDUCE_SAME: return "REDUCE_SAME";
             case OpType_REDUCE_BOOL: return "REDUCE_BOOL";

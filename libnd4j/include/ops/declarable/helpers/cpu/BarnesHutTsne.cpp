@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -30,7 +30,7 @@ namespace helpers {
         int* pRowCounts = reinterpret_cast<int*>(rowCounts.buffer());
         int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
         int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
-        for (int n = 0; n < N; n++) {
+        for (Nd4jLong n = 0; n < N; n++) {
             int begin = pRows[n];//->e<int>(n);
             int end = pRows[n + 1];//rowP->e<int>(n + 1);
             for (int i = begin; i < end; i++) {
@@ -72,7 +72,7 @@ namespace helpers {
         int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
         int* symRowP = reinterpret_cast<int*>(outputRows->buffer());
         symRowP[0] = 0;
-        for (int n = 0; n < N; n++)
+        for (Nd4jLong n = 0; n < N; n++)
             symRowP[n + 1] = symRowP[n] + rowCounts->e<int>(n);
 //        outputRows->printBuffer("output rows");
 
@@ -86,7 +86,7 @@ namespace helpers {
         std::vector<int> offset(N);// = NDArrayFactory::create<int>('c', {N});
 
 //PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(guided) shared(offset))
-        for (int n = 0; n < N; n++) {
+        for (Nd4jLong n = 0; n < N; n++) {
             int begin = pRows[n];
             int bound = pRows[n + 1];
 
@@ -188,9 +188,9 @@ namespace helpers {
         //        gains = gains.add(.2).muli(sign(yGrads)).neq(sign(yIncs)).castTo(Nd4j.defaultFloatingPointType())
         //                .addi(gains.mul(0.8).muli(sign(yGrads)).neq(sign(yIncs)));
         auto gainsInternal = LAMBDA_TTT(x, grad, eps) {
-//            return T((x + 2.) * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps));
-            //return T((x + 2.) * nd4j::math::nd4j_sign<T,T>(grad) == nd4j::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * nd4j::math::nd4j_sign<T,T>(grad) == nd4j::math::nd4j_sign<T,T>(eps));
-            T res = nd4j::math::nd4j_sign<T,T>(grad) != nd4j::math::nd4j_sign<T,T>(eps) ? x + T(.2) : x * T(.8);
+//            return T((x + 2.) * sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps));
+            //return T((x + 2.) * sd::math::nd4j_sign<T,T>(grad) == sd::math::nd4j_sign<T,T>(eps)) + T(x * 0.8 * sd::math::nd4j_sign<T,T>(grad) == sd::math::nd4j_sign<T,T>(eps));
+            T res = sd::math::nd4j_sign<T,T>(grad) != sd::math::nd4j_sign<T,T>(eps) ? x + T(.2) : x * T(.8);
             if(res < .01) res = .01;
             return res;
         };

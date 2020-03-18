@@ -34,25 +34,25 @@
 #endif
 
 
-namespace nd4j {
+namespace sd {
 
     namespace random {
 
         template<typename T>
         class RandomHelper {
         private:
-            nd4j::random::IGenerator *generator;
-            nd4j::random::RandomBuffer *buffer;
+            sd::random::IGenerator *generator;
+            sd::random::RandomBuffer *buffer;
 
 
         public:
 
-            _CUDA_HD RandomHelper(nd4j::random::IGenerator *generator) {
+            _CUDA_HD RandomHelper(sd::random::IGenerator *generator) {
                 this->generator = generator;
                 this->buffer = generator->getBuffer();
             }
 
-            _CUDA_HD RandomHelper(nd4j::random::RandomBuffer *buffer) {
+            _CUDA_HD RandomHelper(sd::random::RandomBuffer *buffer) {
                 this->buffer = buffer;
             }
 
@@ -117,7 +117,7 @@ namespace nd4j {
              * @return
              */
             inline _CUDA_D T nextT() {
-                return (T) nextUInt() / (T) nd4j::DataTypeUtils::max<Nd4jULong>();
+                return (T) nextUInt() / (T) sd::DataTypeUtils::max<Nd4jULong>();
             }
 
             /**
@@ -150,7 +150,7 @@ namespace nd4j {
              *  relative methods are made as workaround for lock-free concurrent execution
              */
             inline _CUDA_D int relativeInt(Nd4jLong index) {
-                return (int) (relativeUInt(index) % (nd4j::DataTypeUtils::max<uint32_t>() + 1));
+                return (int) (relativeUInt(index) % (sd::DataTypeUtils::max<uint32_t>() + 1));
             }
 
             /**
@@ -190,8 +190,8 @@ namespace nd4j {
             inline _CUDA_D T relativeT(Nd4jLong index) {
                 if (sizeof(T) < 4) {
                     // FIXME: this is fast hack for short types, like fp16. This should be improved.
-                    return (T)((float) relativeUInt(index) / (float) nd4j::DataTypeUtils::max<uint32_t>());
-                } else return (T) relativeUInt(index) / (T) nd4j::DataTypeUtils::max<uint32_t>();
+                    return (T)((float) relativeUInt(index) / (float) sd::DataTypeUtils::max<uint32_t>());
+                } else return (T) relativeUInt(index) / (T) sd::DataTypeUtils::max<uint32_t>();
             }
 
             /**

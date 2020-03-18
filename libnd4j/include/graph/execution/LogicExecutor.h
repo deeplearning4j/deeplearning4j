@@ -21,11 +21,11 @@
 #ifndef LIBND4J_LOGICEXECUTOR_H
 #define LIBND4J_LOGICEXECUTOR_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         /**
          * This class acts as switch for picking logic execution based on opNum, unique for each logical op

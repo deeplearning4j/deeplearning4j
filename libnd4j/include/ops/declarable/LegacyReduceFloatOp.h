@@ -23,7 +23,7 @@
 
 #include <ops/declarable/LegacyOp.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         class ND4J_EXPORT LegacyReduceFloatOp : public LegacyOp {
         protected:
@@ -32,7 +32,7 @@ namespace nd4j {
             LegacyReduceFloatOp();
             LegacyReduceFloatOp(int opNum);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
             LegacyOp* clone() override;
         };
     }

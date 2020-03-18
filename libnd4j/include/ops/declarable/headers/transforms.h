@@ -23,7 +23,7 @@
 
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         #if NOT_EXCLUDED(OP_clipbyvalue)
         DECLARE_CONFIGURABLE_OP(clipbyvalue, 1, 1, true, 2, 0);

@@ -20,10 +20,10 @@
 
 #include <helpers/logger.h>
 #include <helpers/BitwiseUtils.h>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <types/float16.h>
 
-namespace nd4j {
+namespace sd {
 
      bool BitwiseUtils::isBE() {
         short int word = 0x0001;
@@ -76,7 +76,7 @@ namespace nd4j {
         return bits;
     }
 
-    nd4j::ByteOrder BitwiseUtils::asByteOrder() {
+    sd::ByteOrder BitwiseUtils::asByteOrder() {
         return isBE() ? ByteOrder::BE : ByteOrder::LE;
     }
 }

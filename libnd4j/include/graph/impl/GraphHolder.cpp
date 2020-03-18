@@ -19,11 +19,11 @@
 //
 
 #include <graph/GraphHolder.h>
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 #include <exceptions/graph_exists_exception.h>
 #include <exceptions/graph_execution_exception.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         GraphHolder* GraphHolder::getInstance() {
             if (_INSTANCE == 0)
@@ -38,7 +38,7 @@ namespace nd4j {
 
             _graphF[graphId] = graph;
 
-            nd4j::SimpleReadWriteLock lock;
+            sd::SimpleReadWriteLock lock;
             _locks[graphId] = lock;
         }
 

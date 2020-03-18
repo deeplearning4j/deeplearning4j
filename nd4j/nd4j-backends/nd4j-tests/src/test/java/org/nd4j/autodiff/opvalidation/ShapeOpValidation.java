@@ -2050,7 +2050,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         print(out[0]);
          */
 
-        INDArray emptyIn = Nd4j.empty(DataType.FLOAT);
+        INDArray emptyIn = Nd4j.empty(DataType.FLOAT).reshape(0, 4);
         INDArray axis = Nd4j.scalar(1);
 
         DynamicCustomOp op = DynamicCustomOp.builder("split")
@@ -2061,9 +2061,10 @@ public class ShapeOpValidation extends BaseOpValidation {
         List<LongShapeDescriptor> l = op.calculateOutputShape();
         assertEquals(4, l.size());
         for( int i=0; i<4; i++ ){
-            assertArrayEquals(new long[0], l.get(i).getShape());
-            assertTrue(l.get(i).isEmpty());
-            op.addOutputArgument(Nd4j.empty(DataType.FLOAT));
+            val desc = l.get(i);
+            assertArrayEquals(new long[]{0, 1}, desc.getShape());
+            assertTrue(desc.isEmpty());
+            op.addOutputArgument(Nd4j.empty(DataType.FLOAT).reshape(desc.getShape()));
         }
 
         Nd4j.exec(op);

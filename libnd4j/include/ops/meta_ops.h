@@ -18,8 +18,8 @@
 #ifndef FUSED_OPS_H_
 #define FUSED_OPS_H_
 
-#include <pointercast.h>
-#include <op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
 
 #include <ops/ops.h>
 

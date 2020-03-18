@@ -23,7 +23,7 @@
 
 #include <atomic>
 #include <mutex>
-#include <dll.h>
+#include <system/dll.h>
 
 /**
  * This class provides PRIMITIVE read-write lock, and should NOT be used outside of GraphServer due to its inefficiency.
@@ -31,7 +31,7 @@
  *
  * Basic idea: write lock won't be obtained before all read requests served
  */
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT SimpleReadWriteLock {
     private:
         std::atomic<unsigned long long int> _read_locks;

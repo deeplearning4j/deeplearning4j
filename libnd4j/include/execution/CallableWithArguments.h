@@ -25,7 +25,7 @@
 #include <vector>
 #include <atomic>
 #include <condition_variable>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 namespace samediff {
     class CallableWithArguments {

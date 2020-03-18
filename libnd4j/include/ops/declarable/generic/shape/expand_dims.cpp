@@ -18,12 +18,12 @@
 // Created by raver119 on 02.11.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_expand_dims)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(expand_dims, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
@@ -41,9 +41,10 @@ namespace nd4j {
 
             REQUIRE_TRUE(axis >= 0 && axis <= input->rankOf()+1, 0, "ExpandDims: axis should be in range of 0...%i in this case, but got %i instead", input->rankOf() + 1, axis);
 
-            std::vector<Nd4jLong> shape;
+            std::vector<Nd4jLong> shape(input->rankOf());
+
             for(int e = 0; e < input->rankOf(); e++)
-                shape.emplace_back(input->sizeAt(e));
+                shape[input->sizeAt(e)];
 
             shape.insert(shape.begin() + axis, 1);
 
@@ -58,7 +59,7 @@ namespace nd4j {
 
         DECLARE_TYPES(expand_dims) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
 

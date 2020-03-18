@@ -25,12 +25,12 @@
 #include <ops/declarable/OpDescriptor.h>
 #include <ops/declarable/DeclarableOp.h>
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 class ND4J_EXPORT GraphUtils {
 public:
-    typedef std::vector<nd4j::ops::OpDescriptor> OpList;
+    typedef std::vector<sd::ops::OpDescriptor> OpList;
 
 public:
     static bool filterOperations(OpList& ops);

@@ -45,19 +45,19 @@
 #include <ops/declarable/headers/util.h>
 #include <ops/declarable/headers/BarnesHutTsne.h>
 #include <ops/declarable/headers/images.h>
-#include <dll.h>
+#include <system/dll.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
-#include <Status.h>
+#include <graph/Status.h>
 #include <helpers/ArrayUtils.h>
 #include <helpers/ShapeBuilders.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/OpTracker.h>
-#include <ConstantShapeHelper.h>
-#include <ConstantTadHelper.h>
+#include <helpers/ConstantShapeHelper.h>
+#include <helpers/ConstantTadHelper.h>
 
 
-namespace nd4j {
+namespace sd {
     struct ND4J_EXPORT _loader {
         _loader();
     };

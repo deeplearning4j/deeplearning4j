@@ -18,13 +18,13 @@
 // @author George A. Shulinok <sgazeos@gmail.com), created on 5/15/2019.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cell_contains)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         CUSTOM_OP_IMPL(cell_contains, 3, 1, false, 0, 1) {
@@ -40,13 +40,13 @@ namespace nd4j {
 
         DECLARE_TYPES(cell_contains) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(nd4j::DataType::BOOL)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
+                    ->setAllowedOutputTypes(sd::DataType::BOOL)
                     ->setSameMode(false);
         }
 
         DECLARE_SHAPE_FN(cell_contains) {
-            return SHAPELIST(CONSTANT(ShapeBuilders::createScalarShapeInfo(nd4j::DataType::BOOL, block.workspace())));
+            return SHAPELIST(CONSTANT(ShapeBuilders::createScalarShapeInfo(sd::DataType::BOOL, block.workspace())));
         }
     }
 }

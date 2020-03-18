@@ -18,13 +18,13 @@
 // Created by raver on 4/9/2018.
 //
 
-#include "../indexreduce.h"
-#include <op_boilerplate.h>
-#include <Loops.h>
+#include <loops/indexreduce.h>
+#include <system/op_boilerplate.h>
+#include <helpers/Loops.h>
 #include <types/types.h>
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
-#include "../legacy_ops.h"
+#include <loops/legacy_ops.h>
 
 using namespace simdOps;
 
@@ -60,11 +60,11 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
     auto startingIndex = OpType::startingIndexValue(x);
     auto len = shape::length(xShapeInfo);
     auto xEws = shape::elementWiseStride(xShapeInfo);
-    nd4j::OmpLaunchHelper info(len);
+    sd::OmpLaunchHelper info(len);
 
     uint xShapeInfoCast[MAX_RANK];
-    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-    int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
+    bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+    int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
     IndexValue<X> intermediatery[64];
     for (int e = 0; e < maxThreads; e++)
         intermediatery[e].index = -1;
@@ -119,12 +119,12 @@ void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 
     const Nd4jLong zLen = shape::length(zShapeInfo);
 
-    if(nd4j::ArrayOptions::arrayType(xShapeInfo) == nd4j::ArrayType::EMPTY) {
-        if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
+    if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
+        if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
             return;
         const auto indexValue = OpType::startingIndexValue(x);
 
-        for (uint i = 0; i < zLen; i++)
+        for (Nd4jLong i = 0; i < zLen; i++)
             z[i] = (Z) indexValue.index;
 
         return;
@@ -142,13 +142,13 @@ void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         if (dimensionLength < 1)
             return;
 
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
         tadOnlyShapeInfo = tadPack.primaryShapeInfo();
         tadOffsets = tadPack.primaryOffsets();
     }
 
-    nd4j::IndexReductionLoops<X,Z>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+    sd::IndexReductionLoops<X,Z>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
 }
 
 }

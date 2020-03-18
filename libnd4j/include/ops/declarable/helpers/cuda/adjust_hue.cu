@@ -21,9 +21,9 @@
 
 #include <ops/declarable/helpers/adjust_hue.h>
 #include <helpers/ConstantTadHelper.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -79,10 +79,10 @@ static _CUDA_H void adjustHueCudaLauncher(const int blocksPerGrid, const int thr
 }
 
 ////////////////////////////////////////////////////////////////////////
-void adjustHue(nd4j::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
+void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -166,15 +166,15 @@ static void _CUDA_G adjustHueSingleNCHWKernel(void *xBuffer, Nd4jLong *xTadShape
 }
 
 template <typename T>
-static void _adjust_hue_single(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
+static void _adjust_hue_single(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
     // numChannels is always 3
     auto tuples = array->lengthOf() / 3;
     if (isNHWC) {
         adjustHueSingleNHWCKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(), array->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), tuples, delta);
     } else {
         // TODO: check this one
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {1, 2});
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {1, 2});
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {1, 2});
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {1, 2});
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 
@@ -184,7 +184,7 @@ static void _adjust_hue_single(nd4j::LaunchContext * context, NDArray *array, ND
 
 
 template <typename T>
-static void _adjust_hue_batch(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
+static void _adjust_hue_batch(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
     auto xType = array->dataType();
 
     // numChannels is always 3
@@ -195,8 +195,8 @@ static void _adjust_hue_batch(nd4j::LaunchContext * context, NDArray *array, NDA
         BUILD_SINGLE_SELECTOR(xType, _adjust_hue_single, (context, array, output, delta, isNHWC);, FLOAT_TYPES);
     } else {
         // TODO: check this one
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {0, 2, 3});
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {0, 2, 3});
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {0, 2, 3});
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {0, 2, 3});
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 
@@ -204,7 +204,7 @@ static void _adjust_hue_batch(nd4j::LaunchContext * context, NDArray *array, NDA
     }
 }
 
-void _adjust_hue(nd4j::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+void _adjust_hue(sd::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
     auto xType = array->dataType();
 
     float d = delta->e<float>(0);

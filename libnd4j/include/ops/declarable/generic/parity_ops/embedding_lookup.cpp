@@ -18,7 +18,7 @@
 // Created by GS <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_embedding_lookup)
 
 #include <ops/declarable/CustomOperations.h>
@@ -27,7 +27,7 @@
 #include <numeric>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 
@@ -64,20 +64,20 @@ CUSTOM_OP_IMPL(embedding_lookup, 2, 1, false, 0, 1) {
         int lastIndDim = indeces->lengthOf();
         int partition_mode = INT_ARG(0); // partition_mode == 0 - i.e. 'mod' , 1 - 'div'
 
-        nd4j::ops::gather op;
+        sd::ops::gather op;
 
-        std::unique_ptr<ResultSet> result(op.evaluate({input, indeces}, {0}));
-        REQUIRE_TRUE(result->status() == Status::OK(), 0, "embedding_lookup: cannot retrieve results from gather op.");
-        REQUIRE_TRUE(result->at(0)->isSameShape(output), 0, "embedding_lookup: wrong shape of return from gather op.");
-        output->assign(result->at(0));
+        auto result(op.evaluate({input, indeces}, {0}));
+        REQUIRE_TRUE(result.status() == Status::OK(), 0, "embedding_lookup: cannot retrieve results from gather op.");
+        REQUIRE_TRUE(result.at(0)->isSameShape(output), 0, "embedding_lookup: wrong shape of return from gather op.");
+        output->assign(result.at(0));
     }
     return Status::OK();
 }
 
 DECLARE_TYPES(embedding_lookup) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
-            ->setAllowedOutputTypes(nd4j::DataType::ANY);
+            ->setAllowedInputTypes(sd::DataType::ANY)
+            ->setAllowedOutputTypes(sd::DataType::ANY);
 }
 
 DECLARE_SHAPE_FN(embedding_lookup) {

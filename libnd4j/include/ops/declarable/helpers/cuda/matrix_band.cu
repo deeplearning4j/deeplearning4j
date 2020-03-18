@@ -18,12 +18,12 @@
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 #include <ops/declarable/helpers/matrix_band.h>
-#include <TAD.h>
-#include <cuda_exception.h>
-#include <ShapeUtils.h>
+#include <helpers/TAD.h>
+#include <exceptions/cuda_exception.h>
+#include <helpers/ShapeUtils.h>
 #include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -83,15 +83,15 @@ namespace helpers {
 // matrixBandPart_ - main algorithm caller
 //
     template <typename T>
-    void matrixBandPart_(nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    void matrixBandPart_(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         dim3 launchDims(256, 512, 8192);
         auto stream = context->getCudaStream();
 
         std::vector<int> lastDims({input->rankOf() - 2, input->rankOf() - 1});
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims);
 
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), lastDims);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), lastDims);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), lastDims);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), lastDims);
 
         const Nd4jLong numTads = packX.numberOfTads();
 
@@ -103,10 +103,10 @@ namespace helpers {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void matrixBandPart(nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
+    void matrixBandPart(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (context, input, output, lowerBand, upperBand), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
 }
 }
 }

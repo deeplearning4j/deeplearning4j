@@ -23,7 +23,7 @@
 
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
     #if NOT_EXCLUDED(OP_knn_mindistance)
         DECLARE_CUSTOM_OP(knn_mindistance, 3, 1, false, 0, 0);

@@ -18,13 +18,13 @@
 //  Created by Yurii Shyrma on 25.01.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_reverse_sequence)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverse.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 CUSTOM_OP_IMPL(reverse_sequence, 2, 1, false, 0, 2) {

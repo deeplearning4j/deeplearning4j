@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_crelu)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(crelu, 1, 1, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -32,7 +32,7 @@ namespace nd4j {
             REQUIRE_TRUE(x->isR(), 0, "CRELU: input must be real type");
 
             auto tmp = x->dup();
-            tmp.applyTransform(nd4j::transform::Neg, tmp);
+            tmp.applyTransform(sd::transform::Neg, tmp);
 
             auto z = OUTPUT_VARIABLE(0);
 
@@ -41,7 +41,7 @@ namespace nd4j {
 
             // TODO: make this configurable?
             double threshold = 0.0;
-            z->applyScalar(nd4j::scalar::RELU, threshold, *z);
+            z->applyScalar(sd::scalar::RELU, threshold, *z);
 
             STORE_RESULT(z);
 
@@ -72,30 +72,28 @@ namespace nd4j {
             auto epsilon = OUTPUT_VARIABLE(0);
 
             // at first step we build fwd activation
-            nd4j::ops::crelu op;
+            sd::ops::crelu op;
             auto tmpResult = op.evaluate({input});
-            if (tmpResult->status() != ND4J_STATUS_OK)
-                return tmpResult->status();
+            if (tmpResult.status() != ND4J_STATUS_OK)
+                return tmpResult.status();
 
-            auto actv = tmpResult->at(0);
+            auto actv = tmpResult.at(0);
 
             // now we do RELU backward pass
             //actv->applyPairwiseTransform(pairwise::RELUDerivativeE, *epsilon, nullptr);
             helpers::reluDerivative(block.launchContext(), actv, epsilonNext);
             // now we split updated array into 2 chunks along last dimension
-            nd4j::ops::concat_bp opc;
+            sd::ops::concat_bp opc;
             auto dec = opc.evaluate({input, input, actv}, {-1});
-            if (dec->status() != ND4J_STATUS_OK)
-                return dec->status();
+            if (dec.status() != ND4J_STATUS_OK)
+                return dec.status();
 
             // and now we subtract two parts of epsilons and pass result out
-            auto pos = dec->at(0);
-            auto neg = dec->at(1);
+            auto pos = dec.at(0);
+            auto neg = dec.at(1);
 
-            pos->applyPairwiseTransform(nd4j::pairwise::Subtract, *neg, *epsilon);
+            pos->applyPairwiseTransform(sd::pairwise::Subtract, *neg, *epsilon);
 
-            delete tmpResult;
-            delete dec;
             return ND4J_STATUS_OK;
         }
 

@@ -18,15 +18,15 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <svd.h>
+#include <helpers/svd.h>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <cusolverDn.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ShapeUtils.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ShapeUtils.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -100,7 +100,7 @@ static void inverseColumnSignCudaLauncher(const int blocksPerGrid, const int thr
 BUILD_SINGLE_TEMPLATE(template void inverseColumnSignCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, void* vu, const Nd4jLong* uShapeInfo, void* vv, const Nd4jLong* vShapeInfo), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-static void svdQR(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* VT, const bool fullUV, const bool calcUV) {
+static void svdQR(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* VT, const bool fullUV, const bool calcUV) {
 
     // since cusa api cusolverDnDgesvd/cusolverDnSgesvd have following constrain on input matrix A: A_rows >= A_columns && A_order = 'f'
     // we make this function to have deal with 2 valid cases only:
@@ -124,19 +124,19 @@ static void svdQR(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, ND
     if(m < n)
         throw std::runtime_error("svdQR: due to cuda api input constrains given shape of A array are not valid !");
 
-    if(ShapeUtils::shapeAsString({minDim}) != ShapeUtils::shapeAsString(S))
+    if(std::vector<Nd4jLong>({minDim}) != S->getShapeAsVector())
         throw std::runtime_error("svdQR: wrong shape of S array !");
 
     if(calcUV) {
 
-        if(fullUV && ShapeUtils::shapeAsString({m,m}) != ShapeUtils::shapeAsString(U))
+        if(fullUV && std::vector<Nd4jLong>({m,m}) != U->getShapeAsVector())
             throw std::runtime_error("svdQR: wrong shape of U array !");
-        else if(!fullUV && ShapeUtils::shapeAsString({m,minDim}) != ShapeUtils::shapeAsString(U))
+        else if(!fullUV && std::vector<Nd4jLong>({m,minDim}) != U->getShapeAsVector())
             throw std::runtime_error("svdQR: wrong shape of U array !");
 
-        if(fullUV && ShapeUtils::shapeAsString({n,n}) != ShapeUtils::shapeAsString(VT))
+        if(fullUV && std::vector<Nd4jLong>({n,n}) != VT->getShapeAsVector())
             throw std::runtime_error("svdQR: wrong shape of VT array !");
-        else if(!fullUV && ShapeUtils::shapeAsString({minDim,n}) != ShapeUtils::shapeAsString(VT))
+        else if(!fullUV && std::vector<Nd4jLong>({minDim,n}) != VT->getShapeAsVector())
             throw std::runtime_error("svdQR: wrong shape of VT array !");
     }
 
@@ -266,7 +266,7 @@ static void svdQR(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, ND
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV, const bool calcUV) {
+static void svdJcb(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV, const bool calcUV) {
 
     // A [m, n]
     // S [n]
@@ -280,19 +280,19 @@ static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, N
     int n = A->sizeAt(1);
     const int minDim = m < n ? m : n;
 
-    if(ShapeUtils::shapeAsString({minDim}) != ShapeUtils::shapeAsString(S))
+    if(std::vector<Nd4jLong>({minDim}) != S->getShapeAsVector())
         throw std::runtime_error("svdJcb: wrong shape of S array !");
 
     if(calcUV) {
 
-        if(fullUV && ShapeUtils::shapeAsString({m,m}) != ShapeUtils::shapeAsString(U))
+        if(fullUV && std::vector<Nd4jLong>({m,m}) != U->getShapeAsVector())
             throw std::runtime_error("svdJcb: wrong shape of U array !");
-        else if(!fullUV && ShapeUtils::shapeAsString({m,minDim}) != ShapeUtils::shapeAsString(U))
+        else if(!fullUV && std::vector<Nd4jLong>({m,minDim}) != U->getShapeAsVector())
             throw std::runtime_error("svdJcb: wrong shape of U array !");
 
-        if(fullUV && ShapeUtils::shapeAsString({n,n}) != ShapeUtils::shapeAsString(V))
+        if(fullUV && std::vector<Nd4jLong>({n,n}) != V->getShapeAsVector())
             throw std::runtime_error("svdJcb: wrong shape of V array !");
-        else if(!fullUV && ShapeUtils::shapeAsString({n,minDim}) != ShapeUtils::shapeAsString(V))
+        else if(!fullUV && std::vector<Nd4jLong>({n,minDim}) != V->getShapeAsVector())
             throw std::runtime_error("svdJcb: wrong shape of V array !");
     }
 
@@ -455,7 +455,7 @@ static void svdJcb(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, N
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void svdBatched(nd4j::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV, const bool calcUV) {
+static void svdBatched(sd::LaunchContext* context, const NDArray* A, NDArray* S, NDArray* U, NDArray* V, const bool fullUV, const bool calcUV) {
 
     // A [..., m, n]
     // S [..., n]
@@ -628,7 +628,7 @@ static void svdBatched(nd4j::LaunchContext* context, const NDArray* A, NDArray* 
 }
 
 ////////////////////////////////////////////////////////////////////
-void svd(nd4j::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
+void svd(sd::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum) {
 
     NDArray* S = outArrs[0];
     NDArray* U = outArrs[1];

@@ -21,7 +21,7 @@
 #ifndef ND4J_VARIABLE_TYPE_H
 #define ND4J_VARIABLE_TYPE_H
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         enum VariableType {
             NDARRAY = 0,

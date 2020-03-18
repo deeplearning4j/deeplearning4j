@@ -23,16 +23,16 @@
 
 #ifndef SCALAR_BOOL_H_
 #define SCALAR_BOOL_H_
-#include <dll.h>
+#include <system/dll.h>
 
 #ifdef __JNI__
 #include <jni.h>
 #endif
-#include <templatemath.h>
+#include <math/templatemath.h>
 #include <ops/ops.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include "helpers/logger.h"
-#include <OmpLaunchHelper.h>
+#include <helpers/OmpLaunchHelper.h>
 #include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__

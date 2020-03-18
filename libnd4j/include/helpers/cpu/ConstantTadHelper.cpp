@@ -19,15 +19,16 @@
 //
 
 #include "../ConstantTadHelper.h"
-#include <TAD.h>
-#include <ShapeUtils.h>
+#include <helpers/TAD.h>
+#include <helpers/ShapeUtils.h>
 
 #ifndef __CUDABLAS__
 
-namespace nd4j {
+
+namespace sd {
 
     ConstantTadHelper::ConstantTadHelper() {
-        std::map<TadDescriptor, TadPack> pack;
+        MAP_IMPL<TadDescriptor, TadPack> pack;
         _cache.emplace_back(pack);
     }
 
@@ -72,7 +73,7 @@ namespace nd4j {
             auto oPtr = new Nd4jLong[numOfSubArrs];
 
             if (numOfSubArrs > 0)
-                shape::calcSubArrShapeAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr, oPtr, descriptor.areUnitiesinShape());
+                shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr, oPtr, descriptor.areUnitiesinShape());
 
 
             ConstantDataBuffer shapesBuffer(sPtr, nullptr, shape::shapeInfoLength(subArrRank)*sizeof(Nd4jLong), DataType::INT64);
@@ -112,7 +113,7 @@ namespace nd4j {
         }
     }
 
-    nd4j::ConstantTadHelper* nd4j::ConstantTadHelper::_INSTANCE = 0;
+    sd::ConstantTadHelper* sd::ConstantTadHelper::_INSTANCE = 0;
 }
 
 #endif

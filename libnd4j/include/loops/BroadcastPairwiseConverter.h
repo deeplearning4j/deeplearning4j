@@ -21,10 +21,10 @@
 #ifndef DEV_TESTS_BROADCASTPAIRWISECONVERTER_H
 #define DEV_TESTS_BROADCASTPAIRWISECONVERTER_H
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <stdexcept>
 
-namespace nd4j {
+namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 inline pairwise::Ops fromBroadcastToPairwise(broadcast::Ops op) {

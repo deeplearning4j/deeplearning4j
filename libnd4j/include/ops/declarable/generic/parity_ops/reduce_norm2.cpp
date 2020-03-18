@@ -22,7 +22,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 #if NOT_EXCLUDED(OP_reduce_norm2)
 
@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(reduce_norm2) {
 
 DECLARE_TYPES(reduce_norm2) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 #endif
@@ -156,7 +156,7 @@ DECLARE_SHAPE_FN(reduce_norm2_bp) {
 
 DECLARE_TYPES(reduce_norm2_bp) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

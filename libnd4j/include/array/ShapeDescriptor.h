@@ -23,12 +23,12 @@
 
 #include <unordered_map>
 #include <vector>
-#include <dll.h>
-#include <pointercast.h>
-#include <DataType.h>
+#include <system/dll.h>
+#include <system/pointercast.h>
+#include <array/DataType.h>
 #include <initializer_list>
 
-namespace nd4j {
+namespace sd {
 
 class ND4J_EXPORT ShapeDescriptor {
 
@@ -44,7 +44,7 @@ class ND4J_EXPORT ShapeDescriptor {
     public:
         ShapeDescriptor(const ShapeDescriptor &other);
         ShapeDescriptor(const Nd4jLong *shapeInfo, bool inheritDtype = true);
-        explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const nd4j::DataType dtypeOverride);
+        explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const sd::DataType dtypeOverride);
         explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride);
         explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride, const Nd4jLong *orderOverride);
         explicit ShapeDescriptor(const DataType type, const Nd4jLong length);
@@ -85,9 +85,19 @@ class ND4J_EXPORT ShapeDescriptor {
         static ShapeDescriptor scalarDescriptor(const DataType type);
         static ShapeDescriptor vectorDescriptor(const Nd4jLong length, const DataType type);
     };
-
-
 }
+
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+    template<>
+    class ND4J_EXPORT hash<sd::ShapeDescriptor> {
+    public:
+        size_t operator()(const sd::ShapeDescriptor &k) const;
+    };
+}
+
+#endif
 
 
 #endif //DEV_TESTS_SHAPEDESCRIPTOR_H

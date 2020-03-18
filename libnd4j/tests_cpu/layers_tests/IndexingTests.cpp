@@ -20,11 +20,11 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
-#include <NativeOps.h>
+#include <array/NDArray.h>
+#include <legacy/NativeOps.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class IndexingTests : public testing::Test {
 public:
@@ -44,16 +44,16 @@ TEST_F(IndexingTests, StridedSlice_1) {
     auto strides = NDArrayFactory::create<int>({1,1,1});
 
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
 
     auto result = op.evaluate({&x, &begin, &end, &strides}, {}, {0,0,0,0,0}); //, 2,2,0,  3,3,3,  1,1,1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -63,17 +63,17 @@ TEST_F(IndexingTests, StridedSlice_2) {
 
     x.linspace(1);
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
 
     auto result = op.evaluate({&x}, {}, {0,0,0,0,0, 3,2,0,  5,5,3,  1,1,1});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -83,17 +83,17 @@ TEST_F(IndexingTests, StridedSlice_3) {
 
     x.linspace(1);
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
 
     auto result = op.evaluate({&x}, {}, {0,0,0,0,0, 3,2,0,  5,5,3,  1,1,2});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -106,18 +106,18 @@ TEST_F(IndexingTests, SimpleSlice_1) {
     exp.p(1, 3.0f);
     exp.p(2, 3.0f);
 
-    nd4j::ops::slice op;
+    sd::ops::slice op;
 
     auto result = op.evaluate({&input}, {}, {1,0,0, 1,1,3});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -132,18 +132,18 @@ TEST_F(IndexingTests, SimpleSlice_2) {
     exp.p(4, 4.0f);
     exp.p(5, 4.0f);
 
-    nd4j::ops::slice op;
+    sd::ops::slice op;
 
     auto result = op.evaluate({&input}, {}, {1,0,0, 1,2,3});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(IndexingTests, SimpleSlice_3) {
@@ -157,18 +157,18 @@ TEST_F(IndexingTests, SimpleSlice_3) {
     exp.p(4, 5.0f);
     exp.p(5, 5.0f);
 
-    nd4j::ops::slice op;
+    sd::ops::slice op;
 
     auto result = op.evaluate({&input}, {}, {1,0,0, 2,1,3});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(IndexingTests, SimpleSlice_4) {
@@ -177,17 +177,17 @@ TEST_F(IndexingTests, SimpleSlice_4) {
     auto stop = NDArrayFactory::create<double>('c', {3}, {2.0, 1.0, 3.0});
     auto exp = NDArrayFactory::create<double>('c', {2, 1, 3}, {3.0, 3.0, 3.0, 5.0, 5.0, 5.0});
 
-    nd4j::ops::slice op;
+    sd::ops::slice op;
 
     auto result = op.evaluate({&input, &start, &stop});
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -201,19 +201,19 @@ TEST_F(IndexingTests, MaskedSlice_0) {
     auto exp = NDArrayFactory::create<float>('c', {1, 5});
     exp.assign(2.0f);
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&matrix}, {}, {0,0,0,0,0,   1, 2, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     // z->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -227,17 +227,17 @@ TEST_F(IndexingTests, MaskedSlice_00) {
     auto exp = NDArrayFactory::create<float>('c', {1, 2}, {2, 2});
 
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&matrix}, {}, {0,0,0,0,0,   1, 1, 2, 3, 1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -251,19 +251,19 @@ TEST_F(IndexingTests, MaskedSlice_1) {
     auto exp = NDArrayFactory::create<float>('c', {5});
     exp.assign(2.0f);
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&matrix}, {}, {0,0,0,0,1,   1, 2, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     // z->printShapeInfo("z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(IndexingTests, MaskedSlice_2) {
@@ -272,17 +272,17 @@ TEST_F(IndexingTests, MaskedSlice_2) {
     auto exp = NDArrayFactory::create<float>('c', {3, 3}, {4.000000f, 4.200000f, 4.300000f, 5.000000f, 5.200000f, 5.300000f, 6.000000f, 6.200000f, 6.300000f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&matrix}, {}, {0,0,0,0,1,   1, 0, 0,  3, 3, 3,  1, 1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -292,17 +292,17 @@ TEST_F(IndexingTests, MaskedSlice_3) {
     auto exp = NDArrayFactory::create<float>('c', {2, 3}, { 4.f,   4.2f,  4.3f, 7.f, 7.2f,  7.3f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&matrix}, {}, {0,0,0,0,2,   1, 0, 0,  3, 3, 3,  1, 1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -312,18 +312,18 @@ TEST_F(IndexingTests, MaskedSlice_4) {
     auto exp = NDArrayFactory::create<float>('c', {3}, { 4.f,   4.2f,  4.3f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&matrix}, {}, {0,0,0,0, 3,   1, 0, 0,  3, 3, 3,  1, 1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(IndexingTests, Live_Slice_1) {
@@ -335,19 +335,19 @@ TEST_F(IndexingTests, Live_Slice_1) {
     auto stride = NDArrayFactory::create<float>('c', {3}, {1.0f, 1.0f, 1.0f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&matrix, &begin, &end, &stride}, {}, {0,0,0,0,3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     // z->printShapeInfo("z shape");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -358,17 +358,17 @@ TEST_F(IndexingTests, Test_StridedSlice_1) {
     auto c = NDArrayFactory::create<float>('c', {1}, {1.f});
     auto exp = NDArrayFactory::create<float>({5.0f, 2});
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(IndexingTests, Test_StridedSlice_2) {
@@ -378,19 +378,19 @@ TEST_F(IndexingTests, Test_StridedSlice_2) {
     auto c = NDArrayFactory::create<float>('c', {2}, {1, 1});
     auto exp = NDArrayFactory::create<float>('c', {1}, {5.0});
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     // z->printIndexedBuffer("Z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -401,17 +401,17 @@ TEST_F(IndexingTests, Test_StridedSlice_3) {
     auto c = NDArrayFactory::create<float>('c', {2}, {1, 1});
     auto exp = NDArrayFactory::create<float>('c', {1}, {6.0});
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -422,20 +422,20 @@ TEST_F(IndexingTests, Test_StridedSlice_4) {
     auto c = NDArrayFactory::create<float>('c', {1}, {1});
     auto exp = NDArrayFactory::create<float>({5.0f, 2});
 
-    nd4j::ops::strided_slice op;
+    sd::ops::strided_slice op;
     auto result = op.evaluate({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1});
 //    auto result = op.execute({&x, &a, &b, &c}, {}, {0, 0, 0, 0, 1, 0, 1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     //z->printIndexedBuffer("Z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(IndexingTests, Test_Subarray_Strided_1) {
@@ -455,16 +455,16 @@ TEST_F(IndexingTests, MaskedSlice_5) {
     auto exp('c', {2, 3}, { 4.f,   4.2f,  4.3f, 7.f, 7.2f,  7.3f});
 
     // output = tf.strided_slice(a, [1, 0, 0], [3, 3, 3], shrink_axis_mask=5)
-    nd4j::ops::strided_slice<float> op;
+    sd::ops::strided_slice<float> op;
     auto result = op.execute({&matrix}, {}, {0,0,0,0,2,   1, 0, 0,  3, 3, 3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 */

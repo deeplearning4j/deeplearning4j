@@ -22,20 +22,20 @@
 #define LIBND4J_TESTLAYERS_H
 
 #include <memory/MemoryTracker.h>
-#include <op_boilerplate.h>
-#include <pointercast.h>
-#include <NativeOps.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
+#include <legacy/NativeOps.h>
 #include <graph/Node.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
-#include <NDArray.h>
-#include <cnpy.h>
+#include <array/NDArray.h>
+#include <cnpy/cnpy.h>
 #include <ops/ops.h>
 #include <helpers/shape.h>
 #include <ops/gemm.h>
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 #include <gtest/gtest.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <array>
 
 #endif //LIBND4J_TESTLAYERS_H

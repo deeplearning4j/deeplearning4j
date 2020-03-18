@@ -18,12 +18,12 @@
 // Created by raver119 on 01/11/17.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_square)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(square, 1, 1, true) {
             auto input = INPUT_VARIABLE(0);
@@ -37,7 +37,7 @@ namespace nd4j {
 
         DECLARE_TYPES(square) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

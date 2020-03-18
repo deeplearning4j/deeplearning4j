@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //  modified by sgazeos@gmail.com with backprop implementation.
 //
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_floormod)
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(floormod, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -65,11 +65,12 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
             gradX->assign(epsNext);
-            nd4j::ops::floormod op;
-            std::unique_ptr<ResultSet> tmpResult(op.evaluate({x, y}));
+
+            sd::ops::floormod op;
+            auto tmpResult(op.evaluate({x, y}));
 
             if (gradY->rankOf() == gradX->rankOf())
-                epsNext->applyPairwiseTransform(pairwise::Multiply, *tmpResult->at(0), *gradY);
+                epsNext->applyPairwiseTransform(pairwise::Multiply, *tmpResult.at(0), *gradY);
             else // epsNext is greater than gradY
             {
                 std::vector<Nd4jLong> dims(epsNext->rankOf() * 2);
@@ -77,7 +78,7 @@ namespace nd4j {
                 for (Nd4jLong d = 0; d < gap; d++) {
                     dims[d * 2 + 1] = 1;
                 }
-                auto tempIn((*tmpResult->at(0))(dims));
+                auto tempIn((*tmpResult.at(0))(dims));
                 (*epsNext)(dims).applyPairwiseTransform(pairwise::Multiply, tempIn, *gradY);
             }
             return Status::OK();

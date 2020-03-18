@@ -18,12 +18,12 @@
 // @author GS <sgazeos@gmail.com>, created on 8/22/2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_matrix_band_part)
 #include <ops/declarable/helpers/matrix_band.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 2) {
 

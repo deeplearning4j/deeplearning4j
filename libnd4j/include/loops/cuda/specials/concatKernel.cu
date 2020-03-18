@@ -21,7 +21,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
 ///////////////////////////////////////////////////////////////////////
     template<typename T>
     __device__ void concatKernel(int numArrays,
@@ -137,7 +137,7 @@ namespace nd4j {
                     T *dataTAD = currentData + inputOffset;
                     T *resultTAD = result + resultOffset;
 
-                    Nd4jLong sub[MAX_RANK];
+                    int sub[MAX_RANK];
 
                     shape::index2coords(arrOffset, zTadShape, sub);
 
@@ -166,7 +166,7 @@ namespace nd4j {
                     auto dataTAD = currentData + inputOffset;
                     auto resultTAD = result + resultOffset;
 
-                    Nd4jLong sub[MAX_RANK];
+                    int sub[MAX_RANK];
 
                     shape::index2coords(arrOffset, zTadShape, sub);
                     Nd4jLong baseOffset = shape::getOffset(zTadShape, sub);
@@ -199,7 +199,7 @@ namespace nd4j {
                                     resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
                                 }
                             } else {
-                                Nd4jLong yIdx[MAX_RANK];
+                                int yIdx[MAX_RANK];
                                 auto yRank = shape::rank(currentTad);
 
                                 for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
@@ -214,8 +214,8 @@ namespace nd4j {
                             //if (threadIdx.x == 0 && blockIdx.x  == 0)
                             //    printf("Branch C; yLength: %i;\n", yLength);
 
-                            Nd4jLong zIdx[MAX_RANK];
-                            Nd4jLong yIdx[MAX_RANK];
+                            int zIdx[MAX_RANK];
+                            int yIdx[MAX_RANK];
                             auto yRank = shape::rank(currentTad);
                             auto tadRank = shape::rank(zTadShape);
 
@@ -263,7 +263,7 @@ namespace nd4j {
 
 
         execConcatKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, inputShapeInfos, vz, zShapeInfo, tadPointers, offsetPointers, zTadShape, zOffsets);
-        nd4j::DebugHelper::checkErrorCode(stream, "concatGenericLegacy(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "concatGenericLegacy(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT concatKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, int numArrays, Nd4jPointer * data, Nd4jPointer * inputShapeInfos, void * vz, Nd4jLong *zShapeInfo, Nd4jPointer * tadPointers, Nd4jPointer * offsetPointers, Nd4jLong * zTadShape, Nd4jLong * zOffsets), LIBND4J_TYPES);

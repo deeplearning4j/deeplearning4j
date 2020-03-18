@@ -18,10 +18,10 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 15.07.2018
 //
 
-#include <OpArgsHolder.h>
+#include <helpers/OpArgsHolder.h>
 
 
-namespace nd4j {
+namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
 // default constructor

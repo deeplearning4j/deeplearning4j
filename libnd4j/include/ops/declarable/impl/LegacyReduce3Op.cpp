@@ -24,7 +24,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <array/DataTypeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         Nd4jStatus LegacyReduce3Op::validateAndExecute(Context &block) {
             auto x = INPUT_VARIABLE(0);
@@ -40,7 +40,7 @@ namespace nd4j {
             ExtraArguments extras(*block.getTArguments());
             PointersManager manager(block.launchContext(), "LegacyReduce3Op");
 
-            if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>()))) {
+            if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == sd::DataTypeUtils::max<int>()))) {
                 // reduce3 to scalar
                 NativeOpExecutioner::execReduce3Scalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                         extras.argumentsAsT(z->dataType()),
@@ -52,8 +52,8 @@ namespace nd4j {
                     if (dims[e] < 0)
                         dims[e] += x->rankOf();
 
-                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
-                auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
+                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
 
                 REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions requuired for reduction!");
 
@@ -92,13 +92,13 @@ namespace nd4j {
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions
         */
-        ShapeList *LegacyReduce3Op::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyReduce3Op::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto xShape = inputShape->at(0);
             auto yShape = inputShape->at(1);
 
             Nd4jLong *zShape = nullptr;
 
-            if (shape::equalsSoft(xShape, yShape) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>()))) {
+            if (shape::equalsSoft(xShape, yShape) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == sd::DataTypeUtils::max<int>()))) {
                 // reduce3 to scalar case
                 ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 zShape[0] = 2;

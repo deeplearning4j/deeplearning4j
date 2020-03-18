@@ -22,7 +22,7 @@
 #include <array/ExtraArguments.h>
 #include <array>
 
-using namespace nd4j;
+using namespace sd;
 
 class ExtraArgumentsTests : public testing::Test {
 public:

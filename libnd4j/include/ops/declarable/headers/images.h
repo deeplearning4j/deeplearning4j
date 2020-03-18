@@ -30,7 +30,7 @@
 #include <execution/Threads.h>
 #include <ops/declarable/helpers/imagesHelpers.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 

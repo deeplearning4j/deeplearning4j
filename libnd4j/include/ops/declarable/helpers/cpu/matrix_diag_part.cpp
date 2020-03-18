@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> on 3/21/2018.
 //
 
-#include "ResultSet.h"
+#include <array/ResultSet.h>
 #include <ops/declarable/helpers/matrix_diag_part.h>
-#include <Status.h>
+#include <graph/Status.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -41,7 +41,7 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
         nd4j_printf("matrix_diag_part: Input matrix has wrong shape.", "");
         return ND4J_STATUS_VALIDATION;
     }
-    int lastDimension = nd4j::math::nd4j_min(input->sizeAt(-2), input->sizeAt(-1));
+    int lastDimension = sd::math::nd4j_min(input->sizeAt(-2), input->sizeAt(-1));
     // TODO: tune this properlys
     int lO = listOut.size();
 
@@ -56,7 +56,7 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
     return Status::OK();
 }
 
-    int matrixDiagPart(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
+    int matrixDiagPart(sd::LaunchContext * context, const NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (input, output), LIBND4J_TYPES);
     }
 

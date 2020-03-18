@@ -21,13 +21,13 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/ops.h>
-#include <GradCheck.h>
+#include <helpers/GradCheck.h>
 #include <array>
 
 
-using namespace nd4j;
+using namespace sd;
 
 
 class DeclarableOpsTests19 : public testing::Test {
@@ -60,12 +60,10 @@ TEST_F(DeclarableOpsTests19, test_conv1d_bp_1) {
     auto u = NDArrayFactory::create<float>('c', {3, 2, 3});
     auto v = NDArrayFactory::create<float>('c', {2, 3, 6});
 
-    nd4j::ops::conv1d_bp op;
+    sd::ops::conv1d_bp op;
     auto result = op.evaluate({&t, &u, &v}, {3, 2, 0, 1, 2,0});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests19, test_squeeze_1) {
@@ -73,7 +71,7 @@ TEST_F(DeclarableOpsTests19, test_squeeze_1) {
     auto e = NDArrayFactory::create<double>('c', {3, 4});
     int axis = 2;
 
-    nd4j::ops::squeeze op;
+    sd::ops::squeeze op;
     auto status = op.execute({&x}, {&e}, {axis});
     ASSERT_EQ(Status::OK(), status);
 }

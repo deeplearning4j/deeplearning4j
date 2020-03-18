@@ -19,12 +19,12 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <GraphExecutioner.h>
+#include <array/NDArray.h>
+#include <graph/GraphExecutioner.h>
 #include <ops/declarable/CustomOperations.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
+using namespace sd;
+using namespace sd::ops;
 
 class ListOperationsTests : public testing::Test {
 
@@ -35,11 +35,11 @@ TEST_F(ListOperationsTests, BasicTest_Write_1) {
     auto x = NDArrayFactory::create<double>('c', {128});
     x.linspace(1);
 
-    nd4j::ops::write_list op;
+    sd::ops::write_list op;
 
     auto result = op.execute(&list, {&x}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     ASSERT_EQ(1, list.elements());
 
@@ -47,8 +47,8 @@ TEST_F(ListOperationsTests, BasicTest_Write_1) {
 
     ASSERT_EQ(2, list.elements());
 
-    delete result;
-    delete result2;
+    
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Stack_1) {
@@ -62,19 +62,19 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
         tads.at(e)->assign(row);
     }
 
-    nd4j::ops::stack_list op;
+    sd::ops::stack_list op;
 
     auto result = op.execute(&list, {}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printShapeInfo();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
@@ -89,14 +89,14 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
         delete row;
     }
 
-    nd4j::ops::unstack_list op;
+    sd::ops::unstack_list op;
 
     auto result = op.execute(&list, {&x}, {}, {0});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
     ASSERT_EQ(list.elements(), 10);
 
-//    auto z = result->at(0);
+//    auto z = result.at(0);
 //    z->printShapeInfo("The first of");
 //    ASSERT_TRUE(exp.isSameShape(z));
 //    ASSERT_TRUE(exp.equalsTo(z));
@@ -107,7 +107,7 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
         delete row;
     }
 
-    delete result;
+    
 }
 
 //TEST_F(ListOperationsTests, BasicTest_UnStackList_2) {
@@ -122,24 +122,24 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
 //        delete row;
 //    }
 //
-//    nd4j::ops::unstack_list op;
+//    sd::ops::unstack_list op;
 //
 //    auto result = op.execute(nullptr, {&x}, {}, {0});
 //
-//    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+//    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 //    ASSERT_EQ(result->size(), 10);
 //
-//    //    auto z = result->at(0);
+//    //    auto z = result.at(0);
 ////    z->printShapeInfo("The first of");
 ////    ASSERT_TRUE(exp.isSameShape(z));
 ////    ASSERT_TRUE(exp.equalsTo(z));
 //    for (int e = 0; e < 10; e++) {
-//        auto row = result->at(e);
+//        auto row = result.at(e);
 //        ASSERT_TRUE(row->equalsTo(tads->at(e)));
 //        //list.write(e, row);
 //    }
 //
-//    delete result;
+//    
 //    delete tads;
 //}
 
@@ -156,18 +156,18 @@ TEST_F(ListOperationsTests, BasicTest_Read_1) {
         delete row;
     }
 
-    nd4j::ops::read_list op;
+    sd::ops::read_list op;
 
     auto result = op.execute(&list, {}, {}, {4});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Pick_1) {
@@ -189,17 +189,17 @@ TEST_F(ListOperationsTests, BasicTest_Pick_1) {
     tads.at(3)->assign(3.0f);
 
 
-    nd4j::ops::pick_list op;
+    sd::ops::pick_list op;
     auto result = op.execute(&list, {}, {}, {1, 1, 3, 3});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Size_1) {
@@ -213,34 +213,34 @@ TEST_F(ListOperationsTests, BasicTest_Size_1) {
         delete row;
     }
 
-    nd4j::ops::size_list op;
+    sd::ops::size_list op;
 
     auto result = op.execute(&list, {}, {}, {1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Create_1) {
     auto matrix = NDArrayFactory::create<double>('c', {3, 2});
     matrix.linspace(1);
 
-    nd4j::ops::create_list op;
+    sd::ops::create_list op;
 
     auto result = op.execute(nullptr, {&matrix}, {}, {1, 1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     // we return flow as well
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Split_1) {
@@ -281,9 +281,9 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
         delete row;
     }
 
-    nd4j::ops::split_list op;
+    sd::ops::split_list op;
     auto result = op.execute(&list, {&matrix, &lengths}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
     ASSERT_EQ(3, list.height());
 
@@ -296,7 +296,7 @@ TEST_F(ListOperationsTests, BasicTest_Split_1) {
     ASSERT_TRUE(exp2.isSameShape(list.readRaw(2)));
     ASSERT_TRUE(exp2.equalsTo(list.readRaw(2)));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
@@ -316,10 +316,10 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
     for (int e = 0; e < matrix.rows(); e++)
         indices.p(e, 9 - e);
 
-    nd4j::ops::scatter_list op;
+    sd::ops::scatter_list op;
     auto result = op.execute(&list, {&indices, &matrix, &s}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     for (int e = 0; e < 10; e++) {
         auto row = tads.at(9 - e);
@@ -329,7 +329,7 @@ TEST_F(ListOperationsTests, BasicTest_Scatter_1) {
 
         ASSERT_TRUE(chunk->equalsTo(row));
     }
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, BasicTest_Clone_1) {
@@ -345,7 +345,7 @@ TEST_F(ListOperationsTests, BasicTest_Clone_1) {
     Context block(1, &variableSpace);
     block.pickInput(-1);
 
-    nd4j::ops::clone_list op;
+    sd::ops::clone_list op;
 
     ASSERT_TRUE(list == block.variable(0)->getNDArrayList());
 
@@ -382,13 +382,13 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
     auto indices = NDArrayFactory::create<double>('c', {1, 10});
     indices.linspace(9, -1);
 
-    nd4j::ops::gather_list op;
+    sd::ops::gather_list op;
     auto result = op.execute(&list, {&indices}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
 
@@ -397,7 +397,7 @@ TEST_F(ListOperationsTests, BasicTest_Gather_1) {
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
@@ -428,17 +428,17 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1});
 
     // creating list
-    nd4j::ops::create_list opB;
+    sd::ops::create_list opB;
     auto nodeB = new Node(&opB, 2, {1},{},{}, 0.0f, {}, {0, 1});
     //nodeB->setCustomOp(&opB);
 
     // filling list with matrix
-    nd4j::ops::split_list opC;
+    sd::ops::split_list opC;
     auto nodeC = new Node(&opC, 3, {2, 1, -2});
     //nodeC->setCustomOp(&opC);
 
     // reading chunks from List. We're adding op number 3 in inputs, to ensure graph will execute this node after split
-    nd4j::ops::read_list opD;
+    sd::ops::read_list opD;
     auto nodeD0 = new Node(&opD, 5, {2, 3}, {},{}, 0.0f, {}, {0});
     auto nodeD1 = new Node(&opD, 6, {2, 3}, {},{}, 0.0f, {}, {1});
     auto nodeD2 = new Node(&opD, 7, {2, 3}, {},{}, 0.0f, {}, {2});
@@ -447,12 +447,12 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
     //nodeD2->setCustomOp(&opD);
 
     // using OneMinus on each chunk separately
-    auto nodeE0 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 10, {5});
-    auto nodeE1 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 11, {6});
-    auto nodeE2 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 12, {7});
+    auto nodeE0 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 10, {5});
+    auto nodeE1 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 11, {6});
+    auto nodeE2 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 12, {7});
 
     // writing chunks back to the List
-    nd4j::ops::write_list opF;
+    sd::ops::write_list opF;
     auto nodeF0 = new Node(&opF, 15, {2, 10}, {},{}, 0.0f, {}, {0});
     auto nodeF1 = new Node(&opF, 16, {2, 11}, {},{}, 0.0f, {}, {1});
     auto nodeF2 = new Node(&opF, 17, {2, 12}, {},{}, 0.0f, {}, {2});
@@ -462,7 +462,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
 //    nodeF2->setCustomOp(&opF);
 
     // now we're stacking chunks back to matrix state
-    nd4j::ops::stack_list opG;
+    sd::ops::stack_list opG;
     auto nodeG = new Node(&opG, 20, {2, 15, 16, 17});
     //auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
 
@@ -559,17 +559,17 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     auto nodeA = new Node(OpType_TRANSFORM_SAME, 0, 1, {-1});
 
     // creating list
-    nd4j::ops::create_list opB;
+    sd::ops::create_list opB;
     auto nodeB = new Node(&opB, 2, {1},{},{}, 0.0f, {}, {0, 1});
 //    nodeB->setCustomOp(&opB);
 
     // filling list with matrix
-    nd4j::ops::scatter_list opC;
+    sd::ops::scatter_list opC;
     auto nodeC = new Node(&opC, 3, {2, -2, 1, -3});
 
     //nodeC->setCustomOp(&opC);
 
-    nd4j::ops::read_list opD;
+    sd::ops::read_list opD;
     auto nodeD0 = new Node(&opD, 5, {2, 3}, {},{}, 0.0f, {}, {0});
     auto nodeD1 = new Node(&opD, 6, {2, 3, 15}, {},{}, 0.0f, {}, {1});
     auto nodeD2 = new Node(&opD, 7, {2, 3, 16}, {},{}, 0.0f, {}, {2});
@@ -580,12 +580,12 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 
 
     // using OneMinus on each chunk separately
-    auto nodeE0 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 10, {5});
-    auto nodeE1 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 11, {6});
-    auto nodeE2 = new Node(OpType_TRANSFORM_SAME, nd4j::transform::OneMinus, 12, {7});
+    auto nodeE0 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 10, {5});
+    auto nodeE1 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 11, {6});
+    auto nodeE2 = new Node(OpType_TRANSFORM_SAME, sd::transform::OneMinus, 12, {7});
 
     // writing chunks back to the List
-    nd4j::ops::write_list opF;
+    sd::ops::write_list opF;
     auto nodeF0 = new Node(&opF, 15, {2, 10}, {},{}, 0.0f, {}, {0});
     auto nodeF1 = new Node(&opF, 16, {2, 11}, {},{}, 0.0f, {}, {1});
     auto nodeF2 = new Node(&opF, 17, {2, 12}, {},{}, 0.0f, {}, {2});
@@ -595,7 +595,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 //    nodeF2->setCustomOp(&opF);
 
     // now we're gathering chunks back to matrix state
-    nd4j::ops::pick_list opG;
+    sd::ops::pick_list opG;
     auto nodeG = new Node(&opG, 20, {2, -2, 15, 16, 17});
     //auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
 

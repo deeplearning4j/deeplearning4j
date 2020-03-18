@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> at 2/27/2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_matrix_inverse)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lup.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(matrix_inverse, 1, 1, true) {
             auto input = INPUT_VARIABLE(0);
@@ -37,7 +37,7 @@ namespace nd4j {
 
         DECLARE_TYPES(matrix_inverse) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

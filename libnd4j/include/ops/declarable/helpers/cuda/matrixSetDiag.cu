@@ -18,11 +18,11 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include "ResultSet.h"
+#include <array/ResultSet.h>
 #include <ops/declarable/helpers/matrixSetDiag.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -39,14 +39,14 @@ __global__ static void matrixSetDiagCuda(const void* vx, const Nd4jLong* xShapeI
     const auto y = reinterpret_cast<const T*>(vy);
           auto z = reinterpret_cast<T*>(vz);
 
-    __shared__ int xRank;       // xRank = zRank, xRank = yRank + 1
-    __shared__ Nd4jLong xLen, *sharedMem;   // xLen = zLen
+    __shared__ int xRank, *sharedMem;       // xRank = zRank, xRank = yRank + 1
+    __shared__ Nd4jLong xLen;   // xLen = zLen
     __shared__ bool areSameOffsets;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);    // shapes are definitely the same, but strides might not
 
@@ -56,7 +56,7 @@ __global__ static void matrixSetDiagCuda(const void* vx, const Nd4jLong* xShapeI
 
     __syncthreads();
 
-    auto coords = sharedMem + threadIdx.x * xRank;               // we provide (xRank * sizeof(Nd4jLong) * threadIdx.x) amount of shared memory per each thread
+    auto coords = sharedMem + threadIdx.x * xRank;               // we provide (xRank * sizeof(int) * threadIdx.x) amount of shared memory per each thread
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (Nd4jLong i = tid; i < xLen; i += gridDim.x * blockDim.x) {
@@ -82,11 +82,11 @@ static void matrixSetDiagCudaLauncher(const int blocksPerGrid, const int threads
 }
 
 ///////////////////////////////////////////////////////////////////
-void matrixSetDiag(nd4j::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * input.rankOf() + 128;
+    const int sharedMem = threadsPerBlock * sizeof(int) * input.rankOf() + 128;
 
     PointersManager manager(context, "matrixSetDiag");
 

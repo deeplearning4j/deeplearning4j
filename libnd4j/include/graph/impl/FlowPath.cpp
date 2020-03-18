@@ -20,7 +20,7 @@
 
 #include <graph/FlowPath.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
 
         void FlowPath::ensureNode(int nodeId) {

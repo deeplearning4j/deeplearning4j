@@ -19,13 +19,13 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <graph/Variable.h>
 #include <flatbuffers/flatbuffers.h>
 #include <ops/declarable/headers/broadcastable.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class NodeTests : public testing::Test {
 public:
@@ -51,7 +51,7 @@ TEST_F(NodeTests, Test_Dtype_Conversion_1) {
 
 
 TEST_F(NodeTests, Test_Dtype_Conversion_2) {
-    nd4j::ops::add opA;
+    sd::ops::add opA;
 
     //auto nodeA = new Node(OpType_CUSTOM, 0, 1, {-1}, {2});
     auto nodeA = new Node(&opA, 1, {-1}, {2});

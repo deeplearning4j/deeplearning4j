@@ -16,11 +16,13 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 
@@ -73,6 +75,15 @@ public abstract class SameDiffLambdaVertex extends SameDiffVertex {
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
         //No op, for lambda vertex
+    }
+
+    @Override
+    public GraphVertex clone() {
+        try {
+            return getClass().getConstructor().newInstance();
+        } catch (Exception e){
+            throw new RuntimeException("Unable to create new instance of class " + getClass().getName() + " from no-arg constructor");
+        }
     }
 
     protected VertexInputs getInputs(SameDiff sd) {

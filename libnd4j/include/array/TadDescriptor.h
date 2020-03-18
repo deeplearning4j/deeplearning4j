@@ -22,9 +22,9 @@
 #define DEV_TESTS_TADDESCRIPTOR_H
 
 #include "ShapeDescriptor.h"
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT TadDescriptor {
     private:
         ShapeDescriptor _originalShape;
@@ -53,9 +53,22 @@ namespace nd4j {
 
         std::vector<int>& axis();
         ShapeDescriptor& originalShape();
+        ShapeDescriptor const& originalShapeConst() const;
         bool areUnitiesinShape() const;
     };
 }
+
+#ifndef __JAVACPP_HACK__
+
+namespace std {
+    template<>
+    class ND4J_EXPORT hash<sd::TadDescriptor> {
+    public:
+        size_t operator()(const sd::TadDescriptor &k) const;
+    };
+}
+
+#endif
 
 
 #endif //DEV_TESTS_TADDESCRIPTOR_H

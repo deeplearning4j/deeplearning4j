@@ -70,6 +70,14 @@ public class Conv3D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
+    public Conv3D(@NonNull INDArray input,@NonNull INDArray weights, @NonNull Conv3DConfig conv3DConfig) {
+        this(new INDArray[]{input, weights}, null, conv3DConfig);
+    }
+
+    public Conv3D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, @NonNull Conv3DConfig conv3DConfig) {
+        this(wrapFilterNull(input, weights, bias) , null, conv3DConfig);
+    }
+
     private void initConfig(Conv3DConfig config){
         this.config = config;
         Preconditions.checkState(config.getSW() >= 1 && config.getPH() >= 0 && config.getDW() >= 1,

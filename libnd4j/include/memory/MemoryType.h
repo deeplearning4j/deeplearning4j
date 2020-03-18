@@ -5,7 +5,7 @@
 #ifndef DEV_TESTS_MEMORYTYPE_H
 #define DEV_TESTS_MEMORYTYPE_H
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         enum MemoryType {
             HOST = 0,

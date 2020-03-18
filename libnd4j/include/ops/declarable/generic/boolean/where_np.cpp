@@ -18,7 +18,7 @@
 //  @author Adam Gibson
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <ops/declarable/headers/boolean.h>
 
 #if NOT_EXCLUDED(OP_where_np)
@@ -26,7 +26,7 @@
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(where_np, -1, 1, false, 0, 0) {
             auto condition = INPUT_VARIABLE(0);
@@ -102,10 +102,12 @@ namespace nd4j {
                 REQUIRE_TRUE(block.width() == 1, 0, "Where op takes either 1 or 3 operands, But got %d operands instead", block.width());
 //                if (output->isEmpty())
                 Nd4jLong width = condition->rankOf();
-                nd4j::ops::Where op;
-                std::unique_ptr<ResultSet> res(op.evaluate({condition}));
-                REQUIRE_OK(res->status());
-                NDArray* whereTrue = res->at(0);
+
+                sd::ops::Where op;
+                auto res(op.evaluate({condition}));
+                REQUIRE_OK(res.status());
+                NDArray* whereTrue = res.at(0);
+
                 if (whereTrue->isEmpty())
                     return ND4J_STATUS_OK;
                 for (Nd4jLong outNext = 0; outNext < width; ++outNext) {
@@ -137,11 +139,11 @@ namespace nd4j {
                 // output shape - a tuple of rank(inShape) 1D tensors with numOfTrue len
                 if (numOfTrue) {
                     for (Nd4jLong e = 0; e < condition->rankOf(); ++e) {
-                        shapes->push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(numOfTrue, nd4j::DataType::INT64));
+                        shapes->push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(numOfTrue, sd::DataType::INT64));
                     }
                 }
                 else {
-                    shapes->push_back(ConstantShapeHelper::getInstance()->emptyShapeInfo(nd4j::DataType::INT64));
+                    shapes->push_back(ConstantShapeHelper::getInstance()->emptyShapeInfo(sd::DataType::INT64));
                 }
             }
             return shapes;
@@ -149,9 +151,9 @@ namespace nd4j {
 
         DECLARE_TYPES(where_np) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::BOOL)
-                    ->setAllowedInputTypes(1, nd4j::DataType::ANY)
-                    ->setAllowedInputTypes(2, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, sd::DataType::BOOL)
+                    ->setAllowedInputTypes(1, sd::DataType::ANY)
+                    ->setAllowedInputTypes(2, sd::DataType::ANY)
                     ->setAllowedOutputTypes( {ALL_FLOATS, ALL_INTS});
         }
     }

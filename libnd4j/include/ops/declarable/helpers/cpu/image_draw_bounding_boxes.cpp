@@ -31,11 +31,11 @@ limitations under the License.
 //
 //  @author sgazeos@gmail.com
 //
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
     typedef std::vector<std::vector<float>> ColorTable_t;
@@ -60,7 +60,7 @@ namespace helpers {
         return colorTable;
     }
 
-    void drawBoundingBoxesFunctor(nd4j::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output) {
+    void drawBoundingBoxesFunctor(sd::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output) {
         // images - batch of 3D images with BW (last dim = 1), RGB (last dim = 3) or RGBA (last dim = 4) channel set
         // boxes - batch of 2D bounds with last dim (y_start, x_start, y_end, x_end) to compute i and j as
         // floor((height - 1 ) * y_start) => rowStart, floor((height - 1) * y_end) => rowEnd
@@ -95,13 +95,13 @@ namespace helpers {
                 for (auto boxIndex = 0; boxIndex < numBoxes; ++boxIndex) {
                     auto colorIndex = boxIndex % colorTable.size();
                     auto rowStart = Nd4jLong((height - 1) * boxes->t<float>(batch, boxIndex, 0));
-                    auto rowStartBound = nd4j::math::nd4j_max(Nd4jLong(0), rowStart);
+                    auto rowStartBound = sd::math::nd4j_max(Nd4jLong(0), rowStart);
                     auto rowEnd = Nd4jLong((height - 1) * boxes->t<float>(batch, boxIndex, 2));
-                    auto rowEndBound = nd4j::math::nd4j_min(Nd4jLong(height - 1), rowEnd);
+                    auto rowEndBound = sd::math::nd4j_min(Nd4jLong(height - 1), rowEnd);
                     auto colStart = Nd4jLong((width - 1) * boxes->t<float>(batch, boxIndex, 1));
-                    auto colStartBound = nd4j::math::nd4j_max(Nd4jLong(0), colStart);
+                    auto colStartBound = sd::math::nd4j_max(Nd4jLong(0), colStart);
                     auto colEnd = Nd4jLong((width - 1) * boxes->t<float>(batch, boxIndex, 3));
-                    auto colEndBound = nd4j::math::nd4j_min(Nd4jLong(width - 1), colEnd);
+                    auto colEndBound = sd::math::nd4j_min(Nd4jLong(width - 1), colEnd);
 
                     if (rowStart > rowEnd || colStart > colEnd) {
                         nd4j_debug(

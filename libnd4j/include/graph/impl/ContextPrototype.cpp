@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <types/float16.h>
 #include <graph/ContextPrototype.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
-        ContextPrototype::ContextPrototype(nd4j::ops::OpDescriptor* opDescriptor, int nodeId, bool inPlace) {
+        ContextPrototype::ContextPrototype(sd::ops::OpDescriptor* opDescriptor, int nodeId, bool inPlace) {
             _nodeId = nodeId;
             _isInplace = inPlace;
             _opDescriptor = opDescriptor;
@@ -106,15 +106,15 @@ namespace nd4j {
             return getNodeId();
         }
 
-        nd4j::DataType ContextPrototype::dataType() {
+        sd::DataType ContextPrototype::dataType() {
             return dataType(0);
         }
 
-        nd4j::DataType ContextPrototype::dataType(int index) {
+        sd::DataType ContextPrototype::dataType(int index) {
             return _dataType;
         }
 
-        void ContextPrototype::setDataType(int index, nd4j::DataType type) {
+        void ContextPrototype::setDataType(int index, sd::DataType type) {
             // if (_outputs->size() == 0)
             _dataType = type;
         }
@@ -154,7 +154,7 @@ namespace nd4j {
             return clone;
         }
 
-        void ContextPrototype::setOpDescriptor(nd4j::ops::OpDescriptor* opDescriptor) {
+        void ContextPrototype::setOpDescriptor(sd::ops::OpDescriptor* opDescriptor) {
             _opDescriptor = opDescriptor;
         }
 
@@ -174,7 +174,7 @@ namespace nd4j {
             return clone;
         }
 
-        std::vector<nd4j::DataType> *ContextPrototype::getDArguments() {
+        std::vector<sd::DataType> *ContextPrototype::getDArguments() {
             return &_dArgs;
         }
 

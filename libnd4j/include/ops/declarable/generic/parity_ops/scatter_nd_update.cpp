@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 24.08.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_scatter_nd_update)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 OP_IMPL(scatter_nd_update, 3, 1, true) {

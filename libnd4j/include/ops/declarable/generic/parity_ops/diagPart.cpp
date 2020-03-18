@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 06.12.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_diag_part)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/diag.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 		
 		CUSTOM_OP_IMPL(diag_part, 1, 1, false, 0, 0) {
@@ -46,7 +46,7 @@ namespace ops  {
 
 		DECLARE_TYPES(diag_part) {
 			getOpDescriptor()
-				->setAllowedInputTypes(nd4j::DataType::ANY)
+				->setAllowedInputTypes(sd::DataType::ANY)
 				->setSameMode(true);
 		}
 

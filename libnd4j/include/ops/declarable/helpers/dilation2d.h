@@ -20,15 +20,15 @@
 
 #include <ops/declarable/helpers/helpers.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////
-void dilation2d(nd4j::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW);
+void dilation2d(sd::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW);
 
 //////////////////////////////////////////////////////////////////////
-FORCEINLINE Nd4jStatus outputSize(nd4j::LaunchContext * context, const int inSize, const int k, const int d, const int s, bool isSameMode, int *outSize, int *padding_before, int *padding_after) {
+FORCEINLINE Nd4jStatus outputSize(sd::LaunchContext * context, const int inSize, const int k, const int d, const int s, bool isSameMode, int *outSize, int *padding_before, int *padding_after) {
     if (s <= 0)
         return Status::THROW("Dilation2D: Stride must be > 0");
 
@@ -38,7 +38,7 @@ FORCEINLINE Nd4jStatus outputSize(nd4j::LaunchContext * context, const int inSiz
     int kEff = (k - 1) * d + 1;
     if (isSameMode) {
         *outSize = (inSize + s - 1) / s;
-        const int padding_needed = nd4j::math::nd4j_max<int>(0, (*outSize - 1) * s + kEff -inSize);
+        const int padding_needed = sd::math::nd4j_max<int>(0, (*outSize - 1) * s + kEff -inSize);
 
         *padding_before = padding_needed / 2;
         *padding_after = padding_needed - *padding_before;
@@ -54,7 +54,7 @@ FORCEINLINE Nd4jStatus outputSize(nd4j::LaunchContext * context, const int inSiz
 }
 
 //////////////////////////////////////////////////////////////////////
-FORCEINLINE Nd4jStatus dilation_hw(nd4j::LaunchContext * context, Nd4jLong *in, Nd4jLong *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *sH, int *sW, int *pH, int *pW, int *dH, int *dW, int *oH, int *oW) {
+FORCEINLINE Nd4jStatus dilation_hw(sd::LaunchContext * context, Nd4jLong *in, Nd4jLong *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *sH, int *sW, int *pH, int *pW, int *dH, int *dW, int *oH, int *oW) {
     const int iH = shape::sizeAt(in, 1);
     const int iW = shape::sizeAt(in, 2);
     const int iC = shape::sizeAt(in, 3);

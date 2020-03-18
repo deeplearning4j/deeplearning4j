@@ -26,7 +26,7 @@
 #include <graph/FlatUtils.h>
 #include <helpers/StringUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
 
         template <typename N>
@@ -52,7 +52,7 @@ namespace nd4j {
         }
         BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT Variable* Variable::asT, (), LIBND4J_TYPES);
 
-        nd4j::graph::Variable* nd4j::graph::Variable::clone() {
+        sd::graph::Variable* sd::graph::Variable::clone() {
             auto result = new Variable(this->isPlaceholder());
             result->_external = this->_external;
             result->_id = this->_id;
@@ -72,47 +72,47 @@ namespace nd4j {
             return result;
         }
 
-        void nd4j::graph::Variable::setIndex(int index) {
+        void sd::graph::Variable::setIndex(int index) {
             _index = index;
         }
 
-        bool nd4j::graph::Variable::hasNDArray() {
+        bool sd::graph::Variable::hasNDArray() {
             return _ndarray != nullptr;
         }
 
-        void nd4j::graph::Variable::setVariableType(VariableType variableType) {
+        void sd::graph::Variable::setVariableType(VariableType variableType) {
             _variableType = variableType;
         }
 
-        bool nd4j::graph::Variable::hasNDArrayList() {
+        bool sd::graph::Variable::hasNDArrayList() {
             return _list != nullptr;
         }
 
-        bool nd4j::graph::Variable::isPlaceholder() {
+        bool sd::graph::Variable::isPlaceholder() {
             return _placeholder;
         }
 
-        std::string * nd4j::graph::Variable::getName() {
+        std::string * sd::graph::Variable::getName() {
             return &_name;
         }
 
-        void nd4j::graph::Variable::setName(std::string *name) {
+        void sd::graph::Variable::setName(std::string *name) {
             _name = *name;
         }
 
-        int nd4j::graph::Variable::id() {
+        int sd::graph::Variable::id() {
             return _id;
         }
 
-        int nd4j::graph::Variable::index() {
+        int sd::graph::Variable::index() {
             return _index;
         }
 
-        void nd4j::graph::Variable::setId(int id) {
+        void sd::graph::Variable::setId(int id) {
             _id = id;
         }
 
-        bool nd4j::graph::Variable::isEmpty() {
+        bool sd::graph::Variable::isEmpty() {
             if (_variableType == VariableType::NDARRAY)
                 return _ndarray == nullptr || !_ndarray->nonNull();
             else if (_variableType == VariableType::ARRAY_LIST)
@@ -121,29 +121,29 @@ namespace nd4j {
             return false;
         }
 
-        bool nd4j::graph::Variable::isExternal() {
+        bool sd::graph::Variable::isExternal() {
             return _external;
         }
 
-        bool nd4j::graph::Variable::isReadOnly() {
+        bool sd::graph::Variable::isReadOnly() {
             return _readOnly;
         }
 
-        void nd4j::graph::Variable::markExternal(bool reallyExternal) {
+        void sd::graph::Variable::markExternal(bool reallyExternal) {
             this->_external = reallyExternal;
         }
 
-        void nd4j::graph::Variable::markRemovable(bool reallyRemovable) {
+        void sd::graph::Variable::markRemovable(bool reallyRemovable) {
             if (!reallyRemovable)
                 nd4j_debug("","");
             this->_removable = reallyRemovable;
         }
 
-        void nd4j::graph::Variable::markReadOnly(bool reallyReadOnly) {
+        void sd::graph::Variable::markReadOnly(bool reallyReadOnly) {
             this->_readOnly = reallyReadOnly;
         }
 
-        nd4j::NDArray * nd4j::graph::Variable::getNDArray() {
+        sd::NDArray * sd::graph::Variable::getNDArray() {
             if (_variableType != VariableType::NDARRAY) {
                 nd4j_printf("Variable[%i:%i/<%s>] is has [%s] type, but NDArray was requested\n", this->_id, this->_index, this->_name.c_str(), EnumUtils::_VariableTypeToString(_variableType));
             }
@@ -162,7 +162,7 @@ namespace nd4j {
             return this->_ndarray;
         }
 
-        nd4j::NDArrayList * nd4j::graph::Variable::getNDArrayList() {
+        sd::NDArrayList * sd::graph::Variable::getNDArrayList() {
             if (_variableType != VariableType::ARRAY_LIST) {
                 nd4j_debug("Variable[%i:%i/<%s>] is has [%s] type, but NDArrayList was requested\n", this->_id, this->_index, this->_name.c_str(), EnumUtils::_VariableTypeToString(_variableType));
             }
@@ -175,24 +175,24 @@ namespace nd4j {
         }
 
 
-        void nd4j::graph::Variable::setNDArrayList(nd4j::NDArrayList * list) {
+        void sd::graph::Variable::setNDArrayList(sd::NDArrayList * list) {
             this->_variableType = VariableType::ARRAY_LIST;
             this->_list = list;
         }
 
 
-        void nd4j::graph::Variable::setNDArray(nd4j::NDArray * array) {
+        void sd::graph::Variable::setNDArray(sd::NDArray * array) {
             this->_variableType = VariableType::NDARRAY;
             this->_ndarray = array;
         }
 
 
-        VariableType nd4j::graph::Variable::variableType() {
+        VariableType sd::graph::Variable::variableType() {
             return _variableType;
         }
 
 
-        nd4j::graph::Variable::Variable(const nd4j::graph::FlatVariable *flatVariable) {
+        sd::graph::Variable::Variable(const sd::graph::FlatVariable *flatVariable) {
             auto vid = flatVariable->id();
             this->_id = vid->first();
             this->_index = vid->second();
@@ -211,7 +211,7 @@ namespace nd4j {
                         // ?????
                         if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
-                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                            _ndarray = sd::graph::FlatUtils::fromFlatArray(ar);
                         }
 
                         _variableType = VariableType::NDARRAY;
@@ -223,9 +223,9 @@ namespace nd4j {
 
                         auto ar = flatVariable->ndarray();
                         if (ar->dtype() == DType_UTF8) {
-                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                            _ndarray = sd::graph::FlatUtils::fromFlatArray(ar);
                         } else {
-                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                            _ndarray = sd::graph::FlatUtils::fromFlatArray(ar);
                         }
 
                         _variableType = VariableType::NDARRAY;
@@ -236,7 +236,7 @@ namespace nd4j {
                         // ?????
                         if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
-                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                            _ndarray = sd::graph::FlatUtils::fromFlatArray(ar);
                             // _ndarray->triggerAllocationFlag(true);
                         }
 
@@ -249,7 +249,7 @@ namespace nd4j {
 
                         if (flatVariable->ndarray() != nullptr) {
                             auto ar = flatVariable->ndarray();
-                            _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
+                            _ndarray = sd::graph::FlatUtils::fromFlatArray(ar);
                             // _ndarray->triggerAllocationFlag(true);
 
                             _variableType = VariableType::NDARRAY;
@@ -270,16 +270,16 @@ namespace nd4j {
             }
         }
 
-        std::vector<Nd4jLong>& nd4j::graph::Variable::shape() {
+        std::vector<Nd4jLong>& sd::graph::Variable::shape() {
             return _shape;
         }
 
-        nd4j::graph::Variable::Variable(bool placeholder) {
+        sd::graph::Variable::Variable(bool placeholder) {
             _placeholder = placeholder;
         }
 
 
-        nd4j::graph::Variable::Variable(NDArray *array, const char *name ) {
+        sd::graph::Variable::Variable(NDArray *array, const char *name ) {
             _ndarray = array;
 
             _external = false;
@@ -293,13 +293,13 @@ namespace nd4j {
         }
 
 
-        nd4j::graph::Variable::Variable(NDArray *array, const char *name, int id, int idx) : Variable(array, name) {
+        sd::graph::Variable::Variable(NDArray *array, const char *name, int id, int idx) : Variable(array, name) {
             _id = id;
             _index = idx;
         }
 
 
-        nd4j::graph::Variable::~Variable() {
+        sd::graph::Variable::~Variable() {
             //nd4j_printf("Removing variable [%i:%i]\n", _id, _index);
             if (_variableType == VariableType::NDARRAY) {
                 nd4j_debug("Removing variable <%i:%i>\n", _id, _index);
@@ -323,7 +323,7 @@ namespace nd4j {
                 auto fBuffer = builder.CreateVector(array->asByteVector());
 
                 // packing array
-                auto fArray = CreateFlatArray(builder, fShape, fBuffer, (nd4j::graph::DType) array->dataType());
+                auto fArray = CreateFlatArray(builder, fShape, fBuffer, (sd::graph::DType) array->dataType());
 
                 // packing id/index of this var
                 auto fVid = CreateIntPair(builder, this->_id, this->_index);
@@ -334,10 +334,27 @@ namespace nd4j {
                     stringId = builder.CreateString(this->_name);
 
                 // returning array
-                return CreateFlatVariable(builder, fVid, stringId, static_cast<nd4j::graph::DType>(array->dataType()), 0, fArray);
+                return CreateFlatVariable(builder, fVid, stringId, static_cast<sd::graph::DType>(array->dataType()), 0, fArray);
             } else {
                 throw std::runtime_error("Variable::asFlatVariable isn't possible for NDArrayList");
             }
         }
+    }
+}
+
+namespace std {
+
+    size_t hash<std::pair<int, int>>::operator()(const std::pair<int,int>& k) const {
+        auto v = std::hash<int>()(k.first);
+        v ^= std::hash<int>()(k.second) + 0x9e3779b9 + (v << 6) + (v >> 2);
+        return v;
+    }
+
+    size_t hash<bfloat16>::operator()(const bfloat16& k) const {
+        return std::hash<float>()((float)k);
+    }
+
+    size_t hash<float16>::operator()(const float16& k) const {
+        return std::hash<float>()((float)k);
     }
 }

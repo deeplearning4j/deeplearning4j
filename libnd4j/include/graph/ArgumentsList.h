@@ -21,13 +21,13 @@
 #ifndef LIBND4J_INPUTLIST_H
 #define LIBND4J_INPUTLIST_H
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <vector>
 #include <types/pair.h>
 
-namespace nd4j {
+namespace sd {
 namespace graph {
     class ND4J_EXPORT ArgumentsList {
     protected:

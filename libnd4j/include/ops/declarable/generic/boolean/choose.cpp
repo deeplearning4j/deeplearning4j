@@ -18,14 +18,14 @@
 //  @author Adam Gibson
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_choose)
 
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/choose.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(choose, -1, 2, false, -2, -1) {
 
@@ -88,7 +88,7 @@ namespace nd4j {
 
             auto newShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(numResults.e<Nd4jLong>(0), ArrayOptions::dataType(inputShape->at(0)));
 
-            auto shapeScalar = ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64);
+            auto shapeScalar = ConstantShapeHelper::getInstance()->scalarShapeInfo(sd::DataType::INT64);
             return SHAPELIST(newShape, shapeScalar);
         }
 

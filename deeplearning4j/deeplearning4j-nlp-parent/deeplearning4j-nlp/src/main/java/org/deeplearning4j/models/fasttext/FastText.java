@@ -28,6 +28,7 @@ import java.util.*;
 @lombok.Builder
 public class FastText implements WordVectors, Serializable {
 
+    private final static String METHOD_NOT_AVAILABLE = "This method is available for text (.vec) models only - binary (.bin) model currently loaded";
     // Mandatory
     @Getter private String inputFile;
     @Getter private String outputFile;
@@ -219,6 +220,7 @@ public class FastText implements WordVectors, Serializable {
 
     public void loadBinaryModel(String modelPath) {
         fastTextImpl.loadModel(modelPath);
+
         modelLoaded = true;
     }
 
@@ -368,14 +370,12 @@ public class FastText implements WordVectors, Serializable {
         return words.contains(word);
     }
 
-    protected transient ModelUtils modelUtils;
-
     @Override
     public Collection<String> wordsNearest(INDArray words, int top) {
         if (modelVectorsLoaded) {
             return word2Vec.wordsNearest(words, top);
         }
-        return modelUtils.wordsNearest(words, top);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
     @Override
@@ -383,7 +383,7 @@ public class FastText implements WordVectors, Serializable {
         if (modelVectorsLoaded) {
             return word2Vec.wordsNearestSum(words, top);
         }
-        return modelUtils.wordsNearestSum(words, top);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
     @Override
@@ -391,7 +391,7 @@ public class FastText implements WordVectors, Serializable {
         if (modelVectorsLoaded) {
             return word2Vec.wordsNearestSum(word, n);
         }
-        return modelUtils.wordsNearestSum(word, n);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
 
@@ -400,7 +400,7 @@ public class FastText implements WordVectors, Serializable {
         if (modelVectorsLoaded) {
             return word2Vec.wordsNearestSum(positive, negative, top);
         }
-        return modelUtils.wordsNearestSum(positive, negative, top);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
     @Override
@@ -408,7 +408,7 @@ public class FastText implements WordVectors, Serializable {
         if (modelVectorsLoaded) {
             return word2Vec.accuracy(questions);
         }
-        return modelUtils.accuracy(questions);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
     @Override
@@ -425,7 +425,7 @@ public class FastText implements WordVectors, Serializable {
         if (modelVectorsLoaded) {
             return word2Vec.similarWordsInVocabTo(word, accuracy);
         }
-        return modelUtils.similarWordsInVocabTo(word, accuracy);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
     @Override
@@ -433,7 +433,7 @@ public class FastText implements WordVectors, Serializable {
         if (modelVectorsLoaded) {
             return word2Vec.wordsNearest(positive, negative, top);
         }
-        return modelUtils.wordsNearest(positive, negative, top);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
 
@@ -442,7 +442,7 @@ public class FastText implements WordVectors, Serializable {
         if (modelVectorsLoaded) {
             return word2Vec.wordsNearest(word,n);
         }
-        return modelUtils.wordsNearestSum(word, n);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
 
@@ -451,7 +451,7 @@ public class FastText implements WordVectors, Serializable {
         if (modelVectorsLoaded) {
             return word2Vec.similarity(word, word2);
         }
-        return modelUtils.similarity(word, word2);
+        throw new IllegalStateException(METHOD_NOT_AVAILABLE);
     }
 
     @Override
@@ -464,7 +464,6 @@ public class FastText implements WordVectors, Serializable {
 
     @Override
     public void setModelUtils(ModelUtils utils) {
-        this.modelUtils = utils;
     }
 
     @Override

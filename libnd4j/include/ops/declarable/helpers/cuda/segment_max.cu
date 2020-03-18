@@ -21,14 +21,14 @@
 #include <ops/declarable/helpers/segment.h>
 #include <ops/declarable/helpers/segment_common.h>
 
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -70,7 +70,7 @@ namespace nd4j {
 
                 for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
                     auto xIndex = shape::getIndexOffset(e, inputShape);
-                    nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+                    sd::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                 }
             }
             // -------------------------------------------------------------------------------------------------------------- //
@@ -108,7 +108,7 @@ namespace nd4j {
                         auto xIndex = shape::getIndexOffset(e, inputShape);
                         auto yIndex = shape::getIndexOffset(e, indicesShape);
                         if (y[yIndex] == segment) {
-                            nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+                            sd::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                         }
                     }
             }
@@ -142,7 +142,7 @@ namespace nd4j {
                         for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                             auto xIndex = shape::getIndexOffset(e, inputTads);
                             auto zIndex = shape::getIndexOffset(e, outputTads);
-                            nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+                            sd::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                             //z[zIndex] = x[xIndex];
                         }
                     }
@@ -151,7 +151,7 @@ namespace nd4j {
                             auto xIndex = shape::getIndexOffset(e, inputTads);
                             auto zIndex = shape::getIndexOffset(e, outputTads);
                             if (lengths[segment])
-                                nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+                                sd::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                         }
                     }
                 }
@@ -185,8 +185,8 @@ namespace nd4j {
                 }
                 else {
                     std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-                    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+                    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
                     Nd4jLong* inputTads = packX.specialShapeInfo();
                     Nd4jLong* inputTadOffsets = packX.specialOffsets();
                     Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -196,7 +196,7 @@ namespace nd4j {
                 NDArray::registerSpecialUse({output}, {input, indices, &classesRangesBegs, &classesRangesLens});
             }
             // -------------------------------------------------------------------------------------------------------------- //
-            void segmentMaxFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
+            void segmentMaxFunctor(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {input, indices});
                 BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMaxFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
                 NDArray::registerSpecialUse({output}, {input, indices});
@@ -204,7 +204,7 @@ namespace nd4j {
             // -------------------------------------------------------------------------------------------------------------- //
 
             template <typename T, typename I>
-            static void unsortedSegmentMaxFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+            static void unsortedSegmentMaxFunctor_(sd::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
                 auto stream = context->getCudaStream();
 //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
                 output->assign(DataTypeUtils::infOrMax<T>());
@@ -212,7 +212,7 @@ namespace nd4j {
                 NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
                 NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
 //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
-//        classes.applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), row, classes);
+//        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), row, classes);
                 classesRangesBegs.assign(indices->lengthOf());
                 classesRangesLens.assign(0);
                 dim3 dims(numOfClasses, indices->lengthOf(), numOfClasses * 32 + 32);
@@ -226,8 +226,8 @@ namespace nd4j {
                 }
                 else {
                     std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-                    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+                    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
                     Nd4jLong* inputTads = packX.specialShapeInfo();
                     Nd4jLong* inputTadOffsets = packX.specialOffsets();
                     Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -239,7 +239,7 @@ namespace nd4j {
 
             }
             // -------------------------------------------------------------------------------------------------------------- //
-            void unsortedSegmentMaxFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+            void unsortedSegmentMaxFunctor(sd::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {input, indices});
                 output->nullify();
                 BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMaxFunctor_, (context, input, indices, numOfClasses, output), NUMERIC_TYPES, INDEXING_TYPES);
@@ -283,7 +283,7 @@ namespace nd4j {
                     auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
                     auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
-                    if (nd4j::math::nd4j_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
+                    if (sd::math::nd4j_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
                         z[zOffset] = gradOut[gradOffsetO];
                     }
                 }
@@ -326,14 +326,14 @@ namespace nd4j {
                     T* outGrad = gradOut + gradOutOffsets[segment];
 
                     for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-                        if (nd4j::math::nd4j_abs(in[e] - current[e]) <= T(1.e-6))
+                        if (sd::math::nd4j_abs(in[e] - current[e]) <= T(1.e-6))
                             currentOut[e] = outGrad[e];
                     }
                 }
             }
             // -------------------------------------------------------------------------------------------------------------- //
             template <typename T, typename I>
-            int segmentMaxFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+            int segmentMaxFunctorBP_(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
                 //int numOfClasses = gradOut->sizeAt(0);
                 // if input is a vector: (as if in doc sample)
                 auto stream = context->getCudaStream();
@@ -349,10 +349,10 @@ namespace nd4j {
                 }
                 else {
                     std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-                    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-                    auto packGradIn = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
-                    auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+                    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+                    auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
+                    auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
                     Nd4jLong* inputTads = packX.specialShapeInfo();
                     Nd4jLong* inputTadOffsets = packX.specialOffsets();
                     Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -372,7 +372,7 @@ namespace nd4j {
                 return Status::OK();
             }
             // -------------------------------------------------------------------------------------------------------------- //
-            int segmentMaxFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+            int segmentMaxFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
                 BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMaxFunctorBP_, (context, input,
                         indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
@@ -381,7 +381,7 @@ namespace nd4j {
 
             // -------------------------------------------------------------------------------------------------------------- //
             template <typename T, typename I>
-            static int unsortedSegmentMaxFunctorBP_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+            static int unsortedSegmentMaxFunctorBP_(sd::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
                 //int numOfClasses = gradOut->sizeAt(0);
                 // if input is a vector: (as if in doc sample)
                 auto stream = context->getCudaStream();
@@ -397,10 +397,10 @@ namespace nd4j {
                 }
                 else {
                     std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-                    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-                    auto packGradIn = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
-                    auto packGradOut = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
+                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+                    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
+                    auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
+                    auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
                     Nd4jLong* inputTads = packX.specialShapeInfo();
                     Nd4jLong* inputTadOffsets = packX.specialOffsets();
                     Nd4jLong* outputTads = packZ.specialShapeInfo();
@@ -420,7 +420,7 @@ namespace nd4j {
                 return Status::OK();
             }
             // -------------------------------------------------------------------------------------------------------------- //
-            int unsortedSegmentMaxFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+            int unsortedSegmentMaxFunctorBP(sd::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
                 BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
                 NDArray::registerSpecialUse({output}, {input, indices, gradOut});

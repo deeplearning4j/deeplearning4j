@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_adjust_saturation)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/adjust_saturation.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, 0, 0) {
@@ -66,7 +66,7 @@ CONFIGURABLE_OP_IMPL(adjust_saturation, 1, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(adjust_saturation) {
-    getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)
+    getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)
                      ->setSameMode(true);
 }
 

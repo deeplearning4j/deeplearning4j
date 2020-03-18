@@ -23,7 +23,7 @@
 
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
          * This operation prints out NDArray content, either on host or device.

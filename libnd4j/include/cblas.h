@@ -48,7 +48,7 @@
 #endif
 
 #ifndef CBLAS_H
-#include <dll.h>
+#include <system/dll.h>
 
 #ifdef __cplusplus
 extern "C" {

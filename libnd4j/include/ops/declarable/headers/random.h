@@ -24,7 +24,7 @@
 
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         #if NOT_EXCLUDED(OP_set_seed)
         DECLARE_CUSTOM_OP(set_seed, -2, 1, false, 0, -2);

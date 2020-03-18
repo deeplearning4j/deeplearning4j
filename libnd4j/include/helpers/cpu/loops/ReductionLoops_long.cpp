@@ -24,12 +24,12 @@ using namespace simdOps;
 
 
 #include "ReductionLoops.hpp"
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <types/types.h>
 
 using namespace simdOps;
 
-namespace nd4j {
+namespace sd {
 
     template<typename X, typename Z>
     template <typename OpType>

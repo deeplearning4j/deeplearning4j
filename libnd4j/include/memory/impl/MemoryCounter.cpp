@@ -20,14 +20,14 @@
 
 #include "../MemoryCounter.h"
 #include <execution/AffinityManager.h>
-#include <Environment.h>
+#include <system/Environment.h>
 #include <helpers/logger.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
 
         MemoryCounter::MemoryCounter() {
-            auto numDevices = nd4j::AffinityManager::numberOfDevices();
+            auto numDevices = sd::AffinityManager::numberOfDevices();
 
             // setting default 0s
             for (int e = 0; e < numDevices; e++) {
@@ -36,12 +36,12 @@ namespace nd4j {
             }
 
             // setting initial values for limits
-            _groupLimits[nd4j::memory::MemoryType::HOST] = nd4j::Environment::getInstance()->maxPrimaryMemory();
-            _groupLimits[nd4j::memory::MemoryType::DEVICE] = nd4j::Environment::getInstance()->maxSpecialMemory();
+            _groupLimits[sd::memory::MemoryType::HOST] = sd::Environment::getInstance()->maxPrimaryMemory();
+            _groupLimits[sd::memory::MemoryType::DEVICE] = sd::Environment::getInstance()->maxSpecialMemory();
 
             // setting initial counter values
-            _groupCounters[nd4j::memory::MemoryType::HOST] = 0;
-            _groupCounters[nd4j::memory::MemoryType::DEVICE] = 0;
+            _groupCounters[sd::memory::MemoryType::HOST] = 0;
+            _groupCounters[sd::memory::MemoryType::DEVICE] = 0;
         }
 
         MemoryCounter* MemoryCounter::getInstance() {
@@ -56,7 +56,7 @@ namespace nd4j {
             _deviceCounters[deviceId] += numBytes;
         }
 
-        void MemoryCounter::countIn(nd4j::memory::MemoryType group, Nd4jLong numBytes) {
+        void MemoryCounter::countIn(sd::memory::MemoryType group, Nd4jLong numBytes) {
             std::lock_guard<std::mutex> lock(_locker);
             _groupCounters[group] += numBytes;
         }
@@ -66,13 +66,13 @@ namespace nd4j {
             _deviceCounters[deviceId] -= numBytes;
         }
 
-        void MemoryCounter::countOut(nd4j::memory::MemoryType group, Nd4jLong numBytes) {
+        void MemoryCounter::countOut(sd::memory::MemoryType group, Nd4jLong numBytes) {
             std::lock_guard<std::mutex> lock(_locker);
             _groupCounters[group] -= numBytes;
         }
 
         bool MemoryCounter::validate(Nd4jLong numBytes) {
-            auto deviceId = nd4j::AffinityManager::currentDeviceId();
+            auto deviceId = sd::AffinityManager::currentDeviceId();
             return validateDevice(deviceId, numBytes);
         }
 
@@ -87,7 +87,7 @@ namespace nd4j {
             return numBytes + dAlloc <= dLimit;
         }
 
-        bool MemoryCounter::validateGroup(nd4j::memory::MemoryType group, Nd4jLong numBytes) {
+        bool MemoryCounter::validateGroup(sd::memory::MemoryType group, Nd4jLong numBytes) {
             std::lock_guard<std::mutex> lock(_locker);
             auto gLimit = _groupLimits[group];
             if (gLimit <= 0)
@@ -103,7 +103,7 @@ namespace nd4j {
             return _deviceCounters[deviceId];
         }
 
-        Nd4jLong MemoryCounter::allocatedGroup(nd4j::memory::MemoryType group) {
+        Nd4jLong MemoryCounter::allocatedGroup(sd::memory::MemoryType group) {
             std::lock_guard<std::mutex> lock(_locker);
             return _groupCounters[group];
         }
@@ -113,7 +113,7 @@ namespace nd4j {
             _deviceLimits[deviceId] = numBytes;
         }
 
-        void MemoryCounter::setGroupLimit(nd4j::memory::MemoryType group, Nd4jLong numBytes) {
+        void MemoryCounter::setGroupLimit(sd::memory::MemoryType group, Nd4jLong numBytes) {
             std::lock_guard<std::mutex> lock(_locker);
             _groupLimits[group] = numBytes;
         }
@@ -123,7 +123,7 @@ namespace nd4j {
             return _deviceLimits[deviceId];
         }
 
-        Nd4jLong MemoryCounter::groupLimit(nd4j::memory::MemoryType group) {
+        Nd4jLong MemoryCounter::groupLimit(sd::memory::MemoryType group) {
             std::lock_guard<std::mutex> lock(_locker);
             return _groupLimits[group];
         }

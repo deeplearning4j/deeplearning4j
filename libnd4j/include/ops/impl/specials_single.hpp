@@ -20,17 +20,17 @@
 //
 
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
-#include <specials.h>
-#include <dll.h>
-#include <NDArray.h>
+#include <ops/specials.h>
+#include <system/dll.h>
+#include <array/NDArray.h>
 #include <ops/declarable/CustomOperations.h>
 #include <types/types.h>
 #include <helpers/Loops.h>
 
-namespace nd4j {
+namespace sd {
 /**
 * Concatneate multi array of the same shape together
 * along a particular dimension
@@ -100,7 +100,7 @@ namespace nd4j {
 //         auto func = PRAGMA_THREADS_FOR {
 //             for (auto i = start; i < stop; i += increment) {
 //                 auto temp = output(indices[i], true);
-//                 nd4j::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr, 0, 1);
+//                 sd::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr, 0, 1);
 //             }
 //         };
 
@@ -108,7 +108,7 @@ namespace nd4j {
 // }
 
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
 
     const int numOfInArrs = inArrs.size();
     const auto sizeofT    = output.sizeOfT();
@@ -136,52 +136,60 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
         return;
     }
 
-    const bool isZcontin = output.strideAt(axis) == 1 && output.ordering() == 'c';
-    bool areInputsContin = true;
-    bool allSameOrder    = true;
+    // const bool isZcontin = output.strideAt(axis) == 1;
+    // bool areInputsContin = true;
+    // bool allSameOrder    = true;
+    // std::vector<Nd4jLong> strideOfContigStride(numOfInArrs);
 
-    if(isZcontin) {
-        for (uint i = 0; i < numOfInArrs; ++i) {
-            areInputsContin &= inArrs[i]->strideAt(axis) == 1;
-            allSameOrder    &= inArrs[i]->ordering() == output.ordering();
-            if(!areInputsContin || !allSameOrder)
-                break;
-        }
-    }
+    // if(isZcontin) {
 
-    const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
+    //     for (uint i = 0; i < numOfInArrs; ++i) {
 
-    if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
+    //         areInputsContin &= inArrs[i]->strideAt(axis) == 1;
+    //         allSameOrder    &= inArrs[i]->ordering() == output.ordering();
+    //         if(!areInputsContin || !allSameOrder)
+    //             break;
 
-        const uint zDim       = output.sizeAt(axis);
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->getShapeInfo());
+    //     }
+    // }
 
-        for (uint i = 0; i < output.lengthOf() / zDim; ++i) {
-            T* z = zBuff + zDim * i;
+    // const bool luckCase2 = isZcontin && areInputsContin && allSameOrder;
 
-            for (uint j = 0; j < inArrs.size(); ++j) {
-                const auto xDim = inArrs[j]->sizeAt(axis);
-                const T* x = inArrs[j]->bufferAsT<T>() + xDim * i;
-                memcpy(z, x, xDim * sizeofT);
-                z += xDim;
-            }
-        }
+    // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
 
-        return;
-    }
+    //     const auto zStep = shape::strideOverContigAxis(axis, output.getShapeInfo());
+
+    //     for (uint i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
+
+    //         T* z = zBuff + zStep * i;
+
+    //         for (uint j = 0; j < inArrs.size(); ++j) {
+    //             const auto xDim = inArrs[j]->sizeAt(axis);
+    //             const T* x = inArrs[j]->bufferAsT<T>() + strideOfContigStride[j] * i;
+    //             memcpy(z, x, xDim * sizeofT);
+    //             z += xDim;
+    //         }
+    //     }
+
+    //     return;
+    // }
 
     // general case
     auto func = PRAGMA_THREADS_FOR {
 
-        Nd4jLong coords[MAX_RANK];
+        int coords[MAX_RANK], temp;
 
         for (auto i = start; i < stop; i += increment) {
 
-            shape::index2coords(i, output.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, output.getShapeInfo(), coords);
+
             const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
             uint inArrIdx = 0;
             uint xDim = inArrs[inArrIdx]->sizeAt(axis);
 
+            temp = coords[axis];
             while (coords[axis] >= xDim) {
                 coords[axis] -= xDim;
                 xDim = inArrs[++inArrIdx]->sizeAt(axis);
@@ -191,6 +199,8 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
             const auto xOffset = shape::getOffset(inArrs[inArrIdx]->getShapeInfo(), coords);
 
             zBuff[zOffset] = x[xOffset];
+
+            coords[axis] = temp;
         }
     };
 
@@ -204,17 +214,118 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
 template <typename T>
 void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *vresult, Nd4jLong *resultShapeInfo) {
     auto result = reinterpret_cast<T *>(vresult);
-    std::vector<NDArray*> inputs(numArrays);
+    std::vector<const NDArray*> inputs(numArrays);
 
     NDArray output(static_cast<void*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
 
     for(int i = 0; i < numArrays; ++i)
         inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));
 
-    nd4j::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
+    sd::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
 
     for(int i = 0; i < numArrays; ++i)
         delete inputs[i];
+}
+
+
+template <typename T>
+void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<NDArray*>& outArrs, const int axis) {
+
+    int numSplits = outArrs.size();
+
+    const auto sizeofT = input.sizeOfT();
+
+    T* xBuff = input.bufferAsT<T>();
+
+    bool luckCase1 = ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) && input.ews() == 1;
+
+    if (luckCase1) {
+        for (uint i = 0; i < numSplits; ++i) {
+            luckCase1 &= outArrs[i]->ordering() == input.ordering() && outArrs[i]->ews() == 1;
+            if (!luckCase1)
+                break;
+        }
+    }
+
+    if (luckCase1) {
+
+        T* x = const_cast<T*>(xBuff);
+        for (uint i = 0; i < numSplits; ++i) {
+            const auto memAmountToCopy = outArrs[i]->lengthOf();
+            memcpy(outArrs[i]->bufferAsT<T>(), x, memAmountToCopy * sizeofT);
+            x += memAmountToCopy;
+        }
+        return;
+    }
+
+    // const bool isXcontin = input.strideAt(axis) == 1;
+    // bool areOutsContin = true;
+    // bool allSameOrder = true;
+    // std::vector<Nd4jLong> strideOfContigStride(numSplits);
+
+    // if (isXcontin) {
+
+    //     for (uint i = 0; i < numSplits; ++i) {
+
+    //         areOutsContin &= outArrs[i]->strideAt(axis) == 1;
+    //         allSameOrder &= outArrs[i]->ordering() == input.ordering();
+    //         if (!areOutsContin || !allSameOrder)
+    //             break;
+
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, outArrs[i]->getShapeInfo());
+    //     }
+    // }
+
+    // const bool luckCase2 = isXcontin && areOutsContin && allSameOrder;
+
+    // if (luckCase2) {
+
+    //     const auto xStep = shape::strideOverContigAxis(axis, input.getShapeInfo());
+
+    //     for (uint i = 0; i < input.lengthOf() / input.sizeAt(axis); ++i) {
+
+    //         T* x = xBuff + xStep * i;
+
+    //         for (uint j = 0; j < numSplits; ++j) {
+    //             const auto zDim = outArrs[j]->sizeAt(axis);
+    //             T* z = outArrs[j]->bufferAsT<T>() + strideOfContigStride[j] * i;
+    //             memcpy(z, x, zDim * sizeofT);
+    //             x += zDim;
+    //         }
+    //     }
+
+    //     return;
+    // }
+
+    uint zDim = outArrs[0]->sizeAt(axis);
+    // general case
+
+    auto func = PRAGMA_THREADS_FOR{
+
+        int coords[MAX_RANK], temp;
+
+        for (auto i = start; i < stop; i += increment) {
+
+            shape::index2coordsCPU(start, i, input.getShapeInfo(), coords);
+            const auto xOffset = shape::getOffset(input.getShapeInfo(), coords);
+
+            uint outArrIdx = 0;
+            temp = coords[axis];
+
+            while (coords[axis] >= zDim) {
+                coords[axis] -= zDim;
+                ++outArrIdx;
+            }
+
+            T* z = outArrs[outArrIdx]->bufferAsT<T>();
+            const auto zOffset = shape::getOffset(outArrs[outArrIdx]->getShapeInfo(), coords);
+            z[zOffset] = xBuff[xOffset];
+
+            coords[axis] = temp;
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, input.lengthOf());
 }
 
 
@@ -487,7 +598,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
                         continue;
 
                     T val = dx[e];
-                    T abs = nd4j::math::nd4j_abs<T>(val);
+                    T abs = sd::math::nd4j_abs<T>(val);
 
                     int bitId = e % 16;
 

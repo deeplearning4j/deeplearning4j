@@ -20,7 +20,7 @@
 
 #include <ops/declarable/helpers/d_t_s.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -88,11 +88,11 @@ namespace helpers {
 
 
     template <typename T>
-    static void __depthToSpace(nd4j::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+    static void __depthToSpace(sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
         depthToSpaceKernel<T><<<512, 512, 1024, *context->getCudaStream()>>>(input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), block_size, isNHWC);
     }
 
-    void _depthToSpace(nd4j::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
+    void _depthToSpace(sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
         auto xType = input->dataType();
 
         NDArray::prepareSpecialUse({output}, {input});
@@ -101,7 +101,7 @@ namespace helpers {
         NDArray::registerSpecialUse({output}, {input});
     }
 
-    BUILD_SINGLE_TEMPLATE(template void __depthToSpace, (nd4j::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC);, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void __depthToSpace, (sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC);, LIBND4J_TYPES);
 
 }
 }

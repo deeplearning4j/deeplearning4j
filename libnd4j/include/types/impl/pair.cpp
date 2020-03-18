@@ -20,7 +20,7 @@
 
 #include <types/pair.h>
 
-namespace nd4j {
+namespace sd {
     Pair::Pair(int first, int second) {
         _first = first;
         _second = second;

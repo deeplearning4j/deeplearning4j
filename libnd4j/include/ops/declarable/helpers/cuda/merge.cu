@@ -23,13 +23,13 @@
 #include <array/ResultSet.h>
 #include <helpers/ShapeUtils.h>
 #include <numeric>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/TAD.h>
 #include <exceptions/cuda_exception.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             //////////////////////////////////////////////////////////////////////////
@@ -60,7 +60,7 @@ namespace nd4j {
             }
 
             template <typename T, typename Z>
-            static void mergeMaxIndex_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+            static void mergeMaxIndex_(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
                 std::vector<void *> inBuffers(inArrs.size());
                 std::vector<void *> inShapes(inArrs.size());
 
@@ -80,7 +80,7 @@ namespace nd4j {
                 manager.synchronize();
             }
 
-            void mergeMaxIndex(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+            void mergeMaxIndex(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
                 NDArray::prepareSpecialUse({&output}, {});
                 for (auto v:inArrs)
                     v->syncToDevice();
@@ -116,7 +116,7 @@ namespace nd4j {
             }
 
             template<typename T>
-            static void mergeMax_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+            static void mergeMax_(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
                 std::vector<void *> inBuffers(inArrs.size());
                 std::vector<void *> inShapes(inArrs.size());
 
@@ -136,7 +136,7 @@ namespace nd4j {
                 manager.synchronize();
             }
 
-            void mergeMax(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+            void mergeMax(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
                 NDArray::prepareSpecialUse({&output}, {});
                 for (auto v:inArrs)
                     v->syncToDevice();
@@ -168,7 +168,7 @@ namespace nd4j {
             }
 
             template<typename T>
-            static void mergeAvg_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+            static void mergeAvg_(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
                 std::vector<void *> inBuffers(inArrs.size());
                 std::vector<void *> inShapes(inArrs.size());
 
@@ -188,7 +188,7 @@ namespace nd4j {
                 manager.synchronize();
             }
 
-            void mergeAvg(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+            void mergeAvg(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
                 NDArray::prepareSpecialUse({&output}, {});
                 for (auto v:inArrs)
                     v->syncToDevice();
@@ -221,7 +221,7 @@ namespace nd4j {
             }
 
             template<typename T>
-            static void mergeAdd_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+            static void mergeAdd_(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
                 std::vector<void *> inBuffers(inArrs.size());
                 std::vector<void *> inShapes(inArrs.size());
 
@@ -240,9 +240,9 @@ namespace nd4j {
 
                 manager.synchronize();
             }
-            BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output), NUMERIC_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output), NUMERIC_TYPES);
 
-            void mergeAdd(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+            void mergeAdd(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
                 NDArray::prepareSpecialUse({&output}, {});
                 for (auto v:inArrs)
                     v->syncToDevice();

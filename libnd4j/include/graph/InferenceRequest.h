@@ -20,13 +20,13 @@
 #ifndef DEV_TESTS_INFERENCEREQUEST_H
 #define DEV_TESTS_INFERENCEREQUEST_H
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <graph/Variable.h>
 #include "ExecutorConfiguration.h"
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         class ND4J_EXPORT InferenceRequest {
         private:

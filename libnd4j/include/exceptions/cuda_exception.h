@@ -23,7 +23,7 @@
 
 #include <string>
 #include <stdexcept>
-#include <dll.h>
+#include <system/dll.h>
 
 #if defined(_MSC_VER)
 
@@ -32,7 +32,7 @@
 
 #endif
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT cuda_exception : public std::runtime_error {
     public:
         cuda_exception(std::string message);

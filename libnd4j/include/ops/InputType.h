@@ -21,7 +21,7 @@
 #ifndef ND4J_INPUTTYPE_H
 #define ND4J_INPUTTYPE_H
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         enum InputType {
             InputType_BOOLEAN = 0,

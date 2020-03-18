@@ -20,7 +20,7 @@
 
 #include <ops/declarable/helpers/knn.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
@@ -41,13 +41,13 @@ namespace nd4j {
                     T h = high[e];
                     if (!(l <= p || h <= p)) {
                         if (p < l)
-                            res += nd4j::math::nd4j_pow<T, T, T>((p - o), po);
+                            res += sd::math::nd4j_pow<T, T, T>((p - o), po);
                         else
-                            res += nd4j::math::nd4j_pow<T, T, T>((p - h), po);
+                            res += sd::math::nd4j_pow<T, T, T>((p - h), po);
                     }
                 }
 
-                output[0] = nd4j::math::nd4j_pow<T, T, T>(res, (T) 0.5f);
+                output[0] = sd::math::nd4j_pow<T, T, T>(res, (T) 0.5f);
             }
 
             void knn_mindistance(const NDArray &input, const NDArray &lowest, const NDArray &highest, NDArray &output) {

@@ -22,7 +22,7 @@
 #include "cudnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 

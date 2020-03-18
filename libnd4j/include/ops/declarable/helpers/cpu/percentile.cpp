@@ -19,10 +19,10 @@
 //
 
 #include <ops/declarable/helpers/percentile.h>
-#include <NDArrayFactory.h>
-#include "ResultSet.h"
+#include <array/NDArrayFactory.h>
+#include <array/ResultSet.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -76,7 +76,7 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<int>&
     }
 }
 
-    void percentile(nd4j::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
+    void percentile(sd::LaunchContext * context, const NDArray& input, NDArray& output, std::vector<int>& axises, const float q, const int interpolation) {
         BUILD_SINGLE_SELECTOR(input.dataType(), _percentile, (input, output, axises, q, interpolation), LIBND4J_TYPES);
     }
 

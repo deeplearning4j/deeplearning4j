@@ -18,13 +18,13 @@
 //  @author sgazeos@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_image_resize)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/image_resize.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(image_resize, 2, 1, false, 0, 0) {
 

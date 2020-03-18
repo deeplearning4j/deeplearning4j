@@ -21,10 +21,10 @@
 #ifndef LIBND4J_HHCOLPICQR_H
 #define LIBND4J_HHCOLPICQR_H
 
-#include <hhColPivQR.h>
-#include "NDArray.h"
+#include <helpers/hhColPivQR.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

@@ -20,10 +20,10 @@
 
 #include<ops/declarable/helpers/gammaMathFunc.h>
 #include<ops/declarable/helpers/zeta.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -49,7 +49,7 @@ static FORCEINLINE T getFactorial(const int n) {
 //////////////////////////////////////////////////////////////////////////
 // implementation is based on serial representation written in terms of the Hurwitz zeta function as polygamma = (-1)^{n+1} * n! * zeta(n+1, x)
 template <typename T>
-static FORCEINLINE T polyGammaScalar(nd4j::LaunchContext * context, const int n, const T x) {
+static FORCEINLINE T polyGammaScalar(sd::LaunchContext * context, const int n, const T x) {
 
 	// if (n < 0)
 	// 	throw("polyGamma function: n must be >= 0 !");
@@ -67,7 +67,7 @@ static FORCEINLINE T polyGammaScalar(nd4j::LaunchContext * context, const int n,
 //////////////////////////////////////////////////////////////////////////
 // calculate polygamma function for arrays
 template <typename T>
-static void polyGamma_(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {
+static void polyGamma_(sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {
 
 	auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
@@ -83,11 +83,11 @@ static void polyGamma_(nd4j::LaunchContext * context, const NDArray& n, const ND
 	samediff::Threads::parallel_for(func, 0, x.lengthOf());
 }
 
-	void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {
+	void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output) {
 		BUILD_SINGLE_SELECTOR(x.dataType(), polyGamma_, (context, n, x, output), FLOAT_TYPES);
 	}
 
-BUILD_SINGLE_TEMPLATE(template void polyGamma_, (nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void polyGamma_, (sd::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& output), FLOAT_TYPES);
 
 
 

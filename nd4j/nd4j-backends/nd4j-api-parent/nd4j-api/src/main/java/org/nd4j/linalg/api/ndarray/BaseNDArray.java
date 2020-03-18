@@ -3772,6 +3772,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             INDArray ret = Nd4j.createUninitialized(this.dataType(), shape, order);
             ret.setData(dup(order).data());
             return ret;
+        } else if (this.isEmpty()) {
+            return Nd4j.create(this.dataType(), shape);
         } else {
             INDArray ret = this.dup(order);
             return Nd4j.create(ret.data(), shape);

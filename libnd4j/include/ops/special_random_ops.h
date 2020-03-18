@@ -24,7 +24,7 @@
 #include <ops/random_ops.h>
 #include <helpers/shape.h>
 #include <graph/RandomGenerator.h>
-#include <specials_cuda.h>
+#include <ops/specials_cuda.h>
 #include <execution/Threads.h>
 
 namespace randomOps {
@@ -63,16 +63,16 @@ namespace randomOps {
             __shared__ char yOrder;
             __shared__ char zOrder;
 
-            __shared__ nd4j::graph::RandomGenerator *rng;
+            __shared__ sd::graph::RandomGenerator *rng;
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
-            __shared__ nd4j::graph::RandomGenerator *devRng;
+            __shared__ sd::graph::RandomGenerator *devRng;
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                rng = (nd4j::graph::RandomGenerator*) shmem;
+                rng = (sd::graph::RandomGenerator*) shmem;
                 cB = shmem;
-                devRng = reinterpret_cast<nd4j::graph::RandomGenerator*> (state);
+                devRng = reinterpret_cast<sd::graph::RandomGenerator*> (state);
                 dB = reinterpret_cast<unsigned char *> (state);
 
                 xLength = shape::length(xShapeBuffer);
@@ -89,7 +89,7 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+            for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
 
             __syncthreads();
@@ -148,8 +148,8 @@ namespace randomOps {
              * Z will hold results
              */
 
-            //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            //sd::random::RandomBuffer *buffer = reinterpret_cast<sd::random::RandomBuffer *> (state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
 
@@ -162,8 +162,8 @@ namespace randomOps {
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
+            int _threads = sd::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = sd::math::nd4j_min<int>(_threads, sd::Environment::getInstance()->maxThreads());
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
                 auto func = PRAGMA_THREADS_FOR {
@@ -244,19 +244,19 @@ namespace randomOps {
 
             __shared__ T *tZ;
 
-            __shared__ nd4j::graph::RandomGenerator* rng;
+            __shared__ sd::graph::RandomGenerator* rng;
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
-            __shared__ nd4j::graph::RandomGenerator *devRng;
+            __shared__ sd::graph::RandomGenerator *devRng;
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(shmem);
+                rng = reinterpret_cast<sd::graph::RandomGenerator*>(shmem);
                 cB = shmem;
-                devRng = reinterpret_cast<nd4j::graph::RandomGenerator *> (state);
+                devRng = reinterpret_cast<sd::graph::RandomGenerator *> (state);
                 dB = reinterpret_cast<unsigned char *> (state);
 
-                tZ = reinterpret_cast<T *>(shmem + sizeof(nd4j::graph::RandomGenerator));
+                tZ = reinterpret_cast<T *>(shmem + sizeof(sd::graph::RandomGenerator));
 
                 zLength = shape::length(zShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -274,7 +274,7 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+            for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
 
             __syncthreads();
@@ -292,11 +292,11 @@ namespace randomOps {
 
                 T realMean0 = y == z ? mean : y[e * yEWS];
 
-                z[e * zEWS] = (nd4j::math::nd4j_sqrt<T,T>(t * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+                z[e * zEWS] = (sd::math::nd4j_sqrt<T,T>(t * sd::math::nd4j_log<T,T>(r0)) * sd::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
 
                 if (epm < zLength) {
                     T realMean1 = y == z ? mean : y[epm * yEWS];
-                    z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(t * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
+                    z[epm * zEWS] =  (sd::math::nd4j_sqrt<T,T>(t * sd::math::nd4j_log<T,T>(r0)) * sd::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
                 }
             }
         }
@@ -314,16 +314,16 @@ namespace randomOps {
             auto middle = zLength % 2  + zLength / 2;
 
             int elementsPerThread = middle / TAD_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
+            int _threads = sd::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = sd::math::nd4j_min<int>(_threads, sd::Environment::getInstance()->maxThreads());
 
             int span = (middle / _threads) + 8;
 
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
 
-            //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            //sd::random::RandomBuffer *buffer = reinterpret_cast<sd::random::RandomBuffer *> (state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
             const T mean = extraArguments[0];
             const T stddev = extraArguments[1];
 
@@ -339,14 +339,14 @@ namespace randomOps {
 
                     T realMean0 = y == z ? mean : y[e * yEWS];
 
-                    auto z0 = (nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(r0)) *
-                               nd4j::math::nd4j_cos<T, T>(two_pi * r1)) * stddev + realMean0;
+                    auto z0 = (sd::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::nd4j_log<T, T>(r0)) *
+                               sd::math::nd4j_cos<T, T>(two_pi * r1)) * stddev + realMean0;
                     z[e * zEWS] = z0;
 
                     if (epm < zLength) {
                         T realMean1 = y == z ? mean : y[epm * yEWS];
-                        auto z1 = (nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(r0)) *
-                                   nd4j::math::nd4j_sin<T, T>(two_pi * r1)) * stddev + realMean1;
+                        auto z1 = (sd::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::nd4j_log<T, T>(r0)) *
+                                   sd::math::nd4j_sin<T, T>(two_pi * r1)) * stddev + realMean1;
                         z[epm * zEWS] = z1;
                     }
                 }
@@ -381,15 +381,15 @@ namespace randomOps {
             __shared__ int yEWS;
             __shared__ int zEWS;
 
-            __shared__ nd4j::graph::RandomGenerator* rng;
+            __shared__ sd::graph::RandomGenerator* rng;
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
-            __shared__ nd4j::graph::RandomGenerator *devRng;
+            __shared__ sd::graph::RandomGenerator *devRng;
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(shmem);
+                rng = reinterpret_cast<sd::graph::RandomGenerator*>(shmem);
                 cB = shmem;
-                devRng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+                devRng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
                 dB = reinterpret_cast<unsigned char *> (state);
 
                 zLength = shape::length(zShapeBuffer);
@@ -399,7 +399,7 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+            for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
 
             __syncthreads();
@@ -433,12 +433,12 @@ namespace randomOps {
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
+            int _threads = sd::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = sd::math::nd4j_min<int>(_threads, sd::Environment::getInstance()->maxThreads());
 
             T prob = extraArguments[1];
 
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
             auto func = PRAGMA_THREADS_FOR {
                 for (auto e = start; e < stop; e++) {
 
@@ -488,15 +488,15 @@ namespace randomOps {
             __shared__ int yEWS;
             __shared__ int zEWS;
 
-            __shared__ nd4j::graph::RandomGenerator* rng;
+            __shared__ sd::graph::RandomGenerator* rng;
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
-            __shared__ nd4j::graph::RandomGenerator *devRng;
+            __shared__ sd::graph::RandomGenerator *devRng;
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                rng = (nd4j::graph::RandomGenerator*) shmem;
+                rng = (sd::graph::RandomGenerator*) shmem;
                 cB = shmem;
-                devRng = reinterpret_cast<nd4j::graph::RandomGenerator*> (state);
+                devRng = reinterpret_cast<sd::graph::RandomGenerator*> (state);
                 dB = reinterpret_cast<unsigned char *> (state);
 
                 zLength = shape::length(zShapeBuffer);
@@ -506,7 +506,7 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+            for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
 
             __syncthreads();
@@ -541,13 +541,13 @@ namespace randomOps {
             auto zEWS = shape::elementWiseStride(zShapeBuffer);
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
+            int _threads = sd::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = sd::math::nd4j_min<int>(_threads, sd::Environment::getInstance()->maxThreads());
 
             T prob = extraArguments[1];
 
-            //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            //sd::random::RandomBuffer *buffer = reinterpret_cast<sd::random::RandomBuffer *> (state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
             auto func = PRAGMA_THREADS_FOR {
                 for (auto e = start; e < stop; e++) {
 
@@ -577,7 +577,7 @@ namespace randomOps {
     template<typename T>
     class TruncatedNormalDistribution {
     private:
-        static inline _CUDA_HD T step(nd4j::graph::RandomGenerator* rng, T mean, T stddev, Nd4jLong e, Nd4jLong middle, T& z) {
+        static inline _CUDA_HD T step(sd::graph::RandomGenerator* rng, T mean, T stddev, Nd4jLong e, Nd4jLong middle, T& z) {
             auto epm = e + middle;
             const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
             const T epsilon = static_cast<T>(1.e-5f);
@@ -587,12 +587,12 @@ namespace randomOps {
 
             T realMean0 = mean;
 
-            auto z0 =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
+            auto z0 =  (sd::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * sd::math::nd4j_log<T,T>(r0)) * sd::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
             z = z0;
             if (epm < middle) {
                 T realMean1 = mean;
-                auto z1 = (nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(r0)) *
-                           nd4j::math::nd4j_sin<T, T>(two_pi * r1)) * stddev + realMean1;
+                auto z1 = (sd::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * sd::math::nd4j_log<T, T>(r0)) *
+                           sd::math::nd4j_sin<T, T>(two_pi * r1)) * stddev + realMean1;
                 z = z1;
             }
             return z;
@@ -619,20 +619,20 @@ namespace randomOps {
 
             __shared__ T *tZ;
 
-            __shared__ nd4j::graph::RandomGenerator* rng;
+            __shared__ sd::graph::RandomGenerator* rng;
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
-            __shared__ nd4j::graph::RandomGenerator* devRng;
+            __shared__ sd::graph::RandomGenerator* devRng;
             __shared__ Nd4jLong middle;
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(shmem);
+                rng = reinterpret_cast<sd::graph::RandomGenerator*>(shmem);
                 cB = shmem;
-                devRng = reinterpret_cast<nd4j::graph::RandomGenerator*> (state);
+                devRng = reinterpret_cast<sd::graph::RandomGenerator*> (state);
                 dB = reinterpret_cast<unsigned char *> (state);
 
-                tZ = reinterpret_cast<T*>(shmem + sizeof(nd4j::graph::RandomGenerator));
+                tZ = reinterpret_cast<T*>(shmem + sizeof(sd::graph::RandomGenerator));
 
                 zLength = shape::length(zShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -650,7 +650,7 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+            for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
 
             __syncthreads();
@@ -660,13 +660,13 @@ namespace randomOps {
             GaussianDistribution<T>::specialOpCuda(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
             __syncthreads();
 
-            T ds = nd4j::math::nd4j_abs<T>(stddev) * static_cast<T>(2.0f);
+            T ds = sd::math::nd4j_abs<T>(stddev) * static_cast<T>(2.0f);
             for (Nd4jLong e = tid; e < zLength; e += step) {
                 if (z[e] > mean + ds || z[e] < mean - ds) {
                     z[e] = TruncatedNormalDistribution<T>::step(rng, mean, stddev, e, middle, z[e]);
 
                     if (z[e] > mean + ds || z[e] < mean - ds)
-                        z[e] = mean + nd4j::DataTypeUtils::min<T>();
+                        z[e] = mean + sd::DataTypeUtils::min<T>();
                 }
             }
         }
@@ -678,14 +678,14 @@ namespace randomOps {
             Nd4jLong zLength = shape::length(zShapeBuffer);
             //auto yEWS = shape::elementWiseStride(yShapeBuffer);
             //auto zEWS = shape::elementWiseStride(zShapeBuffer);
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
-            T ds = nd4j::math::nd4j_abs<T>(stddev) * (T) 2.0f;
+            T ds = sd::math::nd4j_abs<T>(stddev) * (T) 2.0f;
             Nd4jLong middle = zLength / 2 + (zLength % 2);
             int elementsPerThread = middle / TAD_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
+            int _threads = sd::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = sd::math::nd4j_min<int>(_threads, sd::Environment::getInstance()->maxThreads());
 
             const T epsilon = static_cast<T>(1e-5);
 
@@ -695,7 +695,7 @@ namespace randomOps {
                         z[e] = step(rng, mean, stddev, e, middle, z[e]);
 
                         if (z[e] > mean + ds || z[e] < mean - ds)
-                            z[e] = mean + nd4j::DataTypeUtils::min<T>();
+                            z[e] = mean + sd::DataTypeUtils::min<T>();
                     }
                 }
             };
@@ -731,20 +731,20 @@ namespace randomOps {
 
             __shared__ T *tZ;
 
-            __shared__ nd4j::graph::RandomGenerator* rng;
+            __shared__ sd::graph::RandomGenerator* rng;
             __shared__ unsigned char *cB;
             __shared__ unsigned char *dB;
-            __shared__ nd4j::graph::RandomGenerator* devRng;
+            __shared__ sd::graph::RandomGenerator* devRng;
 
             if (threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+                rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
                 cB = shmem;
-                devRng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+                devRng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
 
                 dB = reinterpret_cast<unsigned char *> (state);
 
-                tZ = reinterpret_cast<T*>(shmem + sizeof(nd4j::graph::RandomGenerator));
+                tZ = reinterpret_cast<T*>(shmem + sizeof(sd::graph::RandomGenerator));
 
                 zLength = shape::length(zShapeBuffer);
                 zEWS = shape::elementWiseStride(zShapeBuffer);
@@ -762,7 +762,7 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
+            for (int e = threadIdx.x; e < sizeof(sd::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
 
             __syncthreads();
@@ -780,11 +780,11 @@ namespace randomOps {
 
                 T realMean = y == z ? mean : y[e * yEWS];
 
-                z[e *zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean);
+                z[e *zEWS] =  sd::math::nd4j_exp<T,T>((sd::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * sd::math::nd4j_log<T,T>(r0)) * sd::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean);
 
                 if (epm < zLength) {
                     realMean = y == z ? mean : y[epm * yEWS];
-                    z[epm *zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
+                    z[epm *zEWS] =  sd::math::nd4j_exp<T,T>((sd::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * sd::math::nd4j_log<T,T>(r0)) * sd::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
                 }
             }
         }
@@ -801,16 +801,16 @@ namespace randomOps {
             auto middle = zLength % 2 == 0 ? zLength / 2 : zLength / 2 + 1;
 
             int elementsPerThread = middle / TAD_THRESHOLD;
-            int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
+            int _threads = sd::math::nd4j_max<int>(1, elementsPerThread);
+            _threads = sd::math::nd4j_min<int>(_threads, sd::Environment::getInstance()->maxThreads());
 
             int span = (zLength / _threads) + 8;
 
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
 
-//            auto buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
-            nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+//            auto buffer = reinterpret_cast<sd::random::RandomBuffer *> (state);
+            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
 
             const T mean = extraArguments[0];
             const T stddev = extraArguments[1];
@@ -827,11 +827,11 @@ namespace randomOps {
 
                     T realMean = y == z ? mean : y[e * yEWS];
 
-                    z[e * zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean);
+                    z[e * zEWS] =  sd::math::nd4j_exp<T,T>((sd::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * sd::math::nd4j_log<T,T>(r0)) * sd::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean);
 
                     if (epm < zLength) {
                         realMean = y == z ? mean : y[epm * yEWS];
-                        z[epm * zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
+                        z[epm * zEWS] =  sd::math::nd4j_exp<T,T>((sd::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * sd::math::nd4j_log<T,T>(r0)) * sd::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
                     }
                 }
             };

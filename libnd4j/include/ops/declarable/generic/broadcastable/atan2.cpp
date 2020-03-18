@@ -19,12 +19,12 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_tf_atan2)
 
 #include <ops/declarable/headers/broadcastable.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
@@ -36,7 +36,7 @@ BROADCASTABLE_OP_IMPL(tf_atan2, 0, 0) {
     BROADCAST_CHECK_EMPTY(x,y,z);
 
     // auto tZ = BroadcastHelper<T>::template broadcastApply<simdOps::Atan2<T>>(y, x, z);
-    x->applyTrueBroadcast(nd4j::BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), *y, *z, true);
+    x->applyTrueBroadcast(sd::BroadcastOpsTuple::custom(scalar::Atan2, pairwise::Atan2, broadcast::Atan2), *y, *z, true);
 
     // if (tZ == nullptr)
     //     return ND4J_STATUS_KERNEL_FAILURE;

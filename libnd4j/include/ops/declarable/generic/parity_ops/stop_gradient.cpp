@@ -18,18 +18,21 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_stop_gradient)
 
 #include <ops/declarable/headers/parity_ops.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(stop_gradient, 1, 1, true) {
-            auto x = INPUT_VARIABLE(0);
             auto out = OUTPUT_VARIABLE(0);
-            // just for lulz
-            x->applyTransform(transform::Identity, *out);
+
+            if (!block.isInplace()) {
+                auto x = INPUT_VARIABLE(0);
+                // we hope for memcpy here
+                out->assign(x);
+            }
 
             return Status::OK();
         }
@@ -37,7 +40,7 @@ namespace nd4j {
 
         DECLARE_TYPES(stop_gradient) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

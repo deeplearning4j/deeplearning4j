@@ -21,10 +21,10 @@
 #ifndef LIBND4J_MEMORYREPORT_H
 #define LIBND4J_MEMORYREPORT_H
 
-#include <pointercast.h>
-#include <dll.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         class ND4J_EXPORT MemoryReport {
         private:

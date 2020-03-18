@@ -26,25 +26,25 @@
 #include <string>
 #include <atomic>
 #include <unordered_map>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <memory/Workspace.h>
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT NDArrayList {
     private:
         // workspace where chunks belong to
-        //nd4j::memory::Workspace* _workspace = nullptr;
-        nd4j::LaunchContext * _context = nd4j::LaunchContext ::defaultContext();
+        //sd::memory::Workspace* _workspace = nullptr;
+        sd::LaunchContext * _context = sd::LaunchContext ::defaultContext();
 
         // numeric and symbolic ids of this list
         std::pair<int, int> _id;
         std::string _name;
 
-        nd4j::DataType _dtype;
+        sd::DataType _dtype;
 
         // stored chunks
-        std::map<int, nd4j::NDArray*> _chunks;
+        MAP_IMPL<int, sd::NDArray*> _chunks;
 
         // just a counter, for stored elements
         std::atomic<int> _elements;
@@ -65,7 +65,7 @@ namespace nd4j {
         NDArrayList(int height, bool expandable = false);
         ~NDArrayList();
 
-        nd4j::DataType dataType();
+        sd::DataType dataType();
 
         NDArray* read(int idx);
         NDArray* readRaw(int idx);
@@ -82,8 +82,8 @@ namespace nd4j {
 
         std::pair<int,int>& id();
         std::string& name();
-        //nd4j::memory::Workspace* workspace();
-        nd4j::LaunchContext * context();
+        //sd::memory::Workspace* workspace();
+        sd::LaunchContext * context();
         NDArrayList* clone();
 
         bool equals(NDArrayList& other);

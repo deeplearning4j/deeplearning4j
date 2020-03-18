@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.samediff.testlayers;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.samediff.SDVertexParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -73,5 +74,10 @@ public class SameDiffDenseVertex extends SameDiffVertex {
     @Override
     public char paramReshapeOrder(String paramName){
         return 'f';     //To match DL4J DenseLayer - for easy comparison
+    }
+
+    @Override
+    public GraphVertex clone() {
+        return new SameDiffDenseVertex(nIn, nOut, activation, weightInit);
     }
 }

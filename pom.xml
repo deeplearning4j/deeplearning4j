@@ -335,7 +335,7 @@
         <jackson.databind.version>2.10.1</jackson.databind.version>
         <shaded.snakeyaml.version>1.24</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
-        <lombok.version>1.18.2</lombok.version>
+        <lombok.version>1.18.12</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.7.1</lucene-solr.version>
         <json.version>20131018</json.version>
@@ -743,6 +743,7 @@
                 </os>
             </activation>
             <properties>
+                <os.kernel>linux</os.kernel>
                 <os.name>linux</os.name>
             </properties>
         </profile>
@@ -754,6 +755,7 @@
                 </os>
             </activation>
             <properties>
+                <os.kernel>darwin</os.kernel>
                 <os.name>macosx</os.name>
             </properties>
         </profile>
@@ -765,7 +767,41 @@
                 </os>
             </activation>
             <properties>
+                <os.kernel>windows</os.kernel>
                 <os.name>windows</os.name>
+            </properties>
+        </profile>
+        <profile>
+            <id>arm</id>
+            <activation>
+                <os>
+                    <arch>arm</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>armhf</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>aarch64</id>
+            <activation>
+                <os>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>arm64</os.arch>
+            </properties>
+        </profile>
+        <profile>
+            <id>armv8</id>
+            <activation>
+                <os>
+                    <arch>armv8</arch>
+                </os>
+            </activation>
+            <properties>
+                <os.arch>arm64</os.arch>
             </properties>
         </profile>
         <profile>
@@ -843,17 +879,6 @@
             </activation>
             <properties>
                 <os.arch>x86_64</os.arch>
-            </properties>
-        </profile>
-        <profile>
-            <id>arm</id>
-            <activation>
-                <os>
-                    <arch>arm</arch>
-                </os>
-            </activation>
-            <properties>
-                <os.arch>arm</os.arch>
             </properties>
         </profile>
 

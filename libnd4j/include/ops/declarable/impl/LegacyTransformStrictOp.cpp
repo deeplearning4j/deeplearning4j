@@ -20,10 +20,10 @@
 
 #include <ops/declarable/LegacyTransformStrictOp.h>
 
-#include <NativeOpExecutioner.h>
+#include <legacy/NativeOpExecutioner.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyTransformStrictOp::LegacyTransformStrictOp() : LegacyOp::LegacyOp(1) {
             this->getOpDescriptor()->allowInplace(true);
@@ -61,7 +61,7 @@ namespace nd4j {
         * But these ops already have CustomOp implementations.
         *
         */
-        ShapeList *LegacyTransformStrictOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyTransformStrictOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;

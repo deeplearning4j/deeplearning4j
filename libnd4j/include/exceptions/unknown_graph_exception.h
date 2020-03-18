@@ -21,11 +21,11 @@
 #ifndef DEV_TESTS_UNKNOWN_GRAPH_EXCEPTION_H
 #define DEV_TESTS_UNKNOWN_GRAPH_EXCEPTION_H
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
 #include <stdexcept>
 #include <exceptions/graph_exception.h>
-#include <dll.h>
+#include <system/dll.h>
 
 #if defined(_MSC_VER)
 
@@ -34,7 +34,7 @@
 
 #endif
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT unknown_graph_exception: public graph_exception {
     public:
         explicit unknown_graph_exception(Nd4jLong graphId);

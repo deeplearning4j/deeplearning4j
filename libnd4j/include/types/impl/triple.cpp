@@ -20,7 +20,7 @@
 
 #include <types/triple.h>
 
-namespace nd4j {
+namespace sd {
     int Triple::first() const {
         return _first;
     }

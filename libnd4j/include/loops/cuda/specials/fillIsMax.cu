@@ -21,7 +21,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
@@ -37,7 +37,7 @@ namespace nd4j {
     template <typename T>
     __host__ void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong *xShapeInfo, Nd4jLong length, long idx) {
         execFillIsMax<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, xShapeInfo, length, idx);
-        nd4j::DebugHelper::checkErrorCode(stream, "fillIsMax(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "fillIsMax(...) failed");
     }
 
 

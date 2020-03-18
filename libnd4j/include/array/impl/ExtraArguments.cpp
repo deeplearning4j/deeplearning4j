@@ -29,7 +29,7 @@
 #include <cuda_runtime.h>
 #endif
 
-namespace nd4j {
+namespace sd {
     ExtraArguments::ExtraArguments(std::initializer_list<double> arguments) {
         _fpArgs = arguments;
     }
@@ -122,7 +122,7 @@ namespace nd4j {
     BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT void *ExtraArguments::argumentsAsT, (Nd4jLong offset), LIBND4J_TYPES);
 
 
-    void* ExtraArguments::argumentsAsT(nd4j::DataType dataType, Nd4jLong offset) {
+    void* ExtraArguments::argumentsAsT(sd::DataType dataType, Nd4jLong offset) {
         if (_fpArgs.empty() && _intArgs.empty())
             return nullptr;
 

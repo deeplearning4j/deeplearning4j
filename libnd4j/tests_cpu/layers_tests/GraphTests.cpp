@@ -25,12 +25,12 @@
 #include <graph/Node.h>
 #include <graph/Graph.h>
 #include <graph/GraphUtils.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <ops/declarable/generic/parity_ops.cpp>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class GraphTests : public testing::Test {
 public:
@@ -394,7 +394,7 @@ TEST_F(GraphTests, ReductionsTest1) {
     graph->getVariableSpace()->putVariable(-1, x);
     graph->getVariableSpace()->putVariable(-2, z);
 
-//    nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+//    sd::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
 
     auto nodeA = new Node(OpType_REDUCE_FLOAT, reduce::Mean, 1, {-1}, {2}, {1}, {});
     auto nodeB = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {-2});
@@ -891,7 +891,7 @@ TEST_F(GraphTests, OutputValidation6) {
 }
 
 TEST_F(GraphTests, TestMultiOutput1) {
-    nd4j::ops::testop2i2o op1;
+    sd::ops::testop2i2o op1;
     auto graph = new Graph();
 
     auto x = NDArrayFactory::create_<float>('c', {5, 5});
@@ -910,7 +910,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
     auto nodeB0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {-2}, {11});
     nodeB0->markInplace(false);
 
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation("testop2i2o");
+    auto op = sd::ops::OpRegistrator::getInstance()->getOperation("testop2i2o");
 
     // this op will add 1.0 to first input, and 2.0 for second input
     auto nodeT = new Node(op, 11, {1, 2}, {21, 31}, {}, 0.0f);
@@ -951,7 +951,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
 }
 
 TEST_F(GraphTests, TestDivergentNode1) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation("Switch");
+    auto op = sd::ops::OpRegistrator::getInstance()->getOperation("Switch");
     auto nodeY = new Node(op, 1);
 
     ASSERT_TRUE(nodeY->isDivergencePoint());
@@ -1065,7 +1065,7 @@ TEST_F(GraphTests, MemoryEstimationTest5) {
 
     graph.getVariableSpace()->putVariable(-1, x);
 
-    nd4j::ops::testcustom op;
+    sd::ops::testcustom op;
 
     auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
     auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
@@ -1409,7 +1409,7 @@ TEST_F(GraphTests, OpListTest_1) {
     GraphUtils::filterOperations(ops);
     ASSERT_TRUE(ops.size() == 7);
 
-    std::string exp(" -g \"-DLIBND4J_OPS_LIST='-DOP_rank=true -DOP_range=true -DOP_subtract=true -DOP_permute=true -DOP_matmul=true -DOP_biasadd=true -DOP_TRANSFORM{15}=true '\"");
+    std::string exp(" -g \"-DSD_OPS_LIST='-DOP_rank=true -DOP_range=true -DOP_subtract=true -DOP_permute=true -DOP_matmul=true -DOP_biasadd=true -DOP_TRANSFORM{15}=true '\"");
     std::string out = GraphUtils::makeCommandLine(ops);
 //    nd4j_printf("EXP: >%s<\n", exp.c_str());
 //    nd4j_printf("OUT: >%s<\n", out.c_str());
@@ -1434,7 +1434,7 @@ TEST_F(GraphTests, OpListTest_2) {
 
     GraphUtils::filterOperations(ops);
 
-    std::string exp = " -g \"-DLIBND4J_OPS_LIST='-DOP_rank=true -DOP_range=true -DOP_subtract=true -DOP_permute=true -DOP_matmul=true -DOP_biasadd=true -DOP_TRANSFORM{15}=true -DOP_strided_slice=true -DOP_ACCUMULATION{1}=true '\"";
+    std::string exp = " -g \"-DSD_OPS_LIST='-DOP_rank=true -DOP_range=true -DOP_subtract=true -DOP_permute=true -DOP_matmul=true -DOP_biasadd=true -DOP_TRANSFORM{15}=true -DOP_strided_slice=true -DOP_ACCUMULATION{1}=true '\"";
 
     ASSERT_TRUE(ops.size() == 9);
     ASSERT_EQ(exp, GraphUtils::makeCommandLine(ops));
@@ -1570,7 +1570,7 @@ TEST_F(GraphTests, Test_Inplace_Outputs_1) {
     auto exp = NDArrayFactory::create<float>('c', {6}, {1.f, 2.f, 3.f, 4.f, 5.f, 6.f});
     auto z = NDArrayFactory::create<float>('c', {2, 3});
 
-    nd4j::ops::test_output_reshape op;
+    sd::ops::test_output_reshape op;
     auto result = op.execute({&x}, {&z}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
 
@@ -1587,7 +1587,7 @@ TEST_F(GraphTests, Test_Inplace_Outputs_2) {
     auto z = NDArrayFactory::create<float>('c', {3, 3});
 
     bool failed = false;
-    nd4j::ops::test_output_reshape op;
+    sd::ops::test_output_reshape op;
     try {
         op.execute({&x}, {&z}, {}, {}, {});
 

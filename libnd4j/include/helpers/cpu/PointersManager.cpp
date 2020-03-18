@@ -20,16 +20,16 @@
 
 #ifndef __CUDABLAS__
 
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 #include <exceptions/cuda_exception.h>
-#include <logger.h>
+#include <helpers/logger.h>
 #include <memory/Workspace.h>
 
-namespace nd4j {
+namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
-PointersManager::PointersManager(const nd4j::LaunchContext *context, const std::string& funcName)  {
-    _context  = const_cast<nd4j::LaunchContext*>(context);
+PointersManager::PointersManager(const sd::LaunchContext *context, const std::string& funcName)  {
+    _context  = const_cast<sd::LaunchContext*>(context);
     _funcName = funcName;
 }
 

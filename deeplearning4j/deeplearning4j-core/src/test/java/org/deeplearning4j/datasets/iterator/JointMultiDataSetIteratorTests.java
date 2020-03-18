@@ -18,13 +18,14 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.DataSetGenerator;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
 @Slf4j
-public class JointMultiDataSetIteratorTests {
+public class JointMultiDataSetIteratorTests extends BaseDL4JTest {
 
     @Test (timeout = 20000L)
     public void testJMDSI_1() {

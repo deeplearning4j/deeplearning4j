@@ -22,7 +22,7 @@
 #define DEV_TESTS_ERRORREFERENCE_H
 
 #include <string>
-#include <dll.h>
+#include <system/dll.h>
 
 namespace sd {
     class ND4J_EXPORT ErrorReference {

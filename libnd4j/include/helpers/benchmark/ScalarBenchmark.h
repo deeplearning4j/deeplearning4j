@@ -22,9 +22,9 @@
 #ifndef DEV_TESTS_SCALARBENCHMARK_H
 #define DEV_TESTS_SCALARBENCHMARK_H
 
-using namespace nd4j::graph;
+using namespace sd::graph;
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT ScalarBenchmark : public OpBenchmark {
     public:
         ScalarBenchmark() : OpBenchmark() {

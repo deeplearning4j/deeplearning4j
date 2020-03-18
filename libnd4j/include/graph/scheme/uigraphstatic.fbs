@@ -18,7 +18,7 @@ include "utils.fbs";		//For: IntPair
 include "variable.fbs";		//For: VarType
 include "array.fbs";		//For: DataType
 
-namespace nd4j.graph;
+namespace sd.graph;
 
 enum UIInfoType:byte {
 	GRAPH_STRUCTURE,

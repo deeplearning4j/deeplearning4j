@@ -32,17 +32,17 @@
 #include <helpers/benchmark/BroadcastBenchmark.h>
 #include <ops/declarable/DeclarableOp.h>
 #include <graph/Context.h>
-#include <NDArray.h>
-#include <benchmark/Parameters.h>
-#include <benchmark/PredefinedParameters.h>
-#include <benchmark/ParametersBatch.h>
-#include <benchmark/ParametersSpace.h>
-#include <benchmark/BoolParameters.h>
-#include <benchmark/IntParameters.h>
-#include <benchmark/IntPowerParameters.h>
+#include <array/NDArray.h>
+#include <helpers/benchmark/Parameters.h>
+#include <helpers/benchmark/PredefinedParameters.h>
+#include <helpers/benchmark/ParametersBatch.h>
+#include <helpers/benchmark/ParametersSpace.h>
+#include <helpers/benchmark/BoolParameters.h>
+#include <helpers/benchmark/IntParameters.h>
+#include <helpers/benchmark/IntPowerParameters.h>
 #include <array/ResultSet.h>
 
-namespace nd4j {
+namespace sd {
 
     class ND4J_EXPORT BenchmarkHelper {
     private:
@@ -54,7 +54,7 @@ namespace nd4j {
 
         void benchmarkScalarOperation(scalar::Ops op, std::string testName, double value, NDArray &x, NDArray &z);
 
-        void benchmarkDeclarableOp(nd4j::ops::DeclarableOp &op, std::string testName, Context &context);
+        void benchmarkDeclarableOp(sd::ops::DeclarableOp &op, std::string testName, Context &context);
 
         void benchmarkGEMM(char orderA, std::initializer_list<Nd4jLong> shapeA, char orderB, std::initializer_list<Nd4jLong> shapeB, char orderC, std::initializer_list<Nd4jLong> shapeC);
 

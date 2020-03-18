@@ -22,9 +22,9 @@
 #include <ops/declarable/CustomOperations.h>
 #include <loops/type_conversions.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::ops;
+using namespace sd::graph;
 
 class TypeCastTests : public testing::Test {
 public:

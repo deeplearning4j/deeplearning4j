@@ -18,11 +18,11 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 16.07.2018
 //
 
-#include <GradCheck.h>
-#include <NDArrayFactory.h>
+#include <helpers/GradCheck.h>
+#include <array/NDArrayFactory.h>
 
 
-namespace nd4j {
+namespace sd {
 
 //////////////////////////////////////////////////////////////////////////
 void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray*>& gradArrs) {
@@ -60,9 +60,9 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 	fillGradArrays(loss, std::vector<NDArray*>(&inArrsBP[numInArrsFF], &inArrsBP[numInArrsFF + numInGradArrsBP]));
 
 	// back prop pass
-	ResultSet* outArrsBP = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
+	ResultSet outArrsBP = opBP.execute(argsHolderBP);		// number of output arrays in back prop = numInArrsFF;
 
-	NDArray tmpScalar(nd4j::DataType::DOUBLE, inArrsFF[0]->getContext()); // scalar = 0
+	NDArray tmpScalar(sd::DataType::DOUBLE, inArrsFF[0]->getContext()); // scalar = 0
 
 	for(int i = 0; i < numInArrsFF; ++i) {							// loop through input array
 
@@ -78,18 +78,17 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
 			// add epsilon, feed forward
 			inArrsFF[i]->p<double>(j, orig + EPSILON);
-			ResultSet* outArrsFF = opFF.execute(argsHolderFF);
-			int numOutArrs = outArrsFF->size();
+			ResultSet outArrsFF = opFF.execute(argsHolderFF);
+			int numOutArrs = outArrsFF.size();
 			double scorePlus = 0.;
 
 			for(int k = 0; k < numOutArrs; ++k) {                // loop through output arrays
 				if(loss == SUM)
-					outArrsFF->at(k)->reduceNumber(reduce::Sum, tmpScalar);
+					outArrsFF.at(k)->reduceNumber(reduce::Sum, tmpScalar);
 				else
-					outArrsFF->at(k)->reduceNumber(reduce::Mean, tmpScalar);
+					outArrsFF.at(k)->reduceNumber(reduce::Mean, tmpScalar);
 				scorePlus += tmpScalar.e<double>(0);
 			}
-			delete outArrsFF;
 
 			// subtract epsilon, feed forward
 			inArrsFF[i]->p<double>(j, orig - EPSILON);
@@ -98,12 +97,11 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
 			for(int k = 0; k < numOutArrs; ++k) {            // loop through output arrays
 				if(loss == SUM)
-					outArrsFF->at(k)->reduceNumber(reduce::Sum, tmpScalar);
+					outArrsFF.at(k)->reduceNumber(reduce::Sum, tmpScalar);
 				else
-					outArrsFF->at(k)->reduceNumber(reduce::Mean, tmpScalar);
+					outArrsFF.at(k)->reduceNumber(reduce::Mean, tmpScalar);
 				scoreMinus += tmpScalar.e<double>(0);
 			}
-			delete outArrsFF;
 
 			// restore initial element value
 			inArrsFF[i]->p<double>(j, orig);
@@ -116,7 +114,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 			}
 
 			// get analytical gradient
-			const double analyticGrad = outArrsBP->at(i)->e<double>(j);
+			const double analyticGrad = outArrsBP.at(i)->e<double>(j);
 			if(std::isnan(analyticGrad) || std::isinf(analyticGrad)) {
 				printf("GradCheck::checkGrad: got wrong value for analytical gradient for input array # %i and its element at position %lld ! \n", i, j);
 				throw std::runtime_error("");
@@ -138,13 +136,11 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
             		continue;
             	printf("numericalGrad = %f,  analyticGrad = %f \n", numericalGrad, analyticGrad);
             	printf("GradCheck::checkGrad: got RELERROR = %f > MAXRELERROR(%f) for input array # %i and its element at position %lld ! \n", relError, MAXRELERR, i, j);
-            	delete outArrsBP;
             	return false;
             }
 		}
 	}
 
-	delete outArrsBP;
 	return true;
 }
 

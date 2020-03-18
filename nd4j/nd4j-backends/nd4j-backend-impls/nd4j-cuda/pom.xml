@@ -198,7 +198,7 @@
                                 </requireProperty>
                                 <requireFilesExist>
                                     <files>
-                                        <file>${libnd4jhome}/blas/NativeOps.h</file>
+                                        <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
                                         <file>${libnd4jhome}/blasbuild/cuda/blas</file>
                                     </files>
                                     <message>!!! You have to compile libnd4j with cuda support first!</message>

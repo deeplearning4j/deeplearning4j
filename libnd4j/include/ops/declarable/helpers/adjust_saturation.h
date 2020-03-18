@@ -19,21 +19,21 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
-#include <templatemath.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <math/templatemath.h>
+#include <array/NDArray.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
-    void adjustSaturation(nd4j::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC);
+    void adjustSaturation(sd::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC);
 
 /*
     template <typename T>
     static FORCEINLINE _CUDA_HD void rgb_to_hsv(T r, T g, T b, T* h, T* s, T* v) {
-        T vv = nd4j::math::nd4j_max<T>(r, nd4j::math::nd4j_max<T>(g, b));
-        T range = vv - nd4j::math::nd4j_min<T>(r, nd4j::math::nd4j_min<T>(g, b));
+        T vv = sd::math::nd4j_max<T>(r, sd::math::nd4j_max<T>(g, b));
+        T range = vv - sd::math::nd4j_min<T>(r, sd::math::nd4j_min<T>(g, b));
         if (vv > 0) {
             *s = range / vv;
         } else {
@@ -72,7 +72,7 @@ namespace helpers {
         while (fmodu >= (T) 2.0f)
             fmodu -= (T) 2.0f;
 
-        T x = c * (1. - nd4j::math::nd4j_abs<T>(fmodu - 1.));
+        T x = c * (1. - sd::math::nd4j_abs<T>(fmodu - 1.));
         switch (h_category) {
             case 0:
                 rr = c;

@@ -18,13 +18,13 @@
 // Created by GS <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dropout)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/dropout.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 

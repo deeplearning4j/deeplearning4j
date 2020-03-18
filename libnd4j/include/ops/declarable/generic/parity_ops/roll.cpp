@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_roll)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/roll.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
     CONFIGURABLE_OP_IMPL(roll, 1, 1, true, 0, 0) {
@@ -98,10 +98,10 @@ namespace ops {
 
     DECLARE_TYPES(roll) {
         getOpDescriptor()
-                ->setAllowedInputTypes(0,nd4j::DataType::ANY)
-                ->setAllowedInputTypes(1,nd4j::DataType::INT32) // TODO: all ints in future
-                ->setAllowedInputTypes(2,nd4j::DataType::INT32)
-                ->setAllowedOutputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(0,sd::DataType::ANY)
+                ->setAllowedInputTypes(1,sd::DataType::INT32) // TODO: all ints in future
+                ->setAllowedInputTypes(2,sd::DataType::INT32)
+                ->setAllowedOutputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
     }
 }

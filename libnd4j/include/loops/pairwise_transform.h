@@ -27,10 +27,10 @@
 #include <omp.h>
 #endif
 
-#include <dll.h>
+#include <system/dll.h>
 #include <stdio.h>
 #include <ops/ops.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/types.h>
 #include "legacy_ops.h"
 #include <helpers/DebugHelper.h>

@@ -23,14 +23,14 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 #include <exceptions/cuda_exception.h>
 #include <exceptions/datatype_exception.h>
-#include <dll.h>
+#include <system/dll.h>
 
 #include <cudnn.h>
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -59,17 +59,17 @@ namespace platforms {
     DECLARE_PLATFORM(maxpool3dnew_bp, ENGINE_CUDA);
 
 //////////////////////////////////////////////////////////////////////////
-FORCEINLINE cudnnDataType_t cudnnDataType(nd4j::DataType dataType) {
+FORCEINLINE cudnnDataType_t cudnnDataType(sd::DataType dataType) {
     switch (dataType) {
-        case nd4j::DataType::FLOAT32:
+        case sd::DataType::FLOAT32:
             return CUDNN_DATA_FLOAT;
-        case nd4j::DataType::DOUBLE:
+        case sd::DataType::DOUBLE:
             return CUDNN_DATA_DOUBLE;
-        case nd4j::DataType::HALF:
+        case sd::DataType::HALF:
             return CUDNN_DATA_HALF;
-        case nd4j::DataType::INT32:
+        case sd::DataType::INT32:
             return CUDNN_DATA_INT32;
-        case nd4j::DataType::INT8:
+        case sd::DataType::INT8:
             return CUDNN_DATA_INT8;
         default:
             throw datatype_exception::build("Unsupported data type", dataType);

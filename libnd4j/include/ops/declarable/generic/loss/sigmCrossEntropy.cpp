@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 25.11.2017
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_sigm_cross_entropy_loss)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -118,7 +118,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss, 3, 1, false, 1, 1) {
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(sigm_cross_entropy_loss) {
 
-	getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+	getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -292,7 +292,7 @@ CUSTOM_OP_IMPL(sigm_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 //////////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(sigm_cross_entropy_loss_grad) {
 
-	getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
+	getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)->setAllowedOutputTypes({ALL_FLOATS});
 }
 
 //////////////////////////////////////////////////////////////////////////

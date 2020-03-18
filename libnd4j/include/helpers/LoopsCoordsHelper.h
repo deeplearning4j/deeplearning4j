@@ -23,9 +23,9 @@
 #include <cstddef>
 #include <type_traits>
 #include <utility>
-#include <pointercast.h>
-#include <op_boilerplate.h>
-namespace nd4j {
+#include <system/pointercast.h>
+#include <system/op_boilerplate.h>
+namespace sd {
 
 #if defined(__GNUC__)
 #define likely(x) __builtin_expect( (x), 1)	 
@@ -78,16 +78,16 @@ namespace nd4j {
 		ZipCoordsState() {}
 	};
 
-#define COORDS(x,index)          ((x).::nd4j::CoordsState<(index)>::coord)
-#define STRIDE(x,index)          ((x).::nd4j::CoordsState<(index)>::stride)
-#define LAST_NUM(x,index)        ((x).::nd4j::CoordsState<(index)>::last_num)
-#define OF_ADJUST(x,index)       ((x).::nd4j::CoordsState<(index)>::adjust)
-#define ZIP_LAST_NUM(x,index)    ((x).::nd4j::ZipCoordsState<(index)>::last_num)
-#define ZIP_COORDS(x,index)      ((x).::nd4j::ZipCoordsState<(index)>::coord)
-#define ZIP_STRIDE1(x,index)     ((x).::nd4j::ZipCoordsState<(index)>::stride1)
-#define ZIP_STRIDE2(x,index)     ((x).::nd4j::ZipCoordsState<(index)>::stride2)
-#define ZIP_OF_ADJUST1(x,index)  ((x).::nd4j::ZipCoordsState<(index)>::adjust1)
-#define ZIP_OF_ADJUST2(x,index)  ((x).::nd4j::ZipCoordsState<(index)>::adjust2)
+#define COORDS(x,index)          ((x).::sd::CoordsState<(index)>::coord)
+#define STRIDE(x,index)          ((x).::sd::CoordsState<(index)>::stride)
+#define LAST_NUM(x,index)        ((x).::sd::CoordsState<(index)>::last_num)
+#define OF_ADJUST(x,index)       ((x).::sd::CoordsState<(index)>::adjust)
+#define ZIP_LAST_NUM(x,index)    ((x).::sd::ZipCoordsState<(index)>::last_num)
+#define ZIP_COORDS(x,index)      ((x).::sd::ZipCoordsState<(index)>::coord)
+#define ZIP_STRIDE1(x,index)     ((x).::sd::ZipCoordsState<(index)>::stride1)
+#define ZIP_STRIDE2(x,index)     ((x).::sd::ZipCoordsState<(index)>::stride2)
+#define ZIP_OF_ADJUST1(x,index)  ((x).::sd::ZipCoordsState<(index)>::adjust1)
+#define ZIP_OF_ADJUST2(x,index)  ((x).::sd::ZipCoordsState<(index)>::adjust2)
 
 
 	FORCEINLINE void   index2coords_C(Nd4jLong index, const Nd4jLong rank, const Nd4jLong* bases, Nd4jLong* coords) {

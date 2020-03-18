@@ -22,6 +22,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.ImageMultiPreProcessingScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
@@ -154,6 +155,42 @@ public class ImagePreProcessortTest extends BaseNd4jTest {
         myScaler.transform(beforeDS);
         myScaler.revertFeatures(beforeDS.getFeatures());
         assertEquals(orig, before);
+    }
+
+
+    @Test
+    public void testSegmentation(){
+
+        INDArray f = Nd4j.math().floor(Nd4j.rand(DataType.FLOAT, 3, 3, 16, 16).muli(255));
+        INDArray l = Nd4j.math().floor(Nd4j.rand(DataType.FLOAT, 3, 10, 8, 8).muli(255));
+
+        ImagePreProcessingScaler s = new ImagePreProcessingScaler();
+        s.fitLabel(true);
+
+        s.fit(new DataSet(f,l));
+
+        INDArray expF = f.div(255);
+        INDArray expL = l.div(255);
+
+        DataSet d = new DataSet(f.dup(), l.dup());
+        s.transform(d);
+        assertEquals(expF, d.getFeatures());
+        assertEquals(expL, d.getLabels());
+
+
+        s.fit(new SingletonDataSetIterator(new DataSet(f, l)));
+
+        INDArray f2 = f.dup();
+        INDArray l2 = l.dup();
+        s.transform(f2);
+        s.transformLabel(l2);
+        assertEquals(expF, f2);
+        assertEquals(expL, l2);
+
+        s.revertFeatures(f2);
+        s.revertLabels(l2);
+        assertEquals(f, f2);
+        assertEquals(l, l2);
     }
 
     @Override

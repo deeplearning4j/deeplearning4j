@@ -19,20 +19,20 @@
 //
 
 #include "testlayers.h"
-#include <Graph.h>
+#include <graph/Graph.h>
 #include <chrono>
-#include <Node.h>
+#include <graph/Node.h>
 #include <ops/declarable/CustomOperations.h>
 #include <graph/profiling/GraphProfilingHelper.h>
-#include <type_conversions.h>
+#include <loops/type_conversions.h>
 #include <helpers/threshold.h>
 #include <helpers/MmulHelper.h>
 #include <ops/ops.h>
-#include <OmpLaunchHelper.h>
-#include <GradCheck.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <helpers/GradCheck.h>
 #include <ops/declarable/helpers/im2col.h>
-#include <Loops.h>
-#include <RandomLauncher.h>
+#include <helpers/Loops.h>
+#include <helpers/RandomLauncher.h>
 
 #include <helpers/BenchmarkHelper.h>
 #include <ops/declarable/helpers/scatter.h>
@@ -45,8 +45,8 @@
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <execution/ThreadPool.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class PerformanceTests : public testing::Test {
 public:
@@ -56,6 +56,7 @@ public:
         samediff::ThreadPool::getInstance();
     }
 };
+
 
 #ifdef RELEASE_BUILD
 
@@ -75,7 +76,7 @@ TEST_F(PerformanceTests, test_maxpooling2d_1) {
     ctx.setOutputArray(0, &z);
     ctx.setIArguments(iArgs, 9);
 
-    nd4j::ops::maxpool2d op;
+    sd::ops::maxpool2d op;
 
     for (int i = 0; i < numIterations; i++) {
         auto timeStart = std::chrono::system_clock::now();

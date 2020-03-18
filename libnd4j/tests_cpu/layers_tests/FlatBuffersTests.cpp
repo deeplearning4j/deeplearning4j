@@ -25,11 +25,11 @@
 #include <graph/generated/result_generated.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 #include <ops/declarable/CustomOperations.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class FlatBuffersTest : public testing::Test {
 public:
@@ -94,10 +94,10 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
     auto fBuffer = builder.CreateVector(array->asByteVector());
 
-    auto fArray = CreateFlatArray(builder, fShape, fBuffer, nd4j::graph::DType::DType_FLOAT);
+    auto fArray = CreateFlatArray(builder, fShape, fBuffer, sd::graph::DType::DType_FLOAT);
     auto fVid = CreateIntPair(builder, -1);
 
-    auto fVar = CreateFlatVariable(builder, fVid, 0, nd4j::graph::DType::DType_FLOAT, 0, fArray);
+    auto fVar = CreateFlatVariable(builder, fVid, 0, sd::graph::DType::DType_FLOAT, 0, fArray);
 
     std::vector<int> outputs1, outputs2, inputs1, inputs2;
     outputs1.push_back(2);
@@ -182,9 +182,9 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     ASSERT_TRUE(var != nullptr);
     ASSERT_EQ(-2.0, var->reduceNumber(reduce::Mean).e<float>(0));
 
-    nd4j::graph::GraphExecutioner::execute(&graph);
+    sd::graph::GraphExecutioner::execute(&graph);
 
-    auto resultWrapper = nd4j::graph::GraphExecutioner::executeFlatBuffer((Nd4jPointer) buf);
+    auto resultWrapper = sd::graph::GraphExecutioner::executeFlatBuffer((Nd4jPointer) buf);
 
     auto flatResults = GetFlatResult(resultWrapper->pointer());
 
@@ -265,7 +265,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
 
     auto name1 = builder.CreateString("wow1");
 
-    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, nd4j::graph::DType::FLOAT);
+    auto node1 = CreateFlatNode(builder, 1, name1, OpType_TRANSFORM, 0, in1, 0, sd::graph::DType::FLOAT);
 
     std::vector<flatbuffers::Offset<FlatVariable>> variables_vector;
     variables_vector.push_back(fXVar);
@@ -316,7 +316,7 @@ TEST_F(FlatBuffersTest, ExplicitOutputTest1) {
 /*
 TEST_F(FlatBuffersTest, ReadFile1) {
 
-    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/adam_sum.fb");
+    uint8_t* data = sd::graph::readFlatBuffers("./resources/adam_sum.fb");
 
     auto fg = GetFlatGraph(data);
     auto restoredGraph = new Graph<float>(fg);
@@ -341,7 +341,7 @@ TEST_F(FlatBuffersTest, ReadFile1) {
 }
 
 TEST_F(FlatBuffersTest, ReadFile2) {
-    uint8_t* data = nd4j::graph::readFlatBuffers("./resources/adam_sum.fb");
+    uint8_t* data = sd::graph::readFlatBuffers("./resources/adam_sum.fb");
     Nd4jPointer result = GraphExecutioner<float>::executeFlatBuffer((Nd4jPointer) data);
 
     ResultSet<float> arrays(GetFlatResult(result));
@@ -466,7 +466,7 @@ TEST_F(FlatBuffersTest, ReadTensorArrayLoop_1) {
 TEST_F(FlatBuffersTest, ReadLoops_NestedWhile_1) {
     // TF graph:
     // https://gist.github.com/raver119/2aa49daf7ec09ed4ddddbc6262f213a0
-    nd4j::ops::assign<float> op1;
+    sd::ops::assign<float> op1;
 
     auto graph = GraphExecutioner<float>::importFromFlatBuffers("./resources/nested_while.fb");
 
@@ -605,7 +605,7 @@ TEST_F(FlatBuffersTest, ReduceDim_2) {
 
 #ifdef GRAPH_FILES_OK
 TEST_F(FlatBuffersTest, Ae_00) {
-    nd4j::ops::rank op1;
+    sd::ops::rank op1;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/ae_00.fb");
 
@@ -629,7 +629,7 @@ TEST_F(FlatBuffersTest, Ae_00) {
 }
 
 TEST_F(FlatBuffersTest, expand_dims) {
-    nd4j::ops::rank op1;
+    sd::ops::rank op1;
 
     auto exp = NDArrayFactory::create<float>('c', {3, 1, 4}, {-0.95938617f, -1.20301781f, 1.22260064f, 0.50172403f, 0.59972949f, 0.78568028f, 0.31609724f, 1.51674747f, 0.68013491f, -0.05227458f, 0.25903158f, 1.13243439f});
 
@@ -650,7 +650,7 @@ TEST_F(FlatBuffersTest, expand_dims) {
 }
 
 TEST_F(FlatBuffersTest, transpose) {
-    nd4j::ops::rank op1;
+    sd::ops::rank op1;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/transpose.fb");
 
@@ -663,7 +663,7 @@ TEST_F(FlatBuffersTest, transpose) {
 }
 
 TEST_F(FlatBuffersTest, Test_Stitches) {
-    nd4j::ops::realdiv op0;
+    sd::ops::realdiv op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/partition_stitch_misc.fb");
     //graph->printOut();
@@ -676,8 +676,8 @@ TEST_F(FlatBuffersTest, Test_Stitches) {
 }
 
 TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
-    nd4j::Environment::getInstance()->setDebug(false);
-    nd4j::Environment::getInstance()->setVerbose(false);
+    sd::Environment::getInstance()->setDebug(false);
+    sd::Environment::getInstance()->setVerbose(false);
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/gru_dynamic_mnist.fb");
     //graph->printOut();
@@ -696,9 +696,9 @@ TEST_F(FlatBuffersTest, Test_GruDynamicMnist) {
 }
 
 TEST_F(FlatBuffersTest, Test_Non2D_2) {
-    nd4j::Environment::getInstance()->setDebug(false);
-    nd4j::Environment::getInstance()->setVerbose(false);
-    nd4j::ops::realdiv op0;
+    sd::Environment::getInstance()->setDebug(false);
+    sd::Environment::getInstance()->setVerbose(false);
+    sd::ops::realdiv op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/non2d_2.fb");
     //graph->printOut();
@@ -764,7 +764,7 @@ TEST_F(FlatBuffersTest, Test_MNIST_1) {
 /*
 // FIXME: uncomment this test once conv_0 fb reexported
 TEST_F(FlatBuffersTest, nhwc_conv_0) {
-    nd4j::ops::rank<float> op1;
+    sd::ops::rank<float> op1;
 
     auto exp('c', {4, 2}, {2.958640f, 0.602521f, 7.571267f, 1.496686f, -2.292647f, -1.791460f, 13.055838f, 4.278642f});
 

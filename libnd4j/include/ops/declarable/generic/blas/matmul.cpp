@@ -20,13 +20,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), fully rewritten
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_matmul)
 
 #include <ops/declarable/CustomOperations.h>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
 //////////////////////////////////////////////////////////////////////
@@ -163,7 +163,7 @@ F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
 */
 
 
-    nd4j::ops::matmul op;
+    sd::ops::matmul op;
     op.execute({eps, y}, {dldx}, {}, {transZ, !transY, transX}, {});
     op.execute({x, eps}, {dldy}, {}, {!transX, transZ, transY}, {});
 

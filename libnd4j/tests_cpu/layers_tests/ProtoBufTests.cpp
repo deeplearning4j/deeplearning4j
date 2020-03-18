@@ -20,11 +20,11 @@
 
 
 #include "testlayers.h"
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 
 /*
 
-using namespace nd4j::graph;
+using namespace sd::graph;
 
 class ProtoBufTests : public testing::Test {
 

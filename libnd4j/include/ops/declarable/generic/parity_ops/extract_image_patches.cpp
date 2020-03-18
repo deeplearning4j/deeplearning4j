@@ -21,7 +21,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/extract_patches.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(extract_image_patches, 1, 1, false, 0, 7) {
             auto input = INPUT_VARIABLE(0);
@@ -47,7 +47,7 @@ namespace nd4j {
 
         DECLARE_TYPES(extract_image_patches) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
 

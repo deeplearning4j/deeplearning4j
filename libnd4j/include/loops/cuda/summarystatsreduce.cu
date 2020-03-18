@@ -19,19 +19,19 @@
 //
 
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <types/types.h>
 #include <types/float16.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/summarystatsreduce.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
-#include <dll.h>
-#include <Environment.h>
+#include <system/dll.h>
+#include <system/Environment.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <helpers/DebugHelper.h>
-#include <specials_cuda.h>
+#include <ops/specials_cuda.h>
 
 using namespace simdOps;
 
@@ -211,7 +211,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                             sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
                         }
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -237,7 +237,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -344,7 +344,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
             auto z = reinterpret_cast<Z*>(vz);
             auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
 
-            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            if (sd::Environment::getInstance()->isDebugAndVerbose())
                 printf("D16 opNum:[%i]\n", opNum);
 
             summaryStatsReduceT<X,Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -359,7 +359,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                             1,biasCorrected, nullptr, reductionPointerA, tadShapeInfo, tadOffsets);
 
             // this is blocking method since method should return scalar
-            nd4j::DebugHelper::checkErrorCode(stream, "execSSReduceScalar(...) failed");
+            sd::DebugHelper::checkErrorCode(stream, "execSSReduceScalar(...) failed");
         }
 
         template <typename X, typename Z>
@@ -369,7 +369,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
             auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
 
-            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            if (sd::Environment::getInstance()->isDebugAndVerbose())
                 printf("F17 opNum:[%i]\n", opNum);
 
             auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
@@ -396,7 +396,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
             auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
 
-            if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            if (sd::Environment::getInstance()->isDebugAndVerbose())
                 printf("D18 opNum:[%i]\n", opNum);
 
             summaryStatsReduceT<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(

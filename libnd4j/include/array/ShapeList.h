@@ -22,10 +22,10 @@
 #define LIBND4J_SHAPELIST_H
 
 #include <vector>
-#include <shape.h>
-#include <dll.h>
+#include <helpers/shape.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT ShapeList {
     protected:
         std::vector<Nd4jLong*> _shapes;

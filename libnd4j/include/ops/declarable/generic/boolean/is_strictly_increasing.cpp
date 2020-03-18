@@ -18,13 +18,13 @@
 //  @author @cpuheater
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_is_strictly_increasing)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/compare_elem.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BOOLEAN_OP_IMPL(is_strictly_increasing, 1, true) {
             auto input = INPUT_VARIABLE(0);
@@ -35,7 +35,7 @@ namespace nd4j {
 
             bool isStrictlyIncreasing = true;
 
-            nd4j::ops::helpers::compare_elem(block.launchContext(), input, true, isStrictlyIncreasing);
+            sd::ops::helpers::compare_elem(block.launchContext(), input, true, isStrictlyIncreasing);
 
             if (isStrictlyIncreasing)
                 return ND4J_STATUS_TRUE;

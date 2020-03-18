@@ -20,14 +20,14 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 #include <helpers/MKLDNNStream.h>
 #include "mkldnnUtils.h"
 #include <numeric>
 
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -163,21 +163,25 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     // provide memory buffers and check whether reorder is required
 
     // input
+    mkldnnUtils::loadDataToMklStream(xTR, engine, stream, args, x_user_md, op_prim_desc.src_desc(), DNNL_ARG_SRC);
+    /*
     auto x_user_mem = dnnl::memory(x_user_md, engine, xTR->getBuffer());
     const bool xReorder = op_prim_desc.src_desc() != x_user_mem.get_desc();
     auto x_mkl_mem = xReorder ? dnnl::memory(op_prim_desc.src_desc(), engine) : x_user_mem;
     if (xReorder)
         dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
     args[DNNL_ARG_SRC] = x_mkl_mem;
-
+*/
     // y
+    mkldnnUtils::loadDataToMklStream(yTR, engine, stream, args, y_user_md, op_prim_desc.weights_desc(), DNNL_ARG_WEIGHTS);
+    /*
     auto y_user_mem = dnnl::memory(y_user_md, engine, yTR->getBuffer());
     const bool yReorder = op_prim_desc.weights_desc() != y_user_mem.get_desc();
     auto y_mkl_mem = yReorder ? dnnl::memory(op_prim_desc.weights_desc(), engine) : y_user_mem;
     if (yReorder)
         dnnl::reorder(y_user_mem, y_mkl_mem).execute(stream, y_user_mem, y_mkl_mem);
     args[DNNL_ARG_WEIGHTS] = y_mkl_mem;
-
+*/
     // z
     auto z_user_mem = dnnl::memory(z_user_md, engine, zR->getBuffer());
     const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();

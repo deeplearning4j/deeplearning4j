@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.misc;
 
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -35,7 +36,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @Ignore //Ignored due to very large memory requirements
-public class LargeNetTest {
+public class LargeNetTest extends BaseDL4JTest {
 
     @Ignore
     @Test

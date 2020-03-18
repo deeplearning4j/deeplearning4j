@@ -21,7 +21,7 @@
 #include "loops/scalar.h"
 #include <cuda.h>
 #include <cuda_runtime.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <helpers/TAD.h>
 #include <types/types.h>
 

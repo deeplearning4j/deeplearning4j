@@ -18,13 +18,13 @@
 //  @author @cpuheater
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_is_numeric_tensor)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/compare_elem.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BOOLEAN_OP_IMPL(is_numeric_tensor, 1, true) {
 

@@ -23,8 +23,8 @@
 
 #ifndef SUMMARYSTATSREDUCE_H_
 #define SUMMARYSTATSREDUCE_H_
-#include <templatemath.h>
-#include <dll.h>
+#include <math/templatemath.h>
+#include <system/dll.h>
 
 #include <helpers/shape.h>
 #ifdef __CUDACC__
@@ -41,7 +41,7 @@
 #endif
 
 #include <ops/ops.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 
 #include "legacy_ops.h"
 
@@ -123,7 +123,7 @@ namespace functions {
                 return M2 / n;
             }
 
-            _CUDA_HD double skewness() { return M2 > 0.0 ? nd4j::math::nd4j_sqrt<double, double>(n) * M3 / nd4j::math::nd4j_pow<double, double, double>(M2, 1.5) : 0.0; }
+            _CUDA_HD double skewness() { return M2 > 0.0 ? sd::math::nd4j_sqrt<double, double>(n) * M3 / sd::math::nd4j_pow<double, double, double>(M2, 1.5) : 0.0; }
 
             _CUDA_HD double kurtosis() { return M2 > 0.0 ? n * M4 / (M2 * M2) : 0; }
 
@@ -247,8 +247,8 @@ namespace functions {
 
                 //Basic number of samples (n), min, and max
                 vz.n = n;
-                vz.min = nd4j::math::nd4j_min(x.min, y.min);
-                vz.max = nd4j::math::nd4j_max(x.max, y.max);
+                vz.min = sd::math::nd4j_min(x.min, y.min);
+                vz.max = sd::math::nd4j_max(x.max, y.max);
                 double meanD = x.mean + delta * y.n / n;
                 vz.mean = meanD;
                 double M2D = x.M2 + y.M2;

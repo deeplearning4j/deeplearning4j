@@ -19,19 +19,19 @@
 //
 
 
-#include <householder.h>
-#include <biDiagonalUp.h>
-#include <NDArrayFactory.h>
+#include <helpers/householder.h>
+#include <helpers/biDiagonalUp.h>
+#include <array/NDArrayFactory.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(0), matrix.sizeAt(1)}, matrix.dataType(), matrix.getContext())),
-                                                         _HHbidiag(nd4j::NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getContext())) {
+BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(sd::NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(0), matrix.sizeAt(1)}, matrix.dataType(), matrix.getContext())),
+                                                         _HHbidiag(sd::NDArrayFactory::create(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(1)}, matrix.dataType(), matrix.getContext())) {
 
 	// input validation
 	if(matrix.rankOf() != 2 || matrix.isScalar())
@@ -58,7 +58,7 @@ BiDiagonalUp::BiDiagonalUp(const NDArray& matrix): _HHmatrix(nd4j::NDArrayFactor
 
 		T _x, _y;
 
-		for(int i = 0; i < cols-1; ++i ) {
+		for(Nd4jLong i = 0; i < cols-1; ++i ) {
 
 			// evaluate Householder matrix nullifying columns
 			column = new NDArray(_HHmatrix({i,rows,  i,i+1}, true));

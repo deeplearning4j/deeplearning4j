@@ -21,6 +21,6 @@
 
 #include "../specials_single.hpp"
 
-namespace nd4j {
+namespace sd {
     BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES_6);
 }

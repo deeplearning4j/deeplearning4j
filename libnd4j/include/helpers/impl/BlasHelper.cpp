@@ -19,7 +19,7 @@
 //
 
 #include <helpers/BlasHelper.h>
-namespace nd4j {
+namespace sd {
     BlasHelper* BlasHelper::getInstance() {
         if (_instance == 0)
             _instance = new BlasHelper();
@@ -74,6 +74,9 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMV<float>() {
+        if (sd::Environment::getInstance()->blasFallback())
+            return false;
+
 #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return true;
 #else
@@ -83,6 +86,9 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMV<double>() {
+        if (sd::Environment::getInstance()->blasFallback())
+            return false;
+
 #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return true;
 #else
@@ -130,8 +136,11 @@ namespace nd4j {
         return false;
     }
 
-    bool BlasHelper::hasGEMV(const nd4j::DataType dtype)  {
+    bool BlasHelper::hasGEMV(const sd::DataType dtype)  {
         if(dtype == DataType::FLOAT32) {
+            if (sd::Environment::getInstance()->blasFallback())
+                return false;
+
             #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
             #else
@@ -139,6 +148,9 @@ namespace nd4j {
             #endif
         }
         if(dtype == DataType::DOUBLE) {
+            if (sd::Environment::getInstance()->blasFallback())
+                return false;
+
             #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
             #else
@@ -150,6 +162,9 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMM<float>() {
+        if (sd::Environment::getInstance()->blasFallback())
+            return false;
+
 #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return true;
 #else
@@ -159,6 +174,9 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMM<double>() {
+        if (sd::Environment::getInstance()->blasFallback())
+            return false;
+
 #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return true;
 #else
@@ -206,8 +224,11 @@ namespace nd4j {
         return false;
     }
 
-    bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) {
+    bool BlasHelper:: hasGEMM(const sd::DataType dtype) {
         if(dtype == DataType::FLOAT32) {
+            if (sd::Environment::getInstance()->blasFallback())
+                return false;
+
             #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
             #else
@@ -215,6 +236,9 @@ namespace nd4j {
             #endif
         }
         if(dtype == DataType::DOUBLE) {
+            if (sd::Environment::getInstance()->blasFallback())
+                return false;
+
             #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
             #else
@@ -227,11 +251,17 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasBatchedGEMM<float>() {
+        if (sd::Environment::getInstance()->blasFallback())
+            return false;
+
         return _hasSgemmBatch;
     }
 
     template <>
     bool BlasHelper::hasBatchedGEMM<double>() {
+        if (sd::Environment::getInstance()->blasFallback())
+            return false;
+
         return _hasDgemmBatch;
     }
 

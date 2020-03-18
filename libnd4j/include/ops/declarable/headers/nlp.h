@@ -22,7 +22,7 @@
 #define DEV_TESTS_NLP_H
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
 
         #if NOT_EXCLUDED(OP_skipgram)

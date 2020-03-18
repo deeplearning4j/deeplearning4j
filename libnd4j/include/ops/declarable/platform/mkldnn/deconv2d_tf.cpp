@@ -20,13 +20,13 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 #include <helpers/MKLDNNStream.h>
 #include "mkldnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -76,24 +76,12 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormat);
-    if(gradO->ews() != 1 || gradO->ordering() != 'c') {
-        gradO_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        gradO_user_md.data.format_desc.blocking.strides[0] = gradO->strideAt(0);
-        gradO_user_md.data.format_desc.blocking.strides[1] = gradO->strideAt(1);
-        gradO_user_md.data.format_desc.blocking.strides[2] = gradO->strideAt(2);
-        gradO_user_md.data.format_desc.blocking.strides[3] = gradO->strideAt(3);
-    }
+    mkldnnUtils::setBlockStrides(gradO, 4, gradO_user_md);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormat);
-    if(gradI->ews() != 1 || gradI->ordering() != 'c') {
-        gradI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        gradI_user_md.data.format_desc.blocking.strides[0] = gradI->strideAt(0);
-        gradI_user_md.data.format_desc.blocking.strides[1] = gradI->strideAt(1);
-        gradI_user_md.data.format_desc.blocking.strides[2] = gradI->strideAt(2);
-        gradI_user_md.data.format_desc.blocking.strides[3] = gradI->strideAt(3);
-    }
+    mkldnnUtils::setBlockStrides(gradI, 4, gradI_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -113,20 +101,10 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
     // provide memory buffers and check whether reorder is required
 
     // weights
-    auto w_user_mem = dnnl::memory(w_user_md, engine, weights->getBuffer());
-    const bool wReorder = op_data_bp_prim_desc.weights_desc() != w_user_mem.get_desc();
-    auto w_mkl_mem = wReorder ? dnnl::memory(op_data_bp_prim_desc.weights_desc(), engine) : w_user_mem;
-    if (wReorder)
-        dnnl::reorder(w_user_mem, w_mkl_mem).execute(stream, w_user_mem, w_mkl_mem);
-    args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(weights, engine, stream, args, w_user_md,  op_data_bp_prim_desc.weights_desc(), DNNL_ARG_WEIGHTS);
 
     // gradO
-    auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, gradO->getBuffer());
-    const bool gradOReorder = op_data_bp_prim_desc.diff_dst_desc() != gradO_user_mem.get_desc();
-    auto gradO_mkl_mem = gradOReorder ? dnnl::memory(op_data_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
-    if (gradOReorder)
-        dnnl::reorder(gradO_user_mem, gradO_mkl_mem).execute(stream, gradO_user_mem, gradO_mkl_mem);
-    args[DNNL_ARG_DIFF_DST] = gradO_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(gradO, engine, stream, args, gradO_user_md, op_data_bp_prim_desc.diff_dst_desc(), DNNL_ARG_DIFF_DST);
 
     // gradI
     auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
@@ -145,8 +123,6 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
 
     // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
-
-
 
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {

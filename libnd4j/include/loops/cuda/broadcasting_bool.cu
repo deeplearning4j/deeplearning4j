@@ -18,16 +18,16 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/broadcasting_bool.h>
 #include <loops/legacy_ops.h>
 #include <types/types.h>
-#include <Environment.h>
+#include <system/Environment.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <string>
 #include <stdexcept>
-#include <StringUtils.h>
+#include <helpers/StringUtils.h>
 
 using namespace simdOps;
 
@@ -49,6 +49,15 @@ static __global__ void broadcastBoolSimple(
 
 //////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z, typename OpClass>
+static __global__ void broadcastBoolSimple(const void *x, const Nd4jLong *xShapeInfo,
+                                           const void *y, const Nd4jLong *yShapeInfo,
+                                                 void *z, const Nd4jLong *zShapeInfo,
+                                                 void *extraParams) {
+
+    functions::broadcast::BroadcastBool<X, Z>::template transformCuda<OpClass>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams);
+}
+//////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z, typename OpClass>
 static __global__ void broadcastBoolInverseSimple(
         void *x,
         Nd4jLong *xShapeInfo,
@@ -64,29 +73,55 @@ static __global__ void broadcastBoolInverseSimple(
 }
 
 namespace functions {
-    namespace broadcast {
-//////////////////////////////////////////////////////////////////////////
-        template<typename X, typename Z>
-        template <typename OpClass>
-        __host__ void BroadcastBool<X,Z>::intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-            broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
-            nd4j::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
-        }
+namespace broadcast {
 
 //////////////////////////////////////////////////////////////////////////
-        template<typename X, typename Y>
-        __host__ void BroadcastBool<X,Y>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-            DISPATCH_BY_OPNUM_TT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_BOOL_OPS))
+template<typename X, typename Z>
+template <typename OpClass>
+__host__ void BroadcastBool<X,Z>::intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
+    sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
+}
 
-	        DEBUG_KERNEL(stream, opNum);
-        }
+//////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z>
+template <typename OpClass>
+__host__ void BroadcastBool<X,Z>::intermediateBroadcast(dim3 launchDims, cudaStream_t *stream,
+                                                        const void *x, const Nd4jLong *xShapeInfo,
+                                                        const void *y, const Nd4jLong *yShapeInfo,
+                                                              void *z, const Nd4jLong *zShapeInfo,
+                                                              void *extraParams) {
+
+    broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams);
+    sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+__host__ void BroadcastBool<X,Y>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+
+    DISPATCH_BY_OPNUM_TT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_BOOL_OPS))
+	DEBUG_KERNEL(stream, opNum);
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+__host__ void BroadcastBool<X,Y>::execBroadcast(dim3 launchDims, cudaStream_t *stream, const int opNum,
+                                                const void *x, const Nd4jLong *xShapeInfo,
+                                                const void *y, const Nd4jLong *yShapeInfo,
+                                                      void *z, const Nd4jLong *zShapeInfo,
+                                                      void *extraParams) {
+
+    DISPATCH_BY_OPNUM_TT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams), OPS_A(BROADCAST_BOOL_OPS))
+    DEBUG_KERNEL(stream, opNum);
+}
 
 //////////////////////////////////////////////////////////////////////////
         template<typename X, typename Z>
         template <typename OpClass>
         __host__ void BroadcastBool<X,Z>::intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
             broadcastBoolInverseSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
-            nd4j::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
+            sd::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -229,7 +264,57 @@ namespace functions {
 		}
 	}
 
+//////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z>
+template <typename OpType>
+__device__ void BroadcastBool<X,Z>::transformCuda(const void *vx, const Nd4jLong *xShapeInfo,
+                                                  const void *vy, const Nd4jLong *yShapeInfo,
+                                                        void *vz, const Nd4jLong *zShapeInfo,
+                                                        void *vextraParams) {
 
-    BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT BroadcastBool, , LIBND4J_TYPES, BOOL_TYPES);
+    const X* x = reinterpret_cast<const X*>(vx);
+    const X* y = reinterpret_cast<const X*>(vy);
+          Z* z = reinterpret_cast<Z*>(vz);
+
+    auto extraParams = reinterpret_cast<X*>(vextraParams);
+
+    __shared__ Nd4jLong zLen;
+    __shared__ int rank;
+    __shared__ bool xzSameOffsets, yzSameOffsets;
+
+    if (threadIdx.x == 0) {
+
+        zLen  = shape::length(zShapeInfo);
+        rank = shape::rank(zShapeInfo);
+
+        xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
+        yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
     }
+    __syncthreads();
+
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    int xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
+
+    for (int i = tid; i < zLen; i += blockDim.x * gridDim.x) {
+
+        shape::index2coords(i, zShapeInfo, zCoords);
+
+        for (uint j = 0; j < rank; ++j) {
+            xCoords[j] = shape::sizeAt(xShapeInfo, j) == 1 ? 0 : zCoords[j];
+            yCoords[j] = shape::sizeAt(yShapeInfo, j) == 1 ? 0 : zCoords[j];
+        }
+
+        const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
+        const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, xCoords);
+        const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, yCoords);
+
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
+    }
+}
+
+
+BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT BroadcastBool, , LIBND4J_TYPES, BOOL_TYPES);
+}
 }

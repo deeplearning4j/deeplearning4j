@@ -21,7 +21,7 @@
 #include<ops/declarable/helpers/zeta.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -58,7 +58,7 @@ static FORCEINLINE T zetaScalarSlow(const T x, const T q) {
 //////////////////////////////////////////////////////////////////////////
 // calculate the Hurwitz zeta function for arrays
 template <typename T>
-static void zeta_(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray &z) {
+static void zeta_(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray &z) {
 
 	//auto result = NDArray(&x, false, context);
 	int xLen = x.lengthOf();
@@ -71,11 +71,11 @@ static void zeta_(nd4j::LaunchContext * context, const NDArray& x, const NDArray
 	samediff::Threads::parallel_for(func, 0, xLen);
 }
 
-void zeta(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {
+void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {
     BUILD_SINGLE_SELECTOR(x.dataType(), zeta_, (context, x, q, z), FLOAT_TYPES);
 }
 
-BUILD_SINGLE_TEMPLATE(template void zeta_, (nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void zeta_, (sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z), FLOAT_TYPES);
 
 }
 }

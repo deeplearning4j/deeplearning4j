@@ -19,12 +19,12 @@
 //
 
 #include <ops/declarable/helpers/image_suppression.h>
-#include <NDArrayFactory.h>
-#include <NativeOps.h>
-#include <cuda_exception.h>
+#include <array/NDArrayFactory.h>
+#include <legacy/NativeOps.h>
+#include <exceptions/cuda_exception.h>
 #include <queue>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -50,14 +50,14 @@ namespace helpers {
 
         // we have rectangle with given max values. Compute vexes of rectangle first
 
-        T minYPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
-        T minXPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-        T maxYPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
-        T maxXPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-        T minYNext = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
-        T minXNext = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
-        T maxYNext = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
-        T maxXNext = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
+        T minYPrev = sd::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+        T minXPrev = sd::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+        T maxYPrev = sd::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+        T maxXPrev = sd::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+        T minYNext = sd::math::nd4j_min(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
+        T minXNext = sd::math::nd4j_min(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
+        T maxYNext = sd::math::nd4j_max(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
+        T maxXNext = sd::math::nd4j_max(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
 
         // compute areas for comparation
         T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
@@ -67,13 +67,13 @@ namespace helpers {
         if (areaNext <= T(0.f) || areaPrev <= T(0.f)) return false;
 
         // compute intersection of rectangles
-        T minIntersectionY = nd4j::math::nd4j_max(minYPrev, minYNext);
-        T minIntersectionX = nd4j::math::nd4j_max(minXPrev, minXNext);
-        T maxIntersectionY = nd4j::math::nd4j_min(maxYPrev, maxYNext);
-        T maxIntersectionX = nd4j::math::nd4j_min(maxXPrev, maxXNext);
+        T minIntersectionY = sd::math::nd4j_max(minYPrev, minYNext);
+        T minIntersectionX = sd::math::nd4j_max(minXPrev, minXNext);
+        T maxIntersectionY = sd::math::nd4j_min(maxYPrev, maxYNext);
+        T maxIntersectionX = sd::math::nd4j_min(maxXPrev, maxXNext);
         T intersectionArea =
-                nd4j::math::nd4j_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
-                nd4j::math::nd4j_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
+                sd::math::nd4j_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
+                sd::math::nd4j_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
         T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
         // final check
         return intersectionValue > threshold;
@@ -92,14 +92,14 @@ namespace helpers {
 
         // we have rectangle with given max values. Compute vexes of rectangle first
 
-        T minYPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
-        T minXPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-        T maxYPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
-        T maxXPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
-        T minYNext = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
-        T minXNext = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
-        T maxYNext = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
-        T maxXNext = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
+        T minYPrev = sd::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+        T minXPrev = sd::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+        T maxYPrev = sd::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+        T maxXPrev = sd::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+        T minYNext = sd::math::nd4j_min(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
+        T minXNext = sd::math::nd4j_min(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
+        T maxYNext = sd::math::nd4j_max(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
+        T maxXNext = sd::math::nd4j_max(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
 
         // compute areas for comparation
         T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
@@ -109,13 +109,13 @@ namespace helpers {
         if (areaNext <= T(0.f) || areaPrev <= T(0.f)) return false;
 
         // compute intersection of rectangles
-        T minIntersectionY = nd4j::math::nd4j_max(minYPrev, minYNext);
-        T minIntersectionX = nd4j::math::nd4j_max(minXPrev, minXNext);
-        T maxIntersectionY = nd4j::math::nd4j_min(maxYPrev, maxYNext);
-        T maxIntersectionX = nd4j::math::nd4j_min(maxXPrev, maxXNext);
+        T minIntersectionY = sd::math::nd4j_max(minYPrev, minYNext);
+        T minIntersectionX = sd::math::nd4j_max(minXPrev, minXNext);
+        T maxIntersectionY = sd::math::nd4j_min(maxYPrev, maxYNext);
+        T maxIntersectionX = sd::math::nd4j_min(maxXPrev, maxXNext);
         T intersectionArea =
-                nd4j::math::nd4j_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
-                nd4j::math::nd4j_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
+                sd::math::nd4j_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
+                sd::math::nd4j_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
         T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
         // final check
         return intersectionValue;
@@ -185,7 +185,7 @@ namespace helpers {
 // nonMaxSuppressionV2 algorithm - given from TF NonMaxSuppressionV2 implementation
 //
     template <typename T, typename I>
-    static void nonMaxSuppressionV2_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
+    static void nonMaxSuppressionV2_(sd::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {boxes, scales});
         std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>('c', {scales->lengthOf()})); // - 1, scales->lengthOf()); //, scales->getContext());
@@ -335,7 +335,7 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T, typename I>
     static Nd4jLong
-    nonMaxSuppressionGeneric_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int outputSize,
+    nonMaxSuppressionGeneric_(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int outputSize,
                               double overlapThreshold, double scoreThreshold, NDArray* output, bool simple) {
         auto stream = context->getCudaStream();
         if (output)
@@ -386,14 +386,14 @@ namespace helpers {
         return res;
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    void nonMaxSuppression(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
+    void nonMaxSuppression(sd::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output->dataType(), nonMaxSuppressionV2_,
                 (context, boxes, scales, maxSize, threshold, scoreThreshold, output),
                 FLOAT_TYPES, INDEXING_TYPES);
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    Nd4jLong nonMaxSuppressionGeneric(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
+    Nd4jLong nonMaxSuppressionGeneric(sd::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output ? output->dataType():DataType::INT32, return nonMaxSuppressionGeneric_,
                               (context, boxes, scales, maxSize, threshold, scoreThreshold, output, true),
                               FLOAT_TYPES, INDEXING_TYPES);
@@ -401,7 +401,7 @@ namespace helpers {
     }
 
     Nd4jLong
-    nonMaxSuppressionV3(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
+    nonMaxSuppressionV3(sd::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                              double overlapThreshold, double scoreThreshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output ? output->dataType():DataType::INT32, return nonMaxSuppressionGeneric_,
                               (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, false),

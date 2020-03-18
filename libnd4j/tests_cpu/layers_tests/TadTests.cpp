@@ -22,12 +22,12 @@
 #define LIBND4J_TADTESTS_H
 
 #include "testlayers.h"
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <helpers/TAD.h>
 #include <array>
 #include <helpers/ConstantTadHelper.h>
 
-using namespace nd4j;
+using namespace sd;
 
 class TadTests : public testing::Test {
 public:
@@ -39,7 +39,7 @@ public:
 
 TEST_F(TadTests, Test4DTad1) {
 
-    NDArray*  arraySource = nd4j::NDArrayFactory::linspace(1.0f, 10000.0f, 10000);
+    NDArray*  arraySource = sd::NDArrayFactory::linspace(1.0f, 10000.0f, 10000);
 
     Nd4jLong badShape[]  = {4, 2, 1, 4, 4, 80, 16, 4, 1, 8192, -1, 99};
     Nd4jLong goodShape[] = {4, 2, 1, 4, 4, 16, 16, 4, 1, 8192,  1, 99};
@@ -130,7 +130,7 @@ TEST_F(TadTests, TadEdgeCase_1) {
     auto exp = NDArrayFactory::create<float>('c', {5, 4});
     array.linspace(1);
 
-    auto tad = array.tensorAlongDimension(0, {0, 1});
+    auto tad = array(0, {2});
 
     ASSERT_TRUE(exp.isSameShape(tad));
 }
@@ -140,7 +140,7 @@ TEST_F(TadTests, TestEdgeCase_2) {
     auto array = NDArrayFactory::create<float>('f', {2, 3, 1}, {1, 4, 2, 5, 3, 6});
 
     for (int e = 0 ; e < array.lengthOf(); e++) {
-        auto tad = array.tensorAlongDimension(e, {2});
+        auto tad = array(e, {0,1});
         ASSERT_NEAR(tad.e<float>(0), array.e<float>(e), 1e-5);
     }
 }
@@ -148,7 +148,7 @@ TEST_F(TadTests, TestEdgeCase_2) {
 TEST_F(TadTests, TadEdgeCase_2) {
     auto array = NDArrayFactory::create<float>('c', {2, 3, 4});
 
-    auto tad = array.tensorAlongDimension(0, {1});
+    auto tad = array(0, {0,2});
 
     ASSERT_EQ(3, tad.lengthOf());
 }
@@ -245,13 +245,13 @@ TEST_F(TadTests, test_tad_order_4) {
 
 TEST_F(TadTests, test_column_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 2});
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), 0);
+    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), 0);
 
     ASSERT_EQ(1, shape::rank(tadPack.primaryShapeInfo()));
     ASSERT_EQ(5, shape::length(tadPack.primaryShapeInfo()));
     ASSERT_TRUE(shape::isVector(tadPack.primaryShapeInfo()));
 
-    auto scalarViewPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tadPack.primaryShapeInfo(), 0);
+    auto scalarViewPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(tadPack.primaryShapeInfo(), 0);
 
     ASSERT_TRUE(shape::equalsStrict(tadPack.primaryShapeInfo(), scalarViewPack.primaryShapeInfo()));
 }
@@ -288,10 +288,10 @@ TEST_F(TadTests, calcOffsets_1) {
 /////////////////////////////////////////////////////////////////
 TEST_F(TadTests, outerArrayIndexes_1) {
 
-    NDArray x('c', {2,3,4,5}, nd4j::DataType::FLOAT32);
-    Nd4jLong maxIdxs[120];
+    NDArray x('c', {2,3,4,5}, sd::DataType::FLOAT32);
+    int maxIdxs[120];
 
-    NDArray y1('c', {3,5}, nd4j::DataType::FLOAT32);
+    NDArray y1('c', {3,5}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude1 = {0,2};
     const int n1[] = {20,25,30,35,  80,85,90,95};
     int minIdx = 5;
@@ -301,7 +301,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n1[i] == maxIdxs[i]);
 
-    NDArray y2('c', {4,5}, nd4j::DataType::FLOAT32);
+    NDArray y2('c', {4,5}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude2 = {0,1};
     const int n2[] = {12,32,52,  72,92,112};
     minIdx = 12;
@@ -311,7 +311,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n2[i] == maxIdxs[i]);
 
-    NDArray y3('c', {2,5}, nd4j::DataType::FLOAT32);
+    NDArray y3('c', {2,5}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude3 = {1,2};
     const int n3[] = {64,69,74,79,84,89,94,99,104,109,114,119};
     minIdx = 9;
@@ -321,7 +321,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n3[i] == maxIdxs[i]);
 
-    NDArray y4('c', {2,3}, nd4j::DataType::FLOAT32);
+    NDArray y4('c', {2,3}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude4 = {2,3};
     const int n4[] = {20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39};
     minIdx = 1;
@@ -331,7 +331,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n4[i] == maxIdxs[i]);
 
-    NDArray y5('c', {2,4}, nd4j::DataType::FLOAT32);
+    NDArray y5('c', {2,4}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude5 = {1,3};
     const int n5[] = {65,66,67,68,69, 85,86,87,88,89, 105,106,107,108,109};
     minIdx = 5;
@@ -341,7 +341,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n5[i] == maxIdxs[i]);
 
-    NDArray y6('c', {2,3,4}, nd4j::DataType::FLOAT32);
+    NDArray y6('c', {2,3,4}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude6 = {3};
     const int n6[] = {65,66,67,68,69};
     minIdx = 13;
@@ -351,7 +351,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n6[i] == maxIdxs[i]);
 
-    NDArray y7('c', {4}, nd4j::DataType::FLOAT32);
+    NDArray y7('c', {4}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude7 = {0,1,3};
     const int n7[] = {15,16,17,18,19, 35,36,37,38,39, 55,56,57,58,59, 75,76,77,78,79, 95,96,97,98,99, 115,116,117,118,119};
     minIdx = 3;
@@ -361,7 +361,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n7[i] == maxIdxs[i]);
 
-    NDArray y8('c', {5}, nd4j::DataType::FLOAT32);
+    NDArray y8('c', {5}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude8 = {0,1,2};
     const int n8[] = {0,5,10,15,  20,25,30,35, 40,45,50,55, 60,65,70,75, 80,85,90,95, 100,105,110,115};
     minIdx = 0;
@@ -371,7 +371,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n8[i] == maxIdxs[i]);
 
-    NDArray y9('c', {2}, nd4j::DataType::FLOAT32);
+    NDArray y9('c', {2}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude9 = {1,2,3};
     const int n9[] = {60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119};
     minIdx = 1;
@@ -381,7 +381,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n9[i] == maxIdxs[i]);
 
-    NDArray y10('c', {3,4,5}, nd4j::DataType::FLOAT32);
+    NDArray y10('c', {3,4,5}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude10 = {0};
     const int n10[] = {11, 71};
     minIdx = 11;
@@ -391,7 +391,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n10[i] == maxIdxs[i]);
 
-    NDArray y11('c', {2,4,5}, nd4j::DataType::FLOAT32);
+    NDArray y11('c', {2,4,5}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude11 = {1};
     const int n11[] = {66, 86, 106};
     minIdx = 26;
@@ -401,7 +401,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n11[i] == maxIdxs[i]);
 
-    NDArray y12('c', {3,2}, nd4j::DataType::FLOAT32);
+    NDArray y12('c', {3,2}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude12 = {0,2};
     const int n12[] = {0,2,4,5,7,9,10,12,14,15,17,19,60,62,64,65,67,69,70,72,74,75,77,79};
     minIdx = 0;
@@ -410,7 +410,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n12[i] == maxIdxs[i]);
 
-    NDArray y13('c', {3,2}, nd4j::DataType::FLOAT32);
+    NDArray y13('c', {3,2}, sd::DataType::FLOAT32);
     const std::vector<int> dimsToExclude13 = {0,2};
     const int n13[] = {1,3,6,8,11,13,16,18,61,63,66,68,71,73,76,78};
     minIdx = 1;
@@ -419,7 +419,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n13[i] == maxIdxs[i]);
 
-    NDArray y14('c', {4,5}, nd4j::DataType::FLOAT32);
+    NDArray y14('c', {4,5}, sd::DataType::FLOAT32);
     const int n14[] = {12,32,52,  72,92,112};
     minIdx = 12;
 
@@ -428,7 +428,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n14[i] == maxIdxs[i]);
 
-    NDArray y15('c', {3,4,5}, nd4j::DataType::FLOAT32);
+    NDArray y15('c', {3,4,5}, sd::DataType::FLOAT32);
     const int n15[] = {11, 71};
     minIdx = 11;
 

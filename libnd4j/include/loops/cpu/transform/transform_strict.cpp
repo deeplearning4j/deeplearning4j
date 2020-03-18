@@ -18,8 +18,8 @@
 //  @author  raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
-#include <Loops.h>
+#include <system/op_boilerplate.h>
+#include <helpers/Loops.h>
 #include <types/types.h>
 #include <loops/transform_strict.h>
 #include <loops/legacy_ops.h>
@@ -53,7 +53,7 @@ namespace functions {
             auto z = reinterpret_cast<X *>(vz);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-            nd4j::TransformLoops<X,X,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
+            sd::TransformLoops<X,X,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
         }
 
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformStrict, , FLOAT_TYPES);

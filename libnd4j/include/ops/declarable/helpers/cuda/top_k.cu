@@ -19,10 +19,10 @@
 //
 
 #include <ops/declarable/helpers/top_k.h>
-#include <PointersManager.h>
-#include <ConstantTadHelper.h>
+#include <helpers/PointersManager.h>
+#include <helpers/ConstantTadHelper.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -87,11 +87,11 @@ static void inTopKCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
 }
 
 ///////////////////////////////////////////////////////////////////
-int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, const NDArray* targets, NDArray* output, const uint k) {
+int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const NDArray* targets, NDArray* output, const uint k) {
 
     PointersManager manager(context, "in_top_k");
 
-    const auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(predictions->getShapeInfo(), {1});
+    const auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(predictions->getShapeInfo(), {1});
 
     const int threadsPerBlock = MAX_NUM_THREADS;
     const int blocksPerGrid = static_cast<int>(packX.numberOfTads());
@@ -241,7 +241,7 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
 
 
     template <typename X, typename Y>
-    static int topKFunctor_(nd4j::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
+    static int topKFunctor_(sd::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
 
         auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {input->rankOf() - 1});
         auto packI = ConstantTadHelper::getInstance()->tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
@@ -266,7 +266,7 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
         return Status::OK();
     }
 
-    int topKFunctor(nd4j::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
+    int topKFunctor(sd::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
         input->syncToDevice();
 
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), topKFunctor_, (context, input, values, indices, k, needSort), LIBND4J_TYPES, INDEXING_TYPES);

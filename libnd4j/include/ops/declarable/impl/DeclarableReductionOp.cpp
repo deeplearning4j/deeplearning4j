@@ -25,13 +25,13 @@
 #include <helpers/ConstantTadHelper.h>
 #include <array/DataTypeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
-        DeclarableReductionOp::DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
+        DeclarableReductionOp::DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : sd::ops::DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
             //
         }
 
-        nd4j::ShapeList* DeclarableReductionOp::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)  {
+        sd::ShapeList* DeclarableReductionOp::calculateOutputShape(sd::ShapeList* inputShape, sd::graph::Context& block)  {
            // int numDims = INT_ARG(0);
             std::vector<int> dims;
             if (inputShape->size() > 1) {
@@ -51,7 +51,7 @@ namespace nd4j {
                 std::sort(dims.begin(), dims.end());
 
             // special case - output is scalar
-            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == nd4j::DataTypeUtils::max<int>())) {
+            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == sd::DataTypeUtils::max<int>())) {
                 auto newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
                 return SHAPELIST(newShape);
             }

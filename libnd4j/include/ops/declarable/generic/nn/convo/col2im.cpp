@@ -18,13 +18,13 @@
 // Created by raver119 on 17.10.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_col2im)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/col2im.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(col2im, 1, 1, false, 0, 9) {
             auto x = INPUT_VARIABLE(0);

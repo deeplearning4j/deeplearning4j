@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 1.08.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_scatter_max)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 OP_IMPL(scatter_max, 3, 1, true) {

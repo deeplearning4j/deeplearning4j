@@ -18,13 +18,13 @@
 //  @author @shugeo
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_weighted_cross_entropy_with_logits)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
     OP_IMPL(weighted_cross_entropy_with_logits, 3, 1, true) {
@@ -43,7 +43,7 @@ namespace ops {
 
     DECLARE_TYPES(weighted_cross_entropy_with_logits) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
     }
 }

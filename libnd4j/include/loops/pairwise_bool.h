@@ -26,13 +26,13 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-#include <templatemath.h>
+#include <math/templatemath.h>
 #include <helpers/shape.h>
-#include <pairwise_util.h>
-#include <dll.h>
+#include <system/pairwise_util.h>
+#include <system/dll.h>
 #include <stdio.h>
 #include <ops/ops.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__

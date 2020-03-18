@@ -34,14 +34,14 @@
 #include <array/NDArrayList.h>
 #include <iterator>
 
-namespace nd4j 	  {
+namespace sd 	  {
 namespace ops 	  {
 namespace helpers {
 
 
 
 //////////////////////////////////////////////////////////////////////////
-void lstmCell(nd4j::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
+void lstmCell(sd::LaunchContext * context, const NDArray* xt, const NDArray* ht_1, const NDArray* ct_1, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
               NDArray* ht, NDArray* ct, const std::vector<double>& params) {
 
     // xt   input [bS x nIn]

@@ -19,12 +19,12 @@
 // Modified by GS <sgazeos@gmail.com> on 3/9/2018
 //
 
-#include <gemm.h>
+#include <ops/gemm.h>
 #include <types/types.h>
-#include <Environment.h>
+#include <system/Environment.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     namespace blas {
 
         template <typename T>
@@ -95,7 +95,7 @@ namespace nd4j {
                             for (int k = 0; k < K; k++) {
                                 aIdx = (transAFlag ? linearIndexC(M, K, r, k) : linearIndexF(M, K, r, k));
                                 bIdx = (transBFlag ? linearIndexC(K, N, k, c) : linearIndexF(K, N, k, c));
-                                dot += static_cast<Z>(alpha) * static_cast<Z>(A[aIdx]) * static_cast<Z>(B[bIdx]);//A[aIdx]nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
+                                dot += static_cast<Z>(alpha) * static_cast<Z>(A[aIdx]) * static_cast<Z>(B[bIdx]);//A[aIdx]sd::math::nd4j_dot<T>(aX, bX, K) * alpha;
                             }
                         }
 
@@ -127,14 +127,14 @@ namespace nd4j {
             auto y = reinterpret_cast<Y *>(vY);
             auto z = reinterpret_cast<Z *>(vZ);
 
-            auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(nd4j::blas::transpose<X>(CblasColMajor, CblasRowMajor, M, N, reinterpret_cast<void *>(x))) : x;
+            auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(sd::blas::transpose<X>(CblasColMajor, CblasRowMajor, M, N, reinterpret_cast<void *>(x))) : x;
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto r = start; r < stop; r++) {
                     int aIdx = linearIndexC(M, N, r, 0);
                     auto aX = aT + aIdx;
 
-                    auto dot = nd4j::math::nd4j_dot<X, Y, Z>(aX, y, lda) * static_cast<Z>(alpha);
+                    auto dot = sd::math::nd4j_dot<X, Y, Z>(aX, y, lda) * static_cast<Z>(alpha);
                     z[r] = beta == 0.0f ? dot : dot + static_cast<Z>(beta) * z[r];
                 }
             };

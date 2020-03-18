@@ -20,7 +20,7 @@
 
 #include "testinclude.h"
 #include <string>
-#include <NativeOps.h>
+#include <legacy/NativeOps.h>
 
 class FileTest : public testing::Test {
 
@@ -38,28 +38,28 @@ TEST_F(HeaderTest, test_dataTypes_1) {
     std::string header("0NUMPY6789{'descr': '>f4");
 
 
-    ASSERT_EQ(nd4j::DataType::FLOAT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+    ASSERT_EQ(sd::DataType::FLOAT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_2) {
     std::string header("0NUMPY6789{'descr': '>f8");
 
 
-    ASSERT_EQ(nd4j::DataType::DOUBLE, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+    ASSERT_EQ(sd::DataType::DOUBLE, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_3) {
     std::string header("0NUMPY6789{'descr': '<i4");
 
 
-    ASSERT_EQ(nd4j::DataType::INT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+    ASSERT_EQ(sd::DataType::INT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_4) {
     std::string header("0NUMPY6789{'descr': '>u2");
 
 
-    ASSERT_EQ(nd4j::DataType::UINT16, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+    ASSERT_EQ(sd::DataType::UINT16, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 /*

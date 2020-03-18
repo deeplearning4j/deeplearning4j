@@ -23,7 +23,7 @@
 #define LIBND4J_CONTEXT_H
 
 #include <vector>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 #include <graph/ContextPrototype.h>
@@ -39,26 +39,26 @@
 #include <cuda_device_runtime_api.h>
 #endif
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         /**
          * This class defines input desired for any given node/operation within graph
          */
-        class ND4J_EXPORT Context : public nd4j::graph::ContextPrototype {
+        class ND4J_EXPORT Context : public sd::graph::ContextPrototype {
         protected:
-            nd4j::memory::Workspace* _workspace = nullptr;
-            nd4j::graph::VariableSpace* _variableSpace = nullptr;
+            sd::memory::Workspace* _workspace = nullptr;
+            sd::graph::VariableSpace* _variableSpace = nullptr;
             std::pair<Nd4jLong, Nd4jLong> _executionTime;
-            nd4j::random::RandomBuffer* _rng = nullptr;
+            sd::random::RandomBuffer* _rng = nullptr;
 
-            nd4j::DataType _dataType = nd4j::DataType::FLOAT32;
+            sd::DataType _dataType = sd::DataType::FLOAT32;
             // branch for divergent_op
             int _branch = 0;
 
             // temporary context for standalone ops execution
             LaunchContext* _context = nullptr;
 
-            std::vector<nd4j::DataType> _dataTypes;
+            std::vector<sd::DataType> _dataTypes;
 
             // fields for fast execution (out-of-graph ops use)
             std::vector<NDArray*> _fastpath_in;
@@ -69,6 +69,9 @@ namespace nd4j {
 
             // in some cases we might be able to skip shape function for validation purposes
             bool _shapeFunctionOverride = false;
+
+            // special flag used during conversion from Graph exec to FastPath exec
+            bool _forbidFastPath = false;
         public:
             Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
@@ -84,30 +87,30 @@ namespace nd4j {
             Nd4jLong getOuterTime();
             Nd4jLong getInnerTime();
 
-            nd4j::DataType dataType() override;
+            sd::DataType dataType() override;
 
-            nd4j::DataType dataType(int index) override;
-            void setDataType(int index, nd4j::DataType type) override;
+            sd::DataType dataType(int index) override;
+            void setDataType(int index, sd::DataType type) override;
             // these methods are related to Workspace abstraction
             bool hasWorkspaceProvided();
-            void attachWorkspace(nd4j::memory::Workspace* workspace);
+            void attachWorkspace(sd::memory::Workspace* workspace);
             void forgetWorkspace();
 
             // these methods return full-time workspace
-            nd4j::memory::Workspace* getWorkspace();
-            nd4j::memory::Workspace* workspace();
-            nd4j::memory::Workspace* fWorkspace();
+            sd::memory::Workspace* getWorkspace();
+            sd::memory::Workspace* workspace();
+            sd::memory::Workspace* fWorkspace();
 
             // this method returns workspace for temporary allocations
-            nd4j::memory::Workspace* tWorkspace();
+            sd::memory::Workspace* tWorkspace();
 
             // this method returns workspace for object allocations
-            nd4j::memory::Workspace* oWorkspace();
+            sd::memory::Workspace* oWorkspace();
 
             void setVariableSpace(VariableSpace* variableSpace);
 
-            nd4j::random::RandomBuffer* getRNG();
-            void setRNG(nd4j::random::RandomBuffer* rng);
+            sd::random::RandomBuffer* getRNG();
+            void setRNG(sd::random::RandomBuffer* rng);
 
             void setTargetEngine(samediff::Engine engine);
 
@@ -176,10 +179,16 @@ namespace nd4j {
 
             // methods used in java interop
             /**
-             * This method checks, if Context uses fastpath variable access
+             * This method checks if Context uses fastpath variable access
              * @return
              */
             bool isFastPath();
+
+            /**
+             * Method allows to forbid FastPath execution
+             * @param reallyForbid
+             */
+            void forbidFastPath(bool reallyForbid);
 
 #ifndef __JAVACPP_HACK__
             std::vector<NDArray*>& fastpath_in();
@@ -197,12 +206,12 @@ namespace nd4j {
             void setTArguments(double *arguments, int numberOfArguments);
             void setIArguments(Nd4jLong *arguments, int numberOfArguments);
             void setBArguments(bool *arguments, int numberOfArguments);
-            void setDArguments(nd4j::DataType *arguments, int numberOfArguments);
+            void setDArguments(sd::DataType *arguments, int numberOfArguments);
 
             void setTArguments(const std::vector<double> &tArgs);
             void setIArguments(const std::vector<Nd4jLong> &tArgs);
             void setBArguments(const std::vector<bool> &tArgs);
-            void setDArguments(const std::vector<nd4j::DataType> &dArgs);
+            void setDArguments(const std::vector<sd::DataType> &dArgs);
 
             /**
              * This method purges fastpath in/out contents and releases all the handles.

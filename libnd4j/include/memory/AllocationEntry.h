@@ -21,11 +21,11 @@
 #ifndef DEV_TESTS_ALLOCATIONENTRY_H
 #define DEV_TESTS_ALLOCATIONENTRY_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <string>
 #include <memory/MemoryType.h>
 
-namespace nd4j {
+namespace sd {
     namespace memory {
         class AllocationEntry {
         private:

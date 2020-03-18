@@ -22,15 +22,15 @@
 #define LIBND4J_SVD_HELPER_H
 
 #include <ops/declarable/helpers/helpers.h>
-#include "NDArray.h"
+#include "array/NDArray.h"
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 // svd operation, this function is not method of SVD class, it is standalone function
-void svd(nd4j::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
+void svd(sd::LaunchContext* context, const NDArray* x, const std::vector<NDArray*>& outArrs, const bool fullUV, const bool calcUV, const int switchNum);
 
 
 }

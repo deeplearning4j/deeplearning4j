@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 12.12.2017
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_zeta)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/zeta.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(zeta, 2, 1, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);

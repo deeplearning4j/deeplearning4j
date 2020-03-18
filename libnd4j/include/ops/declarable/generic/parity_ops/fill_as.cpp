@@ -18,12 +18,12 @@
 // Created by raver119 on 01.11.2017.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_fill_as)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(fill_as, 1, 1, true, 0, 0) {
             auto output = OUTPUT_VARIABLE(0);
@@ -47,7 +47,7 @@ namespace nd4j {
 
         DECLARE_TYPES(fill_as) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
     }

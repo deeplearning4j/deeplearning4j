@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dilation2d)
 
 #include <ops/declarable/headers/convo.h>
 #include <ops/declarable/helpers/dilation2d.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(dilation2d, 2, 1, false, 0, 1) {
         auto input = INPUT_VARIABLE(0);
@@ -83,7 +83,7 @@ namespace ops {
 
     DECLARE_TYPES(dilation2d) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

@@ -23,12 +23,12 @@
 
 #ifndef BROADCASTING_H_
 #define BROADCASTING_H_
-#include <dll.h>
+#include <system/dll.h>
 #include <helpers/shape.h>
-#include <templatemath.h>
-#include <pairwise_util.h>
+#include <math/templatemath.h>
+#include <system/pairwise_util.h>
 #include <ops/ops.h>
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <helpers/DebugHelper.h>
 
 #ifdef __CUDACC__
@@ -69,10 +69,20 @@ namespace functions {
 			int *dimension,
 			int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
+            template<typename OpType>
+            static __device__ void transformCuda(const void *x, const Nd4jLong *xShapeInfo,
+                                                 const void *y, const Nd4jLong *yShapeInfo,
+                                                       void *z, const Nd4jLong *zShapeInfo);
+
             template <typename OpClass>
             static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
+            template <typename OpClass>
+            static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, const void *x, const Nd4jLong *xShapeInfo, const void *y, const Nd4jLong *yShapeInfo, void *z, const Nd4jLong *zShapeInfo);
+
             static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+
+            static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, const int opNum, const void *x, const Nd4jLong *xShapeInfo, const void *y, const Nd4jLong *yShapeInfo, void *z, const Nd4jLong *zShapeInfo);
 
 
             template<typename OpType>
@@ -123,7 +133,7 @@ namespace functions {
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ,
-                             nd4j::LoopKind::Kind loopKind,
+                             sd::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop);
 
@@ -151,7 +161,7 @@ namespace functions {
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
                              Nd4jLong *tadOffsetZ,
-                             nd4j::LoopKind::Kind loopKind,
+                             sd::LoopKind::Kind loopKind,
                              uint64_t start,
                              uint64_t stop);
 
@@ -170,6 +180,17 @@ namespace functions {
                              Nd4jLong *tadOffsetZ,
                              uint64_t start,
                              uint64_t stop);
+
+            static void exec(const int opNum,
+                            const void *x, const Nd4jLong *xShapeInfo,
+                            const void *y, const Nd4jLong *yShapeInfo,
+                                  void *z, const Nd4jLong *zShapeInfo);
+
+            template<typename OpType>
+            static void exec(const void *x, const Nd4jLong *xShapeInfo,
+                             const void *y, const Nd4jLong *yShapeInfo,
+                                   void *z, const Nd4jLong *zShapeInfo);
+
 #endif
         };
     }

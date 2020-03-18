@@ -21,11 +21,11 @@
 #ifndef LIBND4J_LOGICSWITCH_H
 #define LIBND4J_LOGICSWITCH_H
 
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <graph/Node.h>
 #include <graph/Graph.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         /**
          * This class is responsible for execution logic of Switch logical abstraction

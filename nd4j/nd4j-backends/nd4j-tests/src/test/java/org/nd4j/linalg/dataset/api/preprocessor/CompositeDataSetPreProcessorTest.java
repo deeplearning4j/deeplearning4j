@@ -1,14 +1,26 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import org.junit.Test;
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class CompositeDataSetPreProcessorTest {
+public class CompositeDataSetPreProcessorTest extends BaseNd4jTest {
+
+    public CompositeDataSetPreProcessorTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
+
     @Test(expected = NullPointerException.class)
     public void when_preConditionsIsNull_expect_NullPointerException() {
         // Assemble

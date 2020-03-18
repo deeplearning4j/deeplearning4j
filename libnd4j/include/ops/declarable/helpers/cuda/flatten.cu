@@ -21,13 +21,13 @@
 #include <ops/declarable/helpers/flatten.h>
 #include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
             void _CUDA_G flattenKernel(void **xBuffers, Nd4jLong **xShapeInfos, Nd4jLong *offsets, Nd4jLong numInputs, void *zBuffer, Nd4jLong *zShapeInfo, char order) {
 
-                Nd4jLong xCoord[MAX_RANK];
+                int xCoord[MAX_RANK];
 
                 // each block of threads works on 1 input array
                 for (Nd4jLong e = blockIdx.x; e < numInputs; e += gridDim.x) {
@@ -44,7 +44,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            void flatten_(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+            void flatten_(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 PointersManager pm(context, "flatten");
 
                 std::vector<void*> hdBuffers(inputs.size());
@@ -72,7 +72,7 @@ namespace nd4j {
                 pm.synchronize();
             }
 
-            void flatten(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+            void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 // FIXME: we want NDArrayFactory::prepareSpecialUse here eventually
                 for (auto v:inputs)
                     v->syncToDevice();

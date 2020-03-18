@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cross)
 
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/helpers/cross.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     DECLARE_TYPES(cross) {
         getOpDescriptor()

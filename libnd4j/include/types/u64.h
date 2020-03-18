@@ -21,11 +21,11 @@
 #define LIBND4J_U64_H
 
 #include <cstdint>
-#include <pointercast.h>
+#include <system/pointercast.h>
 #include <types/float16.h>
 
 
-namespace nd4j {
+namespace sd {
     typedef struct {
         int16_t _v0;
         int16_t _v1;

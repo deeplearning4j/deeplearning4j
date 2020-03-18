@@ -18,13 +18,13 @@
 // @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/flatten.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(flatten, -1, 1, false, 0, 1) {
             auto output = OUTPUT_VARIABLE(0);
@@ -48,13 +48,13 @@ namespace nd4j {
         }
 
         DECLARE_TYPES(flatten) {
-            getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS, nd4j::DataType::BOOL});
-            getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS, nd4j::DataType::BOOL});
+            getOpDescriptor()->setAllowedInputTypes({ALL_INTS, ALL_FLOATS, sd::DataType::BOOL});
+            getOpDescriptor()->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS, sd::DataType::BOOL});
         }
 
         DECLARE_SHAPE_FN(flatten) {
             Nd4jLong length = 0;
-            nd4j::DataType dtype = ArrayOptions::dataType(inputShape->at(0));
+            sd::DataType dtype = ArrayOptions::dataType(inputShape->at(0));
             for (int e = 0; e < inputShape->size(); e++) {
                 length += shape::length(inputShape->at(e));
                 REQUIRE_TRUE(dtype == ArrayOptions::dataType(inputShape->at(e)), 0, "Flatten: all input arrays must have the same datatype");

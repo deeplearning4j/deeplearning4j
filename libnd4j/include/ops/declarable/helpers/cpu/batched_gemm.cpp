@@ -18,14 +18,14 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/float16.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <helpers/BlasHelper.h>
 #include <execution/Threads.h>
 
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 

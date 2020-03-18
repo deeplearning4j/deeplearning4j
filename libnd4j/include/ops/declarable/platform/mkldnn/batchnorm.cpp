@@ -23,15 +23,15 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 #include <helpers/MKLDNNStream.h>
 #include "mkldnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -90,32 +90,13 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     // x
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(dims, type, format);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(dims, type, format);
-    if(x->ews() != 1 || x->ordering() != 'c') {
-        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        x_user_md.data.format_desc.blocking.strides[0] = x->strideAt(0);
-        x_user_md.data.format_desc.blocking.strides[1] = x->strideAt(1);
-        if(xRank > 2) {
-            x_user_md.data.format_desc.blocking.strides[2] = x->strideAt(2);
-            x_user_md.data.format_desc.blocking.strides[3] = x->strideAt(3);
-        }
-        if(xRank > 4)
-            x_user_md.data.format_desc.blocking.strides[4] = x->strideAt(4);
-    }
 
+    mkldnnUtils::setBlockStrides(x, xRank, x_user_md);
     // z, output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, format);
-    if(z->ews() != 1 || z->ordering() != 'c') {
-        z_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        z_user_md.data.format_desc.blocking.strides[0] = z->strideAt(0);
-        z_user_md.data.format_desc.blocking.strides[1] = z->strideAt(1);
-        if(xRank > 2) {
-            z_user_md.data.format_desc.blocking.strides[2] = z->strideAt(2);
-            z_user_md.data.format_desc.blocking.strides[3] = z->strideAt(3);
-        }
-        if(xRank > 4)
-            z_user_md.data.format_desc.blocking.strides[4] = z->strideAt(4);
-    }
+
+    mkldnnUtils::setBlockStrides(z, xRank, z_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -131,14 +112,9 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     // provide memory and check whether reorder is required
 
     // x
-    auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
-    const bool xReorder = op_ff_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? dnnl::memory(op_ff_prim_desc.src_desc(), engine) : x_user_mem;
-    if (xReorder)
-        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[DNNL_ARG_SRC] = x_mkl_mem;
-
-    // z
+    mkldnnUtils::loadDataToMklStream(x, engine, stream, args, x_user_md, op_ff_prim_desc.src_desc(), DNNL_ARG_SRC);
+    
+    // z 
     auto z_user_mem = dnnl::memory(z_user_md, engine, z->getBuffer());
     const bool zReorder = op_ff_prim_desc.dst_desc() != z_user_mem.get_desc();
     auto z_mkl_mem = zReorder ? dnnl::memory(op_ff_prim_desc.dst_desc(), engine) : z_user_mem;
@@ -230,47 +206,20 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     // x
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(dims, type, format);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(dims, type, format);
-    if(x->ews() != 1 || x->ordering() != 'c') {
-        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        x_user_md.data.format_desc.blocking.strides[0] = x->strideAt(0);
-        x_user_md.data.format_desc.blocking.strides[1] = x->strideAt(1);
-        if(xRank > 2) {
-            x_user_md.data.format_desc.blocking.strides[2] = x->strideAt(2);
-            x_user_md.data.format_desc.blocking.strides[3] = x->strideAt(3);
-        }
-        if(xRank > 4)
-            x_user_md.data.format_desc.blocking.strides[4] = x->strideAt(4);
-    }
 
+    mkldnnUtils::setBlockStrides(x, xRank, x_user_md);
+    
     // dLdO
     dnnl::memory::desc dLdO_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc dLdO_user_md = dnnl::memory::desc(dims, type, format);
-    if(dLdO->ews() != 1 || dLdO->ordering() != 'c') {
-        dLdO_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        dLdO_user_md.data.format_desc.blocking.strides[0] = dLdO->strideAt(0);
-        dLdO_user_md.data.format_desc.blocking.strides[1] = dLdO->strideAt(1);
-        if(xRank > 2) {
-            dLdO_user_md.data.format_desc.blocking.strides[2] = dLdO->strideAt(2);
-            dLdO_user_md.data.format_desc.blocking.strides[3] = dLdO->strideAt(3);
-        }
-        if(xRank > 4)
-            dLdO_user_md.data.format_desc.blocking.strides[4] = dLdO->strideAt(4);
-    }
+
+    mkldnnUtils::setBlockStrides(dLdO, xRank, dLdO_user_md);
 
     // dLdI
     dnnl::memory::desc dLdI_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc dLdI_user_md = dnnl::memory::desc(dims, type, format);
-    if(dLdI->ews() != 1 || dLdI->ordering() != 'c') {
-        dLdI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        dLdI_user_md.data.format_desc.blocking.strides[0] = dLdI->strideAt(0);
-        dLdI_user_md.data.format_desc.blocking.strides[1] = dLdI->strideAt(1);
-        if(xRank > 2) {
-            dLdI_user_md.data.format_desc.blocking.strides[2] = dLdI->strideAt(2);
-            dLdI_user_md.data.format_desc.blocking.strides[3] = dLdI->strideAt(3);
-        }
-        if(xRank > 4)
-            dLdI_user_md.data.format_desc.blocking.strides[4] = dLdI->strideAt(4);
-    }
+
+    mkldnnUtils::setBlockStrides(dLdI, xRank, dLdI_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -290,20 +239,10 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     // provide memory and check whether reorder is required
 
     // x
-    auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
-    const bool xReorder = op_bp_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? dnnl::memory(op_bp_prim_desc.src_desc(), engine) : x_user_mem;
-    if (xReorder)
-        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[DNNL_ARG_SRC] = x_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(x, engine, stream, args, x_user_md, op_bp_prim_desc.src_desc(), DNNL_ARG_SRC);
 
     // dLdO
-    auto dLdO_user_mem = dnnl::memory(dLdO_user_md, engine, dLdO->getBuffer());
-    const bool dLdOReorder = op_bp_prim_desc.diff_dst_desc() != dLdO_user_mem.get_desc();
-    auto dLdO_mkl_mem = dLdOReorder ? dnnl::memory(op_bp_prim_desc.diff_dst_desc(), engine) : dLdO_user_mem;
-    if (dLdOReorder)
-        dnnl::reorder(dLdO_user_mem, dLdO_mkl_mem).execute(stream, dLdO_user_mem, dLdO_mkl_mem);
-    args[DNNL_ARG_DIFF_DST] = dLdO_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(dLdO, engine, stream, args, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(), DNNL_ARG_DIFF_DST);
 
     // mean
     auto mean_mkl_mem = dnnl::memory(op_bp_prim_desc.mean_desc(), engine, mean->getBuffer());
@@ -369,7 +308,7 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
 
     // x - mean
     NDArray xMinusMean(x); // empty array with same shape as x
-    const_cast<NDArray*>(x)->applyBroadcast(nd4j::broadcast::Subtract, axes, *mean, xMinusMean);
+    const_cast<NDArray*>(x)->applyBroadcast(sd::broadcast::Subtract, axes, *mean, xMinusMean);
 
     // stdInv
     NDArray stdInv = *variance + epsilon;
@@ -377,30 +316,30 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     stdInv.applyTransform(transform::Sqrt, stdInv);                                 // 1 / (variance + epsilon)^0.5
 
     // dfdm / N
-    auto dfdm = dLdO->reduceAlongDimension(nd4j::reduce::Sum, excludedAxes);
+    auto dfdm = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes);
     dfdm *= stdInv;
     dfdm *= -Ninv;
 
     // dvdm / 2
     NDArray dvdm(mean);                 // empty array with same shape as mean
-    xMinusMean.reduceAlongDimension(nd4j::reduce::Sum, dvdm, excludedAxes);
+    xMinusMean.reduceAlongDimension(sd::reduce::Sum, dvdm, excludedAxes);
     dvdm *= -Ninv;
 
     // (2/N)*dfdv
     NDArray dfdv(variance);                 // empty array with same shape as variance
-    (xMinusMean * *dLdO).reduceAlongDimension(nd4j::reduce::Sum, dfdv, excludedAxes);
+    (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, dfdv, excludedAxes);
     dfdv *= stdInv*stdInv*stdInv;
     dfdv *= -Ninv;
 
     // dvdm/2  + (x - m)
-    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, dvdm, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Add, axes, dvdm, xMinusMean);
     // dfdv * (dvdm/2  + (x - m))
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, dfdv, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Multiply, axes, dfdv, xMinusMean);
     // add dfdm / N
-    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, dfdm, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Add, axes, dfdm, xMinusMean);
     // * gamma
     auto gamma = (*weights)({0,1, 0,0});
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, gamma, xMinusMean);
+    xMinusMean.applyBroadcast(sd::broadcast::Multiply, axes, gamma, xMinusMean);
 
     *dLdI += xMinusMean;
 }
@@ -644,7 +583,7 @@ PLATFORM_CHECK(batchnorm, ENGINE_CPU) {
 //         axes.push_back(input->rankOf() - 1);
 
 //     return block.isUseMKLDNN() &&
-//            nd4j::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) &&
+//            sd::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) &&
 //            axes.size() == 1;
 // }
 

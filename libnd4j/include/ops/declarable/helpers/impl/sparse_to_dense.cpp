@@ -23,7 +23,7 @@
 #include <helpers/StringUtils.h>
 #include <helpers/ShapeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename I>
@@ -32,7 +32,7 @@ namespace nd4j {
                 auto indices = reinterpret_cast<const I*>(vindices);
                 auto output = reinterpret_cast<X*>(voutput);
 
-                Nd4jLong coords[MAX_RANK];
+                int coords[MAX_RANK];
                 uint64_t pos = 0;
                 for (uint64_t e = 0L; e < length; e++) {
                     // indices come in blocks
@@ -80,7 +80,7 @@ namespace nd4j {
                         valueCoords[e] = indices.e<Nd4jLong>(e);
 
                     // write results individually
-                    for (uint64_t e = 0; e < numElements; e++) {
+                    for (Nd4jLong e = 0; e < numElements; e++) {
                         auto vIndex = shape::coords2index(output.shapeInfo(), valueCoords.data());
                         auto cLength = 0L;
                         std::string str;

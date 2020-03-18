@@ -44,6 +44,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
     private double minRange, maxRange;
     private double maxPixelVal;
     private int maxBits;
+    private boolean fitLabels = false;
 
     public ImagePreProcessingScaler() {
         this(0, 1, 8);
@@ -94,7 +95,10 @@ public class ImagePreProcessingScaler implements DataNormalization {
     @Override
     public void preProcess(DataSet toPreProcess) {
         INDArray features = toPreProcess.getFeatures();
-        this.preProcess(features);
+        preProcess(features);
+        if(fitLabels && toPreProcess.getLabels() != null){
+            preProcess(toPreProcess.getLabels());
+        }
     }
 
     public void preProcess(INDArray features) {
@@ -139,6 +143,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
     @Override
     public void revert(DataSet toRevert) {
         revertFeatures(toRevert.getFeatures());
+        revertLabels(toRevert.getLabels());
     }
 
     @Override
@@ -177,10 +182,11 @@ public class ImagePreProcessingScaler implements DataNormalization {
     @Override
     public void fitLabel(boolean fitLabels) {
         //No-op
+        this.fitLabels = fitLabels;
     }
 
     @Override
     public boolean isFitLabel() {
-        return false;
+        return fitLabels;
     }
 }

@@ -21,6 +21,7 @@ import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.TestUtils;
 import org.deeplearning4j.arbiter.conf.updater.AdamSpace;
+import org.deeplearning4j.arbiter.conf.updater.NesterovsSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -80,6 +81,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -766,5 +768,53 @@ public class TestMultiLayerSpace extends BaseDL4JTest {
 
             assertEquals(expCandidates, count);
         }
+    }
+
+
+    @Test
+    public void testGridCandidateGenerator(){
+        ParameterSpace<Integer> layerSizeParam = new DiscreteParameterSpace<>(32, 48, 64);
+        ParameterSpace<Double> learningRateParam = new DiscreteParameterSpace<>(0.005, 0.007, 0.01);
+
+        MultiLayerSpace hyperParamaterSpace = new MultiLayerSpace.Builder()
+                .seed(12345)
+                .biasInit(1)
+                .l2(1e-4)
+                .updater(new NesterovsSpace(learningRateParam))
+                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(layerSizeParam)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.RELU)
+                        .build())
+                .addLayer(new DenseLayerSpace.Builder().nIn(layerSizeParam).nOut(layerSizeParam)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.RELU)
+                        .build())
+                .addLayer(new OutputLayerSpace.Builder()
+                        .lossFunction(LossFunctions.LossFunction.MSE)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(layerSizeParam).nOut(10).build())
+                .build();
+
+        CandidateGenerator candidateGenerator = new GridSearchCandidateGenerator(hyperParamaterSpace, 30, GridSearchCandidateGenerator.Mode.Sequential, null);
+//        CandidateGenerator candidateGenerator = new RandomSearchGenerator(hyperParamaterSpace);
+
+        Set<Pair<Double,Integer>> expCandidates = new HashSet<>();
+        for(Double d : new double[]{0.005, 0.007, 0.01}){
+            for(int i : new int[]{32, 48, 64}){
+                expCandidates.add(new Pair<>(d, i));
+            }
+        }
+
+        Set<Pair<Double,Integer>> actCandidates = new HashSet<>();
+        while(candidateGenerator.hasMoreCandidates()) {
+            Candidate<DL4JConfiguration> conf = candidateGenerator.getCandidate();
+            MultiLayerConfiguration mlc = conf.getValue().getMultiLayerConfiguration();
+            FeedForwardLayer ffl = ((FeedForwardLayer) mlc.getConf(0).getLayer());
+//            System.out.println(ffl.getIUpdater() + ", " + ffl.getNOut());
+            actCandidates.add(new Pair<>(ffl.getIUpdater().getLearningRate(0,0), (int)ffl.getNOut()));
+        }
+
+        assertEquals(expCandidates, actCandidates);
     }
 }

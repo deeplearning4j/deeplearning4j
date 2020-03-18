@@ -19,13 +19,13 @@
 // @author Alex Black
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_gruCell)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/gru.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -70,7 +70,7 @@ CUSTOM_OP_IMPL(gruCell, 6, 4, false, 0, 0) {
 
 DECLARE_TYPES(gruCell) {
     getOpDescriptor()
-        ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+        ->setAllowedInputTypes(0, sd::DataType::ANY)
         ->setAllowedInputTypes(1, {ALL_FLOATS})
         ->setAllowedInputTypes(2, {ALL_FLOATS})
         ->setAllowedInputTypes(3, {ALL_FLOATS})
@@ -145,30 +145,21 @@ CUSTOM_OP_IMPL(gruCell_bp, 10, 6, false, 0, 0) {
 
     REQUIRE_TRUE(x->rankOf() == 2, 0, "GRU_CELL_BP: rank of input array x must be 2, but got %i instead", x->rankOf());
 
-    const std::string hiShape        = ShapeUtils::shapeAsString(hi);
-    const std::string hiCorrectShape = ShapeUtils::shapeAsString({bS, nU});
-    const std::string wShape         = ShapeUtils::shapeAsString(W);
-    const std::string wCorrectShape  = ShapeUtils::shapeAsString({iS+nU, 2*nU});
-    const std::string wcShape        = ShapeUtils::shapeAsString(Wc);
-    const std::string wcCorrectShape = ShapeUtils::shapeAsString({iS+nU, nU});
-    const std::string bShape         = ShapeUtils::shapeAsString(b);
-    const std::string bCorrectShape  = ShapeUtils::shapeAsString({2*nU});
-    const std::string bcShape        = ShapeUtils::shapeAsString(bc);
-    const std::string bcCorrectShape = ShapeUtils::shapeAsString({nU});
-    const std::string dLdrShape      = ShapeUtils::shapeAsString(dLdr);
-    const std::string dLduShape      = ShapeUtils::shapeAsString(dLdu);
-    const std::string dLdcShape      = ShapeUtils::shapeAsString(dLdc);
-    const std::string dLdhShape      = ShapeUtils::shapeAsString(dLdh);
+    const std::vector<Nd4jLong> hiCorrectShape = {bS, nU};
+    const std::vector<Nd4jLong> wCorrectShape  = {iS+nU, 2*nU};
+    const std::vector<Nd4jLong> wcCorrectShape = {iS+nU, nU};
+    const std::vector<Nd4jLong> bCorrectShape  = {2*nU};
+    const std::vector<Nd4jLong> bcCorrectShape = {nU};
 
-    REQUIRE_TRUE(hiShape   == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of previous cell output array, expected is %s, but got %s instead !", hiCorrectShape.c_str(), hiShape.c_str());
-    REQUIRE_TRUE(wShape    == wCorrectShape,   0, "GRU_CELL_BP op: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str());
-    REQUIRE_TRUE(wcShape   == wcCorrectShape,  0, "GRU_CELL_BP op: wrong shape of c weights array, expected is %s, but got %s instead !", wcCorrectShape.c_str(), wcShape.c_str());
-    REQUIRE_TRUE(bShape    == bCorrectShape,   0, "GRU_CELL_BP op: wrong shape of biases array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
-    REQUIRE_TRUE(bcShape   == bcCorrectShape,  0, "GRU_CELL_BP op: wrong shape of c biases array, expected is %s, but got %s instead !", bcCorrectShape.c_str(), bcShape.c_str());
-    REQUIRE_TRUE(dLdrShape == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdr array (gradient wrt reset gate), expected is %s, but got %s instead !", hiCorrectShape.c_str(), dLdrShape.c_str());
-    REQUIRE_TRUE(dLduShape == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdu array (gradient wrt update gate), expected is %s, but got %s instead !", hiCorrectShape.c_str(), dLduShape.c_str());
-    REQUIRE_TRUE(dLdcShape == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdc array (gradient wrt cell state), expected is %s, but got %s instead !", hiCorrectShape.c_str(), dLdcShape.c_str());
-    REQUIRE_TRUE(dLdhShape == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdh array (gradient wrt current cell output), expected is %s, but got %s instead !", hiCorrectShape.c_str(), dLdhShape.c_str());
+    REQUIRE_TRUE(hi->isSameShape(hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of previous cell output array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(hi).c_str());
+    REQUIRE_TRUE(W->isSameShape(wCorrectShape),   0, "GRU_CELL_BP op: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wCorrectShape).c_str(), ShapeUtils::shapeAsString(W).c_str());
+    REQUIRE_TRUE(Wc->isSameShape(wcCorrectShape),  0, "GRU_CELL_BP op: wrong shape of c weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wcCorrectShape).c_str(), ShapeUtils::shapeAsString(Wc).c_str());
+    REQUIRE_TRUE(b->isSameShape(bCorrectShape),   0, "GRU_CELL_BP op: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
+    REQUIRE_TRUE(bc->isSameShape(bcCorrectShape),  0, "GRU_CELL_BP op: wrong shape of c biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bcCorrectShape).c_str(), ShapeUtils::shapeAsString(bc).c_str());
+    REQUIRE_TRUE(dLdr->isSameShape(hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdr array (gradient wrt reset gate), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdr).c_str());
+    REQUIRE_TRUE(dLdu->isSameShape(hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdu array (gradient wrt update gate), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdu).c_str());
+    REQUIRE_TRUE(dLdc->isSameShape(hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdc array (gradient wrt cell state), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdc).c_str());
+    REQUIRE_TRUE(dLdh->isSameShape(hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdh array (gradient wrt current cell output), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdh).c_str());
 
     helpers::gruCellBP(block.launchContext(), x, hi, W, Wc, b, bc, dLdr, dLdu, dLdc, dLdh, dLdx, dLdhi, dLdW, dLdWc, dLdb, dLdbc);
 
@@ -177,7 +168,7 @@ CUSTOM_OP_IMPL(gruCell_bp, 10, 6, false, 0, 0) {
 
 DECLARE_TYPES(gruCell_bp) {
     getOpDescriptor()
-        ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+        ->setAllowedInputTypes(0, sd::DataType::ANY)
         ->setAllowedInputTypes(1, {ALL_FLOATS})
         ->setAllowedInputTypes(2, {ALL_FLOATS})
         ->setAllowedInputTypes(3, {ALL_FLOATS})
@@ -210,30 +201,21 @@ DECLARE_SHAPE_FN(gruCell_bp) {
 
     REQUIRE_TRUE(xShapeInfo[0] == 2, 0, "GRU_CELL_BP: rank of input array x must be 2, but got %i instead", xShapeInfo[0]);
 
-    const std::string hiShape        = ShapeUtils::shapeAsString(hiShapeInfo);
-    const std::string hiCorrectShape = ShapeUtils::shapeAsString({bS, nU});
-    const std::string wShape         = ShapeUtils::shapeAsString(wShapeInfo);
-    const std::string wCorrectShape  = ShapeUtils::shapeAsString({iS+nU, 2*nU});
-    const std::string wcShape        = ShapeUtils::shapeAsString(wcShapeInfo);
-    const std::string wcCorrectShape = ShapeUtils::shapeAsString({iS+nU, nU});
-    const std::string bShape         = ShapeUtils::shapeAsString(bShapeInfo);
-    const std::string bCorrectShape  = ShapeUtils::shapeAsString({2*nU});
-    const std::string bcShape        = ShapeUtils::shapeAsString(bcShapeInfo);
-    const std::string bcCorrectShape = ShapeUtils::shapeAsString({nU});
-    const std::string dLdrShape      = ShapeUtils::shapeAsString(dLdrShapeInfo);
-    const std::string dLduShape      = ShapeUtils::shapeAsString(dLduShapeInfo);
-    const std::string dLdcShape      = ShapeUtils::shapeAsString(dLdcShapeInfo);
-    const std::string dLdhShape      = ShapeUtils::shapeAsString(dLdhShapeInfo);
+    const std::vector<Nd4jLong> hiCorrectShape = {bS, nU};
+    const std::vector<Nd4jLong> wCorrectShape  = {iS+nU, 2*nU};
+    const std::vector<Nd4jLong> wcCorrectShape = {iS+nU, nU};
+    const std::vector<Nd4jLong> bCorrectShape  = {2*nU};
+    const std::vector<Nd4jLong> bcCorrectShape = {nU};
 
-    REQUIRE_TRUE(hiShape   == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of previous cell output array, expected is %s, but got %s instead !", hiCorrectShape.c_str(), hiShape.c_str());
-    REQUIRE_TRUE(wShape    == wCorrectShape,   0, "GRU_CELL_BP op: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str());
-    REQUIRE_TRUE(wcShape   == wcCorrectShape,  0, "GRU_CELL_BP op: wrong shape of c weights array, expected is %s, but got %s instead !", wcCorrectShape.c_str(), wcShape.c_str());
-    REQUIRE_TRUE(bShape    == bCorrectShape,   0, "GRU_CELL_BP op: wrong shape of biases array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
-    REQUIRE_TRUE(bcShape   == bcCorrectShape,  0, "GRU_CELL_BP op: wrong shape of c biases array, expected is %s, but got %s instead !", bcCorrectShape.c_str(), bcShape.c_str());
-    REQUIRE_TRUE(dLdrShape == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdr array (gradient wrt reset gate), expected is %s, but got %s instead !", hiCorrectShape.c_str(), dLdrShape.c_str());
-    REQUIRE_TRUE(dLduShape == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdu array (gradient wrt update gate), expected is %s, but got %s instead !", hiCorrectShape.c_str(), dLduShape.c_str());
-    REQUIRE_TRUE(dLdcShape == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdc array (gradient wrt cell state), expected is %s, but got %s instead !", hiCorrectShape.c_str(), dLdcShape.c_str());
-    REQUIRE_TRUE(dLdhShape == hiCorrectShape,  0, "GRU_CELL_BP op: wrong shape of dLdh array (gradient wrt current cell output), expected is %s, but got %s instead !", hiCorrectShape.c_str(), dLdhShape.c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(hiShapeInfo, hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of previous cell output array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(hiShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(wShapeInfo, wCorrectShape),   0, "GRU_CELL_BP op: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wCorrectShape).c_str(), ShapeUtils::shapeAsString(wShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(wcShapeInfo, wcCorrectShape),  0, "GRU_CELL_BP op: wrong shape of c weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wcCorrectShape).c_str(), ShapeUtils::shapeAsString(wcShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(bShapeInfo, bCorrectShape),   0, "GRU_CELL_BP op: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(bShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(bcShapeInfo, bcCorrectShape),  0, "GRU_CELL_BP op: wrong shape of c biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bcCorrectShape).c_str(), ShapeUtils::shapeAsString(bcShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(dLdrShapeInfo, hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdr array (gradient wrt reset gate), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdrShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(dLduShapeInfo, hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdu array (gradient wrt update gate), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLduShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(dLdcShapeInfo, hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdc array (gradient wrt cell state), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdcShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(dLdhShapeInfo, hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdh array (gradient wrt current cell output), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdhShapeInfo).c_str());
 
     Nd4jLong *dLdxShapeInfo = nullptr;
     COPY_SHAPE(xShapeInfo, dLdxShapeInfo);

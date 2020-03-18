@@ -19,9 +19,9 @@
 //
 
 #include <graph/profiling/GraphProfilingHelper.h>
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         GraphProfile *GraphProfilingHelper::profile(Graph *graph, int iterations) {
 

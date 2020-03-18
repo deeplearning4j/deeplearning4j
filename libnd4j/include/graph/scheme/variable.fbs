@@ -17,7 +17,7 @@
 include "array.fbs";
 include "utils.fbs";
 
-namespace nd4j.graph;
+namespace sd.graph;
 
 // Variable type for variables
 enum VarType:byte {

@@ -26,20 +26,20 @@
 #include <types/bfloat16.h>
 #include <array/DataType.h>
 #include <graph/generated/array_generated.h>
-#include <op_boilerplate.h>
-#include <dll.h>
-#include <Environment.h>
-#include <ArrayOptions.h>
+#include <system/op_boilerplate.h>
+#include <system/dll.h>
+#include <system/Environment.h>
+#include <array/ArrayOptions.h>
 //#include <templatemath.h>
-//#include <shape.h>
+//#include <helpers/shape.h>
 #include <helpers/logger.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT DataTypeUtils {
     public:
         static int asInt(DataType type);
         static DataType fromInt(int dtype);
-        static DataType fromFlatDataType(nd4j::graph::DType dtype);
+        static DataType fromFlatDataType(sd::graph::DType dtype);
         FORCEINLINE static std::string  asString(DataType dataType);
 
         template <typename T>
@@ -70,21 +70,21 @@ namespace nd4j {
         FORCEINLINE static _CUDA_HD size_t sizeOf(DataType type);
         FORCEINLINE static _CUDA_HD size_t sizeOf(const Nd4jLong* shapeInfo);
 
-        FORCEINLINE static _CUDA_HD bool isR(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isR(sd::DataType dataType);
 
-        FORCEINLINE static _CUDA_HD bool isZ(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isZ(sd::DataType dataType);
 
-        FORCEINLINE static _CUDA_HD bool isB(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isB(sd::DataType dataType);
 
-        FORCEINLINE static _CUDA_HD bool isU(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isU(sd::DataType dataType);
 
-        FORCEINLINE static _CUDA_HD bool isS(nd4j::DataType dataType);
+        FORCEINLINE static _CUDA_HD bool isS(sd::DataType dataType);
 
-        FORCEINLINE static nd4j::DataType pickPairwiseResultType(nd4j::DataType typeX, nd4j::DataType typeY);
+        FORCEINLINE static sd::DataType pickPairwiseResultType(sd::DataType typeX, sd::DataType typeY);
 
-        FORCEINLINE static nd4j::DataType pickPairwiseResultType(const Nd4jLong* shapeInfo1, const Nd4jLong* shapeInfo2);
+        FORCEINLINE static sd::DataType pickPairwiseResultType(const Nd4jLong* shapeInfo1, const Nd4jLong* shapeInfo2);
 
-        FORCEINLINE static nd4j::DataType pickFloatingType(nd4j::DataType typeX);
+        FORCEINLINE static sd::DataType pickFloatingType(sd::DataType typeX);
 
         template <typename T1, typename T2>
         FORCEINLINE static std::vector<T2> convertVector(const std::vector<T1> &vector);
@@ -106,38 +106,38 @@ namespace nd4j {
 ///// IMLEMENTATION OF INLINE METHODS /////
 //////////////////////////////////////////////////////////////////////////
 
-    FORCEINLINE nd4j::DataType DataTypeUtils::pickFloatingType(nd4j::DataType typeX) {
+    FORCEINLINE sd::DataType DataTypeUtils::pickFloatingType(sd::DataType typeX) {
         // if proposed dataType is already floating point - return it
         if (isR(typeX))
             return typeX;
         return Environment::getInstance()->defaultFloatDataType();
     }
 
-    FORCEINLINE bool DataTypeUtils::isR(nd4j::DataType dataType) {
-        return dataType == nd4j::DataType::FLOAT32 || dataType == nd4j::DataType::BFLOAT16 || dataType == nd4j::DataType::HALF || dataType == nd4j::DataType::DOUBLE;
+    FORCEINLINE bool DataTypeUtils::isR(sd::DataType dataType) {
+        return dataType == sd::DataType::FLOAT32 || dataType == sd::DataType::BFLOAT16 || dataType == sd::DataType::HALF || dataType == sd::DataType::DOUBLE;
     }
 
-    FORCEINLINE bool DataTypeUtils::isB(nd4j::DataType dataType) {
-        return dataType == nd4j::DataType::BOOL;
+    FORCEINLINE bool DataTypeUtils::isB(sd::DataType dataType) {
+        return dataType == sd::DataType::BOOL;
     }
 
-    FORCEINLINE bool DataTypeUtils::isS(nd4j::DataType dataType) {
-        return dataType == nd4j::DataType::UTF8 || dataType == nd4j::DataType::UTF16 || dataType == nd4j::DataType::UTF32;
+    FORCEINLINE bool DataTypeUtils::isS(sd::DataType dataType) {
+        return dataType == sd::DataType::UTF8 || dataType == sd::DataType::UTF16 || dataType == sd::DataType::UTF32;
     }
 
-    FORCEINLINE bool DataTypeUtils::isZ(nd4j::DataType dataType) {
+    FORCEINLINE bool DataTypeUtils::isZ(sd::DataType dataType) {
         return !isR(dataType) && !isB(dataType) && !isS(dataType);
     }
 
-    FORCEINLINE bool DataTypeUtils::isU(nd4j::DataType dataType) {
-        return dataType == nd4j::DataType::UINT8 || dataType == nd4j::DataType::UINT16 || dataType == nd4j::DataType::UINT32 || dataType == nd4j::DataType::UINT64;
+    FORCEINLINE bool DataTypeUtils::isU(sd::DataType dataType) {
+        return dataType == sd::DataType::UINT8 || dataType == sd::DataType::UINT16 || dataType == sd::DataType::UINT32 || dataType == sd::DataType::UINT64;
     }
 
-    FORCEINLINE nd4j::DataType DataTypeUtils::pickPairwiseResultType(nd4j::DataType typeX, nd4j::DataType typeY) {
+    FORCEINLINE sd::DataType DataTypeUtils::pickPairwiseResultType(sd::DataType typeX, sd::DataType typeY) {
         // if both dtypes are the same - just return it
         if (typeX == typeY)
             return typeX;
-        auto nd4j_max = [](nd4j::DataType typeX, nd4j::DataType typeY) {
+        auto nd4j_max = [](sd::DataType typeX, sd::DataType typeY) {
             return typeX > typeY?typeX:typeY;
         };
         auto rX = isR(typeX);
@@ -154,7 +154,7 @@ namespace nd4j {
         // if both data types are float - return biggest one
         if (rX && rY) {
             // if we allow precision boost, then we pick bigger data type
-            if (nd4j::Environment::getInstance()->precisionBoostAllowed()) {
+            if (sd::Environment::getInstance()->precisionBoostAllowed()) {
                 return nd4j_max(typeX, typeY);
             } else {
                 // and we return first operand otherwise
@@ -165,7 +165,7 @@ namespace nd4j {
 
         // if that's not real type, we apply same rules
         if (!rX && !rY) {
-            if (nd4j::Environment::getInstance()->precisionBoostAllowed()) {
+            if (sd::Environment::getInstance()->precisionBoostAllowed()) {
                 return nd4j_max(typeX, typeY);
             } else {
                 // and we return first operand otherwise
@@ -177,7 +177,7 @@ namespace nd4j {
     }
 
 ///////////////////////////////////////////////////////////////////
-FORCEINLINE nd4j::DataType DataTypeUtils::pickPairwiseResultType(const Nd4jLong* shapeInfo1, const Nd4jLong* shapeInfo2) {
+FORCEINLINE sd::DataType DataTypeUtils::pickPairwiseResultType(const Nd4jLong* shapeInfo1, const Nd4jLong* shapeInfo2) {
 
     return pickPairwiseResultType(ArrayOptions::dataType(shapeInfo1), ArrayOptions::dataType(shapeInfo2));
 }
@@ -420,31 +420,31 @@ FORCEINLINE _CUDA_HD T DataTypeUtils::eps() {
         return result;
     }
 
-    FORCEINLINE _CUDA_HD size_t DataTypeUtils::sizeOfElement(nd4j::DataType type) {
+    FORCEINLINE _CUDA_HD size_t DataTypeUtils::sizeOfElement(sd::DataType type) {
         switch (type) {
-            case nd4j::DataType::UINT8:
-            case nd4j::DataType::INT8:
-            case nd4j::DataType::FLOAT8:
-            case nd4j::DataType::QINT8:
-            case nd4j::DataType::BOOL: return (size_t) 1;
+            case sd::DataType::UINT8:
+            case sd::DataType::INT8:
+            case sd::DataType::FLOAT8:
+            case sd::DataType::QINT8:
+            case sd::DataType::BOOL: return (size_t) 1;
 
-            case nd4j::DataType::BFLOAT16:
-            case nd4j::DataType::HALF:
-            case nd4j::DataType::INT16:
-            case nd4j::DataType::QINT16:
-            case nd4j::DataType::UINT16: return (size_t) 2;
+            case sd::DataType::BFLOAT16:
+            case sd::DataType::HALF:
+            case sd::DataType::INT16:
+            case sd::DataType::QINT16:
+            case sd::DataType::UINT16: return (size_t) 2;
 
-            case nd4j::DataType::UTF8:
-            case nd4j::DataType::UTF16:
-            case nd4j::DataType::UTF32:
-            case nd4j::DataType::INT32:
-            case nd4j::DataType::UINT32:
-            case nd4j::DataType::HALF2:
-            case nd4j::DataType::FLOAT32: return (size_t) 4;
+            case sd::DataType::UTF8:
+            case sd::DataType::UTF16:
+            case sd::DataType::UTF32:
+            case sd::DataType::INT32:
+            case sd::DataType::UINT32:
+            case sd::DataType::HALF2:
+            case sd::DataType::FLOAT32: return (size_t) 4;
 
-            case nd4j::DataType::UINT64:
-            case nd4j::DataType::INT64:
-            case nd4j::DataType::DOUBLE: return (size_t) 8;
+            case sd::DataType::UINT64:
+            case sd::DataType::INT64:
+            case sd::DataType::DOUBLE: return (size_t) 8;
 
             default: {
                 nd4j_printf("Unknown DataType used: [%i]\n", asInt(type));
@@ -456,41 +456,41 @@ FORCEINLINE _CUDA_HD T DataTypeUtils::eps() {
     }
 
     template <typename T>
-    FORCEINLINE _CUDA_HD nd4j::DataType nd4j::DataTypeUtils::fromT() {
+    FORCEINLINE _CUDA_HD sd::DataType sd::DataTypeUtils::fromT() {
         if (std::is_same<T, bool>::value) {
-            return nd4j::DataType::BOOL;
+            return sd::DataType::BOOL;
         } else if (std::is_same<T, std::string>::value) {
-            return nd4j::DataType::UTF8;
+            return sd::DataType::UTF8;
         } else if (std::is_same<T, std::u16string>::value) {
-            return nd4j::DataType::UTF16;
+            return sd::DataType::UTF16;
         } else if (std::is_same<T, std::u32string>::value) {
-            return nd4j::DataType::UTF32;
+            return sd::DataType::UTF32;
         } else if (std::is_same<T, float>::value) {
-            return nd4j::DataType::FLOAT32;
+            return sd::DataType::FLOAT32;
         } else if (std::is_same<T, float16>::value) {
-            return nd4j::DataType::HALF;
+            return sd::DataType::HALF;
         } else if (std::is_same<T, bfloat16>::value) {
-            return nd4j::DataType::BFLOAT16;
+            return sd::DataType::BFLOAT16;
         } else if (std::is_same<T, double>::value) {
-            return nd4j::DataType::DOUBLE;
+            return sd::DataType::DOUBLE;
         } else if (std::is_same<T, int8_t >::value) {
-            return nd4j::DataType::INT8;
+            return sd::DataType::INT8;
         } else if (std::is_same<T, int16_t >::value) {
-            return nd4j::DataType::INT16;
+            return sd::DataType::INT16;
         } else if (std::is_same<T, int>::value) {
-            return nd4j::DataType::INT32;
+            return sd::DataType::INT32;
         } else if (std::is_same<T, Nd4jLong>::value) {
-            return nd4j::DataType::INT64;
+            return sd::DataType::INT64;
         } else if (std::is_same<T, uint8_t>::value) {
-            return nd4j::DataType::UINT8;
+            return sd::DataType::UINT8;
         } else if (std::is_same<T, uint16_t>::value) {
-            return nd4j::DataType::UINT16;
+            return sd::DataType::UINT16;
         } else if (std::is_same<T, uint32_t>::value) {
-            return nd4j::DataType::UINT32;
+            return sd::DataType::UINT32;
         } else if (std::is_same<T, Nd4jULong>::value) {
-            return nd4j::DataType::UINT64;
+            return sd::DataType::UINT64;
         } else {
-            return nd4j::DataType::INHERIT;
+            return sd::DataType::INHERIT;
         }
     }
 }

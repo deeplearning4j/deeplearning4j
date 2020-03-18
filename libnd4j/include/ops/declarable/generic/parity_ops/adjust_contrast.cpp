@@ -18,13 +18,13 @@
 //  @author George A. Shulinok <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_adjust_contrast)
 
 #include <ops/declarable/headers/parity_ops.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 ////////////////////////////////////////////////////////////////////
@@ -68,7 +68,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(adjust_contrast) {
-    getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)
+    getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)
                      ->setAllowedOutputTypes({ALL_FLOATS})
                      ->setSameMode(true);
 }
@@ -119,7 +119,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 0, 0) {
 }
 
 DECLARE_TYPES(adjust_contrast_v2) {
-    getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)
+    getOpDescriptor()->setAllowedInputTypes(sd::DataType::ANY)
             ->setAllowedOutputTypes({ALL_FLOATS})
             ->setSameMode(true);
 }

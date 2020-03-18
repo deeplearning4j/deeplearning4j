@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_unique)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/unique.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(unique, 1, 2, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);
@@ -53,7 +53,7 @@ namespace nd4j {
                 valuesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(uniqueCount, ArrayOptions::dataType(in));
             }
             // second output is always LONG
-            indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::length(in), nd4j::DataType::INT64);
+            indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::length(in), sd::DataType::INT64);
 
             //COPY_SHAPE_EX(in, indicesShape, block.getWorkspace());
 
@@ -80,17 +80,17 @@ namespace nd4j {
             auto valuesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(uniqueCount, source->dataType());
 
             // second output is always LONG
-            auto indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(source->lengthOf(), nd4j::DataType::INT64);
+            auto indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(source->lengthOf(), sd::DataType::INT64);
 
             // third one as well
-            auto countsShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(uniqueCount, nd4j::DataType::INT64);
+            auto countsShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(uniqueCount, sd::DataType::INT64);
 
             return SHAPELIST(valuesShape, indicesShape, countsShape);
         }
 
         DECLARE_TYPES(unique) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes(0, {ALL_INTS, ALL_FLOATS})
                     ->setAllowedOutputTypes(1, {ALL_INTS});
         }

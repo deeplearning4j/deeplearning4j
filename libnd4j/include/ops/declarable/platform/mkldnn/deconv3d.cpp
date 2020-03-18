@@ -20,14 +20,14 @@
 
 #include <ops/declarable/PlatformHelper.h>
 #include <ops/declarable/OpRegistrator.h>
-#include <platform_boilerplate.h>
+#include <system/platform_boilerplate.h>
 
 #include <helpers/MKLDNNStream.h>
 #include "mkldnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
 
 
-namespace nd4j      {
+namespace sd      {
 namespace ops       {
 namespace platforms {
 
@@ -89,14 +89,7 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xFormat);
-    if(input->ews() != 1 || input->ordering() != 'c') {
-        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        x_user_md.data.format_desc.blocking.strides[0] = input->strideAt(0);
-        x_user_md.data.format_desc.blocking.strides[1] = input->strideAt(1);
-        x_user_md.data.format_desc.blocking.strides[2] = input->strideAt(2);
-        x_user_md.data.format_desc.blocking.strides[3] = input->strideAt(3);
-        x_user_md.data.format_desc.blocking.strides[4] = input->strideAt(4);
-    }
+    mkldnnUtils::setBlockStrides(input, 5, x_user_md);
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -116,14 +109,7 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     // output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zDims, zType, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, zType, xFormat);
-    if(output->ews() !=1 || output->ordering() != 'c') {
-        z_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        z_user_md.data.format_desc.blocking.strides[0] = output->strideAt(0);
-        z_user_md.data.format_desc.blocking.strides[1] = output->strideAt(1);
-        z_user_md.data.format_desc.blocking.strides[2] = output->strideAt(2);
-        z_user_md.data.format_desc.blocking.strides[3] = output->strideAt(3);
-        z_user_md.data.format_desc.blocking.strides[4] = output->strideAt(4);
-    }
+    mkldnnUtils::setBlockStrides(output, 5, z_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -140,20 +126,10 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     // provide memory buffers and check whether reorder is required
 
     // input
-    auto x_user_mem = dnnl::memory(x_user_md, engine, input->getBuffer());
-    const bool xReorder = op_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? dnnl::memory(op_prim_desc.src_desc(), engine) : x_user_mem;
-    if (xReorder)
-        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[DNNL_ARG_SRC] = x_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(input, engine, stream, args, x_user_md,  op_prim_desc.src_desc(), DNNL_ARG_SRC);
 
     // weights
-    auto w_user_mem = dnnl::memory(w_user_md, engine, weights->getBuffer());
-    const bool wReorder = op_prim_desc.weights_desc() != w_user_mem.get_desc();
-    auto w_mkl_mem = wReorder ? dnnl::memory(op_prim_desc.weights_desc(), engine) : w_user_mem;
-    if (wReorder)
-        dnnl::reorder(w_user_mem, w_mkl_mem).execute(stream, w_user_mem, w_mkl_mem);
-    args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(weights, engine, stream, args, w_user_md,  op_prim_desc.weights_desc(), DNNL_ARG_WEIGHTS);
 
     // bias
     if(bias != nullptr) {
@@ -223,14 +199,7 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xFormat);
-    if(input->ews() != 1 || input->ordering() != 'c') {
-        x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        x_user_md.data.format_desc.blocking.strides[0] = input->strideAt(0);
-        x_user_md.data.format_desc.blocking.strides[1] = input->strideAt(1);
-        x_user_md.data.format_desc.blocking.strides[2] = input->strideAt(2);
-        x_user_md.data.format_desc.blocking.strides[3] = input->strideAt(3);
-        x_user_md.data.format_desc.blocking.strides[4] = input->strideAt(4);
-    }
+    mkldnnUtils::setBlockStrides(input, 5, x_user_md);
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -245,26 +214,12 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormat);
-    if(gradO->ews() != 1 || gradO->ordering() != 'c') {
-        gradO_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        gradO_user_md.data.format_desc.blocking.strides[0] = gradO->strideAt(0);
-        gradO_user_md.data.format_desc.blocking.strides[1] = gradO->strideAt(1);
-        gradO_user_md.data.format_desc.blocking.strides[2] = gradO->strideAt(2);
-        gradO_user_md.data.format_desc.blocking.strides[3] = gradO->strideAt(3);
-        gradO_user_md.data.format_desc.blocking.strides[4] = gradO->strideAt(4);
-    }
+    mkldnnUtils::setBlockStrides(gradO, 5, gradO_user_md);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormat);
-    if(gradI->ews() != 1 || gradI->ordering() != 'c') {
-        gradI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        gradI_user_md.data.format_desc.blocking.strides[0] = gradI->strideAt(0);
-        gradI_user_md.data.format_desc.blocking.strides[1] = gradI->strideAt(1);
-        gradI_user_md.data.format_desc.blocking.strides[2] = gradI->strideAt(2);
-        gradI_user_md.data.format_desc.blocking.strides[3] = gradI->strideAt(3);
-        gradI_user_md.data.format_desc.blocking.strides[4] = gradI->strideAt(4);
-    }
+    mkldnnUtils::setBlockStrides(gradI, 5, gradI_user_md);
 
     // gradW
     dnnl::memory::desc gradW_mkl_md  = dnnl::memory::desc(wDims, gradWType, wFormat);
@@ -304,20 +259,10 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     // provide memory buffers and check whether reorder is required
 
     // input
-    auto x_user_mem = dnnl::memory(x_user_md, engine, input->getBuffer());
-    const bool xReorder = op_weights_bp_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? dnnl::memory(op_weights_bp_prim_desc.src_desc(), engine) : x_user_mem;
-    if (xReorder)
-        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[DNNL_ARG_SRC] = x_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(input, engine, stream, args, x_user_md,  op_weights_bp_prim_desc.src_desc(), DNNL_ARG_SRC);
 
     // weights
-    auto w_user_mem = dnnl::memory(w_user_md, engine, weights->getBuffer());
-    const bool wReorder = op_data_bp_prim_desc.weights_desc() != w_user_mem.get_desc();
-    auto w_mkl_mem = wReorder ? dnnl::memory(op_data_bp_prim_desc.weights_desc(), engine) : w_user_mem;
-    if (wReorder)
-        dnnl::reorder(w_user_mem, w_mkl_mem).execute(stream, w_user_mem, w_mkl_mem);
-    args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
+    mkldnnUtils::loadDataToMklStream(weights, engine, stream, args, w_user_md, op_data_bp_prim_desc.weights_desc(), DNNL_ARG_WEIGHTS);
 
     // gradO
     auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, gradO->getBuffer());

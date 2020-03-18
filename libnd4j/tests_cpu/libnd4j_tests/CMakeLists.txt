@@ -84,7 +84,7 @@ set(gtest_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/googletest-src)
 add_definitions(-D__STANDALONE_BUILD__=true)
 
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-include_directories(../../include ../../layers ../../include/helpers ../../include/array ../../include/execution ../../include/exceptions ../../include/memory ../../include/loops ../../include/graph ../../include/ops ../../include/types ../../include/cnpy ../../blas)
+include_directories(../../include)
 if(LINUX)
     link_directories(/usr/local/lib)
     link_directories(/usr/lib)
@@ -109,7 +109,7 @@ endif()
 # -fsanitize=address
 # -fsanitize=leak
 if (APPLE)
-    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -D__APPLE_OS__=true -DAPPLE_BUILD=true")
+    set(CMAKE_CXX_FLAGS  " -O0 -g -fPIC -std=c++11 -D__APPLE_OS__=true -DSD_APPLE_BUILD=true")
 elseif(WIN32)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 		set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -Wa,-mbig-obj")
@@ -127,7 +127,7 @@ else()
         endif()
     else()
         set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 ")
-        if (NOT CUDA_BLAS)
+        if (NOT SD_CUDA)
             set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
         endif()
     endif()
@@ -143,14 +143,14 @@ else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DDEBUG_BUILD=true")
 endif()
 
-if ("${EXPERIMENTAL}" STREQUAL "yes")
+if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
     message("Experimental mode ENABLED")
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
 endif()
 
 # tests are always compiled with all ops included
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true -DDEFAULT_ENGINE=samediff::ENGINE_CPU")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=true -DDEFAULT_ENGINE=samediff::ENGINE_CPU")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -209,6 +209,7 @@ file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES false ../../include/ops/declarable/h
 file(GLOB_RECURSE OPS_SOURCES false ../../include/ops/impl/*.cpp ../../include/ops/declarable/impl/*.cpp  ../../include/ops/*.h)
 file(GLOB_RECURSE INDEXING_SOURCES false ../../include/indexing/*.cpp ../../include/indexing/*.h)
 file(GLOB_RECURSE HELPERS_SOURCES false ../../include/helpers/*.cpp)
+file(GLOB_RECURSE LEGACY_SOURCES false ../../include/legacy/impl/*.cpp  ../../include/legacy/cpu/*.cpp ../../include/legacy/*.h)
 file(GLOB_RECURSE LOOPS_SOURCES false ../../include/loops/*.cpp ../../include/loops/*.h)
 
 # optionally build mkldnn
@@ -268,10 +269,7 @@ foreach (TMP_PATH ${TEST_SOURCES})
 endforeach(TMP_PATH)
 
 
-add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas/cpu/GraphExecutioner.cpp
-        ../../blas/cpu/NativeOpExecutioner.cpp ../../blas/cpu/NDArray.cpp ../../blas/cpu/NDArrayFactory.cpp
-    ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
-    ../../blas/Environment.cpp ../../blas/Environment.h ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
+add_executable(runtests ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
     ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 

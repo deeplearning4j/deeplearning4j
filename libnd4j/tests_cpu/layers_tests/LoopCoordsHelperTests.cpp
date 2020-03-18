@@ -19,9 +19,9 @@
  //
 
 #include "testlayers.h"
-#include <LoopsCoordsHelper.h>
+#include <helpers/LoopsCoordsHelper.h>
 #include <type_traits>
-using namespace nd4j;
+using namespace sd;
 
 class LoopCoordsHelper : public testing::Test {
 public:

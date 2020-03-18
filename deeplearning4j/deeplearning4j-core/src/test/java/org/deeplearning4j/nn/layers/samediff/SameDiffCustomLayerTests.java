@@ -21,6 +21,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -136,6 +137,11 @@ public class SameDiffCustomLayerTests extends BaseDL4JTest {
     }
 
     private class ValidatingSameDiffVertex extends SameDiffVertex {
+        @Override
+        public GraphVertex clone() {
+            return new ValidatingSameDiffVertex();
+        }
+
         @Override
         public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
             return vertexInputs[0];

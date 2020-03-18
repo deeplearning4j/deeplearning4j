@@ -15,7 +15,7 @@
 #include "utils_generated.h"
 #include "variable_generated.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct UpdaterState;
@@ -96,7 +96,7 @@ inline flatbuffers::Offset<UpdaterState> CreateUpdaterStateDirect(
     const char *paramName = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *updaterStateKeys = nullptr,
     const std::vector<flatbuffers::Offset<FlatArray>> *updaterStateValues = nullptr) {
-  return nd4j::graph::CreateUpdaterState(
+  return sd::graph::CreateUpdaterState(
       _fbb,
       paramName ? _fbb.CreateString(paramName) : 0,
       updaterStateKeys ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*updaterStateKeys) : 0,
@@ -248,7 +248,7 @@ inline flatbuffers::Offset<FlatGraph> CreateFlatGraphDirect(
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *lossVariables = nullptr,
     const char *trainingConfig = nullptr,
     const std::vector<flatbuffers::Offset<UpdaterState>> *updaterState = nullptr) {
-  return nd4j::graph::CreateFlatGraph(
+  return sd::graph::CreateFlatGraph(
       _fbb,
       id,
       variables ? _fbb.CreateVector<flatbuffers::Offset<FlatVariable>>(*variables) : 0,
@@ -341,37 +341,37 @@ inline flatbuffers::Offset<FlatResponse> CreateFlatResponse(
   return builder_.Finish();
 }
 
-inline const nd4j::graph::FlatGraph *GetFlatGraph(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatGraph>(buf);
+inline const sd::graph::FlatGraph *GetFlatGraph(const void *buf) {
+  return flatbuffers::GetRoot<sd::graph::FlatGraph>(buf);
 }
 
-inline const nd4j::graph::FlatGraph *GetSizePrefixedFlatGraph(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatGraph>(buf);
+inline const sd::graph::FlatGraph *GetSizePrefixedFlatGraph(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatGraph>(buf);
 }
 
 inline bool VerifyFlatGraphBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatGraph>(nullptr);
+  return verifier.VerifyBuffer<sd::graph::FlatGraph>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatGraphBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatGraph>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatGraph>(nullptr);
 }
 
 inline void FinishFlatGraphBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatGraph> root) {
+    flatbuffers::Offset<sd::graph::FlatGraph> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatGraphBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatGraph> root) {
+    flatbuffers::Offset<sd::graph::FlatGraph> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_GRAPH_ND4J_GRAPH_H_

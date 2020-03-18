@@ -18,12 +18,12 @@
 // Created by GS <sgazeos@gmail.com> at 11/12/2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_cholesky)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/lup.h>
-namespace nd4j {
+namespace sd {
     namespace ops {
         OP_IMPL(cholesky, 1, 1, true) {
             NDArray* input = INPUT_VARIABLE(0);
@@ -32,11 +32,11 @@ namespace nd4j {
             REQUIRE_TRUE(input->rankOf() >=2, 0, "cholesky: The rank of input array should not less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "cholesky: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
             REQUIRE_TRUE(helpers::checkCholeskyInput(block.launchContext(), input), 0, "cholesky: The input tensor should be positive-defined and symmetric.");
-            return helpers::cholesky(block.launchContext(), input, output);
+            return helpers::cholesky(block.launchContext(), input, output, block.isInplace());
         }
         DECLARE_TYPES(cholesky) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 

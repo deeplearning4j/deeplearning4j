@@ -19,11 +19,11 @@
 //
 
 #include<cmath>
-#include <DataTypeUtils.h>
+#include <array/DataTypeUtils.h>
 #include<ops/declarable/helpers/betaInc.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -170,7 +170,7 @@ static void betaIncForArrayCudaLauncher(const int blocksPerGrid, const int threa
 
 ///////////////////////////////////////////////////////////////////
 // overload betaInc for arrays, shapes of a, b and x must be the same !!!
-void betaInc(nd4j::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
+void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output) {
 
     const int threadsPerBlock = maxIter;
     const int blocksPerGrid = output.lengthOf();

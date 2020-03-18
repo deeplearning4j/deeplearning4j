@@ -22,7 +22,7 @@
 #include <vector>
 //#include <memory>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
     template <typename T>
@@ -39,7 +39,7 @@ namespace helpers {
         return saved;
     }
 
-    Nd4jLong listDiffCount(nd4j::LaunchContext * context, NDArray* values, NDArray* keep) {
+    Nd4jLong listDiffCount(sd::LaunchContext * context, NDArray* values, NDArray* keep) {
         auto xType = values->dataType();
 
         NDArray::preparePrimaryUse({},{values, keep});
@@ -71,7 +71,7 @@ namespace helpers {
 
 
         if (saved.size() == 0) {
-//            if (nd4j::ops::conditionHelper(__FILE__, __LINE__, false, 0, "ListDiff: search returned no results") != 0)
+//            if (sd::ops::conditionHelper(__FILE__, __LINE__, false, 0, "ListDiff: search returned no results") != 0)
             nd4j_printf("ListDiff: search returned no results", "");
                 throw std::invalid_argument("Op validation failed");
         } else {
@@ -95,7 +95,7 @@ namespace helpers {
         return Status::OK();
     }
 
-    int listDiffFunctor(nd4j::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
+    int listDiffFunctor(sd::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
         auto xType = values->dataType();
 
         NDArray::preparePrimaryUse({output1, output2}, {values, keep});

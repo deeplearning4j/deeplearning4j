@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/crop_and_resize.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template<typename T, typename F, typename I>
@@ -64,8 +64,8 @@ namespace nd4j {
                                 continue;
                             }
                             if (method == 0 /* bilinear */) {
-                                const int topYIndex = nd4j::math::p_floor(inY);
-                                const int bottomYIndex = nd4j::math::p_ceil(inY);
+                                const int topYIndex = sd::math::p_floor(inY);
+                                const int bottomYIndex = sd::math::p_ceil(inY);
                                 const float y_lerp = inY - topYIndex;
 
                                 for (auto x = 0; x < cropWidth; ++x) {

@@ -21,7 +21,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -78,7 +78,7 @@ namespace nd4j {
                                             void *vz, Nd4jLong *zShapeInfo) {
 
         execConcatKernelVStack<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(numArrays, data, inputShapeInfos, vz, zShapeInfo);
-        nd4j::DebugHelper::checkErrorCode(stream, "concatVStack(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "concatVStack(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT concatKernelVStackGeneric, (dim3 & launchDims, cudaStream_t * stream, int numArrays, Nd4jPointer * data, Nd4jPointer * inputShapeInfos, void * vz, Nd4jLong *zShapeInfo), LIBND4J_TYPES);

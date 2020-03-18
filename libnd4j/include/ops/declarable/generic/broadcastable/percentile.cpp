@@ -18,14 +18,14 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 17.05.2018
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_percentile)
 
 #include <ops/declarable/CustomOperations.h>
-#include <declarable/helpers/percentile.h>
+#include <ops/declarable/helpers/percentile.h>
 
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 CUSTOM_OP_IMPL(percentile, 1, 1, false, 1, -2) {    

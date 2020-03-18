@@ -22,12 +22,12 @@
 //#define LIBND4J_LOOPS_CPP
 
 #include <Loops.h>
-#include <shape.h>
-#include <OmpLaunchHelper.h>
-#include <DataTypeUtils.h>
+#include <helpers/shape.h>
+#include <helpers/OmpLaunchHelper.h>
+#include <array/DataTypeUtils.h>
 
 
-namespace nd4j {
+namespace sd {
 
 
 }

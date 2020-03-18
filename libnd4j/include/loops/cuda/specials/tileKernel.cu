@@ -20,18 +20,15 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
-    static Nd4jLong __device__ __noinline__ _getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo) {
+namespace sd {
+    static Nd4jLong __device__ __noinline__ getIndexOffset_(Nd4jLong index, Nd4jLong *shapeInfo) {
         return shape::getIndexOffset(index, shapeInfo);
     }
 
-    static Nd4jLong __device__ __noinline__ _subArrayOffset(Nd4jLong index, Nd4jLong *shapeInfoA, Nd4jLong *shapeInfoB) {
+    static Nd4jLong __device__ __noinline__ subArrayOffset(Nd4jLong index, Nd4jLong *shapeInfoA, Nd4jLong *shapeInfoB) {
         return shape::subArrayOffset(index, shapeInfoA, shapeInfoB);
     }
 
-    static Nd4jLong __device__ __noinline__ _length(Nd4jLong *shapeInfo) {
-        return shape::length(shapeInfo);
-    }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //  tileKernel:
@@ -48,13 +45,13 @@ namespace nd4j {
         int totalThreads = gridDim.x * blockDim.x;
         if (shape::order(outputShape) == 'c') {           //  ews == 1 always here
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                auto yOffset = subArrayOffset(i, outputShape, inputShape);
                 *(reinterpret_cast<T *>(outputBuffer) + i) = *(reinterpret_cast<T const *>(inputBuffer) + yOffset);
             }
         } else {
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto xOffset = _getIndexOffset(i, outputShape);
-                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                auto xOffset = getIndexOffset_(i, outputShape);
+                auto yOffset = subArrayOffset(i, outputShape, inputShape);
                 *(reinterpret_cast<T *>(outputBuffer) + xOffset) = *(reinterpret_cast<T const *>(inputBuffer) + yOffset);
             }
         }
@@ -83,20 +80,20 @@ namespace nd4j {
 
         if (ordering == 'c' && ews == 1) {           //  ews == 1 always here
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                auto yOffset = subArrayOffset(i, outputShape, inputShape);
                 *(reinterpret_cast<X *>(outputBuffer) + i) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }
         } else if (ordering == 'c' && ews > 1) {
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                auto yOffset = subArrayOffset(i, outputShape, inputShape);
                 *(reinterpret_cast<X *>(outputBuffer) + i * ews) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }
         } else {
 
             for (int i = tid; i < resultLength; i += totalThreads) {
 
-                auto xOffset = _getIndexOffset(i, outputShape);
-                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                auto xOffset = getIndexOffset_(i, outputShape);
+                auto yOffset = subArrayOffset(i, outputShape, inputShape);
                 *(reinterpret_cast<X *>(outputBuffer) + xOffset) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }
         }

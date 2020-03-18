@@ -19,10 +19,10 @@
 //
 
 #include "../TadPack.h"
-#include <Environment.h>
+#include <system/Environment.h>
 #include <helpers/shape.h>
 
-namespace nd4j {
+namespace sd {
     TadPack::TadPack(ConstantDataBuffer &shapes, ConstantDataBuffer &offets, Nd4jLong numTads) {
         _tadShape = shapes;
         _tadOffsets = offets;
@@ -49,11 +49,11 @@ namespace nd4j {
     }
 
     Nd4jLong* TadPack::platformShapeInfo() const {
-        return nd4j::Environment::getInstance()->isCPU() ? primaryShapeInfo() : specialShapeInfo();
+        return sd::Environment::getInstance()->isCPU() ? primaryShapeInfo() : specialShapeInfo();
     }
 
     Nd4jLong* TadPack::platformOffsets() const {
-        return nd4j::Environment::getInstance()->isCPU() ? primaryOffsets() : specialOffsets();
+        return sd::Environment::getInstance()->isCPU() ? primaryOffsets() : specialOffsets();
     }
 
     int TadPack::shapeInfoLength() const {

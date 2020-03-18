@@ -21,9 +21,9 @@
 #ifndef LIBND4J_UNICODE_H
 #define LIBND4J_UNICODE_H
 
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace unicode {
 
     /**

@@ -21,7 +21,7 @@
 #include <helpers/StringUtils.h>
 #include <exceptions/no_results_exception.h>
 
-namespace nd4j {
+namespace sd {
     no_results_exception::no_results_exception(Nd4jLong graphId) : graph_exception(StringUtils::buildGraphErrorMessage("Got no results after graph execution", graphId), graphId) {
         _graphId = graphId;
     }

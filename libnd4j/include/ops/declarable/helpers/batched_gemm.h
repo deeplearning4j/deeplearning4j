@@ -19,9 +19,9 @@
 //
 
 #include <vector>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 

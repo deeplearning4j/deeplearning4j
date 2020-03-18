@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_split_string)
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/StringUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(compat_string_split, 2, 2, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
@@ -39,8 +39,7 @@ namespace nd4j {
             delim->syncToHost();
 
             // output rank N+1 wrt input rank
-            std::vector<Nd4jLong> ocoords(input->rankOf() + 1);
-            std::vector<Nd4jLong> icoords(input->rankOf());
+            std::vector<int> icoords(input->rankOf());
 
             // getting buffer lengths
             // FIXME: it'll be bigger, since it'll include delimiters,
@@ -54,7 +53,7 @@ namespace nd4j {
                 auto s = input->e<std::string>(e);
 
                 // getting base index
-                shape::index2coords(e, input->shapeInfo(), icoords.data());
+                shape::index2coordsCPU(0, e, input->shapeInfo(), icoords.data());
 
                 // getting number of substrings
                 auto cnt = StringUtils::countSubarrays(s.c_str(), s.length(), d.c_str(), d.length()) + 1;
@@ -122,8 +121,8 @@ namespace nd4j {
             // values tensor is going to be vector always
             // indices tensor is going to be vector with length equal to values.length * output rank
 
-            auto valuesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(cnt, nd4j::DataType::UTF8);
-            auto indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(cnt * (input->rankOf() + 1), nd4j::DataType::INT64);
+            auto valuesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(cnt, sd::DataType::UTF8);
+            auto indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(cnt * (input->rankOf() + 1), sd::DataType::INT64);
 
             return SHAPELIST(indicesShape, valuesShape);
         }

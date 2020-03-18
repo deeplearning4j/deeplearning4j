@@ -20,7 +20,7 @@
 
 #include <execution/AffinityManager.h>
 
-namespace nd4j {
+namespace sd {
     int AffinityManager::currentDeviceId() {
         return 0;
     }

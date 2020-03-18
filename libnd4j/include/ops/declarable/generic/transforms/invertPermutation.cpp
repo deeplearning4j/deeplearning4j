@@ -18,13 +18,13 @@
 // @author, Yurii Shyrma (iuriish@yahoo.com), created on 06.12.2017
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_invert_permutation)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/transforms.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 ////////////////////////////////////////////////////////////////////////
@@ -44,7 +44,7 @@ DECLARE_SYN(InvertPermutation, invert_permutation);
 
         DECLARE_TYPES(invert_permutation) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setSameMode(true);
         }
 }

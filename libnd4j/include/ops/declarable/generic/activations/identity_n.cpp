@@ -18,12 +18,12 @@
 //  @author sgazeos@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_identity_n)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(identity_n, 1, 1, true, 0, 0) {
 
@@ -52,8 +52,8 @@ namespace nd4j {
 
         DECLARE_TYPES(identity_n) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
+                    ->setAllowedInputTypes(sd::DataType::ANY)
+                    ->setAllowedOutputTypes(sd::DataType::ANY);
         }
 
     }

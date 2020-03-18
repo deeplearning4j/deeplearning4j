@@ -19,8 +19,8 @@
 //
 
 #include <loops/special_kernels.h>
-#include <NDArray.h>
-namespace nd4j {
+#include <array/NDArray.h>
+namespace sd {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // set up given value to upper diagonal given

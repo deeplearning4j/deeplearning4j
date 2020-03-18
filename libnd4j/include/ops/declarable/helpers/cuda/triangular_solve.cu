@@ -18,13 +18,13 @@
 //  @author GS <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 #include <execution/Threads.h>
-#include <ConstantTadHelper.h>
+#include <helpers/ConstantTadHelper.h>
 #include "../triangular_solve.h"
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             /*
@@ -138,7 +138,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            static int triangularSolveFunctor_(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput,
+            static int triangularSolveFunctor_(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput,
                     bool lower, bool adjoint, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
                 auto leftTads = ConstantTadHelper::getInstance()->tadForDimensions(leftInput->getShapeInfo(), {-2, -1});
@@ -161,7 +161,7 @@ namespace nd4j {
 
             }
 
-            int triangularSolveFunctor(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {
+            int triangularSolveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool lower, bool adjoint, NDArray* output) {
                 BUILD_SINGLE_SELECTOR(leftInput->dataType(), return triangularSolveFunctor_, (context, leftInput, rightInput, lower, adjoint, output), FLOAT_NATIVE);
             }
 
@@ -207,7 +207,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            static void adjointTriangularMatrix_(nd4j::LaunchContext* context, NDArray const* input, bool const lower,
+            static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* input, bool const lower,
                     NDArray* output) {
 
                 auto inputTads = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {-2, -1});
@@ -225,7 +225,7 @@ namespace nd4j {
                 }
             }
 
-            void adjointMatrix(nd4j::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
+            void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output) {
                 BUILD_SINGLE_SELECTOR(input->dataType(), adjointTriangularMatrix_, (context, input, lower, output), FLOAT_NATIVE);
             }
 

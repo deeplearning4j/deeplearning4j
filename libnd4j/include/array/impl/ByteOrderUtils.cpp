@@ -21,8 +21,8 @@
 #include <array/ByteOrderUtils.h>
 
 
-namespace nd4j {
-    ByteOrder ByteOrderUtils::fromFlatByteOrder(nd4j::graph::ByteOrder order) {
+namespace sd {
+    ByteOrder ByteOrderUtils::fromFlatByteOrder(sd::graph::ByteOrder order) {
         return (ByteOrder) order;
     }
 }

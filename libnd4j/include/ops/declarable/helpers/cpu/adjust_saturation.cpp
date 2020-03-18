@@ -25,7 +25,7 @@
 #include <execution/Threads.h>
 
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -58,8 +58,8 @@ static void adjustSaturation_(const NDArray *input, const NDArray* factorScalarA
 
         samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     } else {
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  dimC);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
 
         const Nd4jLong numOfTads   = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];
@@ -89,14 +89,14 @@ static void adjustSaturation_(const NDArray *input, const NDArray* factorScalarA
 }
 
 
-void adjustSaturation(nd4j::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
+void adjustSaturation(sd::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
 
     BUILD_SINGLE_SELECTOR(input->dataType(), adjustSaturation_, (input, factorScalarArr, output, dimC), FLOAT_TYPES);
 }
 
 /*
 template <typename T>
-static void adjust_saturation_single_(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
+static void adjust_saturation_single_(sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
     // we're 100% sure it's 3
     const int numChannels = 3;
     int tuples = array->lengthOf() /  numChannels;
@@ -114,7 +114,7 @@ static void adjust_saturation_single_(nd4j::LaunchContext * context, NDArray *ar
             T h, s, v;
             // Convert the RGB color to Hue/V-range.
             helpers::rgb_to_hsv(i[0], i[1], i[2], &h, &s, &v);
-            s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
+            s = sd::math::nd4j_min<T>((T) 1.0f, sd::math::nd4j_max<T>((T) 0.0f, s * delta));
             // Convert the hue and v-range back into RGB.
             helpers::hsv_to_rgb(h, s, v, o, o + 1, o + 2);
         }
@@ -143,7 +143,7 @@ static void adjust_saturation_single_(nd4j::LaunchContext * context, NDArray *ar
             T h, s, v;
             // Convert the RGB color to Hue/V-range.
             helpers::rgb_to_hsv(_ri[0], _gi[0], _bi[0], &h, &s, &v);
-            s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
+            s = sd::math::nd4j_min<T>((T) 1.0f, sd::math::nd4j_max<T>((T) 0.0f, s * delta));
             // Convert the hue and v-range back into RGB.
             helpers::hsv_to_rgb(h, s, v, _ro, _go, _bo);
         }
@@ -153,7 +153,7 @@ static void adjust_saturation_single_(nd4j::LaunchContext * context, NDArray *ar
     }
 }
 
-void adjust_saturation(nd4j::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+void adjust_saturation(sd::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
     auto xType = array->dataType();
 
     float d = delta->e<float>(0);
@@ -177,7 +177,7 @@ void adjust_saturation(nd4j::LaunchContext * context, NDArray *array, NDArray *o
     }
 }
 
-BUILD_SINGLE_TEMPLATE(template void adjust_saturation_single_, (nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void adjust_saturation_single_, (sd::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC), FLOAT_TYPES);
 */
 
 }

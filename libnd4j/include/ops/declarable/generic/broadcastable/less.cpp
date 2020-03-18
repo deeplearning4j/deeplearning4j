@@ -20,7 +20,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(less, 0, 0) {
             auto x = INPUT_VARIABLE(0);

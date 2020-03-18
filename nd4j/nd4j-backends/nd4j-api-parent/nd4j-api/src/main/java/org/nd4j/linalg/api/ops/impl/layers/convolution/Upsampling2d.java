@@ -17,12 +17,15 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
@@ -34,6 +37,7 @@ import java.util.List;
  */
 @Slf4j
 @Getter
+@NoArgsConstructor
 public class Upsampling2d extends DynamicCustomOp {
 
 
@@ -53,7 +57,20 @@ public class Upsampling2d extends DynamicCustomOp {
     }
 
 
-    public Upsampling2d() {}
+    public Upsampling2d(INDArray input, int scale) {
+        this(input, scale, scale, true);
+    }
+
+    public Upsampling2d(INDArray input, int scaleH, int scaleW, boolean nchw) {
+        super(new INDArray[]{input}, null);
+        this.nchw = nchw;
+        this.scaleH = scaleH;
+        this.scaleW = scaleW;
+
+        addIArgument(scaleH);
+        addIArgument(scaleW);
+        addIArgument(nchw ? 1 : 0);
+    }
 
 
     @Override

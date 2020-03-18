@@ -237,9 +237,16 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
     @Override
     public void setParams(INDArray params) {
-        if (params != null) {
-            throw new UnsupportedOperationException("Not supported");
-        }
+        if(this.params == null && params == null)
+            return;
+        if(this.params == null)
+            throw new IllegalStateException("Cannot set parameters of length " + params.length() + " to a layer with no parameters");
+        if(params == null)
+            throw new IllegalStateException("Cannot set null parameters");
+
+        Preconditions.checkState(this.params.length() == params.length(), "Cannot assign parameter vector of length %s to a layer with %s parameters",
+                params.length(), this.params.length());
+        this.params.assign(params);
     }
 
     protected void setParams(INDArray params, char order) {

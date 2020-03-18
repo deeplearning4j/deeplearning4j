@@ -19,14 +19,14 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 #include "../MmulHelper.h"
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 #include <helpers/BlasHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <exceptions/datatype_exception.h>
 #include <execution/Threads.h>
 
 
-namespace nd4j {
+namespace sd {
 
 //////////////////////////////////////////////////////////////////////////////
 // MXK x KxN = MxN              -> actual sequence of axes doesn't matter
@@ -63,7 +63,7 @@ static  void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC,
         for (auto i = start; i < stop; ++i) {
 
             // evaluate C coordinates
-            shape::index2coords(i, cShapeInfo, cCoords.data());
+            shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
 
             // evaluate A coordinates
             aCoords[aMaxis] = cCoords[cMaxis];
@@ -78,7 +78,7 @@ static  void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC,
 
             T3 val = A[aOffset] * B[bOffset];                       // first iteration
 
-            for (uint j = 1; j < K; ++j) {                          // rest iterations
+            for (int j = 1; j < K; ++j) {                          // rest iterations
                 aOffset += shape::stride(aShapeInfo)[aKaxis];
                 bOffset += shape::stride(bShapeInfo)[bKaxis];
                 val = val + A[aOffset] * B[bOffset];
@@ -131,7 +131,7 @@ static  void usualGemv(const NDArray* vA, const NDArray* vX, NDArray* vY, const 
 
             T3 val = A[aOffset] * X[xOffset];                       // first iteration
 
-            for (uint j = 1; j < N; ++j) {                          // rest iterations
+            for (int j = 1; j < N; ++j) {                          // rest iterations
                 aOffset += aNstride;
                 xOffset += incx;
                 val = val + A[aOffset] * X[xOffset];
@@ -163,7 +163,7 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
 
     T3 sum = 0;
     PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(length > Environment::getInstance()->elementwiseThreshold()) schedule(guided) reduction(OMP_SUMT:sum))
-    for(int i = 0; i < length; ++i)
+    for(Nd4jLong i = 0; i < length; ++i)
             sum += X[i * incx] * Y[i * incy];
 
     if(betaPersent)
@@ -282,7 +282,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
 
 ////////////////////////////////////////////////////////////////////////////
 // MXN x N = M
-NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* Y, const double alpha, const double beta, const char outOrder) {
+NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y, const double alpha, const double beta, const char outOrder) {
 
     if (X->dataType() != A->dataType())
         throw datatype_exception::build("mmulMxV expects all data types to be the same", A->dataType(), X->dataType());
@@ -362,7 +362,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
 
 ////////////////////////////////////////////////////////////////////////////
 // (X * Y) = Z[0]
-NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, nd4j::NDArray* Z, const double alpha, const double beta) {
+NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, const double alpha, const double beta) {
     if (X->dataType() != Y->dataType())
         throw datatype_exception::build("Dot expects all data types to be the same", X->dataType(), Y->dataType());
 
@@ -433,12 +433,12 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB,  NDArray* vC,
 
     auto func = PRAGMA_THREADS_FOR {
 
-        std::vector<Nd4jLong> aCoords(aRank), bCoords(bRank), cCoords(cRank);
+        std::vector<int> aCoords(aRank), bCoords(bRank), cCoords(cRank);
 
         for (auto i = start; i < stop; ++i) {
 
             // evaluate C coordinates
-            shape::index2coords(i, cShapeInfo, cCoords.data());
+            shape::index2coordsCPU(start, i, cShapeInfo, cCoords.data());
 
             // calculate index of current batch
             Nd4jLong batchInd;
@@ -462,7 +462,7 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB,  NDArray* vC,
 
             T3 val = A[aOffset] * B[bOffset];                       // first iteration
 
-            for (uint j = 1; j < K; ++j) {                          // rest iterations
+            for (int j = 1; j < K; ++j) {                          // rest iterations
                 aOffset += shape::stride(aShapeInfo)[aKaxis];
                 bOffset += shape::stride(bShapeInfo)[bKaxis];
                 val = val + A[aOffset] * B[bOffset];

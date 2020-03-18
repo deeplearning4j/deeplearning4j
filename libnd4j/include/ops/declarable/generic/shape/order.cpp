@@ -18,12 +18,12 @@
 // Created by raver119 on 12.02.18.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_order)
 
 #include <ops/declarable/headers/shape.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(order, 1, 1, false, 0, 1) {
             auto input = INPUT_VARIABLE(0);
@@ -36,7 +36,7 @@ namespace nd4j {
 
         DECLARE_TYPES(order) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_INTS});
         }
 

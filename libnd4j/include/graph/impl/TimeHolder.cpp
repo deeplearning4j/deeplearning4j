@@ -20,7 +20,7 @@
 
 #include <graph/TimeHolder.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
 
         void TimeHolder::setOuterTime(int nodeId, Nd4jLong time) {

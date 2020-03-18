@@ -1,14 +1,25 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
+import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.dataset.api.preprocessor.PermuteDataSetPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.*;
 
-public class PermuteDataSetPreProcessorTest {
+public class PermuteDataSetPreProcessorTest extends BaseNd4jTest {
+
+    public PermuteDataSetPreProcessorTest(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
 
     @Test(expected = NullPointerException.class)
     public void when_dataSetIsNull_expect_NullPointerException() {

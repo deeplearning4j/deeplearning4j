@@ -21,7 +21,7 @@
 #ifndef LIBND4J_BYTEORDER_H
 #define LIBND4J_BYTEORDER_H
 
-namespace nd4j {
+namespace sd {
     enum ByteOrder {
         LE = 0,
         BE = 1,

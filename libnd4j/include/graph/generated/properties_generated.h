@@ -8,7 +8,7 @@
 
 #include "array_generated.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct FlatProperties;
@@ -143,7 +143,7 @@ inline flatbuffers::Offset<FlatProperties> CreateFlatPropertiesDirect(
     const std::vector<uint8_t> *b = nullptr,
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *s = nullptr,
     const std::vector<int32_t> *shape = nullptr) {
-  return nd4j::graph::CreateFlatProperties(
+  return sd::graph::CreateFlatProperties(
       _fbb,
       name ? _fbb.CreateString(name) : 0,
       i ? _fbb.CreateVector<int32_t>(*i) : 0,
@@ -155,37 +155,37 @@ inline flatbuffers::Offset<FlatProperties> CreateFlatPropertiesDirect(
       shape ? _fbb.CreateVector<int32_t>(*shape) : 0);
 }
 
-inline const nd4j::graph::FlatProperties *GetFlatProperties(const void *buf) {
-  return flatbuffers::GetRoot<nd4j::graph::FlatProperties>(buf);
+inline const sd::graph::FlatProperties *GetFlatProperties(const void *buf) {
+  return flatbuffers::GetRoot<sd::graph::FlatProperties>(buf);
 }
 
-inline const nd4j::graph::FlatProperties *GetSizePrefixedFlatProperties(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<nd4j::graph::FlatProperties>(buf);
+inline const sd::graph::FlatProperties *GetSizePrefixedFlatProperties(const void *buf) {
+  return flatbuffers::GetSizePrefixedRoot<sd::graph::FlatProperties>(buf);
 }
 
 inline bool VerifyFlatPropertiesBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifyBuffer<nd4j::graph::FlatProperties>(nullptr);
+  return verifier.VerifyBuffer<sd::graph::FlatProperties>(nullptr);
 }
 
 inline bool VerifySizePrefixedFlatPropertiesBuffer(
     flatbuffers::Verifier &verifier) {
-  return verifier.VerifySizePrefixedBuffer<nd4j::graph::FlatProperties>(nullptr);
+  return verifier.VerifySizePrefixedBuffer<sd::graph::FlatProperties>(nullptr);
 }
 
 inline void FinishFlatPropertiesBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatProperties> root) {
+    flatbuffers::Offset<sd::graph::FlatProperties> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedFlatPropertiesBuffer(
     flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<nd4j::graph::FlatProperties> root) {
+    flatbuffers::Offset<sd::graph::FlatProperties> root) {
   fbb.FinishSizePrefixed(root);
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_PROPERTIES_ND4J_GRAPH_H_

@@ -24,7 +24,7 @@
 #include <graph/Variable.h>
 #include <graph/VariableSpace.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs) : DeclarableOp::DeclarableOp(numInputs, numOutputs, opName, false, tArgs, iArgs) {
             // This kind of operations work with sets: NDArrayList
@@ -44,14 +44,14 @@ namespace nd4j {
          * @param block
          * @return
          */
-        ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) {
+        ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) {
             // TODO: ensure this method isn't ever called
 
             auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', {1, 1});
             return SHAPELIST(newShape);
         }
 
-        nd4j::NDArray* nd4j::ops::DeclarableListOp::getZ(Context& block, int inputId) {
+        sd::NDArray* sd::ops::DeclarableListOp::getZ(Context& block, int inputId) {
             //nd4j_printf("wow\n","");
             return nullptr;
         }
@@ -64,7 +64,7 @@ namespace nd4j {
             block.pushNDArrayListToVariableSpace(block.getNodeId(), 0, arrayList);
         }
 
-        ResultSet* DeclarableListOp::execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+        ResultSet DeclarableListOp::execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
             std::vector<NDArray*> ins(inputs);
             std::vector<double> tas(tArgs);
             std::vector<int> ias(iArgs);
@@ -94,7 +94,7 @@ namespace nd4j {
             return status;
         }
 
-        ResultSet* DeclarableListOp::execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs) {
+        ResultSet DeclarableListOp::execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs) {
             VariableSpace varSpace;
             int nodeId = 119;
 
@@ -132,8 +132,8 @@ namespace nd4j {
 
 
             Nd4jStatus result = this->validateAndExecute(block);
-            auto res = new ResultSet();
-            res->setStatus(result);
+            ResultSet res;
+            res.setStatus(result);
 
             for (int e = 0; e < DataTypeUtils::max<int>(); e++) {
                 std::pair<int,int> pair(1, e);
@@ -143,10 +143,10 @@ namespace nd4j {
                         auto arr = var->getNDArray();
                         if (arr->isAttached()) {
                             auto d = arr->detach();
-                            res->push_back(d);
+                            res.push_back(d);
                         } else {
                             var->markRemovable(false);
-                            res->push_back(arr);
+                            res.push_back(arr);
                         }
                     }
                 } else

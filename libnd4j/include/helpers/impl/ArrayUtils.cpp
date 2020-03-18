@@ -20,7 +20,7 @@
 
 #include <helpers/ArrayUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ArrayUtils {
         void toIntPtr(std::initializer_list<int> list, int* target) {
             std::vector<int> vec(list);

@@ -6,7 +6,7 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-namespace nd4j {
+namespace sd {
 namespace graph {
 
 struct LongPair;
@@ -512,6 +512,6 @@ inline flatbuffers::Offset<IntTriple> CreateIntTriple(
 }
 
 }  // namespace graph
-}  // namespace nd4j
+}  // namespace sd
 
 #endif  // FLATBUFFERS_GENERATED_UTILS_ND4J_GRAPH_H_

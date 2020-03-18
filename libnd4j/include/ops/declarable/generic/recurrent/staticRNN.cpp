@@ -21,7 +21,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/rnn.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -58,12 +58,17 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
     const int inSize   = x->sizeAt(2);
     const int numUnits = Wx->sizeAt(1);
 
-    REQUIRE_TRUE(ShapeUtils::shapeAsString(Wh) == ShapeUtils::shapeAsString({numUnits, numUnits}), 0, "STATIC_RNN custom operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({numUnits, numUnits}).c_str(), ShapeUtils::shapeAsString(Wh).c_str());
-    REQUIRE_TRUE(ShapeUtils::shapeAsString(b)  == ShapeUtils::shapeAsString({2*numUnits}), 0, "STATIC_RNN custom operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({2*numUnits}).c_str(), ShapeUtils::shapeAsString(b).c_str());
-    if(h0)
-        REQUIRE_TRUE(ShapeUtils::shapeAsString(h0) == ShapeUtils::shapeAsString({bS, numUnits}), 0, "STATIC_RNN custom operation: wrong shape of initial cell output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString({bS, numUnits}).c_str(), ShapeUtils::shapeAsString(h0).c_str());
+    const std::vector<Nd4jLong> expectedWhShape = {numUnits, numUnits};
+    const std::vector<Nd4jLong> expectedbShape  = {2 * numUnits};
+
+    REQUIRE_TRUE(Wh->isSameShape(expectedWhShape), 0, "STATIC_RNN custom operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWhShape).c_str(), ShapeUtils::shapeAsString(Wh).c_str());
+    REQUIRE_TRUE(b->isSameShape(expectedbShape),   0, "STATIC_RNN custom operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedbShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
+    if(h0) {
+        const std::vector<Nd4jLong> expectedh0Shape = {bS, numUnits};
+        REQUIRE_TRUE(h0->isSameShape(expectedh0Shape), 0, "STATIC_RNN custom operation: wrong shape of initial cell output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(expectedh0Shape).c_str(), ShapeUtils::shapeAsString(h0).c_str());
+    }
     if(maxTimeStep)
-        REQUIRE_TRUE(ShapeUtils::shapeAsString(maxTimeStep)  == ShapeUtils::shapeAsString({bS}), 0, "STATIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({bS}).c_str(), ShapeUtils::shapeAsString(maxTimeStep).c_str());
+        REQUIRE_TRUE(maxTimeStep->isSameShape({bS}), 0, "STATIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({bS}).c_str(), ShapeUtils::shapeAsString(maxTimeStep).c_str());
 
 
     helpers::rnnTimeLoop(block.launchContext(), x, Wx, Wh, b, h0, maxTimeStep,  h, hFinal);
@@ -73,7 +78,7 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
 
 DECLARE_TYPES(static_rnn) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -107,12 +112,17 @@ DECLARE_SHAPE_FN(static_rnn) {
     const int bS       = xShapeInfo[2];
     const int numUnits = WxShapeInfo[2];
 
-    REQUIRE_TRUE(ShapeUtils::shapeAsString(WhShapeInfo) == ShapeUtils::shapeAsString({numUnits, numUnits}), 0, "STATIC_RNN custom operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({numUnits, numUnits}).c_str(), ShapeUtils::shapeAsString(WhShapeInfo).c_str());
-    REQUIRE_TRUE(ShapeUtils::shapeAsString(bShapeInfo)  == ShapeUtils::shapeAsString({2*numUnits}), 0, "STATIC_RNN custom operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({2*numUnits}).c_str(), ShapeUtils::shapeAsString(bShapeInfo).c_str());
-    if(h0ShapeInfo)
-        REQUIRE_TRUE(ShapeUtils::shapeAsString(h0ShapeInfo) == ShapeUtils::shapeAsString({bS, numUnits}), 0, "STATIC_RNN custom operation: wrong shape of initial cell output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString({bS, numUnits}).c_str(), ShapeUtils::shapeAsString(h0ShapeInfo).c_str());
+    const std::vector<Nd4jLong> expectedWhShape = {numUnits, numUnits};
+    const std::vector<Nd4jLong> expectedbShape  = {2 * numUnits};
+
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhShapeInfo, expectedWhShape), 0, "STATIC_RNN custom operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWhShape).c_str(), ShapeUtils::shapeAsString(WhShapeInfo).c_str());
+    REQUIRE_TRUE(ShapeUtils::areShapesEqual(bShapeInfo, expectedbShape), 0, "STATIC_RNN custom operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedbShape).c_str(), ShapeUtils::shapeAsString(bShapeInfo).c_str());
+    if(h0ShapeInfo){
+        const std::vector<Nd4jLong> expectedh0Shape = {bS, numUnits};
+        REQUIRE_TRUE(ShapeUtils::areShapesEqual(h0ShapeInfo, expectedh0Shape), 0, "STATIC_RNN custom operation: wrong shape of initial cell output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(expectedh0Shape).c_str(), ShapeUtils::shapeAsString(h0ShapeInfo).c_str());
+    }
     if(maxTimeStepShapeInfo)
-        REQUIRE_TRUE(ShapeUtils::shapeAsString(maxTimeStepShapeInfo)  == ShapeUtils::shapeAsString({bS}), 0, "STATIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({bS}).c_str(), ShapeUtils::shapeAsString(maxTimeStepShapeInfo).c_str());
+        REQUIRE_TRUE(ShapeUtils::areShapesEqual(maxTimeStepShapeInfo, {bS}), 0, "STATIC_RNN custom operation: wrong shape of maxTimeStep array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString({bS}).c_str(), ShapeUtils::shapeAsString(maxTimeStepShapeInfo).c_str());
 
     // evaluate output shapeInfos
     Nd4jLong *hShapeInfo(nullptr), *hPrevShapeInfo(nullptr);

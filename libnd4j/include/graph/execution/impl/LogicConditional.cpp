@@ -19,12 +19,12 @@
 //
 
 #include <graph/execution/LogicConditional.h>
-#include <GraphExecutioner.h>
+#include <graph/GraphExecutioner.h>
 #include <graph/execution/LogicReturn.h>
-#include <Status.h>
+#include <graph/Status.h>
 
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicConditional::processNode(Graph *graph, Node *node) {
             auto __variableSpace = graph->getVariableSpace();
@@ -130,7 +130,7 @@ namespace nd4j {
                 }
             }
 
-            return nd4j::Status::OK();
+            return sd::Status::OK();
         }
     }
 }

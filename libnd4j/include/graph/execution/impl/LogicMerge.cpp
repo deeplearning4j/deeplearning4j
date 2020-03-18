@@ -19,9 +19,9 @@
 //
 
 #include <graph/execution/LogicMerge.h>
-#include <Status.h>
+#include <graph/Status.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         Nd4jStatus LogicMerge::processNode(Graph *graph, Node *node) {
             // at merge node only one of inputs exist if that's just switch and other node isn't LogicNextItration

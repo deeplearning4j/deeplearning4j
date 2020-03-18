@@ -23,7 +23,7 @@
 
 #include "ConstantDataBuffer.h"
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT TadPack {
     private:
         ConstantDataBuffer _tadShape;

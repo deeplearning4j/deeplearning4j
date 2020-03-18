@@ -32,7 +32,7 @@
 
 #endif
 
-namespace nd4j {
+namespace sd {
 
     template <typename T>
     static std::string transformBenchmark() {
@@ -262,7 +262,7 @@ namespace nd4j {
         output += helper.runOperationSuit(&rbMax, (const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>)(generator), batch, "Maximum - Full Array Reduction");
 
         //Index reduction
-        nd4j::ops::argmax opArgmax;
+        sd::ops::argmax opArgmax;
         DeclarableBenchmark dbArgmax(opArgmax, "Argmax");
         auto generator3 = PARAMETRIC_D(){
             auto ctx = new Context(1);
@@ -353,7 +353,7 @@ namespace nd4j {
             std::string s5("Argmax Along Dimension - ");
             s5 += std::to_string(length[i]);
 
-            nd4j::ops::argmax opArgmax;
+            sd::ops::argmax opArgmax;
             DeclarableBenchmark dbArgmax(opArgmax, "Argmax");
             output += helper.runOperationSuit(&dbArgmax, generator3, batch, s5.c_str());
         }
@@ -371,7 +371,7 @@ namespace nd4j {
         PredefinedParameters k("k", {2, 3});
 
         ParametersBatch batch({&nhwc, &k});
-        nd4j::ops::conv2d conv2d;
+        sd::ops::conv2d conv2d;
         DeclarableBenchmark benchmark(conv2d, "conv2d");
 
         int hw = 64;
@@ -462,11 +462,11 @@ namespace nd4j {
             return ctx;
         };
 
-        nd4j::ops::avgpool2d avgpool2d;
+        sd::ops::avgpool2d avgpool2d;
         DeclarableBenchmark benchmark1(avgpool2d, "avgpool");
         output += helper.runOperationSuit(&benchmark1, generator, batch, "Average Pool 2d");
 
-        nd4j::ops::maxpool2d maxpool2d;
+        sd::ops::maxpool2d maxpool2d;
         DeclarableBenchmark benchmark2(maxpool2d, "maxpool");
         output += helper.runOperationSuit(&benchmark2, generator, batch, "Max Pool 2d");
         return output;
@@ -483,7 +483,7 @@ namespace nd4j {
         int n = 128;
 
         ParametersBatch batch({&format, &mb});
-        nd4j::ops::lstmBlock lstmBlock;
+        sd::ops::lstmBlock lstmBlock;
         DeclarableBenchmark benchmark(lstmBlock, "lstm");
 
         int seqLength = 8;
@@ -585,7 +585,7 @@ namespace nd4j {
         };
 
         std::string s("add");
-        nd4j::ops::add op;
+        sd::ops::add op;
         DeclarableBenchmark benchmark(op, "add");
         output += helper.runOperationSuit(&benchmark, generator, batch, "Broadcast (Custom) Add - 2d");
         return output;
@@ -593,9 +593,9 @@ namespace nd4j {
 
     std::string LightBenchmarkSuit::runSuit() {
 #ifdef RELEASE_BUILD
-        std::vector<nd4j::DataType> dtypes({nd4j::DataType::FLOAT32, nd4j::DataType::HALF});
+        std::vector<sd::DataType> dtypes({sd::DataType::FLOAT32, sd::DataType::HALF});
 #else
-        std::vector<nd4j::DataType> dtypes({nd4j::DataType::FLOAT32});
+        std::vector<sd::DataType> dtypes({sd::DataType::FLOAT32});
 #endif
 
         std::string result;
@@ -609,7 +609,7 @@ namespace nd4j {
 
             nd4j_printf("Running LightBenchmarkSuite.pairwiseBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += pairwiseBenchmark, (), LIBND4J_TYPES);
-/*
+
             nd4j_printf("Running LightBenchmarkSuite.reduceFullBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += reduceFullBenchmark, (), LIBND4J_TYPES);
 
@@ -627,13 +627,13 @@ namespace nd4j {
 
             nd4j_printf("Running LightBenchmarkSuite.lstmBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += lstmBenchmark, (), LIBND4J_TYPES);
-            */
+
         }
 
         nd4j_printf("Running LightBenchmarkSuite.broadcast2d\n", "");
-        //result += broadcast2d();
+        result += broadcast2d();
         nd4j_printf("Running LightBenchmarkSuite.mismatchedOrderAssign\n", "");
-        //result += mismatchedOrderAssign();
+        result += mismatchedOrderAssign();
 
         return result;
     }

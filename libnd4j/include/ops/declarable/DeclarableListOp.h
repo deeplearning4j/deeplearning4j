@@ -26,15 +26,15 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/DeclarableOp.h>
 
-using namespace nd4j::graph;
+using namespace sd::graph;
 
-namespace nd4j {
+namespace sd {
     namespace ops {
-        class ND4J_EXPORT DeclarableListOp : public nd4j::ops::DeclarableOp {
+        class ND4J_EXPORT DeclarableListOp : public sd::ops::DeclarableOp {
         protected:
             Nd4jStatus validateAndExecute(Context& block) override = 0;
 
-            nd4j::NDArray* getZ(Context& block, int inputId) ;
+            sd::NDArray* getZ(Context& block, int inputId) ;
             void setupResult(NDArray* array, Context& block);
             void setupResultList(NDArrayList* arrayList, Context& block);
 
@@ -45,10 +45,10 @@ namespace nd4j {
             Nd4jStatus execute(Context* block) override;
             
 
-            ResultSet* execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs);
-            ResultSet* execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs);
+            ResultSet execute(NDArrayList* list, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs);
+            ResultSet execute(NDArrayList* list, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) override;
         };
     }
 }

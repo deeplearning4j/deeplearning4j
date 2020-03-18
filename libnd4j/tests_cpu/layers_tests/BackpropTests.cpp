@@ -21,9 +21,9 @@
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::ops;
+using namespace sd::graph;
 
 class BackpropTests : public testing::Test {
 public:
@@ -32,20 +32,18 @@ public:
 
 TEST_F(BackpropTests, Test_Add_1) {
 
-    NDArray x('c', {2, 3, 4}, nd4j::DataType::FLOAT32);
-    NDArray y('c', {3, 4}, nd4j::DataType::FLOAT32);
-    NDArray e('c', {2, 3, 4}, nd4j::DataType::FLOAT32);
+    NDArray x('c', {2, 3, 4}, sd::DataType::FLOAT32);
+    NDArray y('c', {3, 4}, sd::DataType::FLOAT32);
+    NDArray e('c', {2, 3, 4}, sd::DataType::FLOAT32);
 
-    nd4j::ops::add_bp op;
+    sd::ops::add_bp op;
     auto result = op.evaluate({&x, &y, &e});
 
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    auto eps = result->at(0);
-    auto grad = result->at(1);
+    auto eps = result.at(0);
+    auto grad = result.at(1);
 
     ASSERT_TRUE(x.isSameShape(eps));
     ASSERT_TRUE(y.isSameShape(grad));
-
-    delete result;
 }

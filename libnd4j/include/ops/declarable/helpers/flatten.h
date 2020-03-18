@@ -22,15 +22,15 @@
 #define DEV_TESTS_FLATTEN_H
 
 #include <vector>
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////
-void flatten(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order);
+void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order);
 
 
 //////////////////////////////////////////////////////////////////////

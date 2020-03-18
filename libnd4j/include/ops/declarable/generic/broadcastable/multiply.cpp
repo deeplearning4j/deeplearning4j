@@ -19,12 +19,12 @@
 //  @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_multiply)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
     BROADCASTABLE_OP_IMPL(multiply, 0, 0) {
@@ -38,7 +38,7 @@ namespace ops {
         const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
         REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
 
-        auto tZ = BroadcastHelper::broadcastApply(nd4j::BroadcastOpsTuple::Multiply(), x, y, z);
+        auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Multiply(), x, y, z);
         if (tZ == nullptr)
             return ND4J_STATUS_KERNEL_FAILURE;
         else if (tZ != z)

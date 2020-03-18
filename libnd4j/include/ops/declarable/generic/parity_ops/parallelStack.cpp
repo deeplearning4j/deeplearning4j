@@ -18,13 +18,13 @@
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 01.11.2017
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_parallel_stack)
 
 #include <ops/declarable/CustomOperations.h>
 #include<ops/declarable/helpers/stack.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 
@@ -41,14 +41,14 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
 		inArrs[i] = INPUT_VARIABLE(i);
 
 	const int dim = 0;
-	helpers::stack(block.launchContext(), inArrs, output, dim);
+	helpers::stack(block.launchContext(), inArrs, *output, dim);
 
   	return Status::OK();
 }
 
 	DECLARE_TYPES(parallel_stack) {
 		getOpDescriptor()
-				->setAllowedInputTypes(nd4j::DataType::ANY)
+				->setAllowedInputTypes(sd::DataType::ANY)
 				->setAllowedOutputTypes({ALL_FLOATS});
 	}
 

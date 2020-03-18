@@ -21,7 +21,7 @@
 #ifndef ND4J_DATATYPE_H
 #define ND4J_DATATYPE_H
 
-namespace nd4j {
+namespace sd {
     enum DataType {
         INHERIT = 0,
         BOOL = 1,

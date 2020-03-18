@@ -23,9 +23,9 @@
 
 #include <ops/declarable/DeclarableOp.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
-        class ND4J_EXPORT DeclarableCustomOp : public nd4j::ops::DeclarableOp {
+        class ND4J_EXPORT DeclarableCustomOp : public sd::ops::DeclarableOp {
         protected:
             /**
              * This method executes this Op
@@ -34,7 +34,7 @@ namespace nd4j {
         public:
             DeclarableCustomOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShapes, nd4j::graph::Context& block) override = 0;
+            ShapeList* calculateOutputShape(ShapeList* inputShapes, sd::graph::Context& block) override = 0;
         };
     }
 }

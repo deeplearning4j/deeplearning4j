@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
@@ -36,6 +37,7 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 
@@ -97,11 +99,6 @@ public abstract class SameDiffVertex extends GraphVertex implements TrainingConf
             defineParametersAndInputs(vertexParams);
         }
         return vertexParams;
-    }
-
-    @Override
-    public GraphVertex clone() {
-        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override

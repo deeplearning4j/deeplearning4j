@@ -23,7 +23,7 @@
 
 #include <ops/declarable/headers/common.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
          * This operation toggles individual bits of each element in array

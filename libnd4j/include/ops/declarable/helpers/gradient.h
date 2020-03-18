@@ -19,17 +19,17 @@
 //
 #ifndef __GRADIENT_H_HELPERS__
 #define __GRADIENT_H_HELPERS__
-#include <op_boilerplate.h>
-#include <NDArray.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
     /*
      * applyGradientDescent: calculate z = x - y * w.
      * */
-    void applyGradientDescent(nd4j::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output);
+    void applyGradientDescent(sd::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output);
 
 }
 }

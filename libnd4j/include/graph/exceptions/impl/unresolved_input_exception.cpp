@@ -18,10 +18,10 @@
 // @author raver119@gmail.com
 //
 
-#include <exceptions/unresolved_input_exception.h>
-#include <StringUtils.h>
+#include <graph/exceptions/unresolved_input_exception.h>
+#include <helpers/StringUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace graph {
         unresolved_input_exception::unresolved_input_exception(std::string message) : std::runtime_error(message) {
             //

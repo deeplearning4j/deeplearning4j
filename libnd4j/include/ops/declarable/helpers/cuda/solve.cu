@@ -18,18 +18,18 @@
 //  @author GS <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
-#include <NDArray.h>
-#include <NDArrayFactory.h>
-#include <MmulHelper.h>
+#include <system/op_boilerplate.h>
+#include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
+#include <helpers/MmulHelper.h>
 
 #include <execution/Threads.h>
-#include <ConstantTadHelper.h>
+#include <helpers/ConstantTadHelper.h>
 #include "../triangular_solve.h"
 #include "../lup.h"
 #include "../solve.h"
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
     
@@ -63,7 +63,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            static int solveFunctor_(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput,
+            static int solveFunctor_(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput,
                                      bool adjoint, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
                 // stage 1: LU decomposition batched
@@ -94,7 +94,7 @@ namespace nd4j {
                 return Status::OK();
             }
 
-            int solveFunctor(nd4j::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
+            int solveFunctor(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput, bool adjoint, NDArray* output) {
                 BUILD_SINGLE_SELECTOR(leftInput->dataType(), return solveFunctor_, (context, leftInput, rightInput, adjoint, output), FLOAT_TYPES);
             }
 
@@ -118,7 +118,7 @@ namespace nd4j {
             }
 
             template <typename T>
-            static void adjointMatrix_(nd4j::LaunchContext* context, NDArray const* input, NDArray* output) {
+            static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {input});
                 auto inputTads = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {-2, -1});
                 auto outputTads = ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {-2, -1});
@@ -131,7 +131,7 @@ namespace nd4j {
                 NDArray::registerSpecialUse({output}, {input});
             }
 
-            void adjointMatrix(nd4j::LaunchContext* context, NDArray const* input, NDArray* output) {
+            void adjointMatrix(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
                 BUILD_SINGLE_SELECTOR(input->dataType(), adjointMatrix_, (context, input, output), FLOAT_TYPES);
             }
 

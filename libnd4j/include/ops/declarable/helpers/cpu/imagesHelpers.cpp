@@ -24,7 +24,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
@@ -51,22 +51,22 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
 
     auto func = PRAGMA_THREADS_FOR{
 
-         Nd4jLong coords[MAX_RANK];
-         for (auto i = start; i < stop; i++) {
-             shape::index2coords(i, output.getShapeInfo(), coords);
-             const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
-             const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);
-             const auto xOffset1 = xOffset0 + input.strideAt(dimC);
-             const auto xOffset2 = xOffset1 + input.strideAt(dimC);
-             z[zOffset] = 0.2989f*x[xOffset0] + 0.5870f*x[xOffset1] + 0.1140f*x[xOffset2];
-         }
-     };
+        int coords[MAX_RANK];
+        for (auto i = start; i < stop; i++) {
+            shape::index2coordsCPU(start, i, output.getShapeInfo(), coords);
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+            const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);
+            const auto xOffset1 = xOffset0 + input.strideAt(dimC);
+            const auto xOffset2 = xOffset1 + input.strideAt(dimC);
+            z[zOffset] = 0.2989f*x[xOffset0] + 0.5870f*x[xOffset1] + 0.1140f*x[xOffset2];
+        }
+    };
 
-     samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
-     return;
+    samediff::Threads::parallel_for(func, 0, output.lengthOf(), 1);
+    return;
 }
 
-void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformRgbGrs(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrs_, (input, output, dimC), NUMERIC_TYPES);
 }
 
@@ -78,9 +78,9 @@ FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, con
     const int rank = input.rankOf();
     bool bSimple = (dimC == rank - 1 && 'c' == input.ordering() && 1 == input.ews() &&
                      'c' == output.ordering() && 1 == output.ews());
-    
+
     if (bSimple) {
-        
+
         auto func = PRAGMA_THREADS_FOR{
             for (auto i = start; i < stop; i += increment) {
                 op(x[i], x[i + 1], x[i + 2], z[i], z[i + 1], z[i + 2]);
@@ -91,8 +91,8 @@ FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, con
         return;
     }
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimC);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimC);
 
     const Nd4jLong numOfTads = packX.numberOfTads();
     const Nd4jLong xDimCstride = input.stridesOf()[dimC];
@@ -112,21 +112,21 @@ FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, con
 
 template <typename T>
 FORCEINLINE static void rgbYuv_(const NDArray& input, NDArray& output, const int dimC) {
-    auto op = nd4j::ops::helpers::rgbYuv<T>;
+    auto op = sd::ops::helpers::rgbYuv<T>;
     return rgbToFromYuv_<T>(input, output, dimC, op);
 }
 
-void transformRgbYuv(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformRgbYuv(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input.dataType(), rgbYuv_, (input, output, dimC), FLOAT_TYPES);
 }
 
 template <typename T>
 FORCEINLINE static void yuvRgb_(const NDArray& input, NDArray& output, const int dimC) {
-    auto op = nd4j::ops::helpers::yuvRgb<T>;
+    auto op = sd::ops::helpers::yuvRgb<T>;
     return rgbToFromYuv_<T>(input, output, dimC, op);
 }
 
-void transformYuvRgb(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformYuvRgb(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input.dataType(), yuvRgb_, (input, output, dimC), FLOAT_TYPES);
 }
 
@@ -149,8 +149,8 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
         samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
 
         const Nd4jLong numOfTads = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];
@@ -177,12 +177,12 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
 
     const T* x = input->bufferAsT<T>();
     T* z = output->bufferAsT<T>();
-    // TODO: Use tensordot or other optimizied helpers to see if we can get better performance. 
+    // TODO: Use tensordot or other optimizied helpers to see if we can get better performance.
 
     if (dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
         auto func = PRAGMA_THREADS_FOR{
-            for (auto i = start; i < stop; i += increment) { 
+            for (auto i = start; i < stop; i += increment) {
                 //simple M*v //tr.T*v.T // v * tr  //rule: (AB)' =B'A'
                 // v.shape (1,3) row vector
                 T x0, x1, x2;
@@ -192,15 +192,15 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
                 z[i]   = x0 * tr[0][0] + x1 * tr[1][0] + x2 * tr[2][0];
                 z[i+1] = x0 * tr[0][1] + x1 * tr[1][1] + x2 * tr[2][1];
                 z[i+2] = x0 * tr[0][2] + x1 * tr[1][2] + x2 * tr[2][2];
-                
+
             }
         };
 
         samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
 
         const Nd4jLong numOfTads = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];
@@ -231,13 +231,13 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
 
 template <typename T>
 FORCEINLINE static void hsvRgb(const NDArray* input, NDArray* output, const int dimC) {
-    auto op = nd4j::ops::helpers::hsvToRgb<T>;
+    auto op = sd::ops::helpers::hsvToRgb<T>;
     return tripleTransformer<T>(input, output, dimC, op);
 }
 
 template <typename T>
 FORCEINLINE static void rgbHsv(const NDArray* input, NDArray* output, const int dimC) {
-    auto op = nd4j::ops::helpers::rgbToHsv<T>;
+    auto op = sd::ops::helpers::rgbToHsv<T>;
     return tripleTransformer<T>(input, output, dimC, op);
 }
 
@@ -266,19 +266,19 @@ FORCEINLINE static void yiqRgb(const NDArray* input, NDArray* output, const int 
 
 
 
-void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformHsvRgb(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input->dataType(), hsvRgb, (input, output, dimC), FLOAT_TYPES);
 }
 
-void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformRgbHsv(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input->dataType(), rgbHsv, (input, output, dimC), FLOAT_TYPES);
 }
 
-void transformYiqRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformYiqRgb(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input->dataType(), yiqRgb, (input, output, dimC), FLOAT_TYPES);
 }
 
-void transformRgbYiq(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformRgbYiq(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input->dataType(), rgbYiq, (input, output, dimC), FLOAT_TYPES);
 }
 

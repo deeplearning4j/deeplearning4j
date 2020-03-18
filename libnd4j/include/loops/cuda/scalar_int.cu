@@ -20,7 +20,7 @@
 //
 
 #include "../scalar_int.h"
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <types/types.h>
 
 #include "../legacy_ops.h"
@@ -216,7 +216,7 @@ void ScalarIntTransform<X>::executeCudaShaped(dim3& launchDims, cudaStream_t *st
                                                 void* vscalar,
                                                 void *vextraParams) {
 
-    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance()->isDebugAndVerbose())
         printf("H14 opNum:[%i]\n", opNum);
 
     DISPATCH_BY_OPNUM_T(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalar, vextraParams, nullptr), SCALAR_INT_OPS);

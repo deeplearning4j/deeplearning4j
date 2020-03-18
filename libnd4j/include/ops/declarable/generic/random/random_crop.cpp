@@ -22,7 +22,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/random_crop.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 
@@ -65,7 +65,7 @@ DECLARE_SHAPE_FN(random_crop) {
 
         DECLARE_TYPES(random_crop) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(sd::DataType::ANY)
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
 }

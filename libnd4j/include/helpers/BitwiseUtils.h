@@ -23,11 +23,11 @@
 
 #include <vector>
 #include <array/ByteOrder.h>
-#include <op_boilerplate.h>
-#include <pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
 #include <climits>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT BitwiseUtils {
     public:
 
@@ -55,7 +55,7 @@ namespace nd4j {
          * This method returns enum
          * @return
          */
-        static nd4j::ByteOrder asByteOrder();
+        static sd::ByteOrder asByteOrder();
 
         /**
          * This method swaps bytes: LE vs BE

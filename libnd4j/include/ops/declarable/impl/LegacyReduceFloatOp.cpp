@@ -21,11 +21,11 @@
 #include <ops/declarable/LegacyReduceFloatOp.h>
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
-#include <Status.h>
+#include <graph/Status.h>
 #include <helpers/ConstantTadHelper.h>
 #include <array/DataTypeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyReduceFloatOp::LegacyReduceFloatOp() : LegacyOp::LegacyOp(1) {
             //
@@ -61,7 +61,7 @@ namespace nd4j {
                     allAxes = true;
 
                 // _axis.(block.getIArguments()->size() == 0) ||
-                //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>())
+                //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == sd::DataTypeUtils::max<int>())
                 if (block.getAxis()->empty() || allAxes) {
                     // scalar
                     NativeOpExecutioner::execReduceFloatScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -76,7 +76,7 @@ namespace nd4j {
 
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
 
                     auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
@@ -102,14 +102,14 @@ namespace nd4j {
                     dims[e] = f >= 0 ? f : f += x->rankOf();
                 }
 
-                if ((block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>()) || allAxes) {
+                if ((block.getIArguments()->size() == 1 && INT_ARG(0) == sd::DataTypeUtils::max<int>()) || allAxes) {
                     // scalar
                     NativeOpExecutioner::execReduceFloatScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
 
                     auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
@@ -130,7 +130,7 @@ namespace nd4j {
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions
         */
-        ShapeList *LegacyReduceFloatOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyReduceFloatOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;

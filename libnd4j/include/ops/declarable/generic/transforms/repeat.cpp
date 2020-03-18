@@ -18,12 +18,12 @@
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_repeat)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 
 //////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ CUSTOM_OP_IMPL(repeat, 1, 1, true, 0, -1) {
 
 DECLARE_TYPES(repeat) {
     getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setSameMode(true);
 }
 

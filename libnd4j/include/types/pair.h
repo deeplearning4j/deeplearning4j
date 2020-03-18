@@ -21,9 +21,9 @@
 #ifndef LIBND4J_PAIR_H
 #define LIBND4J_PAIR_H
 
-#include <dll.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT Pair {
     protected:
         int _first = 0;

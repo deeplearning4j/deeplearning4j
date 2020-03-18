@@ -20,42 +20,42 @@
 
 #include "memory/MemoryReport.h"
 
-bool nd4j::memory::MemoryReport::operator<(const nd4j::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator<(const sd::memory::MemoryReport &other) const {
     return this->_rss < other._rss;
 }
 
-bool nd4j::memory::MemoryReport::operator>(const nd4j::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator>(const sd::memory::MemoryReport &other) const {
     return this->_rss > other._rss;
 }
 
-bool nd4j::memory::MemoryReport::operator==(const nd4j::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator==(const sd::memory::MemoryReport &other) const {
     return this->_rss == other._rss;
 }
 
-bool nd4j::memory::MemoryReport::operator!=(const nd4j::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator!=(const sd::memory::MemoryReport &other) const {
     return this->_rss != other._rss;
 }
 
-bool nd4j::memory::MemoryReport::operator<=(const nd4j::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator<=(const sd::memory::MemoryReport &other) const {
     return this->_rss <= other._rss;
 }
 
-bool nd4j::memory::MemoryReport::operator>=(const nd4j::memory::MemoryReport &other) const {
+bool sd::memory::MemoryReport::operator>=(const sd::memory::MemoryReport &other) const {
     return this->_rss >= other._rss;
 }
 
-Nd4jLong nd4j::memory::MemoryReport::getVM() const {
+Nd4jLong sd::memory::MemoryReport::getVM() const {
     return _vm;
 }
 
-void nd4j::memory::MemoryReport::setVM(Nd4jLong _vm) {
+void sd::memory::MemoryReport::setVM(Nd4jLong _vm) {
     MemoryReport::_vm = _vm;
 }
 
-Nd4jLong nd4j::memory::MemoryReport::getRSS() const {
+Nd4jLong sd::memory::MemoryReport::getRSS() const {
     return _rss;
 }
 
-void nd4j::memory::MemoryReport::setRSS(Nd4jLong _rss) {
+void sd::memory::MemoryReport::setRSS(Nd4jLong _rss) {
     MemoryReport::_rss = _rss;
 }

@@ -18,13 +18,13 @@
 // @author George A. Shulinok <sgazeos@gmail.com), created on 4/18/2019.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_barnes_gains)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops  {
 		
     OP_IMPL(barnes_gains, 3, 1, true) {
@@ -40,7 +40,7 @@ namespace ops  {
 
     DECLARE_TYPES(barnes_gains) {
         getOpDescriptor()
-            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedInputTypes(sd::DataType::ANY)
             ->setSameMode(true);
     }
 }

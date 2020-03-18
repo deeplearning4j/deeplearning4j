@@ -23,11 +23,11 @@
 #define LIBND4J_HELPER_HASH_H
 
 #include <string>
-#include <dll.h>
-#include <pointercast.h>
+#include <system/dll.h>
+#include <system/pointercast.h>
 #include <mutex>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         class ND4J_EXPORT HashHelper {
         private:

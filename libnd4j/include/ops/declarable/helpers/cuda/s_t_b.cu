@@ -20,9 +20,9 @@
 //
 
 #include <ops/declarable/helpers/s_t_b.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -43,12 +43,12 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
     const auto x = reinterpret_cast<const T*>(vx);
           auto z = reinterpret_cast<T*>(vz);
 
-    __shared__ int rank;
-    __shared__ Nd4jLong zLen, *sharedMem;
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong zLen;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -84,7 +84,7 @@ static void batchToSpaceCudaLauncher(const int blocksPerGrid, const int threadsP
 BUILD_SINGLE_TEMPLATE(template void batchToSpaceCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint cropBottom, const uint cropLeft), LIBND4J_TYPES);
 
 ///////////////////////////////////////////////////////////////////
-void batchToSpace(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const uint cropBottom, const uint cropTop, const uint cropLeft, const uint cropRight, const uint blockSize) {
+void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& output, const uint cropBottom, const uint cropTop, const uint cropLeft, const uint cropRight, const uint blockSize) {
 
     // [bS*blockSize*blockSize, H/blockSize, W/blockSize, iC] is rearranged/permuted to [bS, oH, oW, iC]
     // oH = H - cropTop  - cropBottom
@@ -103,7 +103,7 @@ void batchToSpace(nd4j::LaunchContext* context, const NDArray& input, NDArray& o
 
         const int threadsPerBlock = MAX_NUM_THREADS / 2;
         const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+        const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
 
         PointersManager manager(context, "batchToSpace");
 
@@ -138,13 +138,13 @@ __global__ static void batchToSpaceNDCuda(const void* vx, const Nd4jLong* xShape
     const auto y = reinterpret_cast<const Y*>(vy);
           auto z = reinterpret_cast<X*>(vz);
 
-    __shared__ int rank;
-    __shared__ Nd4jLong zLen, *sharedMem;
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong zLen;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -181,7 +181,7 @@ static void batchToSpaceNDCudaLauncher(const int blocksPerGrid, const int thread
 BUILD_DOUBLE_TEMPLATE(template void batchToSpaceNDCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop, NDArray& output) {
+void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop, NDArray& output) {
 
     // 4D example, numOfSpatialDims = 2 - two spatial dimensions
     // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  - cropBottom, iW*blockShape[1] - cropLeft - cropRight, iC]
@@ -234,7 +234,7 @@ void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const ND
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+        const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
 
         PointersManager manager(context, "batchToSpaceND");
 
@@ -264,12 +264,12 @@ __global__ static void spaceToBatchCuda(const void* vx, const Nd4jLong* xShapeIn
     const auto x = reinterpret_cast<const T*>(vx);
           auto z = reinterpret_cast<T*>(vz);
 
-    __shared__ int rank;
-    __shared__ Nd4jLong zLen, *sharedMem;
+    __shared__ int rank, *sharedMem;
+    __shared__ Nd4jLong zLen;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -309,7 +309,7 @@ static void spaceToBatchCudaLauncher(const int blocksPerGrid, const int threadsP
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight), LIBND4J_TYPES);
 
 ///////////////////////////////////////////////////////////////////
-void spaceToBatch(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight, const uint blockSize) {
+void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight, const uint blockSize) {
 
     // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW + padLeft + padRight)/blockSize, iC]
 
@@ -326,7 +326,7 @@ void spaceToBatch(nd4j::LaunchContext* context, const NDArray& input, NDArray& o
 
         const int threadsPerBlock = MAX_NUM_THREADS / 2;
         const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+        const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
 
         PointersManager manager(context, "spaceToBatch");
 
@@ -364,13 +364,13 @@ __global__ static void spaceToBatchNDCuda(const void* vx, const Nd4jLong* xShape
     const auto y = reinterpret_cast<const Y*>(vy);
           auto z = reinterpret_cast<X*>(vz);
 
-    __shared__ int rank;    // xRank = zRank, yRank = 2;
-    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
+    __shared__ int rank, *sharedMem;    // xRank = zRank, yRank = 2;
+    __shared__ Nd4jLong zLen, totalThreads;
 
     if (threadIdx.x == 0) {
 
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
@@ -420,7 +420,7 @@ static void spaceToBatchNDCudaLauncher(const int blocksPerGrid, const int thread
 BUILD_DOUBLE_TEMPLATE(template void spaceToBatchNDCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding, NDArray& output ) {
+void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding, NDArray& output ) {
 
     // 4D example with two spatial dimensions
     // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockShape[0]*blockShape[1], (iH + padBottom + padTop)/blockShape[0], (iW + padLeft + padRight)/blockShape[1], iC]
@@ -473,7 +473,7 @@ void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const ND
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+        const int sharedMem = threadsPerBlock * sizeof(int) * output.rankOf() + 128;
 
         PointersManager manager(context, "spaceToBatchND");
 
@@ -523,13 +523,13 @@ void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const ND
     };
 
     template <typename T, int NUM_BLOCK_DIMS, bool B2S>
-    void _execute(nd4j::LaunchContext * context, void *vptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *vptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides) {
+    void _execute(sd::LaunchContext * context, void *vptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *vptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides) {
         auto ptrSpace = reinterpret_cast<T *>(vptrSpace);
         auto ptrBatch = reinterpret_cast<T *>(vptrBatch);
         SpaceToBatchHelper<NUM_BLOCK_DIMS, B2S>::run(ptrSpace, space_shape, space_strides, block_shape, pad_start, block_offsets, ptrBatch, batch_shape, batch_strides);
     };
 
-    Nd4jStatus _batchToSpace(nd4j::LaunchContext * context, int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *crops) {
+    Nd4jStatus _batchToSpace(sd::LaunchContext * context, int internal_block_dims, NDArray *input, NDArray *output, std::vector<Nd4jLong> &internal_input_shape, std::vector<Nd4jLong> &internal_output_shape, Nd4jLong *block_shape, Nd4jLong *crops) {
 
         return Status::OK();
     }
@@ -542,7 +542,7 @@ void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const ND
 #define STB_BOOL (0, false),\
                  (1, true)
 
-    BUILD_TRIPLE_TEMPLATE(template void _execute, (nd4j::LaunchContext * context, void *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides), LIBND4J_TYPES, STB_DIM, STB_BOOL);
+    BUILD_TRIPLE_TEMPLATE(template void _execute, (sd::LaunchContext * context, void *ptrSpace, const Nd4jLong *space_shape, const Nd4jLong *space_strides, const Nd4jLong *block_shape, const Nd4jLong *pad_start, const Nd4jLong *block_offsets, void *ptrBatch, const Nd4jLong *batch_shape, const Nd4jLong *batch_strides), LIBND4J_TYPES, STB_DIM, STB_BOOL);
 
 #undef STB_BOOL
 #undef STB_DIM

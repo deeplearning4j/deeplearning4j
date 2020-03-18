@@ -19,11 +19,11 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/declarable/OpTuple.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
+using namespace sd;
+using namespace sd::ops;
 
 class OpTupleTests : public testing::Test {
     public:

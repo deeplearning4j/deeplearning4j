@@ -78,7 +78,7 @@ namespace samediff {
     ThreadPool::ThreadPool() {
         // TODO: number of threads must reflect number of cores for UMA system. In case of NUMA it should be per-device pool
         // FIXME: on mobile phones this feature must NOT be used
-        _available = nd4j::Environment::getInstance()->maxThreads();
+        _available = sd::Environment::getInstance()->maxThreads();
 
         _queues.resize(_available.load());
         _threads.resize(_available.load());

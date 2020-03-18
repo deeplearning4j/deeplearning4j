@@ -27,13 +27,13 @@
 #include <array/ConstantDataBuffer.h>
 #include <mutex>
 
-namespace nd4j {
+namespace sd {
     class ConstantHolder {
     private:
         int _deviceId = 0;
         std::mutex _mutex;
 
-        std::map<nd4j::DataType, ConstantDataBuffer> _buffers;
+        std::map<sd::DataType, ConstantDataBuffer> _buffers;
     public:
         ConstantHolder(const ConstantHolder& other);
         ConstantHolder() = default;
@@ -42,17 +42,17 @@ namespace nd4j {
         ConstantHolder& operator=(const ConstantHolder& other) = default;
         ConstantHolder& operator=(ConstantHolder&& other) = default;
 
-        bool hasBuffer(nd4j::DataType dataType);
+        bool hasBuffer(sd::DataType dataType);
 
         template <typename T>
         bool hasBuffer();
 
-        void addBuffer(ConstantDataBuffer &pointer, nd4j::DataType dataType);
+        void addBuffer(ConstantDataBuffer &pointer, sd::DataType dataType);
 
         template <typename T>
         void addBuffer(ConstantDataBuffer &pointer);
 
-        ConstantDataBuffer* getConstantDataBuffer(nd4j::DataType dataType);
+        ConstantDataBuffer* getConstantDataBuffer(sd::DataType dataType);
 
         template <typename T>
         ConstantDataBuffer* getConstantDataBuffer();

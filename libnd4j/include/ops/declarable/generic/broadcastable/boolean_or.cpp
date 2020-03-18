@@ -18,12 +18,12 @@
 // Created by raver on 6/6/2018.
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_boolean_or)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BROADCASTABLE_OP_IMPL(boolean_or, 0, 0) {
             auto x = INPUT_VARIABLE(0);

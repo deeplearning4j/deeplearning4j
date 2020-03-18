@@ -22,12 +22,12 @@
 #include <ops/declarable/helpers/scatter.h>
 #include <numeric>
 #include <helpers/ShapeUtils.h>
-#include <TAD.h>
+#include <helpers/TAD.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -63,13 +63,13 @@ __global__ static void checkIndicesCuda(const void *vx, const Nd4jLong *xShapeIn
 
         if(currentInd >= shape::sizeAt(zShapeInfo, axis == -1 ? xCoords[xRank-1] : axis)) {
             printf("checkIndices cuda: out of range element %lld at index %lld \n", currentInd,  i);
-            nd4j::math::atomics::nd4j_atomicAdd<Nd4jLong>(&numOfBadIndxPerBlock, 1);
+            sd::math::atomics::nd4j_atomicAdd<Nd4jLong>(&numOfBadIndxPerBlock, 1);
         }
     }
     __syncthreads();
 
     if (threadIdx.x == 0 && numOfBadIndxPerBlock != 0)
-        nd4j::math::atomics::nd4j_atomicAdd<Nd4jLong>(y, numOfBadIndxPerBlock);
+        sd::math::atomics::nd4j_atomicAdd<Nd4jLong>(y, numOfBadIndxPerBlock);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -82,7 +82,7 @@ static void checkIndicesCudaLauncher(const int blocksPerGrid, const int threadsP
 
 
 ///////////////////////////////////////////////////////////////////
-Nd4jLong checkIndices(nd4j::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
+Nd4jLong checkIndices(sd::LaunchContext *context, const NDArray& indices, const NDArray& output, const int axis) {
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -93,7 +93,7 @@ Nd4jLong checkIndices(nd4j::LaunchContext *context, const NDArray& indices, cons
     PointersManager manager(context, "scatterNDcheckIndices");
 
     // scalar, initial value = 0
-    NDArray numOfBadIndx(nd4j::DataType::INT64, context, true);
+    NDArray numOfBadIndx(sd::DataType::INT64, context, true);
 
     NDArray::prepareSpecialUse({&numOfBadIndx}, {&indices});
     BUILD_SINGLE_SELECTOR(xType, checkIndicesCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), reinterpret_cast<Nd4jLong*>(numOfBadIndx.getSpecialBuffer()), output.getSpecialShapeInfo(), axis), INDEXING_TYPES);
@@ -334,7 +334,7 @@ static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 
 
 ///////////////////////////////////////////////////////////////////
-void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const auto xType = indices.dataType();
     const auto yType = updates.dataType();
@@ -596,7 +596,7 @@ static void scatterNDCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
     const int xRank = indices.rankOf();
     const int yRank = updates.rankOf();
@@ -628,12 +628,12 @@ __global__ void scatterForLossCuda(const void *vx, const Nd4jLong *xShapeInfo,
           auto y = reinterpret_cast<Z*>(vy);
           auto z = reinterpret_cast<Z*>(vz);
 
-    __shared__ Nd4jLong xLen, *sharedMem;
-    __shared__ int xRank;   // xRank = zRank, yRank = xRank + 1
+    __shared__ Nd4jLong xLen;
+    __shared__ int xRank, *sharedMem;   // xRank = zRank, yRank = xRank + 1
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
         xLen  = shape::length(xShapeInfo);
         xRank = shape::rank(xShapeInfo);
@@ -670,7 +670,7 @@ static void scatterForLossCudaLauncher(const int blocksPerGrid, const int thread
 }
 
 ///////////////////////////////////////////////////////////////////
-void scatterForLoss(nd4j::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
+void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray& updates, NDArray& output, const bool calcGrad) {
     // shapes of indices and output must be the same
     // shape of indices should be the same as updates shape with last dimension excluded, for example if updates is {a,b,c} then indices should be {a,b}
 
@@ -678,7 +678,7 @@ void scatterForLoss(nd4j::LaunchContext* context, const NDArray& indices, NDArra
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (indices.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = updates.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+    const int sharedMem = updates.rankOf() * sizeof(int) * threadsPerBlock  + 128;
 
     if(calcGrad) {
         NDArray::prepareSpecialUse({&updates}, {&indices});
@@ -736,13 +736,13 @@ __global__ static void scatterLockCuda(const int opCode,
         std::vector<int> yTadDims(sizeOfUpdDims);
         std::iota(yTadDims.begin(), yTadDims.end(), 0);
 
-        auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), ShapeUtils::evalDimsToExclude(updates.rankOf(), yTadDims));
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), zTadDims);
+        auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), ShapeUtils::evalDimsToExclude(updates.rankOf(), yTadDims));
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), zTadDims);
 
         const Nd4jLong zTadLen = shape::length(packZ.primaryShapeInfo());
         const Nd4jLong yTadLen = shape::length(packY.primaryShapeInfo());
 
-        const auto threadsPerBlock = nd4j::math::nd4j_max<int>(32, nd4j::math::nd4j_min<int>(zTadLen, 1024));
+        const auto threadsPerBlock = sd::math::nd4j_max<int>(32, sd::math::nd4j_min<int>(zTadLen, 1024));
         const auto blocksPerGrid = indices.lengthOf();
 
         const auto xType = indices.dataType();
@@ -959,12 +959,12 @@ __global__ static void scatterLockCuda(const int opCode,
 
 
             template <typename T>
-            void scatter_(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
+            void scatter_(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
                 std::vector<int> dims = {0};
                 auto inverted = ShapeUtils::evalDimsToExclude(output.rankOf(), dims);
 
-                auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), inverted);
-                auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), inverted);
+                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), inverted);
+                auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), inverted);
 
                 auto psX = packX.specialShapeInfo();
                 auto psY = packY.specialShapeInfo();
@@ -981,7 +981,7 @@ __global__ static void scatterLockCuda(const int opCode,
                 if (tadLengthX != tadLengthY)
                     throw std::runtime_error("scatter: Lengths of TADs must be equal");
 
-                auto blockSize = nd4j::math::nd4j_max<int>(32, nd4j::math::nd4j_min<int>(tadLengthX, 1024));
+                auto blockSize = sd::math::nd4j_max<int>(32, sd::math::nd4j_min<int>(tadLengthX, 1024));
 
                 if (lock)
                     scatterCuda<T, true><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()), tadLengthX, tadLengthY);
@@ -1016,9 +1016,9 @@ const int xLastDim = indices.sizeAt(-1);
             zTadDims[i] = zRank - 1 - j;
         }
 
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(indices.getShapeInfo(), {xRank - 1});
-        auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), yTadDims);
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), zTadDims);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(indices.getShapeInfo(), {xRank - 1});
+        auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), yTadDims);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), zTadDims);
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = packZ.numberOfTads();

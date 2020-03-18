@@ -20,7 +20,7 @@
 
 #include <ops/declarable/helpers/flatten.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -45,12 +45,12 @@ namespace nd4j {
                     auto xShapeInfo = inputs[e]->shapeInfo();
                     auto xLength = inputs[e]->lengthOf();
 
-                    for (uint i = 0; i < xLength; i++)
+                    for (Nd4jLong i = 0; i < xLength; i++)
                         z[i] = xBuffer[getIndexOffsetOrdered(i, xShapeInfo, order)];
                 }
             }
 
-            void flatten(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+            void flatten(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 BUILD_SINGLE_SELECTOR(output->dataType(), flatten_, (inputs, output, order), LIBND4J_TYPES);
             }
         }

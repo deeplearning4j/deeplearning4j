@@ -21,8 +21,8 @@
 #include "testlayers.h"
 #include <helpers/CudaLaunchHelper.h>
 
-using namespace nd4j;
-using namespace nd4j::graph;
+using namespace sd;
+using namespace sd::graph;
 
 class CudaLaunchHelperTests : public testing::Test {
 public:

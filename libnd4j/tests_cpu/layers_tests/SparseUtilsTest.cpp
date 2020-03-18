@@ -20,9 +20,9 @@
 
 #include "testlayers.h"
 #include <memory>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include "ops/specials_sparse.h"
-using namespace nd4j;
+using namespace sd;
 
 //////////////////////////////////////////////////////////////////////
 class SparseUtilsTest : public testing::Test {
@@ -131,7 +131,7 @@ TEST_F(SparseUtilsTest, SortCOOindices_Test) {
                                           34, 35, 36, 37, 38, 39
                                           });
 
-    nd4j::sparse::SparseUtils<float >::sortCooIndicesGeneric(indicesArr, reinterpret_cast<float*>(values.getBuffer()), nnz, rank);
+    sd::sparse::SparseUtils<float >::sortCooIndicesGeneric(indicesArr, reinterpret_cast<float*>(values.getBuffer()), nnz, rank);
 
     for ( int i = 0; i < rank * nnz; ++i){
         ASSERT_EQ(expIndicesArr[i], indicesArr[i]);

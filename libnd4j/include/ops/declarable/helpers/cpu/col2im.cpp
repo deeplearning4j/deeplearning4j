@@ -21,13 +21,13 @@
 #include <ops/declarable/helpers/col2im.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
 // [bS, iC, kH, kW, oH, oW] is de-convoluted to [bS, iC, iH, iW]
 template <typename T>
-void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+void col2im_(sd::LaunchContext & context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
 
     auto imBuff         = output.bufferAsT<T>();
 	auto colBuff        = input.bufferAsT<T>();
@@ -65,8 +65,8 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
             T *col, *im;
             int imRow, imCol;
 
-            for (uint b = start_x; b < stop_x; b += inc_x) {
-                for (uint c = start_y; c < stop_y; c += inc_y) {
+            for (auto b = start_x; b < stop_x; b += inc_x) {
+                for (auto c = start_y; c < stop_y; c += inc_y) {
                     for (int kRow = 0; kRow < kH; ++kRow) {
                         for (int kCol = 0; kCol < kW; ++kCol) {
                             for (int colH = 0; colH < oH; ++colH) {
@@ -96,7 +96,7 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
         auto func = PRAGMA_THREADS_FOR {
             T *col, *im;
 
-            for (uint b = start; b < stop; b++) {
+            for (auto b = start; b < stop; b++) {
                 T *im0 = imBuff + b * imStride0;
                 T *col4 = colBuff + b * colStride0;
                 for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {
@@ -132,7 +132,7 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
 }
 
 
-void col2im(nd4j::LaunchContext & context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
+void col2im(sd::LaunchContext & context, const NDArray& input,  NDArray& output, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
 	BUILD_SINGLE_SELECTOR(input.dataType(), col2im_, (context, input, output, sH, sW, pH, pW, iH, iW, dH, dW), FLOAT_TYPES);
 }
 

@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-namespace nd4j.graph;
+namespace sd.graph;
 
 table LongPair {
     first:long; // first

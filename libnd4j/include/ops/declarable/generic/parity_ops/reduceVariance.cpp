@@ -22,7 +22,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 
 //////////////////////////////////////////////////////////////////////////
@@ -88,7 +88,7 @@ DECLARE_SHAPE_FN(reduce_variance) {
 
 DECLARE_TYPES(reduce_variance) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 
@@ -166,7 +166,7 @@ DECLARE_SHAPE_FN(reduce_variance_bp) {
 
 DECLARE_TYPES(reduce_variance_bp) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

@@ -21,28 +21,28 @@
 #ifndef DEV_TESTS_BROADCASTINTOPSTUPLE_H
 #define DEV_TESTS_BROADCASTINTOPSTUPLE_H
 
-#include <op_enums.h>
-#include <dll.h>
+#include <system/op_enums.h>
+#include <system/dll.h>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT BroadcastIntOpsTuple {
     private:
 
     public:
-        nd4j::scalar::IntOps s;
-        nd4j::pairwise::IntOps p;
-        nd4j::broadcast::IntOps b;
+        sd::scalar::IntOps s;
+        sd::pairwise::IntOps p;
+        sd::broadcast::IntOps b;
 
         BroadcastIntOpsTuple() = default;
         ~BroadcastIntOpsTuple() = default;
 
-        BroadcastIntOpsTuple(nd4j::scalar::IntOps scalar, nd4j::pairwise::IntOps pairwise, nd4j::broadcast::IntOps broadcast) {
+        BroadcastIntOpsTuple(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise, sd::broadcast::IntOps broadcast) {
             s = scalar;
             p = pairwise;
             b = broadcast;
         }
 
-        static BroadcastIntOpsTuple custom(nd4j::scalar::IntOps scalar, nd4j::pairwise::IntOps pairwise, nd4j::broadcast::IntOps broadcast);
+        static BroadcastIntOpsTuple custom(sd::scalar::IntOps scalar, sd::pairwise::IntOps pairwise, sd::broadcast::IntOps broadcast);
     };
 }
 

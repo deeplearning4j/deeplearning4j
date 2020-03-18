@@ -19,14 +19,14 @@
 // @author Oleh Semeniv (oleg.semeniv@gmail.com)
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <ops/declarable/helpers/imagesHelpers.h>
 #include <helpers/ConstantTadHelper.h>
 #include <ops/declarable/helpers/adjust_hue.h>
-#include <PointersManager.h>
+#include <helpers/PointersManager.h>
 
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -67,10 +67,10 @@ linkage void rgbToYuvCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformRgbYuv(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformRgbYuv(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), { dimC });
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), { dimC });
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), { dimC });
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), { dimC });
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -122,10 +122,10 @@ linkage void yuvToRgbCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformYuvRgb(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformYuvRgb(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), { dimC });
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), { dimC });
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), { dimC });
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), { dimC });
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -149,19 +149,19 @@ __global__ void rgbToGrsCuda(const void *vx, const Nd4jLong *xShapeInfo, void *v
 	const auto x = reinterpret_cast<const T*>(vx);
 		  auto z = reinterpret_cast<T*>(vz);
 
-	__shared__ Nd4jLong zLen, *sharedMem;
-	__shared__ int rank;	// xRank == zRank
+	__shared__ Nd4jLong zLen;
+	__shared__ int rank, *sharedMem;	// xRank == zRank
 
 	if (threadIdx.x == 0) {
 		extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<int*>(shmem);
 
 		zLen = shape::length(zShapeInfo);
 		rank = shape::rank(zShapeInfo);
 	}
 	__syncthreads();
 
-	Nd4jLong* coords = sharedMem + threadIdx.x * rank;
+	auto coords = sharedMem + threadIdx.x * rank;
 
 	for (Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i +=  gridDim.x * blockDim.x) {
 
@@ -191,13 +191,13 @@ linkage void rgbToGrsCudaLauncher(const int blocksPerGrid, const int threadsPerB
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformRgbGrs(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
+void transformRgbGrs(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
 
 	PointersManager manager(context, "rgbToGrs");
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
+    const int sharedMem = input.rankOf() * sizeof(int) * threadsPerBlock + 128;
 
 	NDArray::prepareSpecialUse({&output}, {&input});
 	BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrsCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), dimC), NUMERIC_TYPES);
@@ -285,10 +285,10 @@ static _CUDA_H void rgbToHsvCudaLauncher(const int blocksPerGrid, const int thre
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformHsvRgb(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -305,9 +305,9 @@ void transformHsvRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray
 }
 
 ///////////////////////////////////////////////////////////////////
-void transformRgbHsv(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+void transformRgbHsv(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -388,9 +388,9 @@ __global__ void tripleTransformerCuda(const void *vx, const Nd4jLong *xShapeInfo
 
 
 template <typename T>
-static void rgbYiq(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+static void rgbYiq(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
 
     NDArray::prepareSpecialUse({output}, {input});
     return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformShapeInfo(), packZ.platformOffsets(), dimC, 1, packZ.numberOfTads());
@@ -398,20 +398,20 @@ static void rgbYiq(nd4j::LaunchContext* context, const NDArray* input, NDArray* 
 }
 
 template <typename T>
-FORCEINLINE static void yiqRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+FORCEINLINE static void yiqRgb(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
 
     NDArray::prepareSpecialUse({output}, {input});
     return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformShapeInfo(), packZ.platformOffsets(), dimC, 2, packZ.numberOfTads());
     NDArray::registerSpecialUse({output}, {input});
 }
 
-void transformYiqRgb(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformYiqRgb(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input->dataType(), yiqRgb, (context, input, output, dimC), FLOAT_TYPES);
 }
 
-void transformRgbYiq(nd4j::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
+void transformRgbYiq(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
     BUILD_SINGLE_SELECTOR(input->dataType(), rgbYiq, (context, input, output, dimC), FLOAT_TYPES);
 }
 

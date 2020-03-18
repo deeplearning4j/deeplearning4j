@@ -21,11 +21,11 @@
 //
 
 #include<ops/declarable/helpers/sru.h>
-#include <NDArrayFactory.h>
-#include <MmulHelper.h>
+#include <array/NDArrayFactory.h>
+#include <helpers/MmulHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j    {
+namespace sd    {
 namespace ops     {
 namespace helpers {
 
@@ -46,7 +46,7 @@ static FORCEINLINE NDArray sigmoid(const NDArray& arr) {
 
 
 //////////////////////////////////////////////////////////////////////////
-void sruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
+void sruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
 
     // x   input [bS x inSize], bS - batch size, inSize - number of features
     // c0  previous cell state c  [bS x inSize], that is at previous time step t-1
@@ -78,7 +78,7 @@ void sruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0,
 
 
 //////////////////////////////////////////////////////////////////////////
-void sruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
+void sruTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* c0, const NDArray* w, const NDArray* b, NDArray* h, NDArray* c) {
 
     // x   input [bS x inSize x time]
     // c0  initial cell state  (at time step = 0) [bS x inSize],
@@ -168,12 +168,12 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
 
             for (Nd4jLong t = 0; t < time; ++t) {
                 // evaluate sigmoids
-                T ft = (1.) / (1. + nd4j::math::nd4j_exp<T, T>(-(pWiVal[1] + bF)));
-                T rt = (1.) / (1. + nd4j::math::nd4j_exp<T, T>(-(pWiVal[2] + bR)));
+                T ft = (1.) / (1. + sd::math::nd4j_exp<T, T>(-(pWiVal[1] + bF)));
+                T rt = (1.) / (1. + sd::math::nd4j_exp<T, T>(-(pWiVal[2] + bR)));
 
                 cur = (cur - *pWiVal) * ft + *pWiVal;
                 *pCtVal = cur;
-                T val = nd4j::math::nd4j_tanh<T, T>(cur);
+                T val = sd::math::nd4j_tanh<T, T>(cur);
                 *pHtVal = (val * maskVal - *pIVal) * rt + *pIVal;
 
                 pIVal += ncolsRev;
@@ -268,10 +268,10 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
 
             for (Nd4jLong t = 0; t < time; ++t) {
                 // evaluate sigmoids
-                T ft = ((T) 1.) / ((T) 1. + nd4j::math::nd4j_exp<T, T>(-(*(pWiVal + 1) + bF)));
-                T rt = ((T) 1.) / ((T) 1. + nd4j::math::nd4j_exp<T, T>(-(*(pWiVal + 2) + bR)));
+                T ft = ((T) 1.) / ((T) 1. + sd::math::nd4j_exp<T, T>(-(*(pWiVal + 1) + bF)));
+                T rt = ((T) 1.) / ((T) 1. + sd::math::nd4j_exp<T, T>(-(*(pWiVal + 2) + bR)));
 
-                T val = nd4j::math::nd4j_tanh<T, T>(*pStateVal);
+                T val = sd::math::nd4j_tanh<T, T>(*pStateVal);
                 T prevVal = (t < time - 1) ? (*(pStateVal - ncolsRev)) : (*(pInit + col));
                 // grad wrt input
                 *pGradInputVal = *pInGradHtVal - (*pInGradHtVal) * rt;
@@ -314,10 +314,10 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
 }
 
 
-void sruBI(nd4j::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {
+void sruBI(sd::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {
     BUILD_SINGLE_SELECTOR(x->dataType(), sruBI_, (x, w, b, c0, mask, ht, ct), FLOAT_TYPES);
 }
-void sruBIBP(nd4j::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask, NDArray* gradI, NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
+void sruBIBP(sd::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* ct, const NDArray* inGradC0, const NDArray* inGradH, const NDArray* mask, NDArray* gradI, NDArray* gradW, NDArray* gradB, NDArray* gradC0) {
     BUILD_SINGLE_SELECTOR(x->dataType(), sruBIBP_, (x, w, b, c0, ct, inGradC0, inGradH, mask, gradI, gradW, gradB, gradC0), FLOAT_TYPES);
 }
 

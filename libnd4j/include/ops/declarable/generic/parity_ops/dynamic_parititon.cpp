@@ -18,14 +18,14 @@
 //  @author GS <sgazeos@gmail.com>
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_dynamic_partition)
 
 #include <ops/declarable/CustomOperations.h>
 #include <array>
 #include <ops/declarable/helpers/dynamic.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
     CUSTOM_OP_IMPL(dynamic_partition, 2, 1, false, 0, 1) {
         auto input = INPUT_VARIABLE(0);
@@ -86,13 +86,13 @@ namespace ops {
 
     DECLARE_TYPES(dynamic_partition) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
     }
 
     DECLARE_TYPES(dynamic_partition_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedInputTypes(sd::DataType::ANY)
                 ->setSameMode(true);
     }
 
@@ -113,23 +113,21 @@ namespace ops {
         originalIndices.linspace(0);
         ops::dynamic_partition op;
         auto res = op.evaluate({&originalIndices, indices}, {numPartition});
-        REQUIRE_TRUE(res->status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
+        REQUIRE_TRUE(res.status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
         ops::dynamic_stitch stichOp;
         std::vector<NDArray*> partitions(numPartition * 2);
-        for (size_t i = 0; i < res->size(); i++) {
-            partitions[i] = res->at(i);
+        for (size_t i = 0; i < res.size(); i++) {
+            partitions[i] = res.at(i);
             partitions[i + numPartition] = gradOutList[i];
         }
 
         auto result = stichOp.evaluate(partitions, {numPartition});
-        REQUIRE_TRUE(result->status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
-        result->at(0)->reshapei(outputList[0]->getShapeAsVector());
+        REQUIRE_TRUE(result.status() == ND4J_STATUS_OK, 0, "dynamic_partition_bp: Error with dynamic partitioning.");
+        result.at(0)->reshapei(outputList[0]->getShapeAsVector());
         outputList[1]->assign(indices);
-        outputList[0]->assign(result->at(0));
+        outputList[0]->assign(result.at(0));
 
 //        helpers::dynamicPartitionFunctorBP(block.launchContext(), input, indices, gradOutList, outputList);
-        delete res;
-        delete result;
         return ND4J_STATUS_OK;
     }
 

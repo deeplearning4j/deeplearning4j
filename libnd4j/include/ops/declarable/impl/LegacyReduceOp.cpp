@@ -22,7 +22,7 @@
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
 #ifdef LEGACY_REDUCE_SAME_ONLY
-namespace nd4j {
+namespace sd {
     namespace ops {
         LegacyReduceOp::LegacyReduceOp() : LegacyOp::LegacyOp(1) {
             //
@@ -140,7 +140,7 @@ namespace nd4j {
         *   For all reductions rules are simple: either you return scalar, or you return reduced NDArray.
         *   It solely depends on input shape, and requested dimensions
         */
-        ShapeList *LegacyReduceOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *LegacyReduceOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;

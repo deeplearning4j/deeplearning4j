@@ -20,15 +20,15 @@
 
 #include "testlayers.h"
 #include <array/ArrayOptions.h>
-#include <AffinityManager.h>
-#include <NDArray.h>
-#include <NDArrayFactory.h>
+#include <execution/AffinityManager.h>
+#include <array/NDArray.h>
+#include <array/NDArrayFactory.h>
 #include <ops/declarable/headers/broadcastable.h>
-#include <MmulHelper.h>
+#include <helpers/MmulHelper.h>
 #include <thread>
 
 
-using namespace nd4j;
+using namespace sd;
 
 class MultiDeviceTests : public testing::Test {
 public:

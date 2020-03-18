@@ -41,9 +41,9 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "execution/Engine.h",
                         "execution/ExecutionMode.h",
                         "memory/MemoryType.h",
-                        "Environment.h",
+                        "system/Environment.h",
                         "types/utf8string.h",
-                        "NativeOps.h",
+                        "legacy/NativeOps.h",
                         "memory/ExternalWorkspace.h",
                         "memory/Workspace.h",
                         "indexing/NDIndex.h",
@@ -53,7 +53,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "graph/ArgumentsList.h",
                         "types/pair.h",
                         "types/pair.h",
-                        "NDArray.h",
+                        "array/NDArray.h",
                         "array/NDArrayList.h",
                         "array/ResultSet.h",
                         "graph/RandomGenerator.h",
@@ -72,7 +72,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "graph/ResultWrapper.h",
                         "helpers/shape.h",
                         "array/ShapeList.h",
-                        //"op_boilerplate.h",
+                        //"system/op_boilerplate.h",
                         "ops/InputType.h",
                         "ops/declarable/OpDescriptor.h",
                         "ops/declarable/PlatformHelper.h",
@@ -185,38 +185,38 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
 
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
                .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS","__CUDABLAS__").define(true))
-               .put(new Info("std::initializer_list", "cnpy::NpyArray", "nd4j::NDArray::applyLambda", "nd4j::NDArray::applyPairwiseLambda",
-                             "nd4j::graph::FlatResult", "nd4j::graph::FlatVariable", "nd4j::NDArray::subarray").skip())
+               .put(new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
+                             "sd::graph::FlatResult", "sd::graph::FlatVariable", "sd::NDArray::subarray").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                                            .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                 .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())
                 .put(new Info("std::vector<std::vector<int> >").pointerTypes("IntVectorVector").define())
                 .put(new Info("std::vector<std::vector<Nd4jLong> >").pointerTypes("LongVectorVector").define())
-                .put(new Info("std::vector<nd4j::NDArray*>").pointerTypes("NDArrayVector").define())
-                .put(new Info("std::vector<const nd4j::NDArray*>").pointerTypes("ConstNDArrayVector").define())
+                .put(new Info("std::vector<sd::NDArray*>").pointerTypes("NDArrayVector").define())
+                .put(new Info("std::vector<const sd::NDArray*>").pointerTypes("ConstNDArrayVector").define())
                 .put(new Info("bool").cast().valueTypes("boolean").pointerTypes("BooleanPointer", "boolean[]"))
-                .put(new Info("nd4j::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
-               .put(new Info("nd4j::IndicesList").purify());
+                .put(new Info("sd::graph::ResultWrapper").base("org.nd4j.nativeblas.ResultWrapperAbstraction").define())
+               .put(new Info("sd::IndicesList").purify());
 /*
         String classTemplates[] = {
-                "nd4j::NDArray",
-                "nd4j::NDArrayList",
-                "nd4j::ResultSet",
-                "nd4j::OpArgsHolder",
-                "nd4j::graph::GraphState",
-                "nd4j::graph::Variable",
-                "nd4j::graph::VariablesSet",
-                "nd4j::graph::Stash",
-                "nd4j::graph::VariableSpace",
-                "nd4j::graph::Context",
-                "nd4j::graph::ContextPrototype",
-                "nd4j::ops::DeclarableOp",
-                "nd4j::ops::DeclarableListOp",
-                "nd4j::ops::DeclarableReductionOp",
-                "nd4j::ops::DeclarableCustomOp",
-                "nd4j::ops::BooleanOp",
-                "nd4j::ops::BroadcastableOp",
-                "nd4j::ops::LogicOp"};
+                "sd::NDArray",
+                "sd::NDArrayList",
+                "sd::ResultSet",
+                "sd::OpArgsHolder",
+                "sd::graph::GraphState",
+                "sd::graph::Variable",
+                "sd::graph::VariablesSet",
+                "sd::graph::Stash",
+                "sd::graph::VariableSpace",
+                "sd::graph::Context",
+                "sd::graph::ContextPrototype",
+                "sd::ops::DeclarableOp",
+                "sd::ops::DeclarableListOp",
+                "sd::ops::DeclarableReductionOp",
+                "sd::ops::DeclarableCustomOp",
+                "sd::ops::BooleanOp",
+                "sd::ops::BroadcastableOp",
+                "sd::ops::LogicOp"};
         for (String t : classTemplates) {
             String s = t.substring(t.lastIndexOf(':') + 1);
             infoMap.put(new Info(t + "<float>").pointerTypes("Float" + s))
@@ -225,6 +225,6 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
 
         }
 */
-        infoMap.put(new Info("nd4j::ops::OpRegistrator::updateMSVC").skip());
+        infoMap.put(new Info("sd::ops::OpRegistrator::updateMSVC").skip());
     }
 }

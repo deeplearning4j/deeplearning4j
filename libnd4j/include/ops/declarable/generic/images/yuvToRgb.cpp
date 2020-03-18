@@ -23,7 +23,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 
 CONFIGURABLE_OP_IMPL(yuv_to_rgb, 1, 1, true, 0, 0) {

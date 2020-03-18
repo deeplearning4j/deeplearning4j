@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17,8 +18,9 @@
 package org.deeplearning4j.integration;
 
 import lombok.Data;
-import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.api.Model;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -26,6 +28,7 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A single test case for integration tests
@@ -37,16 +40,17 @@ public abstract class TestCase {
         PRETRAINED, RANDOM_INIT
     }
 
-    protected String testName;
-    protected TestType testType;
-    protected boolean testPredictions = true;
-    protected boolean testGradients = true;
-    protected boolean testUnsupervisedTraining = false;
-    protected boolean testTrainingCurves = true;
-    protected boolean testParamsPostTraining = true;
-    protected boolean testEvaluation = true;
-    protected boolean testParallelInference = true;
-    protected boolean testOverfitting = true;
+    //See: readme.md for more details
+    protected String testName;                                  //Name of the test, for display purposes
+    protected TestType testType;                                //Type of model - from a pretrained model, or a randomly initialized model
+    protected boolean testPredictions = true;                   //If true: check the predictions/output. Requires getPredictionsTestData() to be implemented
+    protected boolean testGradients = true;                     //If true: check the gradients. Requires getGradientsTestData() to be implemented
+    protected boolean testUnsupervisedTraining = false;         //If true: perform unsupervised training. Only applies to layers like autoencoders, VAEs, etc. Requires getUnsupervisedTrainData() to be implemented
+    protected boolean testTrainingCurves = true;                //If true: perform training, and compare loss vs. iteration. Requires getTrainingData() method
+    protected boolean testParamsPostTraining = true;            //If true: perform training, and compare parameters after training. Requires getTrainingData() method
+    protected boolean testEvaluation = true;                    //If true: perform evaluation. Requires getNewEvaluations() and getEvaluationTestData() methods implemented
+    protected boolean testParallelInference = true;             //If true: run the model through ParallelInference. Requires getPredictionsTestData() method. Only applies to DL4J models, NOT SameDiff models
+    protected boolean testOverfitting = true;                   //If true: perform overfitting, and ensure the predictions match the training data. Requires both getOverfittingData() and getOverfitNumIterations()
 
     protected int[] unsupervisedTrainLayersMLN = null;
     protected String[] unsupervisedTrainLayersCG = null;
@@ -64,6 +68,8 @@ public abstract class TestCase {
     protected double minAbsErrorParamsPostTraining = 1e-4;
     protected double maxRelativeErrorOverfit = 1e-2;
     protected double minAbsErrorOverfit = 1e-2;
+
+    public abstract ModelType modelType();
 
     /**
      * Initialize the test case... many tests don't need this; others may use it to download or create data
@@ -88,16 +94,34 @@ public abstract class TestCase {
     }
 
     /**
-     * Required if testPredictions == true
+     * Required if testPredictions == true && DL4J model (MultiLayerNetwork or ComputationGraph)
      */
     public List<Pair<INDArray[],INDArray[]>> getPredictionsTestData() throws Exception {
         throw new RuntimeException("Implementations must override this method if used");
     }
 
     /**
-     * Required if testGradients == true
+     * Required if testPredictions == true && SameDiff model
+     */
+    public List<Map<String,INDArray>> getPredictionsTestDataSameDiff() throws Exception {
+        throw new RuntimeException("Implementations must override this method if used");
+    }
+
+    public List<String> getPredictionsNamesSameDiff() throws Exception {
+        throw new RuntimeException("Implementations must override this method if used");
+    }
+
+    /**
+     * Required if testGradients == true && DL4J model
      */
     public MultiDataSet getGradientsTestData() throws Exception {
+        throw new RuntimeException("Implementations must override this method if used");
+    }
+
+    /**
+     * Required if testGradients == true && SameDiff model
+     */
+    public Map<String,INDArray> getGradientsTestDataSameDiff() throws Exception {
         throw new RuntimeException("Implementations must override this method if used");
     }
 
@@ -122,6 +146,10 @@ public abstract class TestCase {
         throw new RuntimeException("Implementations must override this method if used");
     }
 
+    public IEvaluation[] doEvaluationSameDiff(SameDiff sd, MultiDataSetIterator iter, IEvaluation[] evaluations){
+        throw new RuntimeException("Implementations must override this method if used");
+    }
+
     /**
      * Required if testEvaluation == true
      */
@@ -130,9 +158,16 @@ public abstract class TestCase {
     }
 
     /**
-     * Required if testOverfitting == true
+     * Required if testOverfitting == true && DL4J model
      */
     public MultiDataSet getOverfittingData() throws Exception {
+        throw new RuntimeException("Implementations must override this method if used");
+    }
+
+    /**
+     * Required if testOverfitting == true && SameDiff model
+     */
+    public Map<String,INDArray> getOverfittingDataSameDiff() throws Exception {
         throw new RuntimeException("Implementations must override this method if used");
     }
 

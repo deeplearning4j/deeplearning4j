@@ -22,7 +22,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 #if NOT_EXCLUDED(OP_reduce_sum)
 
@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(reduce_sum) {
 
 DECLARE_TYPES(reduce_sum) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setSameMode(true);
 }
 #endif
@@ -123,9 +123,9 @@ CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
         if(!keepDims) {
             auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
             auto r  = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-            gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), r, *gradI);
+            gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), r, *gradI);
         } else
-            gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), *gradO, *gradI);
+            gradI->applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), *gradO, *gradI);
     }
 
     return Status::OK();
@@ -152,7 +152,7 @@ DECLARE_SHAPE_FN(reduce_sum_bp) {
 
 DECLARE_TYPES(reduce_sum_bp) {
     getOpDescriptor()
-        ->setAllowedInputTypes(nd4j::DataType::ANY)
+        ->setAllowedInputTypes(sd::DataType::ANY)
         ->setAllowedOutputTypes({ALL_FLOATS});
 }
 

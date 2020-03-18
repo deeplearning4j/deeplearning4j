@@ -21,13 +21,13 @@
 #ifndef LIBND4J_GATHER_H
 #define LIBND4J_GATHER_H
 
-#include <NDArray.h>
+#include <array/NDArray.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
             
-	void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs);
+	void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs);
 
 }
 }

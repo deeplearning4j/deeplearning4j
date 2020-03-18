@@ -18,12 +18,12 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_broadcastgradientargs)
 
 #include <ops/declarable/CustomOperations.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         /**
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
@@ -38,7 +38,7 @@ namespace nd4j {
 
         DECLARE_TYPES(broadcastgradientargs) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY);
+                    ->setAllowedInputTypes(sd::DataType::ANY);
         }
     }
 }

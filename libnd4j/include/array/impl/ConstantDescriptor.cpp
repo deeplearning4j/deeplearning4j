@@ -19,10 +19,10 @@
 //
 
 #include <array/ConstantDescriptor.h>
-#include <DataTypeUtils.h>
+#include <array/DataTypeUtils.h>
 #include <stdexcept>
 
-namespace nd4j {
+namespace sd {
     ConstantDescriptor::ConstantDescriptor(double* values, int length) {
         for (int e = 0; e < length; e++)
             _floatValues.emplace_back(values[e]);
@@ -73,5 +73,27 @@ namespace nd4j {
 
     Nd4jLong ConstantDescriptor::length() const {
         return isInteger() ? _integerValues.size() : isFloat() ? _floatValues.size() : 0L;
+    }
+}
+
+namespace std {
+    size_t hash<sd::ConstantDescriptor>::operator()(const sd::ConstantDescriptor &k) const {
+        using std::hash;
+        // Compute individual hash values for first,
+        // second and third and combine them using XOR
+        // and bit shifting:
+        size_t hashVal = 0;
+        size_t i = 0;
+        if (k.isInteger()) {
+            for (auto v: k.integerValues()) {
+                hashVal ^= std::hash<Nd4jLong>()(v) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+            }
+        }
+        else {
+            for (auto v: k.floatValues()) {
+                hashVal ^= std::hash<double>()(v) + 0x9e3779b9 + (hashVal << 6) + (hashVal >> 2);
+            }
+        }
+        return hashVal;
     }
 }

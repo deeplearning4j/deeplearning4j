@@ -23,7 +23,7 @@
 
 #include "ParametersSpace.h"
 
-namespace nd4j {
+namespace sd {
     class PredefinedParameters : public ParametersSpace{
         std::vector<int> _params;
     public:

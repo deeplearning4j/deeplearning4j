@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/crop_and_resize.h>
 #include "../crop_and_resize.hpp"
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_, (NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops), NUMERIC_TYPES_7, FLOAT_TYPES, INTEGER_TYPES);

@@ -21,13 +21,13 @@
 
 #include "testlayers.h"
 #include <ops/declarable/CustomOperations.h>
-#include <NDArray.h>
+#include <array/NDArray.h>
 #include <ops/ops.h>
-#include <GradCheck.h>
+#include <helpers/GradCheck.h>
 #include <array>
 
 
-using namespace nd4j;
+using namespace sd;
 
 
 class DeclarableOpsTests17 : public testing::Test {
@@ -47,11 +47,9 @@ TEST_F(DeclarableOpsTests17, test_sparse_to_dense_1) {
     auto exp = NDArrayFactory::create<float>('c', {3, 3}, {1.f,0.f,0.f,  0.f,2.f,0.f,  0.f,0.f,3.f});
 
 
-    nd4j::ops::compat_sparse_to_dense op;
+    sd::ops::compat_sparse_to_dense op;
     auto result = op.evaluate({&ranges, &shape, &values, &def});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    delete result;
+    ASSERT_EQ(Status::OK(), result.status());
 }
 
 TEST_F(DeclarableOpsTests17, test_sparse_to_dense_2) {
@@ -62,11 +60,10 @@ TEST_F(DeclarableOpsTests17, test_sparse_to_dense_2) {
     auto exp = NDArrayFactory::string( {3, 3}, {"alpha","d","d",  "d","beta","d",  "d","d","gamma"});
 
 
-    nd4j::ops::compat_sparse_to_dense op;
+    sd::ops::compat_sparse_to_dense op;
     auto result = op.evaluate({&ranges, &shape, &values, &def});
-    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(Status::OK(), result.status());
 
-    delete result;
 }
 
 TEST_F(DeclarableOpsTests17, test_compat_string_split_1) {
@@ -76,13 +73,13 @@ TEST_F(DeclarableOpsTests17, test_compat_string_split_1) {
     auto exp0 = NDArrayFactory::create<Nd4jLong>({0,0, 0,1, 1,0});
     auto exp1 = NDArrayFactory::string( {3}, {"first", "string", "second"});
 
-    nd4j::ops::compat_string_split op;
+    sd::ops::compat_string_split op;
     auto result = op.evaluate({&x, &delimiter});
-    ASSERT_EQ(Status::OK(), result->status());
-    ASSERT_EQ(2, result->size());
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_EQ(2, result.size());
 
-    auto z0 = result->at(0);
-    auto z1 = result->at(1);
+    auto z0 = result.at(0);
+    auto z1 = result.at(1);
 
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp1.isSameShape(z1));
@@ -90,5 +87,4 @@ TEST_F(DeclarableOpsTests17, test_compat_string_split_1) {
     ASSERT_EQ(exp0, *z0);
     ASSERT_EQ(exp1, *z1);
 
-    delete result;
 }

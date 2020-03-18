@@ -18,13 +18,13 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_relu)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CONFIGURABLE_OP_IMPL(relu, 1, 1, true, 1, 0) {
             auto first = INPUT_VARIABLE(0);
@@ -32,7 +32,7 @@ namespace nd4j {
 
             auto scalar = block.numT() > 0 ? block.getTArguments()->at(0) : 0.0;
 
-            first->applyScalar(nd4j::scalar::RELU, scalar, *z);
+            first->applyScalar(sd::scalar::RELU, scalar, *z);
 
             STORE_RESULT(*z);
 

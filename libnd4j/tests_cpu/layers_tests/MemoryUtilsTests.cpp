@@ -22,7 +22,7 @@
 #include <memory/MemoryUtils.h>
 #include "testlayers.h"
 
-using namespace nd4j::memory;
+using namespace sd::memory;
 
 class MemoryUtilsTests : public testing::Test {
 public:

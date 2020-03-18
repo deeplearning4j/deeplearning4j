@@ -18,19 +18,19 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_tanh)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/legacy_helpers.h>
 
-namespace nd4j {
+namespace sd {
         namespace ops {
         CONFIGURABLE_OP_IMPL(tanh, 1, 1, true, 0, 0) {
             auto first = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 
-            first->applyTransform(nd4j::transform::Tanh, *z);
+            first->applyTransform(sd::transform::Tanh, *z);
 
             STORE_RESULT(*z);
 

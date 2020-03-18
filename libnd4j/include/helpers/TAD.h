@@ -23,7 +23,7 @@
 
 
 #include <helpers/shape.h>
-#include <pointercast.h>
+#include <system/pointercast.h>
 
 
 namespace shape {
@@ -443,7 +443,7 @@ namespace shape {
 
     INLINEDEF void TAD::createTadOnlyShapeInfo() {
         this->tadOnlyShapeInfo = this->shapeInfoOnlyShapeAndStride();
-        nd4j::ArrayOptions::setDataType(this->tadOnlyShapeInfo, nd4j::ArrayOptions::dataType(this->originalShapeInfo));
+        sd::ArrayOptions::setDataType(this->tadOnlyShapeInfo, sd::ArrayOptions::dataType(this->originalShapeInfo));
 
         // possible optimization goes here
         if (shape::order(this->originalShapeInfo) == 'c'

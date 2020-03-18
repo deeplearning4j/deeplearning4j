@@ -21,9 +21,9 @@
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <ops/declarable/headers/datatypes.h>
-#include <NDArrayFactory.h>
+#include <array/NDArrayFactory.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(compare_and_bitpack, 2, 1, false, 0, 0) {
             auto x = INPUT_VARIABLE(0);

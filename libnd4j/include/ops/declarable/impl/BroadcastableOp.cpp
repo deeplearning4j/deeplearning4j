@@ -18,24 +18,24 @@
 // Created by raver on 6/6/2018.
 //
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
 #include <ops/declarable/BroadcastableOp.h>
 #include <helpers/ShapeUtils.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         BroadcastableOp::BroadcastableOp(const char *name, int numTArgs, int numIArgs) : DeclarableCustomOp::DeclarableCustomOp(2, 1, name, false, numTArgs, numIArgs) {
             //
         }
 
-        ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
+        ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto shapeList = SHAPELIST();
             auto x = inputShape->at(0);
             auto y = inputShape->at(1);
             auto outputs = _descriptor->getOutputTypesForOutput(0);
-            nd4j::DataType dtype = block.dataType(0);
-            if (block.dataType(0) != nd4j::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == nd4j::DataType::BOOL)) {
+            sd::DataType dtype = block.dataType(0);
+            if (block.dataType(0) != sd::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == sd::DataType::BOOL)) {
                 if (Environment::getInstance()->isExperimentalBuild()) {
                     if (shape::length(y) > shape::length(x)) {
                         dtype = DataTypeUtils::pickPairwiseResultType(y, x);
@@ -46,7 +46,7 @@ namespace nd4j {
                     dtype = ArrayOptions::dataType(x);
                 }
             } else
-                dtype = nd4j::DataType::BOOL;
+                dtype = sd::DataType::BOOL;
 
             if(shape::isEmpty(x) || shape::isEmpty(y)) {
                 // this is edge case, [3, 4] + [] = []

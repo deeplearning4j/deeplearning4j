@@ -19,6 +19,7 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.tools.SimpleVariableGenerator;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -31,7 +32,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
-public class DummyBlockDataSetIteratorTests {
+public class DummyBlockDataSetIteratorTests extends BaseDL4JTest {
 
     @Test
     public void testBlock_1() throws Exception {

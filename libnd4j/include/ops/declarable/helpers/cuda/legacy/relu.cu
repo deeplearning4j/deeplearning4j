@@ -20,10 +20,10 @@
 
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <ops/ops.h>
-#include <NDArrayFactory.h>
-#include <op_boilerplate.h>
+#include <array/NDArrayFactory.h>
+#include <system/op_boilerplate.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
 
@@ -36,7 +36,7 @@ namespace nd4j {
                 theFirst->applyPairwiseLambda(*theSecond, functor, *theFirst);
             }
 
-            void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond) {
+            void reluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative__, (theFirst, theSecond), FLOAT_TYPES);
             }
 
@@ -49,7 +49,7 @@ namespace nd4j {
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+            void reluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), reluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
             }
 
@@ -62,7 +62,7 @@ namespace nd4j {
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void relu6Derivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+            void relu6Derivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), relu6Derivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
             }
 
@@ -78,7 +78,7 @@ namespace nd4j {
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void leakyReluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
+            void leakyReluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), leakyReluDerivative_, (theFirst, theSecond, theOutput, alpha), FLOAT_TYPES);
             }
 
@@ -88,13 +88,13 @@ namespace nd4j {
                 const T alphaT = static_cast<T>(alpha);
 
                 auto functor = LAMBDA_TT(x, y, alphaT){
-                    return y * nd4j::math::nd4j_eluderivative<T,T>(x, alphaT);
+                    return y * sd::math::nd4j_eluderivative<T,T>(x, alphaT);
                 };
 
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void eluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
+            void eluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), eluDerivative_, (theFirst, theSecond, theOutput, alpha), FLOAT_TYPES);
             }
 
@@ -107,7 +107,7 @@ namespace nd4j {
                 input->applyPairwiseLambda(*epsilon, functor, *output);
             }
 
-            void seluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
+            void seluDerivative(sd::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
                 BUILD_SINGLE_SELECTOR(theFirst->dataType(), seluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
             }
         }

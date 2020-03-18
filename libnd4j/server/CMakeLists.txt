@@ -45,7 +45,7 @@ else()
 		endif()
     else()
         set(CMAKE_CXX_FLAGS  " -g -O0 -fPIC -std=c++11 -fmax-errors=2")
-        if (CPU_BLAS)
+        if (SD_CPU)
             SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -fsanitize=address")
         endif()
     endif()
@@ -53,7 +53,7 @@ endif()
 
 
 # tests are always compiled with all ops included
-SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DLIBND4J_ALL_OPS=true")
+SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -DSD_ALL_OPS=true")
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     # using Clang
@@ -117,7 +117,7 @@ find_package(GRPC REQUIRED)
 message("gRPC found, building GraphServer")
 add_executable(GraphServer ./GraphServer.cpp ../include/graph/generated/graph.grpc.fb.cc ../blas/cpu/NativeOps.cpp ../blas/cpu/GraphExecutioner.cpp
         ../blas/cpu/NativeOpExecutioner.cpp ../blas/cpu/NDArray.cpp
-        ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
+        ../include/cnpy/cnpy.cpp ../include/system/nd4jmemset.h ../include/system/nd4jmalloc.h
         ../blas/Environment.cpp ../blas/Environment.h ${LOOPS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
         ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${HELPERS_SOURCES}  ${CUSTOMOPS_HELPERS_SOURCES} ${OPS_SOURCES})
 

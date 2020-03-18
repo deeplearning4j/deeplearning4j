@@ -21,9 +21,9 @@
 #ifndef ND4J_ARRAY_OPTIONS_H
 #define ND4J_ARRAY_OPTIONS_H
 
-#include <op_boilerplate.h>
-#include <pointercast.h>
-#include <dll.h>
+#include <system/op_boilerplate.h>
+#include <system/pointercast.h>
+#include <system/dll.h>
 #include <array/DataType.h>
 #include <array/ArrayType.h>
 #include <array/SpaceType.h>
@@ -87,7 +87,7 @@
 #define ARRAY_UNSIGNED 8388608
 
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT ArrayOptions {
 
     private:
@@ -104,7 +104,7 @@ namespace nd4j {
         static FORCEINLINE _CUDA_HD bool isSparseArray(Nd4jLong *shapeInfo);
         static FORCEINLINE _CUDA_HD bool isUnsigned(Nd4jLong *shapeInfo);
 
-        static FORCEINLINE _CUDA_HD nd4j::DataType dataType(const Nd4jLong *shapeInfo);
+        static FORCEINLINE _CUDA_HD sd::DataType dataType(const Nd4jLong *shapeInfo);
 
         static FORCEINLINE _CUDA_HD SpaceType spaceType(Nd4jLong *shapeInfo);
         static FORCEINLINE _CUDA_HD SpaceType spaceType(const Nd4jLong *shapeInfo);
@@ -119,7 +119,7 @@ namespace nd4j {
 
 
         static FORCEINLINE _CUDA_HD void resetDataType(Nd4jLong *shapeInfo);
-        static FORCEINLINE _CUDA_HD void setDataType(Nd4jLong *shapeInfo, const nd4j::DataType dataType);
+        static FORCEINLINE _CUDA_HD void setDataType(Nd4jLong *shapeInfo, const sd::DataType dataType);
 
         static FORCEINLINE _CUDA_HD void copyDataType(Nd4jLong* to, const Nd4jLong* from);
     };
@@ -155,34 +155,34 @@ namespace nd4j {
         return hasPropertyBitSet(shapeInfo, ARRAY_UNSIGNED);
     }
 
-    FORCEINLINE _CUDA_HD nd4j::DataType ArrayOptions::dataType(const Nd4jLong *shapeInfo) {
+    FORCEINLINE _CUDA_HD sd::DataType ArrayOptions::dataType(const Nd4jLong *shapeInfo) {
         /*if (hasPropertyBitSet(shapeInfo, ARRAY_QUANTIZED))
-            return nd4j::DataType::QINT8;
+            return sd::DataType::QINT8;
         else */if (hasPropertyBitSet(shapeInfo, ARRAY_FLOAT))
-            return nd4j::DataType::FLOAT32;
+            return sd::DataType::FLOAT32;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_DOUBLE))
-            return nd4j::DataType::DOUBLE;
+            return sd::DataType::DOUBLE;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_HALF))
-            return nd4j::DataType::HALF;
+            return sd::DataType::HALF;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_BHALF))
-            return nd4j::DataType::BFLOAT16;
+            return sd::DataType::BFLOAT16;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_BOOL))
-            return nd4j::DataType ::BOOL;
+            return sd::DataType ::BOOL;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_UNSIGNED)) {
             if (hasPropertyBitSet(shapeInfo, ARRAY_CHAR))
-                return nd4j::DataType ::UINT8;
+                return sd::DataType ::UINT8;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_SHORT))
-                return nd4j::DataType ::UINT16;
+                return sd::DataType ::UINT16;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_INT))
-                return nd4j::DataType ::UINT32;
+                return sd::DataType ::UINT32;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
-                return nd4j::DataType ::UINT64;
+                return sd::DataType ::UINT64;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF8))
-                return nd4j::DataType ::UTF8;
+                return sd::DataType ::UTF8;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF16))
-                return nd4j::DataType ::UTF16;
+                return sd::DataType ::UTF16;
             else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF32))
-                return nd4j::DataType ::UTF32;
+                return sd::DataType ::UTF32;
             else {
                 //shape::printShapeInfoLinear("Bad unsigned datatype (not)stored in shape", const_cast<Nd4jLong*>(shapeInfo));
 #ifndef __CUDA_ARCH__
@@ -191,19 +191,19 @@ namespace nd4j {
             }
         }
         else if (hasPropertyBitSet(shapeInfo, ARRAY_CHAR))
-            return nd4j::DataType::INT8;
+            return sd::DataType::INT8;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_SHORT))
-            return nd4j::DataType::INT16;
+            return sd::DataType::INT16;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_INT))
-            return nd4j::DataType::INT32;
+            return sd::DataType::INT32;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_LONG))
-            return nd4j::DataType::INT64;
+            return sd::DataType::INT64;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF8))
-            return nd4j::DataType::UTF8;
+            return sd::DataType::UTF8;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF16))
-            return nd4j::DataType::UTF16;
+            return sd::DataType::UTF16;
         else if (hasPropertyBitSet(shapeInfo, ARRAY_UTF32))
-            return nd4j::DataType::UTF32;
+            return sd::DataType::UTF32;
         else {
             //shape::printShapeInfoLinear("Bad signed datatype (not)stored in shape", const_cast<Nd4jLong*>(shapeInfo));
 #ifndef __CUDA_ARCH__
@@ -296,63 +296,63 @@ namespace nd4j {
         unsetPropertyBit(shapeInfo, ARRAY_UNSIGNED);
     }
 
-    FORCEINLINE _CUDA_HD void ArrayOptions::setDataType(Nd4jLong *shapeInfo, const nd4j::DataType dataType) {
+    FORCEINLINE _CUDA_HD void ArrayOptions::setDataType(Nd4jLong *shapeInfo, const sd::DataType dataType) {
         resetDataType(shapeInfo);
-        if (dataType == nd4j::DataType::UINT8 ||
-            dataType == nd4j::DataType::UINT16 ||
-            dataType == nd4j::DataType::UINT32 ||
-            dataType == nd4j::DataType::UINT64) {
+        if (dataType == sd::DataType::UINT8 ||
+            dataType == sd::DataType::UINT16 ||
+            dataType == sd::DataType::UINT32 ||
+            dataType == sd::DataType::UINT64) {
 
             setPropertyBit(shapeInfo, ARRAY_UNSIGNED);
         }
 
         switch (dataType) {
-            case nd4j::DataType::BOOL:
+            case sd::DataType::BOOL:
                 setPropertyBit(shapeInfo, ARRAY_BOOL);
                 break;
-            case nd4j::DataType::HALF:
+            case sd::DataType::HALF:
                 setPropertyBit(shapeInfo, ARRAY_HALF);
                 break;
-            case nd4j::DataType::BFLOAT16:
+            case sd::DataType::BFLOAT16:
                 setPropertyBit(shapeInfo, ARRAY_BHALF);
                 break;
-            case nd4j::DataType::FLOAT32:
+            case sd::DataType::FLOAT32:
                 setPropertyBit(shapeInfo, ARRAY_FLOAT);
                 break;
-            case nd4j::DataType::DOUBLE:
+            case sd::DataType::DOUBLE:
                 setPropertyBit(shapeInfo, ARRAY_DOUBLE);
                 break;
-            case nd4j::DataType::INT8:
+            case sd::DataType::INT8:
                 setPropertyBit(shapeInfo, ARRAY_CHAR);
                 break;
-            case nd4j::DataType::INT16:
+            case sd::DataType::INT16:
                 setPropertyBit(shapeInfo, ARRAY_SHORT);
                 break;
-            case nd4j::DataType::INT32:
+            case sd::DataType::INT32:
                 setPropertyBit(shapeInfo, ARRAY_INT);
                 break;
-            case nd4j::DataType::INT64:
+            case sd::DataType::INT64:
                 setPropertyBit(shapeInfo, ARRAY_LONG);
                 break;
-            case nd4j::DataType::UINT8:
+            case sd::DataType::UINT8:
                 setPropertyBit(shapeInfo, ARRAY_CHAR);
                 break;
-            case nd4j::DataType::UINT16:
+            case sd::DataType::UINT16:
                 setPropertyBit(shapeInfo, ARRAY_SHORT);
                 break;
-            case nd4j::DataType::UINT32:
+            case sd::DataType::UINT32:
                 setPropertyBit(shapeInfo, ARRAY_INT);
                 break;
-            case nd4j::DataType::UINT64:
+            case sd::DataType::UINT64:
                 setPropertyBit(shapeInfo, ARRAY_LONG);
                 break;
-            case nd4j::DataType::UTF8:
+            case sd::DataType::UTF8:
                 setPropertyBit(shapeInfo, ARRAY_UTF8);
                 break;
-            case nd4j::DataType::UTF16:
+            case sd::DataType::UTF16:
                 setPropertyBit(shapeInfo, ARRAY_UTF16);
                 break;
-            case nd4j::DataType::UTF32:
+            case sd::DataType::UTF32:
                 setPropertyBit(shapeInfo, ARRAY_UTF32);
                 break;
             default:

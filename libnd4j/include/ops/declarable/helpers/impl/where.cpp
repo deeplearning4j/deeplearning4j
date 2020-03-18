@@ -21,7 +21,7 @@
 #include <ops/declarable/helpers/where.h>
 #include <array/NDArrayList.h>
 
-namespace nd4j {
+namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
@@ -29,11 +29,14 @@ namespace nd4j {
                 NDArrayList list(0, true);
                 int cnt = 0;
 
-                Nd4jLong idx[MAX_RANK];
-                for (int e = 0; e < condition.lengthOf(); e++) {
-                    shape::index2coords(e, condition.getShapeInfo(), idx);
+                int idx[MAX_RANK];
+
+                for (Nd4jLong e = 0; e < condition.lengthOf(); e++) {
+
+                    shape::index2coordsCPU(0, e, condition.getShapeInfo(), idx);
 
                     auto offset = shape::getOffset(condition.getShapeInfo(), idx);
+
                     if (condition.e<bool>(offset)) {
                         auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, output.dataType(), output.getContext());
                         for (int f = 0; f < condition.rankOf(); f++)
@@ -49,7 +52,7 @@ namespace nd4j {
             }
             BUILD_SINGLE_TEMPLATE(template void __where,(NDArray &condition, NDArray& output, memory::Workspace *workspace), LIBND4J_TYPES);
 
-            void _where(nd4j::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace) {
+            void _where(sd::LaunchContext * context, NDArray &condition, NDArray& output, memory::Workspace *workspace) {
                 condition.syncToHost();
                 BUILD_SINGLE_SELECTOR(output.dataType(), __where, (condition, output, workspace), LIBND4J_TYPES);
                 output.syncToDevice();

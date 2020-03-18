@@ -23,7 +23,7 @@
 
 #include <vector>
 
-namespace nd4j {
+namespace sd {
     class ParametersSpace {
     protected:
         std::string _name;

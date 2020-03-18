@@ -21,11 +21,11 @@
 #ifndef DEV_TESTS_PARAMETERSBATCH_H
 #define DEV_TESTS_PARAMETERSBATCH_H
 
-#include "ParametersSpace.h"
+#include <helpers/benchmark/ParametersSpace.h>
 #include <vector>
-#include <shape.h>
+#include <helpers/shape.h>
 
-namespace nd4j {
+namespace sd {
     class ParametersBatch {
     protected:
         std::vector<ParametersSpace*> _spaces;
@@ -46,7 +46,7 @@ namespace nd4j {
             int totalIterations = 1;
 
             // hehe
-            Nd4jLong xCoords[MAX_RANK];
+            int xCoords[MAX_RANK];
             Nd4jLong xShape[MAX_RANK];
             int xRank = _spaces.size();
 
@@ -61,10 +61,9 @@ namespace nd4j {
 
             //nd4j_printf("Total Iterations: %i\n", totalIterations);
 
-
-
             for (int i = 0; i < totalIterations; i++) {
-                shape::index2coords(i, xRank, xShape, xCoords);
+                if (xRank > 0)
+                    shape::index2coords(i, xRank, xShape, xCoords);
 
                 Parameters params;
                 for (int j = 0; j < xRank; j++) {

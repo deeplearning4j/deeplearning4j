@@ -21,12 +21,12 @@
 #ifndef LIBND4J_AFFINITYMANAGER_H
 #define LIBND4J_AFFINITYMANAGER_H
 
-#include <dll.h>
-#include <pointercast.h>
+#include <system/dll.h>
+#include <system/pointercast.h>
 #include <atomic>
 #include <mutex>
 
-namespace nd4j {
+namespace sd {
     class ND4J_EXPORT AffinityManager {
     private:
         static std::atomic<int> _lastDevice;

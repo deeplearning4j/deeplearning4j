@@ -19,9 +19,9 @@
 //
 
 #include "testlayers.h"
-#include <NDArray.h>
-#include <ShapeUtils.h>
-#include <reduce3.h>
+#include <array/NDArray.h>
+#include <helpers/ShapeUtils.h>
+#include <loops/reduce3.h>
 #include <ops/declarable/LegacyTransformOp.h>
 #include <ops/declarable/LegacyPairwiseTransformOp.h>
 #include <ops/declarable/LegacyScalarOp.h>
@@ -32,8 +32,8 @@
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
 
-using namespace nd4j;
-using namespace nd4j::ops;
+using namespace sd;
+using namespace sd::ops;
 
 class LegacyOpsTests : public testing::Test {
 
@@ -47,7 +47,7 @@ TEST_F(LegacyOpsTests, TransformTests_1) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(-1.0);
 
-    nd4j::ops::LegacyTransformSameOp op(transform::Neg); // Neg
+    sd::ops::LegacyTransformSameOp op(transform::Neg); // Neg
     auto status = op.execute({&x}, {&z}, {}, {}, {});
     ASSERT_EQ(status, ND4J_STATUS_OK);
     //z.printIndexedBuffer("Output NEG");
@@ -61,16 +61,16 @@ TEST_F(LegacyOpsTests, TransformTests_2) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(-1.0);
 
-    nd4j::ops::LegacyTransformSameOp op(transform::Neg); // Neg
+    sd::ops::LegacyTransformSameOp op(transform::Neg); // Neg
     auto result = op.evaluate({&x}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(LegacyOpsTests,  Reciprocal_1) {
@@ -80,7 +80,7 @@ TEST_F(LegacyOpsTests,  Reciprocal_1) {
     auto ethalon = NDArrayFactory::create<float>('c', {5, 5});
     ethalon.assign(0.5f);
 
-    nd4j::ops::LegacyTransformSameOp op(transform::Reciprocal); // Reciprocal
+    sd::ops::LegacyTransformSameOp op(transform::Reciprocal); // Reciprocal
     Nd4jStatus status = op.execute({&x}, {&x}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -98,7 +98,7 @@ TEST_F(LegacyOpsTests,  PWT_Tests_1) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(6.0);
 
-    nd4j::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
+    sd::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
     Nd4jStatus status = op.execute({&x, &y}, {&x}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -118,15 +118,15 @@ TEST_F(LegacyOpsTests,  PWT_Tests_2) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(6.0);
 
-    nd4j::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
+    sd::ops::LegacyPairwiseTransformOp op(pairwise::Multiply); // Multiply
     auto result = op.evaluate({&x, &y}, {}, {});
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     //z->printBuffer("Z");
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(LegacyOpsTests, Scalar_Test_1) {
@@ -136,7 +136,7 @@ TEST_F(LegacyOpsTests, Scalar_Test_1) {
     auto exp = NDArrayFactory::create<float>('c', {5, 5});
     exp.assign(7.0);
 
-    nd4j::ops::LegacyScalarOp op(scalar::Add);
+    sd::ops::LegacyScalarOp op(scalar::Add);
     op.execute({&x}, {&x}, {5.0}, {}, {}); //
 
     ASSERT_TRUE(exp.equalsTo(&x));
@@ -151,13 +151,13 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
 
     auto y = NDArrayFactory::create<float>(5.0f);
 
-    nd4j::ops::LegacyScalarOp op(scalar::Add, y);
+    sd::ops::LegacyScalarOp op(scalar::Add, y);
     auto result = op.evaluate({&x}, {}, {});
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -165,18 +165,18 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
     int opNum = reduce::Sum;
-    nd4j::ops::LegacyReduceSameOp op(opNum);
+    sd::ops::LegacyReduceSameOp op(opNum);
 
     auto result = op.evaluate({&x}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer("ReduceTest1");
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.sumNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
-    delete result;
+    
 }
 
 
@@ -184,20 +184,20 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
 
-    nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
+    sd::ops::LegacyReduceSameOp op(reduce::Sum);
     auto axis = NDArrayFactory::create<Nd4jLong>('c', {1}, {1});
     auto result = op.evaluate({&x, &axis}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     auto exp = x.reduceAlongDimension(reduce::Sum, {1});
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -207,17 +207,17 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
     auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
 
 
-    nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
+    sd::ops::LegacyReduceSameOp op(reduce::Sum);
     auto result = op.evaluate({&x, &indices}, {}, {});
-    auto z = result->at(0);
+    auto z = result.at(0);
     auto exp = x.reduceAlongDimension(reduce::Sum,{1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -227,36 +227,36 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
     auto indices = NDArrayFactory::create<int>('c', {1, 1}, {1});
 
 
-    nd4j::ops::LegacyReduceSameOp op(reduce::Sum);
+    sd::ops::LegacyReduceSameOp op(reduce::Sum);
     auto result = op.evaluate({&x, &indices}, {}, {}, {true});
-    auto z = result->at(0);
+    auto z = result.at(0);
     auto exp = x.reduceAlongDimension(reduce::Sum, {1}, true);
     // indices.printShapeInfo("Indices shape");
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
     // z->printIndexedBuffer("Output reduce 4");
     // exp.printIndexedBuffer("Expected reduce 4");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 TEST_F(LegacyOpsTests, ReduceTests_5) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
     int opNum = reduce::Mean;
-    nd4j::ops::LegacyReduceFloatOp op(opNum);
+    sd::ops::LegacyReduceFloatOp op(opNum);
 
     auto result = op.evaluate({&x});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printBuffer("ReduceTest1");
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.meanNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
-    delete result;
+    
 }
 
 
@@ -264,20 +264,20 @@ TEST_F(LegacyOpsTests, ReduceTests_6) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.assign(1.0);
     auto axis = NDArrayFactory::create<int>('c', {1}, {1});
-    nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
+    sd::ops::LegacyReduceFloatOp op(reduce::Mean);
 
     auto result = op.evaluate({&x, &axis}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     auto exp = x.reduceAlongDimension(reduce::Mean, {1});
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -287,17 +287,17 @@ TEST_F(LegacyOpsTests, ReduceTests_7) {
     auto indices = NDArrayFactory::create<int>('c', {1,1}, {1});
 
 
-    nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
+    sd::ops::LegacyReduceFloatOp op(reduce::Mean);
     auto result = op.evaluate({&x, &indices}, {}, {});
-    auto z = result->at(0);
+    auto z = result.at(0);
     auto exp = x.reduceAlongDimension(reduce::Mean,{1});
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -307,19 +307,19 @@ TEST_F(LegacyOpsTests, ReduceTests_8) {
     auto indices = NDArrayFactory::create<int>('c', {1}, {1});
 
 
-    nd4j::ops::LegacyReduceFloatOp op(reduce::Mean);
+    sd::ops::LegacyReduceFloatOp op(reduce::Mean);
     auto result = op.evaluate({&x, &indices}, {}, {}, {true});
-    auto z = result->at(0);
+    auto z = result.at(0);
     auto exp = x.reduceAlongDimension(reduce::Mean, {1}, true);
 
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
     // z->printIndexedBuffer("Reduce8 output");
     // z->printShapeInfo("Reduce8 shape");
     // exp.printShapeInfo("Reduce8 expected shape");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    delete result;
+    
 }
 
 
@@ -327,18 +327,18 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 5});
     x.linspace(1);
 
-    nd4j::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
+    sd::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
 
     auto result = op.evaluate({&x}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
 
     ASSERT_TRUE(z->isScalar());
     ASSERT_EQ(24, z->e<int>(0));
 
-    delete result;
+    
 }
 
 
@@ -347,13 +347,13 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     auto indices = NDArrayFactory::create<int>('c', {1}, {1});
     x.linspace(1);
     auto exp = NDArrayFactory::create<Nd4jLong>({4,4,4,4,4});
-    nd4j::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
+    sd::ops::LegacyIndexReduceOp op(indexreduce::IndexMax);
 
     auto result = op.evaluate({&x, &indices}, {}, {});
 
-    ASSERT_EQ(1, result->size());
+    ASSERT_EQ(1, result.size());
 
-    auto z = result->at(0);
+    auto z = result.at(0);
     // z->printIndexedBuffer("Hello indexreduce2");
     ASSERT_TRUE(exp.equalsTo(z));
     //ASSERT_EQ(4, z->e<int>(0));
@@ -362,7 +362,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     //ASSERT_EQ(4, z->e<int>(3));
     //ASSERT_EQ(4, z->e<int>(4));
 
-    delete result;
+    
 }
 
 TEST_F(LegacyOpsTests, BroadcastingTests_1) {
@@ -372,7 +372,7 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
     auto row = NDArrayFactory::create<double>('c', {1, 5});
     row.linspace(1);
     auto axis = NDArrayFactory::create<int>('c', {1}, {1});
-    nd4j::ops::LegacyBroadcastOp op(broadcast::Add);
+    sd::ops::LegacyBroadcastOp op(broadcast::Add);
     Nd4jStatus status = op.execute({&x, &row, &axis}, {&x}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
@@ -394,7 +394,7 @@ TEST_F(LegacyOpsTests, BroadcastingTests_2) {
     int axis = 1;
 
     // shape::printShapeInfoLinear("tad shape", tad.tadOnlyShapeInfo);
-    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), {axis});
+    auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), {axis});
 
     NDArray::prepareSpecialUse({&y}, {&x});
 
@@ -433,11 +433,11 @@ TEST_F(LegacyOpsTests, reduce3_1) {
 
     std::vector<int> dim = {1};
 
-    auto shapeBuffer  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, yShape);
-    auto xShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 1, xShape);
+    auto shapeBuffer  = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 2, yShape);
+    auto xShapeBuffer = sd::ShapeBuilders::createShapeInfo(sd::DataType::FLOAT32, 'c', 1, xShape);
 
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
-    auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
+    auto tadShapeBuffer = sd::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
     functions::reduce3::Reduce3<float, float>::exec(opNum, x, xShapeBuffer, extraVals, y, shapeBuffer, result, tadShapeBuffer, dimension, dimensionLength, 0, 4);
 
     float distancesAssertion[4] = {0.0,8.0,16.0,24.0};
@@ -459,15 +459,15 @@ TEST_F(LegacyOpsTests, Reduce3_2) {
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
     dim.syncToHost();
 
-    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+    sd::LaunchContext* context = sd::LaunchContext::defaultContext();
 
     Nd4jPointer* extraPointers = nullptr;
     #ifdef __CUDABLAS__
         extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
     #endif
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
-    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
     OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -499,15 +499,15 @@ TEST_F(LegacyOpsTests, Reduce3_3) {
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
     dim.syncToHost();
 
-    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+    sd::LaunchContext* context = sd::LaunchContext::defaultContext();
 
     Nd4jPointer* extraPointers = nullptr;
     #ifdef __CUDABLAS__
         extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
     #endif
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
-    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
     OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -539,15 +539,15 @@ TEST_F(LegacyOpsTests, Reduce3_4) {
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
     dim.syncToHost();
 
-    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+    sd::LaunchContext* context = sd::LaunchContext::defaultContext();
 
     Nd4jPointer* extraPointers = nullptr;
     #ifdef __CUDABLAS__
         extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
     #endif
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
-    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
     OpaqueDataBuffer xBuf(x.dataBuffer());
@@ -581,15 +581,15 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
     dim.syncToHost();
 
-    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+    sd::LaunchContext* context = sd::LaunchContext::defaultContext();
 
     Nd4jPointer* extraPointers = nullptr;
     #ifdef __CUDABLAS__
         extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
     #endif
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
-    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
 
     NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
 
@@ -616,10 +616,10 @@ TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
     auto z = NDArrayFactory::create<float>('c', {1000, 1});
     auto dim = NDArrayFactory::create<int>('c', {1}, {-1});
 
-    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), -1);
-    auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), -1);
+    auto tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), -1);
+    auto tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), -1);
 
-    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+    sd::LaunchContext* context = sd::LaunchContext::defaultContext();
 
     Nd4jPointer* extraPointers = nullptr;
     #ifdef __CUDABLAS__
@@ -652,7 +652,7 @@ TEST_F(LegacyOpsTests, test_inverse_broadcast_1) {
     auto e = NDArrayFactory::create<float>('c', {3, 4});
     e.assign(2.0f);
 
-    auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), 1);
+    auto tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), 1);
 
     y.tickWriteDevice();
 
@@ -674,13 +674,13 @@ TEST_F(LegacyOpsTests, test_inverse_broadcast_2) {
     auto e = NDArrayFactory::create<bool>('c', {3, 4});
     e.assign(false);
 
-    auto row = y.tensorAlongDimension(1, {1});
+    auto row = y(1, {0});
     row.assign(2.0f);
 
-    auto erow = e.tensorAlongDimension(1, {1});
+    auto erow = e(1, {0});
     erow.assign(true);
 
-    auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), 1);
+    auto tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), 1);
 
     z.tickWriteDevice();
 

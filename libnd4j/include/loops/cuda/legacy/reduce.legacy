@@ -18,7 +18,7 @@
 //  @author raver119@gmail.com
 //
 
-#include <op_boilerplate.h>
+#include <system/op_boilerplate.h>
 #include <loops/reduce_float.h>
 #include <loops/legacy_ops.h>
 #include <helpers/DebugHelper.h>
@@ -172,7 +172,7 @@ namespace functions {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
-				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
+				sd::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
             }
 
             template <>
@@ -180,7 +180,7 @@ namespace functions {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
-				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarHalf(...) failed");
+				sd::DebugHelper::checkErrorCode(stream, "execReduceScalarHalf(...) failed");
             }
 
             template <>
@@ -188,7 +188,7 @@ namespace functions {
 
                 DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
-				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarDouble(...) failed");
+				sd::DebugHelper::checkErrorCode(stream, "execReduceScalarDouble(...) failed");
             }
 
             template <>
@@ -304,7 +304,7 @@ namespace functions {
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
-					aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+					aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
 					__syncthreads();
@@ -364,7 +364,7 @@ namespace functions {
 				}
 
 				__syncthreads();
-				aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, n), extraParams);
+				aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, n), extraParams);
 
 
 				__syncthreads();
@@ -398,7 +398,7 @@ namespace functions {
 
 
 
-						aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
+						aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(gridDim.x, blockDim.x), extraParams);
 
 						__syncthreads();
 						if (threadIdx.x == 0) {
@@ -468,7 +468,7 @@ namespace functions {
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
-					aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+					aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 					__syncthreads();
 					if (threadIdx.x == 0)
@@ -533,7 +533,7 @@ namespace functions {
 					__syncthreads();
 
 					// aggregate. do NOT reduce for elements > tadLength
-					aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+					aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
 
 					__syncthreads();

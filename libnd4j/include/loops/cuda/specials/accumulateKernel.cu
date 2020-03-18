@@ -21,7 +21,7 @@
 
 #include <loops/special_kernels.h>
 
-namespace nd4j {
+namespace sd {
 
 ///////////////////////////////////////////////////////////////////////
 /**
@@ -83,7 +83,7 @@ namespace nd4j {
     accumulateKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void **vx, void *vz, int n, const Nd4jLong length) {
 
         execAccumulateKernel<T><<< launchDims.x, launchDims.y, launchDims.z, *stream>>> (vx, vz, n, length);
-        nd4j::DebugHelper::checkErrorCode(stream, "accumulate(...) failed");
+        sd::DebugHelper::checkErrorCode(stream, "accumulate(...) failed");
     }
 
     BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT accumulateKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * *vx, void * vz, int n, const Nd4jLong length), LIBND4J_TYPES);

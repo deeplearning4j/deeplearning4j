@@ -21,13 +21,13 @@
 #include <ops/declarable/helpers/helpers.h>
 #include <execution/Threads.h>
 
-namespace nd4j {
+namespace sd {
 namespace ops {
 namespace helpers {
 
-void crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o);
+void crossBatched(sd::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o);
 
-void FORCEINLINE cross(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
+void FORCEINLINE cross(sd::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
 
     if (a->isR()) {
         auto a0 = a->e<double>(0);
@@ -56,7 +56,7 @@ void FORCEINLINE cross(nd4j::LaunchContext * context, NDArray *a, NDArray *b, ND
     }
 }
 
-    void FORCEINLINE _crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
+    void FORCEINLINE _crossBatched(sd::LaunchContext * context, NDArray *a, NDArray *b, NDArray *o) {
         auto a_ = a->reshape(a->ordering(), {-1, 3});
         auto b_ = b->reshape(b->ordering(), {-1, 3});
         auto o_ = o->reshape(o->ordering(), {-1, 3}, false);
@@ -80,7 +80,7 @@ void FORCEINLINE cross(nd4j::LaunchContext * context, NDArray *a, NDArray *b, ND
         samediff::Threads::parallel_tad(func,  0, tads);
     }
 
-    void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
+    void weightedCrossEntropyWithLogitsFunctor(sd::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output);
 }
 }
 }
