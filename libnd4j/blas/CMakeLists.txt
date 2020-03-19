@@ -312,7 +312,10 @@ elseif(SD_CPU)
         set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
 
-
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+       #set -ffast-math flags for some source files to help with auto-vectorization
+       set_source_files_properties( ${CMAKE_CURRENT_SOURCE_DIR}/../include/helpers/cpu/MmulHelper.cpp   PROPERTIES COMPILE_FLAGS $<$<CONFIG:Release>:-ffast-math> )
+    endif()
 
     if(SD_CHECK_VECTORIZATION)
        set(VECT_FILES cpu/NativeOps.cpp ${OPS_SOURCES} ${HELPERS_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${LOOPS_SOURCES})

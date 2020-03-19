@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17,11 +18,10 @@
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 05.06.2018
 //
-
 #ifndef LIBND4J_MMULHELPER_CPP
 #define LIBND4J_MMULHELPER_CPP
 
-#include "../MmulHelper.h"
+#include <helpers/MmulHelper.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/BlasHelper.h>
 #include <array/NDArrayFactory.h>
@@ -239,70 +239,7 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
 
 
 //////////////////////////////////////////////////////////////////////////
-    void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray* z, const bool transX, const bool transY, double alpha, double beta) {
-        int xRank = x->rankOf();
-        int yRank = y->rankOf();
 
-        auto outShape = ShapeUtils::evalShapeForMatmul(x->shapeInfo(), y->shapeInfo(), transX, transY);
-        if(!z->isSameShape(outShape)) {
-            nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
-            throw std::invalid_argument("");
-        }
-
-        if (z->isEmpty())
-            return;
-
-        NDArray* xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
-
-        if((transX && xRank > 1) || (transY && yRank > 1)) {
-            const int rank = xRank >= yRank ? xRank : yRank;
-            std::vector<int> permut(rank);
-            for (int i = 0; i < rank-2; ++i)
-                permut[i] = i;
-            permut[rank-2] = rank - 1;
-            permut[rank-1] = rank - 2;
-
-            if(transX)
-                xT = new NDArray(x->permute(permut));
-
-            if(transY)
-                yT = new NDArray(y->permute(permut));
-        }
-
-        if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
-
-            if(xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
-                xT = new NDArray(x->reshape(x->ordering(), {1, x->lengthOf()})); // please note x is not transposed in this case (since xRank=1)
-                zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
-            }
-
-            mmul(xT, yT, zT, alpha, beta);
-        }
-        else {  // rest cases -  batched mmul
-
-            const int batchRank = xRank - 2;
-            std::vector<int> dimsToExclude(batchRank);
-            for(int i = 0; i < batchRank; ++i)
-                dimsToExclude[i] = i;
-
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
-
-//PRAGMA_OMP_PARALLEL_FOR
-            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-                auto xSubArr = (*xT)(i, dimsToExclude);
-                auto ySubArr = (*yT)(i, dimsToExclude);
-                auto zSubArr = (*zT)(i, dimsToExclude);
-                mmul(&xSubArr, &ySubArr, &zSubArr, alpha, beta);
-            }
-        }
-
-        if(xT != x)
-            delete xT;
-        if(yT != y)
-            delete yT;
-        if(zT != z)
-            delete zT;
-    }
 
 //BUILD_TRIPLE_TEMPLATE(template void usualGemm, (const char cOrder, const bool transA, const bool transB, const int M, const int N, const int K, const double alpha, const void* A, const int lda, const void* B, const int ldb, const double beta, void* C, const int ldc), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 //BUILD_TRIPLE_TEMPLATE(template void usualGemv, (const char aOrder, const int M, const int N, const double alpha, const void* A, const int lda, const void* B, const int incx, const double beta, void* C, const int incy), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);

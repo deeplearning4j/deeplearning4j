@@ -475,8 +475,8 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
         throw std::runtime_error("MmulHelper::dot cuda: X array must be vector !");
     if(!shape::isCommonVector(Y->shapeInfo(), yLenDim))
         throw std::runtime_error("MmulHelper::dot cuda: Y array must be vector !");
-    if(Z != nullptr && !Z->isScalar())
-        throw std::runtime_error("MmulHelper::dot cuda: Z array must be scalar !");
+    if(Z != nullptr && Z->lengthOf() != 1)
+        throw std::runtime_error("MmulHelper::dot cuda: Z array must have length equal to unity !");
 
     const auto length = X->lengthOf();
 
@@ -675,6 +675,50 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
     return C;
 }
+
+    void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray* z, const bool transX, const bool transY, double alpha, double beta) {
+        int xRank = x->rankOf();
+        int yRank = y->rankOf();
+
+        auto outShape = ShapeUtils::evalShapeForMatmul(x->shapeInfo(), y->shapeInfo(), transX, transY);
+        if(!z->isSameShape(outShape)) {
+            nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
+            throw std::invalid_argument("");
+        }
+
+        if (z->isEmpty())
+            return;
+
+        NDArray* xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
+
+        if((transX && xRank > 1) || (transY && yRank > 1)) {
+            const int rank = xRank >= yRank ? xRank : yRank;
+            std::vector<int> permut(rank);
+            for (int i = 0; i < rank-2; ++i)
+                permut[i] = i;
+            permut[rank-2] = rank - 1;
+            permut[rank-1] = rank - 2;
+
+            if(transX)
+                xT = new NDArray(x->permute(permut));
+
+            if(transY)
+                yT = new NDArray(y->permute(permut));
+        }
+
+        if (xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
+                xT = new NDArray(x->reshape(x->ordering(), { 1, x->lengthOf() })); // please note x is not transposed in this case (since xRank=1)
+                zT = new NDArray(z->reshape(z->ordering(), { 1, z->lengthOf() }));
+        }
+        mmul(xT, yT, zT, alpha, beta);
+
+        if(xT != x)
+            delete xT;
+        if(yT != y)
+            delete yT;
+        if(zT != z)
+            delete zT;
+    }
 
 
 /*
