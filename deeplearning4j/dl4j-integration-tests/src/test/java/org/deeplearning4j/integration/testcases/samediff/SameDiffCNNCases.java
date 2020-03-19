@@ -1,3 +1,18 @@
+/* ******************************************************************************
+ * Copyright (c) 2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 package org.deeplearning4j.integration.testcases.samediff;
 
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
@@ -52,7 +67,6 @@ public class SameDiffCNNCases {
             public Object getConfiguration() throws Exception {
                 int nChannels = 1; // Number of input channels
                 int outputNum = 10; // The number of possible outcomes
-                int seed = 123;
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.placeHolder("in", DataType.FLOAT, nChannels, 784);
@@ -267,8 +281,8 @@ public class SameDiffCNNCases {
                         .build()), 0);
 
                 // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
-                // outputsize_H(W)(D) = (8 - 3 + 2*0 ) / 2 + 1 = ceil(3.5) = 4
-                // [minibatch,8,4,4.4]
+                // outputsize_H(W)(D) = (8 - 3 + 2*0 ) / 2 + 1 = 3
+                // [minibatch,8,3,3,3]
 
 
                 SDVariable layer1 = sd.cnn.maxPooling3d("layer1", layer0, Pooling3DConfig.builder()
@@ -278,8 +292,8 @@ public class SameDiffCNNCases {
                         .build());
 
                 // outputSize = (inputSize - kernelSize + 2*padding) / stride + 1
-                // outputsize_H(W)(D) = ( 4 - 2 + 2*0 ) / 2 + 1 = 2
-                // [minibatch,8,2,2,2]
+                // outputsize_H(W)(D) = ( 3 - 2 + 2*0 ) / 2 + 1 = 1
+                // [minibatch,8,1,1,1]
 
 
                 int channels_height_width_depth = 8 * 1 * 1 * 1;
@@ -334,7 +348,6 @@ public class SameDiffCNNCases {
 
                 List<Map<String, INDArray>> list = new ArrayList<>();
                 INDArray arr = Nd4j.rand(new int[]{2, 3, 8, 8, 8});
-                INDArray labels = org.deeplearning4j.integration.TestUtils.randomOneHot(2, 10);
 
                 list.add(Collections.singletonMap("in", arr));
 

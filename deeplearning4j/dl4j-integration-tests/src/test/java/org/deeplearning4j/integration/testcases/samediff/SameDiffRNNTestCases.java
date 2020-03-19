@@ -84,9 +84,9 @@ public class SameDiffRNNTestCases {
             testName = "RnnCsvSequenceClassification1";
             testType = TestType.RANDOM_INIT;
             testPredictions = true;
-            testTrainingCurves = true;
-            testGradients = true;
-            testParamsPostTraining = true;
+            testTrainingCurves = false;
+            testGradients = false;
+            testParamsPostTraining = false;
             testEvaluation = true;
             testOverfitting = false;            //Not much point on this one - it already fits very well...
         }
@@ -128,8 +128,8 @@ public class SameDiffRNNTestCases {
             SDVariable label = sd.placeHolder("label", DataType.FLOAT, miniBatchSize, numLabelClasses);
 
 
-            SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, miniBatchSize, 10));
-            SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, miniBatchSize, 10));
+            SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, miniBatchSize, numUnits));
+            SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, miniBatchSize, numUnits));
 
 
             SDVariable layer0 = sd.rnn.lstmLayer(
@@ -147,16 +147,13 @@ public class SameDiffRNNTestCases {
                             .dataFormat(RnnDataFormat.TNS).build()
             ).getLastOutput();
 
-            SDVariable layer0_activated = sd.nn.tanh("layer0",layer0);
 
 //           Behaviour with default settings: 3d (time series) input with shape
 //          [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output [miniBatchSize, vectorSize]
 
-            SDVariable layer1 = sd.cnn.avgPooling3d("avgPooling",layer0_activated, Pooling3DConfig.builder()
-                    .type(Pooling3D.Pooling3DType.AVG)
-                    .build());
+            SDVariable layer1 = layer0.mean(2);
 
-            SDVariable w1 = sd.var("w1", Nd4j.rand(DataType.FLOAT, 1, numLabelClasses));
+            SDVariable w1 = sd.var("w1", Nd4j.rand(DataType.FLOAT, numUnits, numLabelClasses));
             SDVariable b1 = sd.var("b1", Nd4j.rand(DataType.FLOAT, numLabelClasses));
 
 
@@ -180,8 +177,12 @@ public class SameDiffRNNTestCases {
         public List<Map<String,INDArray>> getPredictionsTestDataSameDiff() throws Exception {
 
             MultiDataSet mds = getTrainingData().next();
+
             List<Map<String, INDArray>> list = new ArrayList<>();
-            list.add(Collections.singletonMap("in", mds.getFeatures()[0]));
+
+            list.add(Collections.singletonMap("in", mds.getFeatures()[0].reshape(10,60)));
+            //[batchsize, insize]
+            System.out.println(mds.getFeatures()[0].reshape(10,60));
 
             return list;
         }
@@ -190,21 +191,18 @@ public class SameDiffRNNTestCases {
         public List<String> getPredictionsNamesSameDiff() throws Exception {
             return Collections.singletonList("out");        }
 
-        @Override
-        public MultiDataSet getGradientsTestData() throws Exception {
-            return getTrainingData().next();
-        }
+
 
         @Override
         public MultiDataSetIterator getTrainingData() throws Exception {
             MultiDataSetIterator iter = getTrainingDataUnnormalized();
-
             MultiDataSetPreProcessor pp = multiDataSet -> {
                 INDArray l = multiDataSet.getLabels(0);
                 l = l.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(l.size(2)-1));
                 multiDataSet.setLabels(0, l);
                 multiDataSet.setLabelsMaskArray(0, null);
             };
+
 
 
             iter.setPreProcessor(new CompositeMultiDataSetPreProcessor(getNormalizer(),pp));
@@ -218,8 +216,8 @@ public class SameDiffRNNTestCases {
 
             File featuresDirTrain = Files.createTempDir();
             File labelsDirTrain = Files.createTempDir();
-            new ClassPathResource("dl4j-integration-tests/data/uci_seq/train/features/").copyDirectory(featuresDirTrain);
-            new ClassPathResource("dl4j-integration-tests/data/uci_seq/train/labels/").copyDirectory(labelsDirTrain);
+            Resources.copyDirectory("dl4j-integration-tests/data/uci_seq/train/features/", featuresDirTrain);
+            Resources.copyDirectory("dl4j-integration-tests/data/uci_seq/train/labels/", labelsDirTrain);
 
             SequenceRecordReader trainFeatures = new CSVSequenceRecordReader();
             trainFeatures.initialize(new NumberedFileInputSplit(featuresDirTrain.getAbsolutePath() + "/%d.csv", 0, 449));
@@ -230,6 +228,7 @@ public class SameDiffRNNTestCases {
                     false, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 
             MultiDataSetIterator iter = new MultiDataSetIteratorAdapter(trainData);
+
             return iter;
         }
 
@@ -251,8 +250,8 @@ public class SameDiffRNNTestCases {
 //            File labelsDirTest = new ClassPathResource("/RnnCsvSequenceClassification/uci_seq/test/labels/").getFile();
             File featuresDirTest = Files.createTempDir();
             File labelsDirTest = Files.createTempDir();
-            new ClassPathResource("dl4j-integration-tests/data/uci_seq/test/features/").copyDirectory(featuresDirTest);
-            new ClassPathResource("dl4j-integration-tests/data/uci_seq/test/labels/").copyDirectory(labelsDirTest);
+            Resources.copyDirectory("dl4j-integration-tests/data/uci_seq/test/features/", featuresDirTest);
+            Resources.copyDirectory("dl4j-integration-tests/data/uci_seq/test/labels/", labelsDirTest);
 
             SequenceRecordReader trainFeatures = new CSVSequenceRecordReader();
             trainFeatures.initialize(new NumberedFileInputSplit(featuresDirTest.getAbsolutePath() + "/%d.csv", 0, 149));

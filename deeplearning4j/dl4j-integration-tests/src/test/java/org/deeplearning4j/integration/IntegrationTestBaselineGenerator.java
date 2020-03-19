@@ -59,8 +59,8 @@ import static org.junit.Assert.assertEquals;
 @Slf4j
 public class IntegrationTestBaselineGenerator {
 
-    public static final File OUTPUT_DIR_DL4J = new File("/home/atuzhykov/SkyMind/dl4j-test-resources/src/main/resources/dl4j-integration-tests").getAbsoluteFile();
-    public static final File OUTPUT_DIR_SAMEDIFF = new File("/home/atuzhykov/SkyMind/dl4j-test-resources/src/main/resources/samediff-integration-tests").getAbsoluteFile();
+    public static final File OUTPUT_DIR_DL4J = new File("/../../dl4j-test-resources/src/main/resources/dl4j-integration-tests").getAbsoluteFile();
+    public static final File OUTPUT_DIR_SAMEDIFF = new File("/../../dl4j-test-resources/src/main/resources/samediff-integration-tests").getAbsoluteFile();
 
 
     public static void main(String[] args) throws Exception {

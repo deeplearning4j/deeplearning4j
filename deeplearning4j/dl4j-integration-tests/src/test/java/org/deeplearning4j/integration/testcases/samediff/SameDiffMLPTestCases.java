@@ -265,7 +265,7 @@ public class SameDiffMLPTestCases {
 
             @Override
             public MultiDataSetIterator getTrainingData() throws Exception {
-                File f = new ClassPathResource("dl4j-integration-tests/data/moon_data_train.csv").getFile();
+                File f = Resources.asFile("dl4j-integration-tests/data/moon_data_train.csv");
                 RecordReader rr = new CSVRecordReader();
                 rr.initialize(new FileSplit(f));
                 DataSetIterator iter = new RecordReaderDataSetIterator(rr, 32, 0, 2);
