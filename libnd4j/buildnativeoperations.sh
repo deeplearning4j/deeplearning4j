@@ -21,6 +21,33 @@ set -eu
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
+setwindows_msys() {
+  if [[ $KERNEL == *"windows"* ]]; then
+  export CMAKE_COMMAND="$CMAKE_COMMAND -G \"MSYS Makefiles\""
+  fi
+}
+
+setandroid_defaults() {
+  if [[ -z ${ANDROID_NDK:-} ]]; then
+    export ANDROID_NDK=$HOME/Android/android-ndk/
+    echo "No ANDROID_NDK variable set. Setting to default of $ANDROID_NDK"
+    else
+        echo "USING ANDROID NDK $ANDROID_NDK"
+fi
+
+  if [[ -z ${ANDROID_VERSION:-} ]]; then
+    export ANDROID_VERSION=21
+    echo "No ANDROID_VERSION variable set. Setting to default of $ANDROID_VERSION"
+    else
+       echo "USING ANDROID VERSION $ANDROID_VERSION"
+    # android needs static linking
+
+fi
+
+
+}
+
+
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
@@ -57,7 +84,7 @@ VERBOSE_ARG="VERBOSE=1"
 HELPER=
 CHECK_VECTORIZATION="OFF"
 NAME=
-while [[ $# > 0 ]]
+while [[ $# -gt 0 ]]
 do
 key="$1"
 value="${2:-}"
@@ -141,7 +168,7 @@ case $key in
             # unknown option
     ;;
 esac
-if [[ $# > 0 ]]; then
+if [[ $# -gt 0 ]]; then
     shift # past argument or value
 fi
 done
@@ -154,6 +181,8 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     HOST="windows"
     KERNEL="windows-x86_64"
+    # need to set build path separator, it ends up being wrong on msys2
+    BUILD_PATH_SEPARATOR=";"
     echo "Running windows"
 elif [ "$(uname -m)" == "ppc64le" ]; then
     if [ -z "$ARCH" ]; then
@@ -166,9 +195,9 @@ if [ -z "$OS" ]; then
     OS="$HOST"
 fi
 
-if [[ -z ${ANDROID_NDK:-} ]]; then
-    export ANDROID_NDK=$HOME/Android/android-ndk/
-fi
+
+
+echo "RUNNING BUILD FOR OS $OS"
 
 case "$OS" in
     linux-armhf)
@@ -190,44 +219,67 @@ case "$OS" in
       if [ -z "$ARCH" ]; then
         ARCH="armv7-a"
       fi
+
+      setandroid_defaults
+
+
       export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DSD_ANDROID_BUILD=true"
+      setwindows_msys
     ;;
 
     android-arm64)
       if [ -z "$ARCH" ]; then
         ARCH="armv8-a"
       fi
+
+      setandroid_defaults
+
+      echo "BUILDING ANDROID ARM with KERNEL $KERNEL"
       export ANDROID_BIN="$ANDROID_NDK/toolchains/aarch64-linux-android-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
-      export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm64/"
+      export CMAKE_COMMAND="$CMAKE_COMMAND  -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DSD_ANDROID_BUILD=true"
+      setwindows_msys
     ;;
 
     android-x86)
       if [ -z "$ARCH" ]; then
         ARCH="i686"
       fi
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/x86-4.9/prebuilt/$KERNEL/"
+      echo "BUILDING ANDROID x86"
+
+      setandroid_defaults
+
+
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-x86/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake -DSD_ANDROID_BUILD=true"
+      setwindows_msys
     ;;
 
     android-x86_64)
+
       if [ -z "$ARCH" ]; then
         ARCH="x86-64"
       fi
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/x86_64-4.9/prebuilt/$KERNEL/"
+      echo "BUILDING ANDROID x86_64"
+
+      setandroid_defaults
+
+
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
-      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86_64/"
+      export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-x86_64/"
       export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DSD_ANDROID_BUILD=true"
+      setwindows_msys
     ;;
 
     ios-x86_64)
@@ -312,6 +364,7 @@ case "$OS" in
         PARALLEL="true"
         VERBOSE_ARG="-v"
       else
+        echo "SETTING UP WINDOWS"
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
         export MAKE_COMMAND="make"
         export CC=/mingw64/bin/gcc
@@ -400,9 +453,9 @@ if [ -z "$NAME" ]; then
 fi
 
 if [ "$LIBTYPE" == "dynamic" ]; then
-     SHARED_LIBS_ARG="-DSD_SHARED_LIB=OFF"
+     SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF"
      else
-         SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON"
+         SHARED_LIBS_ARG="-DSD_SHARED_LIB=OFF -DSD_STATIC_LIB=ON"
 fi
 
 if [ "$BUILD" == "release" ]; then
@@ -464,11 +517,14 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     esac
 fi
 
+
 [[ -z ${OPENBLAS_PATH:-} ]] && OPENBLAS_PATH=""
+OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 
 if [[ -n "${BUILD_PATH:-}" ]]; then
     PREVIFS="$IFS"
     IFS="$BUILD_PATH_SEPARATOR"
+    echo "BUILD PATH BUILD_PATH_SEPARATOR IS $BUILD_PATH_SEPARATOR"
     for P in $BUILD_PATH; do
         if [[ -f "$P/include/openblas_config.h" ]]; then
             OPENBLAS_PATH="$P"
@@ -484,6 +540,7 @@ fi
 
 # replace any backslash with a slash
 OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
+
 
 mkbuilddir() {
     if [ "$CLEAN" == "true" ]; then
@@ -537,7 +594,7 @@ echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
 echo HELPERS = "$HELPERS"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}"  $HELPERS "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+eval "$CMAKE_COMMAND"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}"  "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
@@ -551,9 +608,10 @@ if [ "$CHECK_VECTORIZATION" == "ON" ]; then
 if [ "$MAKE_COMMAND" == "make" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS --output-sync=target"
 fi
+
 exec 3>&1 
-eval $MAKE_COMMAND $MAKE_ARGUMENTS 2>&1 >&3 3>&-  | python3 ../../auto_vectorization/auto_vect.py   && cd ../../..
+eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" 2>&1 >&3 3>&-  | python3 ../../auto_vectorization/auto_vect.py   && cd ../../..
 exec 3>&- 
 else
-eval $MAKE_COMMAND $MAKE_ARGUMENTS  && cd ../../..
+eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"  && cd ../../..
 fi

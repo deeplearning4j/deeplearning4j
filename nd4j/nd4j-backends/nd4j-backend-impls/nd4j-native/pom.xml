@@ -51,16 +51,6 @@
             <classifier>${dependency.platform}</classifier>
         </dependency>
 
-        <!--
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>libnd4j</artifactId>
-            <version>${project.version}</version>
-            <type>zip</type>
-            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
-            <scope>provided</scope>
-        </dependency>
-        -->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
@@ -165,8 +155,8 @@
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
                         <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                        <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
-                        <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
+                       <!-- <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>-->
                     </linkResources>
                 </configuration>
                 <executions>
@@ -174,7 +164,7 @@
                         <id>javacpp-validate</id>
                         <phase>validate</phase>
                         <goals>
-                          <goal>build</goal>
+                            <goal>build</goal>
                         </goals>
                     </execution>
                     <execution>
@@ -296,23 +286,6 @@
             <properties>
                 <javacpp.platform.extension>-avx512</javacpp.platform.extension>
             </properties>
-        </profile>
-        <profile>
-            <id>mingw</id>
-            <activation>
-                <os><family>windows</family></os>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>javacpp</artifactId>
-                        <configuration>
-                            <properties>${javacpp.platform}-mingw</properties>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
         </profile>
 
         <profile>

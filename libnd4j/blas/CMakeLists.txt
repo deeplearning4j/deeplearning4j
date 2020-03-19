@@ -49,7 +49,7 @@ if (SD_IOS_BUILD)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSD_IOS_BUILD=true")
 endif()
 
-if(WIN32)
+if(WIN32 AND NOT ANDROID)
     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
@@ -231,7 +231,11 @@ if(SD_CUDA)
                 ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES})
 
-        add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:nd4jobj>)
+        # Don't output dynamic linked lib when  a static lib build is specified unless the tests are built
+        if(NOT SD_STATIC_LIB OR SD_BUILD_TESTS)
+            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:nd4jobj>)
+        endif()
+
 
         if (WIN32)
             message("MSVC runtime for library: ${MSVC_RT_LIB}")
@@ -241,7 +245,7 @@ if(SD_CUDA)
         if (SD_BUILD_TESTS OR SD_STATIC_LIB)
             add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
             set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
-            install(TARGETS ${SD_LIBRARY_NAME}static DESTINATION .)
+            install(TARGETS ${SD_LIBRARY_NAME}static  DESTINATION .)
         endif()
 
         # on windows we want to make sure we use MT or MD, but since we use it in one lib, we must use it everywhere to avoid conflicts
@@ -320,14 +324,16 @@ elseif(SD_CPU)
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
             ${OPS_SOURCES} ${PERF_SOURCES})
     if(IOS)
-        add_library(${SD_LIBRARY_NAME}       STATIC $<TARGET_OBJECTS:nd4jobj>)
+        add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:nd4jobj>)
     else()
         # static library is built only if we're going to build tests, skip otherwise
         if (SD_BUILD_TESTS OR SD_STATIC_LIB)
             add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
         endif()
 
-        add_library(${SD_LIBRARY_NAME}       SHARED $<TARGET_OBJECTS:nd4jobj>)
+       if(SD_BUILD_TESTS OR NOT SD_STATIC_LIB)
+                add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:nd4jobj>)
+        endif()
     endif()
 
     # we're including {MKLDNN} here in case of building from sources. in future that'll replace {MKLDNN_LIBRARIES}. same applies to BLAS

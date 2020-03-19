@@ -17,8 +17,8 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <groupId>org.deeplearning4j</groupId>
@@ -75,6 +75,7 @@
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
         <libnd4j.buildthreads></libnd4j.buildthreads>
         <libnd4j.helper></libnd4j.helper>
+        <libnd4j.buildprogram>bash</libnd4j.buildprogram>
     </properties>
 
     <build>
@@ -138,7 +139,7 @@
                         <id>javacpp-cppbuild-validate</id>
                         <phase>validate</phase>
                         <goals>
-                          <goal>build</goal>
+                            <goal>build</goal>
                         </goals>
                     </execution>
                     <execution>
@@ -150,8 +151,8 @@
                         <configuration>
                             <skip>${libnd4j.cpu.compile.skip}</skip>
                             <buildCommand>
-                                <program>bash</program>
-                                <argument>${project.basedir}/buildnativeoperations.sh</argument>
+                                <program>${libnd4j.buildprogram}</program>
+                                <argument>buildnativeoperations.sh</argument>
                                 <argument>--build-type</argument>
                                 <argument>${libnd4j.build}</argument>
                                 <argument>--chip</argument>
@@ -183,7 +184,7 @@
                             <skip>${libnd4j.test.skip}</skip>
                             <workingDirectory>${basedir}/tests_cpu</workingDirectory>
                             <buildCommand>
-                                <program>bash</program>
+                                <program>sh</program>
                                 <argument>run_tests.sh</argument>
                                 <argument>--chip</argument>
                                 <argument>${libnd4j.chip}</argument>
@@ -233,9 +234,35 @@
     </build>
 
     <profiles>
+
+        <!-- Build on windows can use sh rather than bash due to WSL clashing with msys2 -->
+        <profile>
+            <id>build-windows</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <properties>
+                <libnd4j.buildprogram>sh</libnd4j.buildprogram>
+            </properties>
+        </profile>
+
+        <!-- Default build program should be bash on non windows platforms -->
+        <profile>
+            <id>build-unix</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <libnd4j.buildprogram>bash</libnd4j.buildprogram>
+            </properties>
+        </profile>
+
+
         <!-- Use -Dlibnd4j.singlethread to use single threaded build (multi-threaded by default) -->
         <profile>
-            <id>libnd4-single-thread</id>
+            <id>libnd4j-single-thread</id>
             <activation>
                 <property>
                     <name>libnd4j.singlethread</name>
@@ -310,8 +337,8 @@
                                 <configuration>
                                     <skip>${libnd4j.cuda.compile.skip}</skip>
                                     <buildCommand>
-                                        <program>bash</program>
-                                        <argument>${project.basedir}/buildnativeoperations.sh
+                                        <program>${libnd4j.buildprogram}</program>
+                                        <argument>buildnativeoperations.sh
                                         </argument>
                                         <argument>--build-type</argument>
                                         <argument>${libnd4j.build}</argument>
@@ -389,6 +416,9 @@
                 </plugins>
             </build>
         </profile>
+
+
+
         <!-- Profiles to set the default libnd4j.helper property, example: mkdnn -->
         <profile>
             <id>libnd4j-helper-avx2</id>

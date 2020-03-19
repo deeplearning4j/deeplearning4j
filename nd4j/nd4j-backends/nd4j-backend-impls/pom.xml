@@ -56,9 +56,7 @@
 
 
     <build>
-        <!--
-        <testSourceDirectory>../nd4j-tests/src/test/java</testSourceDirectory>
-        -->
+
         <plugins>
             <!-- Skip execution of Javadoc since some versions run out of memory -->
             <plugin>
