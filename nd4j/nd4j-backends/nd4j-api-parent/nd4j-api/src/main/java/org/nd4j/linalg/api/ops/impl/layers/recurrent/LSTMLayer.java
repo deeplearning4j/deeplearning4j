@@ -26,7 +26,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
+<<<<<<< HEAD
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
+=======
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
+>>>>>>> df614a6597... Fix LSTMLayer inputs order
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -79,20 +83,33 @@ public class LSTMLayer extends DynamicCustomOp {
     private LSTMConfiguration configuration;
 
     @Getter
+<<<<<<< HEAD
     private LSTMWeights weights;
+=======
+    private LSTMLayerWeights weights;
+>>>>>>> df614a6597... Fix LSTMLayer inputs order
 
     public LSTMLayer() {
     }
 
+<<<<<<< HEAD
     public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable maxTSLength, SDVariable x, SDVariable cLast, SDVariable yLast, LSTMWeights weights, LSTMConfiguration configuration) {
         super(null, sameDiff, weights.argsWithInputs(maxTSLength, x, cLast, yLast));
+=======
+    public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable maxTSLength, SDVariable x, SDVariable cLast, SDVariable yLast, LSTMLayerWeights weights, LSTMConfiguration configuration) {
+        super(null, sameDiff, weights.argsWithInputs(x, maxTSLength, cLast, yLast));
+>>>>>>> df614a6597... Fix LSTMLayer inputs order
         this.configuration = configuration;
         this.weights = weights;
         addIArgument(configuration.iArgs(true));
         addTArgument(configuration.tArgs());
     }
 
+<<<<<<< HEAD
     public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
+=======
+    public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMLayerWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
+>>>>>>> df614a6597... Fix LSTMLayer inputs order
         super(null, null, lstmWeights.argsWithInputs(maxTSLength, x, cLast, yLast));
         this.configuration = lstmConfiguration;
         this.weights = lstmWeights;
