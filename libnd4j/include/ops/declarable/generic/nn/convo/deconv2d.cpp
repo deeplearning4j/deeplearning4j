@@ -38,7 +38,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, oC, iC] always
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
 
-    auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+    auto output  = OUTPUT_NULLIFIED(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
     REQUIRE_TRUE(input->rankOf()   == 4, 0, "CUSTOM DECONV2D OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
     REQUIRE_TRUE(weights->rankOf() == 4, 0, "CUSTOM DECONV2D OP: rank of weights array must be equal to 4, but got %i instead !", weights->rankOf());

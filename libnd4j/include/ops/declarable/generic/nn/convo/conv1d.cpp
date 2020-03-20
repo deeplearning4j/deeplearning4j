@@ -37,7 +37,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     auto weights = INPUT_VARIABLE(1);                                    // [kW, iC, oC] always
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
 
-    auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW)
+    auto output  = OUTPUT_NULLIFIED(0);                                   // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW)
 
     int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
@@ -167,9 +167,9 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
     auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
 
-    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW), epsilon
-    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kW, iC, oC] always
-    auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
+    auto gradI = OUTPUT_NULLIFIED(0);                                                 // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW), epsilon
+    auto gradW = OUTPUT_NULLIFIED(1);                                                 // [kW, iC, oC] always
+    auto gradB = block.width() > 3 ? OUTPUT_NULLIFIED(2) : nullptr;                   // [oC]
 
     int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width

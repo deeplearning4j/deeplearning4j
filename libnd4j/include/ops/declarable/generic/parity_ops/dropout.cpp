@@ -33,7 +33,7 @@ CONFIGURABLE_OP_IMPL(dropout, 1, 1, true, 1, 1) {
     auto input = INPUT_VARIABLE(0); // lookup param
 
     NDArray *reduceShape = nullptr; // this param is optional
-    auto output  = OUTPUT_VARIABLE(0); //
+    auto output  = OUTPUT_NULLIFIED(0); //
     
     int seed = INT_ARG(0);
 
@@ -66,7 +66,7 @@ CONFIGURABLE_OP_IMPL(dropout_bp, 2, 1, false, 1, 1) {
     NDArray* gradOut   = INPUT_VARIABLE(1); // lookup param
 
     NDArray* reduceShape = nullptr; // this param is optional
-    NDArray* output  = OUTPUT_VARIABLE(0); // 
+    NDArray* output  = OUTPUT_NULLIFIED(0); //
     
     int seed = INT_ARG(0);
     

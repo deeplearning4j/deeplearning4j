@@ -34,7 +34,7 @@ namespace ops  {
         auto dataP  = INPUT_VARIABLE(3);
         auto N = INT_ARG(0);
 
-        auto output = OUTPUT_VARIABLE(0);
+        auto output = OUTPUT_NULLIFIED(0);
 
         REQUIRE_TRUE(rowP->isVector(), 0, "barnes_edge_force: row input must be a vector, but its rank is %i instead !", rowP->rankOf());
         REQUIRE_TRUE(colP->isVector(), 0, "barnes_edge_force: col input must be a vector, but its rank is %i instead !", colP->rankOf());

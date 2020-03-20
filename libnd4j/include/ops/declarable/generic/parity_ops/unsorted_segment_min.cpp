@@ -26,7 +26,7 @@ namespace sd {
         CUSTOM_OP_IMPL(unsorted_segment_min, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             auto idxSegments = INPUT_VARIABLE(1);
-            auto segmentedOutput = OUTPUT_VARIABLE(0);
+            auto segmentedOutput = OUTPUT_NULLIFIED(0);
             Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
             REQUIRE_TRUE(idxSegments->isVector(), 0, "unsorted_segment_min: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "unsorted_segment_min: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
@@ -69,7 +69,7 @@ namespace sd {
         }
 
         CUSTOM_OP_IMPL(unsorted_segment_min_bp, 3, 2, false, 0, 1) {
-            return helpers::unsortedSegmentMinFunctorBP(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_VARIABLE(0));
+            return helpers::unsortedSegmentMinFunctorBP(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_NULLIFIED(0));
         }
 
         DECLARE_TYPES(unsorted_segment_min_bp) {

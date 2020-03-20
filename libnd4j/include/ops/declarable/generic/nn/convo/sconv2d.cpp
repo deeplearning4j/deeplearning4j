@@ -37,7 +37,7 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
     NDArray *weightsPoint = nullptr;                              // [1, 1, iC*mC, oC] always
     NDArray *bias         = nullptr;                              // [oC], if weightsPoint=nullptr then oC = iC*mC
 
-    NDArray *output    = OUTPUT_VARIABLE(0);                      // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
+    NDArray *output    = OUTPUT_NULLIFIED(0);                      // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
 
     if(block.width() == 3) {
         if((INPUT_VARIABLE(2))->rankOf() == 4)
@@ -199,26 +199,26 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
     NDArray *weightsPoint = nullptr;                                                     // [1, 1, iC*mC, oC] always
     NDArray *bias         = nullptr;                                                     // [oC], oC = iC*mC if weightsPoint=nullptr
 
-    NDArray *gradI  = OUTPUT_VARIABLE(0);                                                // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    NDArray *gradWD = OUTPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always
+    NDArray *gradI  = OUTPUT_NULLIFIED(0);                                                // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    NDArray *gradWD = OUTPUT_NULLIFIED(1);                                                // [kH, kW, iC, mC] always
     NDArray *gradWP = nullptr;                                                           // [1, 1, iC*mC, oC] always
     NDArray *gradB  = nullptr;                                                           // [oC]
 
     if(block.width() == 4) {
         if((INPUT_VARIABLE(3))->rankOf() == 4) {
             weightsPoint = INPUT_VARIABLE(3);
-            gradWP       = OUTPUT_VARIABLE(2);
+            gradWP       = OUTPUT_NULLIFIED(2);
         }
         else {
             bias  = INPUT_VARIABLE(3);
-            gradB = OUTPUT_VARIABLE(2);
+            gradB = OUTPUT_NULLIFIED(2);
         }
     }
     else if(block.width() == 5) {
         weightsPoint = INPUT_VARIABLE(3);
         bias         = INPUT_VARIABLE(4);
-        gradWP       = OUTPUT_VARIABLE(2);
-        gradB        = OUTPUT_VARIABLE(3);
+        gradWP       = OUTPUT_NULLIFIED(2);
+        gradB        = OUTPUT_NULLIFIED(3);
     }
 
 

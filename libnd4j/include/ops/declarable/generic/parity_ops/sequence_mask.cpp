@@ -25,7 +25,7 @@ namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(sequence_mask, 1, 1, false, 0, 0) {
             auto input  = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_NULLIFIED(0);
             const int inRank = input->rankOf();
 
             //REQUIRE_TRUE(inRank >= 1, 0, "sequence_mask: input array must have rank >= 1, but %i given!", inRank);

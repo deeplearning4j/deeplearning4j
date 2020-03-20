@@ -19,6 +19,7 @@
 //
 
 #include <execution/LaunchContext.h>
+#include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <exceptions/cuda_exception.h>
 #include <thread>
@@ -42,12 +43,15 @@ namespace sd {
     }
 
     std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
+    MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
 
 ////////////////////////////////////////////////////////////////////////
     LaunchContext::LaunchContext() {
         // default constructor, just to make clang/ranlib happy
         _workspace = nullptr;
         _deviceID = 0;
+
+        _deviceMutexes[_deviceID] = new std::mutex();
 
 #ifdef HAVE_MKLDNN
         _engine = new dnnl::engine(dnnl::engine::kind::cpu, 0);
@@ -66,6 +70,11 @@ namespace sd {
 
         // return context for current device
         return LaunchContext::_contexts[0].get();
+    }
+
+    std::mutex* LaunchContext::deviceMutex() {
+        auto deviceId = AffinityManager::currentDeviceId();
+        return _deviceMutexes[deviceId];
     }
 
     void LaunchContext::swapContextBuffers(ContextBuffers &buffers) {

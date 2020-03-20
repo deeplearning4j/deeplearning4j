@@ -30,14 +30,14 @@ namespace sd {
         CUSTOM_OP_IMPL(max_pool_with_argmax, 1, 2, false, 0, 9) {
 
             auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
-            auto indeces = OUTPUT_VARIABLE(1);
+            auto z = OUTPUT_NULLIFIED(0);
+            auto indices = OUTPUT_NULLIFIED(1);
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "max_pool_with_argmax: Input should have rank of 4, but got %i instead", x->rankOf());
 
             auto argI = *(block.getIArguments());
 
-            helpers::maxPoolingFunctor(block.launchContext(), block, x, z, argI, indeces);
+            helpers::maxPoolingFunctor(block.launchContext(), block, x, z, argI, indices);
 
             return Status::OK();
         }

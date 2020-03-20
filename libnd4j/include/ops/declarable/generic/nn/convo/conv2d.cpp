@@ -40,7 +40,7 @@ CUSTOM_OP_IMPL(conv2d, 2, 1, false, 0, 9) {
     auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, oC] always
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
 
-    auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+    auto output  = OUTPUT_NULLIFIED(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
     int sH = INT_ARG(2);                                                        // strides height
     int sW = INT_ARG(3);                                                        // strides width
@@ -161,9 +161,9 @@ CUSTOM_OP_IMPL(conv2d_bp, 3, 2, false, 0, 9) {
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
     auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
-    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC] always
-    auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
+    auto gradI = OUTPUT_NULLIFIED(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto gradW = OUTPUT_NULLIFIED(1);                                                 // [kH, kW, iC, oC] always
+    auto gradB = block.width() > 3 ? OUTPUT_NULLIFIED(2) : nullptr;                   // [oC]
 
     int kH = INT_ARG(0);                                                        // filter(kernel) height
     int kW = INT_ARG(1);                                                        // filter(kernel) width
@@ -267,7 +267,7 @@ CUSTOM_OP_IMPL(conv2d_input_bp, 3, 1, false, 0, 9) {
     auto weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
     auto gradO      = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
-    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto gradI = OUTPUT_NULLIFIED(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
     int kH = INT_ARG(0);                                                        // filter(kernel) height
     int kW = INT_ARG(1);                                                        // filter(kernel) width

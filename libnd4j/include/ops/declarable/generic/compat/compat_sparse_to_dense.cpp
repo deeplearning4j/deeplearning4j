@@ -32,7 +32,7 @@ namespace sd {
             auto values = INPUT_VARIABLE(2);
             NDArray *def = nullptr;
 
-            auto output = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_NULLIFIED(0);
 
             if (block.width() > 3)
                 def = INPUT_VARIABLE(3);

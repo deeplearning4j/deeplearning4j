@@ -28,6 +28,7 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.imports.TFGraphs.NodeReader;
+import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -106,6 +107,7 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertArrayEquals;

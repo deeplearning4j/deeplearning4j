@@ -18,7 +18,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
     public IntVectorVector(long n) { allocate(n); }
     private native void allocate();
     private native void allocate(@Cast("size_t") long n);
-    public native @Name("operator=") @ByRef IntVectorVector put(@ByRef IntVectorVector x);
+    public native @Name("operator =") @ByRef IntVectorVector put(@ByRef IntVectorVector x);
 
     public boolean empty() { return size() == 0; }
     public native long size();
@@ -67,7 +67,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
     public LongVectorVector(long n) { allocate(n); }
     private native void allocate();
     private native void allocate(@Cast("size_t") long n);
-    public native @Name("operator=") @ByRef LongVectorVector put(@ByRef LongVectorVector x);
+    public native @Name("operator =") @ByRef LongVectorVector put(@ByRef LongVectorVector x);
 
     public boolean empty() { return size() == 0; }
     public native long size();
@@ -117,7 +117,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
     public NDArrayVector(long n) { allocate(n); }
     private native void allocate();
     private native void allocate(@Cast("size_t") long n);
-    public native @Name("operator=") @ByRef NDArrayVector put(@ByRef NDArrayVector x);
+    public native @Name("operator =") @ByRef NDArrayVector put(@ByRef NDArrayVector x);
 
     public boolean empty() { return size() == 0; }
     public native long size();
@@ -135,9 +135,9 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
         public Iterator(Pointer p) { super(p); }
         public Iterator() { }
 
-        public native @Name("operator++") @ByRef Iterator increment();
-        public native @Name("operator==") boolean equals(@ByRef Iterator it);
-        public native @Name("operator*") @Const NDArray get();
+        public native @Name("operator ++") @ByRef Iterator increment();
+        public native @Name("operator ==") boolean equals(@ByRef Iterator it);
+        public native @Name("operator *") @Const NDArray get();
     }
 
     public NDArray[] get() {
@@ -185,7 +185,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
     public ConstNDArrayVector(long n) { allocate(n); }
     private native void allocate();
     private native void allocate(@Cast("size_t") long n);
-    public native @Name("operator=") @ByRef ConstNDArrayVector put(@ByRef ConstNDArrayVector x);
+    public native @Name("operator =") @ByRef ConstNDArrayVector put(@ByRef ConstNDArrayVector x);
 
     public boolean empty() { return size() == 0; }
     public native long size();
@@ -203,9 +203,9 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
         public Iterator(Pointer p) { super(p); }
         public Iterator() { }
 
-        public native @Name("operator++") @ByRef Iterator increment();
-        public native @Name("operator==") boolean equals(@ByRef Iterator it);
-        public native @Name("operator*") @Const NDArray get();
+        public native @Name("operator ++") @ByRef Iterator increment();
+        public native @Name("operator ==") boolean equals(@ByRef Iterator it);
+        public native @Name("operator *") @Const NDArray get();
     }
 
     public NDArray[] get() {
@@ -250,7 +250,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
     public IntIntPair(int firstValue, int secondValue) { this(); put(firstValue, secondValue); }
     public IntIntPair()       { allocate();  }
     private native void allocate();
-    public native @Name("operator=") @ByRef IntIntPair put(@ByRef IntIntPair x);
+    public native @Name("operator =") @ByRef IntIntPair put(@ByRef IntIntPair x);
 
 
     @MemberGetter public native int first(); public native IntIntPair first(int first);
@@ -3733,16 +3733,16 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         */
-		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
-		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
+		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
 		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo);
-		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
-		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
+		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
 		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context); }
-		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
+		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
 		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
 		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo);
 
@@ -3750,16 +3750,16 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
-        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
-        private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
+        private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
         public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype);
-        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
-        private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
+        private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
         public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype);
-        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context); }
-        private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
+        private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
         public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
         private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype);
 
@@ -9492,6 +9492,14 @@ public static final int PREALLOC_SIZE = 33554432;
                  * @return
                  */
                 public native NDArray getZ(@ByRef Context ctx, int inputId);
+
+                /**
+                 * Helper method, needed for compatibility with DeclarableOp macros
+                 * @param ctx
+                 * @param inputId
+                 * @return
+                 */
+                public native NDArray getNullifiedZ(@ByRef Context ctx, int inputId);
             }
         
     
@@ -10289,7 +10297,6 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #ifndef __JAVACPP_HACK__
 
-
 // #endif // JCPP
 
 // #endif // CUDA
@@ -10307,6 +10314,10 @@ public static final int PREALLOC_SIZE = 33554432;
     	public native int getDeviceID();
     	public native void setDeviceID(int deviceID);
         public native ErrorReference errorReference();
+
+// #ifndef __JAVACPP_HACK__
+
+// #endif
 
     	public static native @Cast("bool") boolean isInitialized();
     	public static native void releaseBuffers();

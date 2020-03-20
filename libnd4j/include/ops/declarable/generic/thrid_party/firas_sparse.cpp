@@ -48,7 +48,7 @@ namespace sd {
          */
         CUSTOM_OP_IMPL(firas_sparse, 1, 1, false, 0, -1) {
             auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
+            auto z = OUTPUT_NULLIFIED(0);
 
             int batchSize = x->sizeAt(0);
             int numColumns = x->sizeAt(1);

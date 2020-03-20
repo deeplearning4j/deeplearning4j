@@ -2128,8 +2128,10 @@ TEST_F(ConvolutionTests1, col2im_test1) {
 
     auto imageExpected = NDArrayFactory::create<float>('c', {bS, iC, iH, iW}, {1.f,  7.f,  12.f,  34.f,  17.f,  39.f,  44.f,  98.f,  33.f,  71.f,  76.f,  162.f,  49.f,  103.f,  108.f,  226.f});
 
-    LaunchContext ctx;
-    sd::ops::helpers::col2im(ctx, columns, image, sH, sW, pH, pW, iH, iW, dH, dW);
+
+    sd::ops::col2im op;
+    auto status = op.execute({&columns}, {&image}, {sH, sW, pH, pW, iH, iW, dH, dW, 0});
+    ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(image.equalsTo(imageExpected));
 }

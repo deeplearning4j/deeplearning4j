@@ -540,9 +540,9 @@ PLATFORM_IMPL(conv2d_bp, ENGINE_CPU) {
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
     auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
 
-    auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
-    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, oC] always
-    auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
+    auto gradI = OUTPUT_NULLIFIED(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto gradW = OUTPUT_NULLIFIED(1);                                                 // [kH, kW, iC, oC] always
+    auto gradB = block.width() > 3 ? OUTPUT_NULLIFIED(2) : nullptr;                   // [oC]
 
     int kH = INT_ARG(0);                                                        // filter(kernel) height
     int kW = INT_ARG(1);                                                        // filter(kernel) width

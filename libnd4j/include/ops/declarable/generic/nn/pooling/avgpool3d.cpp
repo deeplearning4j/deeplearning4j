@@ -32,7 +32,7 @@ namespace ops  {
 CUSTOM_OP_IMPL(avgpool3dnew, 1, 1, false, 0, 14) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-    auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
+    auto output  = OUTPUT_NULLIFIED(0);                                   // [bS, oD, oH, oW, iC] (NDHWC) or [bS, iC, oD, oH, oW] (NCDHW)
 
     int kD = INT_ARG(0);                                                        // filter(kernel) depth
     int kH = INT_ARG(1);                                                        // filter(kernel) height
@@ -149,7 +149,7 @@ CUSTOM_OP_IMPL(avgpool3dnew_bp, 2, 1, false, 0, 14) {
 
     auto input = INPUT_VARIABLE(0);                          // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto gradO = INPUT_VARIABLE(1);                          // [bS, oD, oH, oW, oC] (NDHWC) or [bS, oC, oD, oH, oW] (NCDHW), epsilon_next
-    auto gradI = OUTPUT_VARIABLE(0);                         // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
+    auto gradI = OUTPUT_NULLIFIED(0);                         // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW), epsilon
 
     const int kD = INT_ARG(0);                                                  // filter(kernel) depth
     const int kH = INT_ARG(1);                                                  // filter(kernel) height

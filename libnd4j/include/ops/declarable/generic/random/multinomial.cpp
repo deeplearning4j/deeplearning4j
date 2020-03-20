@@ -42,7 +42,7 @@ namespace sd {
         CUSTOM_OP_IMPL(random_multinomial, 2, 1, false, 0, 0) {
             
             auto input = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_NULLIFIED(0);
             auto inputSamples = INPUT_VARIABLE(1);
 
 

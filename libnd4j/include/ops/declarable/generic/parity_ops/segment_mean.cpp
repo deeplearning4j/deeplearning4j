@@ -76,8 +76,8 @@ namespace sd {
             auto input = INPUT_VARIABLE(0);
             auto indices = INPUT_VARIABLE(1);
             auto gradOut = INPUT_VARIABLE(2);
-            auto output = OUTPUT_VARIABLE(0);
-            auto outIndices = OUTPUT_VARIABLE(1);
+            auto output = OUTPUT_NULLIFIED(0);
+            auto outIndices = OUTPUT_NULLIFIED(1);
             outIndices->assign(indices);
             return helpers::segmentMeanFunctorBP(block.launchContext(), input, indices, gradOut, output);
         }

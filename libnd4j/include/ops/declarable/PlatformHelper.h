@@ -77,7 +77,15 @@ namespace sd {
                  * @param inputId
                  * @return
                  */
-                sd::NDArray *getZ(graph::Context &ctx, int inputId);
+                sd::NDArray* getZ(graph::Context &ctx, int inputId);
+
+                /**
+                 * Helper method, needed for compatibility with DeclarableOp macros
+                 * @param ctx
+                 * @param inputId
+                 * @return
+                 */
+                sd::NDArray* getNullifiedZ(graph::Context &ctx, int inputId);
             };
         }
     }
