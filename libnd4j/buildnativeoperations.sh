@@ -181,8 +181,6 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(expr substr $(uname -s) 1 5)" == "MINGW" ] || [ "$(expr substr $(uname -s) 1 4)" == "MSYS" ]; then
     HOST="windows"
     KERNEL="windows-x86_64"
-    # need to set build path separator, it ends up being wrong on msys2
-    BUILD_PATH_SEPARATOR=";"
     echo "Running windows"
 elif [ "$(uname -m)" == "ppc64le" ]; then
     if [ -z "$ARCH" ]; then
@@ -195,9 +193,9 @@ if [ -z "$OS" ]; then
     OS="$HOST"
 fi
 
-
-
-echo "RUNNING BUILD FOR OS $OS"
+if [[ -z ${ANDROID_NDK:-} ]]; then
+    export ANDROID_NDK=$HOME/Android/android-ndk/
+fi
 
 case "$OS" in
     linux-armhf)
@@ -251,11 +249,8 @@ case "$OS" in
       if [ -z "$ARCH" ]; then
         ARCH="i686"
       fi
-      echo "BUILDING ANDROID x86"
 
       setandroid_defaults
-
-
       export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
@@ -364,7 +359,6 @@ case "$OS" in
         PARALLEL="true"
         VERBOSE_ARG="-v"
       else
-        echo "SETTING UP WINDOWS"
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
         export MAKE_COMMAND="make"
         export CC=/mingw64/bin/gcc
@@ -524,7 +518,6 @@ OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 if [[ -n "${BUILD_PATH:-}" ]]; then
     PREVIFS="$IFS"
     IFS="$BUILD_PATH_SEPARATOR"
-    echo "BUILD PATH BUILD_PATH_SEPARATOR IS $BUILD_PATH_SEPARATOR"
     for P in $BUILD_PATH; do
         if [[ -f "$P/include/openblas_config.h" ]]; then
             OPENBLAS_PATH="$P"
@@ -540,7 +533,6 @@ fi
 
 # replace any backslash with a slash
 OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
-
 
 mkbuilddir() {
     if [ "$CLEAN" == "true" ]; then
@@ -609,7 +601,7 @@ if [ "$MAKE_COMMAND" == "make" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS --output-sync=target"
 fi
 
-exec 3>&1 
+exec 3>&1
 eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" 2>&1 >&3 3>&-  | python3 ../../auto_vectorization/auto_vect.py   && cd ../../..
 exec 3>&- 
 else
