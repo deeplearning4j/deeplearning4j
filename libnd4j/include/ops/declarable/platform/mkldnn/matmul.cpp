@@ -163,7 +163,7 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(xTR, engine, stream, args, x_user_md, op_prim_desc.src_desc(), DNNL_ARG_SRC);
+    mkldnnUtils::loadDataToMklStream(xTR, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
     /*
     auto x_user_mem = dnnl::memory(x_user_md, engine, xTR->getBuffer());
     const bool xReorder = op_prim_desc.src_desc() != x_user_mem.get_desc();
@@ -173,7 +173,7 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     args[DNNL_ARG_SRC] = x_mkl_mem;
 */
     // y
-    mkldnnUtils::loadDataToMklStream(yTR, engine, stream, args, y_user_md, op_prim_desc.weights_desc(), DNNL_ARG_WEIGHTS);
+    mkldnnUtils::loadDataToMklStream(yTR, engine, stream, y_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
     /*
     auto y_user_mem = dnnl::memory(y_user_md, engine, yTR->getBuffer());
     const bool yReorder = op_prim_desc.weights_desc() != y_user_mem.get_desc();

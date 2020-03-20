@@ -30,7 +30,7 @@ namespace mkldnnUtils {
 
 //////////////////////////////////////////////////////////////////////
 void getDims(const NDArray* array, const int rank, dnnl::memory::dims& mklDims){
-    
+
     std::vector<int64_t> vDims(rank);
     for (auto i = 0; i < rank; i++) {
         vDims[i] = array->sizeAt(i);
@@ -56,25 +56,27 @@ dnnl::memory::format_tag   getFormat(const int rank){
         }
         return dnnl::memory::format_tag::a; // 1 == dataSetRank
 }
+
 //////////////////////////////////////////////////////////////////////
-void   setBlockStrides(const NDArray* array, const int rank, dnnl::memory::desc& mklMd){
-        if (array->ews() != 1 || array->ordering() != 'c') {
-            mklMd.data.format_kind = dnnl_blocked;    // overrides format
-            for (auto i = 0; i < rank; ++i) {
-                mklMd.data.format_desc.blocking.strides[i] = array->strideAt(i);
-            }
+void setBlockStrides(const NDArray* array, dnnl::memory::desc& mklMd){
+
+    if (array->ews() != 1 || array->ordering() != 'c') {
+        mklMd.data.format_kind = dnnl_blocked;    // overrides format
+        for (auto i = 0; i < array->rankOf(); ++i) {
+            mklMd.data.format_desc.blocking.strides[i] = array->strideAt(i);
         }
+    }
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
-void loadDataToMklStream(const NDArray* array, dnnl::engine& engine, dnnl::stream& stream, 
-                         std::unordered_map<int, dnnl::memory>& args, dnnl::memory::desc& user_md, dnnl::memory::desc primitive_md, int DNNL_ARG ){
-                
-                auto user_mem = dnnl::memory(user_md, engine, array->getBuffer());
-                const bool bReorder = primitive_md != user_mem.get_desc();
-                auto mkl_mem = bReorder ? dnnl::memory(primitive_md, engine) : user_mem;
-                if (bReorder)
-                    dnnl::reorder(user_mem, mkl_mem).execute(stream, user_mem, mkl_mem);
-                args[DNNL_ARG] = mkl_mem;
+void loadDataToMklStream(const NDArray* array, const dnnl::engine& engine, const dnnl::stream& stream, const dnnl::memory::desc& user_md, const dnnl::memory::desc& primitive_md,
+                         dnnl::memory& arg) {
+
+    auto user_mem = dnnl::memory(user_md, engine, array->getBuffer());
+    const bool bReorder = primitive_md != user_mem.get_desc();
+    auto mkl_mem = bReorder ? dnnl::memory(primitive_md, engine) : user_mem;
+    if (bReorder)
+        dnnl::reorder(user_mem, mkl_mem).execute(stream, user_mem, mkl_mem);
+    arg = mkl_mem;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -95,7 +97,7 @@ void poolingMKLDNN(const NDArray *input, NDArray *output,
 
     if(rank == 4) {     // 2d
 
-        ops::ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+        ops::ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
         strides   = { sH, sW };
         kernel    = { kH, kW };
@@ -108,7 +110,7 @@ void poolingMKLDNN(const NDArray *input, NDArray *output,
     }
     else {              // 3d
 
-        ops::ConvolutionUtils::getSizesAndIndexesConv3d(isNCHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH);
+        ops::ConvolutionUtils::getSizesAndIndexesConv3d(isNCHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH);
 
         strides   = { sD, sH, sW };
         kernel    = { kD, kH, kW };
@@ -162,7 +164,7 @@ void poolingMKLDNN(const NDArray *input, NDArray *output,
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(input, engine, stream, args, x_user_md, op_prim_desc.src_desc(), DNNL_ARG_SRC);
+    mkldnnUtils::loadDataToMklStream(input, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // output
     auto z_user_mem = dnnl::memory(z_user_md, engine, output->getBuffer());
@@ -199,7 +201,7 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
 
     if(rank == 4) {     // 2d
 
-        ops::ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+        ops::ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
         strides   = { sH, sW };
         kernel    = { kH, kW };
@@ -212,7 +214,7 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
     }
     else {              // 3d
 
-        ops::ConvolutionUtils::getSizesAndIndexesConv3d(isNCHW, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH);
+        ops::ConvolutionUtils::getSizesAndIndexesConv3d(isNCHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH);
 
         strides   = { sD, sH, sW };
         kernel    = { kD, kH, kW };
@@ -280,8 +282,8 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
     std::unordered_map<int, dnnl::memory> args;
 
     // gradO
-    mkldnnUtils::loadDataToMklStream(gradO, engine, stream, args, gradO_user_md, op_bp_prim_desc.diff_dst_desc(), DNNL_ARG_DIFF_DST);
-    
+    mkldnnUtils::loadDataToMklStream(gradO, engine, stream, gradO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
+
     // gradI
     auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
     const bool gradIReorder = op_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc();
@@ -291,8 +293,8 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
     if(mode == algorithm::pooling_max) {
 
         // input
-        mkldnnUtils::loadDataToMklStream(input, engine, stream, args, x_user_md, op_ff_prim_desc.src_desc(), DNNL_ARG_SRC);
-        
+        mkldnnUtils::loadDataToMklStream(input, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+
         // z
         auto z_mkl_mem = dnnl::memory(op_ff_prim_desc.dst_desc(), engine);
         args[DNNL_ARG_DST] = z_mkl_mem;

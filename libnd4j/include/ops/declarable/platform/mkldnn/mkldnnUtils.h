@@ -131,7 +131,7 @@ namespace sd {
          * @param reference to memory descriptor
          * @return memory format
          */
-        void   setBlockStrides(const NDArray* array, const int rank, dnnl::memory::desc& mklMd);
+        void setBlockStrides(const NDArray* array, dnnl::memory::desc& mklMd);
         //////////////////////////////////////////////////////////////////////
         /**
         * This function load and reorder user memory to mkl
@@ -143,8 +143,8 @@ namespace sd {
         * @param primitive memory descriptor
         * @param dnnl arg activation enumerator
         */
-        void loadDataToMklStream(const NDArray* array, dnnl::engine& engine, dnnl::stream& stream,
-             std::unordered_map<int, dnnl::memory>& args, dnnl::memory::desc& user_md, dnnl::memory::desc primitive_md, int DNNL_ARG);
+        void loadDataToMklStream(const NDArray* array, const dnnl::engine& engine, const dnnl::stream& stream, const dnnl::memory::desc& user_md, const dnnl::memory::desc& primitive_md,
+                                dnnl::memory& arg);
 
         /**
          * Utility methods for MKLDNN

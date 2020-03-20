@@ -34,7 +34,7 @@ namespace ops  {
 CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
-    auto weights = INPUT_VARIABLE(1);                                    // [kW, iC, oC] always
+    auto weights = INPUT_VARIABLE(1);                                    // [kW, iC, oC], [oC, iC, kW], [oC, kW, iC]
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
 
     auto output  = OUTPUT_NULLIFIED(0);                                   // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW)
@@ -45,12 +45,13 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     int dW = INT_ARG(3);                                                        // dilations width
     int paddingMode = INT_ARG(4);                                               // 0-VALID, 1-SAME, 2-CAUSAL
     int isNCW       = block.getIArguments()->size() > 5 ? !INT_ARG(5) : 1;      // INT_ARG(4): 0-NCW,  1-NWC
+    int wFormat = block.getIArguments()->size() > 6 ? INT_ARG(6) : 0;           // 0 - [kW, iC, oC], 1 - [oC, iC, kW], 2 - [oC, kW, iC]
 
     const int rank = 3;
     REQUIRE_TRUE(input->rankOf()   == rank, 0, "CUSTOM CONV1D OP: rank of input array must be equal to %i, but got %i instead !", rank, input->rankOf());
     REQUIRE_TRUE(weights->rankOf() == rank, 0, "CUSTOM CONV1D OP: rank of weights array must be equal to %i, but got %i instead !", rank, weights->rankOf());
 
-    int indIOioC, indIiW, indWoC(2);
+    int indIOioC, indIiW, indWoC(0 == wFormat ? 2 : 0);
     if(!isNCW) {
         indIOioC = 2; indIiW = 1;
     }
@@ -63,7 +64,7 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     int iC = input->sizeAt(indIOioC);                 // input channels
     int oC = weights->sizeAt(indWoC);                 // output channels
 
-    std::vector<Nd4jLong> expectedWeightsShape = {kW, iC, oC};
+    std::vector<Nd4jLong> expectedWeightsShape = 0 == wFormat ? std::vector<Nd4jLong>({kW, iC, oC}) : (1 == wFormat ? std::vector<Nd4jLong>({oC, iC, kW}) : std::vector<Nd4jLong>({oC, kW, iC}));
     REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0, "CUSTOM CONV1D OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
     if (bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
@@ -83,11 +84,11 @@ CUSTOM_OP_IMPL(conv1d, 2, 1, false, 0, 5) {
     auto weightsReshaped = weights->reshape(weights->ordering(), {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)});   // [kW, iC, oC] -> [1, kW, iC, oC]
 
     sd::ops::conv2d conv2d;
-    const Nd4jStatus status = conv2d.execute({&inputReshaped, &weightsReshaped, bias}, {&outputReshaped}, {}, {1,kW,  1,sW,  0,pW,  1,dW,  paddingMode,  !isNCW}, {});
+    const Nd4jStatus status = conv2d.execute({&inputReshaped, &weightsReshaped, bias}, {&outputReshaped}, {}, {1,kW,  1,sW,  0,pW,  1,dW,  paddingMode, !isNCW, wFormat}, {});
     if (status != ND4J_STATUS_OK)
         return status;
 
-    // ConvolutionUtils::conv2d(block, &inputReshaped, &weightsReshaped, bias, &outputReshaped, 1,kW,  1,sW,  0,pW,  1,dW,  paddingMode,  isNCW);
+    // ConvolutionUtils::conv2d(block, &inputReshaped, &weightsReshaped, bias, &outputReshaped, 1,kW,  1,sW,  0,pW,  1,dW,  paddingMode, isNCW, wFormat);
 
     return Status::OK();
 }
@@ -105,8 +106,9 @@ DECLARE_SHAPE_FN(conv1d) {
     int dW = INT_ARG(3);                                                        // dilations width
     int paddingMode = INT_ARG(4);                                               // 0-VALID, 1-SAME
     int isNCW  = block.getIArguments()->size() > 5 ? !INT_ARG(5) : 1;           // INT_ARG(4): 1-NWC, 0-NCW
+    int wFormat = block.getIArguments()->size() > 6 ? INT_ARG(6) : 0;           // 0 - [kW, iC, oC], 1 - [oC, iC, kW], 2 - [oC, kW, iC]
 
-    int indIOioC, indIiW, indWoC(2);
+    int indIOioC, indIiW, indWoC(0 == wFormat ? 2 : 0);
     if(!isNCW) {
         indIOioC = 2; indIiW = 1;
     }
@@ -123,7 +125,7 @@ DECLARE_SHAPE_FN(conv1d) {
     int iC = inputShapeInfo[indIOioC+1];                   // input channels
     int oC = weightsShapeInfo[indWoC+1];                 // output channels
 
-    std::vector<Nd4jLong> expectedWeightsShape = {kW, iC, oC};
+    std::vector<Nd4jLong> expectedWeightsShape = 0 == wFormat ? std::vector<Nd4jLong>({kW, iC, oC}) : (1 == wFormat ? std::vector<Nd4jLong>({oC, iC, kW}) : std::vector<Nd4jLong>({oC, kW, iC}));
     REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0, "CUSTOM CONV1D OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if (biasShapeInfo)
         REQUIRE_TRUE(biasShapeInfo[0] <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM CONV1D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
@@ -163,12 +165,12 @@ DECLARE_TYPES(conv1d) {
 CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
-    auto weights = INPUT_VARIABLE(1);                                                // [kW, iC, oC] always
+    auto weights = INPUT_VARIABLE(1);                                                // [kW, iC, oC], [oC, iC, kW], [oC, kW, iC]
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
     auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
 
     auto gradI = OUTPUT_NULLIFIED(0);                                                 // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW), epsilon
-    auto gradW = OUTPUT_NULLIFIED(1);                                                 // [kW, iC, oC] always
+    auto gradW = OUTPUT_NULLIFIED(1);                                                 // [kW, iC, oC], [oC, iC, kW], [oC, kW, iC]
     auto gradB = block.width() > 3 ? OUTPUT_NULLIFIED(2) : nullptr;                   // [oC]
 
     int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) width
@@ -177,12 +179,14 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     int dW = INT_ARG(3);                                                        // dilations width
     int paddingMode = INT_ARG(4);                                               // 0-VALID, 1-SAME, 2-CAUSAL
     int isNCW  = block.getIArguments()->size() > 5 ? !INT_ARG(5) : 1;           // INT_ARG(4): 1-NWC, 0-NCW
+    int wFormat = block.getIArguments()->size() > 6 ? INT_ARG(6) : 0;           // 0 - [kW, iC, oC], 1 - [oC, iC, kW], 2 - [oC, kW, iC]
 
     const int rank = 3;
     REQUIRE_TRUE(input->rankOf()   == rank, 0, "CUSTOM CONV1D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, input->rankOf());
     REQUIRE_TRUE(weights->rankOf() == rank, 0, "CUSTOM CONV1D_BP OP: rank of weights array must be equal to %i, but got %i instead !", rank, weights->rankOf());
     REQUIRE_TRUE(gradO->rankOf()   == rank, 0, "CUSTOM CONV1D_BP OP: rank of output gradients (next epsilon) array must be equal to %i, but got %i instead !", rank, gradO->rankOf());
-    int indIOioC, indIiW, indWoC(2);
+
+    int indIOioC, indIiW, indWoC(0 == wFormat ? 2 : 0);
     if(!isNCW) {
         indIOioC = 2; indIiW = 1;
     }
@@ -199,7 +203,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     ConvolutionUtils::calcOutSizePool2D(trueoH,trueoW, 1,kW, 1,sW, 0,pW, 1,dW, 1,iW, paddingMode);
 
     std::vector<Nd4jLong> expectedGradOShape   = ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoW,  0,indIOioC,indIiW});
-    std::vector<Nd4jLong> expectedWeightsShape = {kW, iC, oC};
+    std::vector<Nd4jLong> expectedWeightsShape = 0 == wFormat ? std::vector<Nd4jLong>({kW, iC, oC}) : (1 == wFormat ? std::vector<Nd4jLong>({oC, iC, kW}) : std::vector<Nd4jLong>({oC, kW, iC}));
     REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,  "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradO).c_str());
     REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0, "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
     if(bias)
@@ -222,11 +226,11 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
     auto gradWReshaped   = gradW  ->reshape(gradW->ordering(),  {1, weights->sizeAt(0), weights->sizeAt(1), weights->sizeAt(2)}, false);// [kW, iC, oC] -> [1, kW, iC, oC]
 
     sd::ops::conv2d_bp conv2dBP;
-    auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped, bias, &gradOReshaped}, {&gradIReshaped, &gradWReshaped, gradB}, {}, {1,kW,  1,sW,  0,pW,  1,dW,  paddingMode,  !isNCW}, {});
+    auto status = conv2dBP.execute({&inputReshaped, &weightsReshaped, bias, &gradOReshaped}, {&gradIReshaped, &gradWReshaped, gradB}, {}, {1,kW,  1,sW,  0,pW,  1,dW,  paddingMode, !isNCW, wFormat}, {});
     if (status != ND4J_STATUS_OK)
         return status;
 
-    // ConvolutionUtils::conv2dBP(block, &inputReshaped, &weightsReshaped, bias, &gradOReshaped, &gradIReshaped, &gradWReshaped, gradB, 1,kW,  1,sW,  0,pW,  1,dW,  paddingMode,  isNCW);
+    // ConvolutionUtils::conv2dBP(block, &inputReshaped, &weightsReshaped, bias, &gradOReshaped, &gradIReshaped, &gradWReshaped, gradB, 1,kW,  1,sW,  0,pW,  1,dW,  paddingMode, isNCW, wFormat);
 
     return Status::OK();
 }
@@ -235,7 +239,7 @@ CUSTOM_OP_IMPL(conv1d_bp, 3, 2, false, 0, 5) {
 DECLARE_SHAPE_FN(conv1d_bp) {
 
     auto inputShapeInfo   = inputShape->at(0);                                               // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
-    auto weightsShapeInfo = inputShape->at(1);                                               // [kW, iC, oC] always
+    auto weightsShapeInfo = inputShape->at(1);                                               // [kW, iC, oC], [oC, iC, kW], [oC, kW, iC]
     Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;            // [oC]
     Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);  // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
 
@@ -250,8 +254,9 @@ DECLARE_SHAPE_FN(conv1d_bp) {
     int dW = INT_ARG(3);                                                        // dilations width
     int paddingMode = INT_ARG(4);                                               // 0-VALID, 1-SAME
     int isNCW  = block.getIArguments()->size() > 5 ? !INT_ARG(5) : 1;           // INT_ARG(4): 1-NWC, 0-NCW
+    int wFormat = block.getIArguments()->size() > 6 ? INT_ARG(6) : 0;           // 0 - [kW, iC, oC], 1 - [oC, iC, kW], 2 - [oC, kW, iC]
 
-    int indIOioC, indIiW, indWoC(2);
+    int indIOioC, indIiW, indWoC(0 == wFormat ? 2 : 0);
     if(!isNCW) {
         indIOioC = 2; indIiW = 1;
     }
@@ -268,7 +273,7 @@ DECLARE_SHAPE_FN(conv1d_bp) {
     ConvolutionUtils::calcOutSizePool2D(trueoH,trueoW, 1,kW, 1,sW, 0,pW, 1,dW, 1,iW, paddingMode);
 
     std::vector<Nd4jLong> expectedGradOShape   = ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoW,  0,indIOioC,indIiW});
-    std::vector<Nd4jLong> expectedWeightsShape = {kW, iC, oC};
+    std::vector<Nd4jLong> expectedWeightsShape = 0 == wFormat ? std::vector<Nd4jLong>({kW, iC, oC}) : (1 == wFormat ? std::vector<Nd4jLong>({oC, iC, kW}) : std::vector<Nd4jLong>({oC, kW, iC}));
     REQUIRE_TRUE(ShapeUtils::areShapesEqual(gradOShapeInfo, expectedGradOShape), 0,  "CUSTOM CONV1D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
     REQUIRE_TRUE(ShapeUtils::areShapesEqual(weightsShapeInfo, expectedWeightsShape), 0, "CUSTOM CONV1D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if(biasShapeInfo)
