@@ -69,6 +69,32 @@ public class UpdaterValidation extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testAdaGradUpdater(){
+        double lr = 0.1;
+        double epsilon = 1e-6;
+
+        INDArray s = Nd4j.zeros(DataType.DOUBLE, 1, 5);
+
+        Map<String,INDArray> state = new HashMap<>();
+        state.put("grad", s.dup());
+        AdaGradUpdater u = (AdaGradUpdater) new AdaGrad(lr, epsilon).instantiate(state, true);
+
+        assertEquals(s, state.get("grad"));
+
+        for( int i=0; i<3; i++ ) {
+            INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
+            INDArray g2 = g1.dup();
+
+            UpdaterJavaCode.applyAdaGradUpdater(g1, s, lr, epsilon);
+
+            u.applyUpdater(g2, i, 0);
+
+            assertEquals(s, state.get("grad"));
+            assertEquals(g1, g2);
+        }
+    }
+
 
     @Test
     public void testAdamUpdater(){
