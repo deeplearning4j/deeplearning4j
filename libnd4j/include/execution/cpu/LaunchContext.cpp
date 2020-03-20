@@ -44,14 +44,13 @@ namespace sd {
 
     std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
     MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
+    std::mutex LaunchContext::_mutex;
 
 ////////////////////////////////////////////////////////////////////////
     LaunchContext::LaunchContext() {
         // default constructor, just to make clang/ranlib happy
         _workspace = nullptr;
         _deviceID = 0;
-
-        _deviceMutexes[_deviceID] = new std::mutex();
 
 #ifdef HAVE_MKLDNN
         _engine = new dnnl::engine(dnnl::engine::kind::cpu, 0);
@@ -73,8 +72,7 @@ namespace sd {
     }
 
     std::mutex* LaunchContext::deviceMutex() {
-        auto deviceId = AffinityManager::currentDeviceId();
-        return _deviceMutexes[deviceId];
+        return &_mutex;
     }
 
     void LaunchContext::swapContextBuffers(ContextBuffers &buffers) {
