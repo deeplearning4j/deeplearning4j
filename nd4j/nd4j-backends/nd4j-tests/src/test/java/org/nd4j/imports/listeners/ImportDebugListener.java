@@ -24,6 +24,7 @@ import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -56,7 +57,7 @@ public class ImportDebugListener extends BaseListener {
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         //No op
 
         for( int i=0; i<outputs.length; i++ ) {

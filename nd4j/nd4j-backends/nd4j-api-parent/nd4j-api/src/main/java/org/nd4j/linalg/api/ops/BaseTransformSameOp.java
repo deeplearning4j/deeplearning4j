@@ -89,22 +89,36 @@ public abstract class BaseTransformSameOp extends BaseTransformOp implements Tra
     }
 
     @Override
-    public boolean validateDataTypes(boolean experimentalMode) {
-        if (y() != null) {
-            Preconditions.checkArgument(x().dataType() == y().dataType(), "Op.X type must be the same as Op.Y type: x.datatype=%s, y.datatype=%s for op %s",
-                    x().dataType(), y().dataType(), getClass());
+    public DataType resultType(OpContext oc) {
+        return oc.getInputArray(0).dataType();
+    }
+
+    @Override
+    public boolean validateDataTypes(OpContext oc, boolean experimentalMode) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        INDArray y = oc != null ? oc.getInputArray(1) : y();
+        INDArray z = oc != null ? oc.getOutputArray(0) : z();
+        if (y != null) {
+            Preconditions.checkArgument(x.dataType() == y.dataType(), "Op.X type must be the same as Op.Y type: x.datatype=%s, y.datatype=%s for op %s",
+                    x.dataType(), y.dataType(), getClass());
         }
 
 
-        if (z() != null)
-            Preconditions.checkArgument(z().dataType() == x().dataType(), "Op.Z must be the same as Op.X type: x.datatype=%s, z.datatype=%s for op %s",
-                    x().dataType(), z.dataType(), getClass());
+        if (z != null)
+            Preconditions.checkArgument(z.dataType() == x.dataType(), "Op.Z must be the same as Op.X type: x.datatype=%s, z.datatype=%s for op %s",
+                    x.dataType(), z.dataType(), getClass());
 
         return true;
     }
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        return calculateOutputShape(null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
 

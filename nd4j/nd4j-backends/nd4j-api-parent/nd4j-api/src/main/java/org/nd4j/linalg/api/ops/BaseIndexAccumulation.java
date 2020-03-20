@@ -93,6 +93,12 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        return calculateOutputShape(null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc){
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
 

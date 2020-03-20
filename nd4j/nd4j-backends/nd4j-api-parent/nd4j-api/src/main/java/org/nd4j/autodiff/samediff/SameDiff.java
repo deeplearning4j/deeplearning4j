@@ -105,7 +105,6 @@ import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
  * In order to execute the graph, you run one of the execution methods, such as {@link #output(Map, String...)}
  */
 @AllArgsConstructor
-@Builder
 @Slf4j
 public class SameDiff extends SDBaseOps {
     protected static final String GRAD_FN_KEY = "grad";
@@ -1230,25 +1229,6 @@ public class SameDiff extends SDBaseOps {
         int result = super.hashCode();
         result = 31 * result + (variables != null ? variables.hashCode() : 0);
         return result;
-    }
-
-
-    /**
-     * Create a new SameDiff instance from an existing instance.
-     * Note that state (variables and functions) is shared between the two SameDiff instance
-     *
-     * @param originalSameDiff Original SameDiff instance
-     * @return Copy
-     */
-    public static SameDiff create(SameDiff originalSameDiff) {
-        SameDiff ret = SameDiff.builder()
-                .sameDiffFunctionInstances(originalSameDiff.sameDiffFunctionInstances)
-                .build();
-        ret.variables.putAll(originalSameDiff.variables);
-        //ensuring proper sameDiff reference
-        DifferentialFunctionFactory differentialFunctionFactory = new DifferentialFunctionFactory(ret);
-        ret.functionFactory = differentialFunctionFactory;
-        return ret;
     }
 
     @Override

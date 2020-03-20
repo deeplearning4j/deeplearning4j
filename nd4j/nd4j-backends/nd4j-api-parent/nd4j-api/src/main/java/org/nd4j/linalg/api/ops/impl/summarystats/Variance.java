@@ -24,6 +24,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -131,8 +132,14 @@ public class Variance extends BaseReduceOp {
 
     @Override
     public DataType resultType() {
-        if (this.x() != null && this.x().isR())
-            return this.x().dataType();
+        return resultType(null);
+    }
+
+    @Override
+    public DataType resultType(OpContext oc){
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        if (x != null && x.isR())
+            return x.dataType();
 
         if(this.arg() != null){
             return this.arg().dataType();
@@ -142,14 +149,18 @@ public class Variance extends BaseReduceOp {
     }
 
     @Override
-    public boolean validateDataTypes() {
-        if (!x().isR())
+    public boolean validateDataTypes(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        if (x != null && !x.isR()) {
+            return false;
+        }
+
+        INDArray y = oc != null ? oc.getInputArray(1) : y();
+        if (y != null && !y.isR())
             return false;
 
-        if (y() != null && !y().isR())
-            return false;
-
-        if (z() != null && !z().isR())
+        INDArray z = oc != null ? oc.getOutputArray(0) : z();
+        if (z != null && !z.isR())
             return false;
 
         return true;
@@ -157,15 +168,22 @@ public class Variance extends BaseReduceOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        if(args().length < 1) {
+        return calculateOutputShape(null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+
+        if(oc == null && args().length < 1) {
             throw new ND4JIllegalStateException("Unable to compute input shape. No arguments found.");
         }
 
         long[] argShape = arg().getShape();
-        if (argShape == null && x() == null) {
+        if (argShape == null && x == null) {
             return Collections.emptyList();
         }
-        long[] inputShape = (argShape == null || Shape.isPlaceholderShape(argShape) ? x().shape() : argShape);
+        long[] inputShape = (argShape == null || Shape.isPlaceholderShape(argShape) ? x.shape() : argShape);
 
         val ret = new ArrayList<LongShapeDescriptor>(1);
         val reducedShape = Shape.getReducedShape(inputShape,dimensions, isKeepDims());

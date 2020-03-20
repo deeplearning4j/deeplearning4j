@@ -55,7 +55,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 @Slf4j
-public class DefaultOpExecutioner implements OpExecutioner {
+public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: deeplearning4j.org/docs/latest/nd4j-overview#workspaces-panic";
 
@@ -108,9 +108,10 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray exec(Op op) {
-        throw new IllegalStateException("Java computation no longer supported");
-    }
+    public abstract INDArray exec(Op op);
+
+    @Override
+    public abstract INDArray exec(Op op, OpContext opContext);
 
     @Override
     public Op execAndReturn(Op op) {
@@ -175,24 +176,16 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray exec(ReduceOp op) {
-        throw new UnsupportedOperationException("Java computation no longer supported");
-    }
+    public abstract INDArray exec(ReduceOp op);
 
     @Override
-    public INDArray exec(Variance accumulation) {
-        throw new UnsupportedOperationException("Operation should use exec special");
-    }
+    public abstract INDArray exec(Variance accumulation);
 
     @Override
-    public INDArray exec(IndexAccumulation op) {
-        throw new UnsupportedOperationException("Operation should use exec special");
-    }
+    public abstract INDArray exec(IndexAccumulation op);
 
     @Override
-    public INDArray exec(BroadcastOp broadcast) {
-    throw new IllegalStateException("Java computation no longer supported");
-    }
+    public abstract INDArray exec(BroadcastOp broadcast);
 
     @Override
     public void exec(MetaOp op) {
@@ -215,9 +208,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
-    public INDArray exec(ScalarOp op) {
-        throw new UnsupportedOperationException();
-    }
+    public abstract INDArray exec(ScalarOp op);
 
     @Override
     public void exec(List<Aggregate> batch) {
@@ -241,9 +232,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
      * @param rng
      */
     @Override
-    public INDArray exec(RandomOp op, Random rng) {
-        throw new UnsupportedOperationException();
-    }
+    public abstract INDArray exec(RandomOp op, Random rng);
 
 
     @Deprecated
@@ -742,6 +731,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public List<LongShapeDescriptor> calculateOutputShape(CustomOp op, OpContext opContext) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public INDArray[] allocateOutputArrays(CustomOp op){
         List<LongShapeDescriptor> shapes = calculateOutputShape(op);
         INDArray[] out = new INDArray[shapes.size()];
@@ -945,5 +939,45 @@ public class DefaultOpExecutioner implements OpExecutioner {
     @Override
     public String runFullBenchmarkSuit(boolean printOut) {
         throw new UnsupportedOperationException();
+    }
+
+
+    public void setX(INDArray x, Op op, OpContext oc){
+        if(oc != null)
+            oc.setInputArray(0, x);
+        else
+            op.setX(x);
+    }
+
+    public INDArray getX(Op op, OpContext oc){
+        if( oc != null )
+            return oc.getInputArray(0);
+        return op.x();
+    }
+
+    public void setY(INDArray y, Op op, OpContext oc){
+        if(oc != null)
+            oc.setInputArray(1, y);
+        else
+            op.setY(y);
+    }
+
+    public INDArray getY(Op op, OpContext oc){
+        if( oc != null )
+            return oc.getInputArray(1);
+        return op.y();
+    }
+
+    public void setZ(INDArray z, Op op, OpContext oc){
+        if(oc != null)
+            oc.setOutputArray(0, z);
+        else
+            op.setZ(z);
+    }
+
+    public INDArray getZ(Op op, OpContext oc){
+        if( oc != null )
+            return oc.getOutputArray(0);
+        return op.z();
     }
 }

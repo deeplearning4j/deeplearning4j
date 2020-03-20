@@ -493,6 +493,11 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        return calculateOutputShape(null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
         val descriptor = getDescriptor();
         if (outputShapes != null && !outputShapes.isEmpty())
             return outputShapes;
@@ -504,34 +509,41 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
 
         //not fully initialized: missing integer args
-        if (descriptor.getNumIArgs() >= 0 && numIArguments() < descriptor.getNumIArgs()) {
+        int nI = oc != null ? oc.numIArguments() : numIArguments();
+        if (descriptor.getNumIArgs() >= 0 && nI < descriptor.getNumIArgs()) {
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: not fully initialized ({} IArgs specified, " +
-                                "{} required)", getClass().getName(),numIArguments(), descriptor.getNumIArgs());
+                        "{} required)", getClass().getName(), nI, descriptor.getNumIArgs());
             }
             return Collections.emptyList();
         }
 
 
         //not fully initialized: missing floating point args
-        if (descriptor.getNumTArgs() >= 0 && numTArguments() < descriptor.getNumTArgs()) {
+        int nT = oc != null ? oc.numTArguments() : numTArguments();
+        if (descriptor.getNumTArgs() >= 0 && nT < descriptor.getNumTArgs()) {
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: not fully initialized ({} TArgs specified, " +
-                        "{} required)", getClass().getName(),numTArguments(), descriptor.getNumTArgs());
+                        "{} required)", getClass().getName(), nT, descriptor.getNumTArgs());
             }
             return Collections.emptyList();
         }
 
         //not fully initialized: missing INDArray input args
-        if(descriptor.getNumInputs() >= 0 && numInputArguments() < descriptor.getNumInputs()){
+        int nIn = oc != null ? oc.numInputArguments() : numInputArguments();
+        if(descriptor.getNumInputs() >= 0 && nIn < descriptor.getNumInputs()){
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: not fully initialized ({} input (INDArray) args specified, " +
-                        "{} required)", getClass().getName(),numInputArguments(), descriptor.getNumInputs());
+                        "{} required)", getClass().getName(), nIn, descriptor.getNumInputs());
             }
             return Collections.emptyList();
         }
 
-        List<LongShapeDescriptor> ret = Nd4j.getExecutioner().calculateOutputShape(this);
+        List<LongShapeDescriptor> ret;
+        if(oc == null)
+            ret = Nd4j.getExecutioner().calculateOutputShape(this);
+        else
+            ret = Nd4j.getExecutioner().calculateOutputShape(this, oc);
         return ret;
     }
 

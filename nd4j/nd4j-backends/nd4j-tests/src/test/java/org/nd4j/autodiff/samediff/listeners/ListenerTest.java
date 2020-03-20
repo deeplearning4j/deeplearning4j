@@ -36,6 +36,7 @@ import org.nd4j.evaluation.classification.Evaluation.Metric;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
@@ -336,12 +337,12 @@ public class ListenerTest extends BaseNd4jTest {
         }
 
         @Override
-        public void preOpExecution(SameDiff sd, At at, SameDiffOp op) {
+        public void preOpExecution(SameDiff sd, At at, SameDiffOp op, OpContext opContext) {
             preOpExecutionCount++;
         }
 
         @Override
-        public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+        public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
             opExecutionCount++;
         }
 

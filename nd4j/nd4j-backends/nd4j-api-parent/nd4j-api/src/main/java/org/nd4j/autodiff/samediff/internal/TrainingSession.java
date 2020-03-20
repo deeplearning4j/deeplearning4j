@@ -11,10 +11,12 @@ import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicDouble;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
@@ -135,10 +137,11 @@ public class TrainingSession extends InferenceSession {
     }
 
     @Override
-    public INDArray[] getOutputs(SameDiffOp op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+    public INDArray[] getOutputs(Pair<SameDiffOp, OpContext> opPair, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                  Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables) {
         //Get outputs from InferenceSession
-        INDArray[] out = super.getOutputs(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs, listeners, at, batch, allReqVariables);
+        INDArray[] out = super.getOutputs(opPair, outputFrameIter, opInputs, allIterInputs, constAndPhInputs, listeners, at, batch, allReqVariables);
+        SameDiffOp op = opPair.getFirst();
 
         List<String> outputs = op.getOutputsOfOp();
         int outIdx = 0;

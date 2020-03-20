@@ -6556,6 +6556,10 @@ public class Nd4j {
         return getExecutioner().exec(op);
     }
 
+    public static INDArray exec(Op op, OpContext context){
+        return getExecutioner().exec(op, context);
+    }
+
     /**
      * Execute the operation and return the result
      *

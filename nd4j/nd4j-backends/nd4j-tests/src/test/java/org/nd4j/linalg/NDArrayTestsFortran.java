@@ -750,7 +750,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
 
 
         INDArray toPermute = Nd4j.create(Nd4j.linspace(0, 7, 8, DataType.DOUBLE).data(), new long[] {2, 2, 2});
-        INDArray permuted = toPermute.permute(2, 1, 0);
+        INDArray permuted = toPermute.dup().permute(2, 1, 0);
+        boolean eq = toPermute.equals(permuted);
         assertNotEquals(toPermute, permuted);
 
         INDArray permuteOther = toPermute.permute(1, 2, 0);

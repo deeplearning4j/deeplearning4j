@@ -76,20 +76,28 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
         return this.x().dataType();
     }
 
+    @Override
+    public DataType resultType(OpContext opContext) {
+        return opContext.getInputArray(0).dataType();
+    }
+
 
     @Override
-    public boolean validateDataTypes(boolean experimentalMode) {
-        Preconditions.checkArgument(x().isR(), "Op.X must be one of floating types: x.datatype=%s for op %s", x().dataType(), getClass());
+    public boolean validateDataTypes(OpContext oc, boolean experimentalMode) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        INDArray y = oc != null ? oc.getInputArray(1) : y();
+        INDArray z = oc != null ? oc.getOutputArray(0) : z();
+        Preconditions.checkArgument(x.isR(), "Op.X must be one of floating types: x.datatype=%s for op %s", x.dataType(), getClass());
 
-        if (y() != null) {
-            Preconditions.checkArgument(y().isR(), "Op.Y must be one of floating types: y.datatype=%s for op %s", y().dataType(), getClass());
+        if (y != null) {
+            Preconditions.checkArgument(y.isR(), "Op.Y must be one of floating types: y.datatype=%s for op %s", y.dataType(), getClass());
 
             if (!experimentalMode)
                 Preconditions.checkArgument(x.dataType() == y.dataType(), "Op.X must have same data type as Op.Y");
         }
 
         if (z() != null)
-            Preconditions.checkArgument(z().dataType() == x().dataType(), "Op.Z must have the same type as Op.X: x.datatype=%s, z.datatype=%s for op %s",
+            Preconditions.checkArgument(z.dataType() == x.dataType(), "Op.Z must have the same type as Op.X: x.datatype=%s, z.datatype=%s for op %s",
                     x.dataType(), z.dataType(), getClass());
 
         return true;
@@ -100,6 +108,13 @@ public abstract class BaseTransformStrictOp extends BaseTransformOp implements T
         if(x == null)
             return Collections.emptyList();
         return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.dataType()));
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        if(oc.getInputArray(0) == null)
+            return Collections.emptyList();
+        return Collections.singletonList(LongShapeDescriptor.fromShape(oc.getInputArray(0).shape(), oc.getInputArray(0).dataType()));
     }
 
     @Override

@@ -98,6 +98,13 @@ public interface OpExecutioner {
      */
     INDArray exec(Op op);
 
+    /**
+     * Execute the operation
+     *
+     * @param op the operation to execute
+     */
+    INDArray exec(Op op, OpContext opContext);
+
     /**Execute a TransformOp and return the result
      * @param op the operation to execute
      */
@@ -363,6 +370,8 @@ public interface OpExecutioner {
     INDArray[] exec(CustomOp op, OpContext context);
 
     List<LongShapeDescriptor> calculateOutputShape(CustomOp op);
+
+    List<LongShapeDescriptor> calculateOutputShape(CustomOp op, OpContext opContext);
 
     /**
      * Equivalent to calli

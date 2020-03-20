@@ -19,6 +19,7 @@ import org.nd4j.graph.UIInfoType;
 import org.nd4j.graph.UIStaticInfoRecord;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.primitives.Pair;
@@ -410,7 +411,7 @@ public class UIListener extends BaseListener {
 
 
     @Override
-    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
 
 
         //Do training set evaluation, if required

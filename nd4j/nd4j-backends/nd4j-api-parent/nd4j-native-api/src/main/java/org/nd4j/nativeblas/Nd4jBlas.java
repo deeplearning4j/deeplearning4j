@@ -54,7 +54,7 @@ public abstract class Nd4jBlas implements Blas {
             }
 
             String logInit = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION);
-            if(logInit == null || logInit.isEmpty() || Boolean.parseBoolean(logInit)) {
+            if(logOpenMPBlasThreads() && (logInit == null || logInit.isEmpty() || Boolean.parseBoolean(logInit))) {
                 log.info("Number of threads used for OpenMP BLAS: {}", getMaxThreads());
             }
         }
@@ -73,5 +73,9 @@ public abstract class Nd4jBlas implements Blas {
             return Vendor.UNKNOWN;
         }
         return Vendor.values()[vendor];
+    }
+
+    public boolean logOpenMPBlasThreads(){
+        return true;
     }
 }

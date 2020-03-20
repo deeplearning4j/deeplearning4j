@@ -11,6 +11,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.ScalarOp;
 
 import java.util.Arrays;
@@ -77,7 +78,7 @@ public class ExecDebuggingListener extends BaseListener {
     }
 
     @Override
-    public void preOpExecution(SameDiff sd, At at, SameDiffOp op) {
+    public void preOpExecution(SameDiff sd, At at, SameDiffOp op, OpContext opContext) {
         if(lastIter != at.iteration()){
             lastIter = at.iteration();
             stepThisIter = 0;

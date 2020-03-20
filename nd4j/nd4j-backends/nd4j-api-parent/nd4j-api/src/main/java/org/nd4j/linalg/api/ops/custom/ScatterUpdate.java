@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -235,6 +236,11 @@ public class ScatterUpdate implements CustomOp {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         return Nd4j.getExecutioner().calculateOutputShape(this);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext opContext) {
+        return Nd4j.getExecutioner().calculateOutputShape(this, opContext);
     }
 
     @Override

@@ -56,6 +56,11 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
+    public int numIArguments() {
+        return fastpath_i.size();
+    }
+
+    @Override
     public void setTArguments(double... arguments) {
         fastpath_t.clear();
         for (val v:arguments)
@@ -65,6 +70,11 @@ public abstract class BaseOpContext implements OpContext {
     @Override
     public List<Double> getTArguments(){
         return fastpath_t;
+    }
+
+    @Override
+    public int numTArguments() {
+        return fastpath_t.size();
     }
 
     @Override
@@ -80,6 +90,11 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
+    public int numBArguments() {
+        return fastpath_b.size();
+    }
+
+    @Override
     public void setDArguments(DataType... arguments) {
         fastpath_d.clear();
         for (val v:arguments)
@@ -89,6 +104,11 @@ public abstract class BaseOpContext implements OpContext {
     @Override
     public List<DataType> getDArguments() {
         return fastpath_d;
+    }
+
+    @Override
+    public int numDArguments() {
+        return fastpath_d.size();
     }
 
     @Override
@@ -111,6 +131,16 @@ public abstract class BaseOpContext implements OpContext {
     }
 
     @Override
+    public int numInputArguments() {
+        return fastpath_in.size();
+    }
+
+    @Override
+    public INDArray getInputArray(int idx) {
+        return fastpath_in.get(idx);
+    }
+
+    @Override
     public List<INDArray> getOutputArrays() {
         val result = new ArrayList<INDArray>();
         for (int e = 0; e < Integer.MAX_VALUE; e++) {
@@ -129,6 +159,15 @@ public abstract class BaseOpContext implements OpContext {
         fastpath_out.put(index, array);
     }
 
+    @Override
+    public INDArray getOutputArray(int i) {
+        return fastpath_out.get(i);
+    }
+
+    @Override
+    public int numOutputArguments() {
+        return fastpath_out.size();
+    }
 
     @Override
     public void setInputArrays(@NonNull List<INDArray> arrays) {

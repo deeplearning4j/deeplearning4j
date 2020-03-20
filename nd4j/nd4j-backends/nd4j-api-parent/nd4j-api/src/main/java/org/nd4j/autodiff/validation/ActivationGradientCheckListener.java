@@ -12,6 +12,8 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
+
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
@@ -36,7 +38,7 @@ public class ActivationGradientCheckListener extends BaseListener {
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         Preconditions.checkState(variableName != null, "No variable name has been set yet. Variable name must be set before using this listener");
         Preconditions.checkState(eps != 0.0, "Epsilon has not been set");
 

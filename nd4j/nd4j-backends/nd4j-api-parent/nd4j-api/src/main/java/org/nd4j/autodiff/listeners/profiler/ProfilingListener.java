@@ -30,6 +30,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -192,7 +193,7 @@ public class ProfilingListener extends BaseListener {
     }
 
     @Override
-    public void preOpExecution(SameDiff sd, At at, SameDiffOp op) {
+    public void preOpExecution(SameDiff sd, At at, SameDiffOp op, OpContext opContext) {
         if (logActive) {
             opStartNano = System.nanoTime();
 
@@ -202,7 +203,7 @@ public class ProfilingListener extends BaseListener {
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         if (logActive) {
             long now = System.nanoTime();
 
