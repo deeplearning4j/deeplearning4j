@@ -93,6 +93,21 @@ TEST_F(RNGTests, TestSeeds_2) {
     ASSERT_EQ(456, generator.nodeState());
 }
 
+TEST_F(RNGTests, TestGenerator_SGA_1) {
+    RandomGenerator generator(12, 13);
+    auto array= NDArrayFactory::create<float>('c',{10000000});
+    generator.setStates(123L, 456L);
+    for (auto idx = 0; idx < array.lengthOf(); idx++) {
+        float x = generator.relativeT(idx, -sd::DataTypeUtils::template max<float>() / 10,
+                                      sd::DataTypeUtils::template max<float>() / 10);
+        array.t<float>(idx) = x;
+    }
+    auto minimum = array.reduceNumber(reduce::AMin);
+    minimum.printBuffer("Randomly float min on 1M array");
+    ASSERT_EQ(123, generator.rootState());
+    ASSERT_EQ(456, generator.nodeState());
+}
+
 
 TEST_F(RNGTests, Test_Dropout_1) {
     auto x0 = NDArrayFactory::create<float>('c', {10, 10});
@@ -573,6 +588,15 @@ TEST_F(RNGTests, Test_Uniform_2) {
     
 }
 
+TEST_F(RNGTests, Test_Uniform_SGA_3) {
+    //auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
+    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
+
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, -sd::DataTypeUtils::template max<float>(), sd::DataTypeUtils::template max<float>());
+    auto minimumU = x1.reduceNumber(reduce::AMin);
+    minimumU.printBuffer("\nMinimum");
+}
+
 TEST_F(RNGTests, Test_Gaussian_2) {
     auto input = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {10, 10});
     auto x1 = NDArrayFactory::create<float>('c', {10, 10});
@@ -728,8 +752,37 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1) {
     auto z = result.at(0);
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
+    //
+    z->printBuffer("\nExponential1");
+    auto mean = z->reduceNumber(reduce::Mean);
+    auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
+    mean.printBuffer("Mean for exponential with param 0.25 (4 exp) is");
+    variance.printBuffer("Variance for exponential with param 0.25 (16 exp) is");
+    ASSERT_FALSE(nexp0->equalsTo(z));
+    ASSERT_FALSE(nexp1->equalsTo(z));
+    ASSERT_FALSE(nexp2->equalsTo(z));
+
+//    delete result;
+}
+
+TEST_F(RNGTests, Test_ExponentialDistribution_1_SGA) {
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10, 10});
+    auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
 
 
+    sd::ops::random_exponential op;
+    auto result = op.evaluate({&x}, {1.f}, {0});
+    ASSERT_EQ(Status::OK(), result.status());
+
+    auto z = result.at(0);
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+    //
+    z->printBuffer("\nExponential2");
+    auto mean = z->reduceNumber(reduce::Mean);
+    auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
+    mean.printBuffer("Mean for exponential with param 1.0 (1 exp) is");
+    variance.printBuffer("Variance for exponential with param 1. (1 exp) is");
     ASSERT_FALSE(nexp0->equalsTo(z));
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
