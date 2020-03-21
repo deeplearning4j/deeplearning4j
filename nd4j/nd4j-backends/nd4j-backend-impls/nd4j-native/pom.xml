@@ -155,8 +155,8 @@
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
                         <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                       <!-- <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
-                        <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>-->
+                       <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                     </linkResources>
                 </configuration>
                 <executions>
