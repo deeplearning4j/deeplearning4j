@@ -339,7 +339,6 @@
                                     <buildCommand>
                                         <program>${libnd4j.buildprogram}</program>
                                         <argument>buildnativeoperations.sh
-
                                         </argument>
                                         <argument>--build-type</argument>
                                         <argument>${libnd4j.build}</argument>
