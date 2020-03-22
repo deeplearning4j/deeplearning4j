@@ -112,7 +112,7 @@
                             <skip>${skipBackendChoice}</skip>
                             <rules>
                                 <requireActiveProfile>
-                                    <profiles>test-nd4j-native,test-nd4j-cuda-10.2</profiles>
+                                    <profiles>test-nd4j-native,test-nd4j-cuda-10.1</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
                             </rules>
@@ -303,11 +303,11 @@
         </profile>
 
         <profile>
-            <id>test-nd4j-cuda-10.2</id>
+            <id>test-nd4j-cuda-10.1</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.2</artifactId>
+                    <artifactId>nd4j-cuda-10.1</artifactId>
                     <version>${nd4j.version}</version>
                     <scope>test</scope>
                 </dependency>
