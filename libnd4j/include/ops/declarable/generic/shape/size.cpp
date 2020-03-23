@@ -32,6 +32,7 @@ namespace sd {
             REQUIRE_TRUE(output->isScalar(), 0, "Size output should be scalar");
 
             output->p(0, input->lengthOf());
+            output->syncToDevice();
 
             return Status::OK();
         }
