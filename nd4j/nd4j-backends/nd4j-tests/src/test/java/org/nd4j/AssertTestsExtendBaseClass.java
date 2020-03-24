@@ -42,6 +42,11 @@ import static org.junit.Assert.assertEquals;
 @Slf4j
 public class AssertTestsExtendBaseClass extends BaseND4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 240000L;
+    }
+
     //Set of classes that are exclusions to the rule (either run manually or have their own logging + timeouts)
     private static final Set<Class<?>> exclusions = new HashSet<>(Arrays.asList(
             TFGraphTestAllSameDiff.class,
