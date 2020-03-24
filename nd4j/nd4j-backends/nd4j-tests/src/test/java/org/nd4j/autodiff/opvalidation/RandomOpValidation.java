@@ -76,7 +76,7 @@ public class RandomOpValidation extends BaseOpValidation {
                             double min = in.minNumber().doubleValue();
                             double max = in.maxNumber().doubleValue();
                             double mean = in.meanNumber().doubleValue();
-                            if (min >= 1 && max <= 2 && (in.length() == 1 || Math.abs(mean - 1.5) < 0.1))
+                            if (min >= 1 && max <= 2 && (in.length() == 1 || Math.abs(mean - 1.5) < 0.2))
                                 return null;
                             return "Failed: min = " + min + ", max = " + max + ", mean = " + mean;
                         };
@@ -87,7 +87,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double stdev = in.std(true).getDouble(0);
-                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.1 && Math.abs(stdev - 1) < 0.1))
+                            if (in.length() == 1 || (Math.abs(mean - 1) < 0.2 && Math.abs(stdev - 1) < 0.2))
                                 return null;
                             return "Failed: mean = " + mean + ", stdev = " + stdev;
                         };
