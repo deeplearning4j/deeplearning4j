@@ -63,6 +63,8 @@ public class KerasActivationUtils {
             dl4jActivation = Activation.HARDSIGMOID;
         } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_LINEAR())) {
             dl4jActivation = Activation.IDENTITY;
+        } else if (kerasActivation.equals(conf.getKERAS_ACTIVATION_SWISH())) {
+            dl4jActivation = Activation.SWISH;
         } else {
             throw new UnsupportedKerasConfigurationException(
                     "Unknown Keras activation function " + kerasActivation);

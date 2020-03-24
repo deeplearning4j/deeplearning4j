@@ -334,6 +334,7 @@ public class KerasLayerConfiguration {
     private final String KERAS_ACTIVATION_SIGMOID = "sigmoid";
     private final String KERAS_ACTIVATION_HARD_SIGMOID = "hard_sigmoid";
     private final String KERAS_ACTIVATION_LINEAR = "linear";
+    private final String KERAS_ACTIVATION_SWISH = "swish";
     private final String KERAS_ACTIVATION_ELU = "elu"; // keras 2 only
     private final String KERAS_ACTIVATION_SELU = "selu"; // keras 2 only
 
