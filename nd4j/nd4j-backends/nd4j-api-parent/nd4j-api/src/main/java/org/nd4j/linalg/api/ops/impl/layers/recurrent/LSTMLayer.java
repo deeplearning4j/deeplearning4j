@@ -23,7 +23,8 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 
 import java.util.Arrays;
@@ -51,11 +52,11 @@ import java.util.Map;
      * 7: weights - cell peephole (t) connections to output gate, [numUnits]<br>
      * 8: biases, shape [4*numUnits]<br>
      * <br>
-     * Input integer arguments: set via {@link LSTMConfiguration}<br>
+     * Input integer arguments: set via {@link LSTMLayerConfig}<br>
      * 0: if not zero, provide peephole connections<br>
      * 1: Data format - 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]<br>
      * <br>
-     * Input float arguments: set via {@link LSTMConfiguration}<br>
+     * Input float arguments: set via {@link LSTMLayerConfig}<br>
      * 0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training<br>
      * 1: clipping value for cell state, if it is not equal to zero, then cell state is clipped<br>
      * <p>
@@ -72,7 +73,7 @@ import java.util.Map;
      */
     public class LSTMLayer extends DynamicCustomOp {
 
-        private LSTMConfiguration configuration;
+        private LSTMLayerConfig configuration;
 
         @Getter
         private LSTMLayerWeights weights;
@@ -80,7 +81,7 @@ import java.util.Map;
         public LSTMLayer() {
         }
 
-        public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable maxTSLength, SDVariable x, SDVariable cLast, SDVariable yLast, LSTMLayerWeights weights, LSTMConfiguration configuration) {
+        public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable maxTSLength, SDVariable x, SDVariable cLast, SDVariable yLast, LSTMLayerWeights weights, LSTMLayerConfig configuration) {
             super(null, sameDiff, weights.argsWithInputs(x, maxTSLength, cLast, yLast));
             this.configuration = configuration;
             this.weights = weights;
@@ -88,9 +89,9 @@ import java.util.Map;
             addTArgument(configuration.tArgs());
         }
 
-        public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMLayerWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
+        public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMLayerWeights lstmWeights, LSTMLayerConfig LSTMLayerConfig) {
             super(null, null, lstmWeights.argsWithInputs(maxTSLength, x, cLast, yLast));
-            this.configuration = lstmConfiguration;
+            this.configuration = LSTMLayerConfig;
             this.weights = lstmWeights;
             addIArgument(configuration.iArgs(true));
             addTArgument(configuration.tArgs());
