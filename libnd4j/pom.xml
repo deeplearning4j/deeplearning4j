@@ -184,7 +184,7 @@
                             <skip>${libnd4j.test.skip}</skip>
                             <workingDirectory>${basedir}/tests_cpu</workingDirectory>
                             <buildCommand>
-                                <program>sh</program>
+                                <program>bash</program>
                                 <argument>run_tests.sh</argument>
                                 <argument>--chip</argument>
                                 <argument>${libnd4j.chip}</argument>

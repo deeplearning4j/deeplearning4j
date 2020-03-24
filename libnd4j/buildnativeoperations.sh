@@ -220,8 +220,9 @@ case "$OS" in
 
       setandroid_defaults
 
-
-      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi-4.9/prebuilt/$KERNEL/"
+      # Note here for android 32 bit prefix on the binutils is different
+      # See https://developer.android.com/ndk/guides/other_build_systems
+      export ANDROID_BIN="$ANDROID_NDK/toolchains/arm-linux-androideabi/prebuilt/$KERNEL/"
       export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
       export ANDROID_CC="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/bin/clang"
       export ANDROID_ROOT="$ANDROID_NDK/platforms/android-$ANDROID_VERSION/arch-arm/"
