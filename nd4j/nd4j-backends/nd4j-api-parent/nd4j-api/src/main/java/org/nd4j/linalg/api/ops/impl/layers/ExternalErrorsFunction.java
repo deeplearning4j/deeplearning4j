@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -147,6 +148,11 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape(){
+        return OUT_SHAPE;
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc){
         return OUT_SHAPE;
     }
 

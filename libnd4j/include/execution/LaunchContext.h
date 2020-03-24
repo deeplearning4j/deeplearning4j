@@ -54,6 +54,8 @@ class ND4J_EXPORT LaunchContext {
         static std::vector<std::shared_ptr<LaunchContext>> _contexts;
         static std::mutex _mutex;
 
+        static MAP_IMPL<int, std::mutex*> _deviceMutexes;
+
         // used for MKLDNN
         void *_engine = nullptr;
 
@@ -93,7 +95,6 @@ class ND4J_EXPORT LaunchContext {
 		void setCudaSpecialStream(cudaStream_t* cudaStream);
 		void setCublasHandle(void *handle);
 
-
 #endif // JCPP
 
 #endif // CUDA
@@ -110,6 +111,12 @@ class ND4J_EXPORT LaunchContext {
     	int getDeviceID() const {return _deviceID;}
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }
         sd::ErrorReference* errorReference();
+
+#ifndef __JAVACPP_HACK__
+    	// this method returns mutex shared between all threads that use the same device
+    	static std::mutex* deviceMutex();
+
+#endif
 
     	static bool isInitialized();
     	static void releaseBuffers();

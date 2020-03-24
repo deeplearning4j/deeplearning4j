@@ -31,7 +31,9 @@ public interface TransformOp extends Op {
      */
     DataType resultType();
 
+    DataType resultType(OpContext opContext);
+
     Type getOpType();
 
-    boolean validateDataTypes(boolean experimentalMode);
+    boolean validateDataTypes(OpContext opContext, boolean experimentalMode);
 }

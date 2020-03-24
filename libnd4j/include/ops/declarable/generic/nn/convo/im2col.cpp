@@ -30,8 +30,7 @@ namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(im2col, 1, 1, false, 0, 9) {
             auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
-
+            auto z = OUTPUT_NULLIFIED(0);
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "im2col input should be 4D, but got %i instead", x->rankOf());
             REQUIRE_TRUE(z->rankOf() == 6, 0, "im2col output should be 6D, but got %i instead", z->rankOf());
@@ -52,8 +51,6 @@ namespace sd {
             // FIXME: zeropad value is void
             LaunchContext* ctx = block.launchContext();
             sd::ops::helpers::im2col(*ctx, *x, *z, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, dY, dX, NDArrayFactory::create(zeroPadVal, block.launchContext()));
-
-            STORE_RESULT(*z);
 
             return Status::OK();
         }
@@ -107,7 +104,7 @@ namespace sd {
 		CUSTOM_OP_IMPL(im2col_bp, 2, 1, false, 0, 9) {
             auto input = INPUT_VARIABLE(0);
 			auto gradAtOutput = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+            auto z = OUTPUT_NULLIFIED(0);
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "im2col_bp input should be 4D, but got %i instead", input->rankOf());
 			REQUIRE_TRUE(gradAtOutput->rankOf() == 6, 0, "im2col_bp gradient at output (input idx 1) should be 6D, but got %i instead", gradAtOutput->rankOf());

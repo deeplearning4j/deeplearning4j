@@ -89,7 +89,12 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
     }
 
     @Override
-    public boolean validateDataTypes(boolean experimentalMode) {
+    public DataType resultType(OpContext oc) {
+        return oc.getInputArray(0).dataType();
+    }
+
+    @Override
+    public boolean validateDataTypes(OpContext oc, boolean experimentalMode) {
         return true;
     }
 

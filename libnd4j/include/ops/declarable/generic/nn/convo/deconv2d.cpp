@@ -35,10 +35,10 @@ namespace ops  {
 CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, oC, iC] always
+    auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC]
 
-    auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+    auto output  = OUTPUT_NULLIFIED(0);                                   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
 
     REQUIRE_TRUE(input->rankOf()   == 4, 0, "CUSTOM DECONV2D OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
     REQUIRE_TRUE(weights->rankOf() == 4, 0, "CUSTOM DECONV2D OP: rank of weights array must be equal to 4, but got %i instead !", weights->rankOf());
@@ -53,18 +53,25 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW     = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // INT_ARG(9): 0-NCHW,  1-NHWC
+    int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;         // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
-    std::vector<Nd4jLong> expectedWeightsShape = {kH, kW, oC, iC};
+    std::vector<Nd4jLong> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
     REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0, "CUSTOM DECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
     if (bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
     if(!isNCHW)
         output = new NDArray(output->permute({0, 3, 1, 2}));       // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
+
+    std::vector<int> colPermut;
+    if(1 == wFormat)
+        colPermut = {1, 2, 3, 0, 4, 5};
+    else
+        colPermut = {2, 3, 1, 0, 4, 5};
 
     if(isSameMode)          // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward pass
         ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
@@ -73,8 +80,9 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 
     //----- calculation of output -----//
     // NHWC: [kH, kW, oC, iC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
-    // NCHW: [kH, kW, oC, iC] x [bS, iC, iH, iW] = [kH, kW, oC, bS, iH, iW]
-    sd::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, {2, 3, 1, 0, 4, 5});
+    // NHWC: [iC, oC, kH, kW] x [bS, iH, iW, iC] = [oC, kH, kW, bS, iH, iW]
+    // NHWC: [iC, kH, kW, oC] x [bS, iH, iW, iC] = [kH, kW, oC, bS, iH, iW]
+    sd::MmulHelper::tensorDot(weights, input, &columns, {indWiC}, {indIOioC}, colPermut);
     LaunchContext* ctx = block.launchContext();
     helpers::col2im(*ctx, columns, *output, sH, sW, pH, pW, oH, oW, dH, dW);     // [bS, oC, kH, kW, iH, iW] is de-convoluted to [bS, oC, oH, oW]
 
@@ -97,7 +105,7 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 DECLARE_SHAPE_FN(deconv2d) {
 
     auto inputShapeInfo   = inputShape->at(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    auto weightsShapeInfo = inputShape->at(1);                                    // [kH, kW, oC, iC] always
+    auto weightsShapeInfo = inputShape->at(1);                                    // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
     auto biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;      // [oC]
 
     const int rank = 4;
@@ -114,8 +122,9 @@ DECLARE_SHAPE_FN(deconv2d) {
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
+    int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;         // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
-    int indIOioC, indIiH, indWoC(2);
+    int indIOioC, indIiH, indWoC(0 == wFormat ? 2 : (1 == wFormat ? 1 : 3));
     if(!isNCHW) {
         indIOioC = 3; indIiH = 1;
     }
@@ -129,7 +138,7 @@ DECLARE_SHAPE_FN(deconv2d) {
     const int iC = inputShapeInfo[indIOioC+1];                   // input channels
     const int oC = weightsShapeInfo[indWoC+1];                   // output channels
 
-    std::vector<Nd4jLong> expectedWeightsShape = {kH, kW, oC, iC};
+    std::vector<Nd4jLong> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
     REQUIRE_TRUE(shape::shapeEquals(4, expectedWeightsShape.data(), shape::rank(weightsShapeInfo), shape::shapeOf(weightsShapeInfo)), 0, "CUSTOM DECONV2D OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if (biasShapeInfo)
         REQUIRE_TRUE(shape::rank(biasShapeInfo) <= 2 && oC == shape::length(biasShapeInfo), 0, "CUSTOM DECONV2D OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, biasShapeInfo[0], shape::length(biasShapeInfo));
@@ -163,12 +172,12 @@ DECLARE_SHAPE_FN(deconv2d) {
 CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW)
-    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, oC, iC] always
+    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC]
     auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
     auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW), gradI
-    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, oC, iC] always
+    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
     REQUIRE_TRUE(input->rankOf()   == 4, 0, "CUSTOM DECONV2D_BP OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
@@ -186,16 +195,17 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
+    int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;         // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
     int trueoH, trueoW;          // true output height, width
     ConvolutionUtils::calcOutSizeDeconv2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     std::vector<Nd4jLong> expectedGradOShape   = ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1});
-    std::vector<Nd4jLong> expectedWeightsShape = {kH, kW, oC, iC};
+    std::vector<Nd4jLong> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
     REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,  "CUSTOM DECONV2D_BP OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradO).c_str());
     REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0, "CUSTOM DECONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
     if(bias)
@@ -206,29 +216,34 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
         ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
     }
 
-
-     // ----- calculation of gradI -> pass it through conv2d_ff ----- //
+    // ----- calculation of gradI -> pass it through conv2d_ff ----- //
     sd::ops::conv2d conv2d;
-    const Nd4jStatus status = conv2d.execute({gradO, weights}, {gradI}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  isSameMode,  !isNCHW}, {});
+    const Nd4jStatus status = conv2d.execute({gradO, weights}, {gradI}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW,  isSameMode, !isNCHW, wFormat}, {});
     if (status != ND4J_STATUS_OK)
         return status;
 
     // -----prepare permutation arrays and axes for dot product ----- //
-    std::vector<int> inputAxesForDot;
+    std::vector<int> inputAxes;
 
     if(!isNCHW) {
         gradO = new NDArray(gradO->permute({0, 3, 1, 2}));                      // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
-        inputAxesForDot = {0, 1, 2};                                            // bS, iH, iW
+        inputAxes = {0, 1, 2};                                            // bS, iH, iW
     }
     else
-        inputAxesForDot = {0, 2, 3};                                            // bS, iH, iW
+        inputAxes = {0, 2, 3};                                            // bS, iH, iW
+
+    std::vector<int> gradWAxes;     // empty for wFormat = 1
+    if(0 == wFormat)
+        gradWAxes = {3, 2, 0, 1};
+    else if(2 == wFormat)
+        gradWAxes = {0, 3, 1, 2};
 
     // ----- calculation of gradW ----- //
     NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(), block.launchContext());
 
     LaunchContext* ctx = block.launchContext();
     helpers::im2col(*ctx, *gradO, columns, kH, kW, sH, sW, pH, pW, dH, dW, NDArrayFactory::create(0.f, input->getContext()));  // [bS, oC, oH, oW] is convoluted to [bS, oC, kH, kW, iH, iW]
-    MmulHelper::tensorDot(input, &columns, gradW, inputAxesForDot, {0, 4, 5}, {3, 2, 0, 1});     // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
+    MmulHelper::tensorDot(input, &columns, gradW, inputAxes, {0, 4, 5}, gradWAxes);     // [bS, iC, iH, iW]/[bS, iH, iW, iC] x [bS, oC, kH, kW, iH, iW] = [iC, oC, kH, kW]
 
     // ----- calculation of gradB ----- //
     if(gradB) {
@@ -248,7 +263,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
 DECLARE_SHAPE_FN(deconv2d_bp) {
 
     auto inputShapeInfo   = inputShape->at(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW)
-    auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, oC, iC] always
+    auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
     Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;             // [oC]
     Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
@@ -267,8 +282,9 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
+    int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;         // 0 - [kH, kW, oC, iC], 1 - [iC, oC, kH, kW], 2 - [iC, kH, kW, oC]
 
-    int indIOioC, indIiH, indWoC(2), indOoH;
+    int indIOioC, indIiH, indOoH, indWoC(0 == wFormat ? 2 : (1 == wFormat ? 1 : 3));
     if(!isNCHW) {
         indIOioC = 3; indIiH = 1; indOoH = 1;
     }
@@ -286,7 +302,7 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
     ConvolutionUtils::calcOutSizeDeconv2D(trueoH, trueoW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     std::vector<Nd4jLong> expectedGradOShape   = ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1});
-    std::vector<Nd4jLong> expectedWeightsShape = {kH, kW, oC, iC};
+    std::vector<Nd4jLong> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, oC, iC);
     REQUIRE_TRUE(shape::shapeEquals(4, expectedGradOShape.data(), shape::rank(gradOShapeInfo), shape::shapeOf(gradOShapeInfo)), 0,  "CUSTOM DECONV2D_BP OP: wrong shape of output gradients next epsilon) array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradOShapeInfo).c_str());
     REQUIRE_TRUE(shape::shapeEquals(4, expectedWeightsShape.data(), shape::rank(weightsShapeInfo), shape::shapeOf(weightsShapeInfo)), 0, "CUSTOM DECONV2D_BP OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weightsShapeInfo).c_str());
     if(biasShapeInfo)

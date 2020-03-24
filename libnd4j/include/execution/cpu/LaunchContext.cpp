@@ -19,6 +19,7 @@
 //
 
 #include <execution/LaunchContext.h>
+#include <execution/AffinityManager.h>
 #include <helpers/logger.h>
 #include <exceptions/cuda_exception.h>
 #include <thread>
@@ -42,6 +43,8 @@ namespace sd {
     }
 
     std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
+    MAP_IMPL<int, std::mutex*> LaunchContext::_deviceMutexes;
+    std::mutex LaunchContext::_mutex;
 
 ////////////////////////////////////////////////////////////////////////
     LaunchContext::LaunchContext() {
@@ -66,6 +69,10 @@ namespace sd {
 
         // return context for current device
         return LaunchContext::_contexts[0].get();
+    }
+
+    std::mutex* LaunchContext::deviceMutex() {
+        return &_mutex;
     }
 
     void LaunchContext::swapContextBuffers(ContextBuffers &buffers) {

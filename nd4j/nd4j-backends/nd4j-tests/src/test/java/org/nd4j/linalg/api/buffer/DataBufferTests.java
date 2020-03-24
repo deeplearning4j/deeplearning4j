@@ -33,7 +33,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import sun.nio.ch.DirectBuffer;
 
 
 import java.nio.ByteBuffer;
@@ -406,15 +405,14 @@ public class DataBufferTests extends BaseNd4jTest {
         //https://github.com/eclipse/deeplearning4j/issues/8783
         Nd4j.create(1);
 
-        DirectBuffer bb = (DirectBuffer) ByteBuffer.allocateDirect(5);
-        System.out.println(bb.getClass());
-        System.out.println(bb.address());
-
-        Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().pointerForAddress(bb.address());
-        DataBuffer buff = Nd4j.createBuffer(ptr, 20, DataType.BYTE);
+        BytePointer bp = new BytePointer(5);
 
 
-        INDArray arr2 = Nd4j.create(buff, new long[]{5}, new long[]{1}, 1L, 'c', DataType.BYTE);
+        Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().pointerForAddress(bp.address());
+        DataBuffer buff = Nd4j.createBuffer(ptr, 5, DataType.INT8);
+
+
+        INDArray arr2 = Nd4j.create(buff, new long[]{5}, new long[]{1}, 0, 'c', DataType.INT8);
         long before = arr2.data().pointer().address();
         Nd4j.getAffinityManager().ensureLocation(arr2, AffinityManager.Location.HOST);
         long after = arr2.data().pointer().address();

@@ -99,6 +99,10 @@ public class SameDiffTests extends BaseNd4jTest {
     @ClassRule
     public static TemporaryFolder folder = new TemporaryFolder();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 999999999L;
+    }
 
     @Before
     public void before() {

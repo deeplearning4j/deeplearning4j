@@ -96,6 +96,14 @@ namespace sd {
             return _descriptor->getHash();
         }
 
+        sd::NDArray* sd::ops::DeclarableOp::getNullifiedZ(Context& block, int inputId) {
+            auto result = getZ(block, inputId);
+            if (result != nullptr && !block.isInplace())
+                result->nullify();
+
+            return result;
+        }
+
 
         sd::NDArray* sd::ops::DeclarableOp::getZ(Context& ctx, int inputId) {
             NDArray* z = nullptr;
@@ -294,7 +302,8 @@ namespace sd {
                             if (Environment::getInstance()->isDebugAndVerbose())
                                 shape::printShapeInfoLinear("Going to create variable with shape", out);
 
-                            auto outArr = new NDArray(out, true, ctx.launchContext());
+                            // we're creating non-initialized array here
+                            auto outArr = new NDArray(out, true, ctx.launchContext(), false);
 
                             ctx.pushNDArrayToVariableSpace(pair, outArr);
 

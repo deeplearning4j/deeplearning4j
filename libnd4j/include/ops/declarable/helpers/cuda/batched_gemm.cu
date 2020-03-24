@@ -116,6 +116,8 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
     const auto bType = pB[0]->dataType();
     const auto cType = pC[0]->dataType();
 
+    std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
+
     auto handle = reinterpret_cast<cublasHandle_t*>(context->getCublasHandle());
     auto stream = context->getCudaStream();
 

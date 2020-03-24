@@ -77,26 +77,42 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
     }
 
     @Override
-    public boolean validateDataTypes() {
-        if (y() != null)
-            Preconditions.checkArgument(x().dataType() == y().dataType(),"Op.X type must be the same as Op.Y type:" +
+    public DataType resultType(OpContext oc){
+        return oc.getInputArray(0).dataType();
+    }
+
+    @Override
+    public boolean validateDataTypes(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        INDArray y = oc != null ? oc.getInputArray(1) : y();
+        if (y != null)
+            Preconditions.checkArgument(x.dataType() == y.dataType(),"Op.X type must be the same as Op.Y type:" +
                     " x.dataType=%s, y.dataType=%s, op=%s", x.dataType(), y.dataType(), getClass().getName());
 
-        if (z() != null)
-            Preconditions.checkArgument(z().dataType() == x().dataType(), "Op.Z must be the same as Op.X type. Op.X.datatype=%s, " +
-                    "Op.Z.datatype=%s", x().dataType(), z.dataType());
+        INDArray z = oc != null ? oc.getOutputArray(0) : z();
+        if (z != null)
+            Preconditions.checkArgument(z.dataType() == x.dataType(), "Op.Z must be the same as Op.X type. Op.X.datatype=%s, " +
+                    "Op.Z.datatype=%s", x.dataType(), z.dataType());
 
         return true;
     }
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        return calculateOutputShape(null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+
         if(x == null)
             return Collections.emptyList();
 
         //Calculate reduction shape. Note that reduction on scalar - returns a scalar
         long[] reducedShape = x.rank() == 0 ? x.shape() : Shape.getReducedShape(x.shape(),dimensions, isKeepDims());
-        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, this.resultType()));
+        DataType rt = oc != null ? resultType(oc) : resultType();
+        return Collections.singletonList(LongShapeDescriptor.fromShape(reducedShape, rt));
     }
 
     @Override

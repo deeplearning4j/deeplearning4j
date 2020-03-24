@@ -10,6 +10,8 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
+
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 public class OpExecOrderListener extends BaseListener {
@@ -24,7 +26,7 @@ public class OpExecOrderListener extends BaseListener {
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         String opName = op.getName();
         if(!opSet.contains(opName)){
             opNamesList.add(opName);

@@ -143,7 +143,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros
-NDArray::NDArray(Nd4jLong* shapeInfo, const sd::DataType dtype, const bool copyStrides, sd::LaunchContext * context) {
+NDArray::NDArray(Nd4jLong* shapeInfo, const sd::DataType dtype, const bool copyStrides, sd::LaunchContext * context, const bool nullify) {
 
     if (shapeInfo == nullptr)
         throw std::runtime_error("NDArray constructor: can't be initalized without shapeinfo");
@@ -161,7 +161,9 @@ NDArray::NDArray(Nd4jLong* shapeInfo, const sd::DataType dtype, const bool copyS
 
     if (!isEmpty()) {
         _buffer = std::make_shared<DataBuffer>(lengthOf() * sizeOfT(), dtype, getContext()->getWorkspace());
-        _buffer->setToZeroBuffers();
+
+        if (nullify)
+            _buffer->setToZeroBuffers();
     }
 }
 
@@ -213,7 +215,7 @@ NDArray::NDArray(sd::LaunchContext * context) {
 
 ////////////////////////////////////////////////////////////////////////
 // creates new NDArray using shape information from "shapeInfo" array, set all elements in new array to be zeros, set dtype as array type
-NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, sd::LaunchContext * context):
+NDArray::NDArray(Nd4jLong* shapeInfo, const bool copyStrides, sd::LaunchContext * context, const bool nullify):
         NDArray(shapeInfo, ArrayOptions::dataType(shapeInfo), copyStrides, context) {
 }
 
@@ -3338,9 +3340,6 @@ bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape, co
 void NDArray::nullify() {
     if (isEmpty())
         return;
-
-    if (isS())
-        throw std::runtime_error("NDArray::nullify: can't nullify string array");
 
     if (isView() || ews() != 1)
         assign(0);

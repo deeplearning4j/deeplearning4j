@@ -30,7 +30,7 @@ namespace sd {
         CUSTOM_OP_IMPL(lstsq, 2, 1, false, 0, 0) {
             auto a = INPUT_VARIABLE(0);
             auto b = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+            auto z = OUTPUT_NULLIFIED(0);
             bool fastFlag = true;
             double l2_factor = 0.;
             if (block.numB() > 0) {
@@ -56,7 +56,7 @@ namespace sd {
         CUSTOM_OP_IMPL(solve_ls, 2, 1, false, 0, 0) {
             auto a = INPUT_VARIABLE(0);
             auto b = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+            auto z = OUTPUT_NULLIFIED(0);
             bool fastFlag = true;
             double l2_factor = 0.;
             if (block.numB() > 0) {

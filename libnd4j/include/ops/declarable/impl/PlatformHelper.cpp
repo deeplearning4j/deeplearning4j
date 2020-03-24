@@ -31,7 +31,15 @@ namespace sd {
                 _engine = engine;
             }
 
-            sd::NDArray *PlatformHelper::getZ(graph::Context &ctx, int inputId) {
+            sd::NDArray* PlatformHelper::getNullifiedZ(graph::Context& block, int inputId) {
+                auto result = getZ(block, inputId);
+                if (result != nullptr && !block.isInplace())
+                    result->nullify();
+
+                return result;
+            }
+
+            sd::NDArray* PlatformHelper::getZ(graph::Context &ctx, int inputId) {
                 NDArray *z = nullptr;
 
                 if (ctx.isFastPath()) {

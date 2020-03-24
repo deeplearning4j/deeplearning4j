@@ -135,4 +135,9 @@ public class LogNormalDistribution extends BaseRandomOp {
         //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
         return Collections.singletonList(DataType.DOUBLE);
     }
+
+    @Override
+    public boolean isTripleArgRngOp() {
+        return true;
+    }
 }

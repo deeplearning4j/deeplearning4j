@@ -30,7 +30,7 @@ namespace sd {
         CUSTOM_OP_IMPL(bits_hamming_distance, 2, 1, true, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
-            auto output = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_NULLIFIED(0);
 
             REQUIRE_TRUE(x->lengthOf() == y->lengthOf(), 0, "bits_hamming_distance: both arguments must have the same length");
             REQUIRE_TRUE(x->dataType() == y->dataType(), 0, "bits_hamming_distance: both arguments must have the same data type");

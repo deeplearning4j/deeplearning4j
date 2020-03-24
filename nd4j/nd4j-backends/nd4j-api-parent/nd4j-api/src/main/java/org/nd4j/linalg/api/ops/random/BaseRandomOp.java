@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.RandomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -65,6 +66,11 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        return calculateOutputShape(null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext opContext) {
         if(shape != null){
             return Collections.singletonList(LongShapeDescriptor.fromShape(shape, Nd4j.defaultFloatingPointType()));
         } else {
@@ -82,5 +88,9 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     @Override
     public boolean isInPlace(){
         return x == null || x == z || x.data().pointer().address() == z.data().pointer().address();
+    }
+
+    public boolean isTripleArgRngOp(){
+        return false;
     }
 }

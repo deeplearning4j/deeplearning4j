@@ -39,12 +39,15 @@ public interface OpContext extends AutoCloseable {
 
     List<Long> getIArguments();
 
+    int numIArguments();
+
     /**
      * This method sets floating point arguments required for operation
      * @param arguments
      */
     void setTArguments(double... arguments);
     List<Double> getTArguments();
+    int numTArguments();
 
     /**
      * This method sets data type arguments required for operation
@@ -52,14 +55,15 @@ public interface OpContext extends AutoCloseable {
      */
     void setDArguments(DataType... arguments);
     List<DataType> getDArguments();
+    int numDArguments();
 
     /**
      * This method sets boolean arguments required for operation
      * @param arguments
      */
     void setBArguments(boolean... arguments);
-
     List<Boolean> getBArguments();
+    int numBArguments();
 
     /**
      * This method sets root-level seed for rng
@@ -99,6 +103,10 @@ public interface OpContext extends AutoCloseable {
      */
     List<INDArray> getInputArrays();
 
+    int numInputArguments();
+
+    INDArray getInputArray(int idx);
+
     /**
      * This method adds INDArray as output for future op call
      * @param index
@@ -123,6 +131,10 @@ public interface OpContext extends AutoCloseable {
      * @return
      */
     List<INDArray> getOutputArrays();
+
+    INDArray getOutputArray(int i);
+
+    int numOutputArguments();
 
     /**
      * This method returns pointer to context, to be used during native op execution

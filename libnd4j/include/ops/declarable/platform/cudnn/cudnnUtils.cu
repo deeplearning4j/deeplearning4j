@@ -124,7 +124,7 @@ void pooling2dCUDNN(const LaunchContext* context,
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
     cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
@@ -135,7 +135,7 @@ void pooling2dCUDNN(const LaunchContext* context,
     // input descriptor
     cudnnTensorDescriptor_t x;
     cudnnCreateTensorDescriptor(&x);
-    if(input->ews() == 1)
+    if(input->ews() == 1 && input->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
         err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
@@ -144,7 +144,7 @@ void pooling2dCUDNN(const LaunchContext* context,
     // output descriptor
     cudnnTensorDescriptor_t z;
     cudnnCreateTensorDescriptor(&z);
-    if(output->ews() == 1)
+    if(output->ews() == 1 && output->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(z, format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
     else
         err = cudnnSetTensor4dDescriptorEx(z, cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC), output->strideAt(indOoH), output->strideAt(indOoH + 1));
@@ -187,7 +187,7 @@ void pooling2dBpCUDNN(const LaunchContext* context,
 
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
     cudnnStatus_t err = cudnnSetStream(*handle, *context->getCudaStream());
@@ -198,7 +198,7 @@ void pooling2dBpCUDNN(const LaunchContext* context,
     // input and gradI descriptor
     cudnnTensorDescriptor_t x;
     cudnnCreateTensorDescriptor(&x);
-    if(input->ews() == 1)
+    if(input->ews() == 1 && input->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
         err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
@@ -207,7 +207,7 @@ void pooling2dBpCUDNN(const LaunchContext* context,
     // gradO descriptor
     cudnnTensorDescriptor_t dz;
     cudnnCreateTensorDescriptor(&dz);
-    if(gradO->ews() == 1)
+    if(gradO->ews() == 1 && gradO->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(dz, format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
     else
         err = cudnnSetTensor4dDescriptorEx(dz, cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC), gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
@@ -255,7 +255,7 @@ void pooling3dCUDNN(const LaunchContext* context,
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                     // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
+    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
     const int pSizes[] = {pD, pH, pW};
     const int sSizes[] = {sD, sH, sW};
@@ -272,7 +272,7 @@ void pooling3dCUDNN(const LaunchContext* context,
     // input descriptor
     cudnnTensorDescriptor_t x;
     cudnnCreateTensorDescriptor(&x);
-    if(input->ews() == 1)
+    if(input->ews() == 1 && input->ordering() == 'c')
         err = cudnnSetTensorNdDescriptorEx(x, format, cudnnDataType(input->dataType()), numDims, xShape);
     else
         err = cudnnSetTensorNdDescriptor(x, cudnnDataType(input->dataType()), numDims, xShape, xStrides);
@@ -281,7 +281,7 @@ void pooling3dCUDNN(const LaunchContext* context,
     // output descriptor
     cudnnTensorDescriptor_t z;
     cudnnCreateTensorDescriptor(&z);
-    if(output->ews() == 1)
+    if(output->ews() == 1 && output->ordering() == 'c')
         err = cudnnSetTensorNdDescriptorEx(z, format, cudnnDataType(output->dataType()), numDims, zShape);
     else
         err = cudnnSetTensorNdDescriptor(z, cudnnDataType(output->dataType()), numDims, zShape, zStrides);
@@ -330,7 +330,7 @@ void pooling3dBpCUDNN(const LaunchContext* context,
 
     int bS, iC, iD, iH, iW, oC, oD, oH, oW;                // batch size, input channels, input depth/height/width, output channels, output depth/height/width;
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;       // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
+    ConvolutionUtils::getSizesAndIndexesConv3d(isNCDHW, 0, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
     const int pSizes[] = {pD, pH, pW};
     const int sSizes[] = {sD, sH, sW};
@@ -347,7 +347,7 @@ void pooling3dBpCUDNN(const LaunchContext* context,
     // input and gradI descriptor
     cudnnTensorDescriptor_t x;
     cudnnCreateTensorDescriptor(&x);
-    if(input->ews() == 1)
+    if(input->ews() == 1 && input->ordering() == 'c')
         err = cudnnSetTensorNdDescriptorEx(x, format, cudnnDataType(input->dataType()), numDims, xShape);
     else
         err = cudnnSetTensorNdDescriptor(x, cudnnDataType(input->dataType()), numDims, xShape, xStrides);
@@ -356,7 +356,7 @@ void pooling3dBpCUDNN(const LaunchContext* context,
     // gradO descriptor
     cudnnTensorDescriptor_t dz;
     cudnnCreateTensorDescriptor(&dz);
-    if(gradO->ews() == 1)
+    if(gradO->ews() == 1 && gradO->ordering() == 'c')
         err = cudnnSetTensorNdDescriptorEx(dz, format, cudnnDataType(gradO->dataType()), numDims, dzShape);
     else
         err = cudnnSetTensorNdDescriptor(dz, cudnnDataType(gradO->dataType()), numDims, dzShape, dzStrides);

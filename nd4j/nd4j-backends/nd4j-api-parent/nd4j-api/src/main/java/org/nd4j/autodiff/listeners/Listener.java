@@ -5,6 +5,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
@@ -104,7 +105,7 @@ public interface Listener {
      * @param at Current iteration/epoch etc
      * @param op Operation that has just been executed
      */
-    void preOpExecution(SameDiff sd, At at, SameDiffOp op);
+    void preOpExecution(SameDiff sd, At at, SameDiffOp op, OpContext opContext);
 
     /**
      * Called at the end of each operation execution<br>
@@ -117,7 +118,7 @@ public interface Listener {
      * @param op      Operation that has just been executed
      * @param outputs The output arrays for the just-executed operation
      */
-    void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs);
+    void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs);
 
     /**
      * Called when any activation becomes available.
@@ -127,7 +128,7 @@ public interface Listener {
      * Note that this method will be called when any activation becomes available, not just ones from {@link #requiredVariables(SameDiff)}<br>
      * It is guaranteed to be called for variables from requiredVariables().<br>
      * <br>
-     * Note that the activations here overlap with {@link #opExecution(SameDiff, At, MultiDataSet, SameDiffOp, INDArray[])} -
+     * Note that the activations here overlap with {@link #opExecution(SameDiff, At, MultiDataSet, SameDiffOp, OpContext, INDArray[])} -
      * both contain the same information/arrays
      *
      * @param sd         The SameDiff instance

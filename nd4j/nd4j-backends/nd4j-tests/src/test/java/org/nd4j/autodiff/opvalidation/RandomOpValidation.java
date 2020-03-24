@@ -385,6 +385,7 @@ public class RandomOpValidation extends BaseOpValidation {
 
     @Test
     public void testUniformDtype(){
+        Nd4j.getRandom().setSeed(12345);
         for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE, }){
             SameDiff sd = SameDiff.create();
             SDVariable shape = sd.constant("shape", Nd4j.createFromArray(1, 100));

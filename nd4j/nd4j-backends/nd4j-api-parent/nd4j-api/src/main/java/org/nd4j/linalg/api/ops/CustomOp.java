@@ -108,9 +108,15 @@ public interface CustomOp {
 
     /**
      * Calculate the output shape for this op
-     * @return
+     * @return Output array shapes
      */
     List<LongShapeDescriptor> calculateOutputShape();
+
+    /**
+     * Calculate the output shape for this op
+     * @return Output array shapes
+     */
+    List<LongShapeDescriptor> calculateOutputShape(OpContext opContext);
 
     /**
      * Get the custom op descriptor if one is available.

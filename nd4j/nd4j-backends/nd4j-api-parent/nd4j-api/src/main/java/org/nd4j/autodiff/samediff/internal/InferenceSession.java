@@ -18,6 +18,7 @@ package org.nd4j.autodiff.samediff.internal;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
@@ -46,6 +47,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
@@ -65,7 +67,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Slf4j
-public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
+public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,OpContext>> {
     private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
@@ -82,6 +84,8 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
     @Setter
     private IdentityDependencyTracker<INDArray, Dep> arrayUseTracker = new IdentityDependencyTracker<>();
 
+
+    private Map<String,OpContext> opContexts = new HashMap<>();
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
@@ -204,18 +208,19 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
     }
 
     @Override
-    public INDArray[] getOutputs(SameDiffOp op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+    public INDArray[] getOutputs(Pair<SameDiffOp,OpContext> opPair, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                  Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables) {
+        SameDiffOp op = opPair.getFirst();
         at.setFrameIter(outputFrameIter);
         if (listeners != null && listeners.size() > 0) {
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOp().getOwnName());
             for (Listener l : listeners) {
                 if (l.isActive(at.operation()))
-                    l.preOpExecution(sameDiff, at, sdOp);
+                    l.preOpExecution(sameDiff, at, sdOp, opPair.getSecond());
             }
         }
 
-        INDArray[] out = doExec(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+        INDArray[] out = doExec(op.getOp(), opPair.getRight(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
 
         if (log.isTraceEnabled()) {
             StringBuilder sb = new StringBuilder();
@@ -246,7 +251,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                     }
 
 
-                    l.opExecution(sameDiff, at, batch, op, out);
+                    l.opExecution(sameDiff, at, batch, op, opPair.getSecond(), out);
 
                     for (String varName : namedOuts.keySet()) {
                         l.activationAvailable(sameDiff, at, batch, op, varName, namedOuts.get(varName));
@@ -255,6 +260,8 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             }
         }
         op.getOp().clearArrays();
+        if(opPair.getSecond() != null)
+            opPair.getSecond().purge();
 
 
         //Record array uses for memory management/deallocation
@@ -343,7 +350,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
         return out;
     }
 
-    public INDArray[] doExec(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+    public INDArray[] doExec(DifferentialFunction op, OpContext opContext, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                              Set<String> constAndPhInputs) {
 
         int totalInputs = (opInputs == null ? 0 : opInputs.size()) + (constAndPhInputs == null ? 0 : constAndPhInputs.size())
@@ -467,31 +474,31 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             return new INDArray[]{out};
         } else if (op instanceof Assert) {
             Assert a = (Assert)op;
-            boolean condition = a.getInputArgument(0).getDouble(0) != 0.0;
+            boolean condition = opContext.getInputArray(0).getDouble(0) != 0.0;
             if(!condition){
                 //Assertion failed
                 String s = "Assertion failed for operation \"" + op.getOwnName() + "\" during execution";
                 if(a.numInputArguments() >= 3) {
-                    INDArray msg = a.getInputArgument(2);
+                    INDArray msg = opContext.getInputArray(2);
                     if (msg != null && msg.dataType() == DataType.UTF8) {
                         s += ": " + msg.getString(0);
                     }
                 }
                 if(a.numInputArguments() >= 5){
-                    INDArray arr = a.getInputArgument(4);
+                    INDArray arr = opContext.getInputArray(4);
                     s += "\n" + arr;
                 }
                 throw new IllegalStateException(s);
             }
-            return ((Assert) op).outputArguments().toArray(new INDArray[0]);
+            return opContext.getOutputArrays().toArray(new INDArray[0]);
         } else if (op instanceof CustomOp) {
             CustomOp c = (CustomOp) op;
-            Nd4j.exec(c);
-            return c.outputArguments().toArray(new INDArray[0]);
+            Nd4j.exec(c, opContext);
+            return opContext.getOutputArrays().toArray(new INDArray[0]);
         } else if (op instanceof Op) {
             Op o = (Op) op;
-            Nd4j.exec(o);
-            return new INDArray[]{o.z()};
+            Nd4j.exec(o, opContext);
+            return new INDArray[]{opContext.getOutputArray(0)};
         } else {
             throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
         }
@@ -774,7 +781,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
     }
 
     @Override
-    public SameDiffOp getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+    public Pair<SameDiffOp,OpContext> getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                            Set<String> constAndPhInputs, Map<String, INDArray> placeholderValues, Set<String> allReqVariables) {
         SameDiffOp sdo = sameDiff.getOps().get(opName);
         DifferentialFunction df = sdo.getOp();
@@ -786,7 +793,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
         if (df instanceof LoopCond || df instanceof Enter || df instanceof Exit || df instanceof NextIteration ||
                 df instanceof Merge || df instanceof Switch || df instanceof BaseTensorOp) {
             //Control dependencies and tensor ops (like TensorArray, TensorArrayRead etc) don't need inputs set, execution is a special case
-            return sdo;
+            return new Pair<>(sdo, null);
         }
 
         //Infer the args based on the inputs (variable + frame + iteration)
@@ -839,24 +846,39 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
         //TODO let's find a way to use in-place modification for loops where possible to reduce memory requirements
         boolean isLoop = !frameIter.getFrame().equals(OUTER_FRAME) && frameIter.getIteration() > 0;
 
+        OpContext oc = opContexts.get(opName);
+        if(oc == null){
+            oc = Nd4j.getExecutioner().buildContext();
+            opContexts.put(opName, oc);
+        }
+
         if (df instanceof CustomOp) {
             DynamicCustomOp customOp = (DynamicCustomOp) df;
             if (args != null) {
-                customOp.setInputArguments(args);
+                oc.setInputArrays(args);
             }
 
             if (df instanceof Identity) {
                 //We don't need to allocate an output array for Identity, we pass through the input array without copying
-                return sdo;
+                return new Pair<>(sdo, oc);
             }
 
-            List<LongShapeDescriptor> outShape = customOp.calculateOutputShape();
+            if(customOp.numIArguments() > 0)
+                oc.setIArguments(customOp.iArgs());
+            if(customOp.numDArguments() > 0)
+                oc.setDArguments(customOp.dArgs());
+            if(customOp.numTArguments() > 0)
+                oc.setTArguments(customOp.tArgs());
+            if(customOp.numBArguments() > 0)
+                oc.setBArguments(customOp.bArgs());
+
+
+            List<LongShapeDescriptor> outShape = customOp.calculateOutputShape(oc);
             Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
             String[] outNames = df.outputVariablesNames();
             Preconditions.checkState(outNames.length == outShape.size(), "Error in operation shape calculation for op \"%s\": Got %s op output shapes for an operation" +
                     " with %s outputs (number of shapes and outputs must be equal)", df.opName(), outShape.size(), outNames.length);
             for (int i = 0; i < outShape.size(); i++) {
-                INDArray currOutput = (customOp.numOutputArguments() <= i ? null : customOp.getOutputArgument(i));
                 LongShapeDescriptor reqShape = outShape.get(i);
 
                 //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/deeplearning4j/deeplearning4j/issues/6872
@@ -870,7 +892,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                 //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
                 boolean isOutput = allReqVariables.contains(outNames[i]);
                 INDArray out = mmgr.allocate(isOutput, reqShape);
-                customOp.setOutputArgument(i, out);
+                oc.setOutputArray(i, out);
             }
 
         } else if (df instanceof Op) {
@@ -909,9 +931,9 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             }
 
             if (args != null && args.length > 0) {
-                op.setX(args[0]);
+                oc.setInputArray(0, args[0]);
                 if (args.length == 2 && !axisArg)
-                    op.setY(args[1]);
+                    oc.setInputArray(1, args[1]);
             }
 
 
@@ -920,18 +942,18 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             boolean isOutput = allReqVariables.contains(((BaseOp) op).outputVariablesNames()[0]);
             if (emptyReduce) {
                 //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
-                INDArray z = mmgr.allocate(false, op.x().dataType(), op.x().shape());
-                op.setZ(z);
+                INDArray z = mmgr.allocate(false, oc.getInputArray(0).dataType(), oc.getInputArray(0).shape());
+                oc.setOutputArray(0, z);
             } else {
-                List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape();
+                List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape(oc);
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
                 LongShapeDescriptor lsd = outputShape.get(0);
                 INDArray z = mmgr.allocate(isOutput, lsd);
-                op.setZ(z);
+                oc.setOutputArray(0, z);
             }
         }
 
-        return sdo;
+        return new Pair<>(sdo, oc);
     }
 
 

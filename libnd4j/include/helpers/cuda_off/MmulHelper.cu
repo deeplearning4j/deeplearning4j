@@ -252,6 +252,8 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
     const bool typeIntFloat  = AB  && aType == DataType::INT8 && cType == DataType::FLOAT32 && major >= 6;
     const bool typeHalfFloat = AB  && aType == DataType::HALF && cType == DataType::FLOAT32  && major >= 6;
 
+    std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
+
     auto handle = reinterpret_cast<cublasHandle_t *>(A->getContext()->getCublasHandle());
     auto stream = A->getContext()->getCudaStream();
 
@@ -393,6 +395,8 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 
     const bool typeDouble = AXY && aType == DataType::DOUBLE;
     const bool typeFloat  = AXY && aType == DataType::FLOAT32;
+
+    std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
 
     auto handle = reinterpret_cast<cublasHandle_t *>(A->getContext()->getCublasHandle());
     auto stream = A->getContext()->getCudaStream();

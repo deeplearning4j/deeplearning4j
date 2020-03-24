@@ -86,7 +86,9 @@ public interface ReduceOp extends Op {
      */
     DataType resultType();
 
-    boolean validateDataTypes();
+    DataType resultType(OpContext oc);
+
+    boolean validateDataTypes(OpContext oc);
 
     Number getFinalResult();
 

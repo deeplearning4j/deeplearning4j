@@ -106,6 +106,7 @@ namespace sd {
             void storeResult(Context &block, int outputNumber, NDArray& array);
             void storeResult(Context &block, int outputNumber, NDArray* array);
             sd::NDArray* getZ(Context& block, int inputId = 0);
+            sd::NDArray* getNullifiedZ(Context& block, int inputId = 0);
 
             /**
             *   This method pre-allocates NDArrays for Op output, in case they are not available at op execution time

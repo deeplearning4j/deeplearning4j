@@ -25,6 +25,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Map;
 
+import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
+
 public class UpdaterJavaCode {
 
     private UpdaterJavaCode(){ }
@@ -44,6 +46,14 @@ public class UpdaterJavaCode {
 
         //Accumulate gradients: E[delta x^2]_t = rho * E[delta x^2]_{t-1} + (1-rho)* (delta x_t)^2
         msdx.muli(rho).addi(update.mul(update).muli(1 - rho));
+    }
+
+    public static void applyAdaGradUpdater(INDArray gradient, INDArray state, double learningRate, double epsilon){
+        state.addi(gradient.mul(gradient));
+
+        INDArray sqrtHistory = sqrt(state.dup('c'), false).addi(epsilon);
+        // lr * gradient / (sqrt(sumSquaredGradients) + epsilon)
+        gradient.muli(sqrtHistory.rdivi(learningRate));
     }
 
 

@@ -72,19 +72,37 @@ public abstract class BaseTransformFloatOp extends BaseTransformOp implements Tr
     }
 
     @Override
-    public boolean validateDataTypes(boolean experimentalMode) {
-        if (y() != null && !experimentalMode) {
+    public DataType resultType(OpContext oc) {
+        if (oc.getInputArray(0) != null && oc.getInputArray(0).isR())
+            return oc.getInputArray(0).dataType();
+
+        return Nd4j.defaultFloatingPointType();
+    }
+
+    @Override
+    public boolean validateDataTypes(OpContext oc, boolean experimentalMode) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        INDArray y = oc != null ? oc.getInputArray(1) : y();
+        INDArray z = oc != null ? oc.getOutputArray(0) : z();
+
+        if (y != null && !experimentalMode) {
             Preconditions.checkArgument(x.dataType() == y.dataType(), "Op.X must have same data type as Op.Y");
         }
 
-        if (z() != null)
-            Preconditions.checkArgument(z().isR(),"Op.Z must be one of floating types: z.datatype=%s for op %s", z().dataType(), getClass());
+        if (z != null)
+            Preconditions.checkArgument(z.isR(),"Op.Z must be one of floating types: z.datatype=%s for op %s", z.dataType(), getClass());
 
         return true;
     }
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        return calculateOutputShape(null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
         if(x == null)
             return Collections.emptyList();
         return Collections.singletonList(LongShapeDescriptor.fromShape(x.shape(), x.isR() ? x.dataType() : Nd4j.defaultFloatingPointType()));

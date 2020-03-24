@@ -9,6 +9,7 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -79,12 +80,12 @@ public class OpBenchmarkListener extends BaseListener {
     }
 
     @Override
-    public void preOpExecution(SameDiff sd, At at, SameDiffOp op) {
+    public void preOpExecution(SameDiff sd, At at, SameDiffOp op, OpContext opContext) {
         start = System.currentTimeMillis();
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         long now = System.currentTimeMillis();
 
         if (mode == Mode.SINGLE_ITER_PRINT && printActive && (now-start) > this.minRuntime) {

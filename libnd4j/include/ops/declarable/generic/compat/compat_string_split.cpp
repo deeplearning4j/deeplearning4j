@@ -30,7 +30,7 @@ namespace sd {
             auto input = INPUT_VARIABLE(0);
             auto delim = INPUT_VARIABLE(1);
 
-            auto indices = OUTPUT_VARIABLE(0);
+            auto indices = OUTPUT_NULLIFIED(0);
             auto values = OUTPUT_VARIABLE(1);
 
             auto d = delim->e<std::string>(0);

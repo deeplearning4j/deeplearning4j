@@ -15,10 +15,12 @@
  ******************************************************************************/
 package org.nd4j.linalg.learning;
 
+import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.updaters.AmsGradUpdater;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.*;
@@ -58,14 +60,56 @@ public class UpdaterValidation extends BaseNd4jTest {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
+            val g3 = g1.dup();
+            val msgu = msg.dup();
+            val msdxu = msdx.dup();
 
             UpdaterJavaCode.applyAdaDeltaUpdater(g1, msg, msdx, rho, epsilon);
 
             u.applyUpdater(g2, i, 0);
 
+            Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaDeltaUpdater(g3, msgu, msdxu, rho, epsilon));
+
             assertEquals(msg, state.get("msg"));
             assertEquals(msdx, state.get("msdx"));
             assertEquals(g1, g2);
+
+            assertEquals(msg, msgu);
+            assertEquals(msdx, msdxu);
+            assertEquals(g1, g3);
+        }
+    }
+
+    @Test
+    public void testAdaGradUpdater(){
+        double lr = 0.1;
+        double epsilon = 1e-6;
+
+        INDArray s = Nd4j.zeros(DataType.DOUBLE, 1, 5);
+
+        Map<String,INDArray> state = new HashMap<>();
+        state.put("grad", s.dup());
+        AdaGradUpdater u = (AdaGradUpdater) new AdaGrad(lr, epsilon).instantiate(state, true);
+
+        assertEquals(s, state.get("grad"));
+
+        for( int i=0; i<3; i++ ) {
+            INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
+            INDArray g2 = g1.dup();
+            val g3 = g1.dup();
+            val su = s.dup();
+
+            UpdaterJavaCode.applyAdaGradUpdater(g1, s, lr, epsilon);
+
+            u.applyUpdater(g2, i, 0);
+
+            Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaGradUpdater(g3, su, lr, epsilon));
+
+            assertEquals(s, state.get("grad"));
+            assertEquals(g1, g2);
+
+            assertEquals(s, su);
+            assertEquals(g1, g3);
         }
     }
 
@@ -92,14 +136,23 @@ public class UpdaterValidation extends BaseNd4jTest {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
+            val g3 = g1.dup();
+            val mu = m.dup();
+            val vu = v.dup();
 
             UpdaterJavaCode.applyAdamUpdater(g1, m, v, lr, beta1, beta2, eps, i);
 
             u.applyUpdater(g2, i, 0);
 
+            Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdamUpdater(g3, vu, mu, lr, beta1, beta2, eps, i));
+
             assertEquals(m, state.get("M"));
             assertEquals(v, state.get("V"));
             assertEquals(g1, g2);
+
+            assertEquals(m, mu);
+            assertEquals(v, vu);
+            assertEquals(g1, g3);
         }
     }
 
@@ -124,14 +177,23 @@ public class UpdaterValidation extends BaseNd4jTest {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
+            val g3 = g1.dup();
+            val mu = m.dup();
+            val vu = v.dup();
 
             UpdaterJavaCode.applyAdaMaxUpdater(g1, m, v, lr, beta1, beta2, eps, i);
 
             u.applyUpdater(g2, i, 0);
 
+            Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaMaxUpdater(g3, vu, mu, lr, beta1, beta2, eps, i));
+
             assertEquals(m, state.get("M"));
             assertEquals(v, state.get("V"));
             assertEquals(g1, g2);
+
+            assertEquals(m, mu);
+            assertEquals(v, vu);
+            assertEquals(g1, g3);
         }
     }
 
@@ -159,15 +221,26 @@ public class UpdaterValidation extends BaseNd4jTest {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
+            val g3 = g1.dup();
+            val mu = m.dup();
+            val vu = v.dup();
+            val hu = vH.dup();
 
             UpdaterJavaCode.applyAmsGradUpdater(g1, m, v, vH, lr, beta1, beta2, eps, i);
 
             u.applyUpdater(g2, i, 0);
 
+            Nd4j.exec(new AmsGradUpdater(g3, vu, mu, hu, lr, beta1, beta2, eps, i));
+
             assertEquals(m, state.get("M"));
             assertEquals(v, state.get("V"));
             assertEquals(vH, state.get("V_HAT"));
             assertEquals(g1, g2);
+
+            assertEquals(m, mu);
+            assertEquals(v, vu);
+            assertEquals(vH, hu);
+            assertEquals(g1, g3);
         }
     }
 
@@ -193,14 +266,23 @@ public class UpdaterValidation extends BaseNd4jTest {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
+            val g3 = g1.dup();
+            val vu = v.dup();
+            val mu = m.dup();
 
             UpdaterJavaCode.applyNadamUpdater(g1, m, v, lr, beta1, beta2, eps, i);
 
             u.applyUpdater(g2, i, 0);
 
+            Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater(g3, vu, mu, lr, beta1, beta2, eps, i));
+
             assertEquals(m, state.get("M"));
             assertEquals(v, state.get("V"));
             assertEquals(g1, g2);
+
+            assertEquals(m, mu);
+            assertEquals(v, vu);
+            assertEquals(g1, g3);
         }
     }
 
@@ -221,13 +303,18 @@ public class UpdaterValidation extends BaseNd4jTest {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
+            val g3 = g1.dup();
+            val vu = v.dup();
 
             UpdaterJavaCode.applyNesterovsUpdater(g1, v, lr, momentum);
-
             u.applyUpdater(g2, i, 0);
+            Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater(g3, vu, lr, momentum));
 
             assertEquals(v, state.get("V"));
             assertEquals(g1, g2);
+
+            assertEquals(v, vu);
+            assertEquals(g1, g3);
         }
     }
 
@@ -249,13 +336,19 @@ public class UpdaterValidation extends BaseNd4jTest {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
+            val g3 = g1.dup();
+            val gu = g.dup();
 
             UpdaterJavaCode.applyRmsProp(g1, g, lr, decay, eps);
-
             u.applyUpdater(g2, i, 0);
+            Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater(g3, gu, lr,decay, eps));
 
             assertEquals(g, state.get("G"));
             assertEquals(g1, g2);
+
+            assertEquals(g, gu);
+            assertEquals(g1, g3);
+
         }
     }
 
@@ -268,11 +361,14 @@ public class UpdaterValidation extends BaseNd4jTest {
         for( int i=0; i<3; i++ ) {
             INDArray g1 = Nd4j.linspace(DataType.DOUBLE, 1, 5, 1).reshape(1,5);
             INDArray g2 = g1.dup();
+            val g3 = g1.dup();
 
             UpdaterJavaCode.applySgd(g1, lr);
+            Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.SgdUpdater(g3, lr));
 
             u.applyUpdater(g2, i, 0);
             assertEquals(g1, g2);
+            assertEquals(g1, g3);
         }
     }
 

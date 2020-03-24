@@ -86,6 +86,9 @@ class FunctionalOpExecutioner extends OpExecutioner {
       case _                => op.z()
     }
 
+  def exec(op: Op, context: OpContext): INDArray =
+    Nd4j.getExecutioner.exec(op, context)
+
   def exec(op: FilterOps): INDArray = {
     val retVal: INDArray = Nd4j.create(op.x.dataType(), op.x.shape().map(_.toLong): _*)
     for (i <- 0 until op.x().length().toInt) {
@@ -407,6 +410,9 @@ class FunctionalOpExecutioner extends OpExecutioner {
 
   def calculateOutputShape(op: CustomOp): java.util.List[LongShapeDescriptor] =
     Nd4j.getExecutioner.calculateOutputShape(op)
+
+  def calculateOutputShape(op: CustomOp, ctx: OpContext): java.util.List[LongShapeDescriptor] =
+    Nd4j.getExecutioner.calculateOutputShape(op, ctx)
 
   /**
     * Equivalent to calli

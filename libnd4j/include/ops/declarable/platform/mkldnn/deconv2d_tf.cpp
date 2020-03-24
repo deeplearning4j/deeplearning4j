@@ -34,7 +34,7 @@ namespace platforms {
 static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* gradO, NDArray* gradI,
                                     const int bS, const int iC, const int iH, const int iW, const int oC, const int oH, const int oW,
                                     const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
-                                    const bool isNCHW) {
+                                    const bool isNCHW, const int wFormat) {
 
     // gradI [bS, iH, iW, iC], mkl doesn't support ndhwc format
     // weights [oC, iC, kH, kW] always, mkl doesn't support weights format [kH, kW, iC, oC]
@@ -52,8 +52,8 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
     // gradI type
     dnnl::memory::data_type gradIType = gradI->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16;
 
-    dnnl::memory::format_tag xFormat = isNCHW ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;
-    dnnl::memory::format_tag wFormat = dnnl::memory::format_tag::oihw;
+    dnnl::memory::format_tag xFormatMkl = isNCHW ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;
+    dnnl::memory::format_tag wFormatMkl = dnnl::memory::format_tag::oihw;
 
     dnnl::memory::dims xDims = {bS, iC, iH, iW};
     dnnl::memory::dims wDims = {oC, iC, kH, kW};
@@ -66,7 +66,7 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormat);
+    dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormatMkl);
     w_user_md.data.format_kind = dnnl_blocked;    // overrides format
     w_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(3);   // permute [kH, kW, iC, oC] -> [oC, iC, kH, kW]
     w_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(2);
@@ -75,13 +75,13 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
 
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormat);
-    mkldnnUtils::setBlockStrides(gradO, 4, gradO_user_md);
+    dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormatMkl);
+    mkldnnUtils::setBlockStrides(gradO, gradO_user_md);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormat);
-    mkldnnUtils::setBlockStrides(gradI, 4, gradI_user_md);
+    dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormatMkl);
+    mkldnnUtils::setBlockStrides(gradI, gradI_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -101,10 +101,10 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
     // provide memory buffers and check whether reorder is required
 
     // weights
-    mkldnnUtils::loadDataToMklStream(weights, engine, stream, args, w_user_md,  op_data_bp_prim_desc.weights_desc(), DNNL_ARG_WEIGHTS);
+    mkldnnUtils::loadDataToMklStream(weights, engine, stream, w_user_md,  op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // gradO
-    mkldnnUtils::loadDataToMklStream(gradO, engine, stream, args, gradO_user_md, op_data_bp_prim_desc.diff_dst_desc(), DNNL_ARG_DIFF_DST);
+    mkldnnUtils::loadDataToMklStream(gradO, engine, stream, gradO_user_md, op_data_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // gradI
     auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
@@ -128,10 +128,10 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
 PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
 
     auto gradO      = INPUT_VARIABLE(2);                                                // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
-    auto weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC] always
+    auto weights    = INPUT_VARIABLE(1);                                                // [kH, kW, iC, oC], [oC, iC, kH, kW], [oC, kH, kW, iC]
     auto gradIShape = INPUT_VARIABLE(0);                                                // [4] - shape of input of conv2d (that is shape of gradI)
 
-    auto gradI = OUTPUT_VARIABLE(0);                                                  // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
+    auto gradI = OUTPUT_VARIABLE(0);                                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
 
     int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0));// filter(kernel) height
     int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1));// filter(kernel) width
@@ -143,6 +143,7 @@ PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
     int dW = INT_ARG(7);                                                        // dilations width
     int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
+    int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;         // 0 - [kH, kW, iC, oC], 1 - [oC, iC, kH, kW], 2 - [oC, kH, kW, iC]
 
     const int rank = gradO->rankOf();
 
@@ -188,7 +189,7 @@ PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
     //     gradO = new NDArray(gradO->permute({0,3,1,2}));    // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
     // }
 
-    deconv2TFdBackPropMKLDNN(weights, gradO,  gradI, bS, iC, iH, iW, oC, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW);
+    deconv2TFdBackPropMKLDNN(weights, gradO,  gradI, bS, iC, iH, iW, oC, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW, wFormat);
 
     // delete weights;
 

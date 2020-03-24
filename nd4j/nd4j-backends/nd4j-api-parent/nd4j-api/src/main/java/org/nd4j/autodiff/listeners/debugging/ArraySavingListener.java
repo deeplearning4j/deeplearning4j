@@ -9,6 +9,7 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -44,7 +45,7 @@ public class ArraySavingListener extends BaseListener {
 
 
     @Override
-    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         List<String> outNames = op.getOutputsOfOp();
         for(int i=0; i<outputs.length; i++ ){
             String filename = (count++) + "_" + outNames.get(i).replaceAll("/", "__") + ".bin";

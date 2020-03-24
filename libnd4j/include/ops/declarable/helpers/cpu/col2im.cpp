@@ -54,8 +54,6 @@ void col2im_(sd::LaunchContext & context, const NDArray& input,  NDArray& output
     const Nd4jLong imStride1  = imStride[1];
     const Nd4jLong imStride2  = imStride[2];
     const Nd4jLong imStride3  = imStride[3];
-        
-    memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
 
 
     // if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {

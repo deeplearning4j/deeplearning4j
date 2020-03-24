@@ -20,6 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.val;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.primitives.Pair;
@@ -127,7 +128,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             // the only entry place for TADless ops
             processAsGridOp(op);
         } else if (op instanceof BroadcastOp) {
-            invoke((BroadcastOp) op);
+            invoke((BroadcastOp) op, null);
         } else {
             //logger.info("Random op: {}", op.getClass().getSimpleName());
             pushToGrid(new OpDescriptor(op));
@@ -238,7 +239,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 flushQueue();
 
             //logger.info("Sending TransformOp to CudaExecutioner");
-            super.invoke(t);
+            super.invoke(t, null);
         } else if (op instanceof Variance) {
             Variance acc = (Variance) op;
             if (flush)
@@ -258,7 +259,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 flushQueue();
 
             //logger.info("Sending ScalarOp to CudaExecutioner");
-            super.invoke(sc);
+            super.invoke(sc, null);
         } else if (op instanceof BroadcastOp) {
             BroadcastOp broadcastOp = (BroadcastOp) op;
             if (flush)
@@ -268,7 +269,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             if (dimensions != null) {
                 super.exec(broadcastOp);
             } else {
-                super.invoke(broadcastOp);
+                super.invoke(broadcastOp, null);
             }
         } else if (op instanceof IndexAccumulation) {
             IndexAccumulation indexAccumulation = (IndexAccumulation) op;
@@ -690,7 +691,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             flushQueue();
 
             buildZ(op, new int[] {Integer.MAX_VALUE});
-            super.invoke(op, new int[] {Integer.MAX_VALUE});
+            super.invoke(op, null, new int[] {Integer.MAX_VALUE});
         } else {
             buildZ(op, dimension);
             processAsGridOp(op, dimension);
@@ -708,7 +709,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     // FIXME: remove CudaContext return opType. We just don't need it
     @Override
-    protected CudaContext invoke(BroadcastOp op) {
+    protected CudaContext invoke(BroadcastOp op, OpContext oc) {
+        Preconditions.checkState(oc == null);
         processAsGridOp(op, op.getDimension());
 
         return null;
@@ -716,7 +718,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     // FIXME: remove CudaContext return opType. We just don't need it
     @Override
-    protected CudaContext invoke(ScalarOp op) {
+    protected CudaContext invoke(ScalarOp op, OpContext oc) {
+        Preconditions.checkState(oc == null);
         processAsGridOp(op, null);
 
         return null;
@@ -724,7 +727,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     // FIXME: remove CudaContext return opType. We just don't need it
     @Override
-    protected CudaContext invoke(TransformOp op) {
+    protected CudaContext invoke(TransformOp op, OpContext oc) {
+        Preconditions.checkState( oc == null);
         processAsGridOp(op, null);
         return null;
     }

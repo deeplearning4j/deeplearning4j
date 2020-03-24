@@ -14,7 +14,10 @@ import org.nd4j.linalg.api.ops.Op;
 
 import java.security.MessageDigest;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 public class NonInplaceValidationListener extends BaseListener {
@@ -33,25 +36,25 @@ public class NonInplaceValidationListener extends BaseListener {
     }
 
     @Override
-    public void preOpExecution(SameDiff sd, At at, SameDiffOp op) {
+    public void preOpExecution(SameDiff sd, At at, SameDiffOp op, OpContext oc) {
         if(op.getOp().isInPlace()){
             //Don't check inplace op
             return;
         }
         if(op.getOp() instanceof Op){
             Op o = (Op)op.getOp();
-            if(o.x() == null){
+            if(oc.getInputArray(0) == null){
                 //No input op
                 return;
-            } else if(o.y() == null){
-                opInputsOrig = new INDArray[]{o.x()};
-                opInputs = new INDArray[]{o.x().dup()};
+            } else if(oc.getInputArray(1) == null){
+                opInputsOrig = new INDArray[]{oc.getInputArray(0)};
+                opInputs = new INDArray[]{oc.getInputArray(0).dup()};
             } else {
-                opInputsOrig = new INDArray[]{o.x(), o.y()};
-                opInputs = new INDArray[]{o.x().dup(), o.y().dup()};
+                opInputsOrig = new INDArray[]{oc.getInputArray(0), oc.getInputArray(1)};
+                opInputs = new INDArray[]{oc.getInputArray(0).dup(), oc.getInputArray(1).dup()};
             }
         } else if(op.getOp() instanceof DynamicCustomOp){
-            val arr = ((DynamicCustomOp) op.getOp()).inputArguments();
+            List<INDArray> arr = oc.getInputArrays(); // ((DynamicCustomOp) op.getOp()).inputArguments();
             opInputs = new INDArray[arr.size()];
             opInputsOrig = new INDArray[arr.size()];
             for( int i=0; i<arr.size(); i++ ){
@@ -64,7 +67,7 @@ public class NonInplaceValidationListener extends BaseListener {
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, OpContext opContext, INDArray[] outputs) {
         if(op.getOp().isInPlace()){
             //Don't check inplace op
             return;

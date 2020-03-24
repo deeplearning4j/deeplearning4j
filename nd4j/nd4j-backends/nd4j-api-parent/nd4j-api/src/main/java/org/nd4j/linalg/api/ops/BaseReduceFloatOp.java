@@ -90,27 +90,43 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
 
     @Override
     public DataType resultType() {
-        if (this.x() != null && this.x().isR())
-            return this.x().dataType();
+        return resultType(null);
+    }
+
+    @Override
+    public DataType resultType(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        if (x != null && x.isR())
+            return x.dataType();
 
         return Nd4j.defaultFloatingPointType();
     }
 
     @Override
-    public boolean validateDataTypes() {
-        if (y() != null)
-            Preconditions.checkArgument(x().dataType() == y().dataType(),
-                    "Op.X [%s] type must be the same as Op.Y [%s] for op %s: x.shape=%ndShape, y.shape=%ndShape", x().dataType(),
-                    y().dataType(), getClass().getName(), x(), y() );
+    public boolean validateDataTypes(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        INDArray y = oc != null ? oc.getInputArray(1) : y();
+        if (y != null)
+            Preconditions.checkArgument(x.dataType() == y.dataType(),
+                    "Op.X [%s] type must be the same as Op.Y [%s] for op %s: x.shape=%ndShape, y.shape=%ndShape", x.dataType(),
+                    y.dataType(), getClass().getName(), x, y );
 
-        if (z() != null)
-            Preconditions.checkArgument(z().isR(),"Op.Z (result array) must be one of floating types: z datatype = %s", z().dataType());
+        INDArray z = oc != null ? oc.getOutputArray(0) : z();
+        if (z != null)
+            Preconditions.checkArgument(z.isR(),"Op.Z (result array) must be one of floating types: z datatype = %s", z.dataType());
 
         return true;
     }
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
+        return calculateOutputShape(null);
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape(OpContext oc) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+
         if(x == null)
             return Collections.emptyList();
 

@@ -119,13 +119,15 @@ namespace randomOps {
 
         random_def T op(Nd4jLong idx, Nd4jLong length, sd::graph::RandomGenerator *helper, T *extraParams) {
             T lambda = extraParams[0];
-            T x = helper->relativeT(idx, -sd::DataTypeUtils::template max<T>() / 10 , sd::DataTypeUtils::template max<T>() / 10);
-            return x <= (T)0.f ? (T)0.f : (T)1.f - sd::math::nd4j_pow<T, T, T>((T) M_E, -(lambda * x));
+            T x = helper->relativeT<T>(idx); //, T(0.f) , max);
+            T xVal = -sd::math::nd4j_log<T,T>(T(1.f) - x);
+
+            return xVal <= (T)0.f ? (T)0.f : xVal / lambda; //pow<T, T, T>((T) M_E, -(lambda * x));
         }
 
         random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, sd::graph::RandomGenerator *helper, T *extraParams) {
             T lambda = extraParams[0];
-            return valueX <= (T)0.f ? (T)0.f : (T)1.f - sd::math::nd4j_pow<T, T, T>((T) M_E, -(lambda * valueX));
+            return valueX <= (T)0.f ? (T)0.f : (T)(valueX/lambda); //1.f - sd::math::nd4j_exp<T,T>(-lambda * valueX); //pow<T, T, T>((T) M_E, -(lambda * valueX));
         }
     };
 

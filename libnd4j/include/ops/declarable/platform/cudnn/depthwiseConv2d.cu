@@ -39,14 +39,14 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context,
     // cudnn supports only following case: mC = 1, oC = iC (groupCount == iC)
 
     // input [bS, iC, iH, iW] nchw or [bS, iH, iW, iC] nhwc
-    // weights [iC, mC, kH, kW], mkl doesn't support this format, so we'll make permute
+    // weights [iC, mC, kH, kW]
     // bias [oC], may be nullptr
     // output [bS, oC, oH, oW] nchw or [bS, oH, oW, oC] nhwc
     // oC = iC*mC
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;           // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weights->sizeAt(1);
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
@@ -58,7 +58,7 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context,
     // input descriptor
     cudnnTensorDescriptor_t x;
     cudnnCreateTensorDescriptor(&x);
-    if(input->ews() == 1)
+    if(input->ews() == 1 && input->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
         err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
@@ -73,7 +73,7 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context,
     // output descriptor
     cudnnTensorDescriptor_t z;
     cudnnCreateTensorDescriptor(&z);
-    if(output->ews() == 1)
+    if(output->ews() == 1 && output->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(z, format, cudnnDataType(output->dataType()), bS, oC, oH, oW);
     else
         err = cudnnSetTensor4dDescriptorEx(z, cudnnDataType(output->dataType()), bS, oC, oH, oW, output->strideAt(0), output->strideAt(indIOioC), output->strideAt(indOoH), output->strideAt(indOoH + 1));
@@ -117,7 +117,8 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context,
 
         cudnnTensorDescriptor_t b;
         cudnnCreateTensorDescriptor(&b);
-        err = cudnnSetTensor4dDescriptor(b, format, cudnnDataType(bias->dataType()), 1, isNCHW ? bias->lengthOf() : 1, 1, isNCHW ? 1: bias->lengthOf());
+        // err = cudnnSetTensor4dDescriptor(b, format, cudnnDataType(bias->dataType()), 1, isNCHW ? bias->lengthOf() : 1, 1, isNCHW ? 1: bias->lengthOf());
+        err = cudnnSetTensor4dDescriptor(b, CUDNN_TENSOR_NCHW, cudnnDataType(bias->dataType()), 1, oC, 1, 1);
         if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnSetTensor4dDescriptor for bias failed", err);
         err = cudnnAddTensor(*handle, alpha, b, bias->getSpecialBuffer(), alpha, z, output->specialBuffer());
         if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnAddTensor bias failed", err);
@@ -146,14 +147,14 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
     // cudnn supports only following case: mC = 1, oC = iC (groupCount == iC)
 
     // input, gradI [bS, iC, iH, iW] nchw or [bS, iH, iW, iC] nhwc
-    // weights, gradW [iC, mC, kH, kW], mkl doesn't support this format, so we'll make permute
+    // weights, gradW [iC, mC, kH, kW]
     // gradB [oC], may be nullptr
     // gradO [bS, oC, oH, oW] nchw or [bS, oH, oW, oC] nhwc
     // oC = iC*mC
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;           // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weights->sizeAt(1);
 
     auto handle = reinterpret_cast<cudnnHandle_t *>(context->getCuDnnHandle());
@@ -165,7 +166,7 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
     // input descriptor
     cudnnTensorDescriptor_t x;
     cudnnCreateTensorDescriptor(&x);
-    if(input->ews() == 1)
+    if(input->ews() == 1 && input->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(x, format, cudnnDataType(input->dataType()), bS, iC, iH, iW);
     else
         err = cudnnSetTensor4dDescriptorEx(x, cudnnDataType(input->dataType()), bS, iC, iH, iW, input->strideAt(0), input->strideAt(indIOioC), input->strideAt(indIiH), input->strideAt(indIiH + 1));
@@ -174,7 +175,7 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
     // gradO descriptor
     cudnnTensorDescriptor_t dz;
     cudnnCreateTensorDescriptor(&dz);
-    if(gradO->ews() == 1)
+    if(gradO->ews() == 1 && gradO->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(dz, format, cudnnDataType(gradO->dataType()), bS, oC, oH, oW);
     else
         err = cudnnSetTensor4dDescriptorEx(dz, cudnnDataType(gradO->dataType()), bS, oC, oH, oW, gradO->strideAt(0), gradO->strideAt(indIOioC), gradO->strideAt(indOoH), gradO->strideAt(indOoH + 1));
@@ -183,7 +184,7 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
     // gradI descriptor
     cudnnTensorDescriptor_t dx;
     cudnnCreateTensorDescriptor(&dx);
-    if(gradI->ews() == 1)
+    if(gradI->ews() == 1 && gradI->ordering() == 'c')
         err = cudnnSetTensor4dDescriptor(dx, format, cudnnDataType(gradI->dataType()), bS, iC, iH, iW);
     else
         err = cudnnSetTensor4dDescriptorEx(dx, cudnnDataType(gradI->dataType()), bS, iC, iH, iW, gradI->strideAt(0), gradI->strideAt(indIOioC), gradI->strideAt(indIiH), gradI->strideAt(indIiH + 1));
@@ -241,7 +242,8 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
     if(gradB != nullptr) {
         cudnnTensorDescriptor_t db;
         cudnnCreateTensorDescriptor(&db);
-        err = cudnnSetTensor4dDescriptor(db, format, cudnnDataType(gradB->dataType()), 1, isNCHW ? gradB->lengthOf() : 1, 1, isNCHW ? 1: gradB->lengthOf());
+        // err = cudnnSetTensor4dDescriptor(db, format, cudnnDataType(gradB->dataType()), 1, isNCHW ? gradB->lengthOf() : 1, 1, isNCHW ? 1: gradB->lengthOf());
+        err = cudnnSetTensor4dDescriptor(db, CUDNN_TENSOR_NCHW, cudnnDataType(gradB->dataType()), 1, oC, 1, 1);
         if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnSetTensor4dDescriptor for gradB failed", err);
 
         err = cudnnConvolutionBackwardBias(*handle, alpha, dz, gradO->getSpecialBuffer(), beta, db, gradB->getSpecialBuffer());
@@ -272,7 +274,7 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
 PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, mC] always
+    auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC] = iC*mC
 
     auto output  = OUTPUT_VARIABLE(0);                                   // [bS, oH, oW, iC*mC] (NHWC) or [bS, iC*mC, oH, oW] (NCHW)
@@ -290,22 +292,31 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
     int dW = INT_ARG(7);                                                        // dilations width
     int paddingMode = INT_ARG(8);                                               // 0-VALID, 1-SAME
     int isNCHW      = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;      // INT_ARG(9): 0-NCHW,  1-NHWC
+    int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;         // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier(oC = iC*mC), output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weights->sizeAt(indWmC);                           // channels multiplier
 
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
-    std::vector<Nd4jLong> expectedWeightsShape = {kH, kW, iC, mC};
+    std::vector<Nd4jLong> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
     REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0, "DEPTHWISECONV2D CUDNN OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
     REQUIRE_TRUE(output->sizeAt(indIOioC) == iC*mC, 0, "DEPTHWISECONV2D CUDNN OP: the output_channels must be equal to input_channels * channels_multiplier = %i !", iC*mC);
     if (bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "DEPTHWISECONV2D CUDNN OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    NDArray* newWeights = new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext()); // cudnn support format {oC, iC/groupCount, kH, kW}
-    newWeights->assign(weights->permute({2,3,0,1})); // assign permuted weights (kH, kW, iC, mC  --> iC, mC, kH, kW)
+    std::vector<int> wPermut;     // cudnn support format {oC, iC/groupCount, kH, kW} only, mC = 1, oC = iC (groupCount == iC) that is {iC, mC, kH, kW} in our case
+    if(0 == wFormat)
+        wPermut = {2,3,0,1};         // kH, kW, iC, mC -> iC, mC, kH, kW
+    else if(1 == wFormat)
+        wPermut = {1,0,2,3};         // mC, iC, kH, kW -> iC, mC, kH, kW
+    else
+        wPermut = {3,0,1,2};         // mC, kH, kW, iC -> iC, mC, kH, kW
+
+    NDArray* newWeights = new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext());
+    newWeights->assign(weights->permute(wPermut));
 
     NDArray* newInput = input;
     NDArray* newGradI = nullptr;
@@ -326,12 +337,13 @@ PLATFORM_IMPL(depthwise_conv2d, ENGINE_CUDA) {
 PLATFORM_CHECK(depthwise_conv2d, ENGINE_CUDA) {
 
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, mC] always
+    auto weights = INPUT_VARIABLE(1);                                    // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
     auto bias    = block.width() > 2 ? INPUT_VARIABLE(2) : nullptr;      // [oC] = iC*mC
 
     const int paddingMode = INT_ARG(8);                                  // 0-VALID, 1-SAME, 2-CAUSAL
+    const int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;       // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-    const int mC = weights->sizeAt(3);
+    const int mC = weights->sizeAt(0 == wFormat ? 3 : 0);
 
     const bool badInputType   = input->dataType()   != DataType::DOUBLE && input->dataType()   != DataType::FLOAT32 && input->dataType()   != DataType::HALF;
     const bool badWeightsType = weights->dataType() != DataType::DOUBLE && weights->dataType() != DataType::FLOAT32 && weights->dataType() != DataType::HALF;
@@ -344,12 +356,12 @@ PLATFORM_CHECK(depthwise_conv2d, ENGINE_CUDA) {
 PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
-    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always
+    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC] = [iC*mC]
     auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
     auto gradI = OUTPUT_VARIABLE(0);                                                 // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW), epsilon
-    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, mC] always
+    auto gradW = OUTPUT_VARIABLE(1);                                                 // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
     REQUIRE_TRUE(input->rankOf()   == 4, 0, "DEPTHWISECONV2D_BP CUDNN OP: rank of input array must be equal to 4, but got %i instead !", input->rankOf());
@@ -366,10 +378,11 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
     int dW = INT_ARG(7);                                                        // dilations width
     int paddingMode = INT_ARG(8);                                               // 0-VALID, 1-SAME
     int isNCHW  = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;          // INT_ARG(9): 1-NHWC, 0-NCHW
+    int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;         // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
     int bS, iC, iH, iW, mC, oC, oH, oW;                     // batch size, input channels, input height/width, channels multiplier(oC = iC*mC), output channels, output height/width
     int indIOioC, indIiH, indWmC, indWiC, indWkH, indOoH;   // corresponding indexes
-    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
+    ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, wFormat, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWmC, indWkH, indOoH);
     mC = weights->sizeAt(indWmC);                           // channels multiplier
 
     int trueoH, trueoW;          // correct output height, width
@@ -378,17 +391,30 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
     ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW, paddingMode);
 
     std::vector<Nd4jLong> expectedGradOShape   = ShapeUtils::composeShapeUsingDimsAndIdx({bS,oC,trueoH,trueoW,  0,indIOioC,indOoH,indOoH+1});
-    std::vector<Nd4jLong> expectedWeightsShape = {kH, kW, iC, mC};
+    std::vector<Nd4jLong> expectedWeightsShape = ConvolutionUtils::expectWeightsShape(wFormat, kH, kW, iC, mC);
     REQUIRE_TRUE(gradO->isSameShape(expectedGradOShape), 0,  "DEPTHWISECONV2D_BP CUDNN OP: wrong shape of output gradients (next epsilon) array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedGradOShape).c_str(), ShapeUtils::shapeAsString(gradO).c_str());
     REQUIRE_TRUE(weights->isSameShape(expectedWeightsShape), 0, "DEPTHWISECONV2D_BP CUDNN OP: wrong shape of weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedWeightsShape).c_str(), ShapeUtils::shapeAsString(weights).c_str());
     if(bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "DEPTHWISECONV2D_BP CUDNN OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
+    std::vector<int> wPermut, gradWPermut;     // cudnn support format {oC, iC/groupCount, kH, kW} only, mC = 1, oC = iC (groupCount == iC) that is {iC, mC, kH, kW}
+    if(0 == wFormat) {
+        wPermut = {2,3,0,1};         // kH, kW, iC, mC -> iC, mC, kH, kW
+        gradWPermut = {2,3,0,1};     // iC, mC, kH, kW -> kH, kW, iC, mC
+    }
+    else if(1 == wFormat) {
+        wPermut = {1,0,2,3};         // mC, iC, kH, kW -> iC, mC, kH, kW
+        gradWPermut = {1,0,2,3};     // iC, mC, kH, kW -> mC, iC, kH, kW
+    }
+    else {
+        wPermut = {3,0,1,2};         // mC, kH, kW, iC -> iC, mC, kH, kW
+        gradWPermut = {1,2,3,0};     // iC, mC, kH, kW -> mC, kH, kW, iC
+    }
 
-    NDArray* newGradW   = new NDArray(gradW->ordering(),   {iC, mC, kH, kW}, gradW->dataType(),   gradW->getContext());     // cudnn support format {oC, iC/groupCount, kH, kW}
+    NDArray* newGradW   = new NDArray(gradW->ordering(),   {iC, mC, kH, kW}, gradW->dataType(),   gradW->getContext());
     NDArray* newWeights = new NDArray(weights->ordering(), {iC, mC, kH, kW}, weights->dataType(), weights->getContext());
 
-    newWeights->assign(weights->permute({2,3,0,1})); // assign permuted weights (kH, kW, iC, mC  --> iC, mC, kH, kW)
+    newWeights->assign(weights->permute(wPermut));
 
     NDArray* newInput = input;
     NDArray* newGradI = gradI;
@@ -397,7 +423,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
 
     depthwiseConv2dBpCUDNN(block.launchContext(), newInput, newWeights, gradO,   newGradI, newGradW, gradB, kH,kW,sH,sW,pH,pW,dH,dW,paddingMode,isNCHW);
 
-    newGradW->permutei({2,3,0,1});  // [iC, mC, kH, kW] -> [kH, kW, iC, mC]
+    newGradW->permutei(gradWPermut);
     gradW->assign(newGradW);
 
     if(newInput != input) {
@@ -420,14 +446,15 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CUDA) {
 PLATFORM_CHECK(depthwise_conv2d_bp, ENGINE_CUDA) {
 
     auto input   = INPUT_VARIABLE(0);                                                // [bS, iH, iW, iC] (NDHWC) or [bS, iC, iH, iW] (NCDHW)
-    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, mC] always
+    auto weights = INPUT_VARIABLE(1);                                                // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
     auto bias    = block.width() > 3 ? INPUT_VARIABLE(2) : nullptr;                  // [oC] = [iC*mC]
     auto gradO   = block.width() > 3 ? INPUT_VARIABLE(3) : INPUT_VARIABLE(2);        // [bS, oH, oW, oC] (NDHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
     const int paddingMode = INT_ARG(8);                                             // 0-VALID, 1-SAME, 2-CAUSAL
     const int isNCHW      = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;    // INT_ARG(9): 0-NCHW, 1-NHWC
+    const int wFormat = block.getIArguments()->size() > 10 ? INT_ARG(10) : 0;       // 0 - [kH, kW, iC, mC], 1 - [mC, iC, kH, kW], 2 - [mC, kH, kW, iC]
 
-    const int mC = weights->sizeAt(3);
+    const int mC = weights->sizeAt(0 == wFormat ? 3 : 0);
 
     const bool badInputType   = input->dataType()   != DataType::DOUBLE && input->dataType()   != DataType::FLOAT32 && input->dataType()   != DataType::HALF;
     const bool badWeightsType = weights->dataType() != DataType::DOUBLE && weights->dataType() != DataType::FLOAT32 && weights->dataType() != DataType::HALF;

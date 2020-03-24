@@ -23,6 +23,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -95,19 +96,28 @@ public class MaxOut extends BaseTransformOp {
     }
 
     @Override
+    public DataType resultType(OpContext oc) {
+        return Nd4j.defaultFloatingPointType();
+    }
+
+    @Override
     public Type getOpType() {
         return Type.TRANSFORM_STRICT;
     }
 
     @Override
-    public boolean validateDataTypes(boolean experimentalMode) {
-        if (!x().isR())
+    public boolean validateDataTypes(OpContext oc, boolean experimentalMode) {
+        INDArray x = oc != null ? oc.getInputArray(0) : x();
+        INDArray y = oc != null ? oc.getInputArray(1) : y();
+        INDArray z = oc != null ? oc.getOutputArray(0) : z();
+
+        if (!x.isR())
             return false;
 
-        if (y() != null && !y().isR())
+        if (y != null && !y().isR())
             return false;
 
-        if (z() != null && z().dataType() != x().dataType())
+        if (z != null && z().dataType() != x().dataType())
             return false;
 
         return true;
