@@ -292,9 +292,9 @@
         <javacpp-presets.version>1.5.3-SNAPSHOT</javacpp-presets.version>
         <javacv.version>1.5.3-SNAPSHOT</javacv.version>
 
-        <python.version>3.7.6</python.version>
+        <python.version>3.7.7</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
-        <numpy.version>1.18.1</numpy.version>
+        <numpy.version>1.18.2</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
         <openblas.version>0.3.9</openblas.version>
