@@ -17,27 +17,22 @@ package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 
     /**
      * notations <br>
-     * bS - batch size
-     * sL - sequence length, number of time steps
-     * nIn - input size
-     * nOut - output size (hidden size) <br<
-     *
      * for unidirectional:
-     * SBN: 0 = [sL, bS, nIn],
-     * BSN: 1 = [bS, sL ,nIn],
-     * BNS: 2 = [bS, nIn, sL],
+     * TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"<br>
+     * NST: shape [numExamples, inOutSize, timeLength]<br>
+     * NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout<br>
      * for bidirectional:
-     * S2BN: 3 = [sL, 2, bS, nOut] (for ONNX)
+     * T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
      */
 
     public enum LSTMDataFormat {
         //Note: ordinal (order) here matters for C++ level. Any new formats hsould be added at end
 
 
-        SBN,
-        BSN,
-        BNS,
-        S2BN
+        TNS,
+        NST,
+        NTS,
+        T2NS
 
     }
 

@@ -31,20 +31,15 @@ public class LSTMLayerConfig {
 
     /**
      * notations <br>
-     * bS - batch size
-     * sL - sequence length, number of time steps
-     * nIn - input size
-     * nOut - output size (hidden size) <br<
-     * <p>
      * for unidirectional:
-     * SBN: 0 = [sL, bS, nIn],
-     * BSN: 1 = [bS, sL ,nIn],
-     * BNS: 2 = [bS, nIn, sL],
+     * TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"<br>
+     * NST: shape [numExamples, inOutSize, timeLength]<br>
+     * NTS: shape [numExamples, timeLength, inOutSize] - TF "time_major=false" layout<br>
      * for bidirectional:
-     * S2BN: 3 = [sL, 2, bS, nOut] (for ONNX)
+     * T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
      */
     @Builder.Default
-    private LSTMDataFormat LSTMdataFormat = LSTMDataFormat.SBN;  //INT_ARG(0)
+    private LSTMDataFormat lstmdataformat = LSTMDataFormat.TNS;  //INT_ARG(0)
 
 
     /**
@@ -62,46 +57,22 @@ public class LSTMLayerConfig {
      * Activation for input (i), forget (f) and output (o) gates
      */
     @Builder.Default
-    private LSTMActivations gateAct = LSTMActivations.RELU; // INT_ARG(2)
+    private LSTMActivations gateAct = LSTMActivations.SIGMOID; // INT_ARG(2)
 
     @Builder.Default
-    private LSTMActivations cellAct = LSTMActivations.RELU; // INT_ARG(3)
+    private LSTMActivations cellAct = LSTMActivations.TANH; // INT_ARG(3)
 
     @Builder.Default
-    private LSTMActivations outAct = LSTMActivations.RELU; // INT_ARG(4)
+    private LSTMActivations outAct = LSTMActivations.TANH; // INT_ARG(4)
 
 
 
-
-    /**
-     * indicates whether seqLen array is provided
-     */
-    private boolean hasBiases;            // B_ARG(0)
-
-    /**
-     * indicates whether seqLen array is provided
-     */
-    private boolean hasSeqLen;            // B_ARG(1)
-
-    /**
-     * indicates whether initial output is provided
-     */
-    private boolean hasInitH ;           // B_ARG(2)
-
-    /**
-     * indicates whether initial cell state is provided
-     */
-    private boolean hasInitC ;          //B_ARG(3)
-
-    /**
-     * indicates whether peephole connections are present
-     */
-    private boolean hasPH;            //B_ARG(4)
 
     /**
      * indicates whether to return whole time sequence h {h_0, h_1, ... , h_sL-1}
      */
-    private boolean retFullSe;            //B_ARG(5)
+    @Builder.Default
+    private boolean retFullSequence = true;            //B_ARG(5)
 
     /**
      * indicates whether to return output at last time step only,
@@ -118,6 +89,7 @@ public class LSTMLayerConfig {
     /**
      * Cell clipping value, if it = 0 then do not apply clipping
      */
+    @Builder.Default
     private double cellClip;   //T_ARG(0)
 
 
@@ -126,33 +98,22 @@ public class LSTMLayerConfig {
         ret.put("gateAct", gateAct.ordinal());
         ret.put("outAct", outAct.ordinal());
         ret.put("cellAct", cellAct.ordinal());
-        ret.put("hasBiases", hasBiases);
-        ret.put("hasSeqLen", hasSeqLen);
-        ret.put("hasInitH", hasInitH);
-        ret.put("hasInitC", hasInitC);
-        ret.put("hasPH", hasPH);
-        ret.put("retFullSe", retFullSe);
+        ret.put("retFullSequence", retFullSequence);
         ret.put("retLastH", retLastH);
         ret.put("retLastC", retLastC);
         ret.put("cellClip", cellClip);
 
         if (includeLSTMDataFormat)
-            ret.put("LSTMDataFormat", LSTMdataFormat.ordinal());
+            ret.put("LSTMDataFormat", lstmdataformat.ordinal());
         if (includeLSTMDirectionMode)
             ret.put("LSTMDirectionMode", directionMode.ordinal());
         return ret;
     }
 
-
-    public int[] iArgs(boolean includeLSTMDataFormat) {
-        if (includeLSTMDataFormat) {
-            return new int[]{ArrayUtil.fromBoolean(hasPH), LSTMdataFormat.ordinal()};
-        } else return new int[]{ArrayUtil.fromBoolean(hasPH)};
-    }
-
-    public double[] tArgs() {
-        return new double[]{cellClip};
-    }
 }
+
+
+
+
 
 
