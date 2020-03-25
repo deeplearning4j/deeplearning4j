@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import org.datavec.python.keras.Model;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Assert;
@@ -32,19 +33,51 @@ public class TFKerasTests extends BaseDL4JTest{
     @Test
     public void testModelWithTFOp1() throws Exception{
         File f = Resources.asFile("modelimport/keras/tfkeras/reshape.h5");
-       ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(f.getAbsolutePath());
-        INDArray out = graph.outputSingle(Nd4j.zeros(12, 2, 3));
-        Assert.assertArrayEquals(new long[]{12, 3}, out.shape());
+        testModelImport(f);
+//       ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(f.getAbsolutePath());
+//        INDArray out = graph.outputSingle(Nd4j.zeros(12, 2, 3));
+//        Assert.assertArrayEquals(new long[]{12, 3}, out.shape());
     }
 
     @Test
     public void testModelWithTFOp2() throws Exception{
         File f = Resources.asFile("modelimport/keras/tfkeras/permute.h5");
-        ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(f.getAbsolutePath());
-        INDArray out = graph.outputSingle(Nd4j.zeros(12, 2, 3));
-        // dl4j's feedforward doesn't support 3D output, so batch and time axes gets squashed
-        long[] expectedShape = new long[]{12 * 2, 5};
-        Assert.assertArrayEquals(expectedShape, out.shape());
+        testModelImport(f);
+//        ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(f.getAbsolutePath());
+//        INDArray out = graph.outputSingle(Nd4j.zeros(12, 2, 3));
+//        // dl4j's feedforward doesn't support 3D output, so batch and time axes gets squashed
+//        long[] expectedShape = new long[]{12 * 2, 5};
+//        Assert.assertArrayEquals(expectedShape, out.shape());
     }
 
+    private void testModelImport(File file) throws Exception{
+        testModelImport(file.getAbsolutePath());
+    }
+    private void testModelImport(String file) throws Exception{
+        Model kerasModel = new Model(file);
+        ComputationGraph dl4jModel = KerasModelImport.importKerasModelAndWeights(file);
+        Assert.assertEquals(kerasModel.numInputs(), dl4jModel.getNumInputArrays());
+        Assert.assertEquals(kerasModel.numOutputs(), dl4jModel.getNumOutputArrays());
+        INDArray[] inputArrays = new INDArray[kerasModel.numInputs()];
+        for (int i = 0; i < inputArrays.length; i ++){
+            long[] shape = kerasModel.inputShapeAt(i);
+            for (int j = 0; j < shape.length; j++){
+                if (shape[j] < 0){
+                    shape[j] = 1;
+                }
+            }
+            inputArrays[i] = Nd4j.rand(shape);
+        }
+
+        INDArray[] kerasOut = kerasModel.predict(inputArrays);
+        INDArray[] dl4jOut = dl4jModel.output(inputArrays);
+
+        Assert.assertEquals(kerasOut.length, dl4jOut.length);
+
+        for (int i = 0; i < kerasOut.length; i++){
+            INDArray kerasOutArr = kerasOut[i].reshape(kerasOut[i].shape()[0], -1);  // bit of relaxation on shape
+            INDArray dl4jOutArr = dl4jOut[i].reshape(dl4jOut[i].shape()[0], -1);
+            Assert.assertEquals(kerasOutArr, dl4jOutArr);
+        }
+    }
 }

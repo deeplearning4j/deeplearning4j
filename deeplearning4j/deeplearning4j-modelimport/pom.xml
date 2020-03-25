@@ -113,6 +113,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-python</artifactId>
+            <version>${datavec.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
