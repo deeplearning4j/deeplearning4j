@@ -78,8 +78,8 @@ public class LSTMLayerConfig {
      * indicates whether to return output at last time step only,
      * in this case shape would be [bS, nOut] (exact shape depends on dataFormat argument)
      */
-
     private boolean retLastH;           //B_ARG(6)
+
     /**
      * indicates whether to return cells state at last time step only,
      * in this case shape would be [bS, nOut] (exact shape depends on dataFormat argument)

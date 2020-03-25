@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.LSTMLayerOutputs;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.SRUCellOutputs;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.SRULayerOutputs;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.GRUWeights;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.SRUWeights;
 import org.nd4j.linalg.primitives.Pair;
@@ -100,19 +101,19 @@ public class SDRNN extends SDOps {
      * See {@link #lstmLayer(String, SDVariable, SDVariable, SDVariable, SDVariable, LSTMWeights, LSTMConfiguration)}
      */
     public LSTMLayerOutputs lstmLayer(@NonNull SDVariable maxTSLength,
-            @NonNull SDVariable x, @NonNull SDVariable cLast, @NonNull SDVariable yLast,
-            @NonNull  LSTMWeights weights, @NonNull LSTMConfiguration config){
+                                      @NonNull SDVariable x, @NonNull SDVariable cLast, @NonNull SDVariable yLast,
+                                      @NonNull LSTMLayerWeights weights, @NonNull LSTMLayerConfig config){
         LSTMLayer c = new LSTMLayer(sd, maxTSLength, x, cLast, yLast, weights, config);
-        return new LSTMLayerOutputs(c.outputVariables(), config.getDataFormat());
+        return new LSTMLayerOutputs(c.outputVariables(), (LSTMDataFormat) config.toProperties(true, true).get("LSTMDataFormat"));
     }
 
     /**
      * See {@link #lstmLayer(String, SDVariable, SDVariable, SDVariable, SDVariable, LSTMWeights, LSTMConfiguration)}
      */
     public LSTMLayerOutputs lstmLayer(int maxTSLength, @NonNull SDVariable x, @NonNull SDVariable cLast, @NonNull SDVariable yLast,
-            @NonNull LSTMWeights weights, @NonNull LSTMConfiguration config){
+            @NonNull LSTMLayerWeights weights, @NonNull LSTMLayerConfig config){
         return lstmLayer(
-                sd.scalar("lstm_max_ts_length", maxTSLength),
+                sd.constant("lstm_max_ts_length", maxTSLength),
                 x, cLast, yLast, weights, config);
     }
 
@@ -120,10 +121,10 @@ public class SDRNN extends SDOps {
      * See {@link #lstmLayer(String, SDVariable, SDVariable, SDVariable, SDVariable, LSTMWeights, LSTMConfiguration)}
      */
     public LSTMLayerOutputs lstmLayer(String baseName, int maxTSLength, @NonNull SDVariable x, @NonNull SDVariable cLast, @NonNull SDVariable yLast,
-            @NonNull LSTMWeights weights, @NonNull LSTMConfiguration config){
+            @NonNull LSTMLayerWeights weights, @NonNull LSTMLayerConfig config){
         if(baseName != null) {
             return lstmLayer(baseName,
-                    sd.scalar(sd.generateDistinctCustomVariableName(baseName + "_max_ts_length"), maxTSLength),
+                    sd.constant(sd.generateDistinctCustomVariableName(baseName + "_max_ts_length"), maxTSLength),
                     x, cLast, yLast, weights, config);
         } else {
             return lstmLayer(maxTSLength, x, cLast, yLast, weights, config);
@@ -148,9 +149,9 @@ public class SDRNN extends SDOps {
      */
     public LSTMLayerOutputs lstmLayer(String baseName, @NonNull SDVariable maxTSLength,
             @NonNull SDVariable x, @NonNull SDVariable cLast, @NonNull SDVariable yLast,
-            @NonNull LSTMWeights weights, @NonNull LSTMConfiguration config){
+            @NonNull LSTMLayerWeights weights, @NonNull LSTMLayerConfig config){
         LSTMLayer c = new LSTMLayer(sd, maxTSLength, x, cLast, yLast, weights, config);
-        return new LSTMLayerOutputs(c.outputVariables(baseName), config.getDataFormat());
+        return new LSTMLayerOutputs(c.outputVariables(baseName), (LSTMDataFormat) config.toProperties(true, true).get("LSTMDataFormat"));
     }
 
     /**

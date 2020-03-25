@@ -8,6 +8,7 @@ import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
 
 /**
@@ -16,7 +17,7 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
 @Getter
 public class LSTMLayerOutputs {
 
-    private RnnDataFormat dataFormat;
+    private LSTMDataFormat dataFormat;
 
     /**
      * Output - input modulation gate activations.
@@ -81,7 +82,7 @@ public class LSTMLayerOutputs {
      */
     private SDVariable y;
 
-    public LSTMLayerOutputs(SDVariable[] outputs, RnnDataFormat dataFormat){
+    public LSTMLayerOutputs(SDVariable[] outputs, LSTMDataFormat dataFormat){
         Preconditions.checkArgument(outputs.length == 7,
                 "Must have 7 LSTM layer outputs, got %s", outputs.length);
 
