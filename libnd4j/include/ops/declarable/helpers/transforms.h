@@ -52,13 +52,16 @@ namespace helpers {
 
 	void scatterSimple(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions);
 
-	void mergeMaxIndex(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output);
+	void mergeMaxIndex(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output);
 
-	void mergeMax(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output);
+	void mergeMax(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output);
+	void mergeMaxBp(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, std::vector<NDArray*>& outArrs);
 
-	void mergeAvg(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output);
+	void mergeAvg(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output);
+	void mergeAvgBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs);
 
-	void mergeAdd(sd::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output);
+	void mergeAdd(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output);
+	void mergeAddBp(sd::LaunchContext* context, const NDArray& gradient, std::vector<NDArray*>& outArrs);
 
 	void clipByNorm(sd::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace);
 	void clipByGlobalNorm(sd::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, sd::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace);

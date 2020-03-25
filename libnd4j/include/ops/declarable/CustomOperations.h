@@ -45,6 +45,7 @@
 #include <ops/declarable/headers/util.h>
 #include <ops/declarable/headers/BarnesHutTsne.h>
 #include <ops/declarable/headers/images.h>
+#include <ops/declarable/headers/updaters.h>
 #include <system/dll.h>
 #include <helpers/shape.h>
 #include <helpers/TAD.h>

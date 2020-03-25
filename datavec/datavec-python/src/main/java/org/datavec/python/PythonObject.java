@@ -77,7 +77,7 @@ public class PythonObject {
 
         long address = bp.address();
         long size = bp.capacity();
-        NumpyArray npArr = NumpyArray.builder().address(address).shape(new long[]{size}).strides(new long[]{1}).dtype(DataType.BYTE).build();
+        NumpyArray npArr = NumpyArray.builder().address(address).shape(new long[]{size}).strides(new long[]{1}).dtype(DataType.INT8).build();
         nativePythonObject = Python.memoryview(new PythonObject(npArr)).nativePythonObject;
     }
 
@@ -320,20 +320,23 @@ public class PythonObject {
     public NumpyArray toNumpy() throws PythonException{
         PyObject np = PyImport_ImportModule("numpy");
         PyObject ndarray = PyObject_GetAttrString(np, "ndarray");
-        if (PyObject_IsInstance(nativePythonObject, ndarray) == 0){
+        if (PyObject_IsInstance(nativePythonObject, ndarray) != 1){
             throw new PythonException("Object is not a numpy array! Use Python.ndarray() to convert object to a numpy array.");
         }
         Py_DecRef(ndarray);
         Py_DecRef(np);
+
         Pointer objPtr = new Pointer(nativePythonObject);
         PyArrayObject npArr = new PyArrayObject(objPtr);
         Pointer ptr = PyArray_DATA(npArr);
-        SizeTPointer shapePtr = PyArray_SHAPE(npArr);
         long[] shape = new long[PyArray_NDIM(npArr)];
-        shapePtr.get(shape, 0, shape.length);
-        SizeTPointer stridesPtr = PyArray_STRIDES(npArr);
+        SizeTPointer shapePtr = PyArray_SHAPE(npArr);
+        if (shapePtr != null)
+            shapePtr.get(shape, 0, shape.length);
         long[] strides = new long[shape.length];
-        stridesPtr.get(strides, 0, strides.length);
+        SizeTPointer stridesPtr = PyArray_STRIDES(npArr);
+        if (stridesPtr != null)
+            stridesPtr.get(strides, 0, strides.length);
         int npdtype = PyArray_TYPE(npArr);
 
         DataType dtype;
@@ -345,28 +348,27 @@ public class PythonObject {
             case NPY_SHORT:
                 dtype = DataType.SHORT; break;
             case NPY_INT:
-                dtype = DataType.INT; break;
+                dtype = DataType.INT32; break;
             case NPY_LONG:
                 dtype = DataType.LONG; break;
             case NPY_UINT:
                 dtype = DataType.UINT32; break;
             case NPY_BYTE:
-                dtype = DataType.BYTE; break;
+                dtype = DataType.INT8; break;
             case NPY_UBYTE:
-                dtype = DataType.UBYTE; break;
+                dtype = DataType.UINT8; break;
             case NPY_BOOL:
                 dtype = DataType.BOOL; break;
             case NPY_HALF:
-                dtype = DataType.HALF; break;
+                dtype = DataType.FLOAT16; break;
             case NPY_LONGLONG:
                 dtype = DataType.INT64; break;
             case NPY_USHORT:
                 dtype = DataType.UINT16; break;
             case NPY_ULONG:
-                dtype = DataType.UINT64; break;
             case NPY_ULONGLONG:
                 dtype = DataType.UINT64; break;
-                default:
+            default:
                     throw new PythonException("Unsupported array data type: " + npdtype);
         }
 

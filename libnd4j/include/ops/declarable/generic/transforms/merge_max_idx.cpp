@@ -32,7 +32,7 @@ CUSTOM_OP_IMPL(mergemaxindex, -1, 1, false, 0, 0) {
     REQUIRE_OK(this->validateInputDimensionsMatch(block));
     auto output = OUTPUT_VARIABLE(0);
 
-    std::vector<NDArray*> inArrs(block.width());
+    std::vector<const NDArray*> inArrs(block.width());
     
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);

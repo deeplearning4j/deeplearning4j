@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -82,6 +83,7 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
     }
 
     @Test
+    @Ignore //2020/03/24 AB - https://github.com/eclipse/deeplearning4j/issues/8802
     public void testMobilenet() throws Exception {
         TFGraphTestZooModels.currentTestDir = testDir.newFolder();
         File f = Resources.asFile("tf_graphs/zoo_models/mobilenet_v2_1.0_224/tf_model.txt");

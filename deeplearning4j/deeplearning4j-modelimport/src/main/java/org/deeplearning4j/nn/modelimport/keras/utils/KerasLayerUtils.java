@@ -21,10 +21,12 @@ import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
+import org.deeplearning4j.nn.modelimport.keras.layers.KerasTFOpLayer;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
@@ -317,6 +319,11 @@ public class KerasLayerUtils {
             layer = new KerasELU(layerConfig, enforceTrainingConfig);
         } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_SOFTMAX())){
             layer = new KerasSoftmax(layerConfig, enforceTrainingConfig);
+        } else if (conf instanceof Keras2LayerConfiguration){
+            Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration)conf;
+            if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())){
+              layer = new KerasTFOpLayer(layerConfig, enforceTrainingConfig);
+            }
         }
         if (layer == null){
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
@@ -402,6 +409,16 @@ public class KerasLayerUtils {
     public static String getLayerNameFromConfig(Map<String, Object> layerConfig,
                                                 KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException {
+        if(conf instanceof Keras2LayerConfiguration){
+            Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration)conf;
+            if (getClassNameFromConfig(layerConfig, conf).equals(((Keras2LayerConfiguration) conf).getTENSORFLOW_OP_LAYER())){
+                if (!layerConfig.containsKey(conf.getLAYER_FIELD_NAME()))
+                    throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_NAME()
+                            + " missing from layer config");
+                return (String) layerConfig.get(conf.getLAYER_FIELD_NAME());
+            }
+        }
+
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         if (!innerConfig.containsKey(conf.getLAYER_FIELD_NAME()))
             throw new InvalidKerasConfigurationException("Field " + conf.getLAYER_FIELD_NAME()

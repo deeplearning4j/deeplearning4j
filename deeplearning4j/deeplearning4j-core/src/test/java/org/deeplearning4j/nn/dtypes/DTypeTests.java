@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.dtypes;
 
 import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
+import org.deeplearning4j.nn.modelimport.keras.layers.TFOpLayer;
 import org.nd4j.shade.guava.collect.ImmutableSet;
 import org.nd4j.shade.guava.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
@@ -128,7 +129,7 @@ public class DTypeTests extends BaseDL4JTest {
                 throw new RuntimeException(e);
             }
 
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface()) {
+            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || TFOpLayer.class == clazz) {     //Skip TFOpLayer here - dtype depends on imported model dtype
                 continue;
             }
 
