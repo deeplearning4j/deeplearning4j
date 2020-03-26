@@ -86,7 +86,7 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
         }
 
         try {
-            ArchiveUtils.unzipFileTo(tmpFile.getAbsolutePath(), localCacheDir.getAbsolutePath());
+            ArchiveUtils.unzipFileTo(tmpFile.getAbsolutePath(), localCacheDir.getAbsolutePath(), false);
         } catch (Throwable t){
             //Catch any errors during extraction, and delete the directory to avoid leaving the dir in an invalid state
             if(localCacheDir.exists())

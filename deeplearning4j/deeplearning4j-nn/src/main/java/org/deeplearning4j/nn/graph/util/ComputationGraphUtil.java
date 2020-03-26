@@ -23,6 +23,9 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
+import java.io.Serializable;
+import java.util.List;
+
 public class ComputationGraphUtil {
 
     private ComputationGraphUtil() {}
@@ -33,13 +36,16 @@ public class ComputationGraphUtil {
         INDArray l = dataSet.getLabels();
         INDArray fMask = dataSet.getFeaturesMaskArray();
         INDArray lMask = dataSet.getLabelsMaskArray();
+        List<Serializable> meta = dataSet.getExampleMetaData();
 
         INDArray[] fNew = f == null ? null : new INDArray[] {f};
         INDArray[] lNew = l == null ? null : new INDArray[] {l};
         INDArray[] fMaskNew = (fMask != null ? new INDArray[] {fMask} : null);
         INDArray[] lMaskNew = (lMask != null ? new INDArray[] {lMask} : null);
 
-        return new org.nd4j.linalg.dataset.MultiDataSet(fNew, lNew, fMaskNew, lMaskNew);
+        org.nd4j.linalg.dataset.MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(fNew, lNew, fMaskNew, lMaskNew);
+        mds.setExampleMetaData(meta);
+        return mds;
     }
 
     /** Convert a DataSetIterator to a MultiDataSetIterator, via an adaptor class */

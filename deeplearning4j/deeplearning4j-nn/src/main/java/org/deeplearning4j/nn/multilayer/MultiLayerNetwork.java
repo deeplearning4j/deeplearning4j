@@ -25,14 +25,11 @@ import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.adapters.OutputAdapter;
-import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
-import org.deeplearning4j.eval.RegressionEvaluation;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
@@ -44,8 +41,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.layers.FrozenLayerWithBackprop;
-import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -58,19 +55,23 @@ import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.deeplearning4j.util.OutputLayerUtil;
+import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.evaluation.classification.ROCMultiClass;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -84,7 +85,6 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -95,6 +95,8 @@ import org.nd4j.util.OneTimeLogger;
 
 import java.io.*;
 import java.util.*;
+
+;
 
 
 /**
@@ -3315,17 +3317,37 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iterator Iterator to evaluate on
      * @return Evaluation object; results of evaluation on all examples in the data set
      */
-    public <T extends Evaluation> T evaluate(DataSetIterator iterator) {
+    public <T extends Evaluation> T evaluate(@NonNull DataSetIterator iterator) {
         return (T)evaluate(iterator, null);
+    }
+
+    /**
+     * Evaluate the network (classification performance).
+     * Can only be used with MultiDataSetIterator instances with a single input/output array
+     *
+     * @param iterator Iterator to evaluate on
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(@NonNull MultiDataSetIterator iterator) {
+        return evaluate(new MultiDataSetWrapperIterator(iterator));
     }
 
     /**
      * Evaluate the network for regression performance
      * @param iterator Data to evaluate on
-     * @return
+     * @return Regression evaluation
      */
     public <T extends RegressionEvaluation> T evaluateRegression(DataSetIterator iterator) {
         return (T)doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()))[0];
+    }
+
+    /**
+     * Evaluate the network for regression performance
+     * Can only be used with MultiDataSetIterator instances with a single input/output array
+     * @param iterator Data to evaluate on
+     */
+    public org.nd4j.evaluation.regression.RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator) {
+        return evaluateRegression(new MultiDataSetWrapperIterator(iterator));
     }
 
     /**
@@ -3424,6 +3446,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             INDArray labels = next.getLabels();
             INDArray fMask = next.getFeaturesMaskArray();
             INDArray lMask = next.getLabelsMaskArray();
+            List<Serializable> meta = next.getExampleMetaData();
 
 
             if (!useRnnSegments) {
@@ -3433,7 +3456,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                     try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                         for (T evaluation : evaluations)
-                            evaluation.eval(labels, out, lMask);
+                            evaluation.eval(labels, out, lMask, meta);
                     }
                 }
             } else {

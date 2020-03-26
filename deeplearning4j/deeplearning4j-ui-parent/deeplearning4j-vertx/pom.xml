@@ -60,7 +60,7 @@
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
-            <version>2.3.29</version>
+            <version>${freemarker.version}</version>
         </dependency>
 
         <dependency>

@@ -51,6 +51,10 @@ public class ArchiveUtils {
      * @throws IOException
      */
     public static void unzipFileTo(String file, String dest) throws IOException {
+        unzipFileTo(file, dest, true);
+    }
+
+    public static void unzipFileTo(String file, String dest, boolean logFiles) throws IOException {
         File target = new File(file);
         if (!target.exists())
             throw new IllegalArgumentException("Archive doesnt exist");
@@ -93,7 +97,9 @@ public class ArchiveUtils {
 
                     fos.close();
                     ze = zis.getNextEntry();
-                    log.debug("File extracted: " + newFile.getAbsoluteFile());
+                    if(logFiles) {
+                        log.info("File extracted: " + newFile.getAbsoluteFile());
+                    }
                 }
 
                 zis.closeEntry();
@@ -112,7 +118,9 @@ public class ArchiveUtils {
             TarArchiveEntry entry;
             /* Read the tar entries using the getNextEntry method **/
             while ((entry = (TarArchiveEntry) tarIn.getNextEntry()) != null) {
-                log.info("Extracting: " + entry.getName());
+                if(logFiles) {
+                    log.info("Extracting: " + entry.getName());
+                }
                 /* If the entry is a directory, create the directory. */
 
                 if (entry.isDirectory()) {

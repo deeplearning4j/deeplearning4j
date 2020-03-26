@@ -229,7 +229,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     @Override
     public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        eval(labels, networkPredictions, maskArray);
     }
 
     @Override

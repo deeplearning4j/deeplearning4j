@@ -116,8 +116,7 @@ public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable
     }
 
     protected int numExecutors() {
-        int numProc = Runtime.getRuntime().availableProcessors();
-        return Math.min(4, numProc);
+        return 4;
     }
 
     protected MultiLayerConfiguration getBasicConf() {

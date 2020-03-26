@@ -23,6 +23,7 @@ import org.nd4j.linalg.dataset.api.iterator.ParallelMultiDataSetIterator;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This MultiDataSetIterator implementation does accumulation of MultiDataSets from different Spark executors, wrt Thread/Device Affinity
@@ -32,14 +33,16 @@ import java.util.List;
 public class VirtualMultiDataSetIterator implements ParallelMultiDataSetIterator {
 
     protected final List<Iterator<MultiDataSet>> iterators;
+    protected final AtomicInteger position;
 
     public VirtualMultiDataSetIterator(@NonNull List<Iterator<MultiDataSet>> iterators) {
         this.iterators = iterators;
+        this.position = new AtomicInteger(0);
     }
 
     @Override
     public MultiDataSet next(int num) {
-        return null;
+        return next();
     }
 
     @Override
@@ -59,27 +62,34 @@ public class VirtualMultiDataSetIterator implements ParallelMultiDataSetIterator
 
     @Override
     public boolean asyncSupported() {
-        return false;
+        return true;
     }
 
     @Override
     public void reset() {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean hasNext() {
-        return false;
+        // just checking if that's not the last iterator, or if that's the last one - check if it has something
+        boolean ret = position.get() < iterators.size() - 1
+                || (position.get() < iterators.size() && iterators.get(position.get()).hasNext());
+        return ret;
     }
 
     @Override
     public MultiDataSet next() {
-        return null;
+        // TODO: this solution isn't ideal, it assumes non-empty iterators all the time. Would be nice to do something here
+        if (!iterators.get(position.get()).hasNext())
+            position.getAndIncrement();
+
+        return iterators.get(position.get()).next();
     }
 
     @Override
     public void remove() {
-
+        // no-op
     }
 
     @Override

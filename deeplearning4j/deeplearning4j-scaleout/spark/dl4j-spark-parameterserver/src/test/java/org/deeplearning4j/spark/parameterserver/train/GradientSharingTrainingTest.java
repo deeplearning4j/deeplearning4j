@@ -49,6 +49,7 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AMSGrad;
@@ -66,137 +67,170 @@ import java.util.concurrent.ConcurrentHashMap;
 import static org.junit.Assert.*;
 
 @Slf4j
-@Ignore("AB 2019/05/21 - Failing - Issue #7657")
+//@Ignore("AB 2019/05/21 - Failing - Issue #7657")
 public class GradientSharingTrainingTest extends BaseSparkTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void trainSanityCheck() throws Exception {
 
-        INDArray last = null;
-        INDArray lastDup = null;
-        for (String s : new String[]{"paths", "direct", "export"}) {
-            System.out.println("--------------------------------------------------------------------------------------------------------------");
-            log.info("Starting: {}", s);
-            boolean isPaths = "paths".equals(s);
+        for(boolean mds : new boolean[]{false, true}) {
+            INDArray last = null;
+            INDArray lastDup = null;
+            for (String s : new String[]{"paths", "direct", "export"}) {
+                System.out.println("--------------------------------------------------------------------------------------------------------------");
+                log.info("Starting: {} - {}", s, (mds ? "MultiDataSet" : "DataSet"));
+                boolean isPaths = "paths".equals(s);
 
-            RDDTrainingApproach rddTrainingApproach;
-            switch (s) {
-                case "direct":
-                    rddTrainingApproach = RDDTrainingApproach.Direct;
-                    break;
-                case "export":
-                    rddTrainingApproach = RDDTrainingApproach.Export;
-                    break;
-                case "paths":
-                    rddTrainingApproach = RDDTrainingApproach.Direct;   //Actualy not used for fitPaths
-                    break;
-                default:
-                    throw new RuntimeException();
-            }
-
-            File temp = testDir.newFolder();
-
-
-            //TODO this probably won't work everywhere...
-            String controller = Inet4Address.getLocalHost().getHostAddress();
-            String networkMask = controller.substring(0, controller.lastIndexOf('.')) + ".0" + "/16";
-
-            VoidConfiguration voidConfiguration = VoidConfiguration.builder()
-                    .unicastPort(40123) // Should be open for IN/OUT communications on all Spark nodes
-                    .networkMask(networkMask) // Local network mask
-                    .controllerAddress(controller)
-                    .meshBuildMode(MeshBuildMode.PLAIN) // everyone is connected to the master
-                    .build();
-            TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new AdaptiveThresholdAlgorithm(1e-3), 16)
-                    .rngSeed(12345)
-                    .collectTrainingStats(false)
-                    .batchSizePerWorker(16) // Minibatch size for each worker
-                    .workersPerNode(2) // Workers per node
-                    .rddTrainingApproach(rddTrainingApproach)
-                    .exportDirectory("file:///" + temp.getAbsolutePath().replaceAll("\\\\", "/"))
-                    .build();
-
-
-            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .seed(12345)
-                    .updater(new AMSGrad(0.1))
-                    .graphBuilder()
-                    .addInputs("in")
-                    .layer("out", new OutputLayer.Builder().nIn(784).nOut(10).activation(Activation.SOFTMAX)
-                            .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
-                    .setOutputs("out")
-                    .build();
-
-
-            SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf, tm);
-            sparkNet.setCollectTrainingStats(tm.getIsCollectTrainingStats());
-
-            System.out.println(Arrays.toString(sparkNet.getNetwork().params().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-            File f = testDir.newFolder();
-            DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
-            int count = 0;
-            List<String> paths = new ArrayList<>();
-            List<DataSet> ds = new ArrayList<>();
-            while (iter.hasNext() && count++ < 8) {
-                DataSet d = iter.next();
-                if (isPaths) {
-                    File out = new File(f, count + ".bin");
-                    d.save(out);
-                    String path = "file:///" + out.getAbsolutePath().replaceAll("\\\\", "/");
-                    paths.add(path);
-                }
-                ds.add(d);
-            }
-
-            int numIter = 1;
-            double[] acc = new double[numIter + 1];
-            for (int i = 0; i < numIter; i++) {
-                //Check accuracy before:
-                DataSetIterator testIter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
-                Evaluation eBefore = sparkNet.getNetwork().evaluate(testIter);
-
-                INDArray paramsBefore = sparkNet.getNetwork().params().dup();
-                ComputationGraph after;
+                RDDTrainingApproach rddTrainingApproach;
                 switch (s) {
                     case "direct":
+                        rddTrainingApproach = RDDTrainingApproach.Direct;
+                        break;
                     case "export":
-                        JavaRDD<DataSet> dsRDD = sc.parallelize(ds);
-                        after = sparkNet.fit(dsRDD);
+                        rddTrainingApproach = RDDTrainingApproach.Export;
                         break;
                     case "paths":
-                        JavaRDD<String> pathRdd = sc.parallelize(paths);
-                        after = sparkNet.fitPaths(pathRdd);
+                        rddTrainingApproach = RDDTrainingApproach.Direct;   //Actualy not used for fitPaths
                         break;
                     default:
                         throw new RuntimeException();
                 }
 
-                INDArray paramsAfter = after.params();
-                System.out.println(Arrays.toString(paramsBefore.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-                System.out.println(Arrays.toString(paramsAfter.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-                System.out.println(Arrays.toString(
-                        Transforms.abs(paramsAfter.sub(paramsBefore)).get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-                assertNotEquals(paramsBefore, paramsAfter);
+                File temp = testDir.newFolder();
 
 
-                testIter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
-                Evaluation eAfter = after.evaluate(testIter);
+                //TODO this probably won't work everywhere...
+                String controller = Inet4Address.getLocalHost().getHostAddress();
+                String networkMask = controller.substring(0, controller.lastIndexOf('.')) + ".0" + "/16";
 
-                double accAfter = eAfter.accuracy();
-                double accBefore = eBefore.accuracy();
-                assertTrue("after: " + accAfter + ", before=" + accBefore, accAfter >= accBefore + 0.005);
+                VoidConfiguration voidConfiguration = VoidConfiguration.builder()
+                        .unicastPort(40123) // Should be open for IN/OUT communications on all Spark nodes
+                        .networkMask(networkMask) // Local network mask
+                        .controllerAddress(controller)
+                        .meshBuildMode(MeshBuildMode.PLAIN) // everyone is connected to the master
+                        .build();
+                TrainingMaster tm = new SharedTrainingMaster.Builder(voidConfiguration, 2, new AdaptiveThresholdAlgorithm(1e-3), 16)
+                        .rngSeed(12345)
+                        .collectTrainingStats(false)
+                        .batchSizePerWorker(16) // Minibatch size for each worker
+                        .workersPerNode(2) // Workers per node
+                        .rddTrainingApproach(rddTrainingApproach)
+                        .exportDirectory("file:///" + temp.getAbsolutePath().replaceAll("\\\\", "/"))
+                        .build();
 
-                if (i == 0) {
-                    acc[0] = eBefore.accuracy();
+
+                ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .seed(12345)
+                        .updater(new AMSGrad(0.1))
+                        .graphBuilder()
+                        .addInputs("in")
+                        .layer("out", new OutputLayer.Builder().nIn(784).nOut(10).activation(Activation.SOFTMAX)
+                                .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "in")
+                        .setOutputs("out")
+                        .build();
+
+
+                SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf, tm);
+                sparkNet.setCollectTrainingStats(tm.getIsCollectTrainingStats());
+
+                System.out.println(Arrays.toString(sparkNet.getNetwork().params().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                File f = testDir.newFolder();
+                DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
+                int count = 0;
+                List<String> paths = new ArrayList<>();
+                List<DataSet> ds = new ArrayList<>();
+                while (iter.hasNext() && count++ < 8) {
+                    DataSet d = iter.next();
+                    if (isPaths) {
+                        File out = new File(f, count + ".bin");
+                        if(mds){
+                            d.toMultiDataSet().save(out);
+                        } else {
+                            d.save(out);
+                        }
+                        String path = "file:///" + out.getAbsolutePath().replaceAll("\\\\", "/");
+                        paths.add(path);
+                    }
+                    ds.add(d);
                 }
-                acc[i + 1] = eAfter.accuracy();
+
+                int numIter = 1;
+                double[] acc = new double[numIter + 1];
+                for (int i = 0; i < numIter; i++) {
+                    //Check accuracy before:
+                    DataSetIterator testIter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
+                    Evaluation eBefore = sparkNet.getNetwork().evaluate(testIter);
+
+                    INDArray paramsBefore = sparkNet.getNetwork().params().dup();
+                    ComputationGraph after;
+                    if(mds) {
+                        //Fitting from MultiDataSet
+                        List<MultiDataSet> mdsList = new ArrayList<>();
+                        for(DataSet d : ds){
+                            mdsList.add(d.toMultiDataSet());
+                        }
+                        switch (s) {
+                            case "direct":
+                            case "export":
+                                JavaRDD<MultiDataSet> dsRDD = sc.parallelize(mdsList);
+                                after = sparkNet.fitMultiDataSet(dsRDD);
+                                break;
+                            case "paths":
+                                JavaRDD<String> pathRdd = sc.parallelize(paths);
+                                after = sparkNet.fitPathsMultiDataSet(pathRdd);
+                                break;
+                            default:
+                                throw new RuntimeException();
+                        }
+                    } else {
+                        //Fitting from DataSet
+                        switch (s) {
+                            case "direct":
+                            case "export":
+                                JavaRDD<DataSet> dsRDD = sc.parallelize(ds);
+                                after = sparkNet.fit(dsRDD);
+                                break;
+                            case "paths":
+                                JavaRDD<String> pathRdd = sc.parallelize(paths);
+                                after = sparkNet.fitPaths(pathRdd);
+                                break;
+                            default:
+                                throw new RuntimeException();
+                        }
+                    }
+
+                    INDArray paramsAfter = after.params();
+                    System.out.println(Arrays.toString(paramsBefore.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                    System.out.println(Arrays.toString(paramsAfter.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                    System.out.println(Arrays.toString(
+                            Transforms.abs(paramsAfter.sub(paramsBefore)).get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+                    assertNotEquals(paramsBefore, paramsAfter);
+
+
+                    testIter = new EarlyTerminationDataSetIterator(new MnistDataSetIterator(32, false, 12345), 10);
+                    Evaluation eAfter = after.evaluate(testIter);
+
+                    double accAfter = eAfter.accuracy();
+                    double accBefore = eBefore.accuracy();
+                    assertTrue("after: " + accAfter + ", before=" + accBefore, accAfter >= accBefore + 0.005);
+
+                    if (i == 0) {
+                        acc[0] = eBefore.accuracy();
+                    }
+                    acc[i + 1] = eAfter.accuracy();
+                }
+                log.info("Accuracies: {}", Arrays.toString(acc));
+                last = sparkNet.getNetwork().params();
+                lastDup = last.dup();
             }
-            log.info("Accuracies: {}", Arrays.toString(acc));
-            last = sparkNet.getNetwork().params();
-            lastDup = last.dup();
         }
     }
 
@@ -289,7 +323,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
     }
 
 
-    @Test
+    @Test @Ignore
     public void testEpochUpdating() throws Exception {
         //Ensure that epoch counter is incremented properly on the workers
 
@@ -316,7 +350,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .seed(12345)
-                .updater(new AMSGrad(0.1))
+                .updater(new AMSGrad(0.001))
                 .graphBuilder()
                 .addInputs("in")
                 .layer("out", new OutputLayer.Builder().nIn(784).nOut(10).activation(Activation.SOFTMAX)
