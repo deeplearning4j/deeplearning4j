@@ -158,8 +158,8 @@ namespace helpers {
     static void segmentMeanFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
         auto stream = context->getCudaStream();
         Nd4jLong numClasses = indices->e<Nd4jLong>(indices->lengthOf() - 1) + 1;
-        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses});
-        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses});
+        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
+        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
 
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);
@@ -198,8 +198,8 @@ namespace helpers {
         auto stream = context->getCudaStream();
 //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
 
-        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
-        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
+        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
+        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
 //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
 //        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), &row, &classes);
         classesRangesBegs.assign(indices->lengthOf());
@@ -314,8 +314,8 @@ namespace helpers {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         auto numClasses = indices->e<int>(indices->lengthOf() - 1) + 1;
-        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses});
-        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses});
+        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
+        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
 
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);
@@ -367,8 +367,8 @@ namespace helpers {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         auto numClasses = indices->e<int>(indices->lengthOf() - 1) + 1;
-        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses});
-        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses});
+        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
+        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
 
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);

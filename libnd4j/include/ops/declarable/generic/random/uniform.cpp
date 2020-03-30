@@ -49,8 +49,8 @@ namespace sd {
             bool disposable = false;
 
             if (min == nullptr && max == nullptr && block.numT() >= 2) {
-                min = NDArrayFactory::create_(dtype);
-                max = NDArrayFactory::create_(dtype);
+                min = NDArrayFactory::create_(dtype, block.launchContext());
+                max = NDArrayFactory::create_(dtype, block.launchContext());
                 min->p(0, T_ARG(0));
                 max->p(0, T_ARG(1));
                 disposable = true;

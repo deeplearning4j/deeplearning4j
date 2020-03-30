@@ -68,6 +68,7 @@ namespace sd {
                 }
                 case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
                     NDArray sum;
+                    sum.setContext(block.launchContext());
                     if (weights->isScalar())
                         sum = *weights * E.lengthOf();
                     else
@@ -201,6 +202,7 @@ namespace sd {
                 case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
 
                     NDArray sum;
+                    sum.setContext(block.launchContext());
                     if (weights->isScalar())
                         sum = (*weights) * E.lengthOf();
                     else

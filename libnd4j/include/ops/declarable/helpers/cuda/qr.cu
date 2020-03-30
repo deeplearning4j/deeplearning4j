@@ -110,7 +110,7 @@ namespace helpers {
         auto resR = fullMatricies?R->ulike():matrix->ulike();
         std::vector<NDArray> q(M);
         NDArray z = *matrix;
-        NDArray e('c', {M}, DataTypeUtils::fromT<T>()); // two internal buffers and scalar for squared norm
+        NDArray e('c', {M}, DataTypeUtils::fromT<T>(), context); // two internal buffers and scalar for squared norm
         for (auto k = 0; k < N && k < M - 1; k++) { // loop for columns, but not further then row number
             e.nullify();
             z = matrixMinor<T>(context, z, k); // minor computing for current column with given matrix z (initally is a input matrix)
@@ -177,4 +177,3 @@ namespace helpers {
 }
 }
 }
-

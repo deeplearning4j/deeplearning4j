@@ -598,7 +598,7 @@ namespace helpers {
     static void lu_(LaunchContext * context, NDArray* input, NDArray* output, NDArray* permutationVectors) {
         auto n = input->sizeAt(-1);
         auto stream = context->getCudaStream();
-        NDArray iota('c', {n}, permutationVectors->dataType());// = NDArrayFactory::create(); // <int>('c', {n});
+        NDArray iota('c', {n}, permutationVectors->dataType(), context);// = NDArrayFactory::create(); // <int>('c', {n});
         iota.linspace(0); iota.syncToDevice();
 
         output->assign(input); // fill up output tensor with zeros
@@ -631,7 +631,7 @@ namespace helpers {
 //        if (dtype != DataType::DOUBLE)
 //            dtype = DataType::FLOAT32;
         auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, DataTypeUtils::fromT<T>(), context); //, block.getWorkspace());
-        auto det = NDArrayFactory::create<T>(1);
+        auto det = NDArrayFactory::create<T>(1, context);
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input});
         dim3 launchDims(256, 256, 1024);
@@ -677,7 +677,7 @@ namespace helpers {
                 dtype = DataType::FLOAT32;
 
             auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, dtype, context); //, block.getWorkspace());
-            auto det = NDArrayFactory::create<T>(1);
+            auto det = NDArrayFactory::create<T>(1, context);
             auto stream = context->getCudaStream();
             NDArray::prepareSpecialUse({output}, {input});
             dim3 launchDims(256, 256, 1024);

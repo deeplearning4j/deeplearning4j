@@ -188,7 +188,7 @@ namespace helpers {
     static void nonMaxSuppressionV2_(sd::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {boxes, scales});
-        std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>('c', {scales->lengthOf()})); // - 1, scales->lengthOf()); //, scales->getContext());
+        std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>('c', {scales->lengthOf()}, context)); // - 1, scales->lengthOf()); //, scales->getContext());
 
         NDArray scores(*scales);
         Nd4jPointer extras[2] = {nullptr, stream};
@@ -198,7 +198,7 @@ namespace helpers {
         indices->tickWriteDevice();
         sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
         indices->tickWriteDevice();
-        NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()});
+        NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
         int numSelected = 0;
         int numBoxes = boxes->sizeAt(0);
         auto boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
@@ -347,8 +347,8 @@ namespace helpers {
                 scores->syncToDevice();
         }
 
-        NDArray indices = NDArrayFactory::create<I>('c', {scores->lengthOf()}); // - 1, scales->lengthOf()); //, scales->getContext());
-        NDArray startPositions = NDArrayFactory::create<I>('c', {scores->lengthOf()});
+        NDArray indices = NDArrayFactory::create<I>('c', {scores->lengthOf()}, context); // - 1, scales->lengthOf()); //, scales->getContext());
+        NDArray startPositions = NDArrayFactory::create<I>('c', {scores->lengthOf()}, context);
         NDArray selectedScores(*scores);
         Nd4jPointer extras[2] = {nullptr, stream};
         auto indexBuf = indices.dataBuffer()->specialAsT<I>();///reinterpret_cast<I*>(indices->specialBuffer());

@@ -142,7 +142,7 @@ namespace helpers {
         const int rowNum = input->rows();
         const int columnNum = input->columns();
 
-        NDArray determinant = NDArrayFactory::create<T>(1.f);
+        NDArray determinant = NDArrayFactory::create<T>(1.f, context);
         NDArray compoundMatrix = *input; // copy
         NDArray permutationMatrix(input, false, context); // has same shape as input and contiguous strides
         permutationMatrix.setIdentity();

@@ -167,8 +167,8 @@ namespace sd {
                 auto stream = context->getCudaStream();
                 indices->syncToHost();
                 Nd4jLong numOfClasses = indices->e<Nd4jLong>(indices->lengthOf() - 1) + 1;
-                NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
-                NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
+                NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
+                NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
 
                 classesRangesBegs.assign(indices->lengthOf());
                 classesRangesLens.assign(0);
@@ -209,8 +209,8 @@ namespace sd {
 //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
                 output->assign(DataTypeUtils::infOrMax<T>());
 
-                NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
-                NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
+                NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses}, context);
+                NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses}, context);
 //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
 //        classes.applyTrueBroadcast(sd::BroadcastOpsTuple::Assign(), row, classes);
                 classesRangesBegs.assign(indices->lengthOf());
