@@ -67,7 +67,7 @@ public class KuromojiBinFilesFetcher {
                             new URL("https://dl4jdata.blob.core.windows.net/kuromoji/kuromoji_bin_files.tar.gz"),
                             tarFile);
         }
-        ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), rootDir.getAbsolutePath());
+        ArchiveUtils.unzipFileTo(tarFile.getAbsolutePath(), rootDir.getAbsolutePath(), false);
 
         return rootDir.getAbsoluteFile();
     }

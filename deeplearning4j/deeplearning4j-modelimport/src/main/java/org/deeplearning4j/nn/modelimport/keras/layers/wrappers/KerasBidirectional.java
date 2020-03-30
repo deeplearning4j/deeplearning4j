@@ -190,7 +190,7 @@ public class KerasBidirectional extends KerasLayer {
                     "Keras Bidirectional layer accepts only one input (received " + inputType.length + ")");
         InputPreProcessor preProcessor = getInputPreprocessor(inputType);
         if (preProcessor != null)
-            return preProcessor.getOutputType(inputType[0]);
+            return this.getBidirectionalLayer().getOutputType(-1, preProcessor.getOutputType(inputType[0]));
         else
             return this.getBidirectionalLayer().getOutputType(-1, inputType[0]);
     }

@@ -33,7 +33,6 @@ import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
-import org.deeplearning4j.eval.meta.Prediction;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -52,19 +51,13 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.resources.Resources;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 /**
  * Created by agibsonccc on 12/22/14.
@@ -165,7 +158,7 @@ public class EvalTest extends BaseDL4JTest {
         assertEquals(evalExpected.getConfusionMatrix(), evalActual.getConfusionMatrix());
     }
 
-    @Test(timeout = 300000)
+    @Test
     public void testEvaluationWithMetaData() throws Exception {
 
         RecordReader csv = new CSVRecordReader();
@@ -256,6 +249,30 @@ public class EvalTest extends BaseDL4JTest {
             assertEquals(actualCounts[i], actualClassI.size());
             assertEquals(predictedCounts[i], predictedClassI.size());
         }
+
+
+        //Finally: test doEvaluation methods
+        rrdsi.reset();
+        org.nd4j.evaluation.classification.Evaluation e2 = new org.nd4j.evaluation.classification.Evaluation();
+        net.doEvaluation(rrdsi, e2);
+        for (int i = 0; i < 3; i++) {
+            List<org.nd4j.evaluation.meta.Prediction> actualClassI = e2.getPredictionsByActualClass(i);
+            List<org.nd4j.evaluation.meta.Prediction> predictedClassI = e2.getPredictionByPredictedClass(i);
+            assertEquals(actualCounts[i], actualClassI.size());
+            assertEquals(predictedCounts[i], predictedClassI.size());
+        }
+
+        ComputationGraph cg = net.toComputationGraph();
+        rrdsi.reset();
+        e2 = new org.nd4j.evaluation.classification.Evaluation();
+        cg.doEvaluation(rrdsi, e2);
+        for (int i = 0; i < 3; i++) {
+            List<org.nd4j.evaluation.meta.Prediction> actualClassI = e2.getPredictionsByActualClass(i);
+            List<org.nd4j.evaluation.meta.Prediction> predictedClassI = e2.getPredictionByPredictedClass(i);
+            assertEquals(actualCounts[i], actualClassI.size());
+            assertEquals(predictedCounts[i], predictedClassI.size());
+        }
+
     }
 
     private static void apply(org.nd4j.evaluation.classification.Evaluation e, int nTimes, INDArray predicted, INDArray actual) {
@@ -504,11 +521,11 @@ public class EvalTest extends BaseDL4JTest {
             list.add(new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{ds.getFeatures()}, new INDArray[]{ds.getLabels(), ds.getLabels()}));
         }
 
-        Evaluation e = new Evaluation();
-        RegressionEvaluation e2 = new RegressionEvaluation();
-        Map<Integer,IEvaluation[]> evals = new HashMap<>();
-        evals.put(0, new IEvaluation[]{(IEvaluation) e});
-        evals.put(1, new IEvaluation[]{(IEvaluation) e2});
+        org.nd4j.evaluation.classification.Evaluation e = new org.nd4j.evaluation.classification.Evaluation();
+        org.nd4j.evaluation.regression.RegressionEvaluation e2 = new org.nd4j.evaluation.regression.RegressionEvaluation();
+        Map<Integer,org.nd4j.evaluation.IEvaluation[]> evals = new HashMap<>();
+        evals.put(0, new org.nd4j.evaluation.IEvaluation[]{e});
+        evals.put(1, new org.nd4j.evaluation.IEvaluation[]{e2});
 
         cg.evaluate(new IteratorMultiDataSetIterator(list.iterator(), 30), evals);
 
@@ -567,14 +584,14 @@ public class EvalTest extends BaseDL4JTest {
         }
 
         try {
-            net.evaluateROC(iter);
+            net.evaluateROC(iter, 0);
             fail("Expected exception");
         } catch (IllegalStateException e){
             assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("ROC"));
         }
 
         try {
-            net.evaluateROCMultiClass(iter);
+            net.evaluateROCMultiClass(iter, 0);
             fail("Expected exception");
         } catch (IllegalStateException e){
             assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("ROCMultiClass"));
@@ -589,14 +606,14 @@ public class EvalTest extends BaseDL4JTest {
         }
 
         try {
-            cg.evaluateROC(iter);
+            cg.evaluateROC(iter, 0);
             fail("Expected exception");
         } catch (IllegalStateException e){
             assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("ROC"));
         }
 
         try {
-            cg.evaluateROCMultiClass(iter);
+            cg.evaluateROCMultiClass(iter, 0);
             fail("Expected exception");
         } catch (IllegalStateException e){
             assertTrue(e.getMessage().contains("Classifier") && e.getMessage().contains("ROCMultiClass"));
@@ -606,10 +623,10 @@ public class EvalTest extends BaseDL4JTest {
         //Disable validation, and check same thing:
         net.getLayerWiseConfigurations().setValidateOutputLayerConfig(false);
         net.evaluate(iter);
-        net.evaluateROCMultiClass(iter);
+        net.evaluateROCMultiClass(iter, 0);
 
         cg.getConfiguration().setValidateOutputLayerConfig(false);
         cg.evaluate(iter);
-        cg.evaluateROCMultiClass(iter);
+        cg.evaluateROCMultiClass(iter, 0);
     }
 }

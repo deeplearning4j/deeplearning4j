@@ -222,8 +222,11 @@ public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {
             if(a == null || Double.isNaN(a.lastThreshold))
                 return;
 
+
             lastThresholdSum += a.lastThreshold;
-            lastSparsitySum += a.lastSparsity;
+            if (!Double.isNaN(a.lastSparsity)) {
+                lastSparsitySum += a.lastSparsity;
+            }
             count++;
         }
 

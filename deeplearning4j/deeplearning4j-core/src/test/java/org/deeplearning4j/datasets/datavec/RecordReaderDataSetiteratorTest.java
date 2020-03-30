@@ -1381,4 +1381,17 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
         assertNotNull(ds.getFeatures());
         assertNull(ds.getLabels());
     }
+
+
+    @Test
+    public void testCollectMetaData(){
+        RecordReaderDataSetIterator trainIter = new RecordReaderDataSetIterator.Builder(new CollectionRecordReader(Collections.<List<Writable>>emptyList()), 1)
+                .collectMetaData(true)
+                .build();
+        assertTrue(trainIter.isCollectMetaData());
+        trainIter.setCollectMetaData(false);
+        assertFalse(trainIter.isCollectMetaData());
+        trainIter.setCollectMetaData(true);
+        assertTrue(trainIter.isCollectMetaData());
+    }
 }

@@ -3556,4 +3556,52 @@ public class SameDiffTests extends BaseNd4jTest {
             assertTrue(msg, msg.contains("\"labels\"") && msg.contains("No array was provided"));
         }
     }
+
+
+    @Test
+    public void testEquals1(){
+
+        SameDiff sd1 = SameDiff.create();
+        SameDiff sd2 = SameDiff.create();
+
+        assertEquals(sd1, sd2);
+
+        SDVariable p1 = sd1.placeHolder("ph", DataType.FLOAT, -1, 10);
+        SDVariable p2 = sd2.placeHolder("ph", DataType.FLOAT, -1, 10);
+
+        assertEquals(sd1, sd2);
+
+        SDVariable w1 = sd1.constant("c1",1.0f);
+        SDVariable w2 = sd2.constant("c1",1.0f);
+
+        assertEquals(sd1, sd2);
+
+        SDVariable a1 = p1.add("add", w1);
+        SDVariable a2 = p2.add("add", w2);
+
+        assertEquals(sd1, sd2);
+
+        SDVariable w1a = sd1.constant("c2", 2.0f);
+        SDVariable w2a = sd2.constant("cX", 2.0f);
+
+        assertNotEquals(sd1, sd2);
+        w2a.rename("c2");
+
+        assertEquals(sd1, sd2);
+
+        sd2.createGradFunction("ph");
+
+        assertEquals(sd1, sd2);
+
+        w2a.getArr().assign(3.0f);
+
+        assertNotEquals(sd1, sd2);
+
+        w1a.getArr().assign(3.0f);
+        assertEquals(sd1, sd2);
+
+        SDVariable s1 = p1.sub("op", w1);
+        SDVariable s2 = p2.add("op", w1);
+        assertNotEquals(sd1, sd2);
+    }
 }

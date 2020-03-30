@@ -205,6 +205,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.numPossibleLabels = b.numPossibleLabels;
         this.regression = b.regression;
         this.preProcessor = b.preProcessor;
+        this.collectMetaData = b.collectMetaData;
     }
 
     /**

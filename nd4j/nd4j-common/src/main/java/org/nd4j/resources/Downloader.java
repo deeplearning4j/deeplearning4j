@@ -95,7 +95,7 @@ public class Downloader {
             }
             // try extracting
             try{
-                ArchiveUtils.unzipFileTo(f.getAbsolutePath(), extractToDir.getAbsolutePath());
+                ArchiveUtils.unzipFileTo(f.getAbsolutePath(), extractToDir.getAbsolutePath(), false);
             } catch (Throwable t){
                 log.warn("Error extracting {} files from file {} - retrying...", name, f.getAbsolutePath(), t);
                 f.delete();

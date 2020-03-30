@@ -1655,29 +1655,6 @@ public class SDVariable implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof SDVariable)) {
-            return false;
-        }
-
-        SDVariable that = (SDVariable) o;
-
-        if (!Objects.equals(varName, that.varName)) {
-            return false;
-        }
-        if (variableType != that.variableType) {
-            return false;
-        }
-        if(sameDiff != that.sameDiff){
-            return false;
-        }
-        return dataType == that.dataType;
-    }
-
-    @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + (varName != null ? varName.hashCode() : 0);
@@ -1694,5 +1671,27 @@ public class SDVariable implements Serializable {
         v.dataType = dataType;
         v.sameDiff = sd;
         return v;
+    }
+
+    @Override
+    public boolean equals(Object o){
+        if(o == this) return true;
+        if(!(o instanceof SDVariable))
+            return false;
+
+        SDVariable s = (SDVariable)o;
+        if(!varName.equals(s.varName))
+            return false;
+        if(variableType != s.variableType)
+            return false;
+        if(dataType != s.dataType)
+            return false;
+
+        if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT){
+            INDArray a1 = getArr();
+            INDArray a2 = s.getArr();
+            return a1.equals(a2);
+        }
+        return true;
     }
 }

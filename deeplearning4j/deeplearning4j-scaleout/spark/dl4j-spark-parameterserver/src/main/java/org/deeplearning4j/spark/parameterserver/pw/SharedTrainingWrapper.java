@@ -109,6 +109,7 @@ public class SharedTrainingWrapper {
 
         // now we're creating DataSetIterators, to feed ParallelWrapper
         iteratorDS = new VirtualDataSetIterator(iteratorsDS);
+        iteratorMDS = new VirtualMultiDataSetIterator(iteratorsMDS);
     }
 
     public static synchronized SharedTrainingWrapper getInstance(long id) {
@@ -447,17 +448,19 @@ public class SharedTrainingWrapper {
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
             try {
-                while((iteratorDS != null && iteratorDS.hasNext()) || (iteratorMDS != null && iteratorMDS.hasNext())) {
+                boolean dsNext;
+                boolean mdsNext;
+                while((dsNext = iteratorDS != null && iteratorDS.hasNext()) || (mdsNext = iteratorMDS != null && iteratorMDS.hasNext())) {
                     //Loop as a guard against concurrent modifications and RCs
 
                     if (wrapper != null) {
-                        if (iteratorDS != null)
+                        if (dsNext)
                             wrapper.fit(iteratorDS);
                         else
                             wrapper.fit(iteratorMDS);
                     } else {
                         // if wrapper is null, we're fitting standalone model then
-                        if (iteratorDS != null) {
+                        if (dsNext) {
                             if (model instanceof ComputationGraph) {
                                 ((ComputationGraph) originalModel).fit(iteratorDS);
                             } else if (model instanceof MultiLayerNetwork) {
@@ -472,7 +475,8 @@ public class SharedTrainingWrapper {
                         }
                     }
 
-                    consumer.getUpdatesQueue().purge();
+                    if(consumer != null)
+                        consumer.getUpdatesQueue().purge();
                 }
             } catch (Throwable t){
                 log.warn("Exception encountered during fit operation", t);

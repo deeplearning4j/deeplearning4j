@@ -16,10 +16,7 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.nd4j.autodiff.samediff.SDVariable;
 
 import java.util.List;
@@ -28,6 +25,7 @@ import java.util.List;
 @NoArgsConstructor
 @Data   //TODO immutable?
 @Builder
+@EqualsAndHashCode(exclude = {"gradient", "variableIndex"})
 public class Variable {
     protected String name;
     protected SDVariable variable;

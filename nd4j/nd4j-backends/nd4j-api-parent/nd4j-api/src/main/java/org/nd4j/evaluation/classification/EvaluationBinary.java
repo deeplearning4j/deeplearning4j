@@ -173,9 +173,6 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     @Override
     public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray, List<? extends Serializable> recordMetaData) {
-        if(recordMetaData != null){
-            throw new UnsupportedOperationException("Evaluation with record metadata not yet implemented for EvaluationBinary");
-        }
         eval(labels, networkPredictions, maskArray);
     }
 

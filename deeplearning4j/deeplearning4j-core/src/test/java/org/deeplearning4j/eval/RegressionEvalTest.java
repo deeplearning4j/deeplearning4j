@@ -61,7 +61,7 @@ public class RegressionEvalTest extends BaseDL4JTest {
 
         DataSet ds = new DataSet(f, l);
         DataSetIterator iter = new ExistingDataSetIterator(Collections.singletonList(ds));
-        RegressionEvaluation re = net.evaluateRegression(iter);
+        org.nd4j.evaluation.regression.RegressionEvaluation re = net.evaluateRegression(iter);
 
         for (int i = 0; i < 5; i++) {
             assertEquals(1.0, re.meanSquaredError(i), 1e-6);

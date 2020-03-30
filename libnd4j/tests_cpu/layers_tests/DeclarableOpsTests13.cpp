@@ -955,7 +955,160 @@ TEST_F(DeclarableOpsTests13, mergemax_2) {
 
     ASSERT_EQ(20, status);
 }
+/////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, mergemax_bp_1) {
 
+    NDArray x1('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray x2('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray x3('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray grad('c', { 5, 5 }, sd::DataType::FLOAT32);
+
+    x1.assign(3);
+    x2.assign(1);
+    x3.assign(2);
+    grad.linspace(.1, .1);
+
+
+    sd::ops::mergemax_bp op;
+    auto result = op.evaluate({ &x1, &x2, &x3, &grad }, {}, {});
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_EQ(3, result.size());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(grad.isSameShape(z));
+    ASSERT_TRUE(grad.equalsTo(z));
+
+}
+/////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, mergemax_bp_2) {
+
+    NDArray x1('c', { 2, 5 }, { 1,2,3,4,5,4,3,2,1,0 }, sd::DataType::FLOAT32);
+    NDArray x2('c', { 2, 5 }, { 0,1,2,3,4,5,6,7,8,9 }, sd::DataType::FLOAT32);
+    NDArray x3('c', { 2, 5 }, { 0,1,1,2,3,4,7,5,8,10 }, sd::DataType::FLOAT32);
+    NDArray grad('c', { 2, 5 }, sd::DataType::FLOAT32);
+
+    grad.linspace(.1, .1);
+
+    NDArray exp1('c', { 2, 5 }, { 0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0 }, sd::DataType::FLOAT32);
+    NDArray exp2('c', { 2, 5 }, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.0, 0.8, 0.9, 0.0 }, sd::DataType::FLOAT32);
+    NDArray exp3('c', { 2, 5 }, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 1.0 }, sd::DataType::FLOAT32);
+
+    sd::ops::mergemax_bp op;
+    auto result = op.evaluate({ &x1, &x2, &x3, &grad }, {}, {});
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_EQ(3, result.size());
+
+    auto z1 = result.at(0);
+    auto z2 = result.at(1);
+    auto z3 = result.at(2);
+
+    ASSERT_TRUE(exp1.isSameShape(z1));
+    ASSERT_TRUE(exp1.equalsTo(z1));
+    ASSERT_TRUE(exp2.isSameShape(z2));
+    ASSERT_TRUE(exp2.equalsTo(z2));
+    ASSERT_TRUE(exp3.isSameShape(z3));
+    ASSERT_TRUE(exp3.equalsTo(z3));
+
+}
+/////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, mergemax_bp_3) {
+
+    NDArray x1C('c', { 2, 5 }, { 1,2,3,4,5,4,3,2,1,0 }, sd::DataType::FLOAT32);
+    NDArray x2C('c', { 2, 5 }, { 0,1,2,3,4,5,6,7,8,9 }, sd::DataType::FLOAT32);
+    NDArray x3C('c', { 2, 5 }, { 0,1,1,2,3,4,7,5,8,10 }, sd::DataType::FLOAT32);
+    NDArray grad('c', { 2, 5 }, sd::DataType::FLOAT32);
+
+    grad.linspace(.1, .1);
+
+    NDArray x1('f', { 2, 5 }, sd::DataType::FLOAT32);
+    NDArray x2('f', { 2, 5 }, sd::DataType::FLOAT32);
+    NDArray x3('f', { 2, 5 }, sd::DataType::FLOAT32);
+
+    NDArray exp1C('c', { 2, 5 }, { 0.1, 0.2, 0.3, 0.4, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0 }, sd::DataType::FLOAT32);
+    NDArray exp2C('c', { 2, 5 }, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 0.0, 0.8, 0.9, 0.0 }, sd::DataType::FLOAT32);
+    NDArray exp3C('c', { 2, 5 }, { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7, 0.0, 0.0, 1.0 }, sd::DataType::FLOAT32);
+
+    NDArray exp1('f', { 2, 5 }, sd::DataType::FLOAT32);
+    NDArray exp2('f', { 2, 5 }, sd::DataType::FLOAT32);
+    NDArray exp3('f', { 2, 5 }, sd::DataType::FLOAT32);
+
+    x1.assign(x1C);
+    x2.assign(x2C);
+    x3.assign(x3C);
+
+    exp1.assign(exp1C);
+    exp2.assign(exp2C);
+    exp3.assign(exp3C);
+
+    sd::ops::mergemax_bp op;
+    auto result = op.evaluate({ &x1, &x2, &x3, &grad }, {}, {});
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_EQ(3, result.size());
+
+    auto z1 = result.at(0);
+    auto z2 = result.at(1);
+    auto z3 = result.at(2);
+
+    ASSERT_TRUE(exp1.isSameShape(z1));
+    ASSERT_TRUE(exp1.equalsTo(z1));
+    ASSERT_TRUE(exp2.isSameShape(z2));
+    ASSERT_TRUE(exp2.equalsTo(z2));
+    ASSERT_TRUE(exp3.isSameShape(z3));
+    ASSERT_TRUE(exp3.equalsTo(z3));
+
+}
+/////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, mergeadd_bp_1) {
+
+    NDArray x1('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray x2('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray x3('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray grad('c', { 5, 5 }, sd::DataType::FLOAT32);
+
+    x1.assign(3);
+    x2.assign(1);
+    x3.assign(2);
+    grad.linspace(.1, .1);
+
+    sd::ops::mergeadd_bp op;
+    auto result = op.evaluate({ &x1, &x2, &x3, &grad }, {}, {});
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_EQ(3, result.size());
+
+    for (int i = 0; i < 3; i++) {
+        auto z = result.at(0);
+        ASSERT_TRUE(grad.isSameShape(z));
+        ASSERT_TRUE(grad.equalsTo(z));
+    }
+}
+/////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, mergeavg_bp_1) {
+
+    NDArray x1('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray x2('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray x3('c', { 5, 5 }, sd::DataType::FLOAT32);
+    NDArray grad('c', { 5, 5 }, sd::DataType::FLOAT32);
+
+    x1.assign(3);
+    x2.assign(1);
+    x3.assign(2);
+    grad.linspace(.1, .1);
+
+    sd::ops::mergeavg_bp op;
+    auto result = op.evaluate({ &x1, &x2, &x3, &grad }, {}, {});
+    ASSERT_EQ(Status::OK(), result.status());
+    ASSERT_EQ(3, result.size());
+
+    grad.applyScalar(sd::scalar::Divide, 3, grad);
+
+    for (int i = 0; i < 3; i++) {
+        auto z = result.at(i);
+        ASSERT_TRUE(grad.isSameShape(z));
+        ASSERT_TRUE(grad.equalsTo(z));
+    }
+
+}
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_1) {
 

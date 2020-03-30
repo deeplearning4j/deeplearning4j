@@ -103,4 +103,6 @@ public class Keras2LayerConfiguration extends KerasLayerConfiguration {
 
     /* Keras weight initializers. */
     private final String LAYER_FIELD_INIT = "kernel_initializer";
+
+    private final String TENSORFLOW_OP_LAYER = "TensorFlowOpLayer";
 }

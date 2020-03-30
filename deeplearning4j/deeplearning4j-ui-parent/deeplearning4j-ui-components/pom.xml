@@ -25,10 +25,6 @@
 
     <artifactId>deeplearning4j-ui-components</artifactId>
 
-    <properties>
-        <freemarker.version>2.3.23</freemarker.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.projectlombok</groupId>

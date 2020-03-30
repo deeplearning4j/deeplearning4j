@@ -16,18 +16,16 @@
 
 package org.nd4j.tensorflow.conversion.graphrunner;
 
-import lombok.Builder;
-import lombok.Singular;
+import lombok.*;
 import org.apache.commons.io.FileUtils;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.protobuf.ByteString;
 import org.nd4j.shade.protobuf.InvalidProtocolBufferException;
 import org.nd4j.shade.protobuf.util.JsonFormat;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.tensorflow.conversion.TensorDataType;
 import org.apache.commons.io.IOUtils;
@@ -56,6 +54,7 @@ import static org.bytedeco.tensorflow.global.tensorflow.*;
  * @author Adam Gibson
  */
 @Slf4j
+@NoArgsConstructor
 public class GraphRunner implements Closeable {
 
     private static boolean isTfWarmedUp = false;
@@ -103,6 +102,9 @@ public class GraphRunner implements Closeable {
      * @param inputDataTypes the expected input data types
      * @param outputDataTypes the expected output data types
      */
+
+
+
     @Builder
     public GraphRunner(List<String> inputNames,
                        List<String> outputNames,
@@ -440,6 +442,7 @@ public class GraphRunner implements Closeable {
      * @return a map of the output names to the
      * ndarrays matching each output specified in the graph
      */
+
     public Map<String,INDArray> run(Map<String,INDArray> inputs) {
         if (!isTfWarmedUp && !isTfWarmingUp){
             isTfWarmingUp = true;
@@ -683,4 +686,7 @@ public class GraphRunner implements Closeable {
 
         return builder1.build();
     }
+
+
+
 }
