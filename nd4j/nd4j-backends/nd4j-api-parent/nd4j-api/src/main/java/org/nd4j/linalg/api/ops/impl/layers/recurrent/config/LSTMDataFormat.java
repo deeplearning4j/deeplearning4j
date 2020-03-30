@@ -30,8 +30,8 @@ package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 
 
         TNS,
-        NST,
         NTS,
+        NST,
         T2NS
 
     }

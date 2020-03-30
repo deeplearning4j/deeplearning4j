@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -79,12 +79,12 @@ public class LSTMBlock extends DynamicCustomOp {
     private LSTMConfiguration configuration;
 
     @Getter
-    private LSTMLayerWeights weights;
+    private LSTMWeights weights;
 
     public LSTMBlock() {
     }
 
-    public LSTMBlock(@NonNull SameDiff sameDiff, SDVariable maxTSLength, SDVariable x, SDVariable cLast, SDVariable yLast, LSTMLayerWeights weights, LSTMConfiguration configuration) {
+    public LSTMBlock(@NonNull SameDiff sameDiff, SDVariable maxTSLength, SDVariable x, SDVariable cLast, SDVariable yLast, LSTMWeights weights, LSTMConfiguration configuration) {
         super(null, sameDiff, weights.argsWithInputs(x, maxTSLength, cLast, yLast));
         this.configuration = configuration;
         this.weights = weights;
@@ -92,7 +92,7 @@ public class LSTMBlock extends DynamicCustomOp {
         addTArgument(configuration.tArgs());
     }
 
-    public LSTMBlock(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMLayerWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
+    public LSTMBlock(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMWeights lstmWeights, LSTMConfiguration lstmConfiguration) {
         super(null, null, lstmWeights.argsWithInputs(maxTSLength, x, cLast, yLast));
         this.configuration = lstmConfiguration;
         this.weights = lstmWeights;

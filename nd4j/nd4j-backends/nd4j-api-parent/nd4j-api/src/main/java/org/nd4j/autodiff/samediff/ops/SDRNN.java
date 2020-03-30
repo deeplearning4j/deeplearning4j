@@ -104,7 +104,7 @@ public class SDRNN extends SDOps {
                                       @NonNull SDVariable x, @NonNull SDVariable cLast, @NonNull SDVariable yLast,
                                       @NonNull LSTMLayerWeights weights, @NonNull LSTMLayerConfig config){
         LSTMLayer c = new LSTMLayer(sd, maxTSLength, x, cLast, yLast, weights, config);
-        return new LSTMLayerOutputs(c.outputVariables(), (LSTMDataFormat) config.toProperties(true, true).get("LSTMDataFormat"));
+        return new LSTMLayerOutputs(c.outputVariables(), config.getLstmdataformat());
     }
 
     /**
@@ -151,7 +151,7 @@ public class SDRNN extends SDOps {
             @NonNull SDVariable x, @NonNull SDVariable cLast, @NonNull SDVariable yLast,
             @NonNull LSTMLayerWeights weights, @NonNull LSTMLayerConfig config){
         LSTMLayer c = new LSTMLayer(sd, maxTSLength, x, cLast, yLast, weights, config);
-        return new LSTMLayerOutputs(c.outputVariables(baseName), (LSTMDataFormat) config.toProperties(true, true).get("LSTMDataFormat"));
+        return new LSTMLayerOutputs(c.outputVariables(baseName), config.getLstmdataformat());
     }
 
     /**

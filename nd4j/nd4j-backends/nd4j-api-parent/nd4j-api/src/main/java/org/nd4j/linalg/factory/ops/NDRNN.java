@@ -87,12 +87,43 @@ public class NDRNN {
   }
 
   /**
-   * The LSTM layer<br>
+   * The LSTM block<br>
+   *
+   * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
+   * @param LSTMWeights Configuration Object
+   * @param LSTMConfiguration Configuration Object
+   * @return output The layer's outputs. (NUMERIC type)
+   */
+  public INDArray lstmblock(INDArray x, LSTMWeights LSTMWeights,
+      LSTMConfiguration LSTMConfiguration) {
+    NDValidation.validateNumerical("lstmblock", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(null, x, null, null, LSTMWeights, LSTMConfiguration))[0];
+  }
+
+  /**
+   * Long Short-Term Memory layer - Hochreiter 1997.<br>
+   * SUPPORTS following data formats:\n<br>
+   * for unidirectional: \n" +<br>
+   * TNS: shapes [timeLength, numExamples, inOutSize]\n<br>
+   * NST: shapes [numExamples, inOutSize, timeLength]\n<br>
+   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
+   * for bidirectional:\n<br>
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)\n<br>
+   * SUPPORTS following direction modes:\n<br>
+   * FWD: forward<br>
+   * BWD: backward<br>
+   * BIDIR_SUM: bidirectional sum\n<br>
+   * BIDIR_CONCAT: bidirectional concat\n" +<br>
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)"<br>
+   * You may use different gate configurations:<br>
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum\n<br>
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")\n<br>
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
    * @param cLast Previous/initial cell state, with shape [batchSize, numUnits] (NUMERIC type)
    * @param yLast Previous/initial cell output, with shape [batchSize, numUnits] (NUMERIC type)
-   * @param maxTSLength  (NUMERIC type)
+   * @param maxTSLength maxTSLength with shape [batchSize] (NUMERIC type)
    * @param LSTMLayerWeights Configuration Object
    * @param LSTMLayerConfig Configuration Object
    * @return output The layer's outputs. (NUMERIC type)

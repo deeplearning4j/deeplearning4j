@@ -49,8 +49,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.*;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -140,11 +139,17 @@ public class SameDiffRNNTestCases {
                             .rWeights(sd.var("rWeights", Nd4j.rand(numUnits, 4 * numUnits)))
                             .peepholeWeights(sd.var("inputPeepholeWeights", Nd4j.rand(DataType.FLOAT, 3*numUnits)))
                             .bias(sd.var("bias", Nd4j.rand(DataType.FLOAT, 4 * numUnits))).build(),
-                    LSTMConfiguration.builder()
-                            .forgetBias(1.0)
-                            .clippingCellValue(0.0)
-                            .peepHole(false)
-                            .dataFormat(RnnDataFormat.TNS).build()
+                    LSTMLayerConfig.builder()
+                            .lstmdataformat(LSTMDataFormat.NST)
+                            .directionMode(LSTMDirectionMode.FWD)
+                            .gateAct(LSTMActivations.SIGMOID)
+                            .cellAct(LSTMActivations.TANH)
+                            .outAct(LSTMActivations.TANH)
+                            .retFullSequence(true)
+                            .retLastC(true)
+                            .retLastH(true)
+                            .build()
+
             ).getOutput();
 
 

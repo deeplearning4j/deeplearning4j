@@ -17,12 +17,11 @@ package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 
 /**
  * direction <br>
- * FWD: 0 = fwd
- * BWD: 1 = bwd
- * BS: 2 = bidirectional sum
- * BC: 3 = bidirectional concat
- * BE: 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3)
- */
+ *  FWD: 0 = fwd
+ *  BWD: 1 = bwd
+ *  BIDIR_SUM: 2 = bidirectional sum
+ *  BIDIR_CONCAT: 3 = bidirectional concat
+ *  BIDIR_EXTRA_DIM: 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3) */
 
 //    const auto directionMode = INT_ARG(1);    // direction:
 
@@ -32,8 +31,8 @@ public enum LSTMDirectionMode {
 
     FWD,
     BWD,
-    BS,
-    BC,
-    BE
+    BIDIR_SUM,
+    BIDIR_CONCAT,
+    BIDIR_EXTRA_DIM
 
 }
