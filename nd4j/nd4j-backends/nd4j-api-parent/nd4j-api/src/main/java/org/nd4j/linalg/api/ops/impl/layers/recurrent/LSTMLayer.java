@@ -26,6 +26,8 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 
+import javax.xml.crypto.Data;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -94,8 +96,23 @@ public class LSTMLayer extends DynamicCustomOp {
         Preconditions.checkState(inputDataTypes != null && 3 <= inputDataTypes.size() && inputDataTypes.size() <= 8, "Expected amount of inputs to LSTMLayer between 3 inputs minimum (input, Wx, Wr only) or 8 maximum, got %s", inputDataTypes);
         //7 outputs, all of same type as input. Note that input 0 is max sequence length (int64), input 1 is actual input
         DataType dt = inputDataTypes.get(1);
+        ArrayList<DataType> list = new ArrayList<>();
+        if (configuration.isRetFullSequence()) {
+
+            list.add(dt);
+        }
+
+        if (configuration.isRetLastC()) {
+
+            list.add(dt);
+        }
+        if (configuration.isRetLastH()){
+
+            list.add(dt);
+        }
+
         Preconditions.checkState(dt.isFPType(), "Input type 1 must be a floating point type, got %s", dt);
-        return Arrays.asList(dt, dt, dt, dt, dt, dt, dt);
+        return list;
     }
 
     @Override
