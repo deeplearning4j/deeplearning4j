@@ -867,9 +867,12 @@ namespace sd {
          *   - 2D matrix MxN
          *   - 1D vector with N elements
          * output value - 2D matrix NxN as multiply of matrixes and add vector
+         * Int args:
+         *      0 - optional switcher of weights format, if int arg == 1 - mkldnn, else mmul
          */
         #if NOT_EXCLUDED(OP_xw_plus_b)
-        DECLARE_CUSTOM_OP(xw_plus_b, 3, 1, false, 0, 0);
+                DECLARE_CUSTOM_OP(xw_plus_b, 3, 1, false, 0, 0);
+                DECLARE_CUSTOM_OP(xw_plus_b_bp, 4, 3, false, 0, 0);
         #endif
 
         /**
