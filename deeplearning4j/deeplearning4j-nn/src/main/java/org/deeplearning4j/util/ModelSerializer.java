@@ -415,7 +415,9 @@ public class ModelSerializer {
      */
     public static Pair<MultiLayerNetwork, Normalizer> restoreMultiLayerNetworkAndNormalizer(@NonNull File file, boolean loadUpdater)
             throws IOException {
-    	return restoreMultiLayerNetworkAndNormalizer(new FileInputStream(file), loadUpdater);
+        try(InputStream is = new BufferedInputStream(new FileInputStream(file))){
+            return restoreMultiLayerNetworkAndNormalizer(is, loadUpdater);
+        }
     }
 
     /**
@@ -876,8 +878,8 @@ public class ModelSerializer {
      * @return
      */
     public static <T extends Normalizer> T restoreNormalizerFromFile(File file) throws IOException {
-        try {
-        	return restoreNormalizerFromInputStream(new FileInputStream(file));
+        try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+        	return restoreNormalizerFromInputStream(is);
         } catch (Exception e) {
             log.warn("Error while restoring normalizer, trying to restore assuming deprecated format...");
             DataNormalization restoredDeprecated = restoreNormalizerFromInputStreamDeprecated(new FileInputStream(file));
@@ -918,8 +920,6 @@ public class ModelSerializer {
      *
      * This method restores normalizer from a given persisted model file serialized with Java object serialization
      *
-     * @param file
-     * @return
      */
     private static DataNormalization restoreNormalizerFromInputStreamDeprecated(InputStream stream) {
     	try {
