@@ -218,7 +218,9 @@ public class ModelSerializer {
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull File file, boolean loadUpdater)
             throws IOException {
-        return restoreMultiLayerNetwork(new FileInputStream(file), loadUpdater);
+        try(InputStream is = new BufferedInputStream(new FileInputStream(file))){
+            return restoreMultiLayerNetwork(is, loadUpdater);
+        }
     }
 
 
