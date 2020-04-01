@@ -2122,4 +2122,26 @@ public class MiscOpValidation extends BaseOpValidation {
 
         assertNull(err);
     }
+
+    @Test
+    public void testSeqMask(){
+        INDArray arr = Nd4j.createFromArray(1,2,3);
+        INDArray maxLen = Nd4j.scalar(4);
+
+        INDArray out = Nd4j.create(DataType.INT32, 3, 4);
+        out.assign(Integer.MAX_VALUE);
+
+        Nd4j.exec(DynamicCustomOp.builder("sequence_mask")
+                .addInputs(arr, maxLen)
+                .addOutputs(out)
+                .build()
+        );
+
+        INDArray exp = Nd4j.createFromArray(new int[][]{
+                {1, 0, 0, 0},
+                {1, 1, 0, 0},
+                {1, 1, 1, 0}});
+
+        assertEquals(exp, out);
+    }
 }

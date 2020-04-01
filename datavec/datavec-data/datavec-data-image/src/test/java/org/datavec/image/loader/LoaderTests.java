@@ -45,15 +45,23 @@ import static org.junit.Assert.assertTrue;
  */
 public class LoaderTests {
 
+    private static void ensureDataAvailable(){
+        //Ensure test resources available by initializing CifarLoader and relying on auto download
+        boolean preProcessCifar = false;
+        int numExamples = 10;
+        int row = 28;
+        int col = 28;
+        int channels = 1;
+        for( boolean train : new boolean[]{true, false}){
+            CifarLoader loader = new CifarLoader(row, col, channels, train, preProcessCifar);
+            loader.next(numExamples);
+        }
+        new LFWLoader(new long[] {250, 250, 3}, true).getRecordReader(1, 1, 1, new Random(42)).next();
+    }
+
     @Test
     public void testLfwReader() throws Exception {
-        String subDir = "lfw-a/lfw";
-        File path = new File(FilenameUtils.concat(System.getProperty("user.home"), subDir));
-        FileSplit fileSplit = new FileSplit(path, LFWLoader.ALLOWED_FORMATS, new Random(42));
-        BalancedPathFilter pathFilter = new BalancedPathFilter(new Random(42), LFWLoader.LABEL_PATTERN, 1, 1, 1);
-        InputSplit[] inputSplit = fileSplit.sample(pathFilter, 1);
-        RecordReader rr = new ImageRecordReader(250, 250, 3, LFWLoader.LABEL_PATTERN);
-        rr.initialize(inputSplit[0]);
+        RecordReader rr = new LFWLoader(new long[] {250, 250, 3}, true).getRecordReader(1, 1, 1, new Random(42));
         List<String> exptedLabel = rr.getLabels();
 
         RecordReader rr2 = new LFWLoader(new long[] {250, 250, 3}, true).getRecordReader(1, 1, 1, new Random(42));
@@ -63,6 +71,7 @@ public class LoaderTests {
 
     @Test
     public void testCifarLoader() {
+        ensureDataAvailable();
         File dir = new File(FilenameUtils.concat(System.getProperty("user.home"), "cifar/cifar-10-batches-bin"));
         CifarLoader cifar = new CifarLoader(false, dir);
         assertTrue(dir.exists());
@@ -71,6 +80,7 @@ public class LoaderTests {
 
     @Test
     public void testCifarInputStream() throws Exception {
+        ensureDataAvailable();
         // check train
         String subDir = "cifar/cifar-10-batches-bin/data_batch_1.bin";
         String path = FilenameUtils.concat(System.getProperty("user.home"), subDir);

@@ -72,11 +72,11 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     protected File fullDir;
 
     protected boolean useSubset = false;
-    InputSplit[] inputSplit;
+    protected InputSplit[] inputSplit;
 
-    public static Map<String, String> lfwData = new HashMap<>();
-    public static Map<String, String> lfwLabel = new HashMap<>();
-    public static Map<String, String> lfwSubsetData = new HashMap<>();
+    public Map<String, String> lfwData = new HashMap<>();
+    public Map<String, String> lfwLabel = new HashMap<>();
+    public Map<String, String> lfwSubsetData = new HashMap<>();
 
     public LFWLoader() {
         this(false);
