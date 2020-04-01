@@ -2288,7 +2288,7 @@ TEST_F(DeclarableOpsTests14, Reshape15) {
     auto shape0 = NDArrayFactory::create<Nd4jLong>('c', {3}, {2, 0, -1});
     auto shape1 = NDArrayFactory::create<Nd4jLong>('c', {2}, {-1, 1});
 
-    auto e0 = NDArrayFactory::create<float>('c', {2, 0, 0});
+    auto e0 = NDArrayFactory::create<float>('c', {2, 0, 1});
     auto e1 = NDArrayFactory::create<float>('c', {0, 1});
 
     sd::ops::reshape op;
@@ -2374,6 +2374,7 @@ TEST_F(DeclarableOpsTests14, Reshape20) {
     NDArray x5('c', {0,2,10}, sd::DataType::FLOAT32);
     NDArray x6('c', {0,10,0}, sd::DataType::FLOAT32);
     NDArray x7('c', {0,1,2}, sd::DataType::FLOAT32);
+    NDArray x8('c', {1,2,0}, sd::DataType::FLOAT32);
 
     sd::ops::reshape op;
 
@@ -2416,4 +2417,8 @@ TEST_F(DeclarableOpsTests14, Reshape20) {
     result = op.evaluate({&x7}, {}, {10,0,50,100});
     ASSERT_EQ(ND4J_STATUS_OK, result.status());
     ASSERT_TRUE(result.at(0)->isSameShape({10,0,50,100}));
+
+    result = op.evaluate({&x7}, {}, {2,0,-1});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({2,0,1}));
 }

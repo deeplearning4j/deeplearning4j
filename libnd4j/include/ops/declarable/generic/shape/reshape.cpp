@@ -81,43 +81,79 @@ DECLARE_SHAPE_FN(reshape) {
 
     REQUIRE_TRUE(!reshapeArgs.empty() || x->lengthOf() == 1, 0, "Reshape buffer should have at least 1 dimension !");
 
-    Nd4jLong xLen = x->lengthOf();
-    if(x->isEmpty()) {
-        xLen = 1;
-        for (uint i = 0; i < x->rankOf(); ++i)                            // take into account possible empty shapes
-            if(x->sizeAt(i) != 0)
-                xLen *= x->sizeAt(i);
+    // Nd4jLong xLen = x->lengthOf();
+    // if(x->isEmpty()) {
+    //     xLen = 1;
+    //     for (uint i = 0; i < x->rankOf(); ++i)                            // take into account possible empty shapes
+    //         if(x->sizeAt(i) != 0)
+    //             xLen *= x->sizeAt(i);
+    // }
+
+    // for (uint i = 0; i < reshapeArgs.size(); ++i) {
+
+    //     if (reshapeArgs[i] == -1) {
+
+    //         uint shapeLength = 1, numOfZeros = 0;
+
+    //         for(uint j = 0; j < i; ++j)
+    //             if(reshapeArgs[j] != 0)
+    //                 shapeLength *= reshapeArgs[j];
+    //             else
+    //                 ++numOfZeros;
+
+    //         for(uint j = i + 1; j < reshapeArgs.size(); ++j) {
+    //             REQUIRE_TRUE(reshapeArgs[j] != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+    //             if(reshapeArgs[j] != 0)
+    //                 shapeLength *= reshapeArgs[j];
+    //             else
+    //                 ++numOfZeros;
+    //         }
+
+    //         const auto dim = xLen / shapeLength;
+
+    //         if(x->isEmpty() && (1 == dim || 0 == numOfZeros))
+    //             shapeNew.push_back(0);
+    //         else
+    //             shapeNew.push_back(dim);
+    //     }
+    //     else
+    //         shapeNew.push_back(reshapeArgs[i]);
+    // }
+
+    Nd4jLong newShapeLen = 1;
+    int pos = -1;
+    bool newShapeEmpty = false;
+
+    for (int i = 0; i < reshapeArgs.size(); ++i) {
+
+        const int dim = reshapeArgs[i];
+
+        if (dim == -1) {
+            REQUIRE_TRUE(pos == -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+            pos = i;
+            shapeNew.push_back(1);
+        }
+        else if (dim == 0) {
+            shapeNew.push_back(0);
+            newShapeEmpty = true;
+        }
+        else {
+            shapeNew.push_back(dim);
+            newShapeLen *= dim;
+        }
     }
 
-    for (uint i = 0; i < reshapeArgs.size(); ++i) {
+    if (pos != -1) {
 
-        if (reshapeArgs[i] == -1) {
-
-            uint shapeLength = 1, numOfZeros = 0;
-
-            for(uint j = 0; j < i; ++j)
-                if(reshapeArgs[j] != 0)
-                    shapeLength *= reshapeArgs[j];
-                else
-                    ++numOfZeros;
-
-            for(uint j = i + 1; j < reshapeArgs.size(); ++j) {
-                REQUIRE_TRUE(reshapeArgs[j] != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                if(reshapeArgs[j] != 0)
-                    shapeLength *= reshapeArgs[j];
-                else
-                    ++numOfZeros;
-            }
-
-            const auto dim = xLen / shapeLength;
-
-            if(x->isEmpty() && (1 == dim || 0 == numOfZeros))
-                shapeNew.push_back(0);
-            else
-                shapeNew.push_back(dim);
+        Nd4jLong xLen = x->lengthOf();
+        if(x->isEmpty()) {
+            xLen = 1;
+            for (uint i = 0; i < x->rankOf(); ++i)                            // take into account possible empty shapes
+                if(x->sizeAt(i) > 0 || !newShapeEmpty)
+                    xLen *= x->sizeAt(i);
         }
-        else
-            shapeNew.push_back(reshapeArgs[i]);
+
+        shapeNew[pos] = xLen / newShapeLen;
     }
 
     auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
@@ -125,6 +161,8 @@ DECLARE_SHAPE_FN(reshape) {
 
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(x->dataType(), orderNew, shapeNew));
 }
+
+
 
 }
 }
