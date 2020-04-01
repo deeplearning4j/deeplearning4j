@@ -47,6 +47,11 @@ public class UniformDistribution extends BaseRandomOp {
         this.extraArgs = new Object[] {this.from, this.to};
     }
 
+    public UniformDistribution(SameDiff sd, double from, double to, DataType dataType, long[] shape) {
+        this(sd, from, to, shape);
+        this.dataType = dataType;
+    }
+
     public UniformDistribution(double min, double max, DataType datatype, long... shape){
         this(Nd4j.createUninitialized(datatype, shape), min, max);
     }
@@ -111,6 +116,6 @@ public class UniformDistribution extends BaseRandomOp {
         Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input datatypes (no args) for %s, got %s", getClass(), inputDataTypes);
         //Input data type specifies the shape; output data type should be any float
         //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
-        return Collections.singletonList(DataType.DOUBLE);
+        return Collections.singletonList(dataType);
     }
 }

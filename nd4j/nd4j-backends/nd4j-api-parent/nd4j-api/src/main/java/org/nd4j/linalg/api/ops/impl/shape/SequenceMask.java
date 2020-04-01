@@ -69,7 +69,13 @@ public class SequenceMask extends DynamicCustomOp {
         addIArgument(maxLen);
         this.dataType = dataType;
         addDArgument(dataType);
-    } 
+    }
+
+    public SequenceMask(INDArray input, DataType dataType) {
+        addInputArgument(input);
+        this.dataType = dataType;
+        addDArgument(dataType);
+    }
 
 
     @Override

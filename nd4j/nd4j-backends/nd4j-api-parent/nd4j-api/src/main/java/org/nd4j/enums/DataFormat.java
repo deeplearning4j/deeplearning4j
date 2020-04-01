@@ -16,7 +16,7 @@
 
 //================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
-package org.nd4j.linalg.factory.enums;
+package org.nd4j.enums;
 
 /**
  * Data format: "NCHW" or "NHWC" */

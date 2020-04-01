@@ -50,6 +50,11 @@ public class AdjustHue extends DynamicCustomOp {
         super(sameDiff,new SDVariable[]{in,factor});
     }
 
+    public AdjustHue(@NonNull SameDiff sameDiff, @NonNull SDVariable in, double factor) {
+        super(sameDiff,new SDVariable[]{in});
+        addTArgument(factor);
+    }
+
     @Override
     public String opName() {
         return "adjust_hue";

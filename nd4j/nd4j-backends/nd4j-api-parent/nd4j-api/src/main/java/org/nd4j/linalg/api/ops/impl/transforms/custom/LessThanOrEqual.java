@@ -36,12 +36,20 @@ import java.util.List;
 public class LessThanOrEqual extends BaseDynamicTransformOp {
     public LessThanOrEqual() {}
 
+    public LessThanOrEqual( SameDiff sameDiff, SDVariable x, SDVariable y) {
+        this(sameDiff, new SDVariable[]{x,y}, false);
+    }
+
     public LessThanOrEqual( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
     public LessThanOrEqual( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
+    }
+
+    public LessThanOrEqual( INDArray x, INDArray y) {
+        addInputArgument(x,y);
     }
 
     public LessThanOrEqual(INDArray x, INDArray y, INDArray z){

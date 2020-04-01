@@ -178,7 +178,7 @@ public class LossOpValidation extends BaseOpValidation {
                             predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
                             labelsArr = Transforms.abs(labelsArr);
                             expOut = Transforms.exp(predictionsArr).sub(labelsArr.mul(predictionsArr));
-                            loss = sd.loss().logPoisson("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().logPoisson("loss", labels, predictions, w, reduction,false);
                             break;
                         case "log_poisson_full":
                             predictionsArr = Transforms.log(Transforms.abs(predictionsArr));
@@ -188,7 +188,7 @@ public class LossOpValidation extends BaseOpValidation {
                                     .add(labelsArr.mul(Transforms.log(labelsArr)))
                                     .sub(labelsArr)
                                     .add(Transforms.log(labelsArr.mul(Math.PI * 2)).mul(0.5));
-                            loss = sd.loss().logPoissonFull("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().logPoisson("loss", labels, predictions, w, reduction,true);
                             break;
                         case "mse":
                             //To match TF, this is actually sum of squares - 1/numExamples (prediction-label)^2
@@ -251,7 +251,7 @@ public class LossOpValidation extends BaseOpValidation {
 
                             expOut.muli(1/((n*(n-1)) / 2));
 
-                            loss = sd.loss().meanPairwiseSquaredError("loss", labels, predictions, w, reduction);
+                            loss = sd.loss().meanPairwiseSquaredError("loss", labels, predictions,w, reduction);
                             break;
                         case "sparsesoftmax":
                             labelsArr = Nd4j.create(DataType.DOUBLE, minibatch);

@@ -235,39 +235,39 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", inputArr.normmax());
                     break;
                 case 10:
-                    loss = sd.math().countNonZero("loss", input);
+                    loss = sd.math().countNonZero("loss", input, 0,1);
                     name = "countNonZero";
                     tc.expectedOutput("loss", Nd4j.scalar(inputArr.length()));
                     gradCheck = false;  //Long out, not floating point
                     break;
                 case 11:
-                    loss = sd.math().countZero("loss", input);
+                    loss = sd.math().countZero("loss", input, 0,1);
                     name = "countZero";
                     tc.expectedOutput("loss", Nd4j.scalar(0L));
                     gradCheck = false;  //Long out, not floating point
                     break;
                 case 12:
-                    loss = sd.math().amax("loss", input);
+                    loss = sd.math().amax("loss", input, 0,1);
                     name = "amax";
                     tc.expectedOutput("loss", inputArr.amax());
                     break;
                 case 13:
-                    loss = sd.math().amin("loss", input);
+                    loss = sd.math().amin("loss", input, 0,1);
                     name = "amin";
                     tc.expectedOutput("loss", inputArr.amin());
                     break;
                 case 14:
-                    loss = sd.math().asum("loss", input);
+                    loss = sd.math().asum("loss", input, 0,1);
                     name = "asum";
                     tc.expectedOutput("loss", Nd4j.getExecutioner().exec(new ASum(inputArr.dup())));
                     break;
                 case 15:
-                    loss = sd.math().amean("loss", input);
+                    loss = sd.math().amean("loss", input, 0,1);
                     name = "amean";
                     tc.expectedOutput("loss", Nd4j.getExecutioner().exec(new AMean(inputArr.dup())));
                     break;
                 case 16:
-                    loss = sd.math().entropy("loss", input);
+                    loss = sd.math().entropy("loss", input, 0,1);
                     name = "entropy";
                     inputArr = Nd4j.linspace(0.01, 0.99, length, DataType.DOUBLE).reshape('c', minibatch, nOut);
                     tc.expected("loss", inputArr.mul(Transforms.log(inputArr, true)).sum(Integer.MAX_VALUE).negi());
@@ -290,14 +290,14 @@ public class ReductionOpValidation extends BaseOpValidation {
                 case 19:
                     inputArr = Nd4j.rand(minibatch, nOut);
                     name = "logEntropy";
-                    loss = sd.math().logEntropy("loss", input);
+                    loss = sd.math().logEntropy("loss", input, 0,1);
                     double logEntropy = inputArr.logEntropyNumber().doubleValue();
                     tc.expected(loss, Nd4j.scalar(logEntropy));
                     break;
                 case 20:
                     inputArr = Nd4j.rand(minibatch, nOut);
                     name = "shannonEntropy";
-                    loss = sd.math().shannonEntropy("loss", input);
+                    loss = sd.math().shannonEntropy("loss", input, 0);
                     double shannonEntropy = inputArr.shannonEntropyNumber().doubleValue();
                     tc.expected(loss, Nd4j.scalar(shannonEntropy));
                     if (OpValidationSuite.IGNORE_FAILING) {
@@ -836,11 +836,11 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testIndexAccum() {
         List<String> failed = new ArrayList<>();
-        List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0, 1}, new int[0]);
+        List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0, 1} /*, new int[0]*/);
 
         INDArray in = Nd4j.rand(DataType.DOUBLE,3, 4);
 
-        for (int t = 0; t < 4; t++) {
+        for (int t = 0; t < 3; t++) {
             int[] d = dims.get(t);
             for (int i = 0; i < 7; i++) {
 

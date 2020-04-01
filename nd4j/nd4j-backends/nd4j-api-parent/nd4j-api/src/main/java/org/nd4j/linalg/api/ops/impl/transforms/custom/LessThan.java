@@ -37,12 +37,20 @@ import java.util.List;
 public class LessThan extends BaseDynamicTransformOp {
     public LessThan() {}
 
+    public LessThan( SameDiff sameDiff, SDVariable x, SDVariable y) {
+        this(sameDiff, new SDVariable[]{x,y}, false);
+    }
+
     public LessThan( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
     public LessThan( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
+    }
+
+    public LessThan( INDArray x, INDArray y) {
+        addInputArgument(x,y);
     }
 
     public LessThan(INDArray x, INDArray y, INDArray z){

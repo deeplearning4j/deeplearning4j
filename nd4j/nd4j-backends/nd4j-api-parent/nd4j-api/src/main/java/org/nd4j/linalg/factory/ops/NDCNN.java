@@ -32,7 +32,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.enums.DataFormat;
+import org.nd4j.enums.DataFormat;
 
 public class NDCNN {
   public NDCNN() {

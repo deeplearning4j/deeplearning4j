@@ -36,6 +36,10 @@ import java.util.List;
 public class GreaterThanOrEqual extends BaseDynamicTransformOp {
     public GreaterThanOrEqual() {}
 
+    public GreaterThanOrEqual( SameDiff sameDiff, SDVariable x, SDVariable y) {
+        this(sameDiff, new SDVariable[]{x,y}, false);
+    }
+
     public GreaterThanOrEqual( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
@@ -46,6 +50,11 @@ public class GreaterThanOrEqual extends BaseDynamicTransformOp {
 
     public GreaterThanOrEqual(INDArray x, INDArray y, INDArray z){
         this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
+
+    public GreaterThanOrEqual(INDArray x, INDArray y) {
+
+        this(new INDArray[]{x,y}, null);
     }
 
     @Override

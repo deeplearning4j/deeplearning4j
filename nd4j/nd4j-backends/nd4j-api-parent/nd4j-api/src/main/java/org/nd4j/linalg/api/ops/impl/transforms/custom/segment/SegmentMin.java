@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -35,6 +36,10 @@ public class SegmentMin extends DynamicCustomOp {
 
     public SegmentMin(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+    }
+
+    public SegmentMin(INDArray data, INDArray segmentIds) {
+        addInputArgument(data, segmentIds);
     }
 
     public SegmentMin(){ }

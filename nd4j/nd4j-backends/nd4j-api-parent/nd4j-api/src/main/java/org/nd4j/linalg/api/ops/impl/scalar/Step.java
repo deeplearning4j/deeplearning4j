@@ -41,6 +41,10 @@ public class Step extends BaseScalarOp {
         this.extraArgs = new Object[] {cutoff};
     }
 
+    public Step(SameDiff sameDiff, SDVariable i_v, double cutoff) {
+        this(sameDiff, i_v, false, cutoff);
+    }
+
     public Step() {
         cutoff = 0.0;
         this.extraArgs = new Object[] {cutoff};

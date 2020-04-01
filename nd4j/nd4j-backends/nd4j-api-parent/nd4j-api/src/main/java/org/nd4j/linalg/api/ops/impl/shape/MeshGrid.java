@@ -37,6 +37,10 @@ public class MeshGrid extends DynamicCustomOp {
         addIArgument(cartesian ? 1 : 0);
     }
 
+    public MeshGrid(SameDiff sd, SDVariable[] inputs, boolean cartesian) {
+        this(sd, cartesian, inputs);
+    }
+
     public MeshGrid(){ }
 
     @Override

@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -40,6 +41,11 @@ public class UnsortedSegmentMean extends DynamicCustomOp {
     public UnsortedSegmentMean(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
         this.numSegments = numSegments;
+        addIArgument(numSegments);
+    }
+
+    public UnsortedSegmentMean(INDArray data, INDArray segmentIds, int numSegments) {
+        addInputArgument(data, segmentIds);
         addIArgument(numSegments);
     }
 

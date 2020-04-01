@@ -1,217 +1,416 @@
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
+
 package org.nd4j.autodiff.samediff.ops;
 
-import lombok.NonNull;
+import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
+
+import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 
-import static org.nd4j.autodiff.samediff.ops.SDValidation.validateInteger;
+public class SDBitwise extends SDOps {
+  public SDBitwise(SameDiff sameDiff) {
+    super(sameDiff);
+  }
 
-/**
- *
- */
-public class SDBitwise extends SDOps  {
-    public SDBitwise(SameDiff sameDiff) {
-        super(sameDiff);
-    }
+  /**
+   * Bitwise AND operation. Supports broadcasting.<br>
+   *
+   * Inputs must satisfy the following constraints: <br>
+   * Must be same types: isSameType(x, y)<br>
+   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   *
+   * @param x First input array (INT type)
+   * @param y Second input array (INT type)
+   * @return output Bitwise AND array (INT type)
+   */
+  public SDVariable and(SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("and", "x", x);
+    SDValidation.validateInteger("and", "y", y);
+    Preconditions.checkArgument(isSameType(x, y), "Must be same types");
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd(sd,x, y).outputVariable();
+  }
 
-    /**
-     * See {@link #leftShift(String, SDVariable, SDVariable)}
-     */
-    public SDVariable leftShift(@NonNull SDVariable x, @NonNull SDVariable y){
-        return leftShift(null, x, y);
-    }
+  /**
+   * Bitwise AND operation. Supports broadcasting.<br>
+   *
+   * Inputs must satisfy the following constraints: <br>
+   * Must be same types: isSameType(x, y)<br>
+   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input array (INT type)
+   * @param y Second input array (INT type)
+   * @return output Bitwise AND array (INT type)
+   */
+  public SDVariable and(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("and", "x", x);
+    SDValidation.validateInteger("and", "y", y);
+    Preconditions.checkArgument(isSameType(x, y), "Must be same types");
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-    /**
-     * Bitwise left shift operation. Supports broadcasting.
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    Input to be bit shifted (must be an integer type)
-     * @param y    Amount to shift elements of x array (must be an integer type)
-     * @return Bitwise shifted input x
-     */
-    public SDVariable leftShift(String name, SDVariable x, SDVariable y){
-        validateInteger("bitwise left shift", x);
-        validateInteger("bitwise left shift", y);
+  /**
+   * Roll integer bits to the left, i.e. var << 4 | var >> (32 - 4)<br>
+   *
+   * @param x Input 1 (INT type)
+   * @param shift Number of bits to shift. (INT type)
+   * @return output SDVariable with shifted bits (INT type)
+   */
+  public SDVariable bitRotl(SDVariable x, SDVariable shift) {
+    SDValidation.validateInteger("bitRotl", "x", x);
+    SDValidation.validateInteger("bitRotl", "shift", shift);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(sd,x, shift).outputVariable();
+  }
 
-        SDVariable ret = f().shift(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
+  /**
+   * Roll integer bits to the left, i.e. var << 4 | var >> (32 - 4)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input 1 (INT type)
+   * @param shift Number of bits to shift. (INT type)
+   * @return output SDVariable with shifted bits (INT type)
+   */
+  public SDVariable bitRotl(String name, SDVariable x, SDVariable shift) {
+    SDValidation.validateInteger("bitRotl", "x", x);
+    SDValidation.validateInteger("bitRotl", "shift", shift);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(sd,x, shift).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-    /**
-     * See {@link #rightShift(String, SDVariable, SDVariable)}
-     */
-    public SDVariable rightShift(SDVariable x, SDVariable y){
-        return rightShift(null, x, y);
-    }
+  /**
+   * Roll integer bits to the right, i.e. var >> 4 | var << (32 - 4)<br>
+   *
+   * @param x Input 1 (INT type)
+   * @param shift Number of bits to shift. (INT type)
+   * @return output SDVariable with shifted bits (INT type)
+   */
+  public SDVariable bitRotr(SDVariable x, SDVariable shift) {
+    SDValidation.validateInteger("bitRotr", "x", x);
+    SDValidation.validateInteger("bitRotr", "shift", shift);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(sd,x, shift).outputVariable();
+  }
 
-    /**
-     * Bitwise right shift operation. Supports broadcasting.
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    Input to be bit shifted (must be an integer type)
-     * @param y    Amount to shift elements of x array (must be an integer type)
-     * @return Bitwise shifted input x
-     */
-    public SDVariable rightShift(String name, SDVariable x, SDVariable y){
-        validateInteger("bitwise right shift", x);
-        validateInteger("bitwise right shift", y);
+  /**
+   * Roll integer bits to the right, i.e. var >> 4 | var << (32 - 4)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input 1 (INT type)
+   * @param shift Number of bits to shift. (INT type)
+   * @return output SDVariable with shifted bits (INT type)
+   */
+  public SDVariable bitRotr(String name, SDVariable x, SDVariable shift) {
+    SDValidation.validateInteger("bitRotr", "x", x);
+    SDValidation.validateInteger("bitRotr", "shift", shift);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(sd,x, shift).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-        SDVariable ret = f().rshift(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
+  /**
+   * Shift integer bits to the left, i.e. var << 4<br>
+   *
+   * @param x Input 1 (INT type)
+   * @param shift Number of bits to shift. (INT type)
+   * @return output SDVariable with shifted bits (INT type)
+   */
+  public SDVariable bitShift(SDVariable x, SDVariable shift) {
+    SDValidation.validateInteger("bitShift", "x", x);
+    SDValidation.validateInteger("bitShift", "shift", shift);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(sd,x, shift).outputVariable();
+  }
 
-    /**
-     * See {@link #leftShiftCyclic(String, SDVariable, SDVariable)}
-     */
-    public SDVariable leftShiftCyclic(SDVariable x, SDVariable y){
-        return leftShiftCyclic(null, x, y);
-    }
+  /**
+   * Shift integer bits to the left, i.e. var << 4<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input 1 (INT type)
+   * @param shift Number of bits to shift. (INT type)
+   * @return output SDVariable with shifted bits (INT type)
+   */
+  public SDVariable bitShift(String name, SDVariable x, SDVariable shift) {
+    SDValidation.validateInteger("bitShift", "x", x);
+    SDValidation.validateInteger("bitShift", "shift", shift);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(sd,x, shift).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-    /**
-     * Bitwise left cyclical shift operation. Supports broadcasting.
-     * Unlike {@link #leftShift(String, SDVariable, SDVariable)} the bits will "wrap around":
-     * {@code leftShiftCyclic(01110000, 2) -> 11000001}
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    Input to be bit shifted (must be an integer type)
-     * @param y    Amount to shift elements of x array (must be an integer type)
-     * @return Bitwise cyclic shifted input x
-     */
-    public SDVariable leftShiftCyclic(String name, SDVariable x, SDVariable y){
-        validateInteger("bitwise left shift (cyclic)", x);
-        validateInteger("bitwise left shift (cyclic)", y);
+  /**
+   * Shift integer bits to the right, i.e. var >> 4<br>
+   *
+   * @param x Input 1 (INT type)
+   * @param shift Number of bits to shift. (INT type)
+   * @return output SDVariable with shifted bits (INT type)
+   */
+  public SDVariable bitShiftRight(SDVariable x, SDVariable shift) {
+    SDValidation.validateInteger("bitShiftRight", "x", x);
+    SDValidation.validateInteger("bitShiftRight", "shift", shift);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(sd,x, shift).outputVariable();
+  }
 
-        SDVariable ret = f().rotl(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
+  /**
+   * Shift integer bits to the right, i.e. var >> 4<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input 1 (INT type)
+   * @param shift Number of bits to shift. (INT type)
+   * @return output SDVariable with shifted bits (INT type)
+   */
+  public SDVariable bitShiftRight(String name, SDVariable x, SDVariable shift) {
+    SDValidation.validateInteger("bitShiftRight", "x", x);
+    SDValidation.validateInteger("bitShiftRight", "shift", shift);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(sd,x, shift).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-    /**
-     * See {@link #rightShiftCyclic(String, SDVariable, SDVariable)}
-     */
-    public SDVariable rightShiftCyclic(SDVariable x, SDVariable y){
-        return rightShiftCyclic(null, x, y);
-    }
+  /**
+   * Bitwise Hamming distance reduction over all elements of both input arrays.<br>
+   * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)<br>
+   *
+   * Inputs must satisfy the following constraints: <br>
+   * Must be same types: isSameType(x, y)<br>
+   *
+   * @param x First input array. (INT type)
+   * @param y Second input array. (INT type)
+   * @return output bitwise Hamming distance (INT type)
+   */
+  public SDVariable bitsHammingDistance(SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("bitsHammingDistance", "x", x);
+    SDValidation.validateInteger("bitsHammingDistance", "y", y);
+    Preconditions.checkArgument(isSameType(x, y), "Must be same types");
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance(sd,x, y).outputVariable();
+  }
 
-    /**
-     * Bitwise right cyclical shift operation. Supports broadcasting.
-     * Unlike {@link #rightShift(String, SDVariable, SDVariable)} the bits will "wrap around":
-     * {@code rightShiftCyclic(00001110, 2) -> 10000011}
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    Input to be bit shifted (must be an integer type)
-     * @param y    Amount to shift elements of x array (must be an integer type)
-     * @return Bitwise cyclic shifted input x
-     */
-    public SDVariable rightShiftCyclic(String name, SDVariable x, SDVariable y){
-        validateInteger("bitwise right shift (cyclic)", x);
-        validateInteger("bitwise right shift (cyclic)", y);
+  /**
+   * Bitwise Hamming distance reduction over all elements of both input arrays.<br>
+   * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)<br>
+   *
+   * Inputs must satisfy the following constraints: <br>
+   * Must be same types: isSameType(x, y)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input array. (INT type)
+   * @param y Second input array. (INT type)
+   * @return output bitwise Hamming distance (INT type)
+   */
+  public SDVariable bitsHammingDistance(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("bitsHammingDistance", "x", x);
+    SDValidation.validateInteger("bitsHammingDistance", "y", y);
+    Preconditions.checkArgument(isSameType(x, y), "Must be same types");
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-        SDVariable ret = f().rotr(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
+  /**
+   * Bitwise left shift operation. Supports broadcasting.<br>
+   *
+   * @param x Input to be bit shifted (INT type)
+   * @param y Amount to shift elements of x array (INT type)
+   * @return output Bitwise shifted input x (INT type)
+   */
+  public SDVariable leftShift(SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("leftShift", "x", x);
+    SDValidation.validateInteger("leftShift", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(sd,x, y).outputVariable();
+  }
 
-    /**
-     * See {@link #bitsHammingDistance(String, SDVariable, SDVariable)}
-     */
-    public SDVariable bitsHammingDistance(SDVariable x, SDVariable y){
-        return bitsHammingDistance(null, x, y);
-    }
+  /**
+   * Bitwise left shift operation. Supports broadcasting.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input to be bit shifted (INT type)
+   * @param y Amount to shift elements of x array (INT type)
+   * @return output Bitwise shifted input x (INT type)
+   */
+  public SDVariable leftShift(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("leftShift", "x", x);
+    SDValidation.validateInteger("leftShift", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-    /**
-     * Bitwise Hamming distance reduction over all elements of both input arrays.<br>
-     * For example, if x=01100000 and y=1010000 then the bitwise Hamming distance is 2 (due to differences at positions 0 and 1)
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    First input array. Must be integer type.
-     * @param y    First input array. Must be integer type, same type as x
-     * @return
-     */
-    public SDVariable bitsHammingDistance(String name, SDVariable x, SDVariable y){
-        validateInteger("bitwise hamming distance", x);
-        validateInteger("bitwise hamming distance", y);
+  /**
+   * Bitwise left cyclical shift operation. Supports broadcasting.<br>
+   * Unlike {@link #leftShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
+   *
+   * @param x Input to be bit shifted (INT type)
+   * @param y Amount to shift elements of x array (INT type)
+   * @return output Bitwise cyclic shifted input x (INT type)
+   */
+  public SDVariable leftShiftCyclic(SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("leftShiftCyclic", "x", x);
+    SDValidation.validateInteger("leftShiftCyclic", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(sd,x, y).outputVariable();
+  }
 
-        SDVariable ret = f().bitwiseHammingDist(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
+  /**
+   * Bitwise left cyclical shift operation. Supports broadcasting.<br>
+   * Unlike {@link #leftShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input to be bit shifted (INT type)
+   * @param y Amount to shift elements of x array (INT type)
+   * @return output Bitwise cyclic shifted input x (INT type)
+   */
+  public SDVariable leftShiftCyclic(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("leftShiftCyclic", "x", x);
+    SDValidation.validateInteger("leftShiftCyclic", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-    /**
-     * See {@link #and(String, SDVariable, SDVariable)}
-     */
-    public SDVariable and(SDVariable x, SDVariable y){
-        return and(null, x, y);
-    }
+  /**
+   * Bitwise OR operation. Supports broadcasting.<br>
+   *
+   * Inputs must satisfy the following constraints: <br>
+   * Must be same types: isSameType(x, y)<br>
+   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   *
+   * @param x First input array (INT type)
+   * @param y First input array (INT type)
+   * @return output Bitwise OR array (INT type)
+   */
+  public SDVariable or(SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("or", "x", x);
+    SDValidation.validateInteger("or", "y", y);
+    Preconditions.checkArgument(isSameType(x, y), "Must be same types");
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr(sd,x, y).outputVariable();
+  }
 
-    /**
-     * Bitwise AND operation. Supports broadcasting.
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    First input array. Must be integer type.
-     * @param y    First input array. Must be integer type, same type as x
-     * @return Bitwise AND array
-     */
-    public SDVariable and(String name, SDVariable x, SDVariable y){
-        validateInteger("bitwise AND", x);
-        validateInteger("bitwise AND", y);
+  /**
+   * Bitwise OR operation. Supports broadcasting.<br>
+   *
+   * Inputs must satisfy the following constraints: <br>
+   * Must be same types: isSameType(x, y)<br>
+   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input array (INT type)
+   * @param y First input array (INT type)
+   * @return output Bitwise OR array (INT type)
+   */
+  public SDVariable or(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("or", "x", x);
+    SDValidation.validateInteger("or", "y", y);
+    Preconditions.checkArgument(isSameType(x, y), "Must be same types");
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-        SDVariable ret = f().bitwiseAnd(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
+  /**
+   * Bitwise right shift operation. Supports broadcasting. <br>
+   *
+   * @param x Input to be bit shifted (INT type)
+   * @param y Amount to shift elements of x array (INT type)
+   * @return output Bitwise shifted input x (INT type)
+   */
+  public SDVariable rightShift(SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("rightShift", "x", x);
+    SDValidation.validateInteger("rightShift", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(sd,x, y).outputVariable();
+  }
 
-    /**
-     * See {@link #or(String, SDVariable, SDVariable)}
-     */
-    public SDVariable or(SDVariable x, SDVariable y){
-        return or(null, x, y);
-    }
+  /**
+   * Bitwise right shift operation. Supports broadcasting. <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input to be bit shifted (INT type)
+   * @param y Amount to shift elements of x array (INT type)
+   * @return output Bitwise shifted input x (INT type)
+   */
+  public SDVariable rightShift(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("rightShift", "x", x);
+    SDValidation.validateInteger("rightShift", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-    /**
-     * Bitwise OR operation. Supports broadcasting.
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    First input array. Must be integer type.
-     * @param y    First input array. Must be integer type, same type as x
-     * @return Bitwise OR array
-     */
-    public SDVariable or(String name, SDVariable x, SDVariable y){
-        validateInteger("bitwise OR", x);
-        validateInteger("bitwise OR", y);
+  /**
+   * Bitwise right cyclical shift operation. Supports broadcasting.<br>
+   * Unlike {@link #rightShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
+   *
+   * @param x Input to be bit shifted (INT type)
+   * @param y Amount to shift elements of x array (INT type)
+   * @return output Bitwise cyclic shifted input x (INT type)
+   */
+  public SDVariable rightShiftCyclic(SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("rightShiftCyclic", "x", x);
+    SDValidation.validateInteger("rightShiftCyclic", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(sd,x, y).outputVariable();
+  }
 
-        SDVariable ret = f().bitwiseOr(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
+  /**
+   * Bitwise right cyclical shift operation. Supports broadcasting.<br>
+   * Unlike {@link #rightShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input to be bit shifted (INT type)
+   * @param y Amount to shift elements of x array (INT type)
+   * @return output Bitwise cyclic shifted input x (INT type)
+   */
+  public SDVariable rightShiftCyclic(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("rightShiftCyclic", "x", x);
+    SDValidation.validateInteger("rightShiftCyclic", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 
-    /**
-     * See {@link #xor(String, SDVariable, SDVariable)}
-     */
-    public SDVariable xor(SDVariable x, SDVariable y){
-        return xor(null, x, y);
-    }
+  /**
+   * Bitwise XOR operation (exclusive OR). Supports broadcasting.<br>
+   *
+   * Inputs must satisfy the following constraints: <br>
+   * Must be same types: isSameType(x, y)<br>
+   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   *
+   * @param x First input array (INT type)
+   * @param y First input array (INT type)
+   * @return output Bitwise XOR array (INT type)
+   */
+  public SDVariable xor(SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("xor", "x", x);
+    SDValidation.validateInteger("xor", "y", y);
+    Preconditions.checkArgument(isSameType(x, y), "Must be same types");
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor(sd,x, y).outputVariable();
+  }
 
-    /**
-     * Bitwise XOR operation (exclusive OR). Supports broadcasting.
-     *
-     * @param name Name of the output variable. May be null.
-     * @param x    First input array. Must be integer type.
-     * @param y    First input array. Must be integer type, same type as x
-     * @return Bitwise XOR array
-     */
-    public SDVariable xor(String name, SDVariable x, SDVariable y){
-        validateInteger("bitwise XOR", x);
-        validateInteger("bitwise XOR", y);
-
-        SDVariable ret = f().bitwiseXor(x, y);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * Flip bits
-     *
-     * @param name  Name of the output variable
-     * @param x input array
-     * @return array after flipping each input bit
-     */
-    public SDVariable toggleBits(String name, SDVariable x) {
-        SDVariable res = f().toggleBits(x);
-        return updateVariableNameAndReference(res, name);
-    }
+  /**
+   * Bitwise XOR operation (exclusive OR). Supports broadcasting.<br>
+   *
+   * Inputs must satisfy the following constraints: <br>
+   * Must be same types: isSameType(x, y)<br>
+   * Must have broadcastable shapes: isBroadcastableShapes(x, y)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input array (INT type)
+   * @param y First input array (INT type)
+   * @return output Bitwise XOR array (INT type)
+   */
+  public SDVariable xor(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateInteger("xor", "x", x);
+    SDValidation.validateInteger("xor", "y", y);
+    Preconditions.checkArgument(isSameType(x, y), "Must be same types");
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 }

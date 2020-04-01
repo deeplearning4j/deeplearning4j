@@ -70,8 +70,8 @@ public class NameScopeTests extends BaseNd4jTest {
             addWithName = x.add("addxy", y);
             try(NameScope ns2 = sd.withNameScope("s2")){
                 z = sd.var("z", DataType.FLOAT, 1);
-                merge = sd.math().mergeMax(y, z);
-                mergeWithName = sd.math.mergeMax("mmax", y, z);
+                merge = sd.math().mergeMax(new SDVariable[]{y, z});
+                mergeWithName = sd.math.mergeMax("mmax", new SDVariable[]{y, z});
             }
         }
         SDVariable a = sd.var("a", DataType.FLOAT, 1);

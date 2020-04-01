@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -39,9 +40,22 @@ public class Linspace extends DynamicCustomOp {
 
     private DataType dataType;
 
+    public Linspace(SameDiff sameDiff, DataType dataType, double start, double stop, long number) {
+        super(sameDiff, new SDVariable[0]);
+        addTArgument(start,stop);
+        addIArgument(number);
+        addDArgument(dataType);
+    }
+
     public Linspace(SameDiff sameDiff, SDVariable from, SDVariable to, SDVariable length, DataType dataType){
         super(sameDiff, new SDVariable[]{from, to, length});
         this.dataType = dataType;
+    }
+
+    public Linspace(DataType dataType, double start, double stop, long number) {
+        addDArgument(dataType);
+        addTArgument(start, stop);
+        addIArgument(number);
     }
 
     public Linspace(){ }

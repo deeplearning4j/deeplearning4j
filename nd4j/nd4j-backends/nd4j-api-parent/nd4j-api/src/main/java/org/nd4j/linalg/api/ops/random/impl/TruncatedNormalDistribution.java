@@ -49,6 +49,13 @@ public class TruncatedNormalDistribution extends BaseRandomOp {
         this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
+    public TruncatedNormalDistribution(SameDiff sd, double mean, double stddev, DataType dataType, long[] shape) {
+        super(sd, shape);
+        this.mean = mean;
+        this.stddev = stddev;
+        this.extraArgs = new Object[] {this.mean, this.stddev};
+    }
+
     public TruncatedNormalDistribution(double mean, double stddev, DataType datatype, long... shape){
         this(Nd4j.createUninitialized(datatype, shape), mean, stddev);
     }

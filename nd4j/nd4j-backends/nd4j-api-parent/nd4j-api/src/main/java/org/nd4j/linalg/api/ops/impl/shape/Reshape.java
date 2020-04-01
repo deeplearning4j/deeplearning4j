@@ -59,6 +59,10 @@ public class Reshape extends DynamicCustomOp {
         super(null, new INDArray[]{in, shape}, new INDArray[]{out}, null, (List<Integer>)null);
     }
 
+    public Reshape(INDArray in, INDArray shape) {
+        addInputArgument(in, shape);
+    }
+
     public Reshape() {
     }
 

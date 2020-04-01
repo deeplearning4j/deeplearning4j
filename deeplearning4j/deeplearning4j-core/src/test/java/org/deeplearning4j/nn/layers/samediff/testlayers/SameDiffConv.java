@@ -130,14 +130,6 @@ public class SameDiffConv extends SameDiffLayer {
 
         SDVariable w = paramTable.get(ConvolutionParamInitializer.WEIGHT_KEY);
 
-        SDVariable[] vars;
-        if(hasBias){
-            SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
-            vars = new SDVariable[]{layerInput, w, b};
-        } else {
-            vars = new SDVariable[]{layerInput, w};
-        }
-
         Conv2DConfig c = Conv2DConfig.builder()
                 .kH(kernel[0]).kW(kernel[1])
                 .pH(padding[0]).pW(padding[1])
@@ -146,7 +138,13 @@ public class SameDiffConv extends SameDiffLayer {
                 .isSameMode(this.cm == ConvolutionMode.Same)
                 .build();
 
-        SDVariable conv = sameDiff.cnn().conv2d(vars, c);    //TODO can't set name
+        SDVariable conv = null;
+        if(hasBias){
+            SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
+            conv = sameDiff.cnn().conv2d(layerInput, w, b, c);
+        } else {
+            conv = sameDiff.cnn().conv2d(layerInput, w, c);
+        }
 
         return activation.asSameDiff("out", sameDiff, conv);
     }

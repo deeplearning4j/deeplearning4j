@@ -39,6 +39,11 @@ public class CosineDistanceLoss extends BaseLoss {
         this.addIArgument(dimension);
     }
 
+    public CosineDistanceLoss(SameDiff sameDiff, SDVariable labels, SDVariable predictions, SDVariable weights,
+                            LossReduce lossReduce, int dimension) {
+        this(sameDiff, lossReduce, predictions, weights, labels, dimension);
+    }
+
     public CosineDistanceLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, int dimension){
         super(lossReduce, predictions, weights, labels);
         this.dimension = dimension;

@@ -24,6 +24,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -40,6 +41,13 @@ public class Gather extends DynamicCustomOp {
     protected int[] indices;
     protected int jaxis = 0;
 
+    public Gather(SameDiff sameDiff, SDVariable df, SDVariable indices, int axis) {
+        this(sameDiff, df, indices, axis, false);
+    }
+
+    public Gather(SameDiff sameDiff, SDVariable df, int[] indices, int axis) {
+        this(sameDiff, df, indices, axis, false);
+    }
 
     public Gather(SameDiff sameDiff, SDVariable input, int[] indices, int axis, boolean inPlace) {
         super(null, sameDiff, new SDVariable[] {input}, inPlace);
@@ -54,6 +62,21 @@ public class Gather extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {input, indices}, inPlace);
         addIArgument(axis);
         this.jaxis = axis;
+    }
+
+    public Gather(INDArray df, int[] indexes, int axis) {
+        addInputArgument(df);
+        addIArgument(axis);
+        addIArgument(indexes);
+        this.jaxis = axis;
+        this.indices = indices;
+    }
+
+    public Gather(INDArray df, INDArray indexes, int axis) {
+        addInputArgument(df, indexes);
+        addIArgument(axis);
+        this.jaxis = axis;
+        this.indices = indices;
     }
 
     @Override

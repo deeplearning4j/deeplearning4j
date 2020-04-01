@@ -36,6 +36,10 @@ public class Tanh extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public Tanh(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v,false);
+    }
+
     public Tanh() {
     }
 

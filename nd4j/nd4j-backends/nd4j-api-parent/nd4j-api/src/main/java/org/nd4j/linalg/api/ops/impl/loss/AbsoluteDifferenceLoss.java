@@ -38,6 +38,11 @@ public class AbsoluteDifferenceLoss extends BaseLoss {
         super(sameDiff, lossReduce, predictions, weights, labels);
     }
 
+    public AbsoluteDifferenceLoss(SameDiff sameDiff, SDVariable label, SDVariable predictions, SDVariable weights,
+                                    LossReduce lossReduce) {
+        this(sameDiff, lossReduce, predictions, weights, label);
+    }
+
     public AbsoluteDifferenceLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce){
         super(lossReduce, predictions, weights, labels);
     }

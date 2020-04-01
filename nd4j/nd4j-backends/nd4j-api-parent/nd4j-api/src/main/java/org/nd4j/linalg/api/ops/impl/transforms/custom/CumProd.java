@@ -59,7 +59,7 @@ public class CumProd extends DynamicCustomOp {
     }
 
     public CumProd(INDArray in, INDArray result, boolean exclusive, boolean reverse, int... axis) {
-        super(null, new INDArray[]{in}, new INDArray[]{result}, null, (List<Integer>)null);
+        super(null, new INDArray[]{in}, result != null ? new INDArray[]{result} : null, null, (List<Integer>)null);
         this.exclusive = exclusive;
         this.reverse = reverse;
         this.jaxis = axis;
@@ -67,6 +67,10 @@ public class CumProd extends DynamicCustomOp {
         tArguments.clear();
         iArguments.clear();
         addArgs();
+    }
+
+    public CumProd(INDArray in,  boolean exclusive, boolean reverse, int... axis) {
+        this(in, null, exclusive, reverse, axis);
     }
 
     @Override

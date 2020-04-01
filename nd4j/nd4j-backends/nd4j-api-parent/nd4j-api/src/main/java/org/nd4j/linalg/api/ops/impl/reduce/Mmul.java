@@ -93,6 +93,24 @@ public class Mmul extends DynamicCustomOp {
         }
     }
 
+    public Mmul(INDArray x, INDArray y, boolean transposeX, boolean transposeY,  boolean transposeZ) {
+        addInputArgument(x, y);
+        addIArgument(ArrayUtil.fromBoolean(transposeX),
+                ArrayUtil.fromBoolean(transposeY),
+                ArrayUtil.fromBoolean(transposeZ));
+    }
+
+    public Mmul(INDArray x, INDArray y) {
+        this(x,y,null,null);
+    }
+
+    public Mmul(SameDiff sameDiff, SDVariable x, SDVariable y, boolean transposeX, boolean transposeY,
+                boolean transposeZ) {
+        super(null,sameDiff,new SDVariable[]{x,y});
+        addIArgument(ArrayUtil.fromBoolean(transposeX),
+                     ArrayUtil.fromBoolean(transposeY),
+                     ArrayUtil.fromBoolean(transposeZ));
+    }
 
     public Mmul() {}
 

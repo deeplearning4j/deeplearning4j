@@ -182,6 +182,11 @@ public class SameDiff extends SDBaseOps {
     public final SDBitwise bitwise = new SDBitwise(this);
 
     /**
+     * Op creator object for linalg operations
+     */
+    public final SDLinalg linalg = new SDLinalg(this);
+
+    /**
      * Op creator object for math operations
      */
     public SDMath math() {
@@ -235,6 +240,13 @@ public class SameDiff extends SDBaseOps {
      */
     public SDBitwise bitwise(){
         return bitwise;
+    }
+
+    /**
+     * Op creator object for linalg operations
+     */
+    public SDLinalg linalg(){
+        return linalg;
     }
 
     private Map<String, SameDiff> sameDiffFunctionInstances;
@@ -3447,6 +3459,12 @@ public class SameDiff extends SDBaseOps {
             if (sd.hasVariable(from)) {
                 sd.renameVariable(from, to);
             }
+        }
+
+        //Check losses:
+        if(lossVariables.contains(from)){
+            int idx = lossVariables.indexOf(from);
+            lossVariables.set(idx, to);
         }
     }
 

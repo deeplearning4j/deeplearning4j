@@ -43,6 +43,10 @@ public class SELU extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public SELU(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public SELU() {
     }
 

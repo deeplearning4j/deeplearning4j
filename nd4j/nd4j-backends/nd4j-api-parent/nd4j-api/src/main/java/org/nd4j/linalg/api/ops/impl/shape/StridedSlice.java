@@ -25,6 +25,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -93,6 +94,20 @@ public class StridedSlice extends DynamicCustomOp {
         addArguments();
         //https://github.com/deeplearning4j/libnd4j/blob/master/include/ops/declarable/generic/parity_ops/strided_slice.cpp#L279
 
+    }
+
+    public StridedSlice(INDArray in, int[] begin, int[] end, int[] strides, int beginMask,
+                        int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        addInputArgument(in);
+        this.begin = ArrayUtil.toLongArray(begin);
+        this.end = ArrayUtil.toLongArray(end);
+        this.strides = ArrayUtil.toLongArray(strides);
+        this.beginMask = beginMask;
+        this.endMask = endMask;
+        this.ellipsisMask = ellipsisMask;
+        this.newAxisMask = newAxisMask;
+        this.shrinkAxisMask = shrinkAxisMask;
+        addArguments();
     }
 
     private void addArguments(){

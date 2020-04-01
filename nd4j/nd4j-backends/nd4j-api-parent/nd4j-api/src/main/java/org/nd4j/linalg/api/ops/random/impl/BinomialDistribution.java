@@ -45,6 +45,10 @@ public class BinomialDistribution extends BaseRandomOp {
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
     }
 
+    public BinomialDistribution(SameDiff sd, int trials, double probability, DataType dataType, long[] shape){
+        this(sd, trials, probability, shape);
+    }
+
     public BinomialDistribution(int trials, double probability, DataType dt, long[] shape){
         this(Nd4j.createUninitialized(dt, shape), trials, probability);
     }

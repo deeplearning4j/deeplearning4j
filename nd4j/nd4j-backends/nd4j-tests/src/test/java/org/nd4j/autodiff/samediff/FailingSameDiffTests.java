@@ -58,7 +58,7 @@ public class FailingSameDiffTests extends BaseNd4jTest {
         INDArray expOut = Nd4j.pile(stack).reshape(5, 5, 2, 3);
 
         SameDiff sd = SameDiff.create();
-        SDVariable result = sd.math().eye(2, 3, DataType.DOUBLE, 5, 5);
+        SDVariable result = sd.math().eye(2, 3 /*, DataType.DOUBLE, new long[]{5, 5}*/);
 
         assertEquals(expOut, result.eval());
     }

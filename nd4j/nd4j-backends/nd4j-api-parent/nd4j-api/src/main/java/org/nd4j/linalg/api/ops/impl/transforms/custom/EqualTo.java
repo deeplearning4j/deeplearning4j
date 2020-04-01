@@ -36,12 +36,20 @@ import java.util.List;
 public class EqualTo extends BaseDynamicTransformOp {
     public EqualTo() {}
 
+    public EqualTo( SameDiff sameDiff, SDVariable x, SDVariable y) {
+        this(sameDiff, new SDVariable[]{x,y}, false);
+    }
+
     public EqualTo( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
     public EqualTo( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
+    }
+
+    public EqualTo( INDArray x, INDArray y) {
+        addInputArgument(x, y);
     }
 
     public EqualTo(INDArray x, INDArray y, INDArray z){

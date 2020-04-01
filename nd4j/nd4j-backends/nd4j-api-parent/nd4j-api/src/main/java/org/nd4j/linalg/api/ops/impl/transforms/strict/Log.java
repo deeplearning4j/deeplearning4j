@@ -36,6 +36,10 @@ public class Log extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public Log(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public Log() {
     }
 

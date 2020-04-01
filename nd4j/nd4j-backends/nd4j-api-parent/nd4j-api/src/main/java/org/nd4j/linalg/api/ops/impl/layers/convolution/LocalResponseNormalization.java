@@ -58,6 +58,10 @@ public class LocalResponseNormalization extends DynamicCustomOp {
         addArgs();
     }
 
+    public LocalResponseNormalization(SameDiff sameDiff, SDVariable input, LocalResponseNormalizationConfig config) {
+        this(sameDiff, new SDVariable[]{input}, false, config);
+    }
+
     public LocalResponseNormalization(@NonNull INDArray input, INDArray output, @NonNull LocalResponseNormalizationConfig config){
         super(new INDArray[]{input}, wrapOrNull(output));
 

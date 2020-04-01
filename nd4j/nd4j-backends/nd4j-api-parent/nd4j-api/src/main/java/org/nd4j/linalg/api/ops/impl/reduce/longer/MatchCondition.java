@@ -38,6 +38,10 @@ public class MatchCondition extends BaseReduceLongOp {
     private double eps;
     private int mode;
 
+    public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition) {
+        this(sameDiff, in, condition, false, null);
+    }
+
     public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition, boolean keepDims, int... dimensions) {
         super(sameDiff, in, dimensions, keepDims);
         this.compare = condition.getValue();
@@ -62,6 +66,10 @@ public class MatchCondition extends BaseReduceLongOp {
         this.extraArgs = new Object[] {compare, eps, (double) mode};
 
         defineDimensions(dimensions);
+    }
+
+    public MatchCondition(INDArray in, Condition condition, boolean keepDim,  int... dimensions) {
+        this(in, condition, dimensions);
     }
 
     @Override

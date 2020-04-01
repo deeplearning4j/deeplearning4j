@@ -54,6 +54,10 @@ public class Pad extends DynamicCustomOp {
         addTArgument(padValue);
     }
 
+    public Pad(SameDiff sd, SDVariable in, SDVariable padding, double padValue) {
+        this(sd, in, padding, Mode.CONSTANT, padValue);
+    }
+
     public Pad(@NonNull INDArray in, @NonNull INDArray padding, INDArray out, @NonNull Mode mode, double padValue){
         super(null, new INDArray[]{in, padding}, out == null ? null : new INDArray[]{out});
         Preconditions.checkState(padding.dataType().isIntType(), "Padding array must be an integer datatype, got %s", padding.dataType());

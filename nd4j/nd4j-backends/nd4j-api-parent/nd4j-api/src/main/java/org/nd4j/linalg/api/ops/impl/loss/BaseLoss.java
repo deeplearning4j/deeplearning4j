@@ -33,9 +33,9 @@ public abstract class BaseLoss extends DynamicCustomOp {
 
     protected LossReduce lossReduce;
 
-    public BaseLoss(@NonNull SameDiff sameDiff, @NonNull LossReduce lossReduce, @NonNull SDVariable predictions, @NonNull SDVariable weights,
+    public BaseLoss(@NonNull SameDiff sameDiff, @NonNull LossReduce lossReduce, @NonNull SDVariable predictions, SDVariable weights,
                     @NonNull SDVariable labels){
-        super(null, sameDiff, new SDVariable[]{predictions, weights, labels});
+        super(null, sameDiff, new SDVariable[]{predictions, getWeights(sameDiff, weights, predictions), labels});
         this.lossReduce = lossReduce;
         addArgs();
     }
@@ -50,6 +50,10 @@ public abstract class BaseLoss extends DynamicCustomOp {
         return (weights != null) ? weights : Nd4j.scalar(predictions.dataType(), 1.0);
     }
 
+    protected static SDVariable getWeights(SameDiff sd, SDVariable weights, SDVariable predictions){
+        return weights != null ? weights : sd.constant(Nd4j.scalar(predictions.dataType(), 1.0));
+    }
+
     protected BaseLoss(){ }
 
     protected void addArgs(){
@@ -62,7 +66,7 @@ public abstract class BaseLoss extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() >= 2, "Expected exactly 2 or more input datatypes for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));    //Same as predictions
     }
 }

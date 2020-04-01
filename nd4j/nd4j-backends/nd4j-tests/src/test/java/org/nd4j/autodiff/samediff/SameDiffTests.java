@@ -1082,7 +1082,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SDVariable out = sd.nn().batchNorm(sdInput, sdMean, sdVar, sdGamma, sdBeta,
                 0.0, 1);
-        out = sd.nn().tanh("out", out);
+        out = sd.f().tanh(out);
 
         INDArray outArr = out.eval();
         assertArrayEquals(new long[]{1, 10}, outArr.shape());
@@ -1122,8 +1122,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SDVariable sdInput = sd.var("input", input);
 
-        val axis = new int[]{0, 1};
-        SDVariable[] moments = sd.math().moments(sdInput, axis);
+        SDVariable[] moments = sd.math().moments(sdInput, 0, 1);
         SDVariable mean = moments[0];
         SDVariable variance = moments[1];
 
@@ -1797,7 +1796,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable labelsVar = sd.constant("labels", labels);
         SDVariable predictionsVar = sd.constant("predictions", pred);
         SDVariable weightsVar = sd.constant("weights", weights);
-        SDVariable cm = sd.math().confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
+        SDVariable cm = sd.math().confusionMatrix("cm", labelsVar, predictionsVar, weightsVar, numClasses);
         INDArray out = cm.eval();
 
         INDArray exp = Nd4j.create(new float[][]{{0, 0, 0, 0, 0}, {0, 0, 10, 0, 0}, {0, 0, 100, 0, 0},
@@ -2981,7 +2980,7 @@ public class SameDiffTests extends BaseNd4jTest {
         }
 
         //Also try training:
-        SDVariable sum = sd.math.mergeAdd(ph1, ph2, ph3, ph4);
+        SDVariable sum = sd.math.mergeAdd(new SDVariable[]{ph1, ph2, ph3, ph4});
         SDVariable mean = sum.add(scalar).mean();
         MultiDataSet mds = new MultiDataSet(new INDArray[]{wrongShape, wrongShape, wrongShape, wrongShape}, null);
 
@@ -3447,7 +3446,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
         SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 3));
         SDVariable z = in.mmul(w).add("z", b);
-        SDVariable softmax = sd.nn.softmax("softmax", z);
+        SDVariable softmax = sd.nn.softmax("softmax", z, 0);
 
         Map<String,INDArray> ph = Collections.singletonMap("in", Nd4j.rand(DataType.FLOAT, 2, 4));
         List<String> outputs = Arrays.asList("in", "z", "softmax");
@@ -3522,13 +3521,13 @@ public class SameDiffTests extends BaseNd4jTest {
     @Test
     public void testRngSanityCheck(){
         Nd4j.getRandom().setSeed(12345);
-        for(DataType dt : DataType.values()) {
+        for(DataType dt : new DataType[]{DataType.FLOAT, DataType.DOUBLE,DataType.BFLOAT16}) {
             if (!dt.isNumerical())
                 continue;
             SameDiff sameDiff = SameDiff.create();
             INDArray indaShape = Nd4j.createFromArray(3, 10);
             SDVariable sdShape = sameDiff.constant(indaShape);
-            SDVariable random = sameDiff.random().uniform("data", 0.0, 10.0, sdShape, dt);
+            SDVariable random = sameDiff.random().uniform("data", 0.0, 10.0, dt, 3, 10);
             INDArray out = random.eval();
             String s = out.toString();
         }

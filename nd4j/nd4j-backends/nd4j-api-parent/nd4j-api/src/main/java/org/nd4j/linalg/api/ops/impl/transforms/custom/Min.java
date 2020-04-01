@@ -52,6 +52,9 @@ public class Min extends BaseDynamicTransformOp {
         super(inputs, outputs);
     }
 
+    public Min( INDArray x, INDArray y) {
+        addInputArgument(x,y);
+    }
 
     @Override
     public String opName() {

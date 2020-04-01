@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -51,6 +52,10 @@ public class ScatterUpdate extends DynamicCustomOp {
 
     public ScatterUpdate(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
+    }
+
+    public ScatterUpdate(INDArray ref, INDArray indices, INDArray updates) {
+        addInputArgument(ref, indices, updates);
     }
 
     public ScatterUpdate(){}

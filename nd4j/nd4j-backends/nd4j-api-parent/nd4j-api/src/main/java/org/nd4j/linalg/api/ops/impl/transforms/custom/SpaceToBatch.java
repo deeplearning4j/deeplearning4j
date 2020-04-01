@@ -54,6 +54,10 @@ public class SpaceToBatch extends DynamicCustomOp {
     public SpaceToBatch() {
     }
 
+    public SpaceToBatch(SameDiff sameDiff, SDVariable x, int[] blocks, int[] paddingTop, int... paddingBottom) {
+        this(sameDiff, new SDVariable[]{x}, blocks, new int[][]{paddingBottom, paddingBottom}, false);
+    }
+
     public SpaceToBatch(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] padding, boolean inPlace) {
         super(null, sameDiff, new SDVariable[]{args[0], sameDiff.constant(Nd4j.createFromArray(padding))}, inPlace);
 
@@ -63,18 +67,13 @@ public class SpaceToBatch extends DynamicCustomOp {
         addIArgument(blocks[0]);
     }
 
-    public SpaceToBatch(INDArray x, int[] blocks, int[] paddingTop, int[] paddingBottom) {
-        super(null,x,null,null,null);
+    public SpaceToBatch(INDArray x, int[] blocks, int[] paddingTop, int... paddingBottom) {
+        addInputArgument(x);
         this.blocks = blocks;
-        this.padding = new int[][]{paddingTop,paddingBottom};
+        this.padding = padding;
 
-        for (val b : blocks)
-            addIArgument(b);
-
-        for (int e = 0; e < padding.length; e++)
-            addIArgument(padding[e][0], padding[e][1]);
+        addIArgument(blocks[0]);
     }
-
 
     @Override
     public String opName() {
@@ -95,7 +94,7 @@ public class SpaceToBatch extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Inverse of space to batch is batch to space with same blocks and crops as padding
         SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        return Arrays.asList(sameDiff.cnn().batchToSpace(gradient, blocks, padding));
+        return Arrays.asList(sameDiff.cnn().batchToSpace(gradient, blocks, padding[0], padding[1]));
     }
 
     @Override

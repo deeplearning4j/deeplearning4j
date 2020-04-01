@@ -41,6 +41,10 @@ public class Identity extends BaseDynamicTransformOp {
         super(new INDArray[]{x}, new INDArray[]{z});
     }
 
+    public Identity(INDArray x){
+        addInputArgument(x);
+    }
+
     public Identity(){ }
 
     @Override

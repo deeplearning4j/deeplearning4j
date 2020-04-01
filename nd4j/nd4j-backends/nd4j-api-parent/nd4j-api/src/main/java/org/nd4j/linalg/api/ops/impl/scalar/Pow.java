@@ -42,6 +42,10 @@ public class Pow extends BaseScalarOp {
         this.extraArgs = new Object[]{pow};
     }
 
+    public Pow(SameDiff sameDiff, SDVariable i_v, double pow) {
+        this(sameDiff, i_v, false, pow);
+    }
+
 
     public Pow(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double pow) {
         super(sameDiff, i_v, pow, extraArgs);

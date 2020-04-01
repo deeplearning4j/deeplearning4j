@@ -16,16 +16,15 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
-import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.enums.DataFormat;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.factory.enums.DataFormat;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -46,45 +45,48 @@ import java.util.*;
  * @author raver119@gmail.com, Max Pumperla
  */
 public class DepthToSpace extends DynamicCustomOp {
-    private String dataFormat = "NHWC";
+    private DataFormat dataFormat = DataFormat.NHWC;
     private int blockSize;
 
     public DepthToSpace() {
     }
 
-    public DepthToSpace(SameDiff sameDiff, SDVariable[] args, int blockSize, String dataFormat) {
+    public DepthToSpace(SameDiff sameDiff, SDVariable args, int blockSize, DataFormat dataFormat) {
+        this(sameDiff, new SDVariable[]{args}, blockSize, dataFormat);
+    }
+
+    public DepthToSpace(SameDiff sameDiff, SDVariable[] args, int blockSize, DataFormat dataFormat) {
         super(null, sameDiff, args, false);
         this.blockSize = blockSize;
         this.dataFormat = dataFormat;
-        boolean isNHWC = dataFormat.equals("NHWC");
+        boolean isNHWC = dataFormat.equals(DataFormat.NHWC);
         addIArgument(blockSize, isNHWC ? 1 : 0);
     }
 
-    public DepthToSpace(@NonNull INDArray in, INDArray out, int blockSize, @NonNull String dataFormat) {
+    public DepthToSpace(INDArray in, INDArray out, int blockSize, DataFormat dataFormat) {
         super(null, in, out, null, null);
         this.blockSize = blockSize;
         this.dataFormat = dataFormat;
-        boolean isNHWC = dataFormat.equals("NHWC");
+        boolean isNHWC = dataFormat.equals(DataFormat.NHWC);
         addIArgument(blockSize, isNHWC ? 1 : 0);
     }
 
-    public DepthToSpace(@NonNull INDArray x, int blockSize, DataFormat dataFormat) {
-        this(x, null, blockSize, dataFormat.toString());
+    public DepthToSpace(INDArray in, int blockSize, DataFormat dataFormat) {
+        this(in, null, blockSize, dataFormat);
     }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Gradient to DepthToSpace is just SpaceToDepth of same block size and data format.
         SDVariable gradient = i_v.get(0);
-        SDVariable ret = sameDiff.cnn().spaceToDepth(gradient, blockSize, dataFormat);
+        SDVariable ret = new SpaceToDepth(sameDiff, new SDVariable[]{gradient}, blockSize, dataFormat).outputVariable();
         return Arrays.asList(ret);
     }
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        boolean isNHWC = dataFormat.equals("NHWC");
+        boolean isNHWC = dataFormat.equals(DataFormat.NHWC);
         addIArgument(blockSize, isNHWC ? 1 : 0);
     }
 

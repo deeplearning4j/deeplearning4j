@@ -41,6 +41,11 @@ public class HuberLoss extends BaseLoss {
         tArguments.add(delta);
     }
 
+    public HuberLoss(SameDiff sameDiff, SDVariable labels, SDVariable predictions, SDVariable weights,
+                    LossReduce lossReduce, double delta) {
+        this(sameDiff, lossReduce, predictions, weights, labels, delta);
+    }
+
     public HuberLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double delta){
         super(lossReduce, predictions, weights, labels);
         this.delta = delta;

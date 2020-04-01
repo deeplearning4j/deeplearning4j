@@ -85,6 +85,12 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         this(x, null, dimensions);
     }
 
+    public BaseIndexAccumulation(INDArray x, boolean keepDims, int[] dimensions) {
+        this(x, null, dimensions);
+        this.keepDims = keepDims;
+        defineDimensions(dimensions);
+    }
+
     public BaseIndexAccumulation(INDArray x, INDArray z, int[] dimensions) {
         super(x, z);
         defineDimensions(dimensions);

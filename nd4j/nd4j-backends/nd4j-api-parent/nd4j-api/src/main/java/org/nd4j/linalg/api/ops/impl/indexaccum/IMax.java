@@ -45,6 +45,11 @@ public class IMax extends BaseIndexAccumulation {
         super(x, z, dimensions);
     }
 
+    public IMax(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+
+    }
+
     public IMax(INDArray x, int... dimensions) {
         super(x, null, dimensions);
     }

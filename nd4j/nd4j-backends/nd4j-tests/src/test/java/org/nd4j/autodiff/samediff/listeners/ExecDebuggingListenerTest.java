@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff.listeners;
 
 import org.junit.Test;
 import org.nd4j.autodiff.listeners.debugging.ExecDebuggingListener;
+import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;

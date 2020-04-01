@@ -1289,7 +1289,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 
-        SDVariable merged = sd.math().mergeAvg("merged", var);
+        SDVariable merged = sd.math().mergeAvg("merged", new SDVariable[]{var});
         SDVariable sum = sd.sum(merged);
 
         Map<String,INDArray> m = sd.output(Collections.emptyMap(), "merged");

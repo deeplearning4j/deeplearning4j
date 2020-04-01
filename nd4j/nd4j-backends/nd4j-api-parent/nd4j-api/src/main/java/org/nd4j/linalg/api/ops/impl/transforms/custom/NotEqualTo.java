@@ -36,12 +36,20 @@ import java.util.List;
 public class NotEqualTo extends BaseDynamicTransformOp {
     public NotEqualTo() {}
 
+    public NotEqualTo( SameDiff sameDiff, SDVariable x, SDVariable y) {
+        this(sameDiff, new SDVariable[]{x,y}, false);
+    }
+
     public NotEqualTo( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
     public NotEqualTo( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
+    }
+
+    public NotEqualTo( INDArray x, INDArray y) {
+        addInputArgument(x,y);
     }
 
     public NotEqualTo(INDArray x, INDArray y, INDArray z){

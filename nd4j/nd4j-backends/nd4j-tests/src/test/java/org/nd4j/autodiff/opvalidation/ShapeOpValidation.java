@@ -1406,14 +1406,13 @@ public class ShapeOpValidation extends BaseOpValidation {
             SameDiff sd = SameDiff.create();
 
             SDVariable[] arr = new SDVariable[rank];
-            List<String> names = new ArrayList<>();
+            String[] names = new String[rank];
             for( int i=0; i<rank; i++ ){
                 INDArray in = Nd4j.linspace(1,3+i, 3+i).reshape(3+i).castTo(DataType.DOUBLE);
                 arr[i] = sd.var("in"+i, in);
-                names.add("meshgrid-" + i);
+                names[i] = "meshgrid-" + i;
             }
-
-            SDVariable[] meshgrid = sd.math().meshgrid(names, false, arr);
+            SDVariable[] meshgrid = sd.math().meshgrid(names, arr, false);
 
             TestCase tc = new TestCase(sd);
 

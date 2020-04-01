@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,8 +33,8 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
+@NoArgsConstructor
 public class HardSigmoid extends BaseTransformStrictOp {
-    public HardSigmoid() {}
 
     public HardSigmoid(INDArray x, INDArray z) {
         super(x, z);
@@ -45,6 +46,10 @@ public class HardSigmoid extends BaseTransformStrictOp {
 
     public HardSigmoid(SameDiff sameDiff, SDVariable in, boolean inPlace){
         super(sameDiff, in, inPlace);
+    }
+
+    public HardSigmoid(SameDiff sameDiff, SDVariable in){
+        this(sameDiff, in, false);
     }
 
     @Override

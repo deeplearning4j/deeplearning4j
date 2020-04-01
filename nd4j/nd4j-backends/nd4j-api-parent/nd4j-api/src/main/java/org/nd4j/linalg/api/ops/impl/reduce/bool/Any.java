@@ -41,6 +41,10 @@ public class Any extends BaseReduceBoolOp {
         super(x);
     }
 
+    public Any(INDArray x, int... dimensions) {
+        super(x, dimensions);
+    }
+
     @Override
     public int opNum() {
         return 0;

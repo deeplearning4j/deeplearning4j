@@ -16,8 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -42,7 +40,6 @@ import java.util.*;
  *
  * @author raver119@gmail.com
  */
-@NoArgsConstructor
 public class Dilation2D extends DynamicCustomOp {
     protected boolean isSameMode;
 
@@ -52,11 +49,21 @@ public class Dilation2D extends DynamicCustomOp {
     // strides
     protected int s0, s1, s2, s3;
 
+
+    public Dilation2D() {
+    }
+
+    public Dilation2D(SameDiff sameDiff, SDVariable df, SDVariable weights, int[] strides, int[] rates, boolean isSameMode) {
+        this(sameDiff, new SDVariable[]{df, weights}, strides, rates, isSameMode, false);
+    }
+
     public Dilation2D(SameDiff sameDiff, SDVariable[] inputAndWeights, int[] strides,
                       int[] rates, boolean isSameMode, boolean inPlace ) {
         super(null, sameDiff, inputAndWeights, inPlace);
-        Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates);
-        Preconditions.checkArgument(strides.length == 4, "Dilation strides length must be 4, got an array with length %s with values %s", strides.length, strides);
+        Preconditions.checkArgument(rates.length == 4,
+                "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates);
+        Preconditions.checkArgument(strides.length == 4,
+                "Dilation strides length must be 4, got an array with length %s with values %s", strides.length, strides);
 
         r0 = rates[0];
         r1 = rates[1];
@@ -69,18 +76,21 @@ public class Dilation2D extends DynamicCustomOp {
         this.isSameMode = isSameMode;
 
         addArgs();
+
     }
 
     public Dilation2D(INDArray[] inputArrays, INDArray[] outputs) {
         super(null, inputArrays, outputs);
+
     }
 
-    public Dilation2D(@NonNull INDArray df, @NonNull INDArray weights, @NonNull int[] strides, @NonNull int[] rates, boolean isSameMode) {
-        super(null, new INDArray[]{df, weights},null);
-        Preconditions.checkArgument(rates.length == 4, "Dilation rate length must be 4, got an array with length %s with values %s", rates.length, rates);
-        Preconditions.checkArgument(strides.length == 4, "Dilation strides length must be 4, got an array with length %s with values %s", strides.length, strides);
+    public Dilation2D(INDArray df, INDArray weights, int[] strides, int[] rates,  boolean isSameMode) {
+        addInputArgument(df, weights);
 
-        this.isSameMode = isSameMode;
+        if (rates.length < 4)
+            throw new IllegalArgumentException("Dilation rate length must be 4.");
+        if (strides.length < 4)
+            throw new IllegalArgumentException("Strides length must be 4.");
 
         r0 = rates[0];
         r1 = rates[1];
@@ -90,9 +100,10 @@ public class Dilation2D extends DynamicCustomOp {
         s1 = strides[1];
         s2 = strides[2];
         s3 = strides[3];
+        this.isSameMode = isSameMode;
+
         addArgs();
     }
-
 
     protected void addArgs() {
         addIArgument(isSameMode ? 1 : 0,

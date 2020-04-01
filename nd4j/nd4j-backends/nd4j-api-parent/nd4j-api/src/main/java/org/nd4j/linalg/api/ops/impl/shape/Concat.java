@@ -49,6 +49,14 @@ public class Concat extends DynamicCustomOp {
         addIArgument(concatDimension);
     }
 
+    public Concat(INDArray[] arrays, int concatDimension) {
+        this(concatDimension, arrays);
+    }
+
+    public Concat(SameDiff sameDiff, SDVariable[] inputs, int concatDimension){
+        this(sameDiff, concatDimension, inputs);
+    }
+
     public Concat(SameDiff sameDiff, int concatDimension, SDVariable... inputs){
         super(null, sameDiff, inputs);
         addIArgument(concatDimension);

@@ -49,6 +49,11 @@ public class AdjustSaturation extends DynamicCustomOp {
         super(sameDiff, new SDVariable[]{in, factor});
     }
 
+    public AdjustSaturation(@NonNull SameDiff sameDiff, @NonNull SDVariable in, double factor) {
+        super(sameDiff, new SDVariable[]{in});
+        addTArgument(factor);
+    }
+
     @Override
     public String opName() {
         return "adjust_saturation";

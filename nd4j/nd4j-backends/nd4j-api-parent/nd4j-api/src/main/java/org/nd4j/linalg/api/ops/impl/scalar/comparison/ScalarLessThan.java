@@ -46,6 +46,9 @@ public class ScalarLessThan extends BaseScalarBoolOp {
         super(sameDiff, i_v, scalar, inPlace);
     }
 
+    public ScalarLessThan(SameDiff sameDiff, SDVariable i_v, double scalar) {
+        super(sameDiff, i_v, scalar, false);
+    }
 
     @Override
     public int opNum() {

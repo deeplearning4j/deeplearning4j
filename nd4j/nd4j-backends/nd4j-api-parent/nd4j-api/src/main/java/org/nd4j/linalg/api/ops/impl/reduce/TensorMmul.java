@@ -77,6 +77,18 @@ public class TensorMmul extends DynamicCustomOp {
         addIArgument(dimensions[1]);
     }
 
+    public TensorMmul(SameDiff sameDiff, SDVariable x, SDVariable y, int[] dimensionsX,
+                      int[] dimensionsY, boolean transposeX, boolean transposeY, boolean transposeZ) {
+        super(null, sameDiff, new SDVariable[]{x,y});
+        this.sameDiff = sameDiff;
+        this.axes = new int[][]{dimensionsX, dimensionsY};
+        addIArgument(dimensionsX.length);
+        addIArgument(dimensionsX[0]);
+        addIArgument(dimensionsY.length);
+        addIArgument(dimensionsY[0]);
+        addBArgument(transposeX, transposeY, transposeZ);
+    }
+
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
         List<LongShapeDescriptor> ret = new ArrayList<>(1);
@@ -240,6 +252,13 @@ public class TensorMmul extends DynamicCustomOp {
     public TensorMmul(INDArray x, INDArray y, INDArray z, int[][] axes) {
         super(null,new INDArray[]{x, y, z},null);
         this.axes = axes;
+    }
+
+    public TensorMmul(INDArray x, INDArray y, int[] dimensionsX, int[] dimensionsY,
+                      boolean transposeX, boolean transposeY, boolean transposeZ) {
+        super(null,new INDArray[]{x, y},null);
+        this.axes = new int[][]{dimensionsX, dimensionsY};
+        addBArgument(transposeX, transposeY, transposeZ);
     }
 
     @Override

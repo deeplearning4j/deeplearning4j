@@ -122,6 +122,13 @@ public class Eye extends DynamicCustomOp {
         addArgs();
     }
 
+    public Eye(SameDiff sameDiff,  SDVariable numRows, SDVariable numCols, DataType dataType, int[] batchDimension) {
+        super(null, sameDiff, new SDVariable[] {numRows, numCols}, false);
+        this.batchDimension = batchDimension;
+        this.dataType = dataType;
+        addArgs();
+    }
+
     protected void addArgs() {
         iArguments.clear();
         tArguments.clear();

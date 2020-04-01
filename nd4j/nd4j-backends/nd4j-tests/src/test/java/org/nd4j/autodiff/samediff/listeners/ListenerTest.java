@@ -85,7 +85,7 @@ public class ListenerTest extends BaseNd4jTest {
         SDVariable z1 = a0.mmul(w1).add(b1);
         SDVariable predictions = sd.nn().softmax("predictions", z1, 1);
 
-        SDVariable loss = sd.loss.softmaxCrossEntropy("loss", label, predictions);
+        SDVariable loss = sd.loss.softmaxCrossEntropy("loss", label, predictions, null);
 
         sd.setLossVariables("loss");
 

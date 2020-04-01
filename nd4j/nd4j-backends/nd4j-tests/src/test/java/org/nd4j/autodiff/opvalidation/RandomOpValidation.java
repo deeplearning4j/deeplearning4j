@@ -71,7 +71,7 @@ public class RandomOpValidation extends BaseOpValidation {
                 switch (i) {
                     case 0:
                         name = "randomUniform";
-                        rand = sd.random().uniform(1, 2, shapeVar);
+                        rand = sd.random().uniform(1, 2, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double min = in.minNumber().doubleValue();
                             double max = in.maxNumber().doubleValue();
@@ -83,7 +83,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 1:
                         name = "randomNormal";
-                        rand = sd.random().normal(1, 1, shapeVar);
+                        rand = sd.random().normal(1, 1, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double stdev = in.std(true).getDouble(0);
@@ -94,7 +94,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 2:
                         name = "randomBernoulli";
-                        rand = sd.random().bernoulli(0.5, shapeVar);
+                        rand = sd.random().bernoulli(0.5, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double min = in.minNumber().doubleValue();
@@ -110,7 +110,7 @@ public class RandomOpValidation extends BaseOpValidation {
                     case 3:
                         name = "randomExponential";
                         final double lambda = 2;
-                        rand = sd.random().exponential(lambda, shapeVar);
+                        rand = sd.random().exponential(lambda, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double min = in.minNumber().doubleValue();
@@ -168,7 +168,7 @@ public class RandomOpValidation extends BaseOpValidation {
                 switch (i) {
                     case 0:
                         name = "randomBernoulli";
-                        rand = sd.random().bernoulli(0.5, shape);
+                        rand = sd.random().bernoulli(0.5, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double min = in.minNumber().doubleValue();
@@ -183,7 +183,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 1:
                         name = "normal";
-                        rand = sd.random().normal(1, 2, shape);
+                        rand = sd.random().normal(1, 2, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double stdev = in.std(true).getDouble(0);
@@ -194,7 +194,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 2:
                         name = "randomBinomial";
-                        rand = sd.random().binomial(4, 0.5, shape);
+                        rand = sd.random().binomial(4, 0.5, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             NdIndexIterator iter = new NdIndexIterator(in.shape());
                             while(iter.hasNext()){
@@ -209,7 +209,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 3:
                         name = "randomUniform";
-                        rand = sd.random().uniform(1, 2, shape);
+                        rand = sd.random().uniform(1, 2, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double min = in.minNumber().doubleValue();
                             double max = in.maxNumber().doubleValue();
@@ -225,7 +225,7 @@ public class RandomOpValidation extends BaseOpValidation {
                             continue;
                         }
                         name = "truncatednormal";
-                        rand = sd.random().normalTruncated(1, 2, shape);
+                        rand = sd.random().normalTruncated(1, 2, DataType.DOUBLE, shape);
                         checkFn = in -> {
                             double mean = in.meanNumber().doubleValue();
                             double stdev = in.std(true).getDouble(0);
@@ -236,7 +236,7 @@ public class RandomOpValidation extends BaseOpValidation {
                         break;
                     case 5:
                         name = "lognormal";
-                        rand = sd.random().logNormal(1, 2, shape);
+                        rand = sd.random().logNormal(1, 2, DataType.DOUBLE, shape);
                         //Note: lognormal parameters are mean and stdev of LOGARITHM of values
                         checkFn = in -> {
                             INDArray log = Transforms.log(in, true);
@@ -389,15 +389,25 @@ public class RandomOpValidation extends BaseOpValidation {
         for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE, }){
             SameDiff sd = SameDiff.create();
             SDVariable shape = sd.constant("shape", Nd4j.createFromArray(1, 100));
-            SDVariable out = sd.random.uniform(0, 10, shape, t);
+            SDVariable out = sd.random.uniform(0, 10, t, 1, 100);
             INDArray arr = out.eval();
             assertEquals(t, arr.dataType());
-            double min = arr.minNumber().doubleValue();
-            double max = arr.maxNumber().doubleValue();
-            double mean = arr.meanNumber().doubleValue();
-            assertEquals(0, min, 0.5);
-            assertEquals(10, max, 0.5);
-            assertEquals(5.5, mean, 1);
+            if (t.equals(DataType.DOUBLE)) {
+                double min = arr.minNumber().doubleValue();
+                double max = arr.maxNumber().doubleValue();
+                double mean = arr.meanNumber().doubleValue();
+                assertEquals(0, min, 0.5);
+                assertEquals(10, max, 0.5);
+                assertEquals(5.5, mean, 1);
+            }
+            else if (t.equals(DataType.FLOAT)) {
+                float min = arr.minNumber().floatValue();
+                float max = arr.maxNumber().floatValue();
+                float mean = arr.meanNumber().floatValue();
+                assertEquals(0, min, 0.5);
+                assertEquals(10, max, 0.5);
+                assertEquals(5.0, mean, 1);
+            }
         }
     }
 }

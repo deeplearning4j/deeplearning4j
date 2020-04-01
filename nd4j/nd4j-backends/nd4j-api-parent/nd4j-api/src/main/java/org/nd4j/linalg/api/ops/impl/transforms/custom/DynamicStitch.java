@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -58,6 +59,16 @@ public class DynamicStitch extends DynamicCustomOp {
 
         this.indices = indices;
         this.numPartitions = inputs.length;
+    }
+
+    public DynamicStitch(INDArray[] inputs, INDArray[] indices) {
+        for (INDArray input : inputs) {
+            addInputArgument(input);
+        }
+
+        for (INDArray index : indices) {
+            addInputArgument(index);
+        }
     }
 
     @Override

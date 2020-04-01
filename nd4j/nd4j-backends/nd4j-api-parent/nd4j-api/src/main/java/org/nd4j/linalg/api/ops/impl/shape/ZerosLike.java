@@ -45,6 +45,10 @@ public class ZerosLike extends DynamicCustomOp {
 
     protected DataType outputType;    //Allow customizing dtype for TF import
 
+    public ZerosLike(SameDiff sameDiff, SDVariable input) {
+        this(null, sameDiff, input, false, input.dataType());
+    }
+
     public ZerosLike(String name, SameDiff sameDiff, SDVariable input) {
         this(name, sameDiff, input, false, input.dataType());
     }
@@ -64,6 +68,10 @@ public class ZerosLike extends DynamicCustomOp {
 
     public ZerosLike(INDArray in, INDArray out){
         this(in, out, in.dataType());
+    }
+
+    public ZerosLike(INDArray in){
+        addInputArgument(in);
     }
 
     public ZerosLike(INDArray in, INDArray out, DataType dataType) {

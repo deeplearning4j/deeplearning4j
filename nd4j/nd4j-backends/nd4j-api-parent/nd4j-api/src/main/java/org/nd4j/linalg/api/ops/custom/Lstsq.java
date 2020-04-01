@@ -17,8 +17,16 @@ package org.nd4j.linalg.api.ops.custom;
 
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 @NoArgsConstructor
 public class Lstsq extends DynamicCustomOp {
@@ -33,8 +41,21 @@ public class Lstsq extends DynamicCustomOp {
         this(matrix, rhs, 0.0, true);
     }
 
+    public Lstsq(@NonNull SameDiff sameDiff, @NonNull SDVariable matrix, @NonNull SDVariable rhs, double l2_regularizer, boolean fast) {
+        super(sameDiff, new SDVariable[]{matrix,rhs});
+        addTArgument(l2_regularizer);
+        addBArgument(fast);
+    }
+
     @Override
     public String opName() {
         return "lstsq";
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        int n = args().length;
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }
