@@ -35,4 +35,18 @@ public class INDArrayHelperTest {
         assertEquals(3, output.shape()[1]);
     }
 
+    @Test
+    public void when_inputHasOneDimension_expect_outputWithTwoDimensions() {
+        // Arrange
+        INDArray input = Nd4j.create(new double[] { 1.0 });
+
+        // Act
+        INDArray output = INDArrayHelper.forceCorrectShape(input);
+
+        // Assert
+        assertEquals(2, output.shape().length);
+        assertEquals(1, output.shape()[0]);
+        assertEquals(1, output.shape()[1]);
+    }
+
 }
