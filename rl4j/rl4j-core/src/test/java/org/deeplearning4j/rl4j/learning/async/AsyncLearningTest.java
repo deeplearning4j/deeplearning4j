@@ -84,9 +84,9 @@ public class AsyncLearningTest {
     public static class TestAsyncLearning extends AsyncLearning<MockEncodable, Integer, DiscreteSpace, MockNeuralNet> {
         private final AsyncConfiguration conf;
         private final IAsyncGlobal asyncGlobal;
-        private final IPolicy<MockEncodable, Integer> policy;
+        private final IPolicy<Integer> policy;
 
-        public TestAsyncLearning(AsyncConfiguration conf, IAsyncGlobal asyncGlobal, IPolicy<MockEncodable, Integer> policy) {
+        public TestAsyncLearning(AsyncConfiguration conf, IAsyncGlobal asyncGlobal, IPolicy<Integer> policy) {
             this.conf = conf;
             this.asyncGlobal = asyncGlobal;
             this.policy = policy;

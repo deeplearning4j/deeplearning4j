@@ -66,7 +66,7 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
         Stack<MiniTrans<Integer>> rewards = new Stack<>();
 
         Observation obs = sObs;
-        IPolicy<O, Integer> policy = getPolicy(current);
+        IPolicy<Integer> policy = getPolicy(current);
 
         Integer action;
         Integer lastAction = getMdp().getActionSpace().noOp();

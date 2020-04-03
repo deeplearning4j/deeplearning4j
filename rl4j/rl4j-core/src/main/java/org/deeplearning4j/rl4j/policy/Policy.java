@@ -36,22 +36,22 @@ import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
  *
  * A Policy responsability is to choose the next action given a state
  */
-public abstract class Policy<O, A> implements IPolicy<O, A> {
+public abstract class Policy<A> implements IPolicy<A> {
 
     public abstract NeuralNet getNeuralNet();
 
     public abstract A nextAction(Observation obs);
 
-    public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
+    public <O, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
         return play(mdp, (IHistoryProcessor)null);
     }
 
-    public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, HistoryProcessor.Configuration conf) {
+    public <O, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, HistoryProcessor.Configuration conf) {
         return play(mdp, new HistoryProcessor(conf));
     }
 
     @Override
-    public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
+    public <O, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
         resetNetworks();
 
         RefacEpochStepCounter epochStepCounter = new RefacEpochStepCounter();
@@ -89,7 +89,11 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
         getNeuralNet().reset();
     }
 
-    protected <AS extends ActionSpace<A>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<O, A, AS> mdpWrapper, IHistoryProcessor hp, RefacEpochStepCounter epochStepCounter) {
+    public void reset() {
+        resetNetworks();
+    }
+
+    protected <O, AS extends ActionSpace<A>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<O, A, AS> mdpWrapper, IHistoryProcessor hp, RefacEpochStepCounter epochStepCounter) {
         epochStepCounter.setCurrentEpochStep(0);
 
         double reward = 0;

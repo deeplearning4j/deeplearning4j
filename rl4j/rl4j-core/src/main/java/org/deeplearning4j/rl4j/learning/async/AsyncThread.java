@@ -199,7 +199,7 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
 
     protected abstract AsyncConfiguration getConf();
 
-    protected abstract IPolicy<O, A> getPolicy(NN net);
+    protected abstract IPolicy<A> getPolicy(NN net);
 
     protected abstract SubEpochReturn trainSubEpoch(Observation obs, int nstep);
 

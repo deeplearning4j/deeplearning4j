@@ -212,7 +212,7 @@ public class PolicyTest {
         assertEquals(0, dqn.outputParams.size());
     }
 
-    public static class MockRefacPolicy extends Policy<MockEncodable, Integer> {
+    public static class MockRefacPolicy extends Policy<Integer> {
 
         private NeuralNet neuralNet;
         private final int[] shape;
@@ -242,7 +242,7 @@ public class PolicyTest {
         }
 
         @Override
-        protected <AS extends ActionSpace<Integer>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<MockEncodable, Integer, AS> mdpWrapper, IHistoryProcessor hp, RefacEpochStepCounter epochStepCounter) {
+        protected <O, AS extends ActionSpace<Integer>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<O, Integer, AS> mdpWrapper, IHistoryProcessor hp, RefacEpochStepCounter epochStepCounter) {
             mdpWrapper.setTransformProcess(MockMDP.buildTransformProcess(shape, skipFrame, historyLength));
             return super.refacInitMdp(mdpWrapper, hp, epochStepCounter);
         }

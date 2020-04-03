@@ -178,7 +178,7 @@ public class AsyncThreadDiscreteTest {
         }
 
         @Override
-        protected IPolicy<MockEncodable, Integer> getPolicy(MockNeuralNet net) {
+        protected IPolicy<Integer> getPolicy(MockNeuralNet net) {
             return policy;
         }
 

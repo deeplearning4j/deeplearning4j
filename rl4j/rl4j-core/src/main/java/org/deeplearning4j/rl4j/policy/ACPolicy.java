@@ -35,7 +35,7 @@ import java.io.IOException;
  * the softmax output of the actor critic, but objects constructed
  * with a {@link Random} argument of null return the max only.
  */
-public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
+public class ACPolicy<O extends Encodable> extends Policy<Integer> {
 
     final private IActorCritic actorCritic;
     Random rnd;
