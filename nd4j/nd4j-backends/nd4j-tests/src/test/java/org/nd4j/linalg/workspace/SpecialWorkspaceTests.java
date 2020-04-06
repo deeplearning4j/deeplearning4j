@@ -36,6 +36,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 /**
@@ -298,6 +301,40 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         log.info("{} ns", ((timeEnd - timeStart) / (double) iterations));
     }
 
+    @Test
+    public void testWorkspaceOrder_1(){
+        WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
+                .initialSize(1_000_000)
+                .overallocationLimit(0.05)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        val exp = Arrays.asList("outer", null, "outer", "inner", "outer", null);
+        val res = new ArrayList<String>();
+
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "outer")){
+            try(MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "inner")){
+                try(MemoryWorkspace ws3 = ws.notifyScopeBorrowed()){
+                    System.out.println("X: " + Nd4j.getMemoryManager().getCurrentWorkspace());                  //outer
+                    res.add(Nd4j.getMemoryManager().getCurrentWorkspace() == null ? null : Nd4j.getMemoryManager().getCurrentWorkspace().getId());
+                    try(MemoryWorkspace ws4 = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
+                        System.out.println("A: " + Nd4j.getMemoryManager().getCurrentWorkspace());              //None (null)
+                        res.add(Nd4j.getMemoryManager().getCurrentWorkspace() == null ? null : Nd4j.getMemoryManager().getCurrentWorkspace().getId());
+                    }
+                    System.out.println("B: " + Nd4j.getMemoryManager().getCurrentWorkspace());                  //outer
+                    res.add(Nd4j.getMemoryManager().getCurrentWorkspace() == null ? null : Nd4j.getMemoryManager().getCurrentWorkspace().getId());
+                }
+                System.out.println("C: " + Nd4j.getMemoryManager().getCurrentWorkspace());                      //inner
+                res.add(Nd4j.getMemoryManager().getCurrentWorkspace() == null ? null : Nd4j.getMemoryManager().getCurrentWorkspace().getId());
+            }
+            System.out.println("D: " + Nd4j.getMemoryManager().getCurrentWorkspace());                          //outer
+            res.add(Nd4j.getMemoryManager().getCurrentWorkspace() == null ? null : Nd4j.getMemoryManager().getCurrentWorkspace().getId());
+        }
+        System.out.println("E: " + Nd4j.getMemoryManager().getCurrentWorkspace());                              //None (null)
+        res.add(Nd4j.getMemoryManager().getCurrentWorkspace() == null ? null : Nd4j.getMemoryManager().getCurrentWorkspace().getId());
+
+        assertEquals(exp, res);
+    }
     @Override
     public char ordering() {
         return 'c';

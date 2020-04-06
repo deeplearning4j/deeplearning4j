@@ -72,9 +72,16 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public Integer getDeviceForThread(long threadId) {
-        val id = affinityMap.get(threadId);
-        if (id == null)
-            throw new RuntimeException("Affinity for thread [" + threadId + "] wasn't defined yet");
+        Integer id = affinityMap.get(threadId);
+        if (id == null) {
+            // if this is current thread - we're still able to fetch id from native side, and update map
+            if (threadId == Thread.currentThread().getId()) {
+                id = NativeOpsHolder.getInstance().getDeviceNativeOps().getDevice();
+                affinityMap.put(Long.valueOf(threadId), id);
+            } else
+                // TODO: we should get rid of this method, and forbid such kind of queries
+                throw new RuntimeException("Affinity for thread [" + threadId + "] wasn't defined yet");
+        }
 
         return id;
     }

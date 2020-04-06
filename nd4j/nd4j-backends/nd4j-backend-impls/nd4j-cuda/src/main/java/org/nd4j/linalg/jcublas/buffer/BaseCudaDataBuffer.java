@@ -1792,11 +1792,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     protected void release() {
         if (!released) {
-            //AtomicAllocator.getInstance().freeMemory(allocationPoint);n
-            NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(allocationPoint.getPtrDataBuffer());
+            ptrDataBuffer.closeBuffer();
             allocationPoint.setReleased(true);
         }
-        released = true;
+
+        super.release();
     }
 
     /*

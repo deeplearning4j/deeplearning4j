@@ -580,6 +580,13 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     public void close() {
         // first we check if this workspace was borrowed. if yes - just close without reset.
         if (isBorrowed.get()) {
+            if (tagScope.get() > 0) {
+                if (tagScope.decrementAndGet() == 0) {
+                    Nd4j.getMemoryManager().setCurrentWorkspace(this);
+                }
+                return;
+            }
+
             isBorrowed.set(false);
             Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
             return;

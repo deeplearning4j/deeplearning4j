@@ -837,6 +837,12 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         this(data, true, workspace);
     }
 
+    @Override
+    protected void release() {
+        ptrDataBuffer.closeBuffer();
+        super.release();
+    }
+
     /**
      * Reallocate the native memory of the buffer
      * @param length the new length of the buffer

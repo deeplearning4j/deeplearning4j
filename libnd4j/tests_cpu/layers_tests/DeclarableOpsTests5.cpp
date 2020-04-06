@@ -2374,7 +2374,7 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test4) {
     auto expected = NDArrayFactory::create<double>('c', {3, 3}, {0, 0, 0, 100, 0, 0, 0, 0, 200});
 
     sd::ops::confusion_matrix op;
-    auto results = op.evaluate({&labels, &predictions, &weights}, {}, {3, sd::DataType::DOUBLE});
+    auto results = op.evaluate({&labels, &predictions, &weights}, {}, {3}, {}, {sd::DataType::DOUBLE});
     auto output = results.at(0);
 
 

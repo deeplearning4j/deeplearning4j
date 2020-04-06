@@ -1930,7 +1930,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void release() {
         this.released = true;
-        this.pointer.deallocate();
         this.indexer = null;
         this.pointer = null;
     }

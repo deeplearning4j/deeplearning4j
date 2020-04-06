@@ -23,7 +23,7 @@
 
 namespace sd {
     namespace ops {
-        BROADCASTABLE_OP_IMPL(equals, 0, 0) {
+        BROADCASTABLE_BOOL_OP_IMPL(equals, 0, 0) {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);

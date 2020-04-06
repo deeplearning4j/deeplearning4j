@@ -6,6 +6,7 @@ import java.nio.*;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.*;
 
+import static org.bytedeco.javacpp.presets.javacpp.*;
 import static org.bytedeco.openblas.global.openblas_nolapack.*;
 import static org.bytedeco.openblas.global.openblas.*;
 
@@ -11406,7 +11407,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 };
 //                                                                                 REGISTER_H(NAME)
 
+// #define DECLARE_BROADCASTABLE_BOOL_OP(NAME,TARGS, IARGS)                        class ND4J_EXPORT NAME: public sd::ops::BroadcastableBoolOp {
+//                                                                                 protected:
+//                                                                                     void registerTypes();
+//                                                                                     Nd4jStatus validateAndExecute(Context& block);
+//                                                                                 public:
+//                                                                                     NAME();
+//                                                                                 };
+//                                                                                 REGISTER_H(NAME)
+
+
 // #define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                               NAME::NAME(): sd::ops::BroadcastableOp(#NAME, TARGS, IARGS) { };
+//                                                                                 REGISTER_C(NAME)
+//                                                                                 Nd4jStatus sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+
+// #define BROADCASTABLE_BOOL_OP_IMPL(NAME, TARGS, IARGS)                          NAME::NAME(): sd::ops::BroadcastableBoolOp(#NAME, TARGS, IARGS) { };
 //                                                                                 REGISTER_C(NAME)
 //                                                                                 Nd4jStatus sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
 
@@ -11869,6 +11884,50 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
 // #endif //LIBND4J_BROADCASTABLEOP_H
+
+
+// Parsed from ops/declarable/BroadcastableBoolOp.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// Created by raver on 6/6/2018.
+//
+
+// #ifndef SD_BROADCASTABLEBOOLOP_H
+// #define SD_BROADCASTABLEBOOLOP_H
+
+// #include <graph/Context.h>
+// #include "OpDescriptor.h"
+// #include "DeclarableOp.h"
+// #include "DeclarableCustomOp.h"
+        @Namespace("sd::ops") public static class BroadcastableBoolOp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public BroadcastableBoolOp(Pointer p) { super(p); }
+        
+
+            public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+        }
+    
+
+
+
+// #endif //SD_BROADCASTABLEBOOLOP_H
 
 
 // Parsed from ops/declarable/DeclarableOp.h
@@ -13636,6 +13695,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LIBND4J_HEADERS_BROADCASTABLE_H
 
 // #include <ops/declarable/BroadcastableOp.h>
+// #include <ops/declarable/BroadcastableBoolOp.h>
 // #include <ops/declarable/headers/common.h>
 // #include <ops/declarable/generic/helpers/BroadcastHelper.h>
         // TODO: make broadcastables separate class
@@ -14317,7 +14377,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *
          */
 //         #if NOT_EXCLUDED(OP_equals)
-        @Namespace("sd::ops") public static class equals extends BroadcastableOp {
+        @Namespace("sd::ops") public static class equals extends BroadcastableBoolOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public equals(Pointer p) { super(p); }
@@ -14338,7 +14398,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Math is: _x != _y ? (T) 1.0f : (T) 0.0f;
          */
 //         #if NOT_EXCLUDED(OP_not_equals)
-        @Namespace("sd::ops") public static class not_equals extends BroadcastableOp {
+        @Namespace("sd::ops") public static class not_equals extends BroadcastableBoolOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public not_equals(Pointer p) { super(p); }
@@ -14359,7 +14419,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Math is: _x <= _y ? (T) 1.0f : (T) 0.0f;
          */
 //         #if NOT_EXCLUDED(OP_less_equal)
-        @Namespace("sd::ops") public static class less_equal extends BroadcastableOp {
+        @Namespace("sd::ops") public static class less_equal extends BroadcastableBoolOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public less_equal(Pointer p) { super(p); }
@@ -14380,7 +14440,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Math is: _x >= _y ? (T) 1.0f : (T) 0.0f;
          */
 //         #if NOT_EXCLUDED(OP_greater_equal)
-        @Namespace("sd::ops") public static class greater_equal extends BroadcastableOp {
+        @Namespace("sd::ops") public static class greater_equal extends BroadcastableBoolOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public greater_equal(Pointer p) { super(p); }
@@ -14401,7 +14461,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Math is: _x < _y ? (T) 1.0f : (T) 0.0f;
          */
 //         #if NOT_EXCLUDED(OP_less)
-        @Namespace("sd::ops") public static class less extends BroadcastableOp {
+        @Namespace("sd::ops") public static class less extends BroadcastableBoolOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public less(Pointer p) { super(p); }
@@ -14422,7 +14482,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Math is: _x > _y ? (T) 1.0f : (T) 0.0f;
          */
 //         #if NOT_EXCLUDED(OP_greater)
-        @Namespace("sd::ops") public static class greater extends BroadcastableOp {
+        @Namespace("sd::ops") public static class greater extends BroadcastableBoolOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public greater(Pointer p) { super(p); }
@@ -16672,6 +16732,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
+        @Namespace("sd::ops") public static class mergemax_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public mergemax_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public mergemax_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public mergemax_bp position(long position) {
+                return (mergemax_bp)super.position(position);
+            }
+        
+                                                                                    public mergemax_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
         /*
          * Complete tensor with max indices merged from all input tensors list
@@ -16714,6 +16789,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
+        @Namespace("sd::ops") public static class mergeadd_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public mergeadd_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public mergeadd_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public mergeadd_bp position(long position) {
+                return (mergeadd_bp)super.position(position);
+            }
+        
+                                                                                    public mergeadd_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_mergeavg)
@@ -16732,6 +16822,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
+        @Namespace("sd::ops") public static class mergeavg_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public mergeavg_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public mergeavg_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public mergeavg_bp position(long position) {
+                return (mergeavg_bp)super.position(position);
+            }
+        
+                                                                                    public mergeavg_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_scatter_update)
@@ -19074,20 +19179,37 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *   - 2D matrix MxN
          *   - 1D vector with N elements
          * output value - 2D matrix NxN as multiply of matrixes and add vector
+         * Int args:
+         *      0 - optional switcher of weights format, if int arg == 1 - mkldnn, else mmul
          */
 //         #if NOT_EXCLUDED(OP_xw_plus_b)
-        @Namespace("sd::ops") public static class xw_plus_b extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public xw_plus_b(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public xw_plus_b(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public xw_plus_b position(long position) {
-                return (xw_plus_b)super.position(position);
-            }
-        
+                @Namespace("sd::ops") public static class xw_plus_b extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public xw_plus_b(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public xw_plus_b(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public xw_plus_b position(long position) {
+                        return (xw_plus_b)super.position(position);
+                    }
+                
                                                                                     public xw_plus_b() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+                @Namespace("sd::ops") public static class xw_plus_b_bp extends DeclarableCustomOp {
+                    static { Loader.load(); }
+                    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                    public xw_plus_b_bp(Pointer p) { super(p); }
+                    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                    public xw_plus_b_bp(long size) { super((Pointer)null); allocateArray(size); }
+                    private native void allocateArray(long size);
+                    @Override public xw_plus_b_bp position(long position) {
+                        return (xw_plus_b_bp)super.position(position);
+                    }
+                
+                                                                                    public xw_plus_b_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
