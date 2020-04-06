@@ -20,18 +20,19 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.base.Preconditions;
 
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
+import lombok.NonNull;
+public class CReLU extends DynamicCustomOp {
 
-public class CRELU extends DynamicCustomOp {
-    @Getter
-
-    public CRELU(SameDiff sd, SDVariable input) {
+    public CReLU(SameDiff sd, SDVariable input) {
         super(sd, new SDVariable[]{input});
     }
 
-    public CRELU(@NonNull INDArray input, INDArray output) {
+    public CReLU(@NonNull INDArray input, INDArray output) {
         super(new INDArray[]{input}, wrapOrNull(output));
     }
 

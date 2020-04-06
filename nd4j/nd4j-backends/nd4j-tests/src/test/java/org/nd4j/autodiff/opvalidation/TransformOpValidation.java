@@ -40,12 +40,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Min;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -1985,5 +1980,26 @@ public class TransformOpValidation extends BaseOpValidation {
                     .expectedOutput(lse.name(), log)
                     .gradientCheck(true));
         }
+    }
+
+
+    @Test
+    public void testCRELU(){
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray inputArr = Nd4j.rand(DataType.DOUBLE, 2, 2);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var(inputArr);
+
+        SDVariable crelu = new CReLU(sd,in).outputVariable();
+        INDArray expected = Nd4j.concat(1, Nd4j.nn.relu(inputArr, 0), Nd4j.nn.relu(inputArr.neg(), 0));
+
+        assertArrayEquals(expected.shape(),crelu.eval().shape());
+        assertEquals(crelu.eval(), expected);
+
+        //        OpValidation.validate(new TestCase(sd)
+//                .expectedOutput("crelu", expected)
+//                .gradientCheck(true)
+//        );
     }
 }

@@ -20,18 +20,20 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.base.Preconditions;
 
 import java.util.Collections;
 import java.util.List;
+import lombok.Getter;
+import lombok.NonNull;
 
-public class CRELU_bp extends DynamicCustomOp {
-    @Getter
+public class CReluBp extends DynamicCustomOp {
 
-    public CRELU_bp(SameDiff sd, SDVariable input, SDVariable epsilonNext) {
+    public CReluBp(SameDiff sd, SDVariable input, SDVariable epsilonNext) {
         super(sd, new SDVariable[]{input, epsilonNext});
     }
 
-    public CRELU_bp(@NonNull INDArray input, @NonNull INDArray epsilonNext, INDArray output) {
+    public CReluBp(@NonNull INDArray input, @NonNull INDArray epsilonNext, INDArray output) {
         super(new INDArray[]{input, epsilonNext}, wrapOrNull(output));
     }
 
@@ -44,7 +46,7 @@ public class CRELU_bp extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions
-                .checkArgument(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatypes, got %s", dataTypes);
+                .checkArgument(dataTypes != null && dataTypes.size() == 2, "Expected exactly 1 input datatypes, got %s", dataTypes);
         Preconditions.checkArgument(dataTypes.get(0).isFPType(), "Input datatype must be floating point, got %s", dataTypes);
 
         return Collections.singletonList(dataTypes.get(0));
