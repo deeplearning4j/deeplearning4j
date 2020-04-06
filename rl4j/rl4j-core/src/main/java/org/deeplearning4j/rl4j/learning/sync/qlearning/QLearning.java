@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -18,10 +19,19 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.EpochStepCounter;
+import org.deeplearning4j.rl4j.learning.configuration.ILearningConfiguration;
+import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
@@ -59,15 +69,15 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     protected abstract LegacyMDPWrapper<O, A, AS> getLegacyMDPWrapper();
 
-    public QLearning(QLConfiguration conf) {
+    public QLearning(QLearningConfiguration conf) {
         this(conf, getSeededRandom(conf.getSeed()));
     }
 
-    public QLearning(QLConfiguration conf, Random random) {
+    public QLearning(QLearningConfiguration conf, Random random) {
         expReplay = new ExpReplay<>(conf.getExpRepMaxSize(), conf.getBatchSize(), random);
     }
 
-    private static Random getSeededRandom(Integer seed) {
+    private static Random getSeededRandom(Long seed) {
         Random rnd = Nd4j.getRandom();
         if(seed != null) {
             rnd.setSeed(seed);
@@ -95,7 +105,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         return getQNetwork();
     }
 
-    public abstract QLConfiguration getConfiguration();
+    public abstract QLearningConfiguration getConfiguration();
 
     protected abstract void preEpoch();
 
@@ -198,7 +208,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         double reward;
         int episodeLength;
         List<Double> scores;
-        float epsilon;
+        double epsilon;
         double startQ;
         double meanQ;
     }
@@ -213,12 +223,14 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     }
 
+
     @Data
     @AllArgsConstructor
     @Builder
+    @Deprecated
     @EqualsAndHashCode(callSuper = false)
     @JsonDeserialize(builder = QLConfiguration.QLConfigurationBuilder.class)
-    public static class QLConfiguration implements LConfiguration {
+    public static class QLConfiguration {
 
         Integer seed;
         int maxEpochStep;
@@ -237,7 +249,25 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         @JsonPOJOBuilder(withPrefix = "")
         public static final class QLConfigurationBuilder {
         }
-    }
 
+        public QLearningConfiguration toLearningConfiguration() {
+
+            return QLearningConfiguration.builder()
+                    .seed(seed.longValue())
+                    .maxEpochStep(maxEpochStep)
+                    .maxStep(maxStep)
+                    .expRepMaxSize(expRepMaxSize)
+                    .batchSize(batchSize)
+                    .targetDqnUpdateFreq(targetDqnUpdateFreq)
+                    .updateStart(updateStart)
+                    .rewardFactor(rewardFactor)
+                    .gamma(gamma)
+                    .errorClamp(errorClamp)
+                    .minEpsilon(minEpsilon)
+                    .epsilonNbStep(epsilonNbStep)
+                    .doubleDQN(doubleDQN)
+                    .build();
+        }
+    }
 
 }

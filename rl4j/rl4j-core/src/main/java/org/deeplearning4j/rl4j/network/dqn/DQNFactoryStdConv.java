@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -30,11 +31,14 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
+import org.deeplearning4j.rl4j.network.configuration.NetworkConfiguration;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.util.Arrays;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/13/16.
@@ -43,7 +47,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 public class DQNFactoryStdConv implements DQNFactory {
 
 
-    Configuration conf;
+    NetworkConfiguration conf;
 
     public DQN buildDQN(int shapeInputs[], int numOutputs) {
 
@@ -80,7 +84,6 @@ public class DQNFactoryStdConv implements DQNFactory {
         return new DQN(model);
     }
 
-
     @AllArgsConstructor
     @Builder
     @Value
@@ -90,6 +93,23 @@ public class DQNFactoryStdConv implements DQNFactory {
         double l2;
         IUpdater updater;
         TrainingListener[] listeners;
+
+        /**
+         * Converts the deprecated Configuration to the new NetworkConfiguration format
+         */
+        public NetworkConfiguration toNetworkConfiguration() {
+            NetworkConfiguration.NetworkConfigurationBuilder builder = NetworkConfiguration.builder()
+                    .learningRate(learningRate)
+                    .l2(l2)
+                    .updater(updater);
+
+            if (listeners != null) {
+                builder.listeners(Arrays.asList(listeners));
+            }
+
+            return builder.build();
+
+        }
     }
 
 }

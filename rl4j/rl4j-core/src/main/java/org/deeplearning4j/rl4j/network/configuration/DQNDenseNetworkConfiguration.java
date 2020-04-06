@@ -14,24 +14,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.support;
+package org.deeplearning4j.rl4j.network.configuration;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
-import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
-@Value
-@AllArgsConstructor
-public class MockAsyncConfiguration implements IAsyncLearningConfiguration {
+@Data
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
+public class DQNDenseNetworkConfiguration extends NetworkConfiguration {
 
-    private Long seed;
-    private int maxEpochStep;
-    private int maxStep;
-    private int updateStart;
-    private double rewardFactor;
-    private double gamma;
-    private double errorClamp;
-    private int numThreads;
-    private int nStep;
-    private int learnerUpdateFrequency;
+    /**
+     * The number of layers in the dense network
+     */
+    @Builder.Default
+    private int numLayers = 3;
+
+    /**
+     * The number of hidden neurons in each layer
+     */
+    @Builder.Default
+    private int numHiddenNodes = 100;
 }

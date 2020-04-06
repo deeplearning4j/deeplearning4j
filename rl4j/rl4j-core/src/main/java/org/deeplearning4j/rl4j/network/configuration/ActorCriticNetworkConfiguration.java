@@ -14,24 +14,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.support;
+package org.deeplearning4j.rl4j.network.configuration;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
-import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-@Value
-@AllArgsConstructor
-public class MockAsyncConfiguration implements IAsyncLearningConfiguration {
+@Data
+@SuperBuilder
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+public class ActorCriticNetworkConfiguration extends NetworkConfiguration {
 
-    private Long seed;
-    private int maxEpochStep;
-    private int maxStep;
-    private int updateStart;
-    private double rewardFactor;
-    private double gamma;
-    private double errorClamp;
-    private int numThreads;
-    private int nStep;
-    private int learnerUpdateFrequency;
+    /**
+     * Whether or not to add an LSTM layer to the network.
+     */
+    @Builder.Default
+    private boolean useLSTM = false;
+
 }

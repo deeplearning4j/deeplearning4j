@@ -14,24 +14,29 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.support;
+package org.deeplearning4j.rl4j.learning.configuration;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
-import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
-@Value
-@AllArgsConstructor
-public class MockAsyncConfiguration implements IAsyncLearningConfiguration {
 
-    private Long seed;
-    private int maxEpochStep;
-    private int maxStep;
-    private int updateStart;
-    private double rewardFactor;
-    private double gamma;
-    private double errorClamp;
-    private int numThreads;
-    private int nStep;
-    private int learnerUpdateFrequency;
+@Data
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
+public class AsyncQLearningConfiguration extends QLearningConfiguration implements IAsyncLearningConfiguration {
+
+    /**
+     * The number of asynchronous threads to use to generate experience data
+     */
+    private final int numThreads;
+
+    /**
+     * The number of steps in each training interations
+     */
+    private final int nStep;
+
+    public int getLearnerUpdateFrequency() {
+        return getTargetDqnUpdateFreq();
+    }
 }

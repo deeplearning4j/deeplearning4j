@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -19,10 +20,10 @@ package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 import lombok.Getter;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
 import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
+import org.deeplearning4j.rl4j.learning.configuration.A3CLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
@@ -31,9 +32,9 @@ import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.api.rng.Random;
 
 import java.util.Stack;
 
@@ -45,7 +46,7 @@ import java.util.Stack;
 public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IActorCritic> {
 
     @Getter
-    final protected A3CDiscrete.A3CConfiguration conf;
+    final protected A3CLearningConfiguration conf;
     @Getter
     final protected IAsyncGlobal<IActorCritic> asyncGlobal;
     @Getter
@@ -54,14 +55,14 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     final private Random rnd;
 
     public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IAsyncGlobal<IActorCritic> asyncGlobal,
-                             A3CDiscrete.A3CConfiguration a3cc, int deviceNum, TrainingListenerList listeners,
+                             A3CLearningConfiguration a3cc, int deviceNum, TrainingListenerList listeners,
                              int threadNumber) {
         super(asyncGlobal, mdp, listeners, threadNumber, deviceNum);
         this.conf = a3cc;
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;
 
-        Integer seed = conf.getSeed();
+        Long seed = conf.getSeed();
         rnd = Nd4j.getRandom();
         if(seed != null) {
             rnd.setSeed(seed + threadNumber);

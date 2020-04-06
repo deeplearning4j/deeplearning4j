@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,36 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.learning.async;
+package org.deeplearning4j.rl4j.learning.configuration;
 
-import org.deeplearning4j.rl4j.learning.ILearning;
+public interface IAsyncLearningConfiguration extends ILearningConfiguration {
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/23/16.
- *
- * Interface configuration for all training method that inherit
- * from AsyncLearning
- */
-public interface AsyncConfiguration extends ILearning.LConfiguration {
+    int getNumThreads();
 
-    Integer getSeed();
+    int getNStep();
 
-    int getMaxEpochStep();
+    int getLearnerUpdateFrequency();
 
     int getMaxStep();
-
-    int getNumThread();
-
-    int getNstep();
-
-    int getTargetDqnUpdateFreq();
-
-    int getUpdateStart();
-
-    double getRewardFactor();
-
-    double getGamma();
-
-    double getErrorClamp();
-
 }

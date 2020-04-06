@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -22,6 +23,7 @@ import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.DoubleDQN;
@@ -45,16 +47,15 @@ import java.util.ArrayList;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
- *
+ * <p>
  * DQN or Deep Q-Learning in the Discrete domain
- *
+ * <p>
  * http://arxiv.org/abs/1312.5602
- *
  */
 public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O, Integer, DiscreteSpace> {
 
     @Getter
-    final private QLConfiguration configuration;
+    final private QLearningConfiguration configuration;
     private final LegacyMDPWrapper<O, Integer, DiscreteSpace> mdp;
     @Getter
     private DQNPolicy<O> policy;
@@ -78,16 +79,15 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         return mdp;
     }
 
-    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
-                             int epsilonNbStep) {
+    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearningConfiguration conf, int epsilonNbStep) {
         this(mdp, dqn, conf, epsilonNbStep, Nd4j.getRandomFactory().getNewRandomInstance(conf.getSeed()));
     }
 
-    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
+    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearningConfiguration conf,
                              int epsilonNbStep, Random random) {
         super(conf);
         this.configuration = conf;
-        this.mdp = new LegacyMDPWrapper<O, Integer, DiscreteSpace>(mdp, null, this);
+        this.mdp = new LegacyMDPWrapper<>(mdp, null, this);
         qNetwork = dqn;
         targetQNetwork = dqn.clone();
         policy = new DQNPolicy(getQNetwork());
@@ -125,6 +125,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     /**
      * Single step of training
+     *
      * @param obs last obs
      * @return relevant info for next step
      */
@@ -135,8 +136,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         boolean isHistoryProcessor = getHistoryProcessor() != null;
         int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
         int historyLength = isHistoryProcessor ? getHistoryProcessor().getConf().getHistoryLength() : 1;
-        int updateStart = getConfiguration().getUpdateStart()
-                        + ((getConfiguration().getBatchSize() + historyLength) * skipFrame);
+        int updateStart = this.getConfiguration().getUpdateStart()
+                + ((this.getConfiguration().getBatchSize() + historyLength) * skipFrame);
 
         Double maxQ = Double.NaN; //ignore if Nan for stats
 
@@ -161,7 +162,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         if (!obs.isSkipped()) {
 
             // Add experience
-            if(pendingTransition != null) {
+            if (pendingTransition != null) {
                 pendingTransition.setNextObservation(obs);
                 getExpReplay().store(pendingTransition);
             }
@@ -188,7 +189,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     @Override
     protected void finishEpoch(Observation observation) {
-        if(pendingTransition != null) {
+        if (pendingTransition != null) {
             pendingTransition.setNextObservation(observation);
             getExpReplay().store(pendingTransition);
         }

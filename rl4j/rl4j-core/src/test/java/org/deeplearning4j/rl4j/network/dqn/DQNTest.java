@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,6 +17,7 @@
 
 package org.deeplearning4j.rl4j.network.dqn;
 
+import org.deeplearning4j.rl4j.network.configuration.DQNDenseNetworkConfiguration;
 import org.junit.Test;
 import org.nd4j.linalg.learning.config.RmsProp;
 
@@ -25,22 +27,20 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 
 /**
- *
  * @author saudet
  */
 public class DQNTest {
 
-    public static DQNFactoryStdDense.Configuration NET_CONF =
-            new DQNFactoryStdDense.Configuration(
-                    3,         //number of layers
-                    16,        //number of hidden nodes
-                    0.001,     //l2 regularization
-                    new RmsProp(0.0005), null
-            );
+    private static DQNDenseNetworkConfiguration NET_CONF =
+            DQNDenseNetworkConfiguration.builder().numLayers(3)
+                    .numHiddenNodes(16)
+                    .l2(0.001)
+                    .updater(new RmsProp(0.0005))
+                    .build();
 
     @Test
     public void testModelLoadSave() throws IOException {
-        DQN dqn = new DQNFactoryStdDense(NET_CONF).buildDQN(new int[] {42}, 13);
+        DQN dqn = new DQNFactoryStdDense(NET_CONF).buildDQN(new int[]{42}, 13);
 
         File file = File.createTempFile("rl4j-dqn-", ".model");
         dqn.save(file.getAbsolutePath());

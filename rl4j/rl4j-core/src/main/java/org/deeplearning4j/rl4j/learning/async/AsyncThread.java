@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -23,6 +24,7 @@ import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.*;
+import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -155,7 +157,7 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
     }
 
     private void handleTraining(RunContext context) {
-        int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - currentEpochStep);
+        int maxSteps = Math.min(getConf().getNStep(), getConf().getMaxEpochStep() - currentEpochStep);
         SubEpochReturn subEpochReturn = trainSubEpoch(context.obs, maxSteps);
 
         context.obs = subEpochReturn.getLastObs();
@@ -197,7 +199,7 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
 
     protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 
-    protected abstract AsyncConfiguration getConf();
+    protected abstract IAsyncLearningConfiguration getConf();
 
     protected abstract IPolicy<O, A> getPolicy(NN net);
 

@@ -14,24 +14,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.support;
+package org.deeplearning4j.rl4j.learning.configuration;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
-import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
+public interface ILearningConfiguration {
+    Long getSeed();
 
-@Value
-@AllArgsConstructor
-public class MockAsyncConfiguration implements IAsyncLearningConfiguration {
+    int getMaxEpochStep();
 
-    private Long seed;
-    private int maxEpochStep;
-    private int maxStep;
-    private int updateStart;
-    private double rewardFactor;
-    private double gamma;
-    private double errorClamp;
-    private int numThreads;
-    private int nStep;
-    private int learnerUpdateFrequency;
+    int getMaxStep();
+
+    double getGamma();
+
+    double getRewardFactor();
 }

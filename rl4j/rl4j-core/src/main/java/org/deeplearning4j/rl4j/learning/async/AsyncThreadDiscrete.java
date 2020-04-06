@@ -1,5 +1,7 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -112,7 +114,7 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
             rewards.add(new MiniTrans(obs.getData(), null, null, 0));
         else {
             INDArray[] output = null;
-            if (getConf().getTargetDqnUpdateFreq() == -1)
+            if (getConf().getLearnerUpdateFrequency() == -1)
                 output = current.outputAll(obs.getData());
             else synchronized (getAsyncGlobal()) {
                 output = getAsyncGlobal().getTarget().outputAll(obs.getData());

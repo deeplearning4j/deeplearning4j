@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -24,16 +25,18 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.QLearningDiscreteTest;
-import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.support.*;
+import org.deeplearning4j.rl4j.support.MockDQN;
+import org.deeplearning4j.rl4j.support.MockEncodable;
+import org.deeplearning4j.rl4j.support.MockHistoryProcessor;
+import org.deeplearning4j.rl4j.support.MockMDP;
+import org.deeplearning4j.rl4j.support.MockNeuralNet;
+import org.deeplearning4j.rl4j.support.MockObservationSpace;
+import org.deeplearning4j.rl4j.support.MockRandom;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -43,8 +46,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -186,8 +187,22 @@ public class PolicyTest {
             new int[] { 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 });
         MockMDP mdp = new MockMDP(observationSpace, 30, random);
 
-        QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 0, 0, 5, 1, 0,
-                0, 1.0, 0, 0, 0, 0, true);
+        QLearningConfiguration conf = QLearningConfiguration.builder()
+                .seed(0L)
+                .maxEpochStep(0)
+                .maxStep(0)
+                .expRepMaxSize(5)
+                .batchSize(1)
+                .targetDqnUpdateFreq(0)
+                .updateStart(0)
+                .rewardFactor(1.0)
+                .gamma(0)
+                .errorClamp(0)
+                .minEpsilon(0)
+                .epsilonNbStep(0)
+                .doubleDQN(true)
+                .build();
+
         MockNeuralNet nnMock = new MockNeuralNet();
         IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
         MockRefacPolicy sut = new MockRefacPolicy(nnMock, observationSpace.getShape(), hpConf.getSkipFrame(), hpConf.getHistoryLength());
