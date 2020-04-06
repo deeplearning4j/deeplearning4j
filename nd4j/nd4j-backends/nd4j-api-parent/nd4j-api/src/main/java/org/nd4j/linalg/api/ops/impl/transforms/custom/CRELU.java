@@ -27,7 +27,7 @@ import java.util.List;
 public class CRELU extends DynamicCustomOp {
     @Getter
 
-    public CRELU(SameDiff sd, SDVariable input, SDVariableep) {
+    public CRELU(SameDiff sd, SDVariable input) {
         super(sd, new SDVariable[]{input});
     }
 

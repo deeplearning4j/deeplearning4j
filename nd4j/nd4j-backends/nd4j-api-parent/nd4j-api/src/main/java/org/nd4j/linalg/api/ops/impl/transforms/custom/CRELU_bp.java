@@ -27,11 +27,11 @@ import java.util.List;
 public class CRELU_bp extends DynamicCustomOp {
     @Getter
 
-    public CRELU(SameDiff sd, SDVariable input, SDVariable epsilonNext) {
+    public CRELU_bp(SameDiff sd, SDVariable input, SDVariable epsilonNext) {
         super(sd, new SDVariable[]{input, epsilonNext});
     }
 
-    public CRELU(@NonNull INDArray input, @NonNull INDArray epsilonNext, INDArray output) {
+    public CRELU_bp(@NonNull INDArray input, @NonNull INDArray epsilonNext, INDArray output) {
         super(new INDArray[]{input, epsilonNext}, wrapOrNull(output));
     }
 
