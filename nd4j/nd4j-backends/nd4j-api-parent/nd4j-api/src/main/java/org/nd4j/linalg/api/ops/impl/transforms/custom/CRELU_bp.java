@@ -24,21 +24,21 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-public class CRELU extends DynamicCustomOp {
+public class CRELU_bp extends DynamicCustomOp {
     @Getter
 
-    public CRELU(SameDiff sd, SDVariable input, SDVariableep) {
-        super(sd, new SDVariable[]{input});
+    public CRELU(SameDiff sd, SDVariable input, SDVariable epsilonNext) {
+        super(sd, new SDVariable[]{input, epsilonNext});
     }
 
-    public CRELU(@NonNull INDArray input, INDArray output) {
-        super(new INDArray[]{input}, wrapOrNull(output));
+    public CRELU(@NonNull INDArray input, @NonNull INDArray epsilonNext, INDArray output) {
+        super(new INDArray[]{input, epsilonNext}, wrapOrNull(output));
     }
 
 
     @Override
     public String opName() {
-        return "crelu";
+        return "crelu_bp";
     }
 
     @Override
