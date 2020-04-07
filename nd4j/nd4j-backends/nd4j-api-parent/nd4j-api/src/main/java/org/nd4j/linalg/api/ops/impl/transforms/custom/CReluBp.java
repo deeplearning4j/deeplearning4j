@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -27,6 +28,8 @@ import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
 
+
+@NoArgsConstructor
 public class CReluBp extends DynamicCustomOp {
 
     public CReluBp(SameDiff sd, SDVariable input, SDVariable epsilonNext) {

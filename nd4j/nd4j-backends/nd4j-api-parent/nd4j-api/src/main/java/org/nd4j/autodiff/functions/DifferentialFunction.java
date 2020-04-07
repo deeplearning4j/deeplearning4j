@@ -153,6 +153,7 @@ public abstract class DifferentialFunction {
     public Map<String,Object> propertiesForFunction() {
         Map<String,Field> fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
         Map<String,Object> ret = new LinkedHashMap<>();
+        Preconditions.checkNotNull(fields, "DifferentialFunctionClassHolder returned null fields for %s - op has not been added to ImportClassMapping?", getClass());
 
         for(val entry : fields.entrySet()) {
             try {

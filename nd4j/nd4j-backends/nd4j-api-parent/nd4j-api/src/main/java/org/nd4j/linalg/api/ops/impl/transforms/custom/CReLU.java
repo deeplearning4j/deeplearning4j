@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -26,7 +27,10 @@ import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
+
+@NoArgsConstructor
 public class CReLU extends DynamicCustomOp {
+
 
     public CReLU(SameDiff sd, SDVariable input) {
         super(sd, new SDVariable[]{input});
@@ -34,6 +38,7 @@ public class CReLU extends DynamicCustomOp {
 
     public CReLU(@NonNull INDArray input, INDArray output) {
         super(new INDArray[]{input}, wrapOrNull(output));
+
     }
 
 
@@ -51,5 +56,10 @@ public class CReLU extends DynamicCustomOp {
         return Collections.singletonList(dataTypes.get(0));
     }
 
+    @Override
+    public List<SDVariable> doDiff(List<SDVariable> i_v) {
+
+        return Collections.singletonList(new CReluBp(sameDiff, arg(), i_v.get(0)).outputVariable());
+    }
 
 }

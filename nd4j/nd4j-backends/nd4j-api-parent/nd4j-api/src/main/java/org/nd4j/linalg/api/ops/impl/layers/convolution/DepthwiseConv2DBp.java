@@ -18,11 +18,9 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -30,16 +28,11 @@ import org.nd4j.imports.descriptors.properties.adapters.ConditionalFieldValueInt
 import org.nd4j.imports.descriptors.properties.adapters.NDArrayShapeAdapter;
 import org.nd4j.imports.descriptors.properties.adapters.SizeThresholdIntArrayIntIndexAdpater;
 import org.nd4j.imports.descriptors.properties.adapters.StringEqualsAdapter;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CReluBp;
 import org.nd4j.linalg.util.ArrayUtil;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -50,49 +43,39 @@ import java.util.*;
  */
 @Slf4j
 @Getter
-public class DepthwiseConv2D extends DynamicCustomOp {
+@NoArgsConstructor
+public class DepthwiseConv2DBp extends DynamicCustomOp {
 
     protected Conv2DConfig config;
-    protected SDVariable in;
-    protected SDVariable weights;
-    protected SDVariable bias;
 
-
-    public DepthwiseConv2D(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
-                           @NonNull SDVariable weights, SDVariable bias, @NonNull Conv2DConfig conv2DConfig) {
-        this(sameDiff, wrapFilterNull(input, weights, bias), conv2DConfig);
-        this.in = input;
-        this.weights = weights;
-        this.bias = bias;
+    public DepthwiseConv2DBp(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
+                             @NonNull SDVariable weights, SDVariable bias, @NonNull SDVariable grad0, @NonNull Conv2DConfig conv2DConfig) {
+        this(sameDiff, wrapFilterNull(input, weights, bias, grad0), conv2DConfig);
     }
 
     @Builder(builderMethodName = "sameDiffBuilder")
-    public DepthwiseConv2D(SameDiff sameDiff,
-                           SDVariable[] inputFunctions,
-                           Conv2DConfig config) {
+    public DepthwiseConv2DBp(SameDiff sameDiff,
+                             SDVariable[] inputFunctions,
+                             Conv2DConfig config) {
         super(sameDiff, inputFunctions);
 
         this.config = config;
         addArgs();
     }
 
-    public DepthwiseConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config) {
+    public DepthwiseConv2DBp(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config) {
         super(inputs, outputs);
 
         this.config = config;
         addArgs();
     }
 
-    public DepthwiseConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config) {
-        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
+    public DepthwiseConv2DBp(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, @NonNull INDArray grad0, INDArray output, @NonNull Conv2DConfig config) {
+        this(wrapFilterNull(input, weights, bias, grad0), wrapOrNull(output), config);
     }
 
-    public DepthwiseConv2D(INDArray layerInput, INDArray depthWeights, INDArray bias, Conv2DConfig config) {
-        this(layerInput, depthWeights, bias, null, config);
-    }
 
-    public DepthwiseConv2D() {
-    }
+
 
     @Override
     public long[] iArgs() {
@@ -149,21 +132,6 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         return config.toProperties();
     }
 
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-        addArgs();
-
-        /*
-        // we must permute weights once during import
-        val weightsName = nodeDef.getInput(1);
-        val variable = initWith.getVariable(weightsName);
-        val tmp = initWith.getArrForVarName(weightsName);
-        val array = tmp.permute(3, 2, 0, 1).dup('c');
-
-        initWith.associateArrayWithVariable(array, variable);
-        */
-    }
 
     @Override
     public boolean isConfigProperties() {
@@ -173,11 +141,6 @@ public class DepthwiseConv2D extends DynamicCustomOp {
     @Override
     public String configFieldName() {
         return "config";
-    }
-
-    @Override
-    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-
     }
 
 
@@ -206,19 +169,6 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
         onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
         onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-
-
-        try {
-            ret.put(tensorflowName(), tfMappings);
-        } catch (NoOpNameFoundException e) {
-            //
-        }
-
-        try {
-            ret.put(onnxName(), onnxMappings);
-        } catch (NoOpNameFoundException e) {
-            //
-        }
 
         return ret;
     }
@@ -289,18 +239,6 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         map.put("pW", paddingWidthHeight);
         map.put("dataFormat", dataFormat);
 
-        try {
-            ret.put(onnxName(), map);
-        } catch (NoOpNameFoundException e) {
-            //ignore
-        }
-
-
-        try {
-            ret.put(tensorflowName(), map);
-        } catch (NoOpNameFoundException e) {
-            //ignore
-        }
 
         return ret;
     }
@@ -308,34 +246,21 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "depthwise_conv2d";
+        return "depthwise_conv2d_bp]";
     }
 
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        List<SDVariable> grads = new ArrayList<SDVariable>();
-        for (SDVariable f : f1) {
-            grads.add(new DepthwiseConv2DBp(sameDiff, new SDVariable[]{
-                    this.in, this.weights, this.bias, f} , this.config).outputVariable());
-        }
-        return grads;
-    }
-
-
-    @Override
-    public String onnxName() {
-        return "depth_conv";
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "DepthwiseConv2dNative";
-    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        return Collections.singletonList(inputDataTypes.get(0));
+        List<DataType> list = new ArrayList<DataType>();
+        list.add(inputDataTypes.get(0));
+        list.add(inputDataTypes.get(0));
+        list.add(inputDataTypes.get(0));
+        return list;
     }
+
+    @Override
+    public int getNumOutputs(){return 3;}
 }

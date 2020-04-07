@@ -35,11 +35,15 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
@@ -1994,12 +1998,70 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable crelu = new CReLU(sd,in).outputVariable();
         INDArray expected = Nd4j.concat(1, Nd4j.nn.relu(inputArr, 0), Nd4j.nn.relu(inputArr.neg(), 0));
 
-        assertArrayEquals(expected.shape(),crelu.eval().shape());
-        assertEquals(crelu.eval(), expected);
 
-        //        OpValidation.validate(new TestCase(sd)
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("crelu", expected)
+                .gradientCheck(true)
+        );
+    }
+
+    @Test
+    public void testClipByAvgNorm(){
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray inputArr = Nd4j.rand(DataType.DOUBLE, 2, 2);
+        INDArray out = Nd4j.zeros(DataType.DOUBLE, 2, 2);
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var(inputArr);
+
+//        System.out.println(new ClipByAvgNorm(inputArr,out,0.2, 1).outputVariablesNames());
+//        System.out.println(clipByAvgNorm);
+//        INDArray expected = sd.math.clipByNorm();
+
+//        assertArrayEquals(expected.shape(),crelu.eval().shape());
+//        assertEquals(crelu.eval(), expected);
+//
+//        OpValidation.validate(new TestCase(sd)
 //                .expectedOutput("crelu", expected)
 //                .gradientCheck(true)
 //        );
+    }
+
+
+    @Test
+    public void testDepthwiseConv2D(){
+
+        int bS = 10;
+
+        int kernelHeight = 2;
+        int kernelWidth = 2;
+        int strideHeight = 2;
+        int strideWidth = 2;
+        int inChannels = 10;
+        int outChannels = 5;
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.rand(bS, inChannels, 28,28));
+        SDVariable weights = sd.var("weights", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, inChannels, outChannels));
+        SDVariable bias = sd.var("bias", Nd4j.rand(DataType.FLOAT,outChannels));
+
+        SDVariable out = new DepthwiseConv2D(sd,in, weights, bias, Conv2DConfig.builder()
+                .kH(kernelHeight)
+                .kW(kernelWidth)
+                .sH(strideHeight)
+                .sW(strideWidth)
+                .dataFormat("NCHW")
+                .build()).outputVariable();
+
+        sd.setLossVariables(out);
+
+                OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true)
+        );
+
+
+
+
     }
 }
