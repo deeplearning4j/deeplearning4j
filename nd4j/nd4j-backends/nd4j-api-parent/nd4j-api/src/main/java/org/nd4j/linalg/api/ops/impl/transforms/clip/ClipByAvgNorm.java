@@ -16,14 +16,12 @@
 package org.nd4j.linalg.api.ops.impl.transforms.clip;
 
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNormBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -60,8 +58,7 @@ public class ClipByAvgNorm extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(new ClipByNormBp(f().sameDiff(), arg(), grad.get(0), clipValue, dimensions).outputVariable());
-    }
+        throw new UnsupportedOperationException("Not yet implemented");    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){

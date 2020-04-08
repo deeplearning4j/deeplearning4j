@@ -2009,23 +2009,19 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testClipByAvgNorm(){
 
         Nd4j.getRandom().setSeed(12345);
-        INDArray inputArr = Nd4j.rand(DataType.DOUBLE, 2, 2);
-        INDArray out = Nd4j.zeros(DataType.DOUBLE, 2, 2);
-
+        INDArray inputArr = Nd4j.rand(DataType.DOUBLE, 2,2,2);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var(inputArr);
+        SDVariable out = new ClipByAvgNorm(sd,in, 1e-2,0,1,2).outputVariable();
+        SDVariable expected = sd.math.clipByNorm(in, 1e-2,0,1,2).mul(inputArr.length());
 
-//        System.out.println(new ClipByAvgNorm(inputArr,out,0.2, 1).outputVariablesNames());
-//        System.out.println(clipByAvgNorm);
-//        INDArray expected = sd.math.clipByNorm();
+        out.markAsLoss();
 
-//        assertArrayEquals(expected.shape(),crelu.eval().shape());
-//        assertEquals(crelu.eval(), expected);
-//
-//        OpValidation.validate(new TestCase(sd)
-//                .expectedOutput("crelu", expected)
-//                .gradientCheck(true)
-//        );
+
+        OpValidation.validate(new TestCase(sd)
+                .expectedOutput("clipbyavgnorm", expected.eval())
+                .gradientCheck(false)
+        );
     }
 
 
@@ -2044,7 +2040,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.rand(bS, inChannels, 28,28));
         SDVariable weights = sd.var("weights", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, inChannels, outChannels));
-        SDVariable bias = sd.var("bias", Nd4j.rand(DataType.FLOAT,outChannels));
+        SDVariable bias = sd.var("bias", Nd4j.rand(DataType.FLOAT, outChannels));
 
         SDVariable out = new DepthwiseConv2D(sd,in, weights, bias, Conv2DConfig.builder()
                 .kH(kernelHeight)
@@ -2057,7 +2053,6 @@ public class TransformOpValidation extends BaseOpValidation {
         sd.setLossVariables(out);
 
                 OpValidation.validate(new TestCase(sd)
-                .gradientCheck(true)
         );
 
 
