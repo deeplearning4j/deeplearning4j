@@ -36,11 +36,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
+import org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
@@ -2042,21 +2044,38 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable weights = sd.var("weights", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, inChannels, outChannels));
         SDVariable bias = sd.var("bias", Nd4j.rand(DataType.FLOAT, outChannels));
 
-        SDVariable out = new DepthwiseConv2D(sd,in, weights, bias, Conv2DConfig.builder()
+        ArrayList<SDVariable> vars_for_grads = new ArrayList<SDVariable>();
+        vars_for_grads.add(in);
+        vars_for_grads.add(weights);
+        vars_for_grads.add(bias);
+
+
+        List<SDVariable> grads = new DepthwiseConv2D(sd,in, weights, null, Conv2DConfig.builder()
                 .kH(kernelHeight)
                 .kW(kernelWidth)
                 .sH(strideHeight)
                 .sW(strideWidth)
                 .dataFormat("NCHW")
-                .build()).outputVariable();
+                .build()).doDiff(vars_for_grads);
+        System.out.println(grads.get(0).eval());
+//        java.lang.IllegalStateException: Could not find descriptor for op: depthwise_conv2d_bp] - class: org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp
 
-        sd.setLossVariables(out);
+    }
 
-                OpValidation.validate(new TestCase(sd)
-        );
+    @Test
+    public void testEmbeddingLookup(){
 
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.rand(1024, 64));
+        SDVariable indeces = sd.var("indeces", Nd4j.create(new int[]{2,20}));
+        SDVariable res = new EmbeddingLookup(sd,in, indeces).outputVariable();
+        System.out.println(res.eval());
 
 
 
     }
+
+
 }

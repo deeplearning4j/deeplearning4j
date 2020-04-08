@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -13,7 +13,6 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.*;
@@ -39,7 +38,7 @@ import java.util.*;
 
 
 /**
- * Depthwise Conv2D operation
+ * Backpropagation for Depthwise Conv2D operation
  */
 @Slf4j
 @Getter
@@ -48,33 +47,13 @@ public class DepthwiseConv2DBp extends DynamicCustomOp {
 
     protected Conv2DConfig config;
 
-    public DepthwiseConv2DBp(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
-                             @NonNull SDVariable weights, SDVariable bias, @NonNull SDVariable grad0, @NonNull Conv2DConfig conv2DConfig) {
-        this(sameDiff, wrapFilterNull(input, weights, bias, grad0), conv2DConfig);
-    }
 
-    @Builder(builderMethodName = "sameDiffBuilder")
-    public DepthwiseConv2DBp(SameDiff sameDiff,
-                             SDVariable[] inputFunctions,
-                             Conv2DConfig config) {
-        super(sameDiff, inputFunctions);
-
+    public DepthwiseConv2DBp(SameDiff sameDiff, List<SDVariable> f1, Conv2DConfig config) {
+        super(sameDiff, wrapFilterNull(f1.get(0), f1.get(1), f1.get(2)));
         this.config = config;
         addArgs();
+
     }
-
-    public DepthwiseConv2DBp(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config) {
-        super(inputs, outputs);
-
-        this.config = config;
-        addArgs();
-    }
-
-    public DepthwiseConv2DBp(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, @NonNull INDArray grad0, INDArray output, @NonNull Conv2DConfig config) {
-        this(wrapFilterNull(input, weights, bias, grad0), wrapOrNull(output), config);
-    }
-
-
 
 
     @Override
@@ -254,13 +233,9 @@ public class DepthwiseConv2DBp extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        List<DataType> list = new ArrayList<DataType>();
-        list.add(inputDataTypes.get(0));
-        list.add(inputDataTypes.get(0));
-        list.add(inputDataTypes.get(0));
-        return list;
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 
     @Override
-    public int getNumOutputs(){return 3;}
+    public int getNumOutputs(){return 1;}
 }

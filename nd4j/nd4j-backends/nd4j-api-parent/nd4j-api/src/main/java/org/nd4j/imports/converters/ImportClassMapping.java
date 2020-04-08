@@ -326,6 +326,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp.class,
             org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp.class,
             org.nd4j.linalg.api.ops.impl.shape.bp.TileBp.class,
+            org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup.class,
             org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray.class,
             org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayConcat.class,
             org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArrayGather.class,

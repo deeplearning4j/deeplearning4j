@@ -313,12 +313,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        List<SDVariable> grads = new ArrayList<SDVariable>();
-        for (SDVariable f : f1) {
-            grads.add(new DepthwiseConv2DBp(sameDiff, new SDVariable[]{
-                    this.in, this.weights, this.bias, f} , this.config).outputVariable());
-        }
-        return grads;
+        return Arrays.asList(new DepthwiseConv2DBp(sameDiff, f1, this.config).outputVariables());
     }
 
 
