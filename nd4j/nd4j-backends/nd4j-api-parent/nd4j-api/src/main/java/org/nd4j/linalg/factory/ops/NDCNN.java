@@ -21,6 +21,7 @@ package org.nd4j.linalg.factory.ops;
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.base.Preconditions;
+import org.nd4j.enums.DataFormat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -32,7 +33,6 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.enums.DataFormat;
 
 public class NDCNN {
   public NDCNN() {
@@ -368,6 +368,18 @@ public class NDCNN {
       LocalResponseNormalizationConfig LocalResponseNormalizationConfig) {
     NDValidation.validateNumerical("localResponseNormalization", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization(input, LocalResponseNormalizationConfig))[0];
+  }
+
+  /**
+   * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices <br>
+   *
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   */
+  public INDArray[] maxPoolWithArgmax(INDArray input, Pooling2DConfig Pooling2DConfig) {
+    NDValidation.validateNumerical("maxPoolWithArgmax", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax(input, Pooling2DConfig));
   }
 
   /**

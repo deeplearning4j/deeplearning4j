@@ -1920,7 +1920,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     SameDiff sd = SameDiff.create();
                     SDVariable sdA = sd.var("a", a);
                     SDVariable sdB = sd.var("b", b);
-                    SDVariable t = sd.mmul(sdA, sdB, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).transposeResult(transposeResult).build());
+                    SDVariable t = sd.mmul(sdA, sdB, transposeA, transposeB, transposeResult);
                     t.norm1("out");
 
                     String err = OpValidation.validate(new TestCase(sd)

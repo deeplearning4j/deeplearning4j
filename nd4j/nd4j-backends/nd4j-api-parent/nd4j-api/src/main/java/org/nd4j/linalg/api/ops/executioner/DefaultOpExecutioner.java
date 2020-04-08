@@ -301,24 +301,27 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    protected void checkForWorkspaces(CustomOp op) {
-        for (val input: op.inputArguments())
+    protected void checkForWorkspaces(CustomOp op, OpContext oc) {
+        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
+        List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+
+        for (val input: inArgs)
             checkWorkspace(op.opName(), input);
 
-        for (val output: op.outputArguments())
+        for (val output: outArgs)
             checkWorkspace(op.opName(), output);
     }
 
-    protected void checkForWorkspaces(Op op) {
-        val x = op.x();
+    protected void checkForWorkspaces(Op op, OpContext oc) {
+        val x = oc != null ? oc.getInputArray(0) : op.x();
         if (x != null)
             checkWorkspace(op.opName(), x);
 
-        val y = op.y();
+        val y = oc != null && oc.getInputArrays().size() > 1 ? oc.getInputArray(1) : op.y();
         if (y != null)
             checkWorkspace(op.opName(), y);
 
-        val z = op.z();
+        val z = oc != null ? oc.getOutputArray(0) : op.z();
         if (z != null)
             checkWorkspace(op.opName(), z);
     }
@@ -346,7 +349,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().processOpCall(op, tadBuffers);
                 break;
             case SCOPE_PANIC:
-                checkForWorkspaces(op);
+                checkForWorkspaces(op, null);
                 return 0L;
             case DISABLED:
             default:
@@ -357,7 +360,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Deprecated
-    public long profilingHookIn(CustomOp op) {
+    public long profilingHookIn(CustomOp op, OpContext oc) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processOpCall(op);
@@ -368,7 +371,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().processOpCall(op);
                 break;
             case SCOPE_PANIC:
-                checkForWorkspaces(op);
+                checkForWorkspaces(op, oc);
                 return 0L;
             case DISABLED:
             default:
@@ -379,7 +382,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Deprecated
-    public void profilingHookOut(Op op, long timeStart) {
+    public void profilingHookOut(Op op, OpContext oc, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -392,14 +395,14 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
             case NAN_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
+                OpExecutionerUtil.checkForNaN(op, oc);
                 break;
             case INF_PANIC:
-                OpExecutionerUtil.checkForInf(op);
+                OpExecutionerUtil.checkForInf(op, oc);
                 break;
             case ANY_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
-                OpExecutionerUtil.checkForInf(op);
+                OpExecutionerUtil.checkForNaN(op, oc);
+                OpExecutionerUtil.checkForInf(op, oc);
                 break;
             case DISABLED:
             default:
@@ -413,7 +416,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Deprecated
-    public void profilingHookOut(CustomOp op, long timeStart) {
+    public void profilingHookOut(CustomOp op, OpContext oc, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -426,14 +429,14 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
             case NAN_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
+                OpExecutionerUtil.checkForNaN(op, oc);
                 break;
             case INF_PANIC:
-                OpExecutionerUtil.checkForInf(op);
+                OpExecutionerUtil.checkForInf(op, oc);
                 break;
             case ANY_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
-                OpExecutionerUtil.checkForInf(op);
+                OpExecutionerUtil.checkForNaN(op, oc);
+                OpExecutionerUtil.checkForInf(op, oc);
                 break;
             case DISABLED:
             default:
@@ -442,12 +445,15 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
-    public long profilingConfigurableHookIn(CustomOp op) {
-        for (val arr: op.inputArguments())
+    public long profilingConfigurableHookIn(CustomOp op, OpContext oc) {
+        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
+        List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+
+        for (val arr: inArgs)
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Input arguments was closed before call");
 
-        for (val arr: op.outputArguments())
+        for (val arr: outArgs)
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Output arguments was closed before call");
 
@@ -460,7 +466,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
 
         if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
-            checkForWorkspaces(op);
+            checkForWorkspaces(op, oc);
         }
 
         return System.nanoTime();
@@ -491,14 +497,14 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             OpProfiler.getInstance().processOpCall(op, tadBuffers);
         }
         if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
-            checkForWorkspaces(op);
+            checkForWorkspaces(op, null);
         }
 
         return System.nanoTime();
     }
 
 
-    public void profilingConfigurableHookOut(Op op, long timeStart) {
+    public void profilingConfigurableHookOut(Op op, OpContext oc, long timeStart) {
         if (OpProfiler.getInstance().getConfig() == null)
             return;
 
@@ -509,10 +515,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             OpProfiler.getInstance().timeOpCall(op, timeStart);
         }
         if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
-            OpExecutionerUtil.checkForNaN(op);
+            OpExecutionerUtil.checkForNaN(op, oc);
         }
         if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op);
+            OpExecutionerUtil.checkForInf(op, oc);
         }
         if (OpProfiler.getInstance().getConfig().isNativeStatistics()) {
             if (op.z() != null) {
@@ -531,7 +537,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    public void profilingConfigurableHookOut(CustomOp op, long timeStart) {
+    public void profilingConfigurableHookOut(CustomOp op, OpContext oc, long timeStart) {
         if (OpProfiler.getInstance().getConfig() == null)
             return;
 
@@ -542,10 +548,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             OpProfiler.getInstance().timeOpCall(op, timeStart);
         }
         if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
-            OpExecutionerUtil.checkForNaN(op);
+            OpExecutionerUtil.checkForNaN(op, oc);
         }
         if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op);
+            OpExecutionerUtil.checkForInf(op, oc);
         }
     }
 

@@ -98,6 +98,7 @@ public class Mmul extends DynamicCustomOp {
         addIArgument(ArrayUtil.fromBoolean(transposeX),
                 ArrayUtil.fromBoolean(transposeY),
                 ArrayUtil.fromBoolean(transposeZ));
+        mt = MMulTranspose.builder().transposeA(transposeX).transposeB(transposeY).transposeResult(transposeZ).build();
     }
 
     public Mmul(INDArray x, INDArray y) {
@@ -110,6 +111,7 @@ public class Mmul extends DynamicCustomOp {
         addIArgument(ArrayUtil.fromBoolean(transposeX),
                      ArrayUtil.fromBoolean(transposeY),
                      ArrayUtil.fromBoolean(transposeZ));
+        mt = MMulTranspose.builder().transposeA(transposeX).transposeB(transposeY).transposeResult(transposeZ).build();
     }
 
     public Mmul() {}

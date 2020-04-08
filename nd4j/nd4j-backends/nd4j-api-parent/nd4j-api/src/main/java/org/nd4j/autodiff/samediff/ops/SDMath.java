@@ -2205,7 +2205,7 @@ public class SDMath extends SDOps {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable mergeAdd(SDVariable[] inputs) {
+  public SDVariable mergeAdd(SDVariable... inputs) {
     SDValidation.validateNumerical("mergeAdd", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp(sd,inputs).outputVariable();
@@ -2219,7 +2219,7 @@ public class SDMath extends SDOps {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable mergeAdd(String name, SDVariable[] inputs) {
+  public SDVariable mergeAdd(String name, SDVariable... inputs) {
     SDValidation.validateNumerical("mergeAdd", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp(sd,inputs).outputVariable();
@@ -2233,7 +2233,7 @@ public class SDMath extends SDOps {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable mergeAvg(SDVariable[] inputs) {
+  public SDVariable mergeAvg(SDVariable... inputs) {
     SDValidation.validateNumerical("mergeAvg", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return new org.nd4j.linalg.api.ops.impl.shape.MergeAvg(sd,inputs).outputVariable();
@@ -2247,7 +2247,7 @@ public class SDMath extends SDOps {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable mergeAvg(String name, SDVariable[] inputs) {
+  public SDVariable mergeAvg(String name, SDVariable... inputs) {
     SDValidation.validateNumerical("mergeAvg", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.MergeAvg(sd,inputs).outputVariable();
@@ -2261,7 +2261,7 @@ public class SDMath extends SDOps {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable mergeMax(SDVariable[] inputs) {
+  public SDVariable mergeMax(SDVariable... inputs) {
     SDValidation.validateNumerical("mergeMax", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return new org.nd4j.linalg.api.ops.impl.shape.MergeMax(sd,inputs).outputVariable();
@@ -2275,7 +2275,7 @@ public class SDMath extends SDOps {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public SDVariable mergeMax(String name, SDVariable[] inputs) {
+  public SDVariable mergeMax(String name, SDVariable... inputs) {
     SDValidation.validateNumerical("mergeMax", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.MergeMax(sd,inputs).outputVariable();

@@ -98,10 +98,16 @@ public class StridedSlice extends DynamicCustomOp {
 
     public StridedSlice(INDArray in, int[] begin, int[] end, int[] strides, int beginMask,
                         int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        this(in, ArrayUtil.toLongArray(begin), ArrayUtil.toLongArray(end), ArrayUtil.toLongArray(strides),
+                beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+    }
+
+    public StridedSlice(INDArray in, long[] begin, long[] end, long[] strides, int beginMask,
+                        int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
         addInputArgument(in);
-        this.begin = ArrayUtil.toLongArray(begin);
-        this.end = ArrayUtil.toLongArray(end);
-        this.strides = ArrayUtil.toLongArray(strides);
+        this.begin = begin;
+        this.end = end;
+        this.strides = strides;
         this.beginMask = beginMask;
         this.endMask = endMask;
         this.ellipsisMask = ellipsisMask;

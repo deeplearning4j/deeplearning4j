@@ -45,7 +45,7 @@ public class SConv2D extends Conv2D {
     }
 
     public SConv2D(@NonNull SameDiff sameDiff, @NonNull SDVariable layerInput, @NonNull SDVariable depthWeights,
-                   @NonNull SDVariable pointWeights, SDVariable bias, @NonNull Conv2DConfig conv2DConfig) {
+                   SDVariable pointWeights, SDVariable bias, @NonNull Conv2DConfig conv2DConfig) {
         this(sameDiff, wrapFilterNull(layerInput, depthWeights, pointWeights, bias), conv2DConfig);
     }
 

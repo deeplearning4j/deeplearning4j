@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -64,15 +65,19 @@ public class SequenceMask extends DynamicCustomOp {
         addDArgument(dataType);
     }
 
-    public SequenceMask(INDArray input, int maxLen, DataType dataType) {
+    public SequenceMask(@NonNull INDArray input, int maxLen, DataType dataType) {
         addInputArgument(input);
         addIArgument(maxLen);
         this.dataType = dataType;
         addDArgument(dataType);
     }
 
-    public SequenceMask(INDArray input, DataType dataType) {
-        addInputArgument(input);
+    public SequenceMask(@NonNull INDArray input, @NonNull DataType dataType) {
+        this(input, null, dataType);
+    }
+
+    public SequenceMask(@NonNull INDArray input, INDArray maxLength, @NonNull DataType dataType) {
+        super(wrapFilterNull(input, maxLength), null);
         this.dataType = dataType;
         addDArgument(dataType);
     }

@@ -18,17 +18,15 @@
 
 package org.nd4j.autodiff.samediff.ops;
 
-import java.lang.String;
+import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 
-import lombok.NonNull;
+import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.GRUCellOutputs;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.LSTMCellOutputs;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.GRUWeights;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.SRUWeights;
 
@@ -43,28 +41,26 @@ public class SDRNN extends SDOps {
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param hLast Output of the previous cell/time step, with shape [batchSize, numUnits] (NUMERIC type)
    * @param GRUWeights Configuration Object
-   * @return output The cell's outputs. (NUMERIC type)
    */
-  public SDVariable gru(SDVariable x, SDVariable hLast, GRUWeights GRUWeights) {
+  public SDVariable[] gru(SDVariable x, SDVariable hLast, GRUWeights GRUWeights) {
     SDValidation.validateNumerical("gru", "x", x);
     SDValidation.validateNumerical("gru", "hLast", hLast);
-    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell(sd,x, hLast, GRUWeights).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell(sd,x, hLast, GRUWeights).outputVariables();
   }
 
   /**
    * The GRU cell.  Does a single time step operation<br>
    *
-   * @param name name May be null. Name for the output variable
+   * @param names names May be null. Arrays of names for the output variables.
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param hLast Output of the previous cell/time step, with shape [batchSize, numUnits] (NUMERIC type)
    * @param GRUWeights Configuration Object
-   * @return output The cell's outputs. (NUMERIC type)
    */
-  public GRUCellOutputs gru(String name, SDVariable x, SDVariable hLast, GRUWeights GRUWeights) {
+  public SDVariable[] gru(String[] names, SDVariable x, SDVariable hLast, GRUWeights GRUWeights) {
     SDValidation.validateNumerical("gru", "x", x);
     SDValidation.validateNumerical("gru", "hLast", hLast);
-    GRUCell c =  new GRUCell(sd,x, hLast, GRUWeights);
-    return new GRUCellOutputs(c.outputVariables(name));
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell(sd,x, hLast, GRUWeights).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
   }
 
   /**
@@ -75,39 +71,172 @@ public class SDRNN extends SDOps {
    * @param yLast revious cell output, with shape [batchSize, numUnits] (NUMERIC type)
    * @param LSTMWeights Configuration Object
    * @param LSTMConfiguration Configuration Object
-   * @return output The cell's outputs (NUMERIC type)
    */
-  public LSTMCellOutputs lstmCell(SDVariable x, SDVariable cLast, SDVariable yLast,
+  public SDVariable[] lstmCell(SDVariable x, SDVariable cLast, SDVariable yLast,
       LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
     SDValidation.validateNumerical("lstmCell", "x", x);
     SDValidation.validateNumerical("lstmCell", "cLast", cLast);
     SDValidation.validateNumerical("lstmCell", "yLast", yLast);
-    LSTMBlockCell c = new LSTMBlockCell(sd,x, cLast, yLast, LSTMWeights, LSTMConfiguration);
-    return new LSTMCellOutputs(c.outputVariables());
+    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell(sd,x, cLast, yLast, LSTMWeights, LSTMConfiguration).outputVariables();
   }
 
   /**
    * The LSTM cell.  Does a single time step operation.<br>
    *
-   * @param name name May be null. Name for the output variable
+   * @param names names May be null. Arrays of names for the output variables.
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param cLast Previous cell state, with shape [batchSize, numUnits] (NUMERIC type)
    * @param yLast revious cell output, with shape [batchSize, numUnits] (NUMERIC type)
    * @param LSTMWeights Configuration Object
    * @param LSTMConfiguration Configuration Object
-   * @return output The cell's outputs (NUMERIC type)
    */
-  public LSTMCellOutputs lstmCell(String name, SDVariable x, SDVariable cLast, SDVariable yLast,
+  public SDVariable[] lstmCell(String[] names, SDVariable x, SDVariable cLast, SDVariable yLast,
       LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
     SDValidation.validateNumerical("lstmCell", "x", x);
     SDValidation.validateNumerical("lstmCell", "cLast", cLast);
     SDValidation.validateNumerical("lstmCell", "yLast", yLast);
-    LSTMBlockCell c =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell(sd,x, cLast, yLast, LSTMWeights, LSTMConfiguration);
-    return new LSTMCellOutputs(c.outputVariables(name));
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell(sd,x, cLast, yLast, LSTMWeights, LSTMConfiguration).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
   }
 
   /**
-   * The LSTM layer.  Does multiple time steps.<br>
+   * Long Short-Term Memory layer - Hochreiter 1997.<br>
+   * SUPPORTS following data formats:\n<br>
+   * for unidirectional: \n" +<br>
+   * TNS: shapes [timeLength, numExamples, inOutSize]\n<br>
+   * NST: shapes [numExamples, inOutSize, timeLength]\n<br>
+   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
+   * for bidirectional:\n<br>
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)\n<br>
+   * SUPPORTS following direction modes:\n<br>
+   * FWD: forward<br>
+   * BWD: backward<br>
+   * BIDIR_SUM: bidirectional sum\n<br>
+   * BIDIR_CONCAT: bidirectional concat\n" +<br>
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)"<br>
+   * You may use different gate configurations:<br>
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum\n<br>
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")\n<br>
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   *
+   * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
+   * @param cLast Previous/initial cell state, with shape [batchSize, numUnits] (NUMERIC type)
+   * @param yLast Previous/initial cell output, with shape [batchSize, numUnits] (NUMERIC type)
+   * @param maxTSLength maxTSLength with shape [batchSize] (NUMERIC type)
+   * @param LSTMLayerWeights Configuration Object
+   * @param LSTMLayerConfig Configuration Object
+   */
+  public SDVariable[] lstmLayer(SDVariable x, SDVariable cLast, SDVariable yLast,
+      SDVariable maxTSLength, LSTMLayerWeights LSTMLayerWeights, LSTMLayerConfig LSTMLayerConfig) {
+    SDValidation.validateNumerical("lstmLayer", "x", x);
+    SDValidation.validateNumerical("lstmLayer", "cLast", cLast);
+    SDValidation.validateNumerical("lstmLayer", "yLast", yLast);
+    SDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
+    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(sd,x, cLast, yLast, maxTSLength, LSTMLayerWeights, LSTMLayerConfig).outputVariables();
+  }
+
+  /**
+   * Long Short-Term Memory layer - Hochreiter 1997.<br>
+   * SUPPORTS following data formats:\n<br>
+   * for unidirectional: \n" +<br>
+   * TNS: shapes [timeLength, numExamples, inOutSize]\n<br>
+   * NST: shapes [numExamples, inOutSize, timeLength]\n<br>
+   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
+   * for bidirectional:\n<br>
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)\n<br>
+   * SUPPORTS following direction modes:\n<br>
+   * FWD: forward<br>
+   * BWD: backward<br>
+   * BIDIR_SUM: bidirectional sum\n<br>
+   * BIDIR_CONCAT: bidirectional concat\n" +<br>
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)"<br>
+   * You may use different gate configurations:<br>
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum\n<br>
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")\n<br>
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
+   * @param cLast Previous/initial cell state, with shape [batchSize, numUnits] (NUMERIC type)
+   * @param yLast Previous/initial cell output, with shape [batchSize, numUnits] (NUMERIC type)
+   * @param maxTSLength maxTSLength with shape [batchSize] (NUMERIC type)
+   * @param LSTMLayerWeights Configuration Object
+   * @param LSTMLayerConfig Configuration Object
+   */
+  public SDVariable[] lstmLayer(String[] names, SDVariable x, SDVariable cLast, SDVariable yLast,
+      SDVariable maxTSLength, LSTMLayerWeights LSTMLayerWeights, LSTMLayerConfig LSTMLayerConfig) {
+    SDValidation.validateNumerical("lstmLayer", "x", x);
+    SDValidation.validateNumerical("lstmLayer", "cLast", cLast);
+    SDValidation.validateNumerical("lstmLayer", "yLast", yLast);
+    SDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(sd,x, cLast, yLast, maxTSLength, LSTMLayerWeights, LSTMLayerConfig).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Long Short-Term Memory layer - Hochreiter 1997.<br>
+   * SUPPORTS following data formats:\n<br>
+   * for unidirectional: \n" +<br>
+   * TNS: shapes [timeLength, numExamples, inOutSize]\n<br>
+   * NST: shapes [numExamples, inOutSize, timeLength]\n<br>
+   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
+   * for bidirectional:\n<br>
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)\n<br>
+   * SUPPORTS following direction modes:\n<br>
+   * FWD: forward<br>
+   * BWD: backward<br>
+   * BIDIR_SUM: bidirectional sum\n<br>
+   * BIDIR_CONCAT: bidirectional concat\n" +<br>
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)"<br>
+   * You may use different gate configurations:<br>
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum\n<br>
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")\n<br>
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   *
+   * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
+   * @param LSTMLayerWeights Configuration Object
+   * @param LSTMLayerConfig Configuration Object
+   */
+  public SDVariable[] lstmLayer(SDVariable x, LSTMLayerWeights LSTMLayerWeights,
+      LSTMLayerConfig LSTMLayerConfig) {
+    SDValidation.validateNumerical("lstmLayer", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(sd,x, null, null, null, LSTMLayerWeights, LSTMLayerConfig).outputVariables();
+  }
+
+  /**
+   * Long Short-Term Memory layer - Hochreiter 1997.<br>
+   * SUPPORTS following data formats:\n<br>
+   * for unidirectional: \n" +<br>
+   * TNS: shapes [timeLength, numExamples, inOutSize]\n<br>
+   * NST: shapes [numExamples, inOutSize, timeLength]\n<br>
+   * NTS: shapes [numExamples, timeLength, inOutSize]<br>
+   * for bidirectional:\n<br>
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)\n<br>
+   * SUPPORTS following direction modes:\n<br>
+   * FWD: forward<br>
+   * BWD: backward<br>
+   * BIDIR_SUM: bidirectional sum\n<br>
+   * BIDIR_CONCAT: bidirectional concat\n" +<br>
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)"<br>
+   * You may use different gate configurations:<br>
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum\n<br>
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")\n<br>
+   * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
+   * @param LSTMLayerWeights Configuration Object
+   * @param LSTMLayerConfig Configuration Object
+   */
+  public SDVariable[] lstmLayer(String[] names, SDVariable x, LSTMLayerWeights LSTMLayerWeights,
+      LSTMLayerConfig LSTMLayerConfig) {
+    SDValidation.validateNumerical("lstmLayer", "x", x);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(sd,x, null, null, null, LSTMLayerWeights, LSTMLayerConfig).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * The LSTM block<br>
    *
    * @param maxTSLength  (NUMERIC type)
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
@@ -117,17 +246,17 @@ public class SDRNN extends SDOps {
    * @param LSTMConfiguration Configuration Object
    * @return output The layer's outputs. (NUMERIC type)
    */
-  public SDVariable lstmLayer(SDVariable maxTSLength, SDVariable x, SDVariable cLast,
+  public SDVariable lstmblock(SDVariable maxTSLength, SDVariable x, SDVariable cLast,
       SDVariable yLast, LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
-    SDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
-    SDValidation.validateNumerical("lstmLayer", "x", x);
-    SDValidation.validateNumerical("lstmLayer", "cLast", cLast);
-    SDValidation.validateNumerical("lstmLayer", "yLast", yLast);
-    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(sd,maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration).outputVariable();
+    SDValidation.validateNumerical("lstmblock", "maxTSLength", maxTSLength);
+    SDValidation.validateNumerical("lstmblock", "x", x);
+    SDValidation.validateNumerical("lstmblock", "cLast", cLast);
+    SDValidation.validateNumerical("lstmblock", "yLast", yLast);
+    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(sd,maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration).outputVariable();
   }
 
   /**
-   * The LSTM layer.  Does multiple time steps.<br>
+   * The LSTM block<br>
    *
    * @param name name May be null. Name for the output variable
    * @param maxTSLength  (NUMERIC type)
@@ -138,13 +267,43 @@ public class SDRNN extends SDOps {
    * @param LSTMConfiguration Configuration Object
    * @return output The layer's outputs. (NUMERIC type)
    */
-  public SDVariable lstmLayer(String name, SDVariable maxTSLength, SDVariable x, SDVariable cLast,
+  public SDVariable lstmblock(String name, SDVariable maxTSLength, SDVariable x, SDVariable cLast,
       SDVariable yLast, LSTMWeights LSTMWeights, LSTMConfiguration LSTMConfiguration) {
-    SDValidation.validateNumerical("lstmLayer", "maxTSLength", maxTSLength);
-    SDValidation.validateNumerical("lstmLayer", "x", x);
-    SDValidation.validateNumerical("lstmLayer", "cLast", cLast);
-    SDValidation.validateNumerical("lstmLayer", "yLast", yLast);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer(sd,maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration).outputVariable();
+    SDValidation.validateNumerical("lstmblock", "maxTSLength", maxTSLength);
+    SDValidation.validateNumerical("lstmblock", "x", x);
+    SDValidation.validateNumerical("lstmblock", "cLast", cLast);
+    SDValidation.validateNumerical("lstmblock", "yLast", yLast);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(sd,maxTSLength, x, cLast, yLast, LSTMWeights, LSTMConfiguration).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * The LSTM block<br>
+   *
+   * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
+   * @param LSTMWeights Configuration Object
+   * @param LSTMConfiguration Configuration Object
+   * @return output The layer's outputs. (NUMERIC type)
+   */
+  public SDVariable lstmblock(SDVariable x, LSTMWeights LSTMWeights,
+      LSTMConfiguration LSTMConfiguration) {
+    SDValidation.validateNumerical("lstmblock", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(sd,null, x, null, null, LSTMWeights, LSTMConfiguration).outputVariable();
+  }
+
+  /**
+   * The LSTM block<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
+   * @param LSTMWeights Configuration Object
+   * @param LSTMConfiguration Configuration Object
+   * @return output The layer's outputs. (NUMERIC type)
+   */
+  public SDVariable lstmblock(String name, SDVariable x, LSTMWeights LSTMWeights,
+      LSTMConfiguration LSTMConfiguration) {
+    SDValidation.validateNumerical("lstmblock", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock(sd,null, x, null, null, LSTMWeights, LSTMConfiguration).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

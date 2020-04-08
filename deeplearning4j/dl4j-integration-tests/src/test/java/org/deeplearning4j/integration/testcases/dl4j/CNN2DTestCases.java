@@ -194,6 +194,8 @@ public class CNN2DTestCases {
                 testParamsPostTraining = false;     //Skip - requires saving all params (approx 500mb)
                 testEvaluation = false;
                 testOverfitting = false;
+                maxRelativeErrorOutput = 0.2;
+                minAbsErrorOutput = 0.05;       //Max value is around 0.22
             }
 
             @Override
@@ -314,6 +316,7 @@ public class CNN2DTestCases {
                 ComputationGraph model = new TransferLearning.GraphBuilder(pretrained)
                         .fineTuneConfiguration(fineTuneConf)
                         .removeVertexKeepConnections("conv2d_9")
+                        .removeVertexAndConnections("outputs")
                         .addLayer("convolution2d_9",
                                 new ConvolutionLayer.Builder(1,1)
                                         .nIn(1024)
@@ -393,7 +396,7 @@ public class CNN2DTestCases {
 
             @Override
             public ModelType modelType() {
-                return ModelType.CG;
+                return ModelType.MLN;
             }
 
             @Override

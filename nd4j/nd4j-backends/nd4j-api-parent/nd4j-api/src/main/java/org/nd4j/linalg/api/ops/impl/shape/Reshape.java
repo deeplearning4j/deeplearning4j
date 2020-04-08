@@ -44,7 +44,6 @@ import java.util.Map;
 public class Reshape extends DynamicCustomOp {
 
     private long[] shape;
-    private String arrName;
 
     public Reshape(SameDiff sameDiff, SDVariable i_v, long[] shape) {
         super(null, sameDiff, new SDVariable[]{i_v});
@@ -54,6 +53,12 @@ public class Reshape extends DynamicCustomOp {
 
     public Reshape(SameDiff sameDiff, SDVariable i_v, SDVariable shape) {
         super(null, sameDiff, new SDVariable[]{i_v, shape});
+    }
+
+    public Reshape(INDArray in, long... shape){
+        super(new INDArray[]{in}, null);
+        this.shape = shape;
+        addIArgument(shape);
     }
 
     public Reshape(INDArray in, INDArray shape){

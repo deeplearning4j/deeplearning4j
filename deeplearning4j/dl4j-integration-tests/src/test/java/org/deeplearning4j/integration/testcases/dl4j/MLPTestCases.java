@@ -77,6 +77,10 @@ public class MLPTestCases {
                 testOverfitting = true;
                 maxRelativeErrorOverfit = 2e-2;
                 minAbsErrorOverfit = 1e-2;
+                maxRelativeErrorGradients = 0.01;
+                minAbsErrorGradients = 0.05;
+                maxRelativeErrorParamsPostTraining = 0.01;
+                minAbsErrorParamsPostTraining = 0.05;
             }
 
             @Override
@@ -135,8 +139,7 @@ public class MLPTestCases {
             public IEvaluation[] getNewEvaluations(){
                 return new IEvaluation[]{
                         new Evaluation(),
-                        new ROCMultiClass(),
-                        new EvaluationCalibration()
+                        new ROCMultiClass()
                 };
             }
 

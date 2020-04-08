@@ -23,8 +23,8 @@ import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.enums.DataFormat;
 import org.nd4j.base.Preconditions;
+import org.nd4j.enums.DataFormat;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
@@ -751,6 +751,33 @@ public class SDCNN extends SDOps {
     SDValidation.validateNumerical("localResponseNormalization", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization(sd,input, LocalResponseNormalizationConfig).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices <br>
+   *
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   */
+  public SDVariable[] maxPoolWithArgmax(SDVariable input, Pooling2DConfig Pooling2DConfig) {
+    SDValidation.validateNumerical("maxPoolWithArgmax", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax(sd,input, Pooling2DConfig).outputVariables();
+  }
+
+  /**
+   * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices <br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   */
+  public SDVariable[] maxPoolWithArgmax(String[] names, SDVariable input,
+      Pooling2DConfig Pooling2DConfig) {
+    SDValidation.validateNumerical("maxPoolWithArgmax", "input", input);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax(sd,input, Pooling2DConfig).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
   }
 
   /**

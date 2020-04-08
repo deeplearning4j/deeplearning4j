@@ -191,6 +191,58 @@ public class NDMath {
   }
 
   /**
+   * Bit shift operation<br>
+   *
+   * @param x input (NUMERIC type)
+   * @param shift shift value (NUMERIC type)
+   * @return output shifted output (NUMERIC type)
+   */
+  public INDArray bitShift(INDArray x, INDArray shift) {
+    NDValidation.validateNumerical("bitShift", "x", x);
+    NDValidation.validateNumerical("bitShift", "shift", shift);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(x, shift))[0];
+  }
+
+  /**
+   * Right bit shift operation<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param shift shift argument (NUMERIC type)
+   * @return output shifted output (NUMERIC type)
+   */
+  public INDArray bitShiftRight(INDArray x, INDArray shift) {
+    NDValidation.validateNumerical("bitShiftRight", "x", x);
+    NDValidation.validateNumerical("bitShiftRight", "shift", shift);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(x, shift))[0];
+  }
+
+  /**
+   * Cyclic bit shift operation<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param shift shift argy=ument (NUMERIC type)
+   * @return output shifted output (NUMERIC type)
+   */
+  public INDArray bitShiftRotl(INDArray x, INDArray shift) {
+    NDValidation.validateNumerical("bitShiftRotl", "x", x);
+    NDValidation.validateNumerical("bitShiftRotl", "shift", shift);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(x, shift))[0];
+  }
+
+  /**
+   * Cyclic right shift operation<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param shift Shift argument (NUMERIC type)
+   * @return output Shifted output (NUMERIC type)
+   */
+  public INDArray bitShiftRotr(INDArray x, INDArray shift) {
+    NDValidation.validateNumerical("bitShiftRotr", "x", x);
+    NDValidation.validateNumerical("bitShiftRotr", "shift", shift);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(x, shift))[0];
+  }
+
+  /**
    * Element-wise ceiling function: out = ceil(x).<br>
    * Rounds each value up to the nearest integer value (if not already an integer)<br>
    *
@@ -346,13 +398,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate cosineDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate cosineDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray cosineDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("cosineDistance", "x", x);
     NDValidation.validateNumerical("cosineDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.CosineDistance(x, y, dimensions));
   }
 
@@ -363,13 +415,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate cosineSimilarity over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate cosineSimilarity over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray cosineSimilarity(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("cosineSimilarity", "x", x);
     NDValidation.validateNumerical("cosineSimilarity", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity(x, y, dimensions));
   }
 
@@ -501,13 +553,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate euclideanDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate euclideanDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray euclideanDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("euclideanDistance", "x", x);
     NDValidation.validateNumerical("euclideanDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance(x, y, dimensions));
   }
 
@@ -665,13 +717,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate hammingDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate hammingDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray hammingDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("hammingDistance", "x", x);
     NDValidation.validateNumerical("hammingDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance(x, y, dimensions));
   }
 
@@ -817,13 +869,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate jaccardDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate jaccardDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray jaccardDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("jaccardDistance", "x", x);
     NDValidation.validateNumerical("jaccardDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.JaccardDistance(x, y, dimensions));
   }
 
@@ -870,6 +922,18 @@ public class NDMath {
     NDValidation.validateNumerical("lastIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(in, keepDims, condition, dimensions));
+  }
+
+  /**
+   * Calculates difference between inputs X and Y.<br>
+   *
+   * @param x Input variable X (NUMERIC type)
+   * @param y Input variable Y (NUMERIC type)
+   */
+  public INDArray[] listDiff(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("listDiff", "x", x);
+    NDValidation.validateNumerical("listDiff", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ListDiff(x, y));
   }
 
   /**
@@ -940,13 +1004,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate manhattanDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate manhattanDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray manhattanDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("manhattanDistance", "x", x);
     NDValidation.validateNumerical("manhattanDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance(x, y, dimensions));
   }
 
@@ -983,7 +1047,7 @@ public class NDMath {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray mergeAdd(INDArray[] inputs) {
+  public INDArray mergeAdd(INDArray... inputs) {
     NDValidation.validateNumerical("mergeAdd", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp(inputs))[0];
@@ -996,7 +1060,7 @@ public class NDMath {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray mergeAvg(INDArray[] inputs) {
+  public INDArray mergeAvg(INDArray... inputs) {
     NDValidation.validateNumerical("mergeAvg", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MergeAvg(inputs))[0];
@@ -1009,10 +1073,22 @@ public class NDMath {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray mergeMax(INDArray[] inputs) {
+  public INDArray mergeMax(INDArray... inputs) {
     NDValidation.validateNumerical("mergeMax", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MergeMax(inputs))[0];
+  }
+
+  /**
+   * Broadcasts parameters for evaluation on an N-D grid.<br>
+   *
+   * @param inputs  (NUMERIC type)
+   * @param cartesian 
+   */
+  public INDArray[] meshgrid(INDArray[] inputs, boolean cartesian) {
+    NDValidation.validateNumerical("meshgrid", "inputs", inputs);
+    Preconditions.checkArgument(inputs.length >= 0, "inputs has incorrect size/length. Expected: inputs.length >= 0, got %s", inputs.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MeshGrid(inputs, cartesian));
   }
 
   /**

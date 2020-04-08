@@ -548,7 +548,7 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray arr2 = Nd4j.rand(new long[]{2, 2, 2});
         SDVariable x = sameDiff.var("x", arr);
         SDVariable y = sameDiff.var("y", arr2);
-        SDVariable result = sameDiff.tensorMmul(x, y, new int[][]{{0}, {1}});
+        SDVariable result = sameDiff.tensorMmul(x, y, new int[]{0}, new int[]{1});
         assertArrayEquals(ArrayUtil.getTensorMmulShape(new long[]{2, 2, 2}, new long[]{2, 2, 2}, new int[][]{{0}, {1}}),
                 result.eval().shape());
         assertEquals(16, sameDiff.numElements());
@@ -689,13 +689,7 @@ public class MiscOpValidation extends BaseOpValidation {
                             SDVariable a = sd.var("a", aArr);
                             SDVariable b = sd.var("b", bArr);
 
-                            MMulTranspose mt = MMulTranspose.builder()
-                                    .transposeA(transposeA)
-                                    .transposeB(transposeB)
-                                    .transposeResult(transposeResult)
-                                    .build();
-
-                            SDVariable mmul = sd.mmul(a, b, mt);
+                            SDVariable mmul = sd.mmul(a, b, transposeA, transposeB, transposeResult);
 
                             INDArray exp = (transposeA ? aArr.transpose() : aArr);
                             exp = exp.mmul(transposeB ? bArr.transpose() : bArr);

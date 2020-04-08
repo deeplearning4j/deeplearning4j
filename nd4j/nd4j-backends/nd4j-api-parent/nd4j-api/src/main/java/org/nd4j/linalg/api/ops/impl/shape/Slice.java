@@ -59,6 +59,10 @@ public class Slice extends DynamicCustomOp {
         addIArgument(size);
     }
 
+    public Slice(@NonNull INDArray input, @NonNull INDArray begin, @NonNull INDArray end){
+        super(new INDArray[]{input, begin, end}, null);
+    }
+
     @Override
     public String opName() {
         return "slice";

@@ -50,7 +50,7 @@ public class Stack extends DynamicCustomOp {
         addArgs();
     }
 
-    public Stack(INDArray input, int axis) {
+    public Stack(INDArray[] input, int axis) {
         addInputArgument(input);
         this.jaxis = axis;
         addArgs();

@@ -236,7 +236,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
 
-        profilingConfigurableHookOut(op, st);
+        profilingConfigurableHookOut(op, oc, st);
         return getZ(op, oc);
     }
 
@@ -690,7 +690,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
 
-        profilingConfigurableHookOut(op, st);
+        profilingConfigurableHookOut(op, oc, st);
 
         return getZ(op, oc);
     }
@@ -774,7 +774,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 if (z == null)
                     setZ(Nd4j.create(op.resultType(), x.shape()), op, oc);
-//                    op.setZ(Nd4j.create(op.resultType(), op.x().shape()));
 
 
                 op.validateDataTypes(oc, experimentalMode.get());
@@ -884,7 +883,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
 
-        profilingConfigurableHookOut(op, st);
+        profilingConfigurableHookOut(op, oc, st);
     }
 
     public INDArray exec(BroadcastOp op) {
@@ -1306,7 +1305,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
 
-        profilingConfigurableHookOut(op, st);
+        profilingConfigurableHookOut(op, oc, st);
 
         return z;
     }
@@ -2040,7 +2039,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, @NonNull OpContext context) {
-        long st = profilingConfigurableHookIn(op);
+        long st = profilingConfigurableHookIn(op, context);
         boolean mklOverride = false;
         try {
             if (Nd4jCpu.Environment.getInstance().isUseMKLDNN()) {
@@ -2125,7 +2124,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } finally {
             if (mklOverride)
                 Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
-            profilingConfigurableHookOut(op, st);
+            profilingConfigurableHookOut(op, context, st);
         }
     }
 

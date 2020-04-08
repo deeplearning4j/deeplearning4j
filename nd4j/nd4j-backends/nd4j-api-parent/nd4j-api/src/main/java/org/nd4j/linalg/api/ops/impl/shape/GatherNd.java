@@ -34,17 +34,12 @@ import java.util.List;
 @NoArgsConstructor
 public class GatherNd extends DynamicCustomOp {
 
-    public GatherNd(SameDiff sameDiff, SDVariable[] inputs, SDVariable[] indices) {
-        super(null, sameDiff, ArrayUtils.addAll(inputs, indices), false);
+    public GatherNd(SameDiff sameDiff, SDVariable input, SDVariable indices) {
+        super(null, sameDiff, new SDVariable[] {input, indices});
     }
 
-    public GatherNd(SameDiff sameDiff, SDVariable input, SDVariable indices, boolean inPlace) {
-        super(null, sameDiff, new SDVariable[] {input, indices}, inPlace);
-    }
-
-    public GatherNd(INDArray[] df, INDArray[] indices) {
-        addInputArgument(df);
-        addInputArgument(indices);
+    public GatherNd(INDArray df, INDArray indices) {
+        super(new INDArray[]{df, indices}, null);
     }
 
     @Override

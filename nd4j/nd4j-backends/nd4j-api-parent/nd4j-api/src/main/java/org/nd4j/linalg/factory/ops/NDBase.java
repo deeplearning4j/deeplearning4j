@@ -150,6 +150,60 @@ public class NDBase {
   }
 
   /**
+   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
+   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
+   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
+   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).<br>
+   * <br>
+   * The result of this operation will be a batch of multiplied matrices. The<br>
+   * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
+   *
+   * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
+   * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
+   * @param transposeA Whether to transpose A arrays or not
+   * @param transposeB Whether to transpose B arrays or not
+   */
+  public INDArray[] batchMmul(INDArray[] inputsA, INDArray[] inputsB, boolean transposeA,
+      boolean transposeB) {
+    NDValidation.validateNumerical("batchMmul", "inputsA", inputsA);
+    Preconditions.checkArgument(inputsA.length >= 1, "inputsA has incorrect size/length. Expected: inputsA.length >= 1, got %s", inputsA.length);
+    NDValidation.validateNumerical("batchMmul", "inputsB", inputsB);
+    Preconditions.checkArgument(inputsB.length >= 1, "inputsB has incorrect size/length. Expected: inputsB.length >= 1, got %s", inputsB.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(inputsA, inputsB, transposeA, transposeB));
+  }
+
+  /**
+   * Matrix multiply a batch of matrices. matricesA and matricesB have to be arrays of same<br>
+   * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),<br>
+   * respectively. If transposeA is true, matrices from matricesA will have shape (N, M) instead.<br>
+   * Likewise, if transposeB is true, matrices from matricesB will have shape (K, N).<br>
+   * <br>
+   * The result of this operation will be a batch of multiplied matrices. The<br>
+   * result has the same length as both input batches and each output matrix is of shape (M, K).<br>
+   *
+   * @param inputsA First array of input matrices, all of shape (M, N) or (N, M) (NUMERIC type)
+   * @param inputsB  Second array of input matrices, all of shape (N, K) or (K, N) (NUMERIC type)
+   */
+  public INDArray[] batchMmul(INDArray[] inputsA, INDArray... inputsB) {
+    NDValidation.validateNumerical("batchMmul", "inputsA", inputsA);
+    Preconditions.checkArgument(inputsA.length >= 1, "inputsA has incorrect size/length. Expected: inputsA.length >= 1, got %s", inputsA.length);
+    NDValidation.validateNumerical("batchMmul", "inputsB", inputsB);
+    Preconditions.checkArgument(inputsB.length >= 1, "inputsB has incorrect size/length. Expected: inputsB.length >= 1, got %s", inputsB.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.custom.BatchMmul(inputsA, inputsB, false, false));
+  }
+
+  /**
+   * Cast the array to a new datatype - for example, Integer -> Float<br>
+   *
+   * @param arg Input variable to cast (NDARRAY type)
+   * @param datatype Datatype to cast to
+   * @return output Output array (after casting) (NDARRAY type)
+   */
+  public INDArray castTo(INDArray arg, DataType datatype) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast(arg, datatype))[0];
+  }
+
+  /**
    * Concatenate a set of inputs along the specified dimension.<br>
    * Note that inputs must have identical rank and identical dimensions, other than the dimension to stack on.<br>
    * For example, if 2 inputs have shape [a, x, c] and [a, y, c] and dimension = 1, then the output has shape [a, x+y, c]<br>
@@ -161,7 +215,7 @@ public class NDBase {
    * @param dimension Dimension to concatenate on
    * @return output  (NUMERIC type)
    */
-  public INDArray concat(INDArray[] inputs, int dimension) {
+  public INDArray concat(int dimension, INDArray... inputs) {
     NDValidation.validateNumerical("concat", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     Preconditions.checkArgument(isSameType(inputs), "Input arrays must all be the same datatype");
@@ -274,28 +328,26 @@ public class NDBase {
    * @param x Input variable (NUMERIC type)
    * @param partitions 1D input with values 0 to numPartitions-1 (INT type)
    * @param numPartitions Number of partitions, >= 1
-   * @return output Output variables (equal in number to numPartitions) (NUMERIC type)
    */
-  public INDArray dynamicPartition(INDArray x, INDArray[] partitions, int numPartitions) {
+  public INDArray[] dynamicPartition(INDArray x, INDArray partitions, int numPartitions) {
     NDValidation.validateNumerical("dynamicPartition", "x", x);
     NDValidation.validateInteger("dynamicPartition", "partitions", partitions);
-    Preconditions.checkArgument(partitions.length >= 1, "partitions has incorrect size/length. Expected: partitions.length >= 1, got %s", partitions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicPartition(x, partitions, numPartitions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicPartition(x, partitions, numPartitions));
   }
 
   /**
    * Dynamically merge the specified input arrays into a single array, using the specified indices<br>
    *
-   * @param x Input variables. (NUMERIC type)
    * @param indices Indices to use when merging. Must be >= 1, same length as input variables (INT type)
+   * @param x Input variables. (NUMERIC type)
    * @return output Merged output variable (NUMERIC type)
    */
-  public INDArray dynamicStitch(INDArray[] x, INDArray[] indices) {
-    NDValidation.validateNumerical("dynamicStitch", "x", x);
-    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+  public INDArray dynamicStitch(INDArray[] indices, INDArray... x) {
     NDValidation.validateInteger("dynamicStitch", "indices", indices);
     Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicStitch(x, indices))[0];
+    NDValidation.validateNumerical("dynamicStitch", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicStitch(indices, x))[0];
   }
 
   /**
@@ -395,11 +447,9 @@ public class NDBase {
    * @param indices  (NUMERIC type)
    * @return output  (NUMERIC type)
    */
-  public INDArray gatherNd(INDArray[] df, INDArray[] indices) {
+  public INDArray gatherNd(INDArray df, INDArray indices) {
     NDValidation.validateNumerical("gatherNd", "df", df);
-    Preconditions.checkArgument(df.length >= 1, "df has incorrect size/length. Expected: df.length >= 1, got %s", df.length);
     NDValidation.validateNumerical("gatherNd", "indices", indices);
-    Preconditions.checkArgument(indices.length >= 1, "indices has incorrect size/length. Expected: indices.length >= 1, got %s", indices.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.GatherNd(df, indices))[0];
   }
 
@@ -514,6 +564,23 @@ public class NDBase {
    */
   public INDArray linspace(DataType dataType, double start, double stop, long number) {
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(dataType, start, stop, number))[0];
+  }
+
+  /**
+   * Create a new 1d array with values evenly spaced between values 'start' and 'stop'<br>
+   * For example, linspace(start=3.0, stop=4.0, number=3) will generate [3.0, 3.5, 4.0]<br>
+   *
+   * @param start Start value (NUMERIC type)
+   * @param stop Stop value (NUMERIC type)
+   * @param number Number of values to generate (LONG type)
+   * @param dataType Data type of the output array
+   * @return output INDArray  with linearly spaced elements (NUMERIC type)
+   */
+  public INDArray linspace(INDArray start, INDArray stop, INDArray number, DataType dataType) {
+    NDValidation.validateNumerical("linspace", "start", start);
+    NDValidation.validateNumerical("linspace", "stop", stop);
+    NDValidation.validateInteger("linspace", "number", number);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Linspace(start, stop, number, dataType))[0];
   }
 
   /**
@@ -1076,6 +1143,20 @@ public class NDBase {
    * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
    *
    * @param x Input variable (NUMERIC type)
+   * @param dimensions Permute dimensions (INT type)
+   * @return output Output variable (permuted input) (NUMERIC type)
+   */
+  public INDArray permute(INDArray x, INDArray dimensions) {
+    NDValidation.validateNumerical("permute", "x", x);
+    NDValidation.validateInteger("permute", "dimensions", dimensions);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Permute(x, dimensions))[0];
+  }
+
+  /**
+   * Array permutation operation: permute the dimensions according to the specified permutation indices.<br>
+   * Example: if input has shape [a,b,c] and dimensions = [2,0,1] the output has shape [c,a,b]<br>
+   *
+   * @param x Input variable (NUMERIC type)
    * @param dimensions  (Size: AtLeast(min=0))
    * @return output Output variable (permuted input) (NUMERIC type)
    */
@@ -1142,6 +1223,24 @@ public class NDBase {
   }
 
   /**
+   * Create a new variable with a 1d array, where the values start at from and increment by step<br>
+   * up to (but not including) limit.<br>
+   * For example, range(1.0, 3.0, 0.5) will return [1.0, 1.5, 2.0, 2.5]<br>
+   *
+   * @param from Initial/smallest value (NUMERIC type)
+   * @param to Largest value (exclusive) (NUMERIC type)
+   * @param step Step size (NUMERIC type)
+   * @param dataType 
+   * @return output INDArray  with the specified values (NUMERIC type)
+   */
+  public INDArray range(INDArray from, INDArray to, INDArray step, DataType dataType) {
+    NDValidation.validateNumerical("range", "from", from);
+    NDValidation.validateNumerical("range", "to", to);
+    NDValidation.validateNumerical("range", "step", step);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.impl.Range(from, to, step, dataType))[0];
+  }
+
+  /**
    * Returns the rank (number of dimensions, i.e., length(shape)) of the specified INDArray  as a 0D scalar variable<br>
    *
    * @param in Input variable (NUMERIC type)
@@ -1169,6 +1268,21 @@ public class NDBase {
   }
 
   /**
+   * Element-wise replace where condition:<br>
+   * out[i] = value if condition(update[i]) is satisfied, or<br>
+   * out[i] = update[i] if condition(update[i]) is NOT satisfied<br>
+   *
+   * @param update Source array (NUMERIC type)
+   * @param value Value to set at the output, if the condition is satisfied
+   * @param condition Condition to check on update array elements
+   * @return output New array with values replaced where condition is satisfied (NUMERIC type)
+   */
+  public INDArray replaceWhere(INDArray update, double value, Condition condition) {
+    NDValidation.validateNumerical("replaceWhere", "update", update);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet(update, value, condition));
+  }
+
+  /**
    * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the<br>
    * input, but with the specified shape.<br>
    * Note that prod(shape) must match length(input) == prod(input.shape)<br>
@@ -1180,6 +1294,21 @@ public class NDBase {
   public INDArray reshape(INDArray x, INDArray shape) {
     NDValidation.validateNumerical("reshape", "x", x);
     NDValidation.validateNumerical("reshape", "shape", shape);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Reshape(x, shape))[0];
+  }
+
+  /**
+   * Reshape the input variable to the specified (fixed) shape. The output variable will have the same values as the<br>
+   * input, but with the specified shape.<br>
+   * Note that prod(shape) must match length(input) == prod(input.shape)<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param shape New shape for variable (Size: AtLeast(min=0))
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray reshape(INDArray x, long... shape) {
+    NDValidation.validateNumerical("reshape", "x", x);
+    Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Reshape(x, shape))[0];
   }
 
@@ -1533,6 +1662,21 @@ public class NDBase {
   }
 
   /**
+   * Generate a sequence mask (with values 0 or 1) based on the specified lengths <br>
+   * Specifically, out[i, ..., k, j] = (j < lengths[i, ..., k] ? 1.0 : 0.0)<br>
+   *
+   * @param lengths Lengths of the sequences (NUMERIC type)
+   * @param maxLen Maximum sequence length (INT type)
+   * @param dataType 
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray sequenceMask(INDArray lengths, INDArray maxLen, DataType dataType) {
+    NDValidation.validateNumerical("sequenceMask", "lengths", lengths);
+    NDValidation.validateInteger("sequenceMask", "maxLen", maxLen);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.SequenceMask(lengths, maxLen, dataType))[0];
+  }
+
+  /**
    * see sequenceMask(String, SDVariable, SDVariable, DataType)<br>
    *
    * @param lengths  (NUMERIC type)
@@ -1598,6 +1742,28 @@ public class NDBase {
     NDValidation.validateNumerical("slice", "input", input);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(size.length >= 1, "size has incorrect size/length. Expected: size.length >= 1, got %s", size.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Slice(input, begin, size))[0];
+  }
+
+  /**
+   * Get a subset of the specified input, by specifying the first element and the size of the array.<br>
+   * For example, if input is:<br>
+   * [a, b, c]<br>
+   * [d, e, f]<br>
+   * then slice(input, begin=[0,1], size=[2,1] will return:<br>
+   * [b]<br>
+   * [e]<br>
+   * Note that for each dimension i, begin[i] + size[i] <= input.size(i)<br>
+   *
+   * @param input input Variable to get subset of (NUMERIC type)
+   * @param begin Beginning index. Must be same length as rank of input array (INT type)
+   * @param size Size of the output array. Must be same length as rank of input array (INT type)
+   * @return output Subset of the input (NUMERIC type)
+   */
+  public INDArray slice(INDArray input, INDArray begin, INDArray size) {
+    NDValidation.validateNumerical("slice", "input", input);
+    NDValidation.validateInteger("slice", "begin", begin);
+    NDValidation.validateInteger("slice", "size", size);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Slice(input, begin, size))[0];
   }
 
@@ -1668,7 +1834,8 @@ public class NDBase {
    * @param axis Axis to stack on
    * @return output Output variable (NDARRAY type)
    */
-  public INDArray stack(INDArray values, int axis) {
+  public INDArray stack(int axis, INDArray... values) {
+    Preconditions.checkArgument(values.length >= 1, "values has incorrect size/length. Expected: values.length >= 1, got %s", values.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Stack(values, axis))[0];
   }
 
@@ -1737,7 +1904,7 @@ public class NDBase {
    * @param shrinkAxisMask Bit mask: if the ith bit is set to 1, then the begin/end/stride values are ignored, and a size 1 dimension is removed at this point. Note that begin/end/stride values must result in a size 1 output for these dimensions
    * @return output A subset of the input array (NUMERIC type)
    */
-  public INDArray stridedSlice(INDArray in, int[] begin, int[] end, int[] strides, int beginMask,
+  public INDArray stridedSlice(INDArray in, long[] begin, long[] end, long[] strides, int beginMask,
       int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
     NDValidation.validateNumerical("stridedSlice", "in", in);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
@@ -1762,7 +1929,7 @@ public class NDBase {
    * @param strides Stride ("step size") for each dimension. For example, stride of 2 means take every second element. (Size: AtLeast(min=1))
    * @return output A subset of the input array (NUMERIC type)
    */
-  public INDArray stridedSlice(INDArray in, int[] begin, int[] end, int... strides) {
+  public INDArray stridedSlice(INDArray in, long[] begin, long[] end, long... strides) {
     NDValidation.validateNumerical("stridedSlice", "in", in);
     Preconditions.checkArgument(begin.length >= 1, "begin has incorrect size/length. Expected: begin.length >= 1, got %s", begin.length);
     Preconditions.checkArgument(end.length >= 1, "end has incorrect size/length. Expected: end.length >= 1, got %s", end.length);
@@ -1997,6 +2164,21 @@ public class NDBase {
     NDValidation.validateNumerical("unsortedSegmentSum", "data", data);
     NDValidation.validateNumerical("unsortedSegmentSum", "segmentIds", segmentIds);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentSum(data, segmentIds, numSegments))[0];
+  }
+
+  /**
+   * Unstack a variable of rank X into N rank X-1 variables by taking slices along the specified axis.<br>
+   * If input has shape [a,b,c] then output has shape:<br>
+   * axis = 0: [b,c]<br>
+   * axis = 1: [a,c]<br>
+   * axis = 2: [a,b]<br>
+   *
+   * @param value Input variable to unstack (NDARRAY type)
+   * @param axis Axis to unstack on
+   * @param num Number of output variables
+   */
+  public INDArray[] unstack(INDArray value, int axis, int num) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Unstack(value, axis, num));
   }
 
   /**

@@ -368,7 +368,7 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
     REQUIRE_TRUE(hasSeqLen == false, 0, "LSTM_LAYER_MKLDNN operation: mkl dnn library doesn't support array specifying max time step per each example in batch !");
     REQUIRE_TRUE(dataFormat < 2, 0, "LSTM_LAYER_MKLDNN operation: wrong data format, only two formats are allowed for input/output tensors in mkl dnn library: TNC and NTC!");
     REQUIRE_TRUE(directionMode < 4, 0, "LSTM_LAYER_MKLDNN operation: option for bidirectional extra output dimension is not valid in mkl dnn library !");
-    REQUIRE_TRUE((retLastH && retLastC) || (!retLastH && !retLastC), 0, "LSTM_LAYER_MKLDNN operation: only two options are present: 1) calculate both output at last time and cell state at last time; 2) do not calculate both !");
+    REQUIRE_TRUE(retLastH == retLastC, 0, "LSTM_LAYER_MKLDNN operation: only two options are present: 1) calculate both output at last time and cell state at last time; 2) do not calculate both !");
 
     count = 0;
     auto h  = retFullSeq ? OUTPUT_VARIABLE(count++) : nullptr;           // output
@@ -464,12 +464,20 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
+
+    const auto dataFormat    = INT_ARG(0);    // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL], for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
+    const auto directionMode = INT_ARG(1);    // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3)
+
     const auto hasBiases  = B_ARG(0);   // indicates whether biases array is provided
+    const auto hasSeqLen  = B_ARG(1);   // indicates whether seqLen array is provided
     const auto hasInitH   = B_ARG(2);   // indicates whether initial output is provided
     const auto hasInitC   = B_ARG(3);   // indicates whether initial cell state is provided
+    const auto hasPH      = B_ARG(4);   // indicates whether peephole connections are present
     const auto retFullSeq = B_ARG(5);   // indicates whether to return whole time sequence h {h_0, h_1, ... , h_sL-1}
     const auto retLastH   = B_ARG(6);   // indicates whether to return output at last time step only, in this case shape would be [bS, nOut] (exact shape depends on dataFormat argument)
     const auto retLastC   = B_ARG(7);   // indicates whether to return cells state at last time step only, in this case shape would be [bS, nOut] (exact shape depends on dataFormat argument)
+
+    const auto cellClip = T_ARG(0);                                     // cell clipping value, if it = 0 then do not apply clipping
 
     const auto x  = INPUT_VARIABLE(0);          // input
     const auto Wx = INPUT_VARIABLE(1);          // input weights
@@ -495,7 +503,15 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     DataType hLType = hL != nullptr ? hL->dataType() : xType;
     DataType cLType = cL != nullptr ? cL->dataType() : xType;
 
-    return block.isUseMKLDNN() && (
+    auto featuresSupported = (cellClip == 0)     //Cell clipping not supported
+        && retFullSeq                            //Always return full sequence in case of MKL DNN
+        && !hasPH                                //Peephole connections not supported in MKL DNN
+		&& !hasSeqLen                            //Sequence length array not supported in MKL DNN
+		&& dataFormat < 2                        //Data format - only 0 and 1 supported in MKL DNN- 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn]
+		&& directionMode < 4                     //Direction mode - only 0-3 supported in MKL DNN (no extra dim option) - 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat
+		&& retLastH == retLastC;                 //Return both lastH and lastC, or return neither (not just 1 or other)
+
+    return block.isUseMKLDNN() && featuresSupported && (
             (xType==DataType::FLOAT32 && WxType==DataType::FLOAT32 && WrType==DataType::FLOAT32 && bType==DataType::FLOAT32 && hIType==DataType::FLOAT32 && cIType==DataType::FLOAT32 && hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32) ||
             (xType==DataType::HALF    && WxType==DataType::HALF    && WrType==DataType::HALF    && bType==DataType::HALF    && hIType==DataType::HALF    && cIType==DataType::HALF    && hType==DataType::HALF    && hLType==DataType::HALF    && cLType==DataType::HALF)    ||
             (xType==DataType::UINT8   && WxType==DataType::INT8    && WrType==DataType::INT8    && bType==DataType::FLOAT32 && hIType==DataType::UINT8   && cIType==DataType::UINT8   && (hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32 || hType==DataType::UINT8 && hLType==DataType::UINT8 && cLType==DataType::UINT8))

@@ -57,8 +57,12 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
         addArgs();
     }
 
-    public MaxPoolWithArgmax(INDArray input, INDArray output,INDArray outArgMax, @NonNull Pooling2DConfig config){
-        super(null, new INDArray[]{input}, new INDArray[]{output, outArgMax});
+    public MaxPoolWithArgmax(@NonNull INDArray input, @NonNull Pooling2DConfig config){
+        this(input, null, null, config);
+    }
+
+    public MaxPoolWithArgmax(@NonNull INDArray input, INDArray output,INDArray outArgMax, @NonNull Pooling2DConfig config){
+        super(null, new INDArray[]{input}, wrapFilterNull(output, outArgMax));
         config.setType(Pooling2D.Pooling2DType.MAX);
 
         this.config = config;

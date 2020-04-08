@@ -2148,7 +2148,7 @@ public class DifferentialFunctionFactory {
 
     public SDVariable gatherNd(SDVariable df, SDVariable indices) {
         validateDifferentialFunctionsameDiff(df);
-        return new GatherNd(sameDiff(), df, indices, false).outputVariable();
+        return new GatherNd(sameDiff(), df, indices).outputVariable();
     }
 
     public SDVariable trace(SDVariable in){

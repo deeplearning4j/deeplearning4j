@@ -66,11 +66,8 @@ public class DynamicPartition extends DynamicCustomOp {
         addArgs();
     }
 
-    public DynamicPartition(INDArray input, INDArray[] partitions, int numPartitions) {
+    public DynamicPartition(INDArray input, INDArray partitions, int numPartitions) {
         addInputArgument(input);
-        for (INDArray part : partitions)
-            addInputArgument(part);
-
         addIArgument(numPartitions);
     }
 

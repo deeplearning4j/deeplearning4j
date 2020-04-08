@@ -29,7 +29,10 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.shape.Concat;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -473,6 +476,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
                 Nd4j.exec(op);  //Should trigger NaN panic
                 fail();
             } catch (Exception e){
+                e.printStackTrace();
                 assertTrue(e.getMessage(), e.getMessage().contains("Inf"));
             }
 
@@ -486,6 +490,57 @@ public class OperationProfilerTests extends BaseNd4jTest {
             }
         } finally {
             Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().checkForINF(false).build());
+        }
+    }
+
+
+    @Test
+    public void testOpProfilerOpContextLegacy(){
+
+        for(boolean nan : new boolean[]{true, false}) {
+
+            INDArray in = Nd4j.valueArrayOf(10, nan ? -1 : 0).castTo(DataType.FLOAT);
+
+            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().checkForNAN(nan).checkForINF(!nan).build());
+
+            OpContext oc = Nd4j.getExecutioner().buildContext();
+            oc.setInputArray(0, in);
+            oc.setOutputArray(0, in.ulike());
+            try {
+                Nd4j.exec(new Log(), oc);
+                System.out.println(oc.getOutputArray(0));
+                fail("Expected op profiler exception");
+            } catch (Throwable t) {
+                //OK
+                assertTrue(t.getMessage(), t.getMessage().contains(nan ? "NaN" : "Inf"));
+            }
+        }
+    }
+
+    @Test
+    public void testOpProfilerOpContextCustomOp(){
+
+        for(boolean nan : new boolean[]{true, false}) {
+
+            INDArray in = Nd4j.create(DataType.DOUBLE, 10).assign(nan ? Double.NaN : Double.POSITIVE_INFINITY);
+            INDArray in2 = in.dup();
+
+
+            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().checkForNAN(nan).checkForINF(!nan).build());
+
+            OpContext oc = Nd4j.getExecutioner().buildContext();
+            oc.setIArguments(0);
+            oc.setInputArray(0, in);
+            oc.setInputArray(1, in2);
+            oc.setOutputArray(0, Nd4j.create(DataType.DOUBLE, 20));
+            try {
+                Nd4j.exec(new Concat(), oc);
+                System.out.println(oc.getOutputArray(0));
+                fail("Expected op profiler exception");
+            } catch (Throwable t) {
+                //OK
+                assertTrue(t.getMessage(), t.getMessage().contains(nan ? "NaN" : "Inf"));
+            }
         }
     }
 }
