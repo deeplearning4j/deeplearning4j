@@ -244,6 +244,12 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
+            <classifier>${dependency.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
             <artifactId>cuda</artifactId>
             <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
         </dependency>
