@@ -48,8 +48,15 @@ public class DepthwiseConv2DBp extends DynamicCustomOp {
     protected Conv2DConfig config;
 
 
-    public DepthwiseConv2DBp(SameDiff sameDiff, List<SDVariable> f1, Conv2DConfig config) {
-        super(sameDiff, wrapFilterNull(f1.get(0), f1.get(1), f1.get(2)));
+    public DepthwiseConv2DBp(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull SDVariable gradO, @NonNull Conv2DConfig config){
+        super(sameDiff, wrapFilterNull(input, weights, bias, gradO));
+        this.config = config;
+        addArgs();
+
+    }
+
+    public DepthwiseConv2DBp(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, @NonNull SDVariable gradO, @NonNull Conv2DConfig config){
+        super(sameDiff, wrapFilterNull(input, weights, gradO));
         this.config = config;
         addArgs();
 
@@ -122,120 +129,22 @@ public class DepthwiseConv2DBp extends DynamicCustomOp {
         return "config";
     }
 
-
-    @Override
-    public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
-        Map<String, Map<String, AttributeAdapter>> ret = new HashMap<>();
-        Map<String, AttributeAdapter> tfMappings = new LinkedHashMap<>();
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
-
-
-        //TF uses [kH, kW, inC, outC] always for weights
-        tfMappings.put("kH", new NDArrayShapeAdapter(0));
-        tfMappings.put("kW", new NDArrayShapeAdapter(1));
-        tfMappings.put("sH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("sW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
-        tfMappings.put("dH", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 2, 1, fields.get("dataFormat")));
-        tfMappings.put("dW", new ConditionalFieldValueIntIndexArrayAdapter("NCHW", 3, 2, fields.get("dataFormat")));
-        tfMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-
-
-        Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
-
-        return ret;
-    }
-
-    @Override
-    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-        Map<String, PropertyMapping> map = new HashMap<>();
-        val strideMapping = PropertyMapping.builder()
-                .tfAttrName("strides")
-                .onnxAttrName("strides")
-                .propertyNames(new String[]{"sW", "sH"})
-                .build();
-
-
-        val kernelMappingH = PropertyMapping.builder()
-                .propertyNames(new String[]{"kH"})
-                .tfInputPosition(1)
-                .shapePosition(0)
-                .onnxAttrName("kernel_shape")
-                .build();
-
-        val kernelMappingW = PropertyMapping.builder()
-                .propertyNames(new String[]{"kW"})
-                .tfInputPosition(1)
-                .shapePosition(1)
-                .onnxAttrName("kernel_shape")
-                .build();
-
-        val dilationMapping = PropertyMapping.builder()
-                .onnxAttrName("dilations")
-                .propertyNames(new String[]{"dW", "dH"})
-                .tfAttrName("rates")
-                .build();
-
-        val dataFormat = PropertyMapping.builder()
-                .onnxAttrName("data_format")
-                .tfAttrName("data_format")
-                .propertyNames(new String[]{"dataFormat"})
-                .build();
-
-        val nhwc = PropertyMapping.builder()
-                .onnxAttrName("data_format")
-                .tfAttrName("data_format")
-                .propertyNames(new String[]{"isNHWC"})
-                .build();
-
-        val sameMode = PropertyMapping.builder()
-                .onnxAttrName("auto_pad")
-                .propertyNames(new String[]{"isSameMode"})
-                .tfAttrName("padding")
-                .build();
-
-        val paddingWidthHeight = PropertyMapping.builder()
-                .onnxAttrName("padding")
-                .propertyNames(new String[]{"pH", "pW"})
-                .build();
-
-
-        map.put("sW", strideMapping);
-        map.put("sH", strideMapping);
-        map.put("kH", kernelMappingH);
-        map.put("kW", kernelMappingW);
-        map.put("dW", dilationMapping);
-        map.put("dH", dilationMapping);
-        map.put("isSameMode", sameMode);
-        map.put("pH", paddingWidthHeight);
-        map.put("pW", paddingWidthHeight);
-        map.put("dataFormat", dataFormat);
-
-
-        return ret;
-    }
-
-
     @Override
     public String opName() {
-        return "depthwise_conv2d_bp]";
+        return "depthwise_conv2d_bp";
     }
 
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
+        List<DataType> list = new ArrayList<DataType>();
+        for(int i=0;i<n-1;i++){list.add(inputDataTypes.get(0));}
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        return Collections.singletonList(inputDataTypes.get(0));
+        return list;
     }
 
     @Override
-    public int getNumOutputs(){return 1;}
+    public int getNumOutputs(){
+        return args().length == 4 ? 3 : 2;}
 }

@@ -16,8 +16,11 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -35,7 +38,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CReluBp;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -53,17 +55,12 @@ import java.util.*;
 public class DepthwiseConv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
-    protected SDVariable in;
-    protected SDVariable weights;
-    protected SDVariable bias;
 
 
     public DepthwiseConv2D(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
                            @NonNull SDVariable weights, SDVariable bias, @NonNull Conv2DConfig conv2DConfig) {
         this(sameDiff, wrapFilterNull(input, weights, bias), conv2DConfig);
-        this.in = input;
-        this.weights = weights;
-        this.bias = bias;
+
     }
 
     @Builder(builderMethodName = "sameDiffBuilder")
@@ -313,7 +310,9 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(new DepthwiseConv2DBp(sameDiff, f1, this.config).outputVariables());
+        SDVariable bias = args().length==2  ? null : arg(2);
+        return Arrays.asList(new DepthwiseConv2DBp(sameDiff, arg(0), arg(1), bias, f1.get(0), this.config).outputVariables());
+
     }
 
 

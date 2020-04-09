@@ -2017,8 +2017,8 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable out = new ClipByAvgNorm(sd,in, 1e-2,0,1,2).outputVariable();
         SDVariable expected = sd.math.clipByNorm(in, 1e-2,0,1,2).mul(inputArr.length());
 
-        out.markAsLoss();
-
+        SDVariable loss = sd.standardDeviation("loss", out, true);
+        loss.markAsLoss();
 
         OpValidation.validate(new TestCase(sd)
                 .expectedOutput("clipbyavgnorm", expected.eval())
@@ -2027,40 +2027,7 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
 
-    @Test
-    public void testDepthwiseConv2D(){
 
-        int bS = 10;
-
-        int kernelHeight = 2;
-        int kernelWidth = 2;
-        int strideHeight = 2;
-        int strideWidth = 2;
-        int inChannels = 10;
-        int outChannels = 5;
-        Nd4j.getRandom().setSeed(12345);
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.rand(bS, inChannels, 28,28));
-        SDVariable weights = sd.var("weights", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, inChannels, outChannels));
-        SDVariable bias = sd.var("bias", Nd4j.rand(DataType.FLOAT, outChannels));
-
-        ArrayList<SDVariable> vars_for_grads = new ArrayList<SDVariable>();
-        vars_for_grads.add(in);
-        vars_for_grads.add(weights);
-        vars_for_grads.add(bias);
-
-
-        List<SDVariable> grads = new DepthwiseConv2D(sd,in, weights, null, Conv2DConfig.builder()
-                .kH(kernelHeight)
-                .kW(kernelWidth)
-                .sH(strideHeight)
-                .sW(strideWidth)
-                .dataFormat("NCHW")
-                .build()).doDiff(vars_for_grads);
-        System.out.println(grads.get(0).eval());
-//        java.lang.IllegalStateException: Could not find descriptor for op: depthwise_conv2d_bp] - class: org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp
-
-    }
 
     @Test
     public void testEmbeddingLookup(){
@@ -2069,8 +2036,8 @@ public class TransformOpValidation extends BaseOpValidation {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", Nd4j.rand(1024, 64));
-        SDVariable indeces = sd.var("indeces", Nd4j.create(new int[]{2,20}));
-        SDVariable res = new EmbeddingLookup(sd,in, indeces).outputVariable();
+        SDVariable indices = sd.var("indices", Nd4j.createFromArray(new int[]{2,20}));
+        SDVariable res = new EmbeddingLookup(sd,in, indices).outputVariable();
         System.out.println(res.eval());
 
 
