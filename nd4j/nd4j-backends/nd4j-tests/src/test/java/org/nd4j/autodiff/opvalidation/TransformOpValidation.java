@@ -34,6 +34,8 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.image.ImageResize;
+import org.nd4j.linalg.api.ops.impl.image.ImageResizeMethods;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp;
@@ -2041,6 +2043,39 @@ public class TransformOpValidation extends BaseOpValidation {
         assertArrayEquals(new long[]{4,10},  out.eval().shape());
 
     }
+
+    @Test
+    public void testImageResize(){
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+
+        // Input Variables
+        INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 32,32);
+        INDArray size = Nd4j.createFromArray(new int[]{28,28});
+        // bArgs
+        boolean preserveAspectRatio = true;
+        boolean antialias = true;
+        // iArgs
+
+        ImageResizeMethods method = ImageResizeMethods.kResizeBilinear;
+
+//        INDArray output = Nd4j.rand(DataType.DOUBLE, 3, 28,28);
+//        DynamicCustomOp op = DynamicCustomOp.builder("image_resize")
+//                .addInputs(in, size)
+//                .addBooleanArguments(preserveAspectRatio, antialias)
+//                .addIntegerArguments(method.ordinal())
+//                .addOutputs(output)
+//                .build();
+//
+//        Nd4j.exec(op);
+//        System.out.println(output);
+        SDVariable inputImage = sd.var(in);
+        SDVariable requestedSize = sd.constant(size);
+        SDVariable out = new ImageResize(sd, inputImage, requestedSize, preserveAspectRatio, antialias, method).outputVariable();
+//     java.lang.IllegalArgumentException: Expected exactly 1 input datatypes, got [DOUBLE, INT]
+
+    }
+
 
 
 }

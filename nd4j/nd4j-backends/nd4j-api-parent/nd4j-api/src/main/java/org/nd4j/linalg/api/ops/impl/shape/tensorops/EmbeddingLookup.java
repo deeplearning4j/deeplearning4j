@@ -39,20 +39,20 @@ public class EmbeddingLookup extends DynamicCustomOp {
     }
 
 
-    public EmbeddingLookup(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable indeces) {
-        super("embedding_lookup", sameDiff, new SDVariable[]{in, indeces});
-        addIArgument(indeces.eval().toIntVector());
+    public EmbeddingLookup(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable indices) {
+        super("embedding_lookup", sameDiff, new SDVariable[]{in, indices});
+        addIArgument(indices.eval().toIntVector());
     }
 
-    public EmbeddingLookup(@NonNull INDArray in, @NonNull INDArray indeces, INDArray output) {
-        super("embedding_lookup", new INDArray[]{in, indeces}, new INDArray[]{output});
-        addIArgument(indeces.toIntVector());
+    public EmbeddingLookup(@NonNull INDArray in, @NonNull INDArray indices, INDArray output) {
+        super("embedding_lookup", new INDArray[]{in, indices}, new INDArray[]{output});
+        addIArgument(indices.toIntVector());
 
     }
 
-    public EmbeddingLookup(@NonNull INDArray in, INDArray output, @NonNull int... indeces) {
-        super("embedding_lookup", new INDArray[]{in, Nd4j.create(indeces)}, new INDArray[]{output});
-        addIArgument(indeces);
+    public EmbeddingLookup(@NonNull INDArray in, INDArray output, @NonNull int... indices) {
+        super("embedding_lookup", new INDArray[]{in, Nd4j.create(indices)}, new INDArray[]{output});
+        addIArgument(indices);
 
 
     }

@@ -93,6 +93,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.grid.FreeGridOp.class,
             org.nd4j.linalg.api.ops.impl.image.CropAndResize.class,
             org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches.class,
+            org.nd4j.linalg.api.ops.impl.image.ImageResize.class,
             org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression.class,
             org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionV3.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeBilinear.class,
