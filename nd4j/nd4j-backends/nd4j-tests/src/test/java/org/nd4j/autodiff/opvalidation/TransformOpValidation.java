@@ -2032,15 +2032,13 @@ public class TransformOpValidation extends BaseOpValidation {
     @Test
     public void testEmbeddingLookup(){
 
-
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.rand(1024, 64));
-        SDVariable indices = sd.var("indices", Nd4j.createFromArray(new int[]{2,20}));
-        SDVariable res = new EmbeddingLookup(sd,in, indices).outputVariable();
-        System.out.println(res.eval());
-
-
+        SDVariable input = sd.var("in", Nd4j.rand(1024, 10));
+        SDVariable indices = sd.constant("indices", Nd4j.createFromArray(new long[]{0, 5, 17, 33}));
+        SDVariable out = new EmbeddingLookup(sd,input, indices).outputVariable();
+        // should be matrix of shape [4, 10]
+        assertArrayEquals(new long[]{4,10},  out.eval().shape());
 
     }
 

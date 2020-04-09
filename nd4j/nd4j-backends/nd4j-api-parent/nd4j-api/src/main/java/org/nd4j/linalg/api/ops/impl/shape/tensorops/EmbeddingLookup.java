@@ -24,6 +24,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -40,14 +41,19 @@ public class EmbeddingLookup extends DynamicCustomOp {
 
     public EmbeddingLookup(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable indeces) {
         super("embedding_lookup", sameDiff, new SDVariable[]{in, indeces});
+        addIArgument(indeces.eval().toIntVector());
     }
 
     public EmbeddingLookup(@NonNull INDArray in, @NonNull INDArray indeces, INDArray output) {
         super("embedding_lookup", new INDArray[]{in, indeces}, new INDArray[]{output});
+        addIArgument(indeces.toIntVector());
+
     }
 
     public EmbeddingLookup(@NonNull INDArray in, INDArray output, @NonNull int... indeces) {
         super("embedding_lookup", new INDArray[]{in, Nd4j.create(indeces)}, new INDArray[]{output});
+        addIArgument(indeces);
+
 
     }
 

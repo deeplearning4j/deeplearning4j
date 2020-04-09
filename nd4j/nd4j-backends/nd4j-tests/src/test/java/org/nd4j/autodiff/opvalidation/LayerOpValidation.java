@@ -1477,13 +1477,13 @@ public class LayerOpValidation extends BaseOpValidation {
         int kernelWidth = 2;
         int strideHeight = 2;
         int strideWidth = 2;
-        int inChannels = 10;
-        int outChannels = 5;
+        int inChannels = 2;
+        int outChannels = 3;
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.rand(bS, inChannels, 28,28));
-        SDVariable weights = sd.var("weights", Nd4j.rand(DataType.FLOAT, kernelHeight, kernelWidth, inChannels, outChannels));
-        SDVariable bias = sd.var("bias", Nd4j.rand(DataType.FLOAT, 50));
+        SDVariable in = sd.var("in", Nd4j.rand(bS, inChannels, 5,5));
+        SDVariable weights = sd.var("weights", Nd4j.rand(DataType.DOUBLE, kernelHeight, kernelWidth, inChannels, outChannels));
+        SDVariable bias = sd.var("bias", Nd4j.rand(DataType.DOUBLE, inChannels*outChannels));
         Conv2DConfig config = Conv2DConfig.builder()
                 .kH(kernelHeight)
                 .kW(kernelWidth)
@@ -1501,7 +1501,5 @@ public class LayerOpValidation extends BaseOpValidation {
         );
 
 
-
     }
-
 }
