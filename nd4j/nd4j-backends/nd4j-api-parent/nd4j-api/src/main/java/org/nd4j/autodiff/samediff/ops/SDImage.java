@@ -24,6 +24,7 @@ import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.enums.ImageResizeMethods;
 
 public class SDImage extends SDOps {
   public SDImage(SameDiff sameDiff) {
@@ -251,6 +252,98 @@ public class SDImage extends SDOps {
   public SDVariable hsvToRgb(String name, SDVariable input) {
     SDValidation.validateNumerical("hsvToRgb", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.custom.HsvToRgb(sd,input).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param input 4D image [NCHW] (NUMERIC type)
+   * @param size new height and width (NUMERIC type)
+   * @param preserveAspectRatio Whether to preserve the aspect ratio. If this is set, then images will be resized to a size that fits in size while preserving the aspect ratio of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False.
+   * @param antialis Whether to use an anti-aliasing filter when downsampling an image
+   * @param ImageResizeMethods ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
+   * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
+   * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
+   * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
+   * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
+   * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
+   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * @return output Output image (NUMERIC type)
+   */
+  public SDVariable imageResize(SDVariable input, SDVariable size, boolean preserveAspectRatio,
+      boolean antialis, ImageResizeMethods ImageResizeMethods) {
+    SDValidation.validateNumerical("imageResize", "input", input);
+    SDValidation.validateNumerical("imageResize", "size", size);
+    return new org.nd4j.linalg.api.ops.impl.image.ImageResize(sd,input, size, preserveAspectRatio, antialis, ImageResizeMethods).outputVariable();
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input 4D image [NCHW] (NUMERIC type)
+   * @param size new height and width (NUMERIC type)
+   * @param preserveAspectRatio Whether to preserve the aspect ratio. If this is set, then images will be resized to a size that fits in size while preserving the aspect ratio of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False.
+   * @param antialis Whether to use an anti-aliasing filter when downsampling an image
+   * @param ImageResizeMethods ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
+   * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
+   * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
+   * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
+   * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
+   * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
+   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * @return output Output image (NUMERIC type)
+   */
+  public SDVariable imageResize(String name, SDVariable input, SDVariable size,
+      boolean preserveAspectRatio, boolean antialis, ImageResizeMethods ImageResizeMethods) {
+    SDValidation.validateNumerical("imageResize", "input", input);
+    SDValidation.validateNumerical("imageResize", "size", size);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.ImageResize(sd,input, size, preserveAspectRatio, antialis, ImageResizeMethods).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param input 4D image [NCHW] (NUMERIC type)
+   * @param size new height and width (NUMERIC type)
+   * @param ImageResizeMethods ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
+   * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
+   * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
+   * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
+   * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
+   * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
+   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * @return output Output image (NUMERIC type)
+   */
+  public SDVariable imageResize(SDVariable input, SDVariable size,
+      ImageResizeMethods ImageResizeMethods) {
+    SDValidation.validateNumerical("imageResize", "input", input);
+    SDValidation.validateNumerical("imageResize", "size", size);
+    return new org.nd4j.linalg.api.ops.impl.image.ImageResize(sd,input, size, false, false, ImageResizeMethods).outputVariable();
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input 4D image [NCHW] (NUMERIC type)
+   * @param size new height and width (NUMERIC type)
+   * @param ImageResizeMethods ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
+   * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
+   * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
+   * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
+   * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
+   * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
+   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * @return output Output image (NUMERIC type)
+   */
+  public SDVariable imageResize(String name, SDVariable input, SDVariable size,
+      ImageResizeMethods ImageResizeMethods) {
+    SDValidation.validateNumerical("imageResize", "input", input);
+    SDValidation.validateNumerical("imageResize", "size", size);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.ImageResize(sd,input, size, false, false, ImageResizeMethods).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
