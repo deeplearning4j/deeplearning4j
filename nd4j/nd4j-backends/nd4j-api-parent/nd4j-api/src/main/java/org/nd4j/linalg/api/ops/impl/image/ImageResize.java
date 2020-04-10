@@ -25,12 +25,14 @@ public class ImageResize extends DynamicCustomOp {
 
     public ImageResize(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable size, boolean preserveAspectRatio, boolean antialias, ImageResizeMethods method) {
         super("image_resize", sameDiff, new SDVariable[]{in, size});
+        Preconditions.checkArgument(in.getArr().shape().length==4,"expected input message in NCHW format i.e [batchSize, channels, height, width]");
         addBArgument(preserveAspectRatio, antialias);
         addIArgument(method.ordinal());
     }
 
     public ImageResize(@NonNull INDArray in, @NonNull INDArray size, INDArray output, boolean preserveAspectRatio, boolean antialias, ImageResizeMethods method) {
         super("image_resize", new INDArray[]{in, size}, new INDArray[]{output});
+        Preconditions.checkArgument(in.shape().length==4,"expected input message in NCHW format i.e [batchSize, channels, height, width]");
         addBArgument(preserveAspectRatio, antialias);
         addIArgument(method.ordinal());
     }
@@ -40,7 +42,7 @@ public class ImageResize extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions
-                .checkArgument(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatypes, got %s", dataTypes);
+                .checkArgument(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", dataTypes);
         Preconditions.checkArgument(dataTypes.get(0).isFPType(), "Input datatype must be floating point, got %s", dataTypes);
 
         return Collections.singletonList(dataTypes.get(0));
