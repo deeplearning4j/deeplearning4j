@@ -96,7 +96,12 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         }
     };
 
-        @Test(expected = IllegalStateException.class)
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
+    @Test(expected = IllegalStateException.class)
     public void fileNotFoundEndToEnd() throws Exception {
         String modelPath = "modelimport/keras/examples/foo/bar.h5";
         importEndModelTest(modelPath, null, true, true, false, false);

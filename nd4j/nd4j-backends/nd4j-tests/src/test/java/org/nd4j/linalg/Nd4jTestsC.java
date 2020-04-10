@@ -6193,24 +6193,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
-    public void testVectorGemv() {
-        val vectorL = Nd4j.create(new float[]{1, 2, 3}, new long[]{3, 1});
-        val vectorN = Nd4j.create(new float[]{1, 2, 3}, new long[]{3});
-        val matrix = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9}, new long[] {3, 3});
-
-//        log.info("vectorN: {}", vectorN);
-//        log.info("vectorL: {}", vectorL);
-
-        val outN = matrix.mmul(vectorN);
-        val outL = matrix.mmul(vectorL);
-
-        assertEquals(outL, outN.reshape(3,1));
-
-        assertEquals(1, outN.rank());
-    }
-
-
-    @Test
     public void testMatrixReshape() {
         val matrix = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9}, new long[] {3, 3});
         val exp = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9}, new long[] {9});

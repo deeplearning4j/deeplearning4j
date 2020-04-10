@@ -32,7 +32,7 @@ namespace ops       {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const bool transX, const bool transY) {
+static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const bool transX, const bool transY, float alpha = 1.f, float beta = 0.f) {
 
     // mkl works with following
     // [M,K]     x [K,N]     = [M,N]
@@ -150,6 +150,12 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
 
     // Create attributes (to handle alpha and beta if necessary)
     dnnl::primitive_attr attr; // it is empty since we have usual values for alpha (=1) and beta (=0)
+    if (alpha != 1.f) attr.set_output_scales(0, {alpha});
+    if (beta != 0.f) {
+        dnnl::post_ops po;
+        po.append_sum(beta);
+        attr.set_post_ops(po);
+    }
 
     // operation primitive description
     dnnl::matmul::desc op_desc(x_mkl_md, y_mkl_md, z_mkl_md);
@@ -224,10 +230,15 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     if(x->isEmpty() || y->isEmpty())
         return Status::OK();
 
-    const int iSize = (int) block.getIArguments()->size();
+    int iSize = (int) block.getIArguments()->size();
     int transX = iSize > 0 ? INT_ARG(0) : 0;
     int transY = iSize > 1 ? INT_ARG(1) : 0;
     const int transZ = iSize > 2 ? INT_ARG(2) : 0;
+
+    // optional use alpha nad beta
+    iSize = (int)block.getTArguments()->size();
+    float alpha = iSize > 0 ? T_ARG(0) : 1.0;
+    float beta = iSize > 1 ? T_ARG(1) : 0.0;
 
     const int xRank = x->rankOf();
     const int yRank = y->rankOf();
@@ -265,7 +276,7 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     }
     // ******* end of input validation ******* //
 
-    matmulMKLDNN(x, y, z, transX, transY);
+    matmulMKLDNN(x, y, z, transX, transY, alpha, beta);
 
     return Status::OK();
 }
@@ -276,14 +287,16 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
-    auto z = INPUT_VARIABLE(0);
+    auto z = OUTPUT_VARIABLE(0);
 
     const DataType xType = x->dataType();
     const DataType yType = y->dataType();
     const DataType zType = z->dataType();
 
+    float alpha = block.numT() > 0 ? T_ARG(0) : 1.0;
+    float beta = block.numT() > 1 ? T_ARG(1) : 0.0;
 
-    return block.isUseMKLDNN() && x->rankOf() < 3 &&
+    return !(z->ordering() == 'f' && beta != 0.f) && block.isUseMKLDNN() && x->rankOf() < 3 &&
           (
             (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
             (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||

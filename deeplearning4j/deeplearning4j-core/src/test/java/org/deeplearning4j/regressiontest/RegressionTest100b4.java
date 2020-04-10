@@ -70,6 +70,11 @@ import org.nd4j.resources.Resources;
 public class RegressionTest100b4 extends BaseDL4JTest {
 
     @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+    }
+
+    @Override
     public DataType getDataType() {
         return DataType.FLOAT;
     }
@@ -123,7 +128,8 @@ public class RegressionTest100b4 extends BaseDL4JTest {
 
             assertEquals(dtype, net.getLayerWiseConfigurations().getDataType());
             assertEquals(dtype, net.params().dataType());
-            assertEquals("Test for dtype: " + dtypeName, outExp, outAct);
+            boolean eq = outExp.equalsWithEps(outAct, 0.01);
+            assertTrue("Test for dtype: " + dtypeName + "\n" + outExp + " vs " + outAct, eq);
         }
     }
 

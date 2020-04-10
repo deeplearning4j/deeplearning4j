@@ -83,22 +83,7 @@ public class BlasTests extends BaseNd4jTest {
         try {
             Nd4j.gemm(a, b, view, false, false, 1.0, 0.0);
             fail("Expected exception");
-        } catch (IllegalStateException e) {
-            assertTrue(e.getMessage().contains("view"));
-        }
-    }
-
-    @Test
-    public void testGemmInvalid2() {
-        final INDArray a = Nd4j.rand(4, 3);
-        final INDArray b = Nd4j.rand(4, 5);
-
-        final INDArray target = Nd4j.zeros(3, 5, 'c');
-
-        try {
-            Nd4j.gemm(a, b, target, true, false, 1.0, 0.0);
-            fail("Expected exception");
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("view"));
         }
     }
@@ -114,7 +99,7 @@ public class BlasTests extends BaseNd4jTest {
         try {
             Nd4j.gemm(a, b, view, true, false, 1.0, 0.0);
             fail("Expected exception");
-        } catch (IllegalStateException e) {
+        } catch (IllegalArgumentException e) {
             assertTrue(e.getMessage().contains("view"));
         }
     }

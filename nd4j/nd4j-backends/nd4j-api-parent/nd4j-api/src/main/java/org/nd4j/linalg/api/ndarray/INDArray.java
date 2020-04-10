@@ -1233,6 +1233,14 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray mmul(INDArray other);
 
     /**
+     * Perform a copy matrix multiplication
+     * @param other other the other matrix to perform matrix multiply with
+     * @param resultOrder either C or F order for result array
+     * @return the result of the matrix multiplication
+     */
+    INDArray mmul(INDArray other, char resultOrder);
+
+    /**
      * Convert this ndarray to a 2d double matrix.
      * Note that THIS SHOULD NOT BE USED FOR SPEED.
      * This is mainly used for integrations with other libraries.

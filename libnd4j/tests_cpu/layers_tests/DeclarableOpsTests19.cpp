@@ -39,6 +39,97 @@ public:
     }
 };
 
+TEST_F(DeclarableOpsTests19, test_matmul_ccc) {
+    auto x = NDArrayFactory::create<float>('c', {10, 10});
+    auto y = NDArrayFactory::create<float>('c', {10, 10});
+    auto e = NDArrayFactory::create<float>('c', {10, 10});
+    auto z = NDArrayFactory::create<float>('c', {10, 10});
+
+    z.assign(100.f);
+    e.assign(110.f);
+    x.assign(1.0f);
+    y.assign(1.0f);
+
+    sd::ops::matmul op;
+    auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests19, test_matmul_fcf) {
+    auto x = NDArrayFactory::create<float>('f', {10, 10});
+    auto y = NDArrayFactory::create<float>('c', {10, 10});
+    auto e = NDArrayFactory::create<float>('f', {10, 10});
+    auto z = NDArrayFactory::create<float>('f', {10, 10});
+
+    z.assign(100.f);
+    e.assign(110.f);
+    x.assign(1.0f);
+    y.assign(1.0f);
+
+    sd::ops::matmul op;
+    auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests19, test_matmul_cff) {
+    auto x = NDArrayFactory::create<float>('c', {10, 10});
+    auto y = NDArrayFactory::create<float>('f', {10, 10});
+    auto e = NDArrayFactory::create<float>('f', {10, 10});
+    auto z = NDArrayFactory::create<float>('f', {10, 10});
+
+    z.assign(100.f);
+    e.assign(110.f);
+    x.assign(1.0f);
+    y.assign(1.0f);
+
+    sd::ops::matmul op;
+    auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
+
+TEST_F(DeclarableOpsTests19, test_matmul_ccf) {
+    auto x = NDArrayFactory::create<float>('c', {10, 10});
+    auto y = NDArrayFactory::create<float>('c', {10, 10});
+    auto e = NDArrayFactory::create<float>('f', {10, 10});
+    auto z = NDArrayFactory::create<float>('f', {10, 10});
+
+    z.assign(100.f);
+    e.assign(110.f);
+    x.assign(1.0f);
+    y.assign(1.0f);
+
+    sd::ops::matmul op;
+    auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests19, test_matmul_fff) {
+    auto x = NDArrayFactory::create<float>('f', {10, 10});
+    auto y = NDArrayFactory::create<float>('f', {10, 10});
+    auto e = NDArrayFactory::create<float>('f', {10, 10});
+    auto z = NDArrayFactory::create<float>('f', {10, 10});
+
+    z.assign(100.f);
+    e.assign(110.f);
+    x.assign(1.0f);
+    y.assign(1.0f);
+
+    sd::ops::matmul op;
+    auto status = op.execute({&x, &y}, {&z}, {1.0, 1.0});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
 TEST_F(DeclarableOpsTests19, test_conv1d_bp_1) {
     /*
     DynamicCustomOp op = DynamicCustomOp.builder("conv1d_bp")
