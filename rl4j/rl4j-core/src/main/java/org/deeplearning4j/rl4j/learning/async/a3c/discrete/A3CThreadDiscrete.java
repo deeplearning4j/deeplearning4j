@@ -18,11 +18,7 @@
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
 import lombok.Getter;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
-import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
-import org.deeplearning4j.rl4j.learning.async.MiniTrans;
+import org.deeplearning4j.rl4j.learning.async.*;
 import org.deeplearning4j.rl4j.learning.configuration.A3CLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -34,9 +30,7 @@ import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-
-import java.util.Stack;
+import org.nd4j.linalg.api.rng.Random;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/23/16.
@@ -67,6 +61,8 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         if(seed != null) {
             rnd.setSeed(seed + threadNumber);
         }
+
+        setUpdateAlgorithm(buildUpdateAlgorithm());
     }
 
     @Override
@@ -74,52 +70,9 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         return new ACPolicy(net, rnd);
     }
 
-    /**
-     *  calc the gradients based on the n-step rewards
-     */
     @Override
-    public Gradient[] calcGradient(IActorCritic iac, Stack<MiniTrans<Integer>> rewards) {
-        MiniTrans<Integer> minTrans = rewards.pop();
-
-        int size = rewards.size();
-
-        //if recurrent then train as a time serie with a batch size of 1
-        boolean recurrent = getAsyncGlobal().getCurrent().isRecurrent();
-
-        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
-                        : getHistoryProcessor().getConf().getShape();
-        int[] nshape = recurrent ? Learning.makeShape(1, shape, size)
-                        : Learning.makeShape(size, shape);
-
-        INDArray input = Nd4j.create(nshape);
-        INDArray targets = recurrent ? Nd4j.create(1, 1, size) : Nd4j.create(size, 1);
-        INDArray logSoftmax = recurrent ? Nd4j.zeros(1, getMdp().getActionSpace().getSize(), size)
-                        : Nd4j.zeros(size, getMdp().getActionSpace().getSize());
-
-        double r = minTrans.getReward();
-        for (int i = size - 1; i >= 0; i--) {
-            minTrans = rewards.pop();
-
-            r = minTrans.getReward() + conf.getGamma() * r;
-            if (recurrent) {
-                input.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(i)).assign(minTrans.getObs());
-            } else {
-                input.putRow(i, minTrans.getObs());
-            }
-
-            //the critic
-            targets.putScalar(i, r);
-
-            //the actor
-            double expectedV = minTrans.getOutput()[0].getDouble(0);
-            double advantage = r - expectedV;
-            if (recurrent) {
-                logSoftmax.putScalar(0, minTrans.getAction(), i, advantage);
-            } else {
-                logSoftmax.putScalar(i, minTrans.getAction(), advantage);
-            }
-        }
-
-        return iac.gradient(input, new INDArray[] {targets, logSoftmax});
+    protected UpdateAlgorithm<IActorCritic> buildUpdateAlgorithm() {
+        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape() : getHistoryProcessor().getConf().getShape();
+        return new A3CUpdateAlgorithm(asyncGlobal, shape, getMdp().getActionSpace().getSize(), conf.getLearnerUpdateFrequency(), conf.getGamma());
     }
 }

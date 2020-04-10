@@ -19,6 +19,7 @@ public class MockDQN implements IDQN {
     public final List<INDArray> outputParams = new ArrayList<>();
     public final List<Pair<INDArray, INDArray>> fitParams = new ArrayList<>();
     public final List<Pair<INDArray, INDArray>> gradientParams = new ArrayList<>();
+    public final List<INDArray> outputAllParams = new ArrayList<>();
 
     @Override
     public NeuralNetwork[] getNeuralNetworks() {
@@ -58,7 +59,8 @@ public class MockDQN implements IDQN {
 
     @Override
     public INDArray[] outputAll(INDArray batch) {
-        return new INDArray[0];
+        outputAllParams.add(batch);
+        return new INDArray[] { batch.mul(-1.0) };
     }
 
     @Override

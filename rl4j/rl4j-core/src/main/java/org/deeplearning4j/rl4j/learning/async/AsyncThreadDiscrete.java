@@ -18,9 +18,12 @@
 
 package org.deeplearning4j.rl4j.learning.async;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.experience.ExperienceHandler;
+import org.deeplearning4j.rl4j.experience.StateActionExperienceHandler;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -28,10 +31,6 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.Stack;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -45,12 +44,38 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
     @Getter
     private NN current;
 
-    public AsyncThreadDiscrete(IAsyncGlobal<NN> asyncGlobal, MDP<O, Integer, DiscreteSpace> mdp, TrainingListenerList listeners, int threadNumber, int deviceNum) {
+    @Setter(AccessLevel.PROTECTED)
+    private UpdateAlgorithm<NN> updateAlgorithm;
+
+    // TODO: Make it configurable with a builder
+    @Setter(AccessLevel.PROTECTED)
+    private ExperienceHandler experienceHandler = new StateActionExperienceHandler();
+
+    public AsyncThreadDiscrete(IAsyncGlobal<NN> asyncGlobal,
+                               MDP<O, Integer, DiscreteSpace> mdp,
+                               TrainingListenerList listeners,
+                               int threadNumber,
+                               int deviceNum) {
         super(asyncGlobal, mdp, listeners, threadNumber, deviceNum);
         synchronized (asyncGlobal) {
             current = (NN)asyncGlobal.getCurrent().clone();
         }
     }
+
+    // TODO: Add an actor-learner class and be able to inject the update algorithm
+    protected abstract UpdateAlgorithm<NN> buildUpdateAlgorithm();
+
+    @Override
+    public void setHistoryProcessor(IHistoryProcessor historyProcessor) {
+        super.setHistoryProcessor(historyProcessor);
+        updateAlgorithm = buildUpdateAlgorithm();
+    }
+
+    @Override
+    protected void preEpoch() {
+        experienceHandler.reset();
+    }
+
 
     /**
      * "Subepoch"  correspond to the t_max-step iterations
@@ -65,13 +90,11 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
         synchronized (getAsyncGlobal()) {
             current.copy(getAsyncGlobal().getCurrent());
         }
-        Stack<MiniTrans<Integer>> rewards = new Stack<>();
 
         Observation obs = sObs;
         IPolicy<O, Integer> policy = getPolicy(current);
 
-        Integer action;
-        Integer lastAction = getMdp().getActionSpace().noOp();
+        Integer action = getMdp().getActionSpace().noOp();
         IHistoryProcessor hp = getHistoryProcessor();
         int skipFrame = hp != null ? hp.getConf().getSkipFrame() : 1;
 
@@ -82,21 +105,15 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
         while (!getMdp().isDone() && getCurrentEpochStep() < lastStep) {
 
             //if step of training, just repeat lastAction
-            if (obs.isSkipped()) {
-                action = lastAction;
-            } else {
+            if (!obs.isSkipped()) {
                 action = policy.nextAction(obs);
             }
 
             StepReply<Observation> stepReply = getLegacyMDPWrapper().step(action);
             accuReward += stepReply.getReward() * getConf().getRewardFactor();
 
-            //if it's not a skipped frame, you can do a step of training
             if (!obs.isSkipped()) {
-
-                INDArray[] output = current.outputAll(obs.getData());
-                rewards.add(new MiniTrans(obs.getData(), action, output, accuReward));
-
+                experienceHandler.addExperience(obs, action, accuReward, stepReply.isDone());
                 accuReward = 0;
             }
 
@@ -104,29 +121,14 @@ public abstract class AsyncThreadDiscrete<O, NN extends NeuralNet>
             reward += stepReply.getReward();
 
             incrementStep();
-            lastAction = action;
         }
 
-        //a bit of a trick usable because of how the stack is treated to init R
-        // FIXME: The last element of minitrans is only used to seed the reward in calcGradient; observation, action and output are ignored.
-
-        if (getMdp().isDone() && getCurrentEpochStep() < lastStep)
-            rewards.add(new MiniTrans(obs.getData(), null, null, 0));
-        else {
-            INDArray[] output = null;
-            if (getConf().getLearnerUpdateFrequency() == -1)
-                output = current.outputAll(obs.getData());
-            else synchronized (getAsyncGlobal()) {
-                output = getAsyncGlobal().getTarget().outputAll(obs.getData());
-            }
-            double maxQ = Nd4j.max(output[0]).getDouble(0);
-            rewards.add(new MiniTrans(obs.getData(), null, output, maxQ));
+        if (getMdp().isDone() && getCurrentEpochStep() < lastStep) {
+            experienceHandler.setFinalObservation(obs);
         }
 
-        getAsyncGlobal().enqueue(calcGradient(current, rewards), getCurrentEpochStep());
+        getAsyncGlobal().enqueue(updateAlgorithm.computeGradients(current, experienceHandler.generateTrainingBatch()), getCurrentEpochStep());
 
         return new SubEpochReturn(getCurrentEpochStep() - stepAtStart, obs, reward, current.getLatestScore());
     }
-
-    public abstract Gradient[] calcGradient(NN nn, Stack<MiniTrans<Integer>> rewards);
 }

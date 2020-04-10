@@ -60,31 +60,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
                 extends SyncLearning<O, A, AS, IDQN>
                 implements TargetQNetworkSource, EpochStepCounter {
 
-    // FIXME Changed for refac
-    // @Getter
-    // final private IExpReplay<A> expReplay;
-    @Getter
-    @Setter(AccessLevel.PROTECTED)
-    protected IExpReplay<A> expReplay;
-
     protected abstract LegacyMDPWrapper<O, A, AS> getLegacyMDPWrapper();
-
-    public QLearning(QLearningConfiguration conf) {
-        this(conf, getSeededRandom(conf.getSeed()));
-    }
-
-    public QLearning(QLearningConfiguration conf, Random random) {
-        expReplay = new ExpReplay<>(conf.getExpRepMaxSize(), conf.getBatchSize(), random);
-    }
-
-    private static Random getSeededRandom(Long seed) {
-        Random rnd = Nd4j.getRandom();
-        if(seed != null) {
-            rnd.setSeed(seed);
-        }
-
-        return rnd;
-    }
 
     protected abstract EpsGreedy<O, A, AS> getEgPolicy();
 
