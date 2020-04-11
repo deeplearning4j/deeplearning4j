@@ -30,6 +30,7 @@ import org.nd4j.enums.DataFormat;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.enums.ImageResizeMethods;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -2057,7 +2058,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
         SDVariable crelu = new CReLU(sd, in).outputVariable();
         INDArray expected = Nd4j.concat(1, Nd4j.nn.relu(inputArr, 0), Nd4j.nn.relu(inputArr.neg(), 0));
-
 
         OpValidation.validate(new TestCase(sd)
                 .expectedOutput("crelu", expected)

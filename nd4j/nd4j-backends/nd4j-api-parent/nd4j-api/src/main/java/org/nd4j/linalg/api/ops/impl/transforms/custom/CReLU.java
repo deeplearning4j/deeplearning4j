@@ -36,8 +36,8 @@ public class CReLU extends DynamicCustomOp {
         super(sd, new SDVariable[]{input});
     }
 
-    public CReLU(@NonNull INDArray input, INDArray output) {
-        super(new INDArray[]{input}, wrapOrNull(output));
+    public CReLU(@NonNull INDArray input) {
+        super(new INDArray[]{input}, null);
 
     }
 

@@ -31,6 +31,30 @@ public class SDNN extends SDOps {
   }
 
   /**
+   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable cReLU(SDVariable x) {
+    SDValidation.validateNumerical("CReLU", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(sd,x).outputVariable();
+  }
+
+  /**
+   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable cReLU(String name, SDVariable x) {
+    SDValidation.validateNumerical("CReLU", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Neural network batch normalization operation.<br>
    * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a><br>
    *
