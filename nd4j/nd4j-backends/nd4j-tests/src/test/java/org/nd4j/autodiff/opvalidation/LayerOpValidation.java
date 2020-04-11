@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -33,9 +34,16 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMActivations;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.LSTMLayerOutputs;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1502,4 +1510,170 @@ public class LayerOpValidation extends BaseOpValidation {
 
 
     }
+
+
+    @Test
+    public void LSTMLayerTestCase1() {
+
+        int bS = 5;
+        int nIn = 3;
+        int numUnits = 7;
+        int sL = 10; //small just for test
+
+        SameDiff sd = SameDiff.create();
+
+        // notations:
+        // bS - batch size, numExamples
+        // sL - sequence length, number of time steps, timeLength
+        // nIn - input size, inOutSize
+
+        //  TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"<br>
+        //  NST: shape [numExamples, inOutSize, timeLength]<br>
+        //  NTS: shape [numExamples, timeLength, inOutSize]<br>
+        //  for bidirectional:
+        //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
+
+
+        SDVariable in = sd.var("in", Nd4j.rand(DataType.FLOAT, bS, nIn, sL));
+
+
+        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
+        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
+
+        LSTMLayerConfig c = LSTMLayerConfig.builder()
+                .lstmdataformat(LSTMDataFormat.NST)
+                .directionMode(LSTMDirectionMode.FWD)
+                .gateAct(LSTMActivations.SIGMOID)
+                .cellAct(LSTMActivations.TANH)
+                .outAct(LSTMActivations.TANH)
+                .retFullSequence(true)
+                .retLastC(true)
+                .retLastH(true)
+                .build();
+
+        LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(
+                in, cLast, yLast, null,
+                LSTMLayerWeights.builder()
+                        .weights(sd.var("weights", Nd4j.rand(DataType.FLOAT, nIn, 4 * numUnits)))
+                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.FLOAT, numUnits, 4 * numUnits)))
+                        .peepholeWeights(sd.var("inputPeepholeWeights", Nd4j.rand(DataType.FLOAT, 3 * numUnits)))
+                        .bias(sd.var("bias", Nd4j.rand(DataType.FLOAT, 4 * numUnits))).build(),
+                c), c);
+
+        long[] out = new long[]{bS, numUnits, sL};
+        long[] hL = new long[]{bS, numUnits};
+        long[] cL = new long[]{bS, numUnits};
+
+        assertArrayEquals(out, outputs.getOutput().eval().shape());
+        assertArrayEquals(hL, outputs.getLastOutput().eval().shape());
+        assertArrayEquals(cL, outputs.getLastState().eval().shape());
+
+
+    }
+
+
+    @Test @Ignore //AB 2020/04/08 - https://github.com/eclipse/deeplearning4j/issues/8824
+    public void LSTMLayerTestCase2() {
+        int bS = 5;
+        int nIn = 3;
+        int numUnits = 7;
+        int sL = 10; //small just for test
+
+        SameDiff sd = SameDiff.create();
+
+        // notations:
+        // bS - batch size, numExamples
+        // sL - sequence length, number of time steps, timeLength
+        // nIn - input size, inOutSize
+
+        //  TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"<br>
+        //  NST: shape [numExamples, inOutSize, timeLength]<br>
+        //  NTS: shape [numExamples, timeLength, inOutSize]<br>
+        //  for bidirectional:
+        //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
+        SDVariable in = sd.var("in", Nd4j.rand(DataType.FLOAT, sL, bS, nIn));
+
+
+        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
+        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
+
+        LSTMLayerConfig c = LSTMLayerConfig.builder()
+                .lstmdataformat(LSTMDataFormat.TNS)
+                .directionMode(LSTMDirectionMode.FWD)
+                .gateAct(LSTMActivations.SIGMOID)
+                .cellAct(LSTMActivations.TANH)
+                .outAct(LSTMActivations.TANH)
+                .retFullSequence(true)
+                .retLastC(false)
+                .retLastH(false)
+                .build();
+
+        LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(
+                in, cLast, yLast, null,
+                LSTMLayerWeights.builder()
+                        .weights(sd.var("weights", Nd4j.rand(DataType.FLOAT, nIn, 4 * numUnits)))
+                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.FLOAT, numUnits, 4 * numUnits)))
+                        .build(),
+                c), c);
+
+
+        long[] out = new long[]{sL, bS, numUnits};
+        assertArrayEquals(out, outputs.getOutput().eval().shape());
+
+    }
+
+    @Test @Ignore //AB 2020/04/08 - https://github.com/eclipse/deeplearning4j/issues/8824
+    public void LSTMLayerTestCase3() {
+        int bS = 5;
+        int nIn = 3;
+        int numUnits = 7;
+        int sL = 10; //small just for test
+
+        SameDiff sd = SameDiff.create();
+
+        // notations:
+        // bS - batch size, numExamples
+        // sL - sequence length, number of time steps, timeLength
+        // nIn - input size, inOutSize
+
+        //  TNS: shape [timeLength, numExamples, inOutSize] - sometimes referred to as "time major"<br>
+        //  NST: shape [numExamples, inOutSize, timeLength]<br>
+        //  NTS: shape [numExamples, timeLength, inOutSize]<br>
+        //  for bidirectional:
+        //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
+        SDVariable in = sd.var("in", Nd4j.rand(DataType.FLOAT, bS, sL, nIn));
+
+
+        // when directionMode >= 2 (BIDIR_CONCAT=3)
+        // Wx, Wr [2, nIn, 4*nOut]
+        // hI, cI [2, bS, nOut]
+        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, 2, bS, numUnits));
+        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, 2, bS, numUnits));
+
+        LSTMLayerConfig c = LSTMLayerConfig.builder()
+                .lstmdataformat(LSTMDataFormat.NTS)
+                .directionMode(LSTMDirectionMode.BIDIR_CONCAT)
+                .gateAct(LSTMActivations.SIGMOID)
+                .cellAct(LSTMActivations.SOFTPLUS)
+                .outAct(LSTMActivations.SOFTPLUS)
+                .retFullSequence(true)
+                .retLastC(false)
+                .retLastH(false)
+                .build();
+
+        LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(new String[]{"out"},
+                in, cLast, yLast, null,
+                LSTMLayerWeights.builder()
+                        .weights(sd.var("weights", Nd4j.rand(DataType.FLOAT, 2, nIn, 4 * numUnits)))
+                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.FLOAT, 2, numUnits, 4 * numUnits)))
+                        .build(),
+                c), c);
+
+
+        long[] out = new long[]{bS, sL, 2 * numUnits};
+
+        assertArrayEquals(out, outputs.getOutput().eval().shape());
+    }
+
+
 }
