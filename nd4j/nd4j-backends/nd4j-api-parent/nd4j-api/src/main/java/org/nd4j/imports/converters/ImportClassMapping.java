@@ -412,6 +412,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixInverse.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixSetDiag.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Max.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.MaximumBp.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Min.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.MirrorPad.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention.class,

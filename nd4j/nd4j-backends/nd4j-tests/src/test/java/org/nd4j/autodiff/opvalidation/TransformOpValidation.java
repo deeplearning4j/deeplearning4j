@@ -2132,4 +2132,24 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
     }
-}
+
+
+    @Test
+    public void testMaximumBp() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable inputX = sd.var(Nd4j.rand(1, 2, 3));
+        SDVariable inputY = sd.var(Nd4j.rand(1, 2, 3));
+
+
+        SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sd, inputX, inputY).outputVariable();
+        OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+
+
+    }
+
+
+    }
+

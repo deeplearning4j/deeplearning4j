@@ -73,12 +73,7 @@ public class Max extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        //TODO Switch to maximum_bp op - https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/broadcastable/maximum.cpp
-        SDVariable max = outputVariables()[0];
-        SDVariable eq1 = sameDiff.eq(larg(), max).castTo(arg(0).dataType());
-        SDVariable eq2 = sameDiff.eq(rarg(), max).castTo(arg(1).dataType());
-
-        return Arrays.asList(eq1.mul(f1.get(0)), eq2.mul(f1.get(0)));
+        return Arrays.asList(new MaximumBp(sameDiff, arg(0), arg(1), f1.get(0)).outputVariables());
     }
 
     @Override
