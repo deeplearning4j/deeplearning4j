@@ -44,6 +44,8 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
+import org.nd4j.linalg.api.ops.impl.shape.MergeAvg;
+import org.nd4j.linalg.api.ops.impl.shape.MergeMax;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm;
@@ -2160,8 +2162,41 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable inputY = sd.var(Nd4j.rand(2, 3));
         SDVariable inputZ = sd.var(Nd4j.rand(2, 3));
         SDVariable out = new MergeAddOp(sd, new SDVariable[]{inputX, inputY, inputZ}).outputVariable();
-
+        out.markAsLoss();
                 OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+
+
+    }
+
+    @Test
+    public void testMergeMaxBp() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable inputX = sd.var(Nd4j.rand(2, 3));
+        SDVariable inputY = sd.var(Nd4j.rand(2, 3));
+        SDVariable inputZ = sd.var(Nd4j.rand(2, 3));
+        SDVariable out = new MergeMax(sd, new SDVariable[]{inputX, inputY, inputZ}).outputVariable();
+        out.markAsLoss();
+        OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+
+
+    }
+
+
+    @Test
+    public void testMergeAvgBp() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable inputX = sd.var(Nd4j.rand(2, 3));
+        SDVariable inputY = sd.var(Nd4j.rand(2, 3));
+        SDVariable inputZ = sd.var(Nd4j.rand(2, 3));
+        SDVariable out = new MergeAvg(sd, new SDVariable[]{inputX, inputY, inputZ}).outputVariable();
+        out.markAsLoss();
+        OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
 
 

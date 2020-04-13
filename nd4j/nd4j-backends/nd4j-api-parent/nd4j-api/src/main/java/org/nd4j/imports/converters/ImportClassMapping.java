@@ -323,7 +323,9 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.shape.Transpose.class,
             org.nd4j.linalg.api.ops.impl.shape.Unstack.class,
             org.nd4j.linalg.api.ops.impl.shape.ZerosLike.class,
-            org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp.class,
+            org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp.class
+            org.nd4j.linalg.api.ops.impl.shape.bp.MergeMaxBp.class,
+            org.nd4j.linalg.api.ops.impl.shape.bp.MergeAvgBp.class,
             org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp.class,
             org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp.class,
             org.nd4j.linalg.api.ops.impl.shape.bp.TileBp.class,
@@ -504,6 +506,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RDivBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RSubBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SquaredDifferenceBpOp.class,
+            org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not.class,

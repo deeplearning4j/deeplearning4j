@@ -75,7 +75,7 @@ public class MergeAddOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-         return Arrays.asList(new MergeAddBp(sameDiff, args(), i_v.get(0)).outputVariable());
+         return Arrays.asList(new MergeAddBp(sameDiff, args(), i_v.get(0)).outputVariables());
 
     }
 

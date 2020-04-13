@@ -1,4 +1,4 @@
-package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp;
+package org.nd4j.linalg.api.ops.impl.shape.bp;
 
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -9,19 +9,19 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-@NoArgsConstructor
-public class MergeAddBp extends DynamicCustomOp {
 
-    public MergeAddBp(SameDiff sameDiff, @NonNull SDVariable[] inputs, @NonNull SDVariable gradO) {
-        super("mergeadd_bp", sameDiff, ArrayUtils.add(inputs, gradO));
+@NoArgsConstructor
+public class MergeMaxBp extends DynamicCustomOp {
+
+    public MergeMaxBp(SameDiff sameDiff, @NonNull SDVariable[] inputs, @NonNull SDVariable gradO) {
+        super("mergemax_bp", sameDiff, ArrayUtils.add(inputs, gradO));
     }
 
     @Override
     public String opName() {
-        return "mergeadd_bp";
+        return "mergemax_bp";
     }
 
     @Override
