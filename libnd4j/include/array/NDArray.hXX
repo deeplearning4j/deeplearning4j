@@ -403,7 +403,6 @@ NDArray::NDArray(const std::u32string& u32string, sd::DataType dtype, sd::Launch
 
 /////////////////////////////////////////////////////////////////////////
 // u8 string constructors
-/////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const std::string& str, sd::DataType dtype, sd::LaunchContext* context) {
 
     if (!DataTypeUtils::isS(dtype)) {

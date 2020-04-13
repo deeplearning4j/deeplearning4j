@@ -47,13 +47,13 @@ class ND4J_EXPORT GradCheck {
         *  opBP - back propagation operation
         *  argsHolderFF - argument holder for feed forward operation
         *  argsHolderBP - argument holder for back propagation operation
-        *  whatArrsToCheck - specifies what output gradient arrays to check, for example {0, 1, 0} means that only second output gradient array will be checked, default value is empty array which means to check all arrays
+        *  whatArrsToCheck - specifies what output gradient arrays to check, for example {0, 1, 0} means that only second output gradient array will be checked, default value is empty std::vector which means to check all arrays
         *  IdxRange - specifies indexes range over which array elements will be checked, for example {0.2, 0.7} means range [0.2*array_length, 0.7*array_length), default value is {0., 1.}
         *  loss - type of scalar loss function, it specifies what elements values will be filled into input gradient arrays automatically, default value is SUM
+        *  outArrsFFIdx - contains indexes of ff output arrays which are independent from each other, default means all are independent
         */
         static bool checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, const OpArgsHolder& argsHolderFF, const OpArgsHolder& argsHolderBP,
-                              const std::vector<bool>& whatArrsToCheck = std::vector<bool>(), const std::vector<double>& IdxRange = {0., 1.}, const LossFunc loss = SUM);
-
+                              const std::vector<bool>& whatArrsToCheck = std::vector<bool>(), const std::vector<double>& IdxRange = {0., 1.}, const LossFunc loss = SUM, const std::vector<int>& outArrsFFIdx = {});
 };
 
 

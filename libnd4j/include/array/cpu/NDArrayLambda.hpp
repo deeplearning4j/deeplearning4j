@@ -10,7 +10,7 @@ void NDArray::applyTriplewiseLambda(NDArray& second, NDArray& third, const std::
         throw std::runtime_error("NDArray::applyTriplewiseLambda<T> method: bother four arrays (this, second, third, target) should have the same type !");
 
     if (this->lengthOf() != second.lengthOf() || this->lengthOf() != third.lengthOf() || !this->isSameShape(second) || !this->isSameShape(third)) {
-        nd4j_printf("applyPairwiseLambda requires both operands to have the same shape\n","");
+        nd4j_printf("applyTriplewiseLambda requires all operands to have the same shape\n","");
         throw std::runtime_error("Shapes mismach");
     }
 
