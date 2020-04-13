@@ -18,14 +18,19 @@ package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
 
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MaximumBp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.MergeAddBp;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -70,11 +75,8 @@ public class MergeAddOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        List<SDVariable> ret = new ArrayList<>();
-        for (int i = 0; i < args().length; i++)
-            ret.add(gradient);
-        return ret;
+         return Arrays.asList(new MergeAddBp(sameDiff, args(), i_v.get(0)).outputVariable());
+
     }
 
 

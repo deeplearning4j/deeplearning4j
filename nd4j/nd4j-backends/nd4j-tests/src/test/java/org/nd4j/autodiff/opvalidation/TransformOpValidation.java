@@ -50,6 +50,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -2139,12 +2140,28 @@ public class TransformOpValidation extends BaseOpValidation {
 
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
-        SDVariable inputX = sd.var(Nd4j.rand(1, 2, 3));
-        SDVariable inputY = sd.var(Nd4j.rand(1, 2, 3));
+        SDVariable inputX = sd.var(Nd4j.rand(2, 3));
+        SDVariable inputY = sd.var(Nd4j.rand(2, 3));
 
 
         SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sd, inputX, inputY).outputVariable();
         OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+
+
+    }
+
+    @Test
+    public void testMergeAddBp() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable inputX = sd.var(Nd4j.rand(2, 3));
+        SDVariable inputY = sd.var(Nd4j.rand(2, 3));
+        SDVariable inputZ = sd.var(Nd4j.rand(2, 3));
+        SDVariable out = new MergeAddOp(sd, new SDVariable[]{inputX, inputY, inputZ}).outputVariable();
+
+                OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
 
 
