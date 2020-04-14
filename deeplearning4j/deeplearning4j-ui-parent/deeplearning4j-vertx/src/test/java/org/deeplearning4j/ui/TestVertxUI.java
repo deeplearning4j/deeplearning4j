@@ -58,6 +58,11 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public class TestVertxUI extends BaseDL4JTest {
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 600_000L;
+    }
+
     @Before
     public void setUp() throws Exception {
         UIServer.stopInstance();
@@ -72,7 +77,7 @@ public class TestVertxUI extends BaseDL4JTest {
         VertxUIServer uiServer = (VertxUIServer) UIServer.getInstance();
         assertEquals(9000, uiServer.getPort());
         uiServer.stop();
-        VertxUIServer vertxUIServer = new VertxUIServer();
+//        VertxUIServer vertxUIServer = new VertxUIServer();
 //        vertxUIServer.runMain(new String[] {"--uiPort", "9100", "-r", "true"});
 //
 //        assertEquals(9100, vertxUIServer.getPort());
@@ -340,6 +345,7 @@ public class TestVertxUI extends BaseDL4JTest {
         UIServer uiServer = UIServer.getInstance(true, null);
         assertTrue(uiServer.isMultiSession());
         uiServer.stop();
+
         uiServer = UIServer.getInstance(false, null);
         assertFalse(uiServer.isMultiSession());
     }

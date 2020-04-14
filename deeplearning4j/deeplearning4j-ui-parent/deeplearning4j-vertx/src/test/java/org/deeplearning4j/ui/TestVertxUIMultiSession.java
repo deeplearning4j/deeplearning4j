@@ -54,6 +54,11 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public class TestVertxUIMultiSession extends BaseDL4JTest {
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 600_000L;
+    }
+
     @Before
     public void setUp() throws Exception {
         UIServer.stopInstance();
@@ -182,7 +187,6 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore
     public void testUIAutoAttachDetach() throws Exception {
 
         long autoDetachTimeoutMillis = 30_000;
