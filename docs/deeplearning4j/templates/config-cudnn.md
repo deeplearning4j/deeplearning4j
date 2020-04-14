@@ -62,7 +62,7 @@ Alternatively, in the case of CUDA 10.2, cuDNN comes bundled with the "redist" p
 	 <dependency>
 	     <groupId>org.bytedeco</groupId>
 	     <artifactId>cuda-platform-redist</artifactId>
-	     <version>10.2-7.6-1.5.2</version>
+	     <version>10.2-7.6-1.5.3</version>
 	 </dependency>
 
 Also note that, by default, Deeplearning4j will use the fastest algorithms available according to cuDNN, but memory usage may be excessive, causing strange launch errors. When this happens, try to reduce memory usage by using the [`NO_WORKSPACE` mode settable via the network configuration](/api/{{page.version}}/org/deeplearning4j/nn/conf/layers/ConvolutionLayer.Builder.html#cudnnAlgoMode-org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode-), instead of the default of `ConvolutionLayer.AlgoMode.PREFER_FASTEST`, for example:

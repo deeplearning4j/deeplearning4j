@@ -118,9 +118,9 @@ def pom_template():
 
     <properties>
         <maven-shade-plugin.version>3.0.0</maven-shade-plugin.version>
-        <javacpp.version>1.5</javacpp.version>
-        <javacpp-presets.version>1.5</javacpp-presets.version>
-        <openblas.version>0.3.5</openblas.version>
+        <javacpp.version>1.5.3</javacpp.version>
+        <javacpp-presets.version>1.5.3</javacpp-presets.version>
+        <openblas.version>0.3.9</openblas.version>
     </properties>
 
     <licenses>
