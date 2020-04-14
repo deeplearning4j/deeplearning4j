@@ -38,6 +38,11 @@ public class LogPoissonLoss extends BaseLoss {
         this(sameDiff, lossReduce, predictions, weights, labels, false);
     }
 
+    public LogPoissonLoss(SameDiff sameDiff, SDVariable labels, SDVariable predictions, SDVariable weights,
+                        LossReduce lossReduce, boolean full) {
+        this(sameDiff, lossReduce, predictions, weights, labels, full);
+    }
+
     public LogPoissonLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels, boolean full){
         super(sameDiff, lossReduce, predictions, weights, labels);
         this.full = full;

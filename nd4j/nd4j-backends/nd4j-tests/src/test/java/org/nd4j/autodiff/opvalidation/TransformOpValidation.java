@@ -26,6 +26,7 @@ import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.enums.DataFormat;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
@@ -249,8 +250,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
         int miniBatch = 128;
         int blockSize = 4;
-        String dataFormat = "NHWC";
-        int isNHWC = dataFormat.equals("NHWC") ? 1 : 0;
         int[] inputShape = new int[]{miniBatch, 2 * blockSize, 2 * blockSize, 1};
 
         INDArray input = Nd4j.randn(inputShape);
@@ -258,12 +257,13 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable sdInput = sd.var("in", inputShape);
 
         INDArray expOut = Nd4j.create(miniBatch, 2, 2, blockSize * blockSize);
-        DynamicCustomOp op = new SpaceToDepth(input, expOut, blockSize, dataFormat);
+        DynamicCustomOp op = new SpaceToDepth(input, expOut, blockSize, DataFormat.NHWC);
         Nd4j.getExecutioner().exec(op);
 
         sd.associateArrayWithVariable(input, sdInput);
 
-        SDVariable t = sd.cnn().spaceToDepth("std", sdInput, blockSize, dataFormat);
+        SDVariable t = sd.cnn().spaceToDepth("std", sdInput, blockSize, DataFormat.NHWC);
+                    //new SpaceToDepth(sd, sdInput, blockSize, dataFormat).outputVariable();
         SDVariable loss = sd.mean("loss", t);
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -278,8 +278,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
         int miniBatch = 128;
         int blockSize = 4;
-        String dataFormat = "NHWC";
-        int isNHWC = dataFormat.equals("NHWC") ? 1 : 0;
         int[] inputShape = new int[]{miniBatch, 2, 2, blockSize * blockSize};
 
         INDArray input = Nd4j.randn(inputShape);
@@ -287,13 +285,13 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable sdInput = sd.var("in", inputShape);
 
         INDArray expOut = Nd4j.create(miniBatch, 2 * blockSize, 2 * blockSize, 1);
-        DynamicCustomOp op = new DepthToSpace(input, expOut, blockSize, dataFormat);
+        DynamicCustomOp op = new DepthToSpace(input, expOut, blockSize, DataFormat.NHWC);
         Nd4j.getExecutioner().exec(op);
 
         sd.associateArrayWithVariable(input, sdInput);
 
-        SDVariable t = sd.cnn().depthToSpace("dts", sdInput, blockSize, dataFormat);
-        SDVariable loss = sd.mean("loss", t);
+        SDVariable t = sd.cnn().depthToSpace("dts", sdInput, blockSize, DataFormat.NHWC);
+         SDVariable loss = sd.mean("loss", t);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("dts", expOut)
@@ -329,7 +327,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         sd.associateArrayWithVariable(input, sdInput);
 
-        SDVariable t = sd.cnn().batchToSpace("bts", sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
+        SDVariable t = sd.cnn().batchToSpace("bts", sdInput, new int[]{2, 2}, new int[]{0, 0}, new int[]{0, 0});
         SDVariable loss = sd.mean("loss", t);
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -367,7 +365,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         sd.associateArrayWithVariable(input, sdInput);
 
-        SDVariable t = sd.cnn().spaceToBatch("stb", sdInput, new int[]{2, 2}, new int[][]{{0, 0}, {0, 0}});
+        SDVariable t = sd.cnn().spaceToBatch("stb", sdInput, new int[]{2, 2}, new int[]{0, 0}, new int[]{0, 0});
         SDVariable loss = sd.mean("loss", t);
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -520,7 +518,7 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testEye(){
         int[] rows = new int[]{3,3,3,3};
         int[] cols = new int[]{3,2,2,2};
-        int[][] batch = new int[][]{null, null, {4}, {3,3}};
+        int[][] batch = new int[][]{{}, {}, {4}, {3,3}};
         INDArray[] expOut = new INDArray[4];
 
         expOut[0] = Nd4j.eye(3).castTo(DataType.DOUBLE);
@@ -689,7 +687,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 23:
                     //TODO SHOULDN'T THIS HAVE A DIMENSION ARG???
-                    t = sd.nn().softmax(in);
+                    t = sd.nn().softmax(in,-1);
                     ia = Nd4j.rand(DataType.DOUBLE, minibatch, nOut);
                     tc.expectedOutput(t.name(), Nd4j.getExecutioner().exec(new SoftMax(ia.dup()))[0]);
                     break;
@@ -987,7 +985,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 76:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
-                    t = sd.math().log(in, 10);
+                    t = sd.math().log(in,10);
                     tc.expected(t, Transforms.log(ia, 10, true));
                     break;
                 case 77:
@@ -1185,7 +1183,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expectedOutput(t.name(), Transforms.atan2(ib, ia));    //Note: y,x order for samediff; x,y order for transforms
                     break;
                 case 20:
-                    t = sd.math().mergeAdd(in1, in2, in2);
+                    t = sd.math().mergeAdd(new SDVariable[]{in1, in2, in2});
                     tc.expectedOutput(t.name(), ia.add(ib).add(ib));
                     break;
                 case 21:
@@ -1484,7 +1482,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable s = sd.var("in", in);
-        SDVariable padded = sd.nn().pad(s, sd.constant(pad), 10.0);
+        SDVariable padded = sd.f().pad(s, sd.constant(pad), Pad.Mode.CONSTANT,10.0);
         String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
         assertNull(err2);
     }
@@ -1518,7 +1516,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable s = sd.var("in", in);
-        SDVariable padded = sd.nn().pad("pad", s, sd.constant(Nd4j.createFromArray(new int[][]{{1,1},{2,2}})), Pad.Mode.REFLECT, 0.0);
+        SDVariable padded = sd.f().pad(s, sd.constant(Nd4j.createFromArray(new int[][]{{1,1},{2,2}})), Pad.Mode.REFLECT, 0.0);
         String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
         assertNull(err2);
     }
@@ -1922,7 +1920,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     SameDiff sd = SameDiff.create();
                     SDVariable sdA = sd.var("a", a);
                     SDVariable sdB = sd.var("b", b);
-                    SDVariable t = sd.mmul(sdA, sdB, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).transposeResult(transposeResult).build());
+                    SDVariable t = sd.mmul(sdA, sdB, transposeA, transposeB, transposeResult);
                     t.norm1("out");
 
                     String err = OpValidation.validate(new TestCase(sd)

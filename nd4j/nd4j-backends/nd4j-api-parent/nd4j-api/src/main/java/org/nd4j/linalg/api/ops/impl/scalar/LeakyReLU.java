@@ -50,6 +50,10 @@ public class LeakyReLU extends BaseScalarOp {
 
     }
 
+    public LeakyReLU(SameDiff sameDiff, SDVariable i_v, double alpha) {
+        this(sameDiff, i_v, false, alpha);
+    }
+
     public LeakyReLU(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, alpha, extraArgs);
         this.alpha = alpha;

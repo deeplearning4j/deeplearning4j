@@ -41,6 +41,11 @@ public class LogLoss extends BaseLoss {
         addTArgument(epsilon);
     }
 
+    public LogLoss(SameDiff sameDiff, SDVariable labels, SDVariable predictions, SDVariable weights,
+                   LossReduce lossReduce, double epsilon) {
+        this(sameDiff, lossReduce, predictions, weights, labels, epsilon);
+    }
+
     public LogLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce, double epsilon){
         super(lossReduce, predictions, weights, labels);
         this.epsilon = epsilon;

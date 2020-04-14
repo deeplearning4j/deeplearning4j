@@ -70,6 +70,7 @@ CUSTOM_OP_IMPL(log_loss, 3, 1, false, 1, 1) {
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
 			NDArray sum;
+			sum.setContext(block.launchContext());
 			if (weights->isScalar())
 				sum = *weights * E.lengthOf();
 			else
@@ -206,6 +207,7 @@ CUSTOM_OP_IMPL(log_loss_grad, 3, 3, false, 1, 1) {
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
 
 			NDArray sum;
+			sum.setContext(block.launchContext());
 			if (weights->isScalar())
 				sum = (*weights) * E.lengthOf();
 			else

@@ -791,7 +791,7 @@ public class Nd4j {
                                 boolean transposeB) {
         long cRows = (transposeA ? a.columns() : a.rows());
         long cCols = (transposeB ? b.rows() : b.columns());
-        INDArray c = Nd4j.createUninitialized(a.dataType(), new long[] {cRows, cCols}, 'f');
+        INDArray c = Nd4j.createUninitialized(a.dataType(), new long[] {cRows, cCols}, a.ordering() == 'c' && b.ordering() == 'c' ? 'c' : 'f');
         return gemm(a, b, c, transposeA, transposeB, 1.0, 0.0);
     }
 
@@ -817,12 +817,9 @@ public class Nd4j {
                                 boolean transposeB,
                                 double alpha,
                                 double beta) {
-        //Note: some views have non-zero offset but 'default' strides (these are OK). And a 'c' order vector such as [10,1] is OK - same buffer as an 'f' order vector with same shape
-        Preconditions.checkState(c.length() == 1 || c.ordering() == 'f' && Shape.hasDefaultStridesForShape(c) ||
-                        c.isVectorOrScalar() && c.elementWiseStride() == 1,
-                "C (result) array is not F order or is a view. Nd4j.gemm requires the result array to be F order " +
-                        "and not a view. C (result) array: [%ndSInfo]", c);
-        getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
+        Preconditions.checkArgument(c.elementWiseStride() == 1, "Nd4j.gemm() C array should NOT be a view");
+
+        Nd4j.exec(new Mmul(a, b, c, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
         return c;
     }
 

@@ -2374,7 +2374,7 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test4) {
     auto expected = NDArrayFactory::create<double>('c', {3, 3}, {0, 0, 0, 100, 0, 0, 0, 0, 200});
 
     sd::ops::confusion_matrix op;
-    auto results = op.evaluate({&labels, &predictions, &weights}, {}, {3, sd::DataType::DOUBLE});
+    auto results = op.evaluate({&labels, &predictions, &weights}, {}, {3}, {}, {sd::DataType::DOUBLE});
     auto output = results.at(0);
 
 
@@ -2432,18 +2432,36 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_3) {
 
     
 }
-
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, XWPlusB_1) {
 
-    auto x = NDArrayFactory::create<double>('c', {2,3}, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f});
-    auto y = NDArrayFactory::create<double>('c', {3,2}, { 11.f,  3.f, 4.f,  5.f, 6.f,  2.f});
-    auto b = NDArrayFactory::create<double>({100.f, 200.f});
+    auto x = NDArrayFactory::create<float>('c', { 2,3 }, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f });
+    auto y = NDArrayFactory::create<float>('c', { 3,2 }, { 11.f,  3.f, 4.f,  5.f, 6.f,  2.f });
+    auto b = NDArrayFactory::create<float>({ 100.f, 200.f });
 
-    auto exp = NDArrayFactory::create<double>('c', {2,2}, {173.f, 264.f, 310.f, 279.f});
+    auto exp = NDArrayFactory::create<float>('c', { 2,2 }, { 173.f, 264.f, 310.f, 279.f });
 
     sd::ops::xw_plus_b op;
-    auto result = op.evaluate({&x, &y, &b}, {}, {});
+    auto result = op.evaluate({ &x, &y, &b });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, XWPlusB_2) {
+
+    auto x = NDArrayFactory::create<float>('c', { 1, 2 }, { 1.f, 11.f });
+    auto y = NDArrayFactory::create<float>('c', { 2, 3 }, { 11.f,  3.f, 4.f,  5.f, 6.f,  2.f });
+    auto b = NDArrayFactory::create<float>({ 100.f, 200.f, 300.f });
+
+    auto exp = NDArrayFactory::create<float>('c', { 1, 3 }, { 166.f, 269.f, 326.f });
+
+    sd::ops::xw_plus_b op;
+    auto result = op.evaluate({ &x, &y, &b }, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
@@ -2452,9 +2470,107 @@ TEST_F(DeclarableOpsTests5, XWPlusB_1) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
 }
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, XWPlusB_3) {
 
+    auto x = NDArrayFactory::create<float>('c', { 1, 2 }, { 1.f, 11.f });
+    auto y = NDArrayFactory::create<float>('c', { 2, 1 }, { 11.f,  3.f });
+    auto b = NDArrayFactory::create<float>('c', { 1 }, { 200.f });
+
+    auto exp = NDArrayFactory::create<float>('c', { 1,1 }, { 244.f });
+
+    sd::ops::xw_plus_b op;
+    auto result = op.evaluate({ &x, &y, &b });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto output = result.at(0);
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, XWPlusB_4) {
+
+    auto x = NDArrayFactory::create<float>('f', { 2,3 }, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f });
+    auto y = NDArrayFactory::create<float>('f', { 3,2 }, { 11.f,  3.f, 4.f,  5.f, 6.f,  2.f });
+    auto b = NDArrayFactory::create<float>({ 100.f, 200.f });
+
+    auto exp = NDArrayFactory::create<float>('f', { 2,2 }, { 140.f, 287.f, 233.f,  351.f });
+
+    sd::ops::xw_plus_b op;
+    auto result = op.evaluate({ &x, &y, &b });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, XWPlusB_5) {
+
+    auto x = NDArrayFactory::create<float>('c', { 2,3 }, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f });
+    auto y = NDArrayFactory::create<float>('c', { 3,2 }, { 11.f,  3.f, 4.f,  5.f, 6.f,  2.f });
+
+    y = y.transpose();
+
+    auto b = NDArrayFactory::create<float>({ 100.f, 200.f });
+
+    auto exp = NDArrayFactory::create<float>('c', { 2,2 }, { 173.f, 264.f, 310.f, 279.f });
+
+
+    sd::ops::xw_plus_b op;
+    auto result = op.evaluate({ &x, &y, &b }, {}, { 1 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, XWPlusB_6) {
+
+    auto x = NDArrayFactory::create<float>('c', { 3, 2 }, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f });
+    auto y = NDArrayFactory::create<float>('c', { 2, 1 }, { 11.f,  3.f });
+
+    auto b = NDArrayFactory::create<float>('c', { 1 }, { 100.f });
+
+    auto exp = NDArrayFactory::create<float>('c', { 3, 1 }, { 144.f, 175.f, 173.f });
+
+    sd::ops::xw_plus_b op;
+    auto result = op.evaluate({ &x, &y, &b });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, XWPlusB_7) {
+
+    auto x = NDArrayFactory::create<float>('c', { 3, 4 }, { 1.f, 11.f,  3.f, 14.f,  5.f,  6.f, 1.f, 11.f,  3.f, 14.f,  5.f,  6.f });
+    auto y = NDArrayFactory::create<float>('c', { 4, 5 }, { 11.f,  3.f, 11.f,  3.f, 11.f,  3.f, 11.f,  3.f, 11.f,  3.f, 11.f,  3.f, 11.f,  3.f, 11.f,  3.f, 3.f, 11.f, 3.f, 11.f });
+
+    auto b = NDArrayFactory::create<float>('c', { 5 }, { 100.f, 200.f, 300.f, 400.f, 500.f });
+
+    auto exp = NDArrayFactory::create<float>('c', { 3, 5 }, { 219.f, 375.f, 531.f, 575.f, 731.f, 217.f, 317.f, 505.f, 517.f, 705.f, 248.f, 396.f, 496.f, 596.f, 696.f });
+
+    sd::ops::xw_plus_b op;
+    auto result = op.evaluate({ &x, &y, &b });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+}
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, StopGradient_1) {
 

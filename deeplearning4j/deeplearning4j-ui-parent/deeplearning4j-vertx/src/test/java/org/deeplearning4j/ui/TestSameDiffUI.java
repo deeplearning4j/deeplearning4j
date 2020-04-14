@@ -58,7 +58,7 @@ public class TestSameDiffUI extends BaseDL4JTest {
         SDVariable b = sd.var("b", DataType.FLOAT, 1, 4);
 
         SDVariable z = in.mmul(w).add(b);
-        SDVariable a = sd.nn().tanh(z);
+        SDVariable a = sd.math().tanh(z);
 
         LogFileWriter lfw = new LogFileWriter(f);
         lfw.writeGraphStructure(sd);

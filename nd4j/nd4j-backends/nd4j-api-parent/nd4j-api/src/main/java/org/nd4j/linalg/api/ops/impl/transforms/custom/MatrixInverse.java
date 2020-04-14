@@ -46,6 +46,9 @@ public class MatrixInverse extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{in}, inPlace);
     }
 
+    public MatrixInverse(SameDiff sameDiff, SDVariable in) {
+        this(sameDiff, in, false);
+    }
 
     @Override
     public String opName() {

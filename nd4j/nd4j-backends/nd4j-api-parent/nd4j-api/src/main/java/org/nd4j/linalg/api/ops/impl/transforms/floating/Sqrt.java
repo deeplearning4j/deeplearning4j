@@ -36,6 +36,10 @@ public class Sqrt extends BaseTransformFloatOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public Sqrt(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public Sqrt() {
     }
 

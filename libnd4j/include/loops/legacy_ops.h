@@ -253,7 +253,8 @@
         (45, ReversePow), \
         (46, DivideNoNan), \
         (47, IGamma), \
-        (48, IGammac)
+        (48, IGammac), \
+        (49, RELUDerivative)
 
 
 

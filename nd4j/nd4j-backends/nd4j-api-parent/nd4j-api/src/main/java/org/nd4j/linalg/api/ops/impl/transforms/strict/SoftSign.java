@@ -40,6 +40,10 @@ public class SoftSign extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public SoftSign(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v, false);
+    }
+
     public SoftSign() {
     }
 

@@ -27,17 +27,21 @@ import org.nd4j.autodiff.samediff.SameDiff;
  */
 public abstract class SDOps {
 
-    protected final SameDiff sd;
+  protected final SameDiff sd;
 
-    public SDOps(SameDiff sameDiff) {
-        this.sd = sameDiff;
-    }
+  public SDOps() {
+    sd = null;
+  }
 
-    protected DifferentialFunctionFactory f() {
-        return sd.f();
-    }
+  public SDOps(SameDiff sameDiff) {
+    this.sd = sameDiff;
+  }
 
-    protected SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName) {
-        return sd.updateVariableNameAndReference(varToUpdate, newVarName);
-    }
+  protected DifferentialFunctionFactory f() {
+    return sd.f();
+  }
+
+  protected SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName) {
+    return sd.updateVariableNameAndReference(varToUpdate, newVarName);
+  }
 }

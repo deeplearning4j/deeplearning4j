@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.weightinit.WeightInitScheme;
 
 import java.io.Serializable;
@@ -244,7 +245,7 @@ public class SDVariable implements Serializable {
      * @return new variable
      */
     public SDVariable assign(Number value){
-        return sameDiff.scalarSet(this, value);
+        return sameDiff.scalarSet(this, value.doubleValue());
     }
 
     /**
@@ -538,7 +539,7 @@ public class SDVariable implements Serializable {
      * @return Output variable (result of mmul)
      */
     public SDVariable mmul(String name, SDVariable other, @NonNull MMulTranspose mMulTranspose) {
-        return sameDiff.mmul(name, this, other, mMulTranspose);
+        return sameDiff.mmul(name, this, other, mMulTranspose.isTransposeA(), mMulTranspose.isTransposeB(), mMulTranspose.isTransposeResult());
     }
 
 
@@ -1403,7 +1404,7 @@ public class SDVariable implements Serializable {
      * @return Output variable
      */
     public SDVariable reshape(int... newShape){
-        return sameDiff.reshape(this, newShape);
+        return sameDiff.reshape(this, ArrayUtil.toLongArray(newShape));
     }
 
     /**

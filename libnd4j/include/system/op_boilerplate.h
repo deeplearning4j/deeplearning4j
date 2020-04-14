@@ -1446,7 +1446,21 @@
                                                                                 };\
                                                                                 REGISTER_H(NAME)
 
+#define DECLARE_BROADCASTABLE_BOOL_OP(NAME,TARGS, IARGS)                        class ND4J_EXPORT NAME: public sd::ops::BroadcastableBoolOp { \
+                                                                                protected: \
+                                                                                    void registerTypes(); \
+                                                                                    Nd4jStatus validateAndExecute(Context& block); \
+                                                                                public:\
+                                                                                    NAME(); \
+                                                                                };\
+                                                                                REGISTER_H(NAME)
+
+
 #define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                               NAME::NAME(): sd::ops::BroadcastableOp(#NAME, TARGS, IARGS) { }; \
+                                                                                REGISTER_C(NAME) \
+                                                                                Nd4jStatus sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+
+#define BROADCASTABLE_BOOL_OP_IMPL(NAME, TARGS, IARGS)                          NAME::NAME(): sd::ops::BroadcastableBoolOp(#NAME, TARGS, IARGS) { }; \
                                                                                 REGISTER_C(NAME) \
                                                                                 Nd4jStatus sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
 

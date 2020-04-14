@@ -36,6 +36,10 @@ public class Sigmoid extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public Sigmoid(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public Sigmoid() {
     }
 

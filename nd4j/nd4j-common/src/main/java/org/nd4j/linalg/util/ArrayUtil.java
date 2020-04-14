@@ -3579,4 +3579,19 @@ public class ArrayUtil {
         }
         return false;
     }
+
+    public static <T> T[] filterNull(T... in){
+        int count = 0;
+        for( int i=0; i<in.length; i++ ) {
+            if (in[i] != null) count++;
+        }
+        T[] out = (T[]) Array.newInstance(in.getClass().getComponentType(), count);
+        int j=0;
+        for( int i=0; i<in.length; i++ ){
+            if(in[i] != null){
+                out[j++] = in[i];
+            }
+        }
+        return out;
+    }
 }

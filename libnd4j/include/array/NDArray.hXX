@@ -403,7 +403,6 @@ NDArray::NDArray(const std::u32string& u32string, sd::DataType dtype, sd::Launch
 
 /////////////////////////////////////////////////////////////////////////
 // u8 string constructors
-/////////////////////////////////////////////////////////////////////////
 NDArray::NDArray(const std::string& str, sd::DataType dtype, sd::LaunchContext* context) {
 
     if (!DataTypeUtils::isS(dtype)) {
@@ -1944,7 +1943,7 @@ void NDArray::tilei(const std::vector<Nd4jLong>& reps) {
 Nd4jLong NDArray::sizeAt(const int dim) const {
 
     if (dim >= this->rankOf() || dim < -this->rankOf())
-        throw std::runtime_error("Bad size index requested");
+        throw std::runtime_error("NDArray::sizeAt: bad size index requested");
 
     if (dim >= 0)
         return shape::shapeOf(_shapeInfo)[dim];

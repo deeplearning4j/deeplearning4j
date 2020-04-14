@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
@@ -35,8 +36,16 @@ import java.util.List;
 @NoArgsConstructor
 public class InvertPermutation extends BaseDynamicTransformOp {
 
+    public InvertPermutation(SameDiff sameDiff, SDVariable input) {
+        this(sameDiff, input, false);
+    }
+
     public InvertPermutation(SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super( sameDiff, new SDVariable[] {input}, inPlace);
+    }
+
+    public InvertPermutation(INDArray input) {
+        addInputArgument(input);
     }
 
     @Override

@@ -185,7 +185,9 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
         final val R = paramTable.get(RECURRENT_WEIGHT_KEY);
         final val b = paramTable.get(BIAS_KEY);
 
-        SDVariable[] inputSlices = sameDiff.unstack(layerInput, 2);
+        long[] shape = layerInput.getShape();
+        Preconditions.checkState(shape != null, "Null shape for input placeholder");
+        SDVariable[] inputSlices = sameDiff.unstack(layerInput, 2, (int)shape[2]);
         this.timeSteps = inputSlices.length;
         SDVariable[] outputSlices = new SDVariable[timeSteps];
         SDVariable prev = null;

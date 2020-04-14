@@ -31,6 +31,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Map;
 
@@ -99,15 +100,15 @@ public class CapsuleLayer extends SameDiffLayer {
     }
 
     @Override
-    public SDVariable defineLayer(SameDiff SD, SDVariable input, Map<String, SDVariable> paramTable, SDVariable mask) {
+    public SDVariable defineLayer(SameDiff sd, SDVariable input, Map<String, SDVariable> paramTable, SDVariable mask) {
 
         // input: [mb, inputCapsules, inputCapsuleDimensions]
 
         // [mb, inputCapsules, 1, inputCapsuleDimensions, 1]
-        SDVariable expanded = SD.expandDims(SD.expandDims(input, 2), 4);
+        SDVariable expanded = sd.expandDims(sd.expandDims(input, 2), 4);
 
         // [mb, inputCapsules, capsules  * capsuleDimensions, inputCapsuleDimensions, 1]
-        SDVariable tiled = SD.tile(expanded, 1, 1, capsules * capsuleDimensions, 1, 1);
+        SDVariable tiled = sd.tile(expanded, 1, 1, capsules * capsuleDimensions, 1, 1);
 
         // [1, inputCapsules, capsules * capsuleDimensions, inputCapsuleDimensions]
         SDVariable weights = paramTable.get(WEIGHT_PARAM);
@@ -119,13 +120,13 @@ public class CapsuleLayer extends SameDiffLayer {
 
         // b is the logits of the routing procedure
         // [mb, inputCapsules, capsules, 1, 1]
-        SDVariable b = SD.zerosLike(uHat).get(SDIndex.all(), SDIndex.all(), SDIndex.all(), SDIndex.interval(0, 1), SDIndex.interval(0, 1));
+        SDVariable b = sd.zerosLike(uHat).get(SDIndex.all(), SDIndex.all(), SDIndex.all(), SDIndex.interval(0, 1), SDIndex.interval(0, 1));
 
         for(int i = 0 ; i < routings ; i++){
 
             // c is the coupling coefficient, i.e. the edge weight between the 2 capsules
             // [mb, inputCapsules, capsules, 1, 1]
-            SDVariable c = CapsuleUtils.softmax(SD, b, 2, 5);
+            SDVariable c = sd.nn.softmax(b, 2);
 
             // [mb, 1, capsules, capsuleDimensions, 1]
             SDVariable s = c.times(uHat).sum(true, 1);
@@ -135,14 +136,14 @@ public class CapsuleLayer extends SameDiffLayer {
 
             // v is the per capsule activations.  On the last routing iteration, this is output
             // [mb, 1, capsules, capsuleDimensions, 1]
-            SDVariable v = CapsuleUtils.squash(SD, s, 3);
+            SDVariable v = CapsuleUtils.squash(sd, s, 3);
 
             if(i == routings - 1){
-                return SD.squeeze(SD.squeeze(v, 1), 3);
+                return sd.squeeze(sd.squeeze(v, 1), 3);
             }
 
             // [mb, inputCapsules, capsules, capsuleDimensions, 1]
-            SDVariable vTiled = SD.tile(v, 1, (int) inputCapsules, 1, 1, 1);
+            SDVariable vTiled = sd.tile(v, 1, (int) inputCapsules, 1, 1, 1);
 
             // [mb, inputCapsules, capsules, 1, 1]
             b = b.plus(uHat.times(vTiled).sum(true, 3));

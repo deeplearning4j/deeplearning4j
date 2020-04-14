@@ -56,6 +56,10 @@ public class Sum extends BaseReduceSameOp {
         super(x, z, keepDims, dimensions);
     }
 
+    public Sum(INDArray x, boolean keepDims, int... dimensions) {
+        this(x, null, keepDims, dimensions);
+    }
+
     @Override
     public int opNum() {
         return 0;

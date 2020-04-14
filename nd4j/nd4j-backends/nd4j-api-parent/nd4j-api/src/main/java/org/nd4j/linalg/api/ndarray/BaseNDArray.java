@@ -2866,14 +2866,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray mmul(INDArray other) {
+    public INDArray mmul(INDArray other, char resultOrder) {
+        Preconditions.checkArgument(resultOrder == 'c' || resultOrder == 'f', "Order must be either 'c' or 'f', but [" + resultOrder + "] was given");
         Preconditions.checkState(this.dataType() == other.dataType(), "Matrix multiplication: arrays must have same dtype: %s vs. %s", this.dataType(), other.dataType());
-        // FIXME: for 1D case, we probably want vector output here?
-        long[] shape = {rows(), other.rank() == 1 ? 1 : other.columns()};
-        INDArray result = createUninitialized(this.dataType(), shape, 'f');
+        // FIXME: add support for 3D+ here?
+        long[] shape = other.rank() == 1 ? new long[]{rows()} : new long[]{rows(), other.columns()};
+        INDArray result = createUninitialized(this.dataType(), shape, resultOrder);
         if (result.isScalar())
             return Nd4j.scalar(this.dataType(), Nd4j.getBlasWrapper().dot(this, other)).reshape(1, 1);
         return mmuli(other, result);
+    }
+
+    @Override
+    public INDArray mmul(INDArray other) {
+        return mmul(other, (this.ordering() == 'f' && other.ordering() == 'f' && other.rank() != 1) ? 'f' : 'c');
     }
 
     protected INDArray create(int[] shape, char ordering) {

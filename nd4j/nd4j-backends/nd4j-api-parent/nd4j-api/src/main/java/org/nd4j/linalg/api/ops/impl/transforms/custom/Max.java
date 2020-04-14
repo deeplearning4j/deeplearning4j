@@ -52,6 +52,10 @@ public class Max extends BaseDynamicTransformOp {
         super(inputs, outputs);
     }
 
+    public Max( INDArray x, INDArray y) {
+        addInputArgument(x,y);
+    }
+
   @Override
     public String opName() {
         return "maximum";

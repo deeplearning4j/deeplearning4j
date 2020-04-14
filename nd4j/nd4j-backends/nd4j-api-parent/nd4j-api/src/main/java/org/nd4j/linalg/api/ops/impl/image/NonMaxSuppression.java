@@ -42,6 +42,13 @@ public class NonMaxSuppression extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{boxes, scores, maxOutSize, iouThreshold, scoreThreshold}, false);
     }
 
+    public NonMaxSuppression(SameDiff sameDiff, SDVariable boxes, SDVariable scores, int maxOutSize,
+                            double iouThreshold, double scoreThreshold) {
+        super(null, sameDiff, new SDVariable[]{boxes, scores}, false);
+        addIArgument(maxOutSize);
+        addTArgument(iouThreshold, scoreThreshold);
+    }
+
     public NonMaxSuppression(INDArray boxes, INDArray scores, int maxOutSize, double iouThreshold, double scoreThreshold) {
         addInputArgument(boxes,scores);
         addIArgument(maxOutSize);

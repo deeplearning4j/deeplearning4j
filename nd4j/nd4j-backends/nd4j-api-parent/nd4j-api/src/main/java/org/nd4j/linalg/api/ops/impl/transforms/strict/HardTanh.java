@@ -17,6 +17,8 @@
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import java.util.Collections;
+
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,12 +34,14 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class HardTanh extends BaseTransformStrictOp {
     public HardTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public HardTanh() {
+    public HardTanh(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
     public HardTanh(INDArray x, INDArray z) {

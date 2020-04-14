@@ -96,6 +96,11 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testLocalExecutionDataSources() throws Exception {
 
@@ -204,7 +209,7 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
                 .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
                 .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
-                .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                .terminationConditions(new MaxTimeCondition(30, TimeUnit.SECONDS),
                         new MaxCandidatesCondition(3))
                 .build();
 
@@ -251,7 +256,7 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(new TestMdsDataProvider(1, 32))
                 .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
-                .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                .terminationConditions(new MaxTimeCondition(30, TimeUnit.SECONDS),
                         new MaxCandidatesCondition(3))
                 .scoreFunction(ScoreFunctions.testSetAccuracy())
                 .build();

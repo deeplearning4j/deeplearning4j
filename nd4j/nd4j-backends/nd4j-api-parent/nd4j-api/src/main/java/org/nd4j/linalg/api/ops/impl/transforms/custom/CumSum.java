@@ -64,13 +64,16 @@ public class CumSum extends DynamicCustomOp {
     }
 
     public CumSum(INDArray in, INDArray result, boolean exclusive, boolean reverse, int... axis) {
-        super(null, new INDArray[]{in}, new INDArray[]{result}, null, (List<Integer>)null);
+        super(null, new INDArray[]{in}, wrapOrNull(result), null, (List<Integer>)null);
         this.exclusive = exclusive;
         this.reverse = reverse;
         this.jaxis = axis;
         addArgs();
     }
 
+    public CumSum(INDArray in, boolean exclusive, boolean reverse, int... axis) {
+        this(in, null, exclusive, reverse, axis);
+    }
 
     @Override
     public String opName() {

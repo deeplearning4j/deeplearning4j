@@ -44,6 +44,10 @@ public class IMin extends BaseIndexAccumulation {
         super(x, dimensions);
     }
 
+    public IMin(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
     public IMin(INDArray x, INDArray z, int... dimensions) {
         super(x, z, dimensions);
     }

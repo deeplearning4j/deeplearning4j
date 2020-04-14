@@ -61,7 +61,7 @@ public class OpsMappingTests extends BaseNd4jTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 180000L;     //Can be slow on some CI machines such as PPC
+        return 360000L;     //Can be very slow on some CI machines (PPC)
     }
 
     @Test

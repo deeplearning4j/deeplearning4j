@@ -791,24 +791,6 @@ TEST_F(DeclarableOpsTests4, Test_FloorTests_1) {
 
 }
 
-TEST_F(DeclarableOpsTests4, Test_Reshape_Again) {
-    auto x = NDArrayFactory::create<double>('c', {4, 3});
-    auto exp = NDArrayFactory::create<double>('c', {4, 3});
-
-    x.linspace(1);
-    exp.linspace(1);
-
-    sd::ops::reshape op;
-    auto result = op.evaluate({&x}, {-99, 4, 3});
-
-    auto z = result.at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-
-}
-
 TEST_F(DeclarableOpsTests4, Test_Split_1) {
     auto x = NDArrayFactory::create<double>('c', {5, 30});
     auto sizes = NDArrayFactory::create<int>('c', {1, 3}, {4, 15, 11});
@@ -1204,23 +1186,6 @@ TEST_F(DeclarableOpsTests4, Test_Add_119) {
     auto z = result.at(0);
 
     ASSERT_EQ(2, z->rankOf());
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-
-}
-
-TEST_F(DeclarableOpsTests4, Test_Reshape_Negative_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-    auto shape = NDArrayFactory::create<Nd4jLong>('c', {2}, {-1, 2});
-    auto exp = NDArrayFactory::create<double>('c', {4, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
-
-    sd::ops::reshape op;
-    auto result = op.evaluate({&x, &shape});
-    ASSERT_EQ(ND4J_STATUS_OK, result.status());
-
-    auto z = result.at(0);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

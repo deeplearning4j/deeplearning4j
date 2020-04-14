@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -49,6 +50,9 @@ public class BatchMmul extends DynamicCustomOp {
     protected int N;
     protected int K;
 
+    public BatchMmul(SameDiff sameDiff, SDVariable[] matricesA, SDVariable[] matricesB, boolean transposeA, boolean transposeB) {
+        this(sameDiff, ArrayUtils.addAll(matricesA, matricesB), transposeA, transposeB);
+    }
 
     public BatchMmul(SameDiff sameDiff,
                      SDVariable[] matrices,
@@ -82,6 +86,22 @@ public class BatchMmul extends DynamicCustomOp {
         this.N = transposeA ? (int) firstShape[0]: (int) firstShape[1];
         this.K = transposeB ? (int) lastShape[0]: (int) lastShape[1];
 
+        addArgs();
+    }
+
+    public BatchMmul(INDArray[] matricesA, INDArray[] matricesB, boolean transposeA, boolean transposeB){
+        super(ArrayUtils.addAll(matricesA, matricesB), null);
+        this.batchSize = matricesA.length;
+
+        this.transposeA = transposeA ? 1 : 0;
+        this.transposeB = transposeB ? 1 : 0;
+
+        long[] firstShape = matricesA[0].shape();
+        long[] lastShape = matricesB[0].shape();
+
+        this.M = transposeA ? (int) firstShape[1]: (int) firstShape[0];
+        this.N = transposeA ? (int) firstShape[0]: (int) firstShape[1];
+        this.K = transposeB ? (int) lastShape[0]: (int) lastShape[1];
         addArgs();
     }
 

@@ -44,6 +44,13 @@ public class BernoulliDistribution extends BaseRandomOp {
         this.extraArgs = new Object[] {this.prob};
     }
 
+    public BernoulliDistribution(SameDiff sd, double prob, DataType dataType, long[] shape){
+        this(sd, prob, shape);
+        this.prob = prob;
+        this.extraArgs = new Object[] {this.prob};
+        super.dataType = dataType;
+    }
+
     public BernoulliDistribution() {
         super();
     }
@@ -113,6 +120,6 @@ public class BernoulliDistribution extends BaseRandomOp {
         Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input datatypes (no args) for %s, got %s", getClass(), inputDataTypes);
         //Input data type specifies the shape; output data type should be any float
         //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
-        return Collections.singletonList(DataType.DOUBLE);
+        return Collections.singletonList(dataType);
     }
 }

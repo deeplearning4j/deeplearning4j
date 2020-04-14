@@ -47,10 +47,6 @@ public class AvgPooling3D extends Pooling3D {
         super(sameDiff, new SDVariable[]{input}, null, null, false, config, Pooling3DType.AVG);
     }
 
-    public AvgPooling3D(SameDiff sameDiff,INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
-        super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.AVG);
-    }
-
     public AvgPooling3D(@NonNull INDArray input, Pooling3DConfig pooling3DConfig) {
         super(null,null,new INDArray[]{input},null,false, pooling3DConfig, Pooling3DType.AVG);
     }

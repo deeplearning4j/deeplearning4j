@@ -33,6 +33,10 @@ import java.util.List;
 public class IsNumericTensor extends DynamicCustomOp {
     public IsNumericTensor() {}
 
+    public IsNumericTensor( SameDiff sameDiff, SDVariable args) {
+        this(sameDiff, new SDVariable[]{args}, false);
+    }
+
     public IsNumericTensor( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(null, sameDiff, args, inPlace);
     }
@@ -41,6 +45,9 @@ public class IsNumericTensor extends DynamicCustomOp {
         super(null, inputs, outputs);
     }
 
+    public IsNumericTensor(INDArray input) {
+        addInputArgument(input);
+    }
 
     @Override
     public String opName() {

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.factory;
 
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -129,6 +130,16 @@ public class NDValidation {
                     " type; got array with non-integer data type " + v.dataType());
     }
 
+    public static void validateInteger(String opName, String inputName, INDArray[] vars) {
+        for (INDArray v : vars) {
+            if (v == null)
+                return;
+            if (!v.dataType().isIntType())
+                throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an integer" +
+                        " type; got array with non-integer data type " + v.dataType());
+        }
+    }
+
     /**
      * Validate that the operation is being applied on an floating point type INDArray
      *
@@ -232,5 +243,16 @@ public class NDValidation {
 
     public static boolean isSameType(INDArray x, INDArray y) {
         return x.dataType() == y.dataType();
+    }
+
+    public static boolean isSameType(INDArray[] x) {
+        DataType firstDataType = x[0].dataType();
+        if (x.length > 1) {
+            for (int i = 1; i < x.length; ++i) {
+                if (firstDataType != x[i].dataType())
+                    return false;
+            }
+        }
+        return true;
     }
 }

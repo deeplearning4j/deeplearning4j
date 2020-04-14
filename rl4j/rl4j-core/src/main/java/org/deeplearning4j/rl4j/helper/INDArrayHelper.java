@@ -32,7 +32,7 @@ public class INDArrayHelper {
      * @return The source INDArray with the correct shape
      */
     public static INDArray forceCorrectShape(INDArray source) {
-        return source.shape()[0] == 1
+        return source.shape()[0] == 1 && source.shape().length > 1
                 ? source
                 : Nd4j.expandDims(source, 0);
     }

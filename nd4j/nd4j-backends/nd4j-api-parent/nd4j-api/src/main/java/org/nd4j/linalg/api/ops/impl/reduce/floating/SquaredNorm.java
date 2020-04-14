@@ -41,6 +41,10 @@ public class SquaredNorm extends BaseReduceFloatOp {
         super(input, output, keepDims, dimensions);
     }
 
+    public SquaredNorm(INDArray input, boolean keepDims, int... dimensions){
+        this(input, null, keepDims, dimensions);
+    }
+
     public SquaredNorm(){}
 
     @Override

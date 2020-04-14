@@ -36,6 +36,10 @@ public class Sign extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public Sign(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public Sign() {
     }
 

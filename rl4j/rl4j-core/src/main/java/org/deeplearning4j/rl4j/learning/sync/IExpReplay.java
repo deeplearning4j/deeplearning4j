@@ -33,6 +33,11 @@ import java.util.ArrayList;
 public interface IExpReplay<A> {
 
     /**
+     * @return The size of the batch that will be returned by getBatch()
+     */
+    int getBatchSize();
+
+    /**
      * @return a batch of uniformly sampled transitions
      */
     ArrayList<Transition<A>> getBatch();
@@ -42,5 +47,4 @@ public interface IExpReplay<A> {
      * @param transition a new transition to store
      */
     void store(Transition<A> transition);
-
 }

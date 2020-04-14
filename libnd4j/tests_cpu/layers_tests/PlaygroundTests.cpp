@@ -91,6 +91,8 @@ TEST_F(PlaygroundTests, test_biasAdd_1) {
 
 
 TEST_F(PlaygroundTests, test_bert_full_1) {
+#ifdef _RELEASE
+
     // this test will run ONLY if this model exists
     if (sd::graph::getFileSize("/home/raver119/Downloads/BertFull/model.fb") < 0)
         return;
@@ -147,10 +149,12 @@ TEST_F(PlaygroundTests, test_bert_full_1) {
     nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
 */
     delete graph;
+#endif
 }
 
 
 TEST_F(PlaygroundTests, test_bert_1) {
+#ifdef _RELEASE
     // this test will run ONLY if this model exists
     if (sd::graph::getFileSize("/home/raver119/Downloads/Bert_minimal_model/bert_minimal_model.fb") < 0)
         return;
@@ -206,9 +210,11 @@ TEST_F(PlaygroundTests, test_bert_1) {
     nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
 */
     delete graph;
+#endif
 }
 
 TEST_F(PlaygroundTests, test_bert_2) {
+#ifdef _RELEASE
     // this test will run ONLY if this model exists
     if (sd::graph::getFileSize("/home/raver119/Downloads/Bert_minimal_model/bert_like_ops.fb") < 0)
         return;
@@ -256,6 +262,7 @@ TEST_F(PlaygroundTests, test_bert_2) {
     nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
 */
     delete graph;
+#endif
 }
 
 
@@ -837,5 +844,78 @@ TEST_F(PlaygroundTests, my) {
     printf("time: %i \n", time);
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, lstmLayerCellBp_1) {
+
+    const int bS   = 2;
+    const int nIn  = 4;
+    const int nOut = 3;
+    // const int nIn  = 8;
+    // const int nOut = 6;
+
+    const float cellClip = 1.1;       // clipping value
+    const Nd4jLong gateAct = 2;        // sigmoid activation for input (i), forget (f) and output (o) gates
+    const float gateAlpha = 0;      // alpha value for activation for gates, not required for sigmoid
+    const float gateBeta = 0;       // beta value for activation for gates, not required for sigmoid
+    const Nd4jLong cellAct = 0;        // tanh activation for cell state
+    const float cellAlpha = 0;      // alpha value for cell state activation, not required for tanh
+    const float cellBeta = 0;       // beta value for cell state activation, not required for tanh
+    const Nd4jLong outAct = 0;         // tanh activation for output
+    const float outAlpha = 0;       // alpha value for output activation, not required for tanh
+    const float outBeta = 0;        // beta value for output activation, not required for tanh
+
+    NDArray x ('c',   {bS, nIn}, sd::DataType::DOUBLE);
+    NDArray hI('c',   {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c',   {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdc('c', {bS, nOut}, sd::DataType::DOUBLE);
+
+    // NDArray x ('c',   {nIn}, sd::DataType::DOUBLE);
+    // NDArray hI('c',   {nOut}, sd::DataType::DOUBLE);
+    // NDArray cI('c',   {nOut}, sd::DataType::DOUBLE);
+    // NDArray dLdh('c', {nOut}, sd::DataType::DOUBLE);
+    // NDArray dLdc('c', {nOut}, sd::DataType::DOUBLE);
+
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b ('c', {4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-4,1);
+    hI.linspace(-2.5,0.5);
+    cI.linspace(-3,0.5);
+    Wx.linspace(0,0.1);
+    Wr.linspace(3,-0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    // x.assign(1.);
+    // hI.assign(2.);
+    // cI.assign(3.);
+    // Wx.assign(0.5);
+    // Wr.assign(0.5);
+    // Wp.assign(0.75);
+    // b.assign(0.7);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {gateAct, cellAct, outAct};
+
+    // std::vector<bool>     bArgs = {false, false};
+    // const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &hI, &cI}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &hI, &cI, &dLdh}, tArgs, iArgs, bArgs);
+
+    std::vector<bool>     bArgs = {true, true};
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayerCell opFF;
+    sd::ops::lstmLayerCellBp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, true, true, true});
+}
+
+
 
 */
+
+

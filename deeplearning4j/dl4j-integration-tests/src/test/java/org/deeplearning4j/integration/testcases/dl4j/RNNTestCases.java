@@ -24,6 +24,7 @@ import org.nd4j.evaluation.classification.EvaluationCalibration;
 import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.preprocessor.CompositeMultiDataSetPreProcessor;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.guava.io.Files;
 import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.integration.testcases.dl4j.misc.CharacterIterator;
@@ -91,7 +92,7 @@ public class RNNTestCases {
             }
 
             private int miniBatchSize = 32;
-            private int exampleLength = 1000;
+            private int exampleLength = 200;
 
 
             @Override
@@ -101,6 +102,7 @@ public class RNNTestCases {
 
             @Override
             public Object getConfiguration() throws Exception {
+                Nd4j.getRandom().setSeed(12345);
 
                 CharacterIterator iter = CharacterIterator.getShakespeareIterator(miniBatchSize,exampleLength);
                 int nOut = iter.totalOutcomes();
@@ -113,7 +115,7 @@ public class RNNTestCases {
                         .seed(12345)
                         .l2(0.001)
                         .weightInit(WeightInit.XAVIER)
-                        .updater(new RmsProp(0.1))
+                        .updater(new Adam(1e-3))
                         .list()
                         .layer(0, new LSTM.Builder().nIn(iter.inputColumns()).nOut(lstmLayerSize)
                                 .activation(Activation.TANH).build())
@@ -140,7 +142,7 @@ public class RNNTestCases {
             @Override
             public MultiDataSetIterator getTrainingData() throws Exception {
                 DataSetIterator iter = CharacterIterator.getShakespeareIterator(miniBatchSize,exampleLength);
-                iter = new EarlyTerminationDataSetIterator(iter, 2);    //3 minibatches, 1000/200 = 5 updates per minibatch
+                iter = new EarlyTerminationDataSetIterator(iter, 2);    //2 minibatches, 200/50 = 4 updates per minibatch
                 return new MultiDataSetIteratorAdapter(iter);
             }
 

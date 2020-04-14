@@ -41,7 +41,7 @@ namespace helpers {
             length += array->lengthOf();
             pos++;
         }
-        NDArray arrayFull('c', {length}, sd::DataType::INT32);
+        NDArray arrayFull('c', {length}, sd::DataType::INT32, inputList[0]->getContext());
         cContext.setOutputArray(0, &arrayFull);
         cContext.setIArguments(&axis, 1);
 

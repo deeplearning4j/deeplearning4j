@@ -44,6 +44,11 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
     public static final double DEFAULT_LABEL_SMOOTHING = 0.0;
     private double labelSmoothing = 0.0;
 
+    public SigmoidCrossEntropyLoss(SameDiff sameDiff, SDVariable labels, SDVariable logits, SDVariable weights,
+                                    LossReduce lossReduce, double labelSmoothing) {
+        this(sameDiff, lossReduce, logits, weights, labels, labelSmoothing);
+    }
+
     public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
                                    SDVariable labels, double labelSmoothing) {
         super(sameDiff, lossReduce, logits, weights, labels);

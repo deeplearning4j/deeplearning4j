@@ -372,16 +372,16 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
     int xLenDim(0), yLenDim(0);
 
     if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
-        throw std::runtime_error("MmulHelper::dot cuda: X array must be vector !");
+        throw std::runtime_error("MmulHelper::dot: X array must be vector !");
     if(!shape::isCommonVector(Y->getShapeInfo(), yLenDim))
-        throw std::runtime_error("MmulHelper::dot cuda: Y array must be vector !");
+        throw std::runtime_error("MmulHelper::dot: Y array must be vector !");
     if(Z != nullptr && !Z->isScalar())
-        throw std::runtime_error("MmulHelper::dot cuda: Z array must be scalar !");
+        throw std::runtime_error("MmulHelper::dot: Z array must be scalar !");
 
     const auto length = X->lengthOf();
 
     if(Y->lengthOf() != length)
-        throw std::runtime_error("MmulHelper::dot cuda: lengths of input vectors are different !");
+        throw std::runtime_error("MmulHelper::dot: lengths of input vectors are different !");
 
     if(Z == nullptr)
         Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()), X->getContext());

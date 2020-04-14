@@ -69,9 +69,9 @@ namespace helpers {
                     auto trial = (*input)(e, dimsToExclude);
 
                     // fill up the first k elements
-                    NDArray topValues = NDArrayFactory::create<T>('c', {k});
-                    NDArray sortedVals = NDArrayFactory::create<T>('c', {k});
-                    NDArray topIndices = NDArrayFactory::create<Nd4jLong>('c', {k});
+                    NDArray topValues = NDArrayFactory::create<T>('c', {k}, input->getContext());
+                    NDArray sortedVals = NDArrayFactory::create<T>('c', {k}, input->getContext());
+                    NDArray topIndices = NDArrayFactory::create<Nd4jLong>('c', {k}, input->getContext());
                     for (uint pos = 0; pos < k; ++pos) {
                         topIndices.t<Nd4jLong>(pos) = pos;
                         topValues.t<T>(pos) = trial.t<T>(pos);
@@ -144,7 +144,7 @@ namespace helpers {
             for (int i = 0; i < input->rankOf() - 1; i++)
                 shapeI[i] = input->sizeAt(i);
             shapeI[input->rankOf() - 1] = k;
-            std::unique_ptr<NDArray> indices(NDArrayFactory::create_<Nd4jLong>(input->ordering(), shapeI));
+            std::unique_ptr<NDArray> indices(NDArrayFactory::create_<Nd4jLong>(input->ordering(), shapeI, context));
             NDArray* values = nullptr;
             int status = topKFunctor(context, input, values, indices.get(), k, true);
             result->assign(0);

@@ -48,12 +48,20 @@ public class Shape extends DynamicCustomOp {
 
     public Shape() {}
 
+    public Shape(SameDiff sameDiff, SDVariable input) {
+        this(sameDiff, input, false);
+    }
+
     public Shape(SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super(null, sameDiff, new SDVariable[] {input}, inPlace);
     }
 
     public Shape(INDArray in, INDArray out){
         super(null, in, out, null, null);
+    }
+
+    public Shape(INDArray in){
+        this(in, null);
     }
 
     @Override

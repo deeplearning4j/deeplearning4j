@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.same;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -30,13 +31,11 @@ import java.util.List;
 /**
  * Created by susaneraly on 3/28/18.
  */
+@NoArgsConstructor
 public class Reciprocal extends BaseTransformSameOp {
 
-    public Reciprocal(SameDiff sameDiff, SDVariable in, boolean inPlace) {
-        super(sameDiff, in, inPlace);
-    }
-
-    public Reciprocal() {
+    public Reciprocal(SameDiff sameDiff, SDVariable in) {
+        super(sameDiff, in, false);
     }
 
     public Reciprocal(INDArray x, INDArray z) {

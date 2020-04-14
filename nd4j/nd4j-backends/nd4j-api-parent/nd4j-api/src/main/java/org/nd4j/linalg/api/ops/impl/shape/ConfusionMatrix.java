@@ -42,6 +42,7 @@ public class ConfusionMatrix extends DynamicCustomOp {
     public ConfusionMatrix(@NonNull INDArray labels, @NonNull INDArray predicted, @NonNull DataType dataType){
         super(new INDArray[]{labels, predicted}, null);
         this.outputType = dataType;
+        addDArgument(dataType);
     }
 
     public ConfusionMatrix(@NonNull INDArray labels, @NonNull INDArray predicted, int numClasses){
@@ -66,11 +67,19 @@ public class ConfusionMatrix extends DynamicCustomOp {
         if(numClasses != null) {
             addIArgument(numClasses);
         }
+        addDArgument(dataType);
+    }
+
+
+    public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, SDVariable weights, DataType dataType){
+        this(sameDiff, labels, pred, weights);
+        this.outputType = dataType;
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, DataType dataType){
         super(null, sameDiff, new SDVariable[]{labels, pred});
         this.outputType = dataType;
+        addDArgument(dataType);
     }
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, SDVariable weights){
@@ -79,6 +88,11 @@ public class ConfusionMatrix extends DynamicCustomOp {
 
     public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, Integer numClasses){
         super(null, sameDiff, new SDVariable[]{labels, pred});
+        addIArgument(numClasses);
+    }
+
+    public ConfusionMatrix(SameDiff sameDiff, SDVariable labels, SDVariable pred, SDVariable weights, Integer numClasses){
+        super(null, sameDiff, new SDVariable[]{labels, pred, weights});
         addIArgument(numClasses);
     }
 

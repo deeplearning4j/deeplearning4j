@@ -40,21 +40,21 @@ implementation group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}
 implementation group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm64"
 implementation group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86"
 implementation group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86_64"
-implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.7-1.5.2'
-implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.7-1.5.2', classifier: "android-arm"
-implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.7-1.5.2', classifier: "android-arm64"
-implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.7-1.5.2', classifier: "android-x86"
-implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.7-1.5.2', classifier: "android-x86_64"
-implementation group: 'org.bytedeco', name: 'opencv', version: '4.1.2-1.5.2'
-implementation group: 'org.bytedeco', name: 'opencv', version: '4.1.2-1.5.2', classifier: "android-arm"
-implementation group: 'org.bytedeco', name: 'opencv', version: '4.1.2-1.5.2', classifier: "android-arm64"
-implementation group: 'org.bytedeco', name: 'opencv', version: '4.1.2-1.5.2', classifier: "android-x86"
-implementation group: 'org.bytedeco', name: 'opencv', version: '4.1.2-1.5.2', classifier: "android-x86_64"
-implementation group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.2'
-implementation group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.2', classifier: "android-arm"
-implementation group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.2', classifier: "android-arm64"
-implementation group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.2', classifier: "android-x86"
-implementation group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.2', classifier: "android-x86_64"
+implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.9-1.5.3'
+implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.9-1.5.3', classifier: "android-arm"
+implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.9-1.5.3', classifier: "android-arm64"
+implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.9-1.5.3', classifier: "android-x86"
+implementation group: 'org.bytedeco', name: 'openblas', version: '0.3.9-1.5.3', classifier: "android-x86_64"
+implementation group: 'org.bytedeco', name: 'opencv', version: '4.3.0-1.5.3'
+implementation group: 'org.bytedeco', name: 'opencv', version: '4.3.0-1.5.3', classifier: "android-arm"
+implementation group: 'org.bytedeco', name: 'opencv', version: '4.3.0-1.5.3', classifier: "android-arm64"
+implementation group: 'org.bytedeco', name: 'opencv', version: '4.3.0-1.5.3', classifier: "android-x86"
+implementation group: 'org.bytedeco', name: 'opencv', version: '4.3.0-1.5.3', classifier: "android-x86_64"
+implementation group: 'org.bytedeco', name: 'leptonica', version: '1.79.0-1.5.3'
+implementation group: 'org.bytedeco', name: 'leptonica', version: '1.79.0-1.5.3', classifier: "android-arm"
+implementation group: 'org.bytedeco', name: 'leptonica', version: '1.79.0-1.5.3', classifier: "android-arm64"
+implementation group: 'org.bytedeco', name: 'leptonica', version: '1.79.0-1.5.3', classifier: "android-x86"
+implementation group: 'org.bytedeco', name: 'leptonica', version: '1.79.0-1.5.3', classifier: "android-x86_64"
 
 implementation 'com.google.code.gson:gson:2.8.2'
 annotationProcessor 'org.projectlombok:lombok:1.16.16'

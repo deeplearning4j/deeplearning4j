@@ -35,6 +35,10 @@ public class RectifiedLinear extends BaseScalarOp {
         super(sameDiff, i_v, cutoff, inPlace);
     }
 
+    public RectifiedLinear(SameDiff sameDiff, SDVariable i_v, double cutoff) {
+        this(sameDiff, i_v, false, cutoff);
+    }
+
     public RectifiedLinear() {
         super();
     }

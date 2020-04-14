@@ -23,6 +23,7 @@
 #include <array/NDArrayList.h>
 #include <helpers/ShapeUtils.h>
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/stack.h>
 
 namespace sd {
     NDArrayList::NDArrayList(int height, bool expandable) {
@@ -144,25 +145,38 @@ namespace sd {
 
     NDArray* NDArrayList::stack() {
         // FIXME: this is bad for perf, but ok as poc
-        sd::ops::stack op;
-        std::vector<NDArray*> inputs;
-        std::vector<double> targs;
-        std::vector<Nd4jLong> iargs({0});
-        std::vector<bool> bargs;
+        
         int numElements = _elements.load();
-
+        std::vector<const NDArray*> inputs(numElements);
         for (int e = 0; e < numElements; e++) {
             _chunks[e]->syncToDevice();
-            inputs.emplace_back(_chunks[e]);
+            inputs[e] = _chunks[e];
         }
 
-        iargs.push_back(_axis);
+        auto inShapeInfo = inputs[0]->getShapeInfo();
+        int rank = shape::rank(inShapeInfo);
+	    NDArray* array = nullptr;
 
-        auto result = op.evaluate(inputs);
+        if (shape::isEmpty(inShapeInfo)) {
+	     switch (rank) {
+             case 0: {
+                 if (numElements == 1) {
+                     array =  new NDArray(inputs[0]->ordering(), {0}, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
+                 } else {
+                     array = new NDArray('c', {(Nd4jLong) numElements, 0}, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext() ) ;
+                 }
+              }
+	       }
+	   }
+       else{        
+          std::vector<Nd4jLong> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
+          outShape.insert(outShape.begin(), (Nd4jLong) numElements);
+          array = new NDArray( shape::order(inShapeInfo), outShape, ArrayOptions::dataType(inShapeInfo), inputs[0]->getContext());
+       }
+       
+       ops::helpers::stack(inputs[0]->getContext(), inputs, *array, 0);
 
-        auto array = new NDArray(result.at(0)->dup());
-
-        return array;
+       return array;
     }
 
     std::pair<int,int>& NDArrayList::id() {

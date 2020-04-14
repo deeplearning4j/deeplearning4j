@@ -45,6 +45,10 @@ public class LogSumExp extends DynamicCustomOp {
         this.keepDims = keepDims;
     }
 
+    public LogSumExp(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+        this(sameDiff, i_v, false, dimensions);
+    }
+
     public LogSumExp() {}
 
     public LogSumExp(INDArray x, int... dimensions) {

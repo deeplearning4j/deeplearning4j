@@ -239,7 +239,7 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
 
 
 //////////////////////////////////////////////////////////////////////////
-    void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray* z, const bool transX, const bool transY) {
+    void MmulHelper::matmul(const sd::NDArray* x, const sd::NDArray* y, sd::NDArray* z, const bool transX, const bool transY, double alpha, double beta) {
         int xRank = x->rankOf();
         int yRank = y->rankOf();
 
@@ -276,7 +276,7 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
                 zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
             }
 
-            mmul(xT, yT, zT, 1., 0.);
+            mmul(xT, yT, zT, alpha, beta);
         }
         else {  // rest cases -  batched mmul
 
@@ -292,7 +292,7 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
                 auto xSubArr = (*xT)(i, dimsToExclude);
                 auto ySubArr = (*yT)(i, dimsToExclude);
                 auto zSubArr = (*zT)(i, dimsToExclude);
-                mmul(&xSubArr, &ySubArr, &zSubArr, 1., 0.);
+                mmul(&xSubArr, &ySubArr, &zSubArr, alpha, beta);
             }
         }
 

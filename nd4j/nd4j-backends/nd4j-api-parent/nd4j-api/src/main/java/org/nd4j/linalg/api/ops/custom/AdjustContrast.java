@@ -29,12 +29,17 @@ public class AdjustContrast extends BaseAdjustContrast {
         super(in, factor, out);
     }
 
+    public AdjustContrast(@NonNull INDArray in, double factor) {
+        this(in, factor, null);
+    }
+
     public AdjustContrast(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable factor) {
         super(sameDiff,new SDVariable[]{in,factor});
     }
 
-    public AdjustContrast(@NonNull INDArray in, double factor) {
-        this(in, factor, null);
+    public AdjustContrast(@NonNull SameDiff sameDiff, @NonNull SDVariable in, double factor) {
+        super(sameDiff,new SDVariable[]{in});
+        addTArgument(factor);
     }
 
     @Override

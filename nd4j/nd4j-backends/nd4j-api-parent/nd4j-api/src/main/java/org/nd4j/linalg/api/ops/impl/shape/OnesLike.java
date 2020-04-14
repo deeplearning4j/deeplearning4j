@@ -48,8 +48,16 @@ public class OnesLike extends DynamicCustomOp {
     public OnesLike() {
     }
 
+    public OnesLike(SameDiff sameDiff, SDVariable input) {
+        this(null, sameDiff, input);
+    }
+
     public OnesLike(String name, SameDiff sameDiff, SDVariable input) {
         this(name, sameDiff, input, input.dataType());
+    }
+
+    public OnesLike(SameDiff sameDiff, SDVariable input, DataType dataType) {
+        this(null, sameDiff, input, dataType);
     }
 
     public OnesLike(String name, SameDiff sameDiff, SDVariable input, DataType dataType) {

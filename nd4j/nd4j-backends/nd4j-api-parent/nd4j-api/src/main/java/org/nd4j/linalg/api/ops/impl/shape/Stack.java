@@ -50,6 +50,16 @@ public class Stack extends DynamicCustomOp {
         addArgs();
     }
 
+    public Stack(INDArray[] input, int axis) {
+        addInputArgument(input);
+        this.jaxis = axis;
+        addArgs();
+    }
+
+    public Stack(SameDiff sameDiff, SDVariable values, int axis) {
+        this(sameDiff, new SDVariable[]{values}, axis);
+    }
+
     public Stack(SameDiff sameDiff, SDVariable[] values, int axis) {
         super(null, sameDiff, values, false);
         this.jaxis = axis;

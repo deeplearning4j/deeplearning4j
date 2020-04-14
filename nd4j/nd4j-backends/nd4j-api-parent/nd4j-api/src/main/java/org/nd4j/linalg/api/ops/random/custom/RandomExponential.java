@@ -36,6 +36,7 @@ import java.util.List;
 @Slf4j
 public class RandomExponential extends DynamicCustomOp {
     private double lambda = 0.0;
+    private DataType dataType = DataType.DOUBLE;
 
     public RandomExponential() {
         //
@@ -46,6 +47,15 @@ public class RandomExponential extends DynamicCustomOp {
         Preconditions.checkState(lambda >= 0, "Lambda parameter must be > 0 - got %s", lambda);
         this.lambda = lambda;
         addTArgument(lambda);
+    }
+
+    public RandomExponential(SameDiff sd, double lambda, DataType dataType, long... shape){
+        super(null, sd, new SDVariable[]{sd.constant(Nd4j.createFromArray(shape))});
+        this.lambda = lambda;
+        addTArgument(lambda);
+        this.dataType = dataType;
+        addDArgument(dataType);
+        addIArgument(shape);
     }
 
     public RandomExponential(double lambda, DataType datatype, long... shape){

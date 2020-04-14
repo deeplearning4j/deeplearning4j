@@ -35,6 +35,10 @@ public class Square extends BaseTransformSameOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public Square(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public Square() {
     }
 

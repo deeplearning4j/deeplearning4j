@@ -48,7 +48,7 @@ TEST_F(ParityOpsTests, TestZeroAs1) {
     ASSERT_TRUE(z->isSameShape(&x));
     ASSERT_TRUE(z->equalsTo(&exp));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestMaximum1) {
@@ -66,7 +66,7 @@ TEST_F(ParityOpsTests, TestMaximum1) {
 
     ASSERT_TRUE(y.equalsTo(z));
 
-    
+
 }
 
 
@@ -86,7 +86,7 @@ TEST_F(ParityOpsTests, TestMinimum1) {
 
     ASSERT_TRUE(y.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestTear1) {
@@ -106,7 +106,7 @@ TEST_F(ParityOpsTests, TestTear1) {
     for (int e = 0; e < result.size(); e++)
         ASSERT_TRUE(tads.at(e)->equalsTo(result.at(e)));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestUnstack1) {
@@ -126,7 +126,7 @@ TEST_F(ParityOpsTests, TestUnstack1) {
     for (int e = 0; e < result.size(); e++)
         ASSERT_TRUE(tads.at(e)->equalsTo(result.at(e)));
 
-    
+
 }
 
 
@@ -148,7 +148,7 @@ TEST_F(ParityOpsTests, TestUnstack2) {
     for (int e = 0; e < result.size(); e++)
         ASSERT_TRUE(tads.at(e)->equalsTo(result.at(e)));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestUnstack3) {
@@ -166,7 +166,7 @@ TEST_F(ParityOpsTests, TestUnstack3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -185,7 +185,7 @@ TEST_F(ParityOpsTests, TestUnstack4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestUnstack5) {
@@ -203,7 +203,7 @@ TEST_F(ParityOpsTests, TestUnstack5) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestUnstack6) {
@@ -221,7 +221,7 @@ TEST_F(ParityOpsTests, TestUnstack6) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestUnstack7) {
@@ -239,7 +239,7 @@ TEST_F(ParityOpsTests, TestUnstack7) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestUnstack8) {
@@ -257,7 +257,7 @@ TEST_F(ParityOpsTests, TestUnstack8) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestUnstack9) {
@@ -275,7 +275,7 @@ TEST_F(ParityOpsTests, TestUnstack9) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -293,7 +293,7 @@ TEST_F(ParityOpsTests, TestUnstack10) {
     ASSERT_TRUE(exp.isSameShape(result.at(1)));
     ASSERT_TRUE(exp.isSameShape(result.at(2)));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -310,7 +310,7 @@ TEST_F(ParityOpsTests, TestUnstack11) {
     ASSERT_TRUE(exp.isSameShape(result.at(0)));
     ASSERT_TRUE(exp.isSameShape(result.at(1)));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -325,7 +325,7 @@ TEST_F(ParityOpsTests, TestUnstack12) {
 
     ASSERT_TRUE(result.size() == 0);
 
-    
+
 }
 
 TEST_F(ParityOpsTests, TestUnstack13) {
@@ -361,7 +361,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
     ASSERT_TRUE(reshaped.isSameShape(z));
     ASSERT_TRUE(reshaped.equalsTo(z));
 
-    
+
 }
 
 
@@ -380,7 +380,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest2) {
     ASSERT_TRUE(reshaped.isSameShape(z));
     ASSERT_TRUE(reshaped.equalsTo(z));
 
-    
+
 }
 
 
@@ -399,7 +399,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest3) {
     ASSERT_TRUE(reshaped.isSameShape(z));
     ASSERT_TRUE(reshaped.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, ExpandDimsTest4) {
@@ -417,7 +417,7 @@ TEST_F(ParityOpsTests, ExpandDimsTest4) {
     ASSERT_TRUE(reshaped.isSameShape(z));
     ASSERT_TRUE(reshaped.equalsTo(z));
 
-    
+
 }
 
 
@@ -434,7 +434,7 @@ TEST_F(ParityOpsTests, Test_Shape_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -452,7 +452,7 @@ TEST_F(ParityOpsTests, Test_Equals_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -470,7 +470,7 @@ TEST_F(ParityOpsTests, Test_NotEquals_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Less_1) {
@@ -487,7 +487,7 @@ TEST_F(ParityOpsTests, Test_Less_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_LessEquals_1) {
@@ -504,7 +504,7 @@ TEST_F(ParityOpsTests, Test_LessEquals_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
@@ -521,7 +521,7 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_GreaterEquals_2) {
@@ -538,7 +538,7 @@ TEST_F(ParityOpsTests, Test_GreaterEquals_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Greater_1) {
@@ -555,7 +555,7 @@ TEST_F(ParityOpsTests, Test_Greater_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Where_1) {
@@ -575,7 +575,7 @@ TEST_F(ParityOpsTests, Test_Where_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Where_2) {
@@ -593,7 +593,7 @@ TEST_F(ParityOpsTests, Test_Where_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -612,7 +612,7 @@ TEST_F(ParityOpsTests, Test_Where_3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Select_1) {
@@ -630,7 +630,7 @@ TEST_F(ParityOpsTests, Test_Select_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Select_2) {
@@ -648,7 +648,7 @@ TEST_F(ParityOpsTests, Test_Select_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Select_3) {
@@ -666,25 +666,7 @@ TEST_F(ParityOpsTests, Test_Select_3) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
-}
 
-TEST_F(ParityOpsTests, Test_Reshape_TF_1) {
-    auto x = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 3, 4});
-    auto shape = NDArrayFactory::create<int>('c', {1, 3}, {1, 2, 2});
-
-    auto exp = NDArrayFactory::create<int>('c', {1, 2, 2}, {1, 2, 3, 4});
-
-    sd::ops::reshape op;
-
-    auto result = op.evaluate({&x, &shape}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result.status());
-
-    auto z = result.at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-    
 }
 
 TEST_F(ParityOpsTests, Test_Bias_Add_1) {
@@ -702,7 +684,7 @@ TEST_F(ParityOpsTests, Test_Bias_Add_1) {
     for (int e = 0; e < tads.size(); e++) {
         ASSERT_TRUE(bias.equalsTo(tads.at(e)));
     }
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
@@ -718,7 +700,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
@@ -735,7 +717,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
@@ -751,7 +733,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_3) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_4) {
@@ -767,7 +749,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_4) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_5) {
@@ -784,7 +766,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_5) {
     // z->printBuffer();
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
@@ -800,7 +782,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_6) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
@@ -816,7 +798,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_7) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -864,7 +846,7 @@ TEST_F(ParityOpsTests, scatterMax_test1) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, scatterMax_test2) {
@@ -880,7 +862,7 @@ TEST_F(ParityOpsTests, scatterMax_test2) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, scatterMax_test3) {
@@ -897,7 +879,7 @@ TEST_F(ParityOpsTests, scatterMax_test3) {
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, scatterMax_test4) {
@@ -913,7 +895,7 @@ TEST_F(ParityOpsTests, scatterMax_test4) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, scatterMax_test5) {
@@ -929,7 +911,7 @@ TEST_F(ParityOpsTests, scatterMax_test5) {
     auto z = result.at(0);
 
    ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, scatterMax_test6) {
@@ -945,7 +927,7 @@ TEST_F(ParityOpsTests, scatterMax_test6) {
     auto z = result.at(0);
 
    ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 
@@ -963,7 +945,7 @@ TEST_F(ParityOpsTests, scatterMin_test1) {
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ParityOpsTests, scatterMin_test2) {
@@ -979,7 +961,7 @@ TEST_F(ParityOpsTests, scatterMin_test2) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, scatterMin_test3) {
@@ -995,7 +977,7 @@ TEST_F(ParityOpsTests, scatterMin_test3) {
     auto z = result.at(0);
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(ParityOpsTests, scatterMin_test4) {
@@ -1012,7 +994,7 @@ TEST_F(ParityOpsTests, scatterMin_test4) {
     // z->printBuffer();
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1044,7 +1026,7 @@ TEST_F(ParityOpsTests, scatterND_test1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1064,7 +1046,7 @@ TEST_F(ParityOpsTests, scatterND_test2) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1088,7 +1070,7 @@ TEST_F(ParityOpsTests, scatterND_test3) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1107,7 +1089,7 @@ TEST_F(ParityOpsTests, scatterND_test4) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1127,7 +1109,7 @@ TEST_F(ParityOpsTests, scatterND_test5) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1154,7 +1136,7 @@ TEST_F(ParityOpsTests, scatterND_test6) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1181,7 +1163,7 @@ TEST_F(ParityOpsTests, scatterND_test7) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1202,7 +1184,7 @@ TEST_F(ParityOpsTests, scatterND_test8) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1236,7 +1218,7 @@ TEST_F(ParityOpsTests, scatterND_add_test1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1260,7 +1242,7 @@ TEST_F(ParityOpsTests, scatterND_add_test2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1283,7 +1265,7 @@ TEST_F(ParityOpsTests, scatterND_add_test3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1310,7 +1292,7 @@ TEST_F(ParityOpsTests, scatterND_add_test4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1346,7 +1328,7 @@ TEST_F(ParityOpsTests, scatterND_add_test5) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1379,7 +1361,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1404,7 +1386,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1427,7 +1409,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1454,7 +1436,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1490,7 +1472,7 @@ TEST_F(ParityOpsTests, scatterND_sub_test5) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -1511,7 +1493,7 @@ TEST_F(ParityOpsTests, scatterND_update_test1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1535,7 +1517,7 @@ TEST_F(ParityOpsTests, scatterND_update_test2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1559,7 +1541,7 @@ TEST_F(ParityOpsTests, scatterND_update_test3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1586,7 +1568,7 @@ TEST_F(ParityOpsTests, scatterND_update_test4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1622,7 +1604,7 @@ TEST_F(ParityOpsTests, scatterND_update_test5) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1655,7 +1637,7 @@ TEST_F(ParityOpsTests, scatter_update_1) {
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1674,7 +1656,7 @@ TEST_F(ParityOpsTests, scatter_update_2) {
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1693,7 +1675,7 @@ TEST_F(ParityOpsTests, scatter_update_3) {
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1712,5 +1694,5 @@ TEST_F(ParityOpsTests, scatter_update_4) {
     ASSERT_TRUE(exp.isSameShape(x));
     ASSERT_TRUE(exp.equalsTo(x));
 
-    
+
 }

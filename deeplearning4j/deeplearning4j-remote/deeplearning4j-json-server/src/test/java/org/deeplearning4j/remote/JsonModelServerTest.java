@@ -495,7 +495,7 @@ public class JsonModelServerTest extends BaseDL4JTest {
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 28*28);
         SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 28*28, 10));
         SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 10));
-        SDVariable sm = sd.nn.softmax("softmax", in.mmul(w).add(b));
+        SDVariable sm = sd.nn.softmax("softmax", in.mmul(w).add(b), -1);
 
         val server = new JsonModelServer.Builder<float[], Integer>(sd)
                 .outputSerializer( new IntSerde())

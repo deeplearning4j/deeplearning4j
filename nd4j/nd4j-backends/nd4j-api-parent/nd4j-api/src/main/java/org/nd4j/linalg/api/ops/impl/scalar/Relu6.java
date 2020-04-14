@@ -42,6 +42,10 @@ public class Relu6 extends BaseScalarOp {
         super(sameDiff, i_v, cutoff, inPlace);
     }
 
+    public Relu6(SameDiff sameDiff, SDVariable i_v, double cutoff) {
+        this(sameDiff, i_v, false, cutoff);
+    }
+
     public Relu6() {
         //
     }

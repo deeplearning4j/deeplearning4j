@@ -515,7 +515,7 @@ TEST_F(DeclarableOpsTests12, TestConfusionZero_1) {
     //exp1.assign(1.);
     //exp2.assign(-2.);
     sd::ops::confusion_matrix op;
-    Nd4jStatus status = op.execute({&x, &i}, {&output}, {}, {4}, {});
+    Nd4jStatus status = op.execute({&x, &i}, {&output}, {}, {4}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(output.equalsTo(exp));

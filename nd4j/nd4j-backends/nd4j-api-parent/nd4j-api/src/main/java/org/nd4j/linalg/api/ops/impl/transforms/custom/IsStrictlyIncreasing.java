@@ -39,6 +39,10 @@ public class IsStrictlyIncreasing extends DynamicCustomOp {
         super(null, sameDiff, args, inPlace);
     }
 
+    public IsStrictlyIncreasing( SameDiff sameDiff, SDVariable input) {
+        super(null, sameDiff, new SDVariable[]{input});
+    }
+
     public IsStrictlyIncreasing(@NonNull INDArray input){
         this(input, null);
     }

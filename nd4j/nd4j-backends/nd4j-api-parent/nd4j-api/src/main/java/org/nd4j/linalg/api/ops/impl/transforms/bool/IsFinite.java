@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.bool;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -30,12 +31,15 @@ import java.util.List;
  *
  * @author raver119@gmail.com
   */
+@NoArgsConstructor
 public class IsFinite extends BaseTransformBoolOp {
     public IsFinite(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public IsFinite() {}
+    public IsFinite(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
 
     public IsFinite(INDArray x, INDArray z) {
         super(x, z);

@@ -66,6 +66,14 @@ public class Tile extends DynamicCustomOp {
         this(inputs,outputs,axis,false);
     }
 
+    public Tile(INDArray x, INDArray repeat) {
+        addInputArgument(x, repeat);
+    }
+
+    public Tile(INDArray x, int... repeat) {
+        addInputArgument(x);
+        addIArgument(repeat);
+    }
 
     public Tile() {}
 

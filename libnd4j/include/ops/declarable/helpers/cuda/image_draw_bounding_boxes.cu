@@ -25,7 +25,7 @@ namespace ops {
 namespace helpers {
 
     typedef NDArray ColorTable_t;
-    static NDArray DefaultColorTable(int depth) {
+    static NDArray DefaultColorTable(int depth, sd::LaunchContext* context) {
         //std::vector<std::vector<float>> colorTable;
         const Nd4jLong kDefaultTableLength = 10;
         const Nd4jLong kDefaultChannelLength = 4;
@@ -40,7 +40,7 @@ namespace helpers {
                 0, 0, 0.5, 1,    // 7: navy blue
                 0, 1, 1, 1,      // 8: aqua
                 1, 0, 1, 1       // 9: fuchsia
-        }, DataType::FLOAT32);
+        }, DataType::FLOAT32, context);
 
         if (depth == 1) {
             colorTable.assign(1.f); // all to white when black and white colors
@@ -144,7 +144,7 @@ namespace helpers {
         auto channels = images->sizeAt(3);
         auto stream = context->getCudaStream();
         auto boxSize = boxes->sizeAt(1);
-        NDArray colorsTable = DefaultColorTable(channels);
+        NDArray colorsTable = DefaultColorTable(channels, context);
         if ((colors != nullptr && colors->lengthOf() > 0)) {
             colorsTable = *colors;
         }

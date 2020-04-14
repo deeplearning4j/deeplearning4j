@@ -80,7 +80,7 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
             SDVariable z0 = in.mmul(w0).add(b0);
             SDVariable a0 = sd.math().tanh(z0);
             SDVariable z1 = a0.mmul(w1).add("prediction", b1);
-            SDVariable a1 = sd.nn().softmax(z1);
+            SDVariable a1 = sd.nn().softmax(z1,-1);
 
             SDVariable diff = sd.f().squaredDifference(a1, label);
             SDVariable lossMse = diff.mul(diff).mean();

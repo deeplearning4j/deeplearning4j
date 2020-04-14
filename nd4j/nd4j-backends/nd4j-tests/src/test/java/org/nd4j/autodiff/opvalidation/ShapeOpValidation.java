@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.linear.LUDecomposition;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -118,7 +119,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         List<String> failed = new ArrayList<>();
 
-        for (int[] toShape : new int[][]{{3, 4 * 5}, {3 * 4, 5}, {1, 3 * 4 * 5}, {3 * 4 * 5, 1}}) {
+        for (long[] toShape : new long[][]{{3, 4 * 5}, {3 * 4, 5}, {1, 3 * 4 * 5}, {3 * 4 * 5, 1}}) {
             for(char order : new char[]{'c','f'}){
                 INDArray inArr = Nd4j.rand(DataType.DOUBLE, origShape, order).muli(100);
 
@@ -387,10 +388,10 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Builder(builderClassName = "Builder")
     @Data
     private static class SSCase {
-        private int[] shape;
-        private int[] begin;
-        private int[] end;
-        private int[] strides;
+        private long[] shape;
+        private long[] begin;
+        private long[] end;
+        private long[] strides;
         private int beginMask;
         private int endMask;
         private int ellipsisMask;
@@ -399,22 +400,22 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         public static class Builder {
 
-            public Builder shape(int... shape) {
+            public Builder shape(long... shape) {
                 this.shape = shape;
                 return this;
             }
 
-            public Builder begin(int... begin) {
+            public Builder begin(long... begin) {
                 this.begin = begin;
                 return this;
             }
 
-            public Builder end(int... end) {
+            public Builder end(long... end) {
                 this.end = end;
                 return this;
             }
 
-            public Builder strides(int... strides) {
+            public Builder strides(long... strides) {
                 this.strides = strides;
                 return this;
             }
@@ -1406,14 +1407,13 @@ public class ShapeOpValidation extends BaseOpValidation {
             SameDiff sd = SameDiff.create();
 
             SDVariable[] arr = new SDVariable[rank];
-            List<String> names = new ArrayList<>();
+            String[] names = new String[rank];
             for( int i=0; i<rank; i++ ){
                 INDArray in = Nd4j.linspace(1,3+i, 3+i).reshape(3+i).castTo(DataType.DOUBLE);
                 arr[i] = sd.var("in"+i, in);
-                names.add("meshgrid-" + i);
+                names[i] = "meshgrid-" + i;
             }
-
-            SDVariable[] meshgrid = sd.math().meshgrid(names, false, arr);
+            SDVariable[] meshgrid = sd.math().meshgrid(names, arr, false);
 
             TestCase tc = new TestCase(sd);
 
@@ -1571,7 +1571,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray arr2 = Transforms.sigmoid(Nd4j.linspace(7, 12, 6)).reshape(3, 2);
         SDVariable x1 = sameDiff.var("x1", arr1);
         SDVariable x2 = sameDiff.var("x2", arr2);
-        SDVariable result = sameDiff.parallel_stack(new SDVariable[]{x1, x2});
+        SDVariable result = sameDiff.stack(0, new SDVariable[]{x1, x2});
         assertArrayEquals(new long[]{2, 3, 2}, result.eval().shape());
         assertEquals(Nd4j.concat(0, arr1, arr2).reshape(2, 3, 2), result.eval());
     }
@@ -1661,9 +1661,9 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
-        SDVariable slice_full = sd.stridedSlice(in, new int[]{0, 0}, new int[]{3, 4}, new int[]{1, 1});
-        SDVariable subPart = sd.stridedSlice(in, new int[]{1, 2}, new int[]{3, 4}, new int[]{1, 1});
-        // SDVariable subPart2 = sd.stridedSlice(in, new int[]{0, 0}, new int[]{4, 5}, new int[]{2, 2});
+        SDVariable slice_full = sd.stridedSlice(in,new long[]{0, 0},new long[]{3, 4},new long[]{1, 1});
+        SDVariable subPart = sd.stridedSlice(in,new long[]{1, 2},new long[]{3, 4},new long[]{1, 1});
+        // SDVariable subPart2 = sd.stridedSlice(in,new long[]{0, 0},new long[]{4, 5},new long[]{2, 2});
 
         sd.outputAll(null);
 
@@ -1679,8 +1679,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
-        SDVariable slice1 = sd.stridedSlice(in, new int[]{-999, 0}, new int[]{2, 4}, new int[]{1, 1}, 1 << 1, 0, 0, 0, 0);
-        SDVariable slice2 = sd.stridedSlice(in, new int[]{1, 0}, new int[]{-999, 4}, new int[]{1, 1}, 0, 1, 0, 0, 0);
+        SDVariable slice1 = sd.stridedSlice(in,new long[]{-999, 0},new long[]{2, 4},new long[]{1, 1}, 1 << 1, 0, 0, 0, 0);
+        SDVariable slice2 = sd.stridedSlice(in,new long[]{1, 0},new long[]{-999, 4},new long[]{1, 1}, 0, 1, 0, 0, 0);
 
         sd.outputAll(null);
 
@@ -1695,9 +1695,9 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable in = sd.var("in", inArr);
 
         //[1:3,...] -> [1:3,:,:]
-        SDVariable slice = sd.stridedSlice(in, new int[]{1}, new int[]{3}, new int[]{1}, 0, 0, 1 << 1, 0, 0);
+        SDVariable slice = sd.stridedSlice(in,new long[]{1},new long[]{3},new long[]{1}, 0, 0, 1 << 1, 0, 0);
         //[1:3,...,1:4] -> [1:3,:,1:4]
-        SDVariable slice2 = sd.stridedSlice(in, new int[]{1, 1}, new int[]{3, 4}, new int[]{1, 1}, 0, 0, 1 << 1, 0, 0);
+        SDVariable slice2 = sd.stridedSlice(in,new long[]{1, 1},new long[]{3, 4},new long[]{1, 1}, 0, 0, 1 << 1, 0, 0);
 
         sd.outputAll(Collections.emptyMap());
 
@@ -1710,7 +1710,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
-        SDVariable slice = sd.stridedSlice(in, new int[]{-999, 0, 0, 0}, new int[]{-999, 3, 4, 5}, new int[]{-999, 1, 1, 1}, 0, 0, 0, 1, 0);
+        SDVariable slice = sd.stridedSlice(in,new long[]{-999, 0, 0, 0},new long[]{-999, 3, 4, 5},new long[]{-999, 1, 1, 1}, 0, 0, 0, 1, 0);
 
         INDArray out = slice.eval();
 
@@ -1723,7 +1723,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
-        SDVariable slice = sd.stridedSlice(in, new int[]{1, 1, -999, 1}, new int[]{3, 3, -999, 4}, new int[]{1, 1, -999, 1}, 0, 0, 0, 1 << 2, 0);
+        SDVariable slice = sd.stridedSlice(in,new long[]{1, 1, -999, 1},new long[]{3, 3, -999, 4},new long[]{1, 1, -999, 1}, 0, 0, 0, 1 << 2, 0);
         INDArray out = slice.eval();
 
         assertArrayEquals(new long[]{2, 2, 1, 3}, slice.getArr().shape());
@@ -1735,9 +1735,9 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray inArr = Nd4j.linspace(1, 60, 60).reshape('c', 3, 4, 5);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
-        SDVariable slice = sd.stridedSlice(in, new int[]{0, 0, 0}, new int[]{-999, 4, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1);
-        SDVariable slice2 = sd.stridedSlice(in, new int[]{2, 0, 0}, new int[]{-999, 4, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1);
-        SDVariable slice3 = sd.stridedSlice(in, new int[]{1, 2, 1}, new int[]{-999, -999, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1 | 1 << 1);
+        SDVariable slice = sd.stridedSlice(in,new long[]{0, 0, 0},new long[]{-999, 4, 5},new long[]{1, 1, 1}, 0, 0, 0, 0, 1);
+        SDVariable slice2 = sd.stridedSlice(in,new long[]{2, 0, 0},new long[]{-999, 4, 5},new long[]{1, 1, 1}, 0, 0, 0, 0, 1);
+        SDVariable slice3 = sd.stridedSlice(in,new long[]{1, 2, 1},new long[]{-999, -999, 5},new long[]{1, 1, 1}, 0, 0, 0, 0, 1 | 1 << 1);
 
         sd.outputAll(null);
 
@@ -2498,5 +2498,31 @@ public class ShapeOpValidation extends BaseOpValidation {
         Nd4j.getExecutioner().exec(op);
 
         assertEquals(Nd4j.createFromArray(2, 2), out);
+    }
+
+
+    @Test @Ignore //AB 2020/04/01 - https://github.com/eclipse/deeplearning4j/issues/8592
+    public void testReshapeZeros(){
+        int[][] shapes = new int[][]{{2,0}, {10,0},    {10, 0},  {2,0,0,10}, {10, 0},   {0, 0, 10},  {0,2,10}, {1,2,0}};
+        int[][] reshape = new int[][]{{2,-1}, {2,0,-1}, {5,2,-1}, {2,0,-1},   {-1, 2, 0}, {2, -1, 0}, {2, 0, 0, 0, -1}, {2,0,-1}};
+        int[][] expected = new int[][]{{2,0}, {2,0,5}, {5,2,0}, {2,0,10}, {5,2,0}, {2,5,0}, {2,0,0,0,10}, {2,0,1}};
+
+        for( int i=0; i<shapes.length; i++ ){
+            System.out.println(i);
+            long[] orig = ArrayUtil.toLongArray(shapes[i]);
+            int[] r = reshape[i];
+            long[] exp = ArrayUtil.toLongArray(expected[i]);
+
+            SameDiff sd = SameDiff.create();
+            SDVariable v = sd.placeHolder("orig", DataType.FLOAT, orig);
+            SDVariable rs = v.reshape(r);
+            SDVariable rs2 = v.reshape(sd.constant(Nd4j.createFromArray(r)));
+
+            INDArray out = rs.eval(Collections.singletonMap("orig", Nd4j.create(DataType.FLOAT, orig)));
+            assertArrayEquals(exp, out.shape());
+
+            out = rs2.eval(Collections.singletonMap("orig", Nd4j.create(DataType.FLOAT, orig)));
+            assertArrayEquals(exp, out.shape());
+        }
     }
 }

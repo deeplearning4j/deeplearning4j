@@ -40,16 +40,15 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_0) {
 
 TEST_F(ArrayOptionsTests, TestShape_Basic_1) {
     shape[5] = 2;
-    
+
 
     ASSERT_TRUE(ArrayOptions::isNewFormat(shape));
     ASSERT_TRUE(ArrayOptions::isSparseArray(shape));
 }
 
-
 TEST_F(ArrayOptionsTests, TestShape_Basic_2) {
     shape[5] = 258;
-    
+
     ASSERT_TRUE(ArrayOptions::isNewFormat(shape));
 
     ASSERT_TRUE(ArrayOptions::isSparseArray(shape));
@@ -58,7 +57,7 @@ TEST_F(ArrayOptionsTests, TestShape_Basic_2) {
 
 TEST_F(ArrayOptionsTests, TestShape_Basic_3) {
     ASSERT_EQ(0, shape::extra(shape));
-    
+
     ASSERT_EQ(SpaceType::CONTINUOUS, ArrayOptions::spaceType(shape));
 }
 

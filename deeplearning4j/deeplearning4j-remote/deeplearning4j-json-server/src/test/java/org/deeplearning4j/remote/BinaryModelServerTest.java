@@ -19,6 +19,7 @@ import org.nd4j.remote.clients.serde.BinarySerializer;
 import org.nd4j.remote.clients.serde.JsonDeserializer;
 import org.nd4j.remote.clients.serde.JsonSerializer;
 import org.nd4j.remote.clients.serde.impl.IntegerSerde;
+import org.nd4j.resources.Resources;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import javax.imageio.ImageIO;
@@ -65,7 +66,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
     @Test
     public void testMlnMnist_ImageInput() throws Exception {
 
-        val modelFile = new ClassPathResource("models/mnist/mnist-model.zip").getFile();
+        val modelFile = Resources.asFile("models/mnist/mnist-model.zip");
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(modelFile);
 
         val server = new JsonModelServer.Builder<BufferedImage, Integer>(net)
@@ -129,7 +130,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
     @Test
     public void testMlnMnist_ImageInput_Async() throws Exception {
 
-        val modelFile = new ClassPathResource("models/mnist/mnist-model.zip").getFile();
+        val modelFile = Resources.asFile("models/mnist/mnist-model.zip");
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(modelFile);
 
         val server = new JsonModelServer.Builder<BufferedImage, Integer>(net)
@@ -198,7 +199,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
     @Test
     public void testBinaryIn_BinaryOut() throws Exception {
 
-        val modelFile = new ClassPathResource("models/mnist/mnist-model.zip").getFile();
+        val modelFile = Resources.asFile("models/mnist/mnist-model.zip");
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(modelFile);
 
         val server = new JsonModelServer.Builder<BufferedImage, BufferedImage>(net)

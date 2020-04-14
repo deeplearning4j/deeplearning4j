@@ -34,6 +34,10 @@ public class MatrixSetDiag extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{in, diag}, inPlace);
     }
 
+    public MatrixSetDiag(SameDiff sameDiff, SDVariable in, SDVariable diag) {
+        this(sameDiff, in, diag, false);
+    }
+
     public MatrixSetDiag(@NonNull INDArray in, @NonNull INDArray diag){
         super(new INDArray[]{in, diag}, null);
     }

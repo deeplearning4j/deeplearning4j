@@ -112,7 +112,7 @@ namespace sd {
                 int numThreads = 256;
                 int numBlocks = sd::math::nd4j_max<int>(256, sd::math::nd4j_min<int>(1, shape::length(xShapeInfo) / numThreads));
                 int workspaceSize = numBlocks * numBins;
-                auto tmp = NDArrayFactory::create<Z>('c', {workspaceSize});
+                auto tmp = NDArrayFactory::create<Z>('c', {workspaceSize}, context);
 
                 histogramKernel<X, Z><<<numBlocks, numThreads, 32768, *context->getCudaStream()>>>(xBuffer, dxShapeInfo, zBuffer, zShapeInfo, tmp.getSpecialBuffer(), context->getReductionPointer(), numBins, reinterpret_cast<X*>(min_val), reinterpret_cast<X*>(max_val));
 

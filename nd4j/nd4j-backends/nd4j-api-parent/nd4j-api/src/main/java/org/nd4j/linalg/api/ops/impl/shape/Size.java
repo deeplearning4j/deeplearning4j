@@ -22,6 +22,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
@@ -46,6 +47,11 @@ public class Size extends DynamicCustomOp {
     public Size(SameDiff sameDiff, SDVariable input) {
         super(null, sameDiff, new SDVariable[] {input}, false);
     }
+
+    public Size(INDArray in) {
+        addInputArgument(in);
+    }
+
 
     @Override
     public String onnxName() {

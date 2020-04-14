@@ -16,12 +16,23 @@
 
 //================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
-package org.nd4j.linalg.factory.enums;
+package org.nd4j.enums;
 
 /**
- * Data format: "NCHW" or "NHWC" */
-public enum DataFormat {
-  NCHW,
+ * direction <br>
+ *  FWD: 0 = fwd
+ *  BWD: 1 = bwd
+ *  BIDIR_SUM: 2 = bidirectional sum
+ *  BIDIR_CONCAT: 3 = bidirectional concat
+ *  BIDIR_EXTRA_DIM: 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3) */
+public enum LSTMDirectionMode {
+  FWD,
 
-  NHWC
+  BWD,
+
+  BIDIR_SUM,
+
+  BIDIR_CONCAT,
+
+  BIDIR_EXTRA_DIM
 }

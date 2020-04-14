@@ -22,6 +22,7 @@
 #define LIBND4J_HEADERS_BROADCASTABLE_H
 
 #include <ops/declarable/BroadcastableOp.h>
+#include <ops/declarable/BroadcastableBoolOp.h>
 #include <ops/declarable/headers/common.h>
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 
@@ -261,7 +262,7 @@ namespace sd {
          *
          */
         #if NOT_EXCLUDED(OP_equals)
-        DECLARE_BROADCASTABLE_OP(equals, 0, 0);
+        DECLARE_BROADCASTABLE_BOOL_OP(equals, 0, 0);
         #endif
 
         /**
@@ -269,7 +270,7 @@ namespace sd {
          * Math is: _x != _y ? (T) 1.0f : (T) 0.0f;
          */
         #if NOT_EXCLUDED(OP_not_equals)
-        DECLARE_BROADCASTABLE_OP(not_equals, 0, 0);
+        DECLARE_BROADCASTABLE_BOOL_OP(not_equals, 0, 0);
         #endif
 
         /**
@@ -277,7 +278,7 @@ namespace sd {
          * Math is: _x <= _y ? (T) 1.0f : (T) 0.0f;
          */
         #if NOT_EXCLUDED(OP_less_equal)
-        DECLARE_BROADCASTABLE_OP(less_equal, 0, 0);
+        DECLARE_BROADCASTABLE_BOOL_OP(less_equal, 0, 0);
         #endif
 
         /**
@@ -285,7 +286,7 @@ namespace sd {
          * Math is: _x >= _y ? (T) 1.0f : (T) 0.0f;
          */
         #if NOT_EXCLUDED(OP_greater_equal)
-        DECLARE_BROADCASTABLE_OP(greater_equal, 0, 0);
+        DECLARE_BROADCASTABLE_BOOL_OP(greater_equal, 0, 0);
         #endif
 
         /**
@@ -293,7 +294,7 @@ namespace sd {
          * Math is: _x < _y ? (T) 1.0f : (T) 0.0f;
          */
         #if NOT_EXCLUDED(OP_less)
-        DECLARE_BROADCASTABLE_OP(less, 0, 0);
+        DECLARE_BROADCASTABLE_BOOL_OP(less, 0, 0);
         #endif
 
         /**
@@ -301,7 +302,7 @@ namespace sd {
          * Math is: _x > _y ? (T) 1.0f : (T) 0.0f;
          */
         #if NOT_EXCLUDED(OP_greater)
-        DECLARE_BROADCASTABLE_OP(greater, 0, 0);
+        DECLARE_BROADCASTABLE_BOOL_OP(greater, 0, 0);
         #endif
 
         /**

@@ -56,6 +56,14 @@ public class Upsampling2d extends DynamicCustomOp {
         addIArgument(nchw ? 1 : 0);
     }
 
+    public Upsampling2d(SameDiff sameDiff, SDVariable input, int scaleH, int scaleW, boolean nchw) {
+        this(sameDiff, input, nchw, scaleH, scaleW);
+    }
+
+    public Upsampling2d(SameDiff sameDiff, SDVariable input, int scale) {
+        super(null,sameDiff, new SDVariable[]{input});
+        addIArgument(scale);
+    }
 
     public Upsampling2d(INDArray input, int scale) {
         this(input, scale, scale, true);

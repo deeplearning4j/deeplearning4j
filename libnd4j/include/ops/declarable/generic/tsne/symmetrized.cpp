@@ -14,9 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// @author George A. Shulinok <sgazeos@gmail.com>, created on 4/18/2019.
-//
+ //
+ // @author George A. Shulinok <sgazeos@gmail.com>, created on 4/18/2019.
+ //
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_barnes_symmetrized)
@@ -25,20 +25,20 @@
 #include <ops/declarable/helpers/BarnesHutTsne.h>
 
 namespace sd {
-namespace ops  {
-		NDArray* rowCountsPtr = nullptr;
+    namespace ops {
+        NDArray* rowCountsPtr = nullptr;
 
-		CUSTOM_OP_IMPL(barnes_symmetrized, 3, 3, false, 0, -1) {
-    		auto rowP  = INPUT_VARIABLE(0);
-            auto colP  = INPUT_VARIABLE(1);
-            auto valP  = INPUT_VARIABLE(2);
+        CUSTOM_OP_IMPL(barnes_symmetrized, 3, 3, false, 0, -1) {
+            auto rowP = INPUT_VARIABLE(0);
+            auto colP = INPUT_VARIABLE(1);
+            auto valP = INPUT_VARIABLE(2);
             auto N = rowP->lengthOf() - 1;
-    		auto outputRows = OUTPUT_VARIABLE(0);
+            auto outputRows = OUTPUT_VARIABLE(0);
             auto outputCols = OUTPUT_VARIABLE(1);
             auto outputVals = OUTPUT_VARIABLE(2);
 
-    		if (block.getIArguments()->size() > 0)
-    		    N = INT_ARG(0);
+            if (block.getIArguments()->size() > 0)
+                N = INT_ARG(0);
 
             if (rowCountsPtr) {
                 helpers::barnes_symmetrize(rowP, colP, valP, N, outputRows, outputCols, outputVals, rowCountsPtr);
@@ -46,33 +46,33 @@ namespace ops  {
                 return Status::OK();
             }
             return Status::THROW("barnes_symmetrized: Cannot loop due wrong input data.");
-		}
+        }
 
-		DECLARE_TYPES(barnes_symmetrized) {
-			getOpDescriptor()
-				->setAllowedInputTypes(0, {DataType::INT32})
-                ->setAllowedInputTypes(1, {DataType::INT32})
-                ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
-                ->setAllowedOutputTypes(1, {DataType::INT32})
-                ->setAllowedOutputTypes(1, {DataType::INT32})
-                ->setAllowedOutputTypes(2, {ALL_INTS, ALL_FLOATS})
-				->setSameMode(false);
-		}
+        DECLARE_TYPES(barnes_symmetrized) {
+            getOpDescriptor()
+                ->setAllowedInputTypes(0, { DataType::INT32 })
+                ->setAllowedInputTypes(1, { DataType::INT32 })
+                ->setAllowedInputTypes(2, { ALL_INTS, ALL_FLOATS })
+                ->setAllowedOutputTypes(1, { DataType::INT32 })
+                ->setAllowedOutputTypes(1, { DataType::INT32 })
+                ->setAllowedOutputTypes(2, { ALL_INTS, ALL_FLOATS })
+                ->setSameMode(false);
+        }
 
-		DECLARE_SHAPE_FN(barnes_symmetrized) {
-    		auto valPShapeInfo = inputShape->at(2);
+        DECLARE_SHAPE_FN(barnes_symmetrized) {
+            auto valPShapeInfo = inputShape->at(2);
             Nd4jLong* outShapeInfo;
-            auto rowP  = INPUT_VARIABLE(0);
-            auto colP  = INPUT_VARIABLE(1);
+            auto rowP = INPUT_VARIABLE(0);
+            auto colP = INPUT_VARIABLE(1);
             auto N = rowP->lengthOf() - 1;
             if (block.getIArguments()->size() > 0)
                 N = INT_ARG(0);
             auto dataType = rowP->dataType(); //ArrayOptions::dataType(inputShape->at(0));
-            NDArray* rowCounts = NDArrayFactory::create_<int>('c', {N}); //rowP->dup();
+            NDArray* rowCounts = NDArrayFactory::create_<int>('c', { N }, block.launchContext()); //rowP->dup();
             //srowCounts->assign(0);
             Nd4jLong len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
             rowCounts->syncToHost();
-//            rowCounts->printBuffer("Row Counts");
+            //            rowCounts->printBuffer("Row Counts");
             if (len <= 0) throw std::runtime_error("barnes_symmetrized: Cannot allocate shape due non-positive len.");
             rowCountsPtr = rowCounts;
             //ALLOCATE(outShapeInfo, block.workspace(), shape::shapeInfoLength(2), Nd4jLong);
@@ -80,13 +80,13 @@ namespace ops  {
 //            outShapeInfo[2] = len;
            // ShapeUtils::updateStridesAndType(outShapeInfo, ArrayOptions::dataType(valPShapeInfo), 'c');
             //outShapeInfo = ShapeBuilders::createVectorShapeInfo(ArrayOptions::dataType(valPShapeInfo), len, block.workspace());
-            outShapeInfo = sd::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', {1, len}, block.getWorkspace());
-            auto outColsShapeInfo = sd::ShapeBuilders::createShapeInfo(dataType, 'c', {1, len}, block.getWorkspace());
-            auto outRowsShapeInfo = sd::ShapeBuilders::createShapeInfo(dataType, 'c', {1, N + 1}, block.getWorkspace());
-    		return SHAPELIST(CONSTANT(outRowsShapeInfo), CONSTANT(outColsShapeInfo), CONSTANT(outShapeInfo));
-		}
+            outShapeInfo = sd::ShapeBuilders::createShapeInfo(ArrayOptions::dataType(valPShapeInfo), 'c', { 1, len }, block.getWorkspace());
+            auto outColsShapeInfo = sd::ShapeBuilders::createShapeInfo(dataType, 'c', { 1, len }, block.getWorkspace());
+            auto outRowsShapeInfo = sd::ShapeBuilders::createShapeInfo(dataType, 'c', { 1, N + 1 }, block.getWorkspace());
+            return SHAPELIST(CONSTANT(outRowsShapeInfo), CONSTANT(outColsShapeInfo), CONSTANT(outShapeInfo));
+        }
 
-}
+    }
 }
 
 #endif

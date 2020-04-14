@@ -19,11 +19,13 @@ package org.nd4j.linalg.api.blas.impl;
 import lombok.val;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.params.GemvParameters;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -57,6 +59,10 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
         GemvParameters parameters = new GemvParameters(A, X, Y);
+
+        Nd4j.exec(new Mmul(A, X, Y, alpha, beta, MMulTranspose.builder().transposeA(false).build()));
+
+        /*
         if (A.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, parameters.getA(), parameters.getX(),
                             parameters.getY());
@@ -86,7 +92,7 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         } else {
             throw new ND4JIllegalStateException("Unsupported data type " + A.dataType());
         }
-
+        */
         OpExecutionerUtil.checkForAny(Y);
     }
 

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -33,12 +34,15 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class ASin extends BaseTransformStrictOp {
     public ASin(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ASin() {
+    public ASin(SameDiff sameDiff, SDVariable i_v) {
+
+        this(sameDiff, i_v, false);
     }
 
     public ASin(INDArray x, INDArray z) {

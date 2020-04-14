@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -33,12 +34,15 @@ import java.util.List;
  *
  * @author Max Pumperla
  */
+@NoArgsConstructor
 public class MergeAddOp extends BaseDynamicTransformOp {
-
-    public MergeAddOp() {}
 
     public MergeAddOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
+    }
+
+    public MergeAddOp(SameDiff sameDiff, SDVariable[] args) {
+        this(sameDiff, args, false);
     }
 
     public MergeAddOp(@NonNull INDArray... inputs){

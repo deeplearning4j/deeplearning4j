@@ -76,8 +76,13 @@ TEST_F(MklDnnTests, helpers_includer) {
     sd::ops::platforms::PLATFORM_tanh_ENGINE_CPU tanh;
 
     sd::ops::platforms::PLATFORM_tanh_ENGINE_CPU tanh_bp;
+   
+    sd::ops::platforms::PLATFORM_xw_plus_b_ENGINE_CPU xw_plus_b;
 
-    printer({&conv2d, &conv2d_bp, &conv3d, &conv3d_bp, &avgpool2d, &avgpool2d_bp, &maxpool2d, &maxpool2d_bp, &avgpool3d, &avgpool3d_bp, &maxpool3d, &maxpool3d_bp, &lrn, &batchnorm, &matmul, &softmax, &softmax_bp, &tanh, &tanh_bp });
+    sd::ops::platforms::PLATFORM_xw_plus_b_bp_ENGINE_CPU xw_plus_b_bp;
 
+
+    printer({&conv2d, &conv2d_bp, &conv3d, &conv3d_bp, &avgpool2d, &avgpool2d_bp, &maxpool2d, &maxpool2d_bp, &avgpool3d, &avgpool3d_bp, &maxpool3d, &maxpool3d_bp, &lrn, &batchnorm, &matmul, &softmax, &softmax_bp, &tanh, &tanh_bp, &xw_plus_b, &xw_plus_b_bp });
+    
 #endif
 }

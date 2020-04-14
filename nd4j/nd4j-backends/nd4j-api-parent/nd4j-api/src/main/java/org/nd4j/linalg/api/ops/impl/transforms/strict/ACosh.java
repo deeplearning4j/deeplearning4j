@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -32,10 +33,8 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class ACosh extends BaseTransformStrictOp {
-
-    public ACosh() {
-    }
 
     public ACosh(INDArray x) {
         super(x);

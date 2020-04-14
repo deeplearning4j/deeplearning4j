@@ -44,16 +44,21 @@ public class SConv2D extends Conv2D {
         super(sameDiff, inputFunctions, conv2DConfig);
     }
 
+    public SConv2D(@NonNull SameDiff sameDiff, @NonNull SDVariable layerInput, @NonNull SDVariable depthWeights,
+                   SDVariable pointWeights, SDVariable bias, @NonNull Conv2DConfig conv2DConfig) {
+        this(sameDiff, wrapFilterNull(layerInput, depthWeights, pointWeights, bias), conv2DConfig);
+    }
+
     public SConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
         super(inputs, outputs, config);
     }
 
-    public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights, INDArray pointWeights, INDArray bias, @NonNull Conv2DConfig Conv2DConfig){
-        this(wrapFilterNull(layerInput, depthWeights, pointWeights, bias), null, Conv2DConfig);
-    }
-
     public SConv2D(@NonNull INDArray layerInput, @NonNull INDArray depthWeights, INDArray pointWeights, @NonNull Conv2DConfig Conv2DConfig){
         this(wrapFilterNull(layerInput, depthWeights, pointWeights), null, Conv2DConfig);
+    }
+
+    public SConv2D(INDArray layerInput, INDArray depthWeights, INDArray pointWeights, INDArray bias, Conv2DConfig config) {
+        this(wrapFilterNull(layerInput, depthWeights, pointWeights, bias), null, config);
     }
 
     public SConv2D() {}

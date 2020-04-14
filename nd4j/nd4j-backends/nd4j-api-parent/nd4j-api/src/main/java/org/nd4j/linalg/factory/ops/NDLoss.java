@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -222,15 +222,12 @@ public class NDLoss {
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
-   * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param epsilon epsilon
    * @return output Log loss  (NUMERIC type)
    */
-  public INDArray logLoss(INDArray label, INDArray predictions, INDArray weights, double epsilon) {
+  public INDArray logLoss(INDArray label, INDArray predictions) {
     NDValidation.validateNumerical("logLoss", "label", label);
     NDValidation.validateNumerical("logLoss", "predictions", predictions);
-    NDValidation.validateNumerical("logLoss", "weights", weights);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, weights, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, epsilon))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.loss.LogLoss(label, predictions, null, org.nd4j.autodiff.loss.LossReduce.MEAN_BY_NONZERO_WEIGHT_COUNT, 0.0))[0];
   }
 
   /**

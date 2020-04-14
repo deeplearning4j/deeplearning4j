@@ -46,6 +46,10 @@ public class ExpandDims extends DynamicCustomOp {
     public ExpandDims() {
     }
 
+    public ExpandDims(SameDiff sameDiff, SDVariable args, int axis) {
+        this(sameDiff, new SDVariable[]{args}, axis);
+    }
+
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, int axis) {
         super(null, sameDiff, args);
         if (axis == Integer.MAX_VALUE) {
@@ -61,6 +65,11 @@ public class ExpandDims extends DynamicCustomOp {
 
     public ExpandDims(INDArray[] inputs, INDArray[] outputs) {
         super(null, inputs, outputs);
+    }
+
+    public ExpandDims(INDArray input, int axis) {
+        addInputArgument(input);
+        addIArgument(axis);
     }
 
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {

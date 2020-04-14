@@ -71,6 +71,12 @@ public class Svd extends DynamicCustomOp {
         addIArgument(ArrayUtil.fromBoolean(fullUV), ArrayUtil.fromBoolean(computeUv), switchNum);
     }
 
+    public Svd(INDArray input, boolean fullUV, boolean computeUV, int switchNum) {
+        addInputArgument(input);
+        addBArgument(fullUV, computeUV);
+        addIArgument(switchNum);
+    }
+
     @Override
     public String opName(){
         return "svd";

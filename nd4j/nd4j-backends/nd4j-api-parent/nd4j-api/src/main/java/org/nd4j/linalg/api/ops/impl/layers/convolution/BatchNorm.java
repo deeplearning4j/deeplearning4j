@@ -76,6 +76,19 @@ public class BatchNorm extends DynamicCustomOp {
         addArgs();
     }
 
+    public BatchNorm(SameDiff sameDiff, SDVariable input, SDVariable mean, SDVariable variance,
+                     SDVariable gamma, SDVariable beta, double epsilon, int[] axis) {
+        super(null,sameDiff, wrapFilterNull(input, mean, variance, gamma, beta), false);
+        Preconditions.checkState(axis != null && axis.length > 0, "Invalid axis argument: axis must be specified" +
+                "and length > 0. Got %s", axis);
+        this.sameDiff = sameDiff;
+        this.applyBeta = beta != null;
+        this.applyGamma = gamma != null;
+        this.epsilon = epsilon;
+        this.jaxis = axis;
+        addArgs();
+    }
+
     public BatchNorm(INDArray input, INDArray mean, INDArray variance, INDArray gamma, INDArray beta, double epsilon, int... axis){
         super(wrapFilterNull(input, mean, variance, gamma, beta), null);
         this.jaxis = axis;

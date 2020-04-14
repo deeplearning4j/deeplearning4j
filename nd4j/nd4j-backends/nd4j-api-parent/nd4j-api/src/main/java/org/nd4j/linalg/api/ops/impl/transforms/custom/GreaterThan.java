@@ -37,12 +37,20 @@ import java.util.List;
 public class GreaterThan extends BaseDynamicTransformOp {
     public GreaterThan() {}
 
+    public GreaterThan( SameDiff sameDiff, SDVariable x, SDVariable y) {
+        this(sameDiff, new SDVariable[]{x,y},false);
+    }
+
     public GreaterThan( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
 
     public GreaterThan( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
+    }
+
+    public GreaterThan( INDArray x, INDArray y) {
+        addInputArgument(x,y);
     }
 
     public GreaterThan(INDArray x, INDArray y, INDArray z){

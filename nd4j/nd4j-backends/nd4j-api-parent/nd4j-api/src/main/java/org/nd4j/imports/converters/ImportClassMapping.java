@@ -146,6 +146,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer.class,
+            org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell.class,
             org.nd4j.linalg.api.ops.impl.loss.AbsoluteDifferenceLoss.class,
@@ -633,7 +634,9 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.Lu.class,
             org.nd4j.linalg.api.ops.custom.TriangularSolve.class,
             org.nd4j.linalg.api.ops.custom.LinearSolve.class,
-            org.nd4j.linalg.api.ops.custom.Lstsq.class
+            org.nd4j.linalg.api.ops.custom.Lstsq.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.Qr.class,
+            org.nd4j.linalg.api.ops.custom.Logdet.class
     );
 
     static {

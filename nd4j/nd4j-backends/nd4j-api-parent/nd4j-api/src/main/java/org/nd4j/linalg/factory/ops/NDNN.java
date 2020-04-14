@@ -1,5 +1,5 @@
-/* ******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -107,7 +107,7 @@ public class NDNN {
     NDValidation.validateNumerical("dotProductAttention", "keys", keys);
     NDValidation.validateNumerical("dotProductAttention", "values", values);
     NDValidation.validateNumerical("dotProductAttention", "mask", mask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention(queries, keys, values, mask, scaled))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention(queries, keys, values, mask, scaled, false))[0];
   }
 
   /**
@@ -227,7 +227,7 @@ public class NDNN {
     NDValidation.validateNumerical("layerNorm", "input", input);
     NDValidation.validateNumerical("layerNorm", "gain", gain);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, channelsFirst, dimensions))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm(input, gain, null, channelsFirst, dimensions))[0];
   }
 
   /**
@@ -237,12 +237,11 @@ public class NDNN {
    * Alpha value is most commonly set to 0.01<br>
    *
    * @param x Input variable (NUMERIC type)
-   * @param alpha Cutoff - commonly 0.01 (NUMERIC type)
+   * @param alpha Cutoff - commonly 0.01
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray leakyRelu(INDArray x, INDArray alpha) {
+  public INDArray leakyRelu(INDArray x, double alpha) {
     NDValidation.validateNumerical("leakyRelu", "x", x);
-    NDValidation.validateNumerical("leakyRelu", "alpha", alpha);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU(x, alpha));
   }
 
@@ -250,12 +249,11 @@ public class NDNN {
    * Leaky ReLU derivative: dOut/dIn given input.<br>
    *
    * @param x Input variable (NUMERIC type)
-   * @param alpha Cutoff - commonly 0.01 (NUMERIC type)
+   * @param alpha Cutoff - commonly 0.01
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray leakyReluDerivative(INDArray x, INDArray alpha) {
+  public INDArray leakyReluDerivative(INDArray x, double alpha) {
     NDValidation.validateNumerical("leakyReluDerivative", "x", x);
-    NDValidation.validateNumerical("leakyReluDerivative", "alpha", alpha);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative(x, alpha));
   }
 
@@ -343,7 +341,21 @@ public class NDNN {
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wv", Wv);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "Wo", Wo);
     NDValidation.validateNumerical("multiHeadDotProductAttention", "mask", mask);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention(queries, keys, values, Wq, Wk, Wv, Wo, mask, scaled, false))[0];
+  }
+
+  /**
+   * Padding operation <br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param padding Padding value (NUMERIC type)
+   * @param constant Padding constant
+   * @return output Padded input (NUMERIC type)
+   */
+  public INDArray pad(INDArray input, INDArray padding, double constant) {
+    NDValidation.validateNumerical("pad", "input", input);
+    NDValidation.validateNumerical("pad", "padding", padding);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, constant))[0];
   }
 
   /**
@@ -462,6 +474,17 @@ public class NDNN {
   }
 
   /**
+   * Softmax activation, along the specified dimension<br>
+   *
+   * @param x Input (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray softmax(INDArray x) {
+    NDValidation.validateNumerical("softmax", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax(x, -1))[0];
+  }
+
+  /**
    * Softmax derivative function<br>
    *
    * @param x Softmax input (NUMERIC type)
@@ -518,5 +541,16 @@ public class NDNN {
   public INDArray swish(INDArray x) {
     NDValidation.validateNumerical("swish", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Swish(x));
+  }
+
+  /**
+   * Elementwise tanh (hyperbolic tangent) operation: out = tanh(x)<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray tanh(INDArray x) {
+    NDValidation.validateNumerical("tanh", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh(x));
   }
 }

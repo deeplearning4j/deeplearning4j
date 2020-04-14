@@ -45,6 +45,11 @@ public class SoftmaxCrossEntropyLoss extends BaseLoss {
 
     private double labelSmoothing = 0.0;
 
+    public SoftmaxCrossEntropyLoss(SameDiff sameDiff, SDVariable labels, SDVariable logits,
+                                   SDVariable weights, LossReduce lossReduce, double labelSmoothing) {
+        this(sameDiff, lossReduce, logits, weights,  labels, labelSmoothing);
+    }
+
     public SoftmaxCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights, SDVariable labels,
                                    double labelSmoothing) {
         super(sameDiff, lossReduce, logits, weights, labels);

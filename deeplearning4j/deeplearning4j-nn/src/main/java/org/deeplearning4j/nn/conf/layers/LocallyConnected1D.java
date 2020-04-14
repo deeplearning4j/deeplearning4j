@@ -178,9 +178,11 @@ public class LocallyConnected1D extends SameDiffLayer {
             //Note: for same mode, bottom/right padding can be 1 more than top/left padding
             //NCW format.
             if(cm == ConvolutionMode.Same) {
-                layerInput = sameDiff.nn().pad(layerInput, new int[][]{{0, 0}, {0, 0}, {padding, paddingR}}, 0);
+                layerInput = sameDiff.nn().pad(layerInput,
+                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, paddingR}})), 0);
             } else {
-                layerInput = sameDiff.nn().pad(layerInput, new int[][]{{0, 0}, {0, 0}, {padding, padding}}, 0);
+                layerInput = sameDiff.nn().pad(layerInput,
+                        sameDiff.constant(Nd4j.createFromArray(new int[][]{{0, 0}, {0, 0}, {padding, padding}})), 0);
             }
         }
 

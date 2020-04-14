@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,19 +17,18 @@
 
 package org.deeplearning4j.malmo;
 
-import java.util.HashMap;
-
+import com.microsoft.msr.malmo.TimestampedStringVector;
+import com.microsoft.msr.malmo.WorldState;
 import org.json.JSONArray;
 import org.json.JSONObject;
-
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import com.microsoft.msr.malmo.TimestampedStringVector;
-import com.microsoft.msr.malmo.WorldState;
+import java.util.HashMap;
 
 /**
  * Observation space that contains a grid of Minecraft blocks
+ *
  * @author howard-abrams (howard.abrams@ca.com) on 1/12/17.
  */
 public class MalmoObservationSpaceGrid extends MalmoObservationSpace {
@@ -43,11 +43,11 @@ public class MalmoObservationSpaceGrid extends MalmoObservationSpace {
 
     /**
      * Construct observation space from a array of blocks policy should distinguish between.
-     * 
-     * @param name Name given to Grid element in mission specification
-     * @param xSize total x size of grid
-     * @param ySize total y size of grid
-     * @param zSize total z size of grid
+     *
+     * @param name   Name given to Grid element in mission specification
+     * @param xSize  total x size of grid
+     * @param ySize  total y size of grid
+     * @param zSize  total z size of grid
      * @param blocks Array of block names to distinguish between. Supports combination of individual strings and/or arrays of strings to map multiple block types to a single observation value. If not specified, it will dynamically map block names to integers - however, because these will be mapped as they are seen, different missions may have different mappings!
      */
     public MalmoObservationSpaceGrid(String name, int xSize, int ySize, int zSize, Object... blocks) {
@@ -78,7 +78,7 @@ public class MalmoObservationSpaceGrid extends MalmoObservationSpace {
 
     @Override
     public int[] getShape() {
-        return new int[] {totalSize};
+        return new int[]{totalSize};
     }
 
     @Override

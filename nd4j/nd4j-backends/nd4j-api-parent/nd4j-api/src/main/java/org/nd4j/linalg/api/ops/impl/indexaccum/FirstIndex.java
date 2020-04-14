@@ -54,8 +54,16 @@ public class FirstIndex extends BaseIndexAccumulation {
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
+    public FirstIndex(SameDiff sameDiff, SDVariable i_v, boolean keepDims, Condition condition, int... dimensions) {
+        this(sameDiff, i_v, condition, keepDims, dimensions);
+    }
+
     public FirstIndex(INDArray x, @NonNull Condition condition, int... dimension) {
         this(x, condition, false, dimension);
+    }
+
+    public FirstIndex(INDArray x, boolean keepDims, @NonNull Condition condition, int... dimension) {
+        this(x,condition,keepDims,dimension);
     }
 
     public FirstIndex(INDArray x, @NonNull Condition condition, boolean keepDims, int... dimension) {
@@ -71,7 +79,6 @@ public class FirstIndex extends BaseIndexAccumulation {
         this.eps = eps;
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
-
 
     @Override
     public int opNum() {

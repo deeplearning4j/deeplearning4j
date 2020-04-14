@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,777 +14,1042 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
+
 package org.nd4j.autodiff.samediff.ops;
 
-import lombok.NonNull;
+import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
+
+import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.base.Preconditions;
+import org.nd4j.enums.DataFormat;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 
-import static org.nd4j.autodiff.samediff.ops.SDValidation.validateFloatingPoint;
-import static org.nd4j.autodiff.samediff.ops.SDValidation.validateNumerical;
-
-/**
- * SameDiff Convolutional Neural Network operations - CNN1d, 2d and 3d ops - as well as related functions.<br>
- * Accessible via {@link SameDiff#cnn()}<br>
- * See also {@link SDNN} (accessible via {@link SameDiff#nn()} for general neural network ops.<br>
- * See also {@link SDRNN} (accessible via {@link SameDiff#rnn()} for recurrent neural network ops.<br>
- *
- * @author Alex Black
- */
 public class SDCNN extends SDOps {
-
-    public SDCNN(SameDiff sameDiff) {
-        super(sameDiff);
-    }
-
-    /**
-     * See {@link #avgPooling2d(String, SDVariable, Pooling2DConfig)}.
-     */
-    public SDVariable avgPooling2d(@NonNull SDVariable input, @NonNull Pooling2DConfig pooling2DConfig) {
-        return avgPooling2d(null, input, pooling2DConfig);
-    }
-
-    /**
-     * 2D Convolution layer operation - average pooling 2d
-     *
-     * @param name            name of the operation in SameDiff
-     * @param input           the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param pooling2DConfig the configuration
-     * @return Result after applying average pooling on the input
-     */
-    public SDVariable avgPooling2d(String name, @NonNull SDVariable input, @NonNull Pooling2DConfig pooling2DConfig) {
-        validateFloatingPoint("avgPooling2d", input);
-        SDVariable ret = f().avgPooling2d(input, pooling2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #avgPooling3d(String, SDVariable, Pooling3DConfig)}.
-     */
-    public SDVariable avgPooling3d(@NonNull SDVariable input, @NonNull Pooling3DConfig pooling3DConfig) {
-        return avgPooling3d(null, input, pooling3DConfig);
-    }
-
-    /**
-     * 3D convolution layer operation - average pooling 3d
-     *
-     * @param name            name of the operation in SameDiff
-     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                        (shape [minibatch, depth, height, width, channels])
-     * @param pooling3DConfig the configuration
-     * @return Result after applying average pooling on the input
-     */
-    public SDVariable avgPooling3d(String name, @NonNull SDVariable input, @NonNull Pooling3DConfig pooling3DConfig) {
-        validateFloatingPoint("avgPooling3d", input);
-        SDVariable ret = f().avgPooling3d(input, pooling3DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #batchToSpace(String, SDVariable, int[], int[][])
-     */
-    public SDVariable batchToSpace(@NonNull SDVariable x, @NonNull int[] blocks, @NonNull int[][] crops) {
-        return batchToSpace(null, x, blocks, crops);
-    }
-
-    /**
-     * Convolution 2d layer batch to space operation on 4d input.
-     * Reduces input batch dimension by rearranging data into a larger spatial dimensions
-     *
-     * @param name   Output variable name
-     * @param x      Input variable. 4d input
-     * @param blocks Block size, in the height/width dimension
-     * @param crops  Optional 2d int[] array: values [[crop top, crop bottom], [crop left, crop right]]
-     * @return Output variable
-     * @see #spaceToBatch(String, SDVariable, int[], int[][])
-     */
-    public SDVariable batchToSpace(String name, @NonNull SDVariable x, @NonNull int[] blocks, @NonNull int[][] crops) {
-        validateNumerical("batchToSpace", x);
-        SDVariable ret = f().batchToSpace(x, blocks, crops);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * See {@link #col2Im(String, SDVariable, Conv2DConfig)}.
-     */
-    public SDVariable col2Im(@NonNull SDVariable in, @NonNull Conv2DConfig config) {
-        return col2Im(null, in, config);
-    }
-
-    /**
-     * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape
-     * [minibatch, inputChannels, height, width]
-     *
-     * @param name   Name of the output variable
-     * @param in     Input - rank 6 input with shape [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
-     * @param config Convolution configuration for the col2im operation
-     * @return Col2Im output variable
-     */
-    public SDVariable col2Im(String name, @NonNull SDVariable in, @NonNull Conv2DConfig config) {
-        SDVariable ret = f().col2Im(in, config);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #conv1d(String, SDVariable, SDVariable, SDVariable, Conv1DConfig)}, no bias.
-     */
-    public SDVariable conv1d(@NonNull SDVariable input, @NonNull SDVariable weights, @NonNull Conv1DConfig conv1DConfig) {
-        return conv1d((String) null, input, weights, conv1DConfig);
-    }
-
-    /**
-     * See {@link #conv1d(String, SDVariable, SDVariable, SDVariable, Conv1DConfig)}, no bias.
-     */
-    public SDVariable conv1d(String name, @NonNull SDVariable input, @NonNull SDVariable weights, @NonNull Conv1DConfig conv1DConfig) {
-        validateFloatingPoint("conv1d", input);
-        validateFloatingPoint("conv1d", weights);
-        SDVariable ret = f().conv1d(input, weights, conv1DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #conv1d(String, SDVariable, SDVariable, SDVariable, Conv1DConfig)}.
-     */
-    public SDVariable conv1d(@NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull Conv1DConfig conv1DConfig) {
-        return conv1d(null, input, weights, bias, conv1DConfig);
-    }
-
-    /**
-     * Conv1d operation.
-     *
-     * @param name         name of the operation in SameDiff
-     * @param input        the inputs to conv1d
-     * @param weights      weights for conv1d op - rank 3 array with shape [kernelSize, inputChannels, outputChannels]
-     * @param bias         bias for conv1d op - rank 1 array with shape [outputChannels]. May be null.
-     * @param conv1DConfig the configuration
-     * @return
-     */
-    public SDVariable conv1d(String name, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull Conv1DConfig conv1DConfig) {
-        validateFloatingPoint("conv1d", input);
-        validateFloatingPoint("conv1d", weights);
-        validateFloatingPoint("conv1d", bias);
-        SDVariable ret = f().conv1d(input, weights, bias, conv1DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #conv2d(String, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.
-     */
-    public SDVariable conv2d(@NonNull SDVariable layerInput, @NonNull SDVariable weights, @NonNull Conv2DConfig config) {
-        return conv2d(layerInput, weights, null, config);
-    }
-
-    /**
-     * See {@link #conv2d(String, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.
-     */
-    public SDVariable conv2d(String name, @NonNull SDVariable layerInput, @NonNull SDVariable weights, @NonNull Conv2DConfig config) {
-        return conv2d(name, layerInput, weights, null, config);
-    }
-
-    /**
-     * See {@link #conv2d(String, SDVariable, SDVariable, SDVariable, Conv2DConfig)}.
-     */
-    public SDVariable conv2d(@NonNull SDVariable layerInput, @NonNull SDVariable weights, SDVariable bias, @NonNull Conv2DConfig config) {
-        return conv2d(null, layerInput, weights, bias, config);
-    }
-
-    /**
-     * 2D Convolution operation with optional bias
-     *
-     * @param name         name of the operation in SameDiff
-     * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights    Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels]
-     * @param bias       Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param config     Conv2DConfig configuration
-     * @return result of conv2d op
-     */
-    public SDVariable conv2d(String name, @NonNull SDVariable layerInput, @NonNull SDVariable weights, SDVariable bias, @NonNull Conv2DConfig config) {
-        validateFloatingPoint("conv2d", "input", layerInput);
-        validateFloatingPoint("conv2d", "weights", weights);
-        validateFloatingPoint("conv2d", "bias", bias);
-        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
-        arr[0] = layerInput;
-        arr[1] = weights;
-        if (bias != null)
-            arr[2] = bias;
-        return conv2d(name, arr, config);
-    }
-
-    /**
-     * See {@link #conv2d(String, SDVariable[], Conv2DConfig)}.
-     */
-    public SDVariable conv2d(@NonNull SDVariable[] inputs, @NonNull Conv2DConfig config) {
-        return conv2d(null, inputs, config);
-    }
-
-    /**
-     * 2D Convolution operation with optional bias
-     *
-     * @param name   Name of the output SDVariable
-     * @param inputs an array with either 2 elements (layerInput, weights) or 3 elements (layerInput, weights, bias) as
-     *               described in {@link #conv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param config Conv2DConfig configuration
-     * @return result of convolution 2d operation
-     */
-    public SDVariable conv2d(String name, @NonNull SDVariable[] inputs, @NonNull Conv2DConfig config) {
-        for(SDVariable v : inputs)
-            validateNumerical("conv2d", v);
-        SDVariable ret = f().conv2d(inputs, config);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #conv3d(String, SDVariable, SDVariable, SDVariable, Conv3DConfig)}, no bias.
-     */
-    public SDVariable conv3d(@NonNull SDVariable input, @NonNull SDVariable weights, @NonNull Conv3DConfig conv3DConfig) {
-        return conv3d(null, input, weights, null, conv3DConfig);
-    }
-
-    /**
-     * See {@link #conv3d(String, SDVariable, SDVariable, SDVariable, Conv3DConfig)}, no bias.
-     */
-    public SDVariable conv3d(String name, @NonNull SDVariable input, @NonNull SDVariable weights, @NonNull Conv3DConfig conv3DConfig) {
-        return conv3d(name, input, weights, null, conv3DConfig);
-    }
-
-    /**
-     * See {@link #conv3d(String, SDVariable, SDVariable, SDVariable, Conv3DConfig)}.
-     */
-    public SDVariable conv3d(@NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull Conv3DConfig conv3DConfig) {
-        return conv3d(null, input, weights, bias, conv3DConfig);
-    }
-
-    /**
-     * Convolution 3D operation with optional bias
-     *
-     * @param name         Name of the output variable
-     * @param input        the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                     (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                     (shape [minibatch, depth, height, width, channels])
-     * @param weights      Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels].
-     * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param conv3DConfig the configuration
-     * @return Conv3d output variable
-     */
-    public SDVariable conv3d(String name, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull Conv3DConfig conv3DConfig) {
-        validateFloatingPoint("conv3d", "input", input);
-        validateFloatingPoint("conv3d", "weights", weights);
-        validateFloatingPoint("conv3d", "bias", bias);
-        SDVariable[] args;
-        if (bias == null) {
-            args = new SDVariable[]{input, weights};
-        } else {
-            args = new SDVariable[]{input, weights, bias};
-        }
-        SDVariable ret = f().conv3d(args, conv3DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #deconv2d(String, SDVariable, SDVariable, SDVariable, DeConv2DConfig)}, no bias.
-     */
-    public SDVariable deconv2d(@NonNull SDVariable layerInput, @NonNull SDVariable weights, @NonNull DeConv2DConfig deconv2DConfig) {
-        return deconv2d(layerInput, weights, null, deconv2DConfig);
-    }
-
-    /**
-     * See {@link #deconv2d(String, SDVariable, SDVariable, SDVariable, DeConv2DConfig)}, no bias.
-     */
-    public SDVariable deconv2d(String name, @NonNull SDVariable layerInput, @NonNull SDVariable weights, @NonNull DeConv2DConfig deconv2DConfig) {
-        return deconv2d(name, layerInput, weights, null, deconv2DConfig);
-    }
-
-    /**
-     * See {@link #deconv2d(String, SDVariable, SDVariable, SDVariable, DeConv2DConfig)}.
-     */
-    public SDVariable deconv2d(@NonNull SDVariable layerInput, @NonNull SDVariable weights, SDVariable bias, @NonNull DeConv2DConfig deconv2DConfig) {
-        return deconv2d(null, layerInput, weights, bias, deconv2DConfig);
-    }
-
-    /**
-     * 2D deconvolution operation with optional bias
-     *
-     * @param name            name of the operation in SameDiff
-     * @param layerInput     the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-     *                       (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param weights        Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth].
-     * @param bias           Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param deconv2DConfig DeConv2DConfig configuration
-     * @return result of deconv2d op
-     */
-    public SDVariable deconv2d(String name, @NonNull SDVariable layerInput, @NonNull SDVariable weights, SDVariable bias, @NonNull DeConv2DConfig deconv2DConfig) {
-        validateFloatingPoint("deconv2d", "input", layerInput);
-        validateFloatingPoint("deconv2d", "weights", weights);
-        validateFloatingPoint("deconv2d", "bias", bias);
-        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
-        arr[0] = layerInput;
-        arr[1] = weights;
-        if (bias != null)
-            arr[2] = bias;
-        return deconv2d(name, arr, deconv2DConfig);
-    }
-
-    /**
-     * See {@link #deconv2d(String, SDVariable[], DeConv2DConfig)}.
-     */
-    public SDVariable deconv2d(@NonNull SDVariable[] inputs, @NonNull DeConv2DConfig deconv2DConfig) {
-        return deconv2d(null, inputs, deconv2DConfig);
-    }
-
-    /**
-     * 2D deconvolution operation with or without optional bias
-     *
-     * @param name           Name of the output variable
-     * @param inputs         Inputs to the deconvolution 2d operation - input array of length 2 (layerInput, weights)
-     *                       or length 3 (layerInput, weights, bias) as described in {@link #deconv2d(SDVariable[], DeConv2DConfig)}
-     * @param deconv2DConfig the configuration
-     * @return result of deconv2d op
-     */
-    public SDVariable deconv2d(String name, @NonNull SDVariable[] inputs, @NonNull DeConv2DConfig deconv2DConfig) {
-        for(SDVariable v : inputs)
-            validateNumerical("deconv2d", v);
-        SDVariable ret = f().deconv2d(inputs, deconv2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #deconv3d(String, SDVariable, SDVariable, SDVariable, DeConv3DConfig)}, no bias.
-     */
-    public SDVariable deconv3d(@NonNull SDVariable input, @NonNull SDVariable weights, @NonNull DeConv3DConfig config) {
-        return deconv3d(input, weights, null, config);
-    }
-
-    /**
-     * See {@link #deconv3d(String, SDVariable, SDVariable, SDVariable, DeConv3DConfig)}, no bias.
-     */
-    public SDVariable deconv3d(String name, @NonNull SDVariable input, @NonNull SDVariable weights, @NonNull DeConv3DConfig config) {
-        return deconv3d(name, input, weights, null, config);
-    }
-
-    /**
-     * See {@link #deconv3d(String, SDVariable, SDVariable, SDVariable, DeConv3DConfig)}.
-     */
-    public SDVariable deconv3d(@NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull DeConv3DConfig config) {
-        return deconv3d(null, input, weights, bias, config);
-    }
-
-    /**
-     * 3D CNN deconvolution operation with or without optional bias
-     *
-     * @param name    Name of the output variable
-     * @param input   Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
-     * @param weights Weights array - shape [kD, kH, kW, oC, iC]
-     * @param bias    Bias array - optional, may be null. If non-null, must have shape [outputChannels]
-     * @param config  Configuration
-     */
-    public SDVariable deconv3d(String name, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull DeConv3DConfig config) {
-        validateFloatingPoint("conv3d", input);
-        validateFloatingPoint("conv3d", weights);
-        validateFloatingPoint("conv3d", bias);
-        SDVariable ret = f().deconv3d(input, weights, bias, config);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #depthToSpace(String, SDVariable, int, String)}.
-     */
-    public SDVariable depthToSpace(@NonNull SDVariable x, @NonNull int blockSize, @NonNull String dataFormat) {
-        return depthToSpace(null, x, blockSize, dataFormat);
-    }
-
-    /**
-     * Convolution 2d layer batch to space operation on 4d input.<br>
-     * Reduces input channels dimension by rearranging data into a larger spatial dimensions<br>
-     * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]
-     * = [mb, 2, 4, 4]
-     *
-     * @param name       Output variable name
-     * @param x          the input to depth to space pooling 2d operation - 4d activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param blockSize  Block size, in the height/width dimension
-     * @param dataFormat Data format: "NCHW" or "NHWC"
-     * @return Output variable
-     * @see #depthToSpace(String, SDVariable, int, String)
-     */
-    public SDVariable depthToSpace(String name, @NonNull SDVariable x, @NonNull int blockSize, @NonNull String dataFormat) {
-        SDVariable ret = f().depthToSpace(x, blockSize, dataFormat);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #depthWiseConv2d(String, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.
-     */
-    public SDVariable depthWiseConv2d(@NonNull SDVariable layerInput, @NonNull SDVariable depthWeights, @NonNull Conv2DConfig config) {
-        return depthWiseConv2d(layerInput, depthWeights, null, config);
-    }
-
-    /**
-     * See {@link #depthWiseConv2d(String, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.
-     */
-    public SDVariable depthWiseConv2d(String name, @NonNull SDVariable layerInput, @NonNull SDVariable depthWeights, @NonNull Conv2DConfig config) {
-        return depthWiseConv2d(name, layerInput, depthWeights, null, config);
-    }
-
-    /**
-     * See {@link #depthWiseConv2d(String, SDVariable, SDVariable, SDVariable, Conv2DConfig)}.
-     */
-    public SDVariable depthWiseConv2d(@NonNull SDVariable layerInput, @NonNull SDVariable depthWeights, SDVariable bias, @NonNull Conv2DConfig config) {
-        return depthWiseConv2d(null, layerInput, depthWeights, bias, config);
-    }
-
-    /**
-     * Depth-wise 2D convolution operation with optional bias
-     *
-     * @param name            name of the operation in SameDiff
-     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param bias         Optional 1D bias array with shape [outputChannels]. May be null.
-     * @param config       Conv2DConfig configuration
-     * @return result of depthwise conv2d op
-     */
-    public SDVariable depthWiseConv2d(String name, @NonNull SDVariable layerInput, @NonNull SDVariable depthWeights, SDVariable bias, @NonNull Conv2DConfig config) {
-        validateFloatingPoint("depthwiseConv2d", "input", layerInput);
-        validateFloatingPoint("depthwiseConv2d", "depth weights", depthWeights);
-        validateFloatingPoint("depthwiseConv2d", "bias", bias);
-        SDVariable[] arr = new SDVariable[bias == null ? 2 : 3];
-        arr[0] = layerInput;
-        arr[1] = depthWeights;
-        if (bias != null)
-            arr[2] = bias;
-        return depthWiseConv2d(name, arr, config);
-    }
-
-    /**
-     * See {@link #depthWiseConv2d(String, SDVariable[], Conv2DConfig)}.
-     */
-    public SDVariable depthWiseConv2d(@NonNull SDVariable[] inputs, @NonNull Conv2DConfig depthConv2DConfig) {
-        return depthWiseConv2d(null, inputs, depthConv2DConfig);
-    }
-
-    /**
-     * Depth-wise convolution 2D operation.
-     *
-     * @param name              name of the output variable
-     * @param inputs            the inputs to depth-wise conv2d. An array with either 2 elements (layerInput, depthWeights)
-     *                          or 3 elements (layerInput, depthWeights, bias) as described in
-     *                          {@link #depthWiseConv2d(SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param depthConv2DConfig the configuration
-     * @return result of depthwise conv2d op
-     */
-    public SDVariable depthWiseConv2d(String name, @NonNull SDVariable[] inputs, @NonNull Conv2DConfig depthConv2DConfig) {
-        for(SDVariable v : inputs)
-            validateFloatingPoint("depthWiseConv2d", v);
-        SDVariable ret = f().depthWiseConv2d(inputs, depthConv2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #dilation2D(String, SDVariable, SDVariable, int[], int[], boolean)}.
-     */
-    public SDVariable dilation2D(@NonNull SDVariable df, @NonNull SDVariable weights, @NonNull int[] strides,
-            @NonNull int[] rates, @NonNull boolean isSameMode) {
-        return dilation2D(null, df, weights, strides, rates, isSameMode);
-    }
-
-    /**
-     * TODO doc string
-     *
-     * @param name
-     * @param df
-     * @param weights
-     * @param strides
-     * @param rates
-     * @param isSameMode
-     * @return
-     */
-    public SDVariable dilation2D(String name, @NonNull SDVariable df, @NonNull SDVariable weights, @NonNull int[] strides,
-            @NonNull int[] rates, @NonNull boolean isSameMode) {
-        SDVariable ret = f().dilation2D(df, weights, strides, rates, isSameMode);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * Extract image patches
-     *
-     * @param name     Name of the output variable
-     * @param input    Input array. Must be rank 4, with shape [minibatch, height, width, channels]
-     * @param kH       Kernel height
-     * @param kW       Kernel width
-     * @param sH       Stride height
-     * @param sW       Stride width
-     * @param rH       Rate height
-     * @param rW       Rate width
-     * @param sameMode If true: use same mode padding. If false
-     * @return
-     */
-    public SDVariable extractImagePatches(String name, @NonNull SDVariable input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode) {
-        SDVariable ret = f().extractImagePatches(input, kH, kW, sH, sW, rH, rW, sameMode);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * See {@link #im2Col(String, SDVariable, Conv2DConfig)}.
-     */
-    public SDVariable im2Col(@NonNull SDVariable in, @NonNull Conv2DConfig config) {
-        return im2Col(null, in, config);
-    }
-
-    /**
-     * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape
-     * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]
-     *
-     * @param name   Name of the output variable
-     * @param in     Input - rank 4 input with shape [minibatch, inputChannels, height, width]
-     * @param config Convolution configuration for the im2col operation
-     * @return Im2Col output variable
-     */
-    public SDVariable im2Col(String name, @NonNull SDVariable in, @NonNull Conv2DConfig config) {
-        SDVariable ret = f().im2Col(in, config);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * See {@link #localResponseNormalization(String, SDVariable, LocalResponseNormalizationConfig)}.
-     */
-    public SDVariable localResponseNormalization(@NonNull SDVariable inputs, @NonNull LocalResponseNormalizationConfig lrnConfig) {
-        return localResponseNormalization(null, inputs, lrnConfig);
-    }
-
-    /**
-     * 2D convolution layer operation - local response normalization
-     *
-     * @param name      name of the operation in SameDiff
-     * @param input     the inputs to lrn
-     * @param lrnConfig the configuration
-     * @return
-     */
-    public SDVariable localResponseNormalization(String name, @NonNull SDVariable input,
-            @NonNull LocalResponseNormalizationConfig lrnConfig) {
-        validateFloatingPoint("local response normalization", input);
-        SDVariable ret = f().localResponseNormalization(input, lrnConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * See {@link #maxPooling2d(String, SDVariable, Pooling2DConfig)}.
-     */
-    public SDVariable maxPooling2d(@NonNull SDVariable input, @NonNull Pooling2DConfig pooling2DConfig) {
-        return maxPooling2d(null, input, pooling2DConfig);
-    }
-
-    /**
-     * 2D Convolution layer operation - max pooling 2d
-     *
-     * @param name            name of the operation in SameDiff
-     * @param input           the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                        (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param pooling2DConfig the configuration
-     * @return Result after applying max pooling on the input
-     */
-    public SDVariable maxPooling2d(String name, @NonNull SDVariable input, @NonNull Pooling2DConfig pooling2DConfig) {
-        validateNumerical("maxPooling2d", input);
-        SDVariable ret = f().maxPooling2d(input, pooling2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * See {@link #maxPooling3d(String, SDVariable, Pooling3DConfig)}.
-     */
-    public SDVariable maxPooling3d(@NonNull SDVariable input, @NonNull Pooling3DConfig pooling3DConfig) {
-        return maxPooling3d(null, input, pooling3DConfig);
-    }
-
-    /**
-     * 3D convolution layer operation - max pooling 3d operation.
-     *
-     * @param name            name of the operation in SameDiff
-     * @param input           the input to average pooling 3d operation - 5d activations in NCDHW format
-     *                        (shape [minibatch, channels, depth, height, width]) or NDHWC format
-     *                        (shape [minibatch, depth, height, width, channels])
-     * @param pooling3DConfig the configuration
-     * @return Result after applying max pooling on the input
-     */
-    public SDVariable maxPooling3d(String name, @NonNull SDVariable input, @NonNull Pooling3DConfig pooling3DConfig) {
-        validateNumerical("maxPooling3d", input);
-        SDVariable ret = f().maxPooling3d(input, pooling3DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * See {@link #separableConv2d(String, SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.
-     */
-    public SDVariable separableConv2d(SDVariable layerInput, @NonNull SDVariable depthWeights, SDVariable pointWeights,
-            @NonNull Conv2DConfig config) {
-        return separableConv2d(layerInput, depthWeights, pointWeights, null, config);
-    }
-
-
-    /**
-     * See {@link #separableConv2d(String, SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}, no bias.
-     */
-    public SDVariable separableConv2d(String name, @NonNull SDVariable layerInput, @NonNull SDVariable depthWeights, SDVariable pointWeights,
-            @NonNull Conv2DConfig config) {
-        return separableConv2d(layerInput, depthWeights, pointWeights, null, config);
-    }
-
-    /**
-     * See {@link #separableConv2d(String, SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}.
-     */
-    public SDVariable separableConv2d(@NonNull SDVariable layerInput, @NonNull SDVariable depthWeights, SDVariable pointWeights,
-            SDVariable bias, @NonNull Conv2DConfig config) {
-        return separableConv2d(null, layerInput, depthWeights, pointWeights, bias, config);
-    }
-
-    /**
-     * Separable 2D convolution operation with optional bias
-     *
-     * @param layerInput   the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-     *                     (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier]
-     * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]
-     *                     May be null
-     * @param bias         Optional bias, rank 1 with shape [outputChannels]. May be null.
-     * @param config       Conv2DConfig configuration
-     * @return result of separable convolution 2d operation
-     */
-    public SDVariable separableConv2d(String name, @NonNull SDVariable layerInput, @NonNull SDVariable depthWeights, SDVariable pointWeights,
-                                      SDVariable bias, @NonNull Conv2DConfig config) {
-        validateFloatingPoint("separableConv2d", "input", layerInput);
-        validateFloatingPoint("separableConv2d", "depthWeights", depthWeights);
-        validateFloatingPoint("separableConv2d", "pointWeights", pointWeights);
-        validateFloatingPoint("separableConv2d", "bias", bias);
-        SDVariable[] arr = new SDVariable[bias == null ? 3 : 4];
-        arr[0] = layerInput;
-        arr[1] = depthWeights;
-        arr[2] = pointWeights;
-        if (bias != null)
-            arr[3] = bias;
-        return sconv2d(name, arr, config);
-    }
-
-    /**
-     * See {@link #sconv2d(String, SDVariable[], Conv2DConfig)}.
-     */
-    public SDVariable sconv2d(@NonNull SDVariable[] inputs, @NonNull Conv2DConfig conv2DConfig) {
-        return sconv2d(null, inputs, conv2DConfig);
-    }
-
-    /**
-     * Separable 2D convolution operation with/without optional bias
-     *
-     * @param name         name of the output variable
-     * @param inputs       the inputs to separable conv2 operation. Should be length 3 (layerInput, depthWeights, pointWeights)
-     *                     or length 4 (layerInput, depthWeights, pointWeights, bias) as described in {@link #separableConv2d(SDVariable, SDVariable, SDVariable, SDVariable, Conv2DConfig)}
-     * @param conv2DConfig the configuration
-     * @return result of separable convolution 2d operation
-     */
-    public SDVariable sconv2d(String name, @NonNull SDVariable[] inputs, @NonNull Conv2DConfig conv2DConfig) {
-        for(SDVariable v : inputs)
-            validateFloatingPoint("sconv2d", v);
-        SDVariable ret = f().sconv2d(inputs, conv2DConfig);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * @see #spaceToBatch(String, SDVariable, int[], int[][])
-     */
-    public SDVariable spaceToBatch(@NonNull SDVariable x, @NonNull int[] blocks, @NonNull int[][] padding) {
-        return spaceToBatch(null, x, blocks, padding);
-    }
-
-    /**
-     * Convolution 2d layer space to batch operation on 4d input.
-     * Increases input batch dimension by rearranging data from spatial dimensions into batch dimension
-     *
-     * @param name    Output variable name
-     * @param x       Input variable. 4d input
-     * @param blocks  Block size, in the height/width dimension
-     * @param padding Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]]
-     * @return Output variable
-     * @see #batchToSpace(String, SDVariable, int[], int[][])
-     */
-    public SDVariable spaceToBatch(String name, @NonNull SDVariable x, @NonNull int[] blocks, @NonNull int[][] padding) {
-        SDVariable ret = f().spaceToBatch(x, blocks, padding);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-    /**
-     * @see #spaceToDepth(String, SDVariable, int, String)
-     */
-    public SDVariable spaceToDepth(@NonNull SDVariable x, int blockSize, @NonNull String dataFormat) {
-        return spaceToDepth(null, x, blockSize, dataFormat);
-    }
-
-    /**
-     * Convolution 2d layer space to depth operation on 4d input.<br>
-     * Increases input channels (reduced spatial dimensions) by rearranging data into a larger channels dimension<br>
-     * Example: if input has shape [mb, 2, 4, 4] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]
-     * = [mb, 2, 4, 4]
-     *
-     * @param name       Output variable name
-     * @param x          the input to depth to space pooling 2d operation - 4d activations in NCHW format
-     *                   (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels])
-     * @param blockSize  Block size, in the height/width dimension
-     * @param dataFormat Data format: "NCHW" or "NHWC"
-     * @return Output variable
-     * @see #depthToSpace(String, SDVariable, int, String)
-     */
-    public SDVariable spaceToDepth(String name, @NonNull SDVariable x, int blockSize, @NonNull String dataFormat) {
-        SDVariable ret = f().spaceToDepth(x, blockSize, dataFormat);
-        return updateVariableNameAndReference(ret, name);
-    }
-
-
-    /**
-     * See {@link #upsampling2d(String, SDVariable, boolean, int, int)},
-     * scale is used for both height and width dimensions.
-     *
-     * @param scale The scale for both height and width dimensions.
-     */
-    public SDVariable upsampling2d(@NonNull SDVariable input, int scale) {
-        return upsampling2d(null, input, true, scale, scale);
-    }
-
-    /**
-     * See {@link #upsampling2d(String, SDVariable, boolean, int, int)},
-     * scale is used for both height and width dimensions.
-     *
-     * @param scale The scale for both height and width dimensions.
-     */
-    public SDVariable upsampling2d(String name, @NonNull SDVariable input, int scale) {
-        return upsampling2d(name, input, true, scale, scale);
-    }
-
-    /**
-     * See {@link #upsampling2d(String, SDVariable, boolean, int, int)}.
-     */
-    public SDVariable upsampling2d(@NonNull SDVariable input, boolean nchw, int scaleH, int scaleW) {
-        return upsampling2d(null, input, nchw, scaleH, scaleW);
-    }
-
-    /**
-     * 2D Convolution layer operation - Upsampling 2d
-     *
-     * @param input  Input, in NCHW format
-     * @param nchw   If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
-     * @param scaleH Scale to upsample in height dimension
-     * @param scaleW Scale to upsample in width dimension
-     * @return Upsampled input
-     */
-    public SDVariable upsampling2d(String name, @NonNull SDVariable input, boolean nchw, int scaleH, int scaleW) {
-        SDVariable ret = f().upsampling2d(input, nchw, scaleH, scaleW);
-        return updateVariableNameAndReference(ret, name);
-    }
+  public SDCNN(SameDiff sameDiff) {
+    super(sameDiff);
+  }
+
+  /**
+   * 2D Convolution layer operation - average pooling 2d<br>
+   *
+   * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   * @return output Result after applying average pooling on the input (NUMERIC type)
+   */
+  public SDVariable avgPooling2d(SDVariable input, Pooling2DConfig Pooling2DConfig) {
+    SDValidation.validateNumerical("avgPooling2d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D(sd,input, Pooling2DConfig).outputVariable();
+  }
+
+  /**
+   * 2D Convolution layer operation - average pooling 2d<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   * @return output Result after applying average pooling on the input (NUMERIC type)
+   */
+  public SDVariable avgPooling2d(String name, SDVariable input, Pooling2DConfig Pooling2DConfig) {
+    SDValidation.validateNumerical("avgPooling2d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D(sd,input, Pooling2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 3D convolution layer operation - average pooling 3d <br>
+   *
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
+   *                         (shape [minibatch, channels, depth, height, width]) or NDHWC format
+   *                         (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param Pooling3DConfig Configuration Object
+   * @return output after applying average pooling on the input (NUMERIC type)
+   */
+  public SDVariable avgPooling3d(SDVariable input, Pooling3DConfig Pooling3DConfig) {
+    SDValidation.validateNumerical("avgPooling3d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D(sd,input, Pooling3DConfig).outputVariable();
+  }
+
+  /**
+   * 3D convolution layer operation - average pooling 3d <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
+   *                         (shape [minibatch, channels, depth, height, width]) or NDHWC format
+   *                         (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param Pooling3DConfig Configuration Object
+   * @return output after applying average pooling on the input (NUMERIC type)
+   */
+  public SDVariable avgPooling3d(String name, SDVariable input, Pooling3DConfig Pooling3DConfig) {
+    SDValidation.validateNumerical("avgPooling3d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling3D(sd,input, Pooling3DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Convolution 2d layer batch to space operation on 4d input.<br>
+   * Reduces input batch dimension by rearranging data into a larger spatial dimensions<br>
+   *
+   * @param x Input variable. 4d input (NUMERIC type)
+   * @param blocks Block size, in the height/width dimension (Size: Exactly(count=2))
+   * @param croppingTop  (Size: Exactly(count=2))
+   * @param croppingBottom  (Size: Exactly(count=2))
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable batchToSpace(SDVariable x, int[] blocks, int[] croppingTop,
+      int... croppingBottom) {
+    SDValidation.validateNumerical("batchToSpace", "x", x);
+    Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
+    Preconditions.checkArgument(croppingTop.length == 2, "croppingTop has incorrect size/length. Expected: croppingTop.length == 2, got %s", croppingTop.length);
+    Preconditions.checkArgument(croppingBottom.length == 2, "croppingBottom has incorrect size/length. Expected: croppingBottom.length == 2, got %s", croppingBottom.length);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace(sd,x, blocks, croppingTop, croppingBottom).outputVariable();
+  }
+
+  /**
+   * Convolution 2d layer batch to space operation on 4d input.<br>
+   * Reduces input batch dimension by rearranging data into a larger spatial dimensions<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable. 4d input (NUMERIC type)
+   * @param blocks Block size, in the height/width dimension (Size: Exactly(count=2))
+   * @param croppingTop  (Size: Exactly(count=2))
+   * @param croppingBottom  (Size: Exactly(count=2))
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable batchToSpace(String name, SDVariable x, int[] blocks, int[] croppingTop,
+      int... croppingBottom) {
+    SDValidation.validateNumerical("batchToSpace", "x", x);
+    Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
+    Preconditions.checkArgument(croppingTop.length == 2, "croppingTop has incorrect size/length. Expected: croppingTop.length == 2, got %s", croppingTop.length);
+    Preconditions.checkArgument(croppingBottom.length == 2, "croppingBottom has incorrect size/length. Expected: croppingBottom.length == 2, got %s", croppingBottom.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace(sd,x, blocks, croppingTop, croppingBottom).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape<br>
+   * [minibatch, inputChannels, height, width]<br>
+   *
+   * @param in Input - rank 6 input with shape [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output Col2Im output variable (NUMERIC type)
+   */
+  public SDVariable col2Im(SDVariable in, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("col2Im", "in", in);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im(sd,in, Conv2DConfig).outputVariable();
+  }
+
+  /**
+   * col2im operation for use in 2D convolution operations. Outputs a 4d array with shape<br>
+   * [minibatch, inputChannels, height, width]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param in Input - rank 6 input with shape [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output Col2Im output variable (NUMERIC type)
+   */
+  public SDVariable col2Im(String name, SDVariable in, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("col2Im", "in", in);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im(sd,in, Conv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Conv1d operation.<br>
+   *
+   * @param input the inputs to conv1d (NUMERIC type)
+   * @param weights weights for conv1d op - rank 3 array with shape [kernelSize, inputChannels, outputChannels] (NUMERIC type)
+   * @param bias bias for conv1d op - rank 1 array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv1DConfig Configuration Object
+   * @return output result of conv1d op (NUMERIC type)
+   */
+  public SDVariable conv1d(SDVariable input, SDVariable weights, SDVariable bias,
+      Conv1DConfig Conv1DConfig) {
+    SDValidation.validateNumerical("conv1d", "input", input);
+    SDValidation.validateNumerical("conv1d", "weights", weights);
+    SDValidation.validateNumerical("conv1d", "bias", bias);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(sd,input, weights, bias, Conv1DConfig).outputVariable();
+  }
+
+  /**
+   * Conv1d operation.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the inputs to conv1d (NUMERIC type)
+   * @param weights weights for conv1d op - rank 3 array with shape [kernelSize, inputChannels, outputChannels] (NUMERIC type)
+   * @param bias bias for conv1d op - rank 1 array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv1DConfig Configuration Object
+   * @return output result of conv1d op (NUMERIC type)
+   */
+  public SDVariable conv1d(String name, SDVariable input, SDVariable weights, SDVariable bias,
+      Conv1DConfig Conv1DConfig) {
+    SDValidation.validateNumerical("conv1d", "input", input);
+    SDValidation.validateNumerical("conv1d", "weights", weights);
+    SDValidation.validateNumerical("conv1d", "bias", bias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(sd,input, weights, bias, Conv1DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Conv1d operation.<br>
+   *
+   * @param input the inputs to conv1d (NUMERIC type)
+   * @param weights weights for conv1d op - rank 3 array with shape [kernelSize, inputChannels, outputChannels] (NUMERIC type)
+   * @param Conv1DConfig Configuration Object
+   * @return output result of conv1d op (NUMERIC type)
+   */
+  public SDVariable conv1d(SDVariable input, SDVariable weights, Conv1DConfig Conv1DConfig) {
+    SDValidation.validateNumerical("conv1d", "input", input);
+    SDValidation.validateNumerical("conv1d", "weights", weights);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(sd,input, weights, null, Conv1DConfig).outputVariable();
+  }
+
+  /**
+   * Conv1d operation.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the inputs to conv1d (NUMERIC type)
+   * @param weights weights for conv1d op - rank 3 array with shape [kernelSize, inputChannels, outputChannels] (NUMERIC type)
+   * @param Conv1DConfig Configuration Object
+   * @return output result of conv1d op (NUMERIC type)
+   */
+  public SDVariable conv1d(String name, SDVariable input, SDVariable weights,
+      Conv1DConfig Conv1DConfig) {
+    SDValidation.validateNumerical("conv1d", "input", input);
+    SDValidation.validateNumerical("conv1d", "weights", weights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D(sd,input, weights, null, Conv1DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 2D Convolution operation with optional bias<br>
+   *
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param weights Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of conv2d op (NUMERIC type)
+   */
+  public SDVariable conv2d(SDVariable layerInput, SDVariable weights, SDVariable bias,
+      Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("conv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("conv2d", "weights", weights);
+    SDValidation.validateNumerical("conv2d", "bias", bias);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(sd,layerInput, weights, bias, Conv2DConfig).outputVariable();
+  }
+
+  /**
+   * 2D Convolution operation with optional bias<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param weights Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of conv2d op (NUMERIC type)
+   */
+  public SDVariable conv2d(String name, SDVariable layerInput, SDVariable weights, SDVariable bias,
+      Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("conv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("conv2d", "weights", weights);
+    SDValidation.validateNumerical("conv2d", "bias", bias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(sd,layerInput, weights, bias, Conv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 2D Convolution operation with optional bias<br>
+   *
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param weights Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of conv2d op (NUMERIC type)
+   */
+  public SDVariable conv2d(SDVariable layerInput, SDVariable weights, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("conv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("conv2d", "weights", weights);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(sd,layerInput, weights, null, Conv2DConfig).outputVariable();
+  }
+
+  /**
+   * 2D Convolution operation with optional bias<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param weights Weights for the convolution operation. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, outputChannels] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of conv2d op (NUMERIC type)
+   */
+  public SDVariable conv2d(String name, SDVariable layerInput, SDVariable weights,
+      Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("conv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("conv2d", "weights", weights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D(sd,layerInput, weights, null, Conv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Convolution 3D operation with optional bias <br>
+   *
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
+   * (shape [minibatch, channels, depth, height, width]) or NDHWC format
+   * (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
+   * @param bias  Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv3DConfig Configuration Object
+   * @return output Conv3d output variable (NUMERIC type)
+   */
+  public SDVariable conv3d(SDVariable input, SDVariable weights, SDVariable bias,
+      Conv3DConfig Conv3DConfig) {
+    SDValidation.validateNumerical("conv3d", "input", input);
+    SDValidation.validateNumerical("conv3d", "weights", weights);
+    SDValidation.validateNumerical("conv3d", "bias", bias);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(sd,input, weights, bias, Conv3DConfig).outputVariable();
+  }
+
+  /**
+   * Convolution 3D operation with optional bias <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
+   * (shape [minibatch, channels, depth, height, width]) or NDHWC format
+   * (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
+   * @param bias  Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv3DConfig Configuration Object
+   * @return output Conv3d output variable (NUMERIC type)
+   */
+  public SDVariable conv3d(String name, SDVariable input, SDVariable weights, SDVariable bias,
+      Conv3DConfig Conv3DConfig) {
+    SDValidation.validateNumerical("conv3d", "input", input);
+    SDValidation.validateNumerical("conv3d", "weights", weights);
+    SDValidation.validateNumerical("conv3d", "bias", bias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(sd,input, weights, bias, Conv3DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Convolution 3D operation with optional bias <br>
+   *
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
+   * (shape [minibatch, channels, depth, height, width]) or NDHWC format
+   * (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
+   * @param Conv3DConfig Configuration Object
+   * @return output Conv3d output variable (NUMERIC type)
+   */
+  public SDVariable conv3d(SDVariable input, SDVariable weights, Conv3DConfig Conv3DConfig) {
+    SDValidation.validateNumerical("conv3d", "input", input);
+    SDValidation.validateNumerical("conv3d", "weights", weights);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(sd,input, weights, null, Conv3DConfig).outputVariable();
+  }
+
+  /**
+   * Convolution 3D operation with optional bias <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
+   * (shape [minibatch, channels, depth, height, width]) or NDHWC format
+   * (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
+   * @param Conv3DConfig Configuration Object
+   * @return output Conv3d output variable (NUMERIC type)
+   */
+  public SDVariable conv3d(String name, SDVariable input, SDVariable weights,
+      Conv3DConfig Conv3DConfig) {
+    SDValidation.validateNumerical("conv3d", "input", input);
+    SDValidation.validateNumerical("conv3d", "weights", weights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D(sd,input, weights, null, Conv3DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 2D deconvolution operation with optional bias<br>
+   *
+   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
+   * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param DeConv2DConfig Configuration Object
+   * @return output result of deconv2d op (NUMERIC type)
+   */
+  public SDVariable deconv2d(SDVariable layerInput, SDVariable weights, SDVariable bias,
+      DeConv2DConfig DeConv2DConfig) {
+    SDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("deconv2d", "weights", weights);
+    SDValidation.validateNumerical("deconv2d", "bias", bias);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(sd,layerInput, weights, bias, DeConv2DConfig).outputVariable();
+  }
+
+  /**
+   * 2D deconvolution operation with optional bias<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
+   * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param DeConv2DConfig Configuration Object
+   * @return output result of deconv2d op (NUMERIC type)
+   */
+  public SDVariable deconv2d(String name, SDVariable layerInput, SDVariable weights,
+      SDVariable bias, DeConv2DConfig DeConv2DConfig) {
+    SDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("deconv2d", "weights", weights);
+    SDValidation.validateNumerical("deconv2d", "bias", bias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(sd,layerInput, weights, bias, DeConv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 2D deconvolution operation with optional bias<br>
+   *
+   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
+   * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param DeConv2DConfig Configuration Object
+   * @return output result of deconv2d op (NUMERIC type)
+   */
+  public SDVariable deconv2d(SDVariable layerInput, SDVariable weights,
+      DeConv2DConfig DeConv2DConfig) {
+    SDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("deconv2d", "weights", weights);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(sd,layerInput, weights, null, DeConv2DConfig).outputVariable();
+  }
+
+  /**
+   * 2D deconvolution operation with optional bias<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
+   * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
+   * @param DeConv2DConfig Configuration Object
+   * @return output result of deconv2d op (NUMERIC type)
+   */
+  public SDVariable deconv2d(String name, SDVariable layerInput, SDVariable weights,
+      DeConv2DConfig DeConv2DConfig) {
+    SDValidation.validateNumerical("deconv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("deconv2d", "weights", weights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D(sd,layerInput, weights, null, DeConv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 3D CNN deconvolution operation with or without optional bias<br>
+   *
+   * @param input Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW) (NUMERIC type)
+   * @param weights Weights array - shape [kD, kH, kW, oC, iC] (NUMERIC type)
+   * @param bias Bias array - optional, may be null. If non-null, must have shape [outputChannels] (NUMERIC type)
+   * @param DeConv3DConfig Configuration Object
+   * @return output result of 3D CNN deconvolution operation (NUMERIC type)
+   */
+  public SDVariable deconv3d(SDVariable input, SDVariable weights, SDVariable bias,
+      DeConv3DConfig DeConv3DConfig) {
+    SDValidation.validateNumerical("deconv3d", "input", input);
+    SDValidation.validateNumerical("deconv3d", "weights", weights);
+    SDValidation.validateNumerical("deconv3d", "bias", bias);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(sd,input, weights, bias, DeConv3DConfig).outputVariable();
+  }
+
+  /**
+   * 3D CNN deconvolution operation with or without optional bias<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW) (NUMERIC type)
+   * @param weights Weights array - shape [kD, kH, kW, oC, iC] (NUMERIC type)
+   * @param bias Bias array - optional, may be null. If non-null, must have shape [outputChannels] (NUMERIC type)
+   * @param DeConv3DConfig Configuration Object
+   * @return output result of 3D CNN deconvolution operation (NUMERIC type)
+   */
+  public SDVariable deconv3d(String name, SDVariable input, SDVariable weights, SDVariable bias,
+      DeConv3DConfig DeConv3DConfig) {
+    SDValidation.validateNumerical("deconv3d", "input", input);
+    SDValidation.validateNumerical("deconv3d", "weights", weights);
+    SDValidation.validateNumerical("deconv3d", "bias", bias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(sd,input, weights, bias, DeConv3DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 3D CNN deconvolution operation with or without optional bias<br>
+   *
+   * @param input Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW) (NUMERIC type)
+   * @param weights Weights array - shape [kD, kH, kW, oC, iC] (NUMERIC type)
+   * @param DeConv3DConfig Configuration Object
+   * @return output result of 3D CNN deconvolution operation (NUMERIC type)
+   */
+  public SDVariable deconv3d(SDVariable input, SDVariable weights, DeConv3DConfig DeConv3DConfig) {
+    SDValidation.validateNumerical("deconv3d", "input", input);
+    SDValidation.validateNumerical("deconv3d", "weights", weights);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(sd,input, weights, null, DeConv3DConfig).outputVariable();
+  }
+
+  /**
+   * 3D CNN deconvolution operation with or without optional bias<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW) (NUMERIC type)
+   * @param weights Weights array - shape [kD, kH, kW, oC, iC] (NUMERIC type)
+   * @param DeConv3DConfig Configuration Object
+   * @return output result of 3D CNN deconvolution operation (NUMERIC type)
+   */
+  public SDVariable deconv3d(String name, SDVariable input, SDVariable weights,
+      DeConv3DConfig DeConv3DConfig) {
+    SDValidation.validateNumerical("deconv3d", "input", input);
+    SDValidation.validateNumerical("deconv3d", "weights", weights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D(sd,input, weights, null, DeConv3DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Convolution 2d layer batch to space operation on 4d input.<br>
+   * Reduces input channels dimension by rearranging data into a larger spatial dimensions<br>
+   * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]<br>
+   * = [mb, 2, 4, 4]<br>
+   *
+   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
+   *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param blockSize Block size, in the height/width dimension
+   * @param dataFormat Data format: "NCHW" or "NHWC"
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable depthToSpace(SDVariable x, int blockSize, DataFormat dataFormat) {
+    SDValidation.validateNumerical("depthToSpace", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace(sd,x, blockSize, dataFormat).outputVariable();
+  }
+
+  /**
+   * Convolution 2d layer batch to space operation on 4d input.<br>
+   * Reduces input channels dimension by rearranging data into a larger spatial dimensions<br>
+   * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]<br>
+   * = [mb, 2, 4, 4]<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
+   *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param blockSize Block size, in the height/width dimension
+   * @param dataFormat Data format: "NCHW" or "NHWC"
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable depthToSpace(String name, SDVariable x, int blockSize, DataFormat dataFormat) {
+    SDValidation.validateNumerical("depthToSpace", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace(sd,x, blockSize, dataFormat).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Depth-wise 2D convolution operation with optional bias <br>
+   *
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of depthwise conv2d op (NUMERIC type)
+   */
+  public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights, SDVariable bias,
+      Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
+    SDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(sd,layerInput, depthWeights, bias, Conv2DConfig).outputVariable();
+  }
+
+  /**
+   * Depth-wise 2D convolution operation with optional bias <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
+   * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of depthwise conv2d op (NUMERIC type)
+   */
+  public SDVariable depthWiseConv2d(String name, SDVariable layerInput, SDVariable depthWeights,
+      SDVariable bias, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
+    SDValidation.validateNumerical("depthWiseConv2d", "bias", bias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(sd,layerInput, depthWeights, bias, Conv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Depth-wise 2D convolution operation with optional bias <br>
+   *
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of depthwise conv2d op (NUMERIC type)
+   */
+  public SDVariable depthWiseConv2d(SDVariable layerInput, SDVariable depthWeights,
+      Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(sd,layerInput, depthWeights, null, Conv2DConfig).outputVariable();
+  }
+
+  /**
+   * Depth-wise 2D convolution operation with optional bias <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (NUMERIC type)
+   * @param depthWeights Depth-wise conv2d weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of depthwise conv2d op (NUMERIC type)
+   */
+  public SDVariable depthWiseConv2d(String name, SDVariable layerInput, SDVariable depthWeights,
+      Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("depthWiseConv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("depthWiseConv2d", "depthWeights", depthWeights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D(sd,layerInput, depthWeights, null, Conv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * TODO doc string<br>
+   *
+   * @param df  (NUMERIC type)
+   * @param weights df (NUMERIC type)
+   * @param strides weights (Size: Exactly(count=2))
+   * @param rates strides (Size: Exactly(count=2))
+   * @param isSameMode isSameMode
+   * @return output Computed the grayscale dilation of 4-D input and 3-D filters tensors. (NUMERIC type)
+   */
+  public SDVariable dilation2D(SDVariable df, SDVariable weights, int[] strides, int[] rates,
+      boolean isSameMode) {
+    SDValidation.validateNumerical("dilation2D", "df", df);
+    SDValidation.validateNumerical("dilation2D", "weights", weights);
+    Preconditions.checkArgument(strides.length == 2, "strides has incorrect size/length. Expected: strides.length == 2, got %s", strides.length);
+    Preconditions.checkArgument(rates.length == 2, "rates has incorrect size/length. Expected: rates.length == 2, got %s", rates.length);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D(sd,df, weights, strides, rates, isSameMode).outputVariable();
+  }
+
+  /**
+   * TODO doc string<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param df  (NUMERIC type)
+   * @param weights df (NUMERIC type)
+   * @param strides weights (Size: Exactly(count=2))
+   * @param rates strides (Size: Exactly(count=2))
+   * @param isSameMode isSameMode
+   * @return output Computed the grayscale dilation of 4-D input and 3-D filters tensors. (NUMERIC type)
+   */
+  public SDVariable dilation2D(String name, SDVariable df, SDVariable weights, int[] strides,
+      int[] rates, boolean isSameMode) {
+    SDValidation.validateNumerical("dilation2D", "df", df);
+    SDValidation.validateNumerical("dilation2D", "weights", weights);
+    Preconditions.checkArgument(strides.length == 2, "strides has incorrect size/length. Expected: strides.length == 2, got %s", strides.length);
+    Preconditions.checkArgument(rates.length == 2, "rates has incorrect size/length. Expected: rates.length == 2, got %s", rates.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D(sd,df, weights, strides, rates, isSameMode).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Extract image patches <br>
+   *
+   * @param input Input array. Must be rank 4, with shape [minibatch, height, width, channels] (NUMERIC type)
+   * @param kH Kernel height
+   * @param kW Kernel width
+   * @param sH Stride height
+   * @param sW Stride width
+   * @param rH Rate height
+   * @param rW Rate width
+   * @param sameMode If true: use same mode padding. If false
+   * @return output The result is a 4D tensor which is indexed by batch, row, and column. (NUMERIC type)
+   */
+  public SDVariable extractImagePatches(SDVariable input, int kH, int kW, int sH, int sW, int rH,
+      int rW, boolean sameMode) {
+    SDValidation.validateNumerical("extractImagePatches", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(sd,input, kH, kW, sH, sW, rH, rW, sameMode).outputVariable();
+  }
+
+  /**
+   * Extract image patches <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input array. Must be rank 4, with shape [minibatch, height, width, channels] (NUMERIC type)
+   * @param kH Kernel height
+   * @param kW Kernel width
+   * @param sH Stride height
+   * @param sW Stride width
+   * @param rH Rate height
+   * @param rW Rate width
+   * @param sameMode If true: use same mode padding. If false
+   * @return output The result is a 4D tensor which is indexed by batch, row, and column. (NUMERIC type)
+   */
+  public SDVariable extractImagePatches(String name, SDVariable input, int kH, int kW, int sH,
+      int sW, int rH, int rW, boolean sameMode) {
+    SDValidation.validateNumerical("extractImagePatches", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.image.ExtractImagePatches(sd,input, kH, kW, sH, sW, rH, rW, sameMode).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape<br>
+   * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]   <br>
+   *
+   * @param in Input - rank 4 input with shape [minibatch, inputChannels, height, width] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output Im2Col output variable (NUMERIC type)
+   */
+  public SDVariable im2Col(SDVariable in, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("im2Col", "in", in);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col(sd,in, Conv2DConfig).outputVariable();
+  }
+
+  /**
+   * im2col operation for use in 2D convolution operations. Outputs a 6d array with shape<br>
+   * [minibatch, inputChannels, kernelHeight, kernelWidth, outputHeight, outputWidth]   <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param in Input - rank 4 input with shape [minibatch, inputChannels, height, width] (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output Im2Col output variable (NUMERIC type)
+   */
+  public SDVariable im2Col(String name, SDVariable in, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("im2Col", "in", in);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col(sd,in, Conv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 2D convolution layer operation - local response normalization<br>
+   *
+   * @param input the inputs to lrn (NUMERIC type)
+   * @param LocalResponseNormalizationConfig Configuration Object
+   * @return output Result after Local Response Normalization (NUMERIC type)
+   */
+  public SDVariable localResponseNormalization(SDVariable input,
+      LocalResponseNormalizationConfig LocalResponseNormalizationConfig) {
+    SDValidation.validateNumerical("localResponseNormalization", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization(sd,input, LocalResponseNormalizationConfig).outputVariable();
+  }
+
+  /**
+   * 2D convolution layer operation - local response normalization<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the inputs to lrn (NUMERIC type)
+   * @param LocalResponseNormalizationConfig Configuration Object
+   * @return output Result after Local Response Normalization (NUMERIC type)
+   */
+  public SDVariable localResponseNormalization(String name, SDVariable input,
+      LocalResponseNormalizationConfig LocalResponseNormalizationConfig) {
+    SDValidation.validateNumerical("localResponseNormalization", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization(sd,input, LocalResponseNormalizationConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices <br>
+   *
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   */
+  public SDVariable[] maxPoolWithArgmax(SDVariable input, Pooling2DConfig Pooling2DConfig) {
+    SDValidation.validateNumerical("maxPoolWithArgmax", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax(sd,input, Pooling2DConfig).outputVariables();
+  }
+
+  /**
+   * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices <br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   */
+  public SDVariable[] maxPoolWithArgmax(String[] names, SDVariable input,
+      Pooling2DConfig Pooling2DConfig) {
+    SDValidation.validateNumerical("maxPoolWithArgmax", "input", input);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPoolWithArgmax(sd,input, Pooling2DConfig).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * 2D Convolution layer operation - max pooling 2d <br>
+   *
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   * @return output Result after applying max pooling on the input (NUMERIC type)
+   */
+  public SDVariable maxPooling2d(SDVariable input, Pooling2DConfig Pooling2DConfig) {
+    SDValidation.validateNumerical("maxPooling2d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D(sd,input, Pooling2DConfig).outputVariable();
+  }
+
+  /**
+   * 2D Convolution layer operation - max pooling 2d <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param Pooling2DConfig Configuration Object
+   * @return output Result after applying max pooling on the input (NUMERIC type)
+   */
+  public SDVariable maxPooling2d(String name, SDVariable input, Pooling2DConfig Pooling2DConfig) {
+    SDValidation.validateNumerical("maxPooling2d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D(sd,input, Pooling2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 3D convolution layer operation - max pooling 3d operation.<br>
+   *
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
+   *                         (shape [minibatch, channels, depth, height, width]) or NDHWC format
+   *                         (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param Pooling3DConfig Configuration Object
+   * @return output Result after applying max pooling on the input (NUMERIC type)
+   */
+  public SDVariable maxPooling3d(SDVariable input, Pooling3DConfig Pooling3DConfig) {
+    SDValidation.validateNumerical("maxPooling3d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D(sd,input, Pooling3DConfig).outputVariable();
+  }
+
+  /**
+   * 3D convolution layer operation - max pooling 3d operation.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
+   *                         (shape [minibatch, channels, depth, height, width]) or NDHWC format
+   *                         (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param Pooling3DConfig Configuration Object
+   * @return output Result after applying max pooling on the input (NUMERIC type)
+   */
+  public SDVariable maxPooling3d(String name, SDVariable input, Pooling3DConfig Pooling3DConfig) {
+    SDValidation.validateNumerical("maxPooling3d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D(sd,input, Pooling3DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Separable 2D convolution operation with optional bias <br>
+   *
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
+   * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]. May be null (NUMERIC type)
+   * @param bias Optional bias, rank 1 with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of separable convolution 2d operation (NUMERIC type)
+   */
+  public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights,
+      SDVariable pointWeights, SDVariable bias, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
+    SDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
+    SDValidation.validateNumerical("separableConv2d", "bias", bias);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(sd,layerInput, depthWeights, pointWeights, bias, Conv2DConfig).outputVariable();
+  }
+
+  /**
+   * Separable 2D convolution operation with optional bias <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
+   * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]. May be null (NUMERIC type)
+   * @param bias Optional bias, rank 1 with shape [outputChannels]. May be null. (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of separable convolution 2d operation (NUMERIC type)
+   */
+  public SDVariable separableConv2d(String name, SDVariable layerInput, SDVariable depthWeights,
+      SDVariable pointWeights, SDVariable bias, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
+    SDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
+    SDValidation.validateNumerical("separableConv2d", "bias", bias);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(sd,layerInput, depthWeights, pointWeights, bias, Conv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Separable 2D convolution operation with optional bias <br>
+   *
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
+   * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]. May be null (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of separable convolution 2d operation (NUMERIC type)
+   */
+  public SDVariable separableConv2d(SDVariable layerInput, SDVariable depthWeights,
+      SDVariable pointWeights, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
+    SDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(sd,layerInput, depthWeights, pointWeights, null, Conv2DConfig).outputVariable();
+  }
+
+  /**
+   * Separable 2D convolution operation with optional bias <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
+   *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
+   * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]. May be null (NUMERIC type)
+   * @param Conv2DConfig Configuration Object
+   * @return output result of separable convolution 2d operation (NUMERIC type)
+   */
+  public SDVariable separableConv2d(String name, SDVariable layerInput, SDVariable depthWeights,
+      SDVariable pointWeights, Conv2DConfig Conv2DConfig) {
+    SDValidation.validateNumerical("separableConv2d", "layerInput", layerInput);
+    SDValidation.validateNumerical("separableConv2d", "depthWeights", depthWeights);
+    SDValidation.validateNumerical("separableConv2d", "pointWeights", pointWeights);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D(sd,layerInput, depthWeights, pointWeights, null, Conv2DConfig).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Convolution 2d layer space to batch operation on 4d input.<br>
+   * Increases input batch dimension by rearranging data from spatial dimensions into batch dimension <br>
+   *
+   * @param x Input variable. 4d input (NUMERIC type)
+   * @param blocks Block size, in the height/width dimension (Size: Exactly(count=2))
+   * @param paddingTop Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]] (Size: Exactly(count=2))
+   * @param paddingBottom Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]] (Size: Exactly(count=2))
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable spaceToBatch(SDVariable x, int[] blocks, int[] paddingTop,
+      int... paddingBottom) {
+    SDValidation.validateNumerical("spaceToBatch", "x", x);
+    Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
+    Preconditions.checkArgument(paddingTop.length == 2, "paddingTop has incorrect size/length. Expected: paddingTop.length == 2, got %s", paddingTop.length);
+    Preconditions.checkArgument(paddingBottom.length == 2, "paddingBottom has incorrect size/length. Expected: paddingBottom.length == 2, got %s", paddingBottom.length);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch(sd,x, blocks, paddingTop, paddingBottom).outputVariable();
+  }
+
+  /**
+   * Convolution 2d layer space to batch operation on 4d input.<br>
+   * Increases input batch dimension by rearranging data from spatial dimensions into batch dimension <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable. 4d input (NUMERIC type)
+   * @param blocks Block size, in the height/width dimension (Size: Exactly(count=2))
+   * @param paddingTop Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]] (Size: Exactly(count=2))
+   * @param paddingBottom Optional 2d int[] array for padding the result: values [[pad top, pad bottom], [pad left, pad right]] (Size: Exactly(count=2))
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable spaceToBatch(String name, SDVariable x, int[] blocks, int[] paddingTop,
+      int... paddingBottom) {
+    SDValidation.validateNumerical("spaceToBatch", "x", x);
+    Preconditions.checkArgument(blocks.length == 2, "blocks has incorrect size/length. Expected: blocks.length == 2, got %s", blocks.length);
+    Preconditions.checkArgument(paddingTop.length == 2, "paddingTop has incorrect size/length. Expected: paddingTop.length == 2, got %s", paddingTop.length);
+    Preconditions.checkArgument(paddingBottom.length == 2, "paddingBottom has incorrect size/length. Expected: paddingBottom.length == 2, got %s", paddingBottom.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch(sd,x, blocks, paddingTop, paddingBottom).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Convolution 2d layer space to depth operation on 4d input.<br>
+   * Increases input channels (reduced spatial dimensions) by rearranging data into a larger channels dimension<br>
+   * Example: if input has shape [mb, 2, 4, 4] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]<br>
+   * = [mb, 2, 4, 4] <br>
+   *
+   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
+   *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param blockSize  Block size, in the height/width dimension
+   * @param dataFormat Data format: "NCHW" or "NHWC"
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable spaceToDepth(SDVariable x, int blockSize, DataFormat dataFormat) {
+    SDValidation.validateNumerical("spaceToDepth", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth(sd,x, blockSize, dataFormat).outputVariable();
+  }
+
+  /**
+   * Convolution 2d layer space to depth operation on 4d input.<br>
+   * Increases input channels (reduced spatial dimensions) by rearranging data into a larger channels dimension<br>
+   * Example: if input has shape [mb, 2, 4, 4] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]<br>
+   * = [mb, 2, 4, 4] <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
+   *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param blockSize  Block size, in the height/width dimension
+   * @param dataFormat Data format: "NCHW" or "NHWC"
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable spaceToDepth(String name, SDVariable x, int blockSize, DataFormat dataFormat) {
+    SDValidation.validateNumerical("spaceToDepth", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth(sd,x, blockSize, dataFormat).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Upsampling layer for 2D inputs.<br>
+   * scale is used for both height and width dimensions. <br>
+   *
+   * @param input Input in NCHW format (NUMERIC type)
+   * @param scale The scale for both height and width dimensions.
+   * @return output Upsampled input (NUMERIC type)
+   */
+  public SDVariable upsampling2d(SDVariable input, int scale) {
+    SDValidation.validateNumerical("upsampling2d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(sd,input, scale).outputVariable();
+  }
+
+  /**
+   * Upsampling layer for 2D inputs.<br>
+   * scale is used for both height and width dimensions. <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input in NCHW format (NUMERIC type)
+   * @param scale The scale for both height and width dimensions.
+   * @return output Upsampled input (NUMERIC type)
+   */
+  public SDVariable upsampling2d(String name, SDVariable input, int scale) {
+    SDValidation.validateNumerical("upsampling2d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(sd,input, scale).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * 2D Convolution layer operation - Upsampling 2d <br>
+   *
+   * @param input Input in NCHW format (NUMERIC type)
+   * @param scaleH Scale to upsample in height dimension
+   * @param scaleW Scale to upsample in width dimension
+   * @param nchw If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
+   * @return output Upsampled input (NUMERIC type)
+   */
+  public SDVariable upsampling2d(SDVariable input, int scaleH, int scaleW, boolean nchw) {
+    SDValidation.validateNumerical("upsampling2d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(sd,input, scaleH, scaleW, nchw).outputVariable();
+  }
+
+  /**
+   * 2D Convolution layer operation - Upsampling 2d <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input in NCHW format (NUMERIC type)
+   * @param scaleH Scale to upsample in height dimension
+   * @param scaleW Scale to upsample in width dimension
+   * @param nchw If true: input is in NCHW (minibatch, channels, height, width) format. False: NHWC format
+   * @return output Upsampled input (NUMERIC type)
+   */
+  public SDVariable upsampling2d(String name, SDVariable input, int scaleH, int scaleW,
+      boolean nchw) {
+    SDValidation.validateNumerical("upsampling2d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(sd,input, scaleH, scaleW, nchw).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 }

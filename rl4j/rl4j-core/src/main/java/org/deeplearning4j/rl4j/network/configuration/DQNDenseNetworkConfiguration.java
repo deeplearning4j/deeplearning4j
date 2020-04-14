@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,27 +14,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.learning.async;
+package org.deeplearning4j.rl4j.network.configuration;
 
-import lombok.AllArgsConstructor;
-import lombok.Value;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- *
- * Its called a MiniTrans because it is similar to a Transition
- * but without a next observation
- *
- * It is stacked and then processed by AsyncNStepQL or A3C
- * following the paper implementation https://arxiv.org/abs/1602.01783 paper.
- *
- */
-@AllArgsConstructor
-@Value
-public class MiniTrans<A> {
-    INDArray obs;
-    A action;
-    INDArray[] output;
-    double reward;
+@Data
+@SuperBuilder
+@EqualsAndHashCode(callSuper = true)
+public class DQNDenseNetworkConfiguration extends NetworkConfiguration {
+
+    /**
+     * The number of layers in the dense network
+     */
+    @Builder.Default
+    private int numLayers = 3;
+
+    /**
+     * The number of hidden neurons in each layer
+     */
+    @Builder.Default
+    private int numHiddenNodes = 100;
 }

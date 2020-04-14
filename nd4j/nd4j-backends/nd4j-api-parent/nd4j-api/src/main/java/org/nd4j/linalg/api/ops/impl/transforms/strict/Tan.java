@@ -38,6 +38,10 @@ public class Tan extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public Tan(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public Tan() {
     }
 

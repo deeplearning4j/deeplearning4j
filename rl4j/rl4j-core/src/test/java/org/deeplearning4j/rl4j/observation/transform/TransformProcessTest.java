@@ -128,7 +128,7 @@ public class TransformProcessTest {
 
         // Assert
         assertFalse(result.isSkipped());
-        assertEquals(1, result.getData().shape().length);
+        assertEquals(2, result.getData().shape().length);
         assertEquals(1, result.getData().shape()[0]);
         assertEquals(-10.0, result.getData().getDouble(0), 0.00001);
     }

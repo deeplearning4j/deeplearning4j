@@ -16,9 +16,11 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.ArrayList;
@@ -34,6 +36,15 @@ public class MeshGrid extends DynamicCustomOp {
      */
     public MeshGrid(SameDiff sd, boolean cartesian, SDVariable... inputs){
         super(null, sd, inputs, false);
+        addIArgument(cartesian ? 1 : 0);
+    }
+
+    public MeshGrid(SameDiff sd, SDVariable[] inputs, boolean cartesian) {
+        this(sd, cartesian, inputs);
+    }
+
+    public MeshGrid(@NonNull INDArray[] inputs, boolean cartesian){
+        super(inputs, null);
         addIArgument(cartesian ? 1 : 0);
     }
 

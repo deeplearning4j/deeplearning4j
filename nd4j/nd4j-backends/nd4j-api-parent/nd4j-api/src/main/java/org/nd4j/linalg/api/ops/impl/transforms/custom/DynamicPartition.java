@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -53,12 +54,21 @@ public class DynamicPartition extends DynamicCustomOp {
     public DynamicPartition() {
     }
 
+    public DynamicPartition(SameDiff sameDiff, SDVariable input,  SDVariable[] partitions, int numPartitions) {
+        this(sameDiff, input, partitions[0], numPartitions);
+    }
+
     public DynamicPartition(SameDiff sameDiff, SDVariable input,  SDVariable partitions, int numPartitions) {
         super(null, sameDiff,  new SDVariable[] {input, partitions}, false);
 
         this.partitions = partitions;
         this.numPartitions = numPartitions;
         addArgs();
+    }
+
+    public DynamicPartition(INDArray input, INDArray partitions, int numPartitions) {
+        addInputArgument(input);
+        addIArgument(numPartitions);
     }
 
 

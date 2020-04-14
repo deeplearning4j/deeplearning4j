@@ -41,6 +41,12 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
+            <classifier>${dependency.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
             <artifactId>openblas</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
         </dependency>

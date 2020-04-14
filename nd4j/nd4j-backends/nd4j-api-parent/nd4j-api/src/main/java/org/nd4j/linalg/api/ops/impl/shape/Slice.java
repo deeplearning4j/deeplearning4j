@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.*;
@@ -52,6 +53,15 @@ public class Slice extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{input, begin, end});
     }
 
+    public Slice(INDArray in, int[] begin, int... size) {
+        addInputArgument(in);
+        addIArgument(begin);
+        addIArgument(size);
+    }
+
+    public Slice(@NonNull INDArray input, @NonNull INDArray begin, @NonNull INDArray end){
+        super(new INDArray[]{input, begin, end}, null);
+    }
 
     @Override
     public String opName() {

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,12 +32,15 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class Exp extends BaseTransformStrictOp {
-    public Exp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+
+    public Exp(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
-    public Exp() {
+    public Exp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
+        super(sameDiff, i_v, inPlace);
     }
 
     public Exp(INDArray x, INDArray z) {

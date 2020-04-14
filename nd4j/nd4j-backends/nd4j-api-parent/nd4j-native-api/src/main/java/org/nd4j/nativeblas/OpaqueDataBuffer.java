@@ -209,4 +209,11 @@ public class OpaqueDataBuffer extends Pointer {
     public void syncToPrimary() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbSyncToPrimary(this);
     }
+
+    /**
+     * This method releases underlying buffer
+     */
+    public void closeBuffer() {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(this);
+    }
 }

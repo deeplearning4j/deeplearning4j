@@ -45,15 +45,4 @@ public class CapsuleUtils {
         return x.times(squaredNorm).div(squaredNorm.plus(1.0).times(scale));
     }
 
-    /**
-     * Compute softmax along a given dimension
-     */
-    public static SDVariable softmax(SameDiff SD, SDVariable x, int dimension, int rank){
-        int[] permutation = ArrayUtil.range(0, rank);
-        permutation[0] = dimension;
-        permutation[dimension] = 0;
-
-        return SD.nn.softmax(x.permute(permutation)).permute(ArrayUtil.invertPermutation(permutation));
-    }
-
 }

@@ -36,12 +36,20 @@ import java.util.List;
  */
 public class GaussianDistribution extends BaseRandomOp {
     private double mean;
-    private double stddev;
+    private double stddev;    
 
     public GaussianDistribution(SameDiff sd, double mean, double stddev, long[] shape){
         super(sd, shape);
         this.mean = mean;
         this.stddev = stddev;
+        this.extraArgs = new Object[] {this.mean, this.stddev};
+    }
+
+    public GaussianDistribution(SameDiff sd, double mean, double stddev, DataType dataType, long[] shape){
+        super(sd, shape);
+        this.mean = mean;
+        this.stddev = stddev;
+        this.dataType = dataType;
         this.extraArgs = new Object[] {this.mean, this.stddev};
     }
 
@@ -134,9 +142,7 @@ public class GaussianDistribution extends BaseRandomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input datatypes (no args) for %s, got %s", getClass(), inputDataTypes);
-        //Input data type specifies the shape; output data type should be any float
-        //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
-        return Collections.singletonList(DataType.DOUBLE);
+        return Collections.singletonList(dataType);
     }
 
     @Override

@@ -56,6 +56,11 @@ public class RegressionTest100b6 extends BaseDL4JTest {
         return DataType.FLOAT;
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+    }
+
     @Test
     public void testCustomLayer() throws Exception {
 
@@ -106,7 +111,8 @@ public class RegressionTest100b6 extends BaseDL4JTest {
             assertEquals(dtype, net.getLayerWiseConfigurations().getDataType());
             assertEquals(dtype, net.params().dataType());
             boolean eq = outExp.equalsWithEps(outAct, 0.01);
-            assertTrue(outExp + " vs " + outAct, eq);        }
+            assertTrue(outExp + " vs " + outAct, eq);
+        }
     }
 
 

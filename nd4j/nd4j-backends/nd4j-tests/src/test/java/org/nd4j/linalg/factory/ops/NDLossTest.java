@@ -61,7 +61,7 @@ public class NDLossTest extends BaseNd4jTest {
 
 
         SDVariable loss = sd.loss().absoluteDifference("loss", labels, predictions, w, reduction);
-        SDVariable loss2 = sd.loss().absoluteDifference("loss2", labels, predictions, null, reduction);
+        SDVariable loss2 = sd.loss().absoluteDifference("loss2", labels, predictions,null, reduction);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
@@ -251,8 +251,8 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray predictionsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
         INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
-        SDVariable loss = sd.loss().logPoisson("loss", labels, predictions, w, reduction);
-        SDVariable loss2 = sd.loss().logPoisson("loss2", labels, predictions, null, reduction);
+        SDVariable loss = sd.loss().logPoisson("loss", labels, predictions, w, reduction, false);
+        SDVariable loss2 = sd.loss().logPoisson("loss2", labels, predictions, null, reduction, false);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
@@ -285,7 +285,8 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
         SDVariable loss = sd.loss().meanPairwiseSquaredError("loss", labels, predictions, w, reduction);
-        SDVariable loss2 = sd.loss().meanPairwiseSquaredError("loss2", labels, predictions, null, reduction);
+        SDVariable loss2 = sd.loss().meanPairwiseSquaredError("loss2", labels, predictions,
+                null, reduction);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
@@ -318,7 +319,8 @@ public class NDLossTest extends BaseNd4jTest {
         INDArray labelsArr = Nd4j.randn(DataType.DOUBLE, minibatch, nOut);
 
         SDVariable loss = sd.loss().meanSquaredError("loss", labels, predictions, w, reduction);
-        SDVariable loss2 = sd.loss().meanSquaredError("loss2", labels, predictions, null, reduction);
+        SDVariable loss2 = sd.loss().meanSquaredError("loss2", labels, predictions,
+                null, reduction);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
@@ -352,7 +354,8 @@ public class NDLossTest extends BaseNd4jTest {
         double labelSmoothing = 0.01;
 
         SDVariable loss = sd.loss().sigmoidCrossEntropy("loss", labels, predictions, w, reduction, labelSmoothing);
-        SDVariable loss2 = sd.loss().sigmoidCrossEntropy("loss2", labels, predictions, null, reduction, labelSmoothing);
+        SDVariable loss2 = sd.loss().sigmoidCrossEntropy("loss2", labels, predictions,
+                null, reduction, labelSmoothing);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);
 
@@ -388,7 +391,7 @@ public class NDLossTest extends BaseNd4jTest {
 
         double labelSmoothing = 0.0;
 
-        SDVariable loss = sd.loss().softmaxCrossEntropy("loss", labels, predictions, w, reduction, labelSmoothing);
+        SDVariable loss = sd.loss().softmaxCrossEntropy("loss", labels, predictions, null, reduction, labelSmoothing);
         SDVariable loss2 = sd.loss().softmaxCrossEntropy("loss2", labels, predictions, null, reduction, labelSmoothing);
         sd.associateArrayWithVariable(predictionsArr, predictions);
         sd.associateArrayWithVariable(labelsArr, labels);

@@ -288,9 +288,9 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5.3-SNAPSHOT</javacpp.version>
-        <javacpp-presets.version>1.5.3-SNAPSHOT</javacpp-presets.version>
-        <javacv.version>1.5.3-SNAPSHOT</javacv.version>
+        <javacpp.version>1.5.3</javacpp.version>
+        <javacpp-presets.version>1.5.3</javacpp-presets.version>
+        <javacv.version>1.5.3</javacv.version>
 
         <python.version>3.7.7</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
@@ -298,8 +298,8 @@
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
         <openblas.version>0.3.9</openblas.version>
-        <mkl.version>2020.0</mkl.version>
-        <opencv.version>4.2.0</opencv.version>
+        <mkl.version>2020.1</mkl.version>
+        <opencv.version>4.3.0</opencv.version>
         <ffmpeg.version>4.2.2</ffmpeg.version>
         <leptonica.version>1.79.0</leptonica.version>
         <hdf5.version>1.12.0</hdf5.version>

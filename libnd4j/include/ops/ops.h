@@ -1441,7 +1441,7 @@ namespace simdOps {
 		}
 
 		op_def static Z op(X d1) {
-			return d1;
+			return static_cast<Z>(d1);
 		}
 	};
 
@@ -2431,6 +2431,19 @@ namespace simdOps {
 			auto xt = static_cast<Z>(d1);
 			auto xf = static_cast<Z>(d2);
 			return xt < xf ? xf : xt;
+		}
+	};
+
+	template <typename X, typename Y, typename Z>
+	class RELUDerivative {
+	public:
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
+
+		op_def static Z op(X d1, Y d2, Z *params) {
+			auto xt = static_cast<Z>(d1);
+			auto xf = static_cast<Z>(d2);
+			return xt > xf ? static_cast<Z>(1.f) : static_cast<Z>(0.f);
 		}
 	};
 

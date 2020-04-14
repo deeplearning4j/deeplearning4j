@@ -50,6 +50,10 @@ public class SoftMax extends BaseDynamicTransformOp {
         super(sameDiff, args, false);
     }
 
+    public SoftMax(SameDiff sameDiff, SDVariable x, int dimension) {
+        this(sameDiff, new SDVariable[]{x}, dimension);
+    }
+
     public SoftMax(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }

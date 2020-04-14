@@ -14,9 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-// @author sgazeos@gmail.com
-//
+ //
+ // @author sgazeos@gmail.com
+ //
 
 #include <ops/declarable/generic/helpers/BroadcastHelper.h>
 #include <ops/declarable/headers/parity_ops.h>
@@ -29,24 +29,24 @@ namespace sd {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
-            auto z0 = NDArrayFactory::create<bool>(x->ordering(), x->getShapeAsVector());
+            auto z0 = NDArrayFactory::create<bool>(x->ordering(), x->getShapeAsVector(), block.launchContext());
             BROADCAST_CHECK_EMPTY(x, y, (&z0));
-            
+
             auto tZ = BroadcastHelper::broadcastApply(BROADCAST_BOOL(GreaterThan), x, y, &z0);
             bitcast res;
-            auto status = res.execute({tZ}, {z}, {}, {DataType::UINT8}, {}, {}, false);
+            auto status = res.execute({ tZ }, { z }, {}, { DataType::UINT8 }, {}, {}, false);
             if (tZ != &z0) {
                 delete tZ;
             }
-            
+
             return status;
         }
 
         DECLARE_TYPES(compare_and_bitpack) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, DataType::ANY)
-                    ->setAllowedInputTypes(1, DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::UINT8);
+                ->setAllowedInputTypes(0, DataType::ANY)
+                ->setAllowedInputTypes(1, DataType::ANY)
+                ->setAllowedOutputTypes(0, DataType::UINT8);
         }
 
         DECLARE_SHAPE_FN(compare_and_bitpack) {

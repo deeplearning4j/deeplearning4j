@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -36,7 +37,7 @@ import java.util.Collection;
  *
  * Standard implementation of ActorCriticCompGraph
  */
-public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IActorCritic<NN> {
+public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> {
 
     final protected ComputationGraph cg;
     @Getter
@@ -73,13 +74,13 @@ public class ActorCriticCompGraph<NN extends ActorCriticCompGraph> implements IA
         }
     }
 
-    public NN clone() {
-        NN nn = (NN)new ActorCriticCompGraph(cg.clone());
+    public ActorCriticCompGraph clone() {
+        ActorCriticCompGraph nn = new ActorCriticCompGraph(cg.clone());
         nn.cg.setListeners(cg.getListeners());
         return nn;
     }
 
-    public void copy(NN from) {
+    public void copy(ActorCriticCompGraph from) {
         cg.setParams(from.cg.params());
     }
 
