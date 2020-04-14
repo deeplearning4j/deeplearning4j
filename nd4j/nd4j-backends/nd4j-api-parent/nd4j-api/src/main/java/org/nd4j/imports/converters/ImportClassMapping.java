@@ -148,6 +148,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer.class,
+            org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayerBp.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlock.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell.class,

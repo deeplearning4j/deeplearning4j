@@ -1534,11 +1534,11 @@ public class LayerOpValidation extends BaseOpValidation {
         //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
 
 
-        SDVariable in = sd.var("in", Nd4j.rand(DataType.FLOAT, bS, nIn, sL));
+        SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, bS, nIn, sL));
 
 
-        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
-        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
+        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.DOUBLE, bS, numUnits));
+        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.DOUBLE, bS, numUnits));
 
         LSTMLayerConfig c = LSTMLayerConfig.builder()
                 .lstmdataformat(LSTMDataFormat.NST)
@@ -1554,10 +1554,10 @@ public class LayerOpValidation extends BaseOpValidation {
         LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(
                 in, cLast, yLast, null,
                 LSTMLayerWeights.builder()
-                        .weights(sd.var("weights", Nd4j.rand(DataType.FLOAT, nIn, 4 * numUnits)))
-                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.FLOAT, numUnits, 4 * numUnits)))
-                        .peepholeWeights(sd.var("inputPeepholeWeights", Nd4j.rand(DataType.FLOAT, 3 * numUnits)))
-                        .bias(sd.var("bias", Nd4j.rand(DataType.FLOAT, 4 * numUnits))).build(),
+                        .weights(sd.var("weights", Nd4j.rand(DataType.DOUBLE, nIn, 4 * numUnits)))
+                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.DOUBLE, numUnits, 4 * numUnits)))
+                        .peepholeWeights(sd.var("inputPeepholeWeights", Nd4j.rand(DataType.DOUBLE, 3 * numUnits)))
+                        .bias(sd.var("bias", Nd4j.rand(DataType.DOUBLE, 4 * numUnits))).build(),
                 c), c);
 
         long[] out = new long[]{bS, numUnits, sL};
@@ -1567,6 +1567,11 @@ public class LayerOpValidation extends BaseOpValidation {
         assertArrayEquals(out, outputs.getOutput().eval().shape());
         assertArrayEquals(hL, outputs.getLastOutput().eval().shape());
         assertArrayEquals(cL, outputs.getLastState().eval().shape());
+
+        sd.setLossVariables(outputs.getLastOutput(),outputs.getLastTimeStepOutput(),outputs.getTimeSeriesOutput());
+        OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true)
+        );
 
 
     }
@@ -1674,6 +1679,8 @@ public class LayerOpValidation extends BaseOpValidation {
 
         assertArrayEquals(out, outputs.getOutput().eval().shape());
     }
+
+
 
 
 }
