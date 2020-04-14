@@ -294,7 +294,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
     @Override
     public void unsafeSetDevice(Integer deviceId) {
+        // actually set device
         NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
+
+        // reset saved context, so it will be recreated on first call
+        AtomicAllocator.getInstance().getMemoryHandler().resetCachedContext();
     }
 
     @Override
