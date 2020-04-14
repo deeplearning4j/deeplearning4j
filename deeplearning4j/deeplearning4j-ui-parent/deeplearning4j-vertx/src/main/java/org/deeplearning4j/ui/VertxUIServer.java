@@ -89,17 +89,20 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
             //Launch UI server verticle and wait for it to start
             CountDownLatch l = new CountDownLatch(1);
             vertx.deployVerticle(VertxUIServer.class.getName(), res -> {
+                if (res.failed()) {
+                    log.error("UI server failed to start.", res.cause());
+                }
                 l.countDown();
             });
             try {
                 l.await(5000, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e){ } //Ignore
         } else if (!instance.isStopped()) {
-            if (instance.multiSession.get() && !instance.isMultiSession()) {
+            if (multiSession && !instance.isMultiSession()) {
                 throw new RuntimeException("Cannot return multi-session instance." +
                         " UIServer has already started in single-session mode at " + instance.getAddress() +
                         " You may stop the UI server instance, and start a new one.");
-            } else if (!instance.multiSession.get() && instance.isMultiSession()) {
+            } else if (!multiSession && instance.isMultiSession()) {
                 throw new RuntimeException("Cannot return single-session instance." +
                         " UIServer has already started in multi-session mode at " + instance.getAddress() +
                         " You may stop the UI server instance, and start a new one.");
@@ -306,7 +309,6 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         server.close();
         shutdown.set(true);
     }
-
 
     @Override
     public boolean isStopped() {
