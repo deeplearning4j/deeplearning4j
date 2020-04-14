@@ -323,7 +323,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.shape.Transpose.class,
             org.nd4j.linalg.api.ops.impl.shape.Unstack.class,
             org.nd4j.linalg.api.ops.impl.shape.ZerosLike.class,
-            org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp.class
+            org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp.class,
             org.nd4j.linalg.api.ops.impl.shape.bp.MergeMaxBp.class,
             org.nd4j.linalg.api.ops.impl.shape.bp.MergeAvgBp.class,
             org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp.class,
