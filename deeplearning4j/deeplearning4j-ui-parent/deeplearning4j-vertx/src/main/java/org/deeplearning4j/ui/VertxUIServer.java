@@ -75,10 +75,6 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
     private TrainModule trainModule;
 
-    public static VertxUIServer getInstance() {
-        return getInstance(null, multiSession.get(), null);
-    }
-
     public static VertxUIServer getInstance(Integer port, boolean multiSession, Function<String, StatsStorage> statsStorageProvider){
         if (instance == null || instance.isStopped()) {
             VertxUIServer.multiSession.set(multiSession);

@@ -39,7 +39,11 @@ public interface UIServer {
      * @throws RuntimeException if the instance has already started in a different mode (multi/single-session)
      */
     static UIServer getInstance() throws RuntimeException {
-        return getInstance(false, null);
+        if (VertxUIServer.getInstance() != null) {
+            return VertxUIServer.getInstance();
+        } else {
+            return getInstance(false, null);
+        }
     }
 
     /**
