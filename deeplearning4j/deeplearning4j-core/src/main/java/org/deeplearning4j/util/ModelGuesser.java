@@ -54,7 +54,11 @@ public class ModelGuesser {
      * @return the loaded normalizer
      */
     public static Normalizer<?> loadNormalizer(String path) {
-        return ModelSerializer.restoreNormalizerFromFile(new File(path));
+        try {
+            return ModelSerializer.restoreNormalizerFromFile(new File(path));
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
 
