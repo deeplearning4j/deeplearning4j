@@ -137,7 +137,7 @@ public class TrainModule implements UIModule {
             maxChartPoints = DEFAULT_MAX_CHART_POINTS;
         }
 
-        configuration = new Configuration(new Version(2, 3, 29));
+        configuration = new Configuration(new Version(2, 3, 23));
         configuration.setDefaultEncoding("UTF-8");
         configuration.setLocale(Locale.US);
         configuration.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
