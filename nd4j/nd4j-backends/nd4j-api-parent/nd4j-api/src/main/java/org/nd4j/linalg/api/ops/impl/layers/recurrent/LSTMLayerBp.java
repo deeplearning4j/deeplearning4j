@@ -36,7 +36,7 @@ import java.util.Map;
 
 
 /**
- * LSTM layer implemented as a single operation.
+ * LSTM layer backpropagation
  */
 @NoArgsConstructor
 public class LSTMLayerBp extends DynamicCustomOp {
@@ -52,24 +52,8 @@ public class LSTMLayerBp extends DynamicCustomOp {
     private SDVariable maxTSLength;
 
 
-
-//  Input base on this cpp code part for lstmLayer_bp
-//    const auto x  = INPUT_VARIABLE(0);          // input
-//    const auto Wx = INPUT_VARIABLE(1);          // input weights
-//    const auto Wr = INPUT_VARIABLE(2);          // recurrent weights
-//    count = 3;
-//    const auto b      = hasBiases  ? INPUT_VARIABLE(count++) : nullptr;  // biases
-//    const auto seqLen = hasSeqLen  ? INPUT_VARIABLE(count++) : nullptr;  // seqLen vector
-//    const auto hI     = hasInitH   ? INPUT_VARIABLE(count++) : nullptr;  // initial output
-//    const auto cI     = hasInitC   ? INPUT_VARIABLE(count++) : nullptr;  // initial cell state
-//    const auto Wp     = hasPH      ? INPUT_VARIABLE(count++) : nullptr;  // peephole weights
-//    const auto dLdh   = retFullSeq ? INPUT_VARIABLE(count++) : nullptr;  // gradient vs. output
-//    const auto dLdhL  = retLastH   ? INPUT_VARIABLE(count++) : nullptr;  // gradient vs. output at last time step
-//    const auto dLdcL  = retLastC   ? INPUT_VARIABLE(count++) : nullptr;  // gradient vs. cell state at last time step
-
-    public LSTMLayerBp(@NonNull SameDiff sameDiff, SDVariable x, SDVariable cLast, SDVariable yLast, SDVariable maxTSLength, LSTMLayerWeights weights, LSTMLayerConfig configuration,
+    public LSTMLayerBp(@NonNull SameDiff sameDiff, @NonNull SDVariable x, SDVariable cLast, SDVariable yLast, SDVariable maxTSLength, @NonNull LSTMLayerWeights weights,@NonNull LSTMLayerConfig configuration,
                        SDVariable dLdh, SDVariable dLdhL, SDVariable dLdcL) {
-//        super("lstmLayer_bp", sameDiff, weights.argsWithInputs(x, maxTSLength, cLast, yLast));
         super("lstmLayer_bp", sameDiff, wrapFilterNull(x, weights.getWeights(), weights.getRWeights(),weights.getBias(),
                 maxTSLength, yLast, cLast, weights.getPeepholeWeights(), dLdh, dLdhL, dLdcL));
         this.configuration = configuration;
@@ -89,30 +73,30 @@ public class LSTMLayerBp extends DynamicCustomOp {
 
     }
 
-
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         DataType dt = inputDataTypes.get(1);
         ArrayList<DataType> list = new ArrayList<>();
-        if (configuration.isRetFullSequence()) {
+        list.add(dt); // dLdx
+        list.add(dt); // dLdWx
+        list.add(dt); // dLdWr
 
+        if (this.weights.hasBias()) {
             list.add(dt);
-        }
+        } // dLdb
 
-        if (configuration.isRetLastC()) {
-
+        if (this.maxTSLength!=null) {
             list.add(dt);
-        }
-        if (configuration.isRetLastH()){
-
+        } // dLdSl
+        if (this.yLast!=null){
             list.add(dt);
-        }
-        list.add(dt);
-        list.add(dt);
-        list.add(dt);
-        list.add(dt);
-
-
+        } //dLdhI
+        if (this.cLast!=null){
+            list.add(dt);
+        } // dLdcI
+        if (this.weights.hasPH()){
+            list.add(dt);
+        } // dLdWp
 
         Preconditions.checkState(dt.isFPType(), "Input type 1 must be a floating point type, got %s", dt);
         return list;
@@ -163,20 +147,11 @@ public class LSTMLayerBp extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs(){
-//        C++ outputs
-//        auto dLdx  = OUTPUT_VARIABLE(0);                                 // gradient vs. input
-//        auto dLdWx = OUTPUT_NULLIFIED(1);                                // gradient vs. input weights
-//        auto dLdWr = OUTPUT_NULLIFIED(2);                                // gradient vs. recurrent weights
-//        auto dLdb  = hasBiases ? OUTPUT_NULLIFIED(count++) : nullptr;    // gradient vs. biases
-//        auto dLdsL = hasSeqLen ? INPUT_VARIABLE(count++)   : nullptr;    // gradient vs. seqLen vector, we don't calculate it !!!
-//        auto dLdhI = hasInitH  ? OUTPUT_NULLIFIED(count++) : nullptr;    // gradient vs. initial output
-//        auto dLdcI = hasInitC  ? OUTPUT_NULLIFIED(count++) : nullptr;    // gradient vs. initial cell state
-//        auto dLdWp = hasPH     ? OUTPUT_NULLIFIED(count)   : nullptr;    // gradient vs. peephole weights
 
         return Booleans.countTrue(
-                configuration.isRetFullSequence(),
-                configuration.isRetLastH(),
-                configuration.isRetLastC(),
+                true,
+                true,
+                true,
                 weights.hasBias(),
                 this.maxTSLength != null,
                 this.yLast != null,

@@ -131,9 +131,13 @@ public class LSTMLayer extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grads) {
+        int i=0;
+        SDVariable grad0 = this.configuration.isRetFullSequence() ? grads.get(i++): null;
+        SDVariable grad1 = this.configuration.isRetLastH() ? grads.get(i++): null;
+        SDVariable grad2 = this.configuration.isRetLastC() ? grads.get(i++): null;
 
         return Arrays.asList(new LSTMLayerBp(sameDiff, arg(0), this.cLast, this.yLast, this.maxTSLength,
-                this.weights, this.configuration, grads.get(0),grads.get(1),grads.get(2)).outputVariables());
+                this.weights, this.configuration, grad0, grad1,grad2).outputVariables());
     }
 
 

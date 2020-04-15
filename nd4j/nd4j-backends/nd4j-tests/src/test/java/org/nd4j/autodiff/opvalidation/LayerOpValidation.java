@@ -1552,7 +1552,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build();
 
         LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(
-                in, cLast, yLast, null,
+                in, cLast, null, null,
                 LSTMLayerWeights.builder()
                         .weights(sd.var("weights", Nd4j.randn(DataType.DOUBLE, nIn, 4 * numUnits)))
                         .rWeights(sd.var("rWeights", Nd4j.randn(DataType.DOUBLE, numUnits, 4 * numUnits)))
@@ -1568,7 +1568,7 @@ public class LayerOpValidation extends BaseOpValidation {
         assertArrayEquals(hL, outputs.getLastOutput().eval().shape());
         assertArrayEquals(cL, outputs.getLastState().eval().shape());
 
-        sd.setLossVariables(outputs.getLastOutput(),outputs.getLastTimeStepOutput(),outputs.getTimeSeriesOutput());
+        sd.setLossVariables(outputs.getOutput(),outputs.getLastTimeStepOutput(),outputs.getTimeSeriesOutput());
 
         OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true)
