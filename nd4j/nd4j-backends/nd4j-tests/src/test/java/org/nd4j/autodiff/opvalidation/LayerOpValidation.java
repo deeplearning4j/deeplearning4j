@@ -1518,7 +1518,7 @@ public class LayerOpValidation extends BaseOpValidation {
         int bS = 5;
         int nIn = 3;
         int numUnits = 7;
-        int sL = 10; //small just for test
+        int sL = 3; //small just for test
 
         SameDiff sd = SameDiff.create();
 
@@ -1534,7 +1534,7 @@ public class LayerOpValidation extends BaseOpValidation {
         //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
 
 
-        SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, bS, nIn, sL));
+        SDVariable in = sd.var("in", Nd4j.randn(DataType.DOUBLE, bS, nIn, sL));
 
 
         SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.DOUBLE, bS, numUnits));
@@ -1554,9 +1554,9 @@ public class LayerOpValidation extends BaseOpValidation {
         LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(
                 in, cLast, yLast, null,
                 LSTMLayerWeights.builder()
-                        .weights(sd.var("weights", Nd4j.rand(DataType.DOUBLE, nIn, 4 * numUnits)))
-                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.DOUBLE, numUnits, 4 * numUnits)))
-                        .peepholeWeights(sd.var("inputPeepholeWeights", Nd4j.rand(DataType.DOUBLE, 3 * numUnits)))
+                        .weights(sd.var("weights", Nd4j.randn(DataType.DOUBLE, nIn, 4 * numUnits)))
+                        .rWeights(sd.var("rWeights", Nd4j.randn(DataType.DOUBLE, numUnits, 4 * numUnits)))
+                        .peepholeWeights(sd.var("inputPeepholeWeights", Nd4j.randn(DataType.DOUBLE, 3 * numUnits)))
                         .bias(sd.var("bias", Nd4j.rand(DataType.DOUBLE, 4 * numUnits))).build(),
                 c), c);
 
@@ -1569,6 +1569,7 @@ public class LayerOpValidation extends BaseOpValidation {
         assertArrayEquals(cL, outputs.getLastState().eval().shape());
 
         sd.setLossVariables(outputs.getLastOutput(),outputs.getLastTimeStepOutput(),outputs.getTimeSeriesOutput());
+
         OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true)
         );
