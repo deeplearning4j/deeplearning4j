@@ -2084,11 +2084,11 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_1) {
     const auto hasInitH   = true;   // initial output is provided
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = true;   // peephole connections are absent
-    const auto retFullSeq = false;  // dLdh per each time step
+    const auto retFullSeq = true;   // dLdh per each time step
     const auto retLastH   = true;   // output at last time step
-    const auto retLastC   = true;   // cells state at last time step
+    const auto retLastC   = true;  // cells state at last time step
 
-    const double cellClip = 0.5;       // do not apply clipping
+    const double cellClip = 0.5;       // clipping
 
     NDArray x('c', {sL, bS, nIn}, sd::DataType::DOUBLE);
     NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
@@ -2097,6 +2097,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_1) {
     NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
     NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
     NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {sL, bS, nOut}, sd::DataType::DOUBLE);
     NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
     NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
 
@@ -2113,75 +2114,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_1) {
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, std::vector<bool>(), {0., 1.}, GradCheck::LossFunc::SUM, {0});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_bp_2) {
-
-    const int sL   = 3;
-    const int bS   = 2;
-    const int nIn  = 2;
-    const int nOut = 3;
-
-    const int dataFormat = 0;       // [sL,bS,nIn]
-    const int directionMode = 0;    // forward
-    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
-    const int cellAct = 0;          // tanh activation for cell state
-    const int outAct = 0;           // tanh activation for output
-
-    const bool hasBiases  = true;   // biases array is provided
-    const bool hasSeqLen  = false;  // seqLen array is not provided
-    const auto hasInitH   = true;   // initial output is provided
-    const auto hasInitC   = true;   // initial cell state is provided
-    const auto hasPH      = true;   // peephole connections are absent
-    const auto retFullSeq = false;  // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
-    const auto retLastH   = false;   // output at last time step
-    const auto retLastC   = true;   //  cells state at last time step
-
-    const double cellClip = 0.5;       // do not apply clipping
-
-    NDArray x('c', {sL, bS, nIn}, sd::DataType::DOUBLE);
-    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
-    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::DOUBLE);
-    NDArray b('c', {4*nOut}, sd::DataType::DOUBLE);
-    NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
-    NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
-    NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
-    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
-
-    x.linspace(-2,0.1);
-    hI.linspace(-1.5,0.1);
-    cI.linspace(0.7,-0.1);
-    Wx.linspace(1,-0.1);
-    Wr.linspace(-1,0.1);
-    Wp.linspace(0.2,0.2);
-    b.linspace(1,-0.15);
-
-    std::vector<double>   tArgs = {cellClip};
-    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
-    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
-
-    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdcL}, tArgs, iArgs, bArgs);
-
-    sd::ops::lstmLayer opFF;
-    sd::ops::lstmLayer_bp opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, std::vector<bool>(), {0., 1.}, GradCheck::LossFunc::MEAN);
-
-    ASSERT_TRUE(isGradCorrect);
-}
-
-///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests13, lstmLayer_bp_3) {
 
     const int sL   = 3;
     const int bS   = 2;
@@ -2199,11 +2143,11 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_3) {
     const auto hasInitH   = true;   // initial output is provided
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = true;   // peephole connections are absent
-    const auto retFullSeq = true;  // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
-    const auto retLastH   = false;   // output at last time step
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = false;  // output at last time step
     const auto retLastC   = true;   // cells state at last time step
 
-    const double cellClip = 0.5;       // do not apply clipping
+    const double cellClip = 0.5;       // clipping
 
     NDArray x('c', {bS, sL, nIn}, sd::DataType::DOUBLE);
     NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
@@ -2233,13 +2177,13 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_3) {
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, std::vector<bool>(), {0., 1.}, GradCheck::LossFunc::MEAN, {0});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, std::vector<bool>(), {0., 1.}, GradCheck::LossFunc::MEAN);
 
     ASSERT_TRUE(isGradCorrect);
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests13, lstmLayer_bp_4) {
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_3) {
 
     const int sL   = 4;
     const int bS   = 3;
@@ -2258,10 +2202,10 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_4) {
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = true;   // peephole connections are absent
     const auto retFullSeq = true;   // dLdh per each time step
-    const auto retLastH   = false;   // output at last time step
-    const auto retLastC   = false;   // cells state at last time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
 
-    const double cellClip = 0.5;       // do not apply clipping
+    const double cellClip = 0.5;       //  clipping
 
     NDArray x('c', {bS, nIn, sL}, sd::DataType::DOUBLE);
     NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
@@ -2272,6 +2216,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_4) {
     NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
     NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
     NDArray dLdh('c', {bS, nOut, sL}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
 
     x.linspace(-2,0.1);
     hI.linspace(-1.5,0.1);
@@ -2286,18 +2232,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_4) {
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true}, {0., 1.}, GradCheck::LossFunc::MEAN, {0});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests13, lstmLayer_bp_5) {
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_4) {
 
     const int sL   = 3;
     const int bS   = 2;
@@ -2315,11 +2261,11 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_5) {
     const auto hasInitH   = true;   // initial output is provided
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = true;   // peephole connections are absent
-    const auto retFullSeq = false;   // dLdh per each time step
+    const auto retFullSeq = true;   // dLdh per each time step
     const auto retLastH   = true;   // output at last time step
-    const auto retLastC   = false;   // cells state at last time step
+    const auto retLastC   = true;   // cells state at last time step
 
-    const double cellClip = 0.5;       // do not apply clipping
+    const double cellClip = 0.5;       // clipping
 
     NDArray x('c', {bS, sL, nIn}, sd::DataType::DOUBLE);
     NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
@@ -2328,7 +2274,9 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_5) {
     NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
     NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
     NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS, sL, nOut}, sd::DataType::DOUBLE);
     NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
 
     x.linspace(-2,0.1);
     hI.linspace(-1.5,0.1);
@@ -2343,18 +2291,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_5) {
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdhL}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, std::vector<bool>(), {0., 1.}, GradCheck::LossFunc::MEAN, {0});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests13, lstmLayer_bp_6) {
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_5) {
 
     const int sL   = 3;
     const int bS   = 2;
@@ -2373,10 +2321,10 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_6) {
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = true;   // peephole connections are absent
     const auto retFullSeq = true;   // dLdh per each time step
-    const auto retLastH   = false;   // output at last time step
-    const auto retLastC   = false;   // cells state at last time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
 
-    const double cellClip = 0.5;       // do not apply clipping
+    const double cellClip = 0.5;       // clipping
 
     NDArray x('c', {bS, nIn, sL}, sd::DataType::DOUBLE);
     NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
@@ -2387,6 +2335,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_6) {
     NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
     NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
     NDArray dLdh('c', {bS, nOut, sL}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
 
     x.linspace(-2,0.1);
     hI.linspace(-1.5,0.1);
@@ -2401,18 +2351,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_6) {
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true}, {0., 1.}, GradCheck::LossFunc::MEAN, {0});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests13, lstmLayer_bp_7) {
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_6) {
 
     const int sL   = 3;
     const int bS   = 2;
@@ -2430,11 +2380,11 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_7) {
     const auto hasInitH   = true;   // initial output is provided
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = true;   // peephole connections are absent
-    const auto retFullSeq = false;   // dLdh per each time step
+    const auto retFullSeq = true;   // dLdh per each time step
     const auto retLastH   = true;   // output at last time step
-    const auto retLastC   = false;   // cells state at last time step
+    const auto retLastC   = true;   // cells state at last time step
 
-    const double cellClip = 0.5;       // do not apply clipping
+    const double cellClip = 0.5;       // clipping
 
     NDArray x('c', {bS, nIn, sL}, sd::DataType::DOUBLE);
     NDArray Wx('c', {2, nIn, 4*nOut}, sd::DataType::DOUBLE);
@@ -2444,7 +2394,9 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_7) {
     NDArray hI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
     NDArray cI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
     NDArray Wp('c', {2, 3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS, nOut, sL}, sd::DataType::DOUBLE);
     NDArray dLdhL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
 
     x.linspace(-2,0.1);
     hI.linspace(-1.5,0.1);
@@ -2459,18 +2411,24 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_7) {
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdcL}, tArgs, iArgs, bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true}, {0., 1.}, GradCheck::LossFunc::MEAN, {0});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests13, lstmLayer_bp_8) {
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_7) {
 
     const int sL   = 3;
     const int bS   = 2;
@@ -2489,10 +2447,10 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_8) {
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = true;   // peephole connections are absent
     const auto retFullSeq = true;   // dLdh per each time step
-    const auto retLastH   = false;   // output at last time step
-    const auto retLastC   = false;   // cells state at last time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
 
-    const double cellClip = 0.5;       // do not apply clipping
+    const double cellClip = 0.5;       // clipping
 
     NDArray x('c', {bS,sL,nIn}, sd::DataType::DOUBLE);
     NDArray Wx('c', {2, nIn, 4*nOut}, sd::DataType::DOUBLE);
@@ -2503,6 +2461,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_8) {
     NDArray cI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
     NDArray Wp('c', {2, 3*nOut}, sd::DataType::DOUBLE);
     NDArray dLdh('c', {bS,sL,2*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
 
     x.linspace(-2,0.1);
     hI.linspace(-1.5,0.1);
@@ -2517,18 +2477,24 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_8) {
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdcL}, tArgs, iArgs, bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true}, {0., 1.}, GradCheck::LossFunc::MEAN, {0});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests13, lstmLayer_bp_9) {
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_8) {
 
     const int sL   = 3;
     const int bS   = 2;
@@ -2547,10 +2513,10 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_9) {
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = true;   // peephole connections are absent
     const auto retFullSeq = true;   // dLdh per each time step
-    const auto retLastH   = false;   // output at last time step
-    const auto retLastC   = false;   // cells state at last time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
 
-    const double cellClip = 0.5;       // do not apply clipping
+    const double cellClip = 0.5;       // clipping
 
     NDArray x('c', {sL, bS, nIn}, sd::DataType::DOUBLE);
     NDArray Wx('c', {2, nIn, 4*nOut}, sd::DataType::DOUBLE);
@@ -2561,6 +2527,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_9) {
     NDArray cI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
     NDArray Wp('c', {2, 3*nOut}, sd::DataType::DOUBLE);
     NDArray dLdh('c', {sL, 2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
 
     x.linspace(-2,0.1);
     hI.linspace(-1.5,0.1);
@@ -2575,12 +2543,18 @@ TEST_F(DeclarableOpsTests13, lstmLayer_bp_9) {
     std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
 
     const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
-    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdcL}, tArgs, iArgs, bArgs);
 
     sd::ops::lstmLayer opFF;
     sd::ops::lstmLayer_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true}, {0., 1.}, GradCheck::LossFunc::MEAN, {0});
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
 
     ASSERT_TRUE(isGradCorrect);
 }

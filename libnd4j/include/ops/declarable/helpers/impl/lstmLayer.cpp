@@ -189,54 +189,6 @@ static FORCEINLINE int getBatchTimeTotalIndex(const int dataFormat, const int sL
     return b * sL + t;       // NTS, NST: shape [bS, sL, nIn], [bS, nIn, sL]
 }
 
-//////////////////////////////////////////////////////////////////////////
-// x{M,K} x y{K,N} = z{M,N}, dzdy{K,N,M,N} - Jacobian derivative  -> if x.rankOf() == 2
-// x{K} x y{K,N} = z{N}, dzdy{K,N,N} - Jacobian derivative        -> if x.rankOf() == 1
-static NDArray mmulJacobianWeightsDeriv(const int nOut, const NDArray& x) {
-
-    std::vector<Nd4jLong> outShape = x.rankOf() == 1 ? std::vector<Nd4jLong>({x.sizeAt(0), nOut, nOut}) : std::vector<Nd4jLong>({x.sizeAt(1), nOut, x.sizeAt(0), nOut});
-
-    NDArray dzdy(x.ordering(), outShape, x.dataType(), x.getContext());
-
-    if(x.rankOf() == 1) {
-        auto func = PRAGMA_THREADS_FOR_3D {
-
-            for (auto i0 = start_x; i0 < stop_x; ++i0) {
-                for (auto i1 = start_y; i1 < stop_y; ++i1) {
-                    for (auto i2 = start_z; i2 < stop_z; ++i2) {
-                        if(i1 == i2)
-                            dzdy.p<double>(i0,i1,i2, x.e<double>(i0));
-                        else
-                            dzdy.p<double>(i0,i1,i2, 0);
-                    }
-                }
-            }
-        };
-
-        samediff::Threads::parallel_for(func,  0,dzdy.sizeAt(0),1,  0,dzdy.sizeAt(1),1,  0,dzdy.sizeAt(2),1);
-    }
-    else {
-        auto func = PRAGMA_THREADS_FOR_3D {
-
-            for (auto i0 = start_x; i0 < stop_x; ++i0) {
-                for (auto i1 = start_y; i1 < stop_y; ++i1) {
-                    for (auto i2 = start_z; i2 < stop_z; ++i2) {
-                        for (auto i3 = 0; i3 < dzdy.sizeAt(3); ++i3) {
-                            if(i1 == i3)
-                                dzdy.p<double>(i0,i1,i2,i3, x.e<double>(i2,i0));
-                            else
-                                dzdy.p<double>(i0,i1,i2,i3, 0);
-                        }
-                    }
-                }
-            }
-        };
-
-        samediff::Threads::parallel_for(func,  0,dzdy.sizeAt(0),1,  0,dzdy.sizeAt(1),1,  0,dzdy.sizeAt(2),1);
-    }
-
-    return dzdy;
-}
 
 //////////////////////////////////////////////////////////////////////////
 void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
@@ -245,25 +197,25 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                    NDArray* h, NDArray* c) {
 
     // * -> means element-wise multiplication
-    // ^ -> means matrix multiplication
+    // × -> means matrix multiplication
 
     /************************ THIS IS NOT OPTIMAZED CODE ***********************************/
     /** the objective is to provide math-readable code **/
 
     // equations (no peephole connections)
-    // it  = σ(Wxi ^ xt  +  Wri ^ ht-1  +  bi)
-    // ft  = σ(Wxf ^ xt  +  Wrf ^ ht-1  +  bf)
-    // c't = tanh(Wxc ^ xt  +  Wrc ^ ht-1  +  bc)
+    // it  = σ(Wxi × xt  +  Wri × ht-1  +  bi)
+    // ft  = σ(Wxf × xt  +  Wrf × ht-1  +  bf)
+    // c't = tanh(Wxc × xt  +  Wrc × ht-1  +  bc)
     // ct  = ft * ct-1 + it * c't
-    // ot  = σ(Wxo ^ xt  +  Wro ^ ht-1  +  bo)
+    // ot  = σ(Wxo × xt  +  Wro × ht-1  +  bo)
     // ht  = ot * tanh(ct)
 
     // equations (peephole connections are present)
-    // it  = σ(Wxi ^ xt  +  Wri ^ ht-1  +  Wpi * ct-1  +  bi)
-    // ft  = σ(Wxf ^ xt  +  Wrf ^ ht-1  +  Wpf * ct-1  +  bf)
-    // c't = tanh(Wxc ^ xt  +  Wrc ^ ht-1  +  bc)
+    // it  = σ(Wxi × xt  +  Wri × ht-1  +  Wpi * ct-1  +  bi)
+    // ft  = σ(Wxf × xt  +  Wrf × ht-1  +  Wpf * ct-1  +  bf)
+    // c't = tanh(Wxc × xt  +  Wrc × ht-1  +  bc)
     // ct  = ft * ct-1 + it * c't
-    // ot  = σ(Wxo ^ xt  +  Wro ^ ht-1  +  Wpo * ct   +  bo)
+    // ot  = σ(Wxo × xt  +  Wro × ht-1  +  Wpo * ct   +  bo)
     // ht  = ot * tanh(ct)
 
 
@@ -399,7 +351,7 @@ void lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
 //////////////////////////////////////////////////////////////////////////
 void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI, const NDArray* cI, const NDArray* Wp,
-                     const NDArray* dLdh, const NDArray* dLdc,
+                     const NDArray* dLdh, const NDArray* dLdhL, const NDArray* dLdcL,
                      const NDArray* z, const NDArray* a, const NDArray* c, const std::vector<float>& params,
                      NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdb, NDArray* dLdWp) {
 
@@ -407,10 +359,10 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
     /** the objective is to provide math-readable code **/
 
     // equations (no peephole connections)
-    // zi = x ^ Wxi + hI ^ Wri + bi
-    // zf = x ^ Wxf + hI ^ Wrf + bf
-    // zg = x ^ Wxg + hI ^ Wrg + bg
-    // zo = x ^ Wxo + hI ^ Wro + bo
+    // zi = x × Wxi + hI × Wri + bi
+    // zf = x × Wxf + hI × Wrf + bf
+    // zg = x × Wxg + hI × Wrg + bg
+    // zo = x × Wxo + hI × Wro + bo
     // i = act(zi)
     // f = act(zf)
     // g = actC(zg)
@@ -419,10 +371,10 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
     // h = o * actH(c)
 
     // equations (peephole connections are present)
-    // zi = x ^ Wxi + hI ^ Wri + cI * Wpi + bi
-    // zf = x ^ Wxf + hI ^ Wrf + cI * Wpf + bf
-    // zg = x ^ Wxg + hI ^ Wrg + bg
-    // zo = x ^ Wxo + hI ^ Wro + c  * Wpo + bo
+    // zi = x × Wxi + hI × Wri + cI * Wpi + bi
+    // zf = x × Wxf + hI × Wrf + cI * Wpf + bf
+    // zg = x × Wxg + hI × Wrg + bg
+    // zo = x × Wxo + hI × Wro + c  * Wpo + bo
     // i = act(zi)
     // f = act(zf)
     // g = actC(zg)
@@ -449,18 +401,19 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
     // params[11] - beta value for output activation
 
     // INPUTS:
-    // x    - current input at time t, [bS, nIn] or [nIn] if seqLen != nullptr
-    // Wx   - input weights [nIn, 4*nOut]
-    // Wr   - recurrent weights [nOut, 4*nOut]
-    // b    - biases [4*nOut], optional, may be nullptr
-    // hI   - (ht-1) previous (initial) output at time t-1, [bS, nOut] or [nOut] if seqLen != nullptr
-    // cI   - (ct-1) previous (initial) cell state at time t-1, [bS, nOut] or [nOut] if seqLen != nullptr
-    // Wp   - peephole weights [3*nOut], optional, may be nullptr
-    // dLdh - loss derivative with respect to h, [bS, nOut] or [nOut] if seqLen != nullptr
-    // dLdc - loss derivative with respect to c, [bS, nOut] or [nOut] if seqLen != nullptr
-    // z    - zi,zf,zg,zo taken from ff outputs to reduce amount of calculations in bp, [bS, 4*nOut]
-    // a    - i,f,g,o taken from ff outputs to reduce amount of calculations in bp, [bS, 4*nOut]
-    // c    - taken from ff outputs to reduce amount of calculations in bp, [bS, nOut]
+    // x     - current input at time t, [bS, nIn] or [nIn] if seqLen != nullptr
+    // Wx    - input weights [nIn, 4*nOut]
+    // Wr    - recurrent weights [nOut, 4*nOut]
+    // b     - biases [4*nOut], optional, may be nullptr
+    // hI    - (ht-1) previous (initial) output at time t-1, [bS, nOut] or [nOut] if seqLen != nullptr
+    // cI    - (ct-1) previous (initial) cell state at time t-1, [bS, nOut] or [nOut] if seqLen != nullptr
+    // Wp    - peephole weights [3*nOut], optional, may be nullptr
+    // dLdh  - loss derivative with respect to h at each time step, [bS, nOut] or [nOut] if seqLen != nullptr
+    // dLdhL - loss derivative with respect to h at last time step, [bS, nOut] or [nOut] if seqLen != nullptr
+    // dLdcL - loss derivative with respect to c at last time step, [bS, nOut] or [nOut] if seqLen != nullptr
+    // z     - zi,zf,zg,zo taken from ff outputs to reduce amount of calculations in bp, [bS, 4*nOut]
+    // a     - i,f,g,o taken from ff outputs to reduce amount of calculations in bp, [bS, 4*nOut]
+    // c     - taken from ff outputs to reduce amount of calculations in bp, [bS, nOut]
 
     // OUTPUTS:
     // dLdx  - loss derivative with respect to x, [bS, nIn] or [nIn] if seqLen != nullptr
@@ -485,19 +438,19 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
     // dLdzg = dLdcI*dcdg*dgdzg;            [bS, nOut](or[nOut])
     // dLdzo = dLdhI*dhdo*dodzo;            [bS, nOut](or[nOut])
 
-    // dLdx  = dLdzi^WxiT + dLdzf^WxfT + dLdzg^WxgT + dLdzo^WxoT,   [bS, nIn]
-    // dLdhI = dLdzi^WriT + dLdzf^WrfT + dLdzg^WrgT + dLdzo^WroT,   [bS, nOut]
+    // dLdx  = dLdzi×WxiT + dLdzf×WxfT + dLdzg×WxgT + dLdzo×WxoT,   [bS, nIn]
+    // dLdhI = dLdzi×WriT + dLdzf×WrfT + dLdzg×WrgT + dLdzo×WroT,   [bS, nOut]
     // dLdcI = dLdcI*dcdcI,                                         [bS, nOut]
 
-    // dLdWxi = xT^dLdzi                            [nIn, bS] x [bS, nOut] = [nIn, nOut]
-    // dLdWxf = xT^dLdzf                            [nIn, bS] x [bS, nOut] = [nIn, nOut]
-    // dLdWxg = xT^dLdzg                            [nIn, bS] x [bS, nOut] = [nIn, nOut]
-    // dLdWxo = xT^dLdzo                            [nIn, bS] x [bS, nOut] = [nIn, nOut]
+    // dLdWxi = xT×dLdzi                            [nIn, bS] x [bS, nOut] = [nIn, nOut]
+    // dLdWxf = xT×dLdzf                            [nIn, bS] x [bS, nOut] = [nIn, nOut]
+    // dLdWxg = xT×dLdzg                            [nIn, bS] x [bS, nOut] = [nIn, nOut]
+    // dLdWxo = xT×dLdzo                            [nIn, bS] x [bS, nOut] = [nIn, nOut]
 
-    // dLdWri = hIT^dLdzi                           [nOut, bS] x [bS, nOut] = [nOut, nOut]
-    // dLdWrf = hIT^dLdzf                           [nOut, bS] x [bS, nOut] = [nOut, nOut]
-    // dLdWrg = hIT^dLdzg                           [nOut, bS] x [bS, nOut] = [nOut, nOut]
-    // dLdWro = hIT^dLdzo                           [nOut, bS] x [bS, nOut] = [nOut, nOut]
+    // dLdWri = hIT×dLdzi                           [nOut, bS] x [bS, nOut] = [nOut, nOut]
+    // dLdWrf = hIT×dLdzf                           [nOut, bS] x [bS, nOut] = [nOut, nOut]
+    // dLdWrg = hIT×dLdzg                           [nOut, bS] x [bS, nOut] = [nOut, nOut]
+    // dLdWro = hIT×dLdzo                           [nOut, bS] x [bS, nOut] = [nOut, nOut]
 
     //  dLdbi = dLdzi.reduce_sum_along_0_axis       [bS, nOut] -> reduce -> [nOut]
     //  dLdbf = dLdzf.reduce_sum_along_0_axis       [bS, nOut] -> reduce -> [nOut]
@@ -563,10 +516,12 @@ void lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, con
 
     if(dLdh)
         *dLdhI += *dLdh;
-    if(dLdc)
-        *dLdcI += *dLdc;
-    else
-        *dLdcI += *dLdhI * dhdc;
+    if(dLdhL)
+        *dLdhI += *dLdhL;
+    if(dLdcL)
+        *dLdcI += *dLdcL;
+
+    *dLdcI += *dLdhI * dhdc;
 
     dLdzi *= *dLdcI;     // [bS, nOut](or[nOut])
     dLdzf *= *dLdcI;     // [bS, nOut](or[nOut])
@@ -662,25 +617,27 @@ void lstmLayerTimeLoop(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
     const std::vector<Nd4jLong> shapeOut = {bS, nOut};
 
+    const auto type = h ? h->dataType() : (hL ? hL->dataType() : cL->dataType());
+
     auto h0 = const_cast<NDArray*>(hI);
     if(!hI) {
-        h0 = new NDArray(x->ordering(), shapeOut, x->dataType(), x->getContext());
+        h0 = new NDArray(x->ordering(), shapeOut, type, x->getContext());
         h0->nullify();
     }
 
     auto c0 = const_cast<NDArray*>(cI);
     if(!cI) {
-        c0 = new NDArray(x->ordering(), shapeOut, x->dataType(), x->getContext());
+        c0 = new NDArray(x->ordering(), shapeOut, type, x->getContext());
         c0->nullify();
     }
 
     auto ct = cL;
     if(!cL)
-        ct = new NDArray(x->ordering(), shapeOut, x->dataType(), x->getContext());
+        ct = new NDArray(x->ordering(), shapeOut, type, x->getContext());
 
     auto ht = hL;
     if(!h && !hL)
-        ht = new NDArray(x->ordering(), shapeOut, x->dataType(), x->getContext());
+        ht = new NDArray(x->ordering(), shapeOut, type, x->getContext());
 
     // create sets of required (depends on seqLen presence) sub-arrays
     std::vector<int> dims;
@@ -989,17 +946,19 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
     const int bS = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(1);
     const int nOut = Wx->sizeAt(-1) / 4;
 
+    const auto type = dLdh ? dLdh->dataType() : (dLdhL ? dLdhL->dataType() : dLdcL->dataType());
+
     auto dLdh0 = dLdhI;
     if(!hI)
-        dLdh0 = new NDArray(x->ordering(), {bS, nOut}, x->dataType(), x->getContext());     // this constructor nullifies array automatically
+        dLdh0 = new NDArray(x->ordering(), {bS, nOut}, type, x->getContext());     // this constructor nullifies array automatically
 
     auto dLdc0 = dLdcI;
     if(!cI)
-        dLdc0 = new NDArray(x->ordering(), {bS, nOut}, x->dataType(), x->getContext());     // this constructor nullifies array automatically
+        dLdc0 = new NDArray(x->ordering(), {bS, nOut}, type, x->getContext());     // this constructor nullifies array automatically
 
-    NDArray z(x->ordering(), {sL, bS, 4*nOut}, x->dataType(), x->getContext());
+    NDArray z(x->ordering(), {sL, bS, 4*nOut}, type, x->getContext());
     NDArray a = z.ulike();
-    NDArray h(x->ordering(), {sL+1, bS, nOut}, x->dataType(), x->getContext());
+    NDArray h(x->ordering(), {sL+1, bS, nOut}, type, x->getContext());
     NDArray c = h.ulike();
 
     // create sets of required (depends on seqLen presence) sub-arrays
@@ -1041,9 +1000,9 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
         if(dLdh)
             dLdhSet = new ResultSet(dLdh->allTensorsAlongDimension(dims));  // sub-arrays with shape [nOut]
-        if(!dLdh && dLdhL)
+        if(dLdhL)
             dLdhLSet = new ResultSet(dLdhL->allTensorsAlongDimension({1}));  // sub-arrays with shape [nOut]
-        if(!dLdh && !dLdhL)
+        if(dLdcL)
             dLdcLSet = new ResultSet(dLdcL->allTensorsAlongDimension({1}));  // sub-arrays with shape [nOut]
     }
 
@@ -1054,13 +1013,13 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
         if(!seqLen) {   // seqLen is absent
 
             if(hI)
-                h({0,1, 0,0, 0,0}).assign(hI);
+                hSet->at(0)->assign(hI);
             else
-                h({0,1, 0,0, 0,0}).nullify();
+                hSet->at(0)->nullify();
             if(cI)
-                c({0,1, 0,0, 0,0}).assign(cI);
+                cSet->at(0)->assign(cI);
             else
-                c({0,1, 0,0, 0,0}).nullify();
+                cSet->at(0)->nullify();
 
             // ff
             for (int t = 0; t < sL; ++t)
@@ -1068,9 +1027,10 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
             // bp
             for (int t = sL-1; t >= 0; --t) {
-                const NDArray* dLdhh = dLdh  ? dLdhSet->at(t) : (t == sL-1 ? dLdhL : nullptr);
-                const NDArray* dLdcc = dLdhh ? nullptr : (t == sL-1 ? dLdcL : nullptr);
-                lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, dLdhh, dLdcc,
+                const NDArray* dLdhh  = dLdh ? dLdhSet->at(t) : nullptr;
+                const NDArray* dLdhhL = (t == sL-1 && dLdhL) ? dLdhL : nullptr;
+                const NDArray* dLdccL = (t == sL-1 && dLdcL) ? dLdcL : nullptr;
+                lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t), cSet->at(t), Wp, dLdhh, dLdhhL, dLdccL,
                                 zSet->at(t), aSet->at(t), cSet->at(t+1), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb, dLdWp);
             }
         }
@@ -1086,13 +1046,13 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                 }
 
                 if(hI)
-                    h({0,1, e,e+1, 0,0}).assign(hISet->at(e));
+                    hSet->at(e)->assign(hISet->at(e));
                 else
-                    h({0,1, e,e+1, 0,0}).nullify();
+                    hSet->at(e)->nullify();
                 if(cI)
-                    c({0,1, e,e+1, 0,0}).assign(cISet->at(e));
+                    cSet->at(e)->assign(cISet->at(e));
                 else
-                    c({0,1, e,e+1, 0,0}).nullify();
+                    cSet->at(e)->nullify();
 
                 // ff
                 for (int t = 0; t < limit; ++t)
@@ -1102,9 +1062,10 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                 // bp
                 for (int t = limit-1; t >= 0; --t) {
                     const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-                    const NDArray* dLdhh = dLdh  ? dLdhSet->at(ind) : (t == limit-1 && dLdhL ? dLdhLSet->at(e) : nullptr);
-                    const NDArray* dLdcc = dLdhh ? nullptr : (t == limit-1 ? dLdcLSet->at(e) : nullptr);
-                    lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at(t*bS + e), cSet->at(t*bS + e), Wp, dLdhh, dLdcc,
+                    const NDArray* dLdhh  = dLdh ? dLdhSet->at(ind) : nullptr;
+                    const NDArray* dLdhhL = (t == limit-1 && dLdhL) ? dLdhLSet->at(e) : nullptr;
+                    const NDArray* dLdccL = (t == limit-1 && dLdcL) ? dLdcLSet->at(e) : nullptr;
+                    lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at(t*bS + e), cSet->at(t*bS + e), Wp, dLdhh, dLdhhL, dLdccL,
                                     zSet->at(t*bS + e), aSet->at(t*bS + e), cSet->at((t+1)*bS + e), params, dLdxSet->at(ind), dLdWx, dLdWr,
                                     dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);
                 }
@@ -1119,13 +1080,13 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
         if(!seqLen) {     // backward or bidirectional, seqLen is absent
 
             if(hI)
-                h({sL,sL+1, 0,0, 0,0}).assign(hI);
+                hSet->at(sL)->assign(hI);
             else
-                h({sL,sL+1, 0,0, 0,0}).nullify();
+                hSet->at(sL)->nullify();
             if(cI)
-                c({sL,sL+1, 0,0, 0,0}).assign(cI);
+                cSet->at(sL)->assign(cI);
             else
-                c({sL,sL+1, 0,0, 0,0}).nullify();
+                cSet->at(sL)->nullify();
 
             // ff
             for (int t = sL-1; t >= 0; --t)
@@ -1133,9 +1094,10 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 
             // bp
             for (int t = 0; t < sL; ++t) {
-                const NDArray* dLdhh = dLdh  ? dLdhSet->at(t) : (t == 0 ? dLdhL : nullptr);
-                const NDArray* dLdcc = dLdhh ? nullptr : (t == 0 ? dLdcL : nullptr);
-                lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t+1), cSet->at(t+1), Wp, dLdhh, dLdcc,
+                const NDArray* dLdhh  = dLdh ? dLdhSet->at(t) : nullptr;
+                const NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhL : nullptr;
+                const NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcL : nullptr;
+                lstmLayerCellBp(xSet->at(t), Wx, Wr, b, hSet->at(t+1), cSet->at(t+1), Wp,  dLdhh, dLdhhL, dLdccL,
                                 zSet->at(t), aSet->at(t), cSet->at(t), params, dLdxSet->at(t), dLdWx, dLdWr, dLdh0, dLdc0, dLdb, dLdWp);
             }
         }
@@ -1151,13 +1113,13 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                 }
 
                 if(hI)
-                    h({sL,sL+1, e,e+1, 0,0}).assign(hISet->at(e));
+                    hSet->at(sL*bS + e)->assign(hISet->at(e));
                 else
-                    h({sL,sL+1, e,e+1, 0,0}).nullify();
+                    hSet->at(sL*bS + e)->nullify();
                 if(cI)
-                    c({sL,sL+1, e,e+1, 0,0}).assign(cISet->at(e));
+                    cSet->at(sL*bS + e)->assign(cISet->at(e));
                 else
-                    c({sL,sL+1, e,e+1, 0,0}).nullify();
+                    cSet->at(sL*bS + e)->nullify();
 
                 // ff
                 for (int t = sL - 1; t >= sL-limit; --t)
@@ -1167,9 +1129,10 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                 // bp
                 for (int t = sL-limit; t < sL; ++t) {
                     const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-                    const NDArray* dLdhh = dLdh  ? dLdhSet->at(ind) : (t == sL-limit && dLdhL ? dLdhLSet->at(e) : nullptr);
-                    const NDArray* dLdcc = dLdhh ? nullptr : (t == sL-limit ? dLdcLSet->at(e) : nullptr);
-                    lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at((t+1)*bS + e), cSet->at((t+1)*bS + e), Wp, dLdhh, dLdcc,
+                    const NDArray* dLdhh  = dLdh ? dLdhSet->at(ind) : nullptr;
+                    const NDArray* dLdhhL = (t == sL-limit && dLdhL) ? dLdhLSet->at(e) : nullptr;
+                    const NDArray* dLdccL = (t == sL-limit && dLdcL) ? dLdcLSet->at(e) : nullptr;
+                    lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at((t+1)*bS + e), cSet->at((t+1)*bS + e), Wp, dLdhh, dLdhhL, dLdccL,
                                     zSet->at(t*bS + e), aSet->at(t*bS + e), cSet->at(t*bS + e), params, dLdxSet->at(ind), dLdWx, dLdWr,
                                     dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);
                 }
@@ -1206,9 +1169,10 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
                 // bp
                 for (int t = 0; t < limit; ++t) {
                     const auto ind = getBatchTimeTotalIndex(dataFormat, sL, bS, t, e);
-                    const NDArray* dLdhh = dLdh  ? dLdhSet->at(ind) : (t == 0 && dLdhL ? dLdhLSet->at(e) : nullptr);
-                    const NDArray* dLdcc = dLdhh ? nullptr : (t == 0 ? dLdcLSet->at(e) : nullptr);
-                    lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at((t+1)*bS + e), cSet->at((t+1)*bS + e), Wp, dLdhh, dLdcc,
+                    const NDArray* dLdhh  = dLdh ? dLdhSet->at(ind) : nullptr;
+                    const NDArray* dLdhhL = (t == 0 && dLdhL) ? dLdhLSet->at(e) : nullptr;
+                    const NDArray* dLdccL = (t == 0 && dLdcL) ? dLdcLSet->at(e) : nullptr;
+                    lstmLayerCellBp(xSet->at(ind), Wx, Wr, b, hSet->at((t+1)*bS + e), cSet->at((t+1)*bS + e), Wp, dLdhh, dLdhhL, dLdccL,
                                     zSet->at(t*bS + e), aSet->at(t*bS + e), cSet->at(t*bS + e), params, dLdxSet->at(ind), dLdWx, dLdWr,
                                     dLdh0Set->at(e), dLdc0Set->at(e), dLdb, dLdWp);
                 }
@@ -1248,10 +1212,10 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 //     /** the objective is to provide math-readable code **/
 
 //     // equations (no peephole connections)
-//     // zi = x ^ Wxi + hI ^ Wri + bi
-//     // zf = x ^ Wxf + hI ^ Wrf + bf
-//     // zg = x ^ Wxg + hI ^ Wrg + bg
-//     // zo = x ^ Wxo + hI ^ Wro + bo
+//     // zi = x × Wxi + hI × Wri + bi
+//     // zf = x × Wxf + hI × Wrf + bf
+//     // zg = x × Wxg + hI × Wrg + bg
+//     // zo = x × Wxo + hI × Wro + bo
 //     // i = act(zi)
 //     // f = act(zf)
 //     // g = actC(zg)
@@ -1260,10 +1224,10 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 //     // h = o * actH(c)
 
 //     // equations (peephole connections are present)
-//     // zi = x ^ Wxi + hI ^ Wri + cI * Wpi + bi
-//     // zf = x ^ Wxf + hI ^ Wrf + cI * Wpf + bf
-//     // zg = x ^ Wxg + hI ^ Wrg + bg
-//     // zo = x ^ Wxo + hI ^ Wro + c  * Wpo + bo
+//     // zi = x × Wxi + hI × Wri + cI * Wpi + bi
+//     // zf = x × Wxf + hI × Wrf + cI * Wpf + bf
+//     // zg = x × Wxg + hI × Wrg + bg
+//     // zo = x × Wxo + hI × Wro + c  * Wpo + bo
 //     // i = act(zi)
 //     // f = act(zf)
 //     // g = actC(zg)
@@ -1333,13 +1297,13 @@ void lstmLayerTimeLoopBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr,
 //     // oFactor = *dLdh*dhdzo                        [bS, nOut]
 
 //     // tempC   = dcdcI + Wp ? dcdzi*dzidcI + dcdzf*dzfdcI : 0;
-//     // tempIFE = dcdzi^WriT + dcdzf^WrfT + dcdzg^WrgT
-//     // tempO   = dhdzo^WroT
+//     // tempIFE = dcdzi×WriT + dcdzf×WrfT + dcdzg×WrgT
+//     // tempO   = dhdzo×WroT
 
 //     // dhIdcI = dhdc_from_previous_time_step
 
-//     // dLdx   = iFactor^WxiT + fFactor^WxfT + eFactor^WxgT + oFactor^WxoT,      [bS, nIn]
-//     // dLdhI  = iFactor^WriT + fFactor^WrfT + eFactor^WrgT + oFactor^WroT,      [bS, nOut]
+//     // dLdx   = iFactor×WxiT + fFactor×WxfT + eFactor×WxgT + oFactor×WxoT,      [bS, nIn]
+//     // dLdhI  = iFactor×WriT + fFactor×WrfT + eFactor×WrgT + oFactor×WroT,      [bS, nOut]
 //     // dLdcI  = factor*tempC + dLdhI * dhIdcI, dhIdcI=0 if firstIter,           [bS, nOut]
 
 //     // dcdWxi(dcIdWxi) = dcdzi*dzidWxi + tempIFE*dhIdWxi + tempC*dcIdWxi,           dcIdWxi=dhIdWxi= 0 if firstIter, [nIn, nOut, bS, nOut]

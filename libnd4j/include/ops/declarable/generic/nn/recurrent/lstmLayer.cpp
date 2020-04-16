@@ -727,12 +727,10 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
             dLdcLBwd = new NDArray((*dLdcL)({1,2, 0,0, 0,0}));
         }
 
-        // FIXME looks like sum (directionMode == 2) is impossible for backprop
         if(dLdh) {
             if(directionMode == 2) {        // sum
-                REQUIRE_TRUE(false, 0, "LSTM_LAYER_BP operation: mode for bidirectional sum and dLdh being present has no sense for backpropagation !");
-                // dLdhFwd = dLdh;
-                // dLdhBwd = new NDArray(dLdh->ordering(), dLdh->getShapeAsVector(), dLdh->dataType(), dLdh->getContext());      // automatically nullifies content
+                dLdhFwd = dLdh;
+                dLdhBwd = dLdh;
             }
             else if(directionMode == 3) {   // concat
                 dLdhFwd = new NDArray(dataFormat <= 1 ? (*dLdh)({0,0, 0,0,    0,nOut})   : (*dLdh)({0,0,    0,nOut,   0,0}));
@@ -744,21 +742,20 @@ CUSTOM_OP_IMPL(lstmLayer_bp, 4, 1, false, 1, 5) {
             }
         }
 
+        NDArray dLdxBwd = dLdx->ulike();
 
-
+        // FIXME - following two calls are independent and may run in different streams
         helpers::lstmLayerTimeLoopBp(x, &WxFwd, &WrFwd, bFwd, seqLen, hIFwd, cIFwd, WpFwd, dLdhFwd, dLdhLFwd, dLdcLFwd, params, true,  dLdx,     &dLdWxFwd, &dLdWrFwd, dLdbFwd, dLdhIFwd, dLdcIFwd, dLdWpFwd);
-                NDArray dLdxBwd = dLdx->ulike();
         helpers::lstmLayerTimeLoopBp(x, &WxBwd, &WrBwd, bBwd, seqLen, hIBwd, cIBwd, WpBwd, dLdhBwd, dLdhLBwd, dLdcLBwd, params, false, &dLdxBwd, &dLdWxBwd, &dLdWrBwd, dLdbBwd, dLdhIBwd, dLdcIBwd, dLdWpBwd);
 
         *dLdx += dLdxBwd;
 
         delete WpFwd; delete WpBwd; delete bFwd; delete bBwd; delete hIFwd; delete hIBwd; delete cIFwd; delete cIBwd;
-        delete dLdhBwd; delete dLdhLFwd; delete dLdhLBwd; delete dLdcLFwd; delete dLdcLBwd;
+        delete dLdhLFwd; delete dLdhLBwd; delete dLdcLFwd; delete dLdcLBwd;
         delete dLdWpFwd; delete dLdWpBwd; delete dLdbFwd; delete dLdbBwd;
         delete dLdhIFwd; delete dLdhIBwd; delete dLdcIFwd; delete dLdcIBwd;
 
-        if(dLdhFwd != dLdh)
-            delete dLdhFwd;
+        if(!(dLdh && directionMode == 2)) { delete dLdhFwd; delete dLdhBwd; }
     }
 
     return Status::OK();

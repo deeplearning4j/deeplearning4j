@@ -31,10 +31,26 @@ namespace helpers {
 				 const NDArray* bru, const NDArray* bc,
 				 NDArray* r, NDArray* u, NDArray* c, NDArray* h);
 
+	void gruCell(sd::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc, const NDArray* b,
+				 NDArray* gates, NDArray* h);
+
 	void gruTimeLoop(sd::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h);
 
-	void gruCellBP(sd::LaunchContext* context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc, const NDArray* b, const NDArray* bc, const NDArray* dLdr, const NDArray* dLdu, const NDArray* dLdc, const NDArray* dLdh, NDArray* dLdx, NDArray* dLdhLast, NDArray* dLdW, NDArray* dLdWc, NDArray* dLdb, NDArray* dLdbc);
+	void gruCellBp(sd::LaunchContext* context,
+              		const NDArray* x,    const NDArray* hLast,
+              		const NDArray* W,    const NDArray* Wc,        const NDArray* b,    const NDArray* bc,
+              		const NDArray* dLdr, const NDArray* dLdu,      const NDArray* dLdc, const NDArray* dLdh,
+              		      NDArray* dLdx,       NDArray* dLdhLast,
+              		      NDArray* dLdW,       NDArray* dLdWc,
+              		      NDArray* dLdb,       NDArray* dLdbc);
 
+	void gruCellBp(sd::LaunchContext* context,
+              const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* gates,
+              NDArray* dLdx, NDArray* dLdhI, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb);
+
+	void gruTimeLoopBp(sd::LaunchContext * context,
+                    const NDArray* x, const NDArray* hI, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh,
+                    NDArray* dLdx, NDArray* dLdhI, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb);
 }
 }
 }
