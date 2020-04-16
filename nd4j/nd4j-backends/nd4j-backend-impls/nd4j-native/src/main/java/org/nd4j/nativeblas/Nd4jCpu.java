@@ -20475,11 +20475,15 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * lin_space - op porting from TF (https://www.tensorflow.org/api_docs/python/tf/lin_space)
          *
-         * input params:
+         * optional input params:
          *    0 - startVal - NDArray scalar (float point)
          *    1 - finishVal - NDArray scalar (float point)
          *    2 - numOfElements - NDArray scalar (integer)
-         *
+         * Optional:
+         * T args
+         *    0 - startVal
+         *    1 - finishVal]
+         *    2 - numOfElements
          * output:
          *    0 - 1D NDArray with the same type as input and length as given with numOfElements param.
          */

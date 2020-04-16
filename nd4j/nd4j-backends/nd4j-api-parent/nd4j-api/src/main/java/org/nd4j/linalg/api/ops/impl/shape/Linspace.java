@@ -42,6 +42,9 @@ import java.util.Map;
 public class Linspace extends DynamicCustomOp {
 
     private DataType dataType;
+    private double start;
+    private double stop;
+    private long elements;
 
     public Linspace(SameDiff sameDiff, DataType dataType, double start, double stop, long number) {
         this(sameDiff, sameDiff.constant(start), sameDiff.constant(stop), sameDiff.constant(number), dataType);
@@ -54,7 +57,7 @@ public class Linspace extends DynamicCustomOp {
     }
 
     public Linspace(DataType dataType, double start, double stop, long number) {
-        this(dataType, Nd4j.scalar(start), Nd4j.scalar(stop), Nd4j.scalar(number));
+        this(start, stop, number, dataType);
     }
 
     public Linspace(DataType dataType, INDArray start, INDArray stop, INDArray number) {
@@ -65,6 +68,19 @@ public class Linspace extends DynamicCustomOp {
         super(new INDArray[]{start, stop, number}, null);
         this.dataType = dataType;
         addDArgument(dataType);
+    }
+
+    public Linspace(double start, double stop, long number, @NonNull DataType dataType) {
+        super(new INDArray[]{}, null);
+        this.dataType = dataType;
+        addDArgument(dataType);
+
+        this.start = start;
+        this.stop = stop;
+        this.elements = number;
+
+        addTArgument(this.start, this.stop);
+        addIArgument(elements);
     }
 
     public Linspace(){ }

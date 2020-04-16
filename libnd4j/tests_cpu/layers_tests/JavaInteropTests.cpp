@@ -1334,6 +1334,20 @@ TEST_F(JavaInteropTests, test_workspace_backed_arrays_1) {
     ASSERT_EQ(Status::OK(), status);
 }
 
+TEST_F(JavaInteropTests, test_linspace_shape_1) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
+    sd::ops::lin_space op;
+    double tArgs[2] = {1.0, 10.0};
+    Nd4jLong iArgs = 10L;
+    int dArg = (int) sd::DataType::FLOAT32;
+    auto result = ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 2, &iArgs, 1, nullptr, 0, &dArg, 1);
+
+    ASSERT_EQ(1, result->size());
+    delete result;
+}
+
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     auto pl = sd::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");

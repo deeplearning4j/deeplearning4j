@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
+import org.nd4j.linalg.api.ops.impl.shape.Linspace;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.shape.SequenceMask;
 import org.nd4j.linalg.api.ops.impl.transforms.Cholesky;
@@ -1801,6 +1802,16 @@ public class CustomOpsTests extends BaseNd4jTest {
                 .build();
         ret = Nd4j.exec(matmul);
         assertEquals(ret[0], in);
+    }
+
+
+    @Test
+    public void testLinspaceSignature_1() throws Exception {
+        val array1 = Nd4j.exec(new Linspace(DataType.FLOAT, Nd4j.scalar(1.0f), Nd4j.scalar(10.f), Nd4j.scalar(10L)))[0];
+        val array2 = Nd4j.exec(new Linspace(DataType.FLOAT, 1.0f, 10.f, 10L))[0];
+
+        assertEquals(array1.dataType(), array2.dataType());
+        assertEquals(array1, array2);
     }
 
     @Test
