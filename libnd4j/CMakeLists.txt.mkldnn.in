@@ -4,7 +4,7 @@ project(mkldnn-download NONE)
 
 include(ExternalProject)
 ExternalProject_Add(mkldnn
-  GIT_REPOSITORY     https://github.com/intel/mkl-dnn.git
+  GIT_REPOSITORY    https://github.com/oneapi-src/oneDNN.git
   GIT_TAG           v1.3
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build"
