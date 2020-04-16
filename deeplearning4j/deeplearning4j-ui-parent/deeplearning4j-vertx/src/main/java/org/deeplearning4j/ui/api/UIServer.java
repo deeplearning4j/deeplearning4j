@@ -17,6 +17,7 @@
 
 package org.deeplearning4j.ui.api;
 
+import io.vertx.core.Promise;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.ui.VertxUIServer;
@@ -32,13 +33,15 @@ import java.util.List;
 public interface UIServer {
 
     /**
-     * Get (and, initialize if necessary) the UI server.
+     * Get (and, initialize if necessary) the UI server. This synchronous function will wait until the server started.
      * Singleton pattern - all calls to getInstance() will return the same UI instance.
      *
      * @return UI instance for this JVM
-     * @throws RuntimeException if the instance has already started in a different mode (multi/single-session)
+     * @throws RuntimeException if UI server failed to start;
+     * if the instance has already started in a different mode (multi/single-session)
+     * @throws InterruptedException if interrupted while waiting for completion
      */
-    static UIServer getInstance() throws RuntimeException {
+    static UIServer getInstance() throws RuntimeException, InterruptedException {
         if (VertxUIServer.getInstance() != null) {
             return VertxUIServer.getInstance();
         } else {
@@ -47,7 +50,7 @@ public interface UIServer {
     }
 
     /**
-     * Get (and, initialize if necessary) the UI server.
+     * Get (and, initialize if necessary) the UI server. This synchronous function will wait until the server started.
      * Singleton pattern - all calls to getInstance() will return the same UI instance.
      *
      * @param multiSession         in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
@@ -56,16 +59,19 @@ public interface UIServer {
      *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
      *                             as URL path parameter in multi-session mode, or leave it {@code null}.
      * @return UI instance for this JVM
-     * @throws RuntimeException if the instance has already started in a different mode (multi/single-session)
+     * @throws RuntimeException if UI server failed to start;
+     * if the instance has already started in a different mode (multi/single-session)
+     * @throws InterruptedException if interrupted while waiting for completion
      */
-    static UIServer getInstance(boolean multiSession, Function<String, StatsStorage> statsStorageProvider) throws RuntimeException {
+    static UIServer getInstance(boolean multiSession, Function<String, StatsStorage> statsStorageProvider)
+            throws RuntimeException, InterruptedException {
         return VertxUIServer.getInstance(null, multiSession, statsStorageProvider);
     }
 
     /**
      * Stop UIServer instance, if already running
      */
-    static void stopInstance() {
+    static void stopInstance() throws Exception {
         VertxUIServer.stopInstance();
     }
 
@@ -148,8 +154,15 @@ public interface UIServer {
     boolean isRemoteListenerEnabled();
 
     /**
-     * Stop/shut down the UI server.
+     * Stop/shut down the UI server. This synchronous function should wait until the server is stopped.
      */
-    void stop();
+    void stop() throws Exception;
 
+    /**
+     * Stop/shut down the UI server.
+     * This asynchronous function should immediately return, and notify the callback {@link Promise} on completion:
+     * either call {@link Promise#complete} or {@link io.vertx.core.Promise#fail}.
+     * @param stopCallback callback {@link Promise} to notify on completion
+     */
+    void stop(Promise<Void> stopCallback);
 }

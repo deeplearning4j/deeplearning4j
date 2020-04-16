@@ -39,6 +39,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -54,6 +56,7 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public class TestVertxUIMultiSession extends BaseDL4JTest {
+    private static final Logger log = LoggerFactory.getLogger(TestVertxUIMultiSession.class);
     @Override
     public long getTimeoutMilliseconds() {
         return 600_000L;
@@ -64,15 +67,14 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
         UIServer.stopInstance();
     }
 
-    @Ignore
     @Test
-    public void testUIMultiSession() throws Exception {
-
+    public void testUIMultiSessionParallelTraining() throws Exception {
         UIServer uIServer = UIServer.getInstance(true, null);
         HashMap<Thread, StatsStorage> statStorageForThread = new HashMap<>();
         HashMap<Thread, String> sessionIdForThread = new HashMap<>();
 
-        for (int session = 0; session < 10; session++) {
+        int parallelTrainingCount = 10;
+        for (int session = 0; session < parallelTrainingCount; session++) {
 
             StatsStorage ss = new InMemoryStatsStorage();
 
@@ -110,8 +112,6 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
             sessionIdForThread.put(training, sessionId);
         }
 
-        Thread.sleep(10000000);
-
         for (Thread thread: statStorageForThread.keySet()) {
             StatsStorage ss = statStorageForThread.get(thread);
             String sessionId = sessionIdForThread.get(thread);
@@ -134,7 +134,6 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
                 assertFalse(uIServer.isAttached(ss));
             }
         }
-
     }
 
     @Test
@@ -190,7 +189,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     @Test
     public void testUIAutoAttachDetach() throws Exception {
 
-        long autoDetachTimeoutMillis = 20_000;
+        long autoDetachTimeoutMillis = 10_000;
         AutoDetachingStatsStorageProvider statsProvider = new AutoDetachingStatsStorageProvider(autoDetachTimeoutMillis);
         UIServer uIServer = UIServer.getInstance(true, statsProvider);
         statsProvider.setUIServer(uIServer);
@@ -237,13 +236,13 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
             assertTrue(uIServer.isAttached(ss));
         }
 
-        Thread.sleep(autoDetachTimeoutMillis);
+        Thread.sleep(autoDetachTimeoutMillis + 1_000);
         assertFalse(uIServer.isAttached(ss));
 
     }
 
     @Test (expected = RuntimeException.class)
-    public void testUIServerGetInstanceMultipleCalls1() {
+    public void testUIServerGetInstanceMultipleCalls1() throws InterruptedException {
         UIServer uiServer = UIServer.getInstance();
         assertFalse(uiServer.isMultiSession());
         UIServer.getInstance(true, null);
@@ -251,7 +250,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     }
 
     @Test (expected = RuntimeException.class)
-    public void testUIServerGetInstanceMultipleCalls2() {
+    public void testUIServerGetInstanceMultipleCalls2() throws InterruptedException {
         UIServer uiServer = UIServer.getInstance(true, null);
         assertTrue(uiServer.isMultiSession());
         UIServer.getInstance(false, null);
@@ -297,17 +296,17 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
             if (statsStorage != null) {
                 new Thread(() -> {
                     try {
-                        System.out.println("Waiting to detach StatsStorage (session ID: " + sessionId + ")" +
-                                " after " + autoDetachTimeoutMillis + " ms ");
+                        log.info("Waiting to detach StatsStorage (session ID: {})" +
+                                " after {} ms ", sessionId, autoDetachTimeoutMillis);
                         Thread.sleep(autoDetachTimeoutMillis);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     } finally {
-                        System.out.println("Auto-detaching StatsStorage (session ID: " + sessionId + ") after " +
-                                autoDetachTimeoutMillis + " ms.");
+                        log.info("Auto-detaching StatsStorage (session ID: {}) after {} ms.",
+                                sessionId, autoDetachTimeoutMillis);
                         uIServer.detach(statsStorage);
-                        System.out.println(" To re-attach StatsStorage of training session, visit " +
-                                uIServer.getAddress() + "/train/" + sessionId);
+                        log.info(" To re-attach StatsStorage of training session, visit {}}/train/{}",
+                                uIServer.getAddress(), sessionId);
                     }
                 }).start();
             }

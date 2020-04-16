@@ -19,6 +19,8 @@ package org.deeplearning4j.ui;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.impl.MimeMapping;
@@ -75,24 +77,15 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
     private TrainModule trainModule;
 
-    public static VertxUIServer getInstance(Integer port, boolean multiSession, Function<String, StatsStorage> statsStorageProvider){
+    public static VertxUIServer getInstance(Integer port, boolean multiSession,
+                                            Function<String, StatsStorage> statsStorageProvider)
+            throws RuntimeException, InterruptedException {
         if (instance == null || instance.isStopped()) {
             VertxUIServer.multiSession.set(multiSession);
             VertxUIServer.setStatsStorageProvider(statsStorageProvider);
             instancePort = port;
-            Vertx vertx = Vertx.vertx();
-
             //Launch UI server verticle and wait for it to start
-            CountDownLatch l = new CountDownLatch(1);
-            vertx.deployVerticle(VertxUIServer.class.getName(), res -> {
-                if (res.failed()) {
-                    log.error("UI server failed to start.", res.cause());
-                }
-                l.countDown();
-            });
-            try {
-                l.await(5000, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e){ } //Ignore
+            deploy();
         } else if (!instance.isStopped()) {
             if (multiSession && !instance.isMultiSession()) {
                 throw new RuntimeException("Cannot return multi-session instance." +
@@ -106,6 +99,50 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         }
 
         return instance;
+    }
+
+    /**
+     * Deploy (start) {@link VertxUIServer}, waiting until starting is complete.
+     * @throws RuntimeException if UI server failed to start
+     * @throws InterruptedException if interrupted while waiting for completion
+     */
+    private static void deploy() throws RuntimeException, InterruptedException {
+        CountDownLatch l = new CountDownLatch(1);
+        Promise<String> promise = Promise.promise();
+        promise.future().compose(
+                success -> Future.future(prom -> l.countDown()),
+                failure -> Future.future(prom -> l.countDown())
+        );
+        deploy(promise);
+        // synchronous function
+        l.await();
+
+        Future<String> future = promise.future();
+        if (future.failed()) {
+            throw new RuntimeException("Deeplearning4j UI server failed to start.", future.cause());
+        }
+    }
+
+    /**
+     * Deploy (start) {@link VertxUIServer},
+     * and handle successful or failed completion of deployment with given promise
+     * @param startCallback promise that will handle success or failure of deployment
+     */
+    public static void deploy(Promise<String> startCallback) {
+        log.debug("Deeplearning4j UI server is starting.");
+        Promise<String> promise = Promise.promise();
+        promise.future().compose(
+                success -> Future.future(prom -> {prom.complete();}),
+                failure -> Future.future(prom -> {
+                    prom.fail(new RuntimeException(failure));
+                })
+        ).compose(
+                success -> Future.future(prom -> { startCallback.complete(); }),
+                failure -> Future.future(prom -> { startCallback.fail(failure); })
+        );
+
+        Vertx vertx = Vertx.vertx();
+        vertx.deployVerticle(VertxUIServer.class.getName(), res -> {promise.handle(res);});
     }
 
 
@@ -131,10 +168,18 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         instance = this;
     }
 
-    public static void stopInstance(){
-        if(instance == null)
+    public static void stopInstance() throws Exception {
+        if(instance == null || instance.isStopped())
             return;
         instance.stop();
+        VertxUIServer.reset();
+    }
+
+    private static void reset() {
+        VertxUIServer.instance = null;
+        VertxUIServer.statsStorageProvider = null;
+        VertxUIServer.instancePort = null;
+        VertxUIServer.multiSession.set(false);
     }
 
     /**
@@ -151,7 +196,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     }
 
     @Override
-    public void start() throws Exception {
+    public void start(Promise<Void> startCallback) throws Exception {
         //Create REST endpoints
         File uploadDir = new File(System.getProperty("java.io.tmpdir"), "DL4JUI_" + System.currentTimeMillis());
         uploadDir.mkdirs();
@@ -250,17 +295,26 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
             }
         }
 
-
-        server = vertx.createHttpServer()
-                .requestHandler(r)
-                .listen(port);
-
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
 
-        String address = UIServer.getInstance().getAddress();
-        log.info("Deeplearning4j UI server started at: {}", address);
+        server = vertx.createHttpServer()
+                .requestHandler(r)
+                .listen(port, result -> {
+                    if (result.succeeded()) {
+                        try {
+                            String address = UIServer.getInstance().getAddress();
+                            log.info("Deeplearning4j UI server started at: {}", address);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        startCallback.complete();
+                    } else {
+                        startCallback.fail(new RuntimeException("Deeplearning4j UI server failed to listen on port "
+                                + server.actualPort(), result.cause()));
+                    }
+                });
     }
 
     private List<String> extractArgsFromRoute(String path, RoutingContext rc) {
@@ -306,9 +360,27 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     }
 
     @Override
-    public void stop() {
-        server.close();
+    public void stop() throws InterruptedException {
+        CountDownLatch l = new CountDownLatch(1);
+        Promise<Void> promise = Promise.promise();
+        promise.future().compose(
+                successEvent -> Future.future(prom -> l.countDown()),
+                failureEvent -> Future.future(prom -> l.countDown())
+        );
+        /**
+         * Stop Vertx instance and release any resources held by it.
+         * Pass promise to {@link #stop(Promise)}.
+         */
+        vertx.close(ar -> promise.handle(ar));
+        // synchronous function should wait until the server is stopped
+        l.await();
+    }
+
+    @Override
+    public void stop(Promise<Void> stopCallback) {
         shutdown.set(true);
+        stopCallback.complete();
+        log.info("Deeplearning4j UI server stopped.");
     }
 
     @Override
@@ -356,8 +428,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         if (!statsStorageInstances.contains(statsStorage))
             return; //No op
         boolean found = false;
-        for (Iterator<Pair<StatsStorage, StatsStorageListener>> iterator = listeners.iterator(); iterator.hasNext(); ) {
-            Pair<StatsStorage, StatsStorageListener> p = iterator.next();
+        for (Pair<StatsStorage, StatsStorageListener> p : listeners) {
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
                 listeners.remove(p);
@@ -517,7 +588,12 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         CLIParams d = new CLIParams();
         new JCommander(d).parse(args);
         instancePort = d.getCliPort();
-        UIServer.getInstance(d.isCliMultiSession(), null);
+        try {
+            UIServer.getInstance(d.isCliMultiSession(), null);
+        } catch (InterruptedException e) {
+            log.error("Failed to get Deeplearning4j UI server instance.", e);
+            System.exit(1);
+        }
         if(d.isCliEnableRemote()){
             try {
                 File tempStatsFile = DL4JFileUtils.createTempFile("dl4j", "UIstats");

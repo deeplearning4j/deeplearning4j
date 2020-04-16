@@ -17,6 +17,7 @@
 
 package org.deeplearning4j.ui;
 
+import io.vertx.core.Vertx;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -45,11 +46,14 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.*;
 
@@ -58,6 +62,9 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public class TestVertxUI extends BaseDL4JTest {
+
+    private static final Logger log = LoggerFactory.getLogger(TestVertxUIMultiSession.class);
+
     @Override
     public long getTimeoutMilliseconds() {
         return 600_000L;
@@ -76,38 +83,9 @@ public class TestVertxUI extends BaseDL4JTest {
 
         VertxUIServer uiServer = (VertxUIServer) UIServer.getInstance();
         assertEquals(9000, uiServer.getPort());
+
+        Thread.sleep(30_000);
         uiServer.stop();
-//        VertxUIServer vertxUIServer = new VertxUIServer();
-//        vertxUIServer.runMain(new String[] {"--uiPort", "9100", "-r", "true"});
-//
-//        assertEquals(9100, vertxUIServer.getPort());
-//        vertxUIServer.stop();
-
-
-        //        uiServer.attach(ss);
-        //
-        //        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-        //                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-        //                .list()
-        //                .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build())
-        //                .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(4).nOut(3).build())
-        //                .build();
-        //
-        //        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        //        net.init();
-        //        net.setListeners(new StatsListener(ss, 3), new ScoreIterationListener(1));
-        //
-        //        DataSetIterator iter = new IrisDataSetIterator(150, 150);
-        //
-        //        for (int i = 0; i < 500; i++) {
-        //            net.fit(iter);
-        ////            Thread.sleep(100);
-        //            Thread.sleep(100);
-        //        }
-        //
-        ////        uiServer.stop();
-
-        Thread.sleep(100000);
     }
 
     @Test
@@ -341,12 +319,35 @@ public class TestVertxUI extends BaseDL4JTest {
     }
 
     @Test
-    public void testUIServerStop() {
+    public void testUIServerStop() throws Exception {
         UIServer uiServer = UIServer.getInstance(true, null);
         assertTrue(uiServer.isMultiSession());
+
+        long sleepMilliseconds = 10_000;
+        log.info("Waiting {} ms before stopping.", sleepMilliseconds);
+        Thread.sleep(sleepMilliseconds);
         uiServer.stop();
 
+        log.info("UI server is stopped. Waiting {} ms before starting new UI server.", sleepMilliseconds);
+        Thread.sleep(sleepMilliseconds);
         uiServer = UIServer.getInstance(false, null);
         assertFalse(uiServer.isMultiSession());
+
+        log.info("Waiting {} ms before stopping.", sleepMilliseconds);
+        Thread.sleep(sleepMilliseconds);
+        uiServer.stop();
+    }
+
+    @Test (expected = RuntimeException.class)
+    public void testUIStartFailure() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        int port = VertxUIServer.DEFAULT_UI_PORT;
+        Vertx.vertx().createHttpServer()
+                .requestHandler(event -> {})
+                .listen(port, result -> latch.countDown());
+        latch.await();
+
+        UIServer.getInstance();
+
     }
 }
