@@ -144,7 +144,9 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     public void autoAttachStatsStorageBySessionId(Function<String, StatsStorage> statsStorageProvider) {
         if (statsStorageProvider != null) {
             this.statsStorageLoader = new StatsStorageLoader(statsStorageProvider);
-            this.trainModule.setSessionLoader(this.statsStorageLoader);
+            if (trainModule != null) {
+                this.trainModule.setSessionLoader(this.statsStorageLoader);
+            }
         }
     }
 
@@ -191,6 +193,9 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
             });
         }
 
+        if (VertxUIServer.statsStorageProvider != null) {
+            autoAttachStatsStorageBySessionId(VertxUIServer.statsStorageProvider);
+        }
 
         uiModules.add(new DefaultModule(isMultiSession())); //For: navigation page "/"
         trainModule = new TrainModule(isMultiSession(), statsStorageLoader, this::getAddress);

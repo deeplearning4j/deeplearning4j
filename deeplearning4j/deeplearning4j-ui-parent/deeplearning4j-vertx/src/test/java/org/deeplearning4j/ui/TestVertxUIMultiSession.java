@@ -64,6 +64,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
         UIServer.stopInstance();
     }
 
+    @Ignore
     @Test
     public void testUIMultiSession() throws Exception {
 
@@ -189,15 +190,15 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     @Test
     public void testUIAutoAttachDetach() throws Exception {
 
-        long autoDetachTimeoutMillis = 30_000;
+        long autoDetachTimeoutMillis = 20_000;
         AutoDetachingStatsStorageProvider statsProvider = new AutoDetachingStatsStorageProvider(autoDetachTimeoutMillis);
         UIServer uIServer = UIServer.getInstance(true, statsProvider);
         statsProvider.setUIServer(uIServer);
-
+        InMemoryStatsStorage ss = null;
         for (int session = 0; session < 3; session++) {
             int layerSize = session + 4;
 
-            InMemoryStatsStorage ss = new InMemoryStatsStorage();
+            ss = new InMemoryStatsStorage();
             String sessionId = Integer.toString(session);
             statsProvider.put(sessionId, ss);
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -236,7 +237,9 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
             assertTrue(uIServer.isAttached(ss));
         }
 
-        Thread.sleep(1_000_000);
+        Thread.sleep(autoDetachTimeoutMillis);
+        assertFalse(uIServer.isAttached(ss));
+
     }
 
     @Test (expected = RuntimeException.class)
