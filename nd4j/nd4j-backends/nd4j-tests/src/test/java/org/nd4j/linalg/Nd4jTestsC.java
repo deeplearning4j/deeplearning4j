@@ -5608,6 +5608,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testPercentile5() {
+        val array = Nd4j.createFromArray(new int[]{1, 1982});
+        val perc = array.percentileNumber(75);
+        assertEquals(1982.f, perc.floatValue(), 1e-5f);
+    }
+
+    @Test
     public void testTadPercentile1() {
         INDArray array = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         Transforms.reverse(array, false);
