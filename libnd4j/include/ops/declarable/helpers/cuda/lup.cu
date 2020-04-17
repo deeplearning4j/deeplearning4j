@@ -341,14 +341,16 @@ namespace helpers {
     static void lup_(LaunchContext *context, NDArray *input, NDArray *compound, NDArray *permutation) {
         auto stream = context->getCudaStream();
         auto n = input->rows();
-        cusolverDnHandle_t cusolverH = nullptr;
+        std::lock_guard<std::mutex> lock(*LaunchContext::deviceMutex());
+
+        cusolverDnHandle_t* cusolverH = (cusolverDnHandle_t*)context->getCusolverHandle(); //nullptr;
         // create solver handle
-        cusolverStatus_t status = cusolverDnCreate(&cusolverH);
-        if (CUSOLVER_STATUS_SUCCESS != status) {
-            throw cuda_exception::build("Cannot create cuSolver handle", status);
-        }
+        cusolverStatus_t status; //cusolverDnCreate(&cusolverH);
+//        if (CUSOLVER_STATUS_SUCCESS != status) {
+//            throw cuda_exception::build("Cannot create cuSolver handle", status);
+//        }
         // set solver stream
-        status = cusolverDnSetStream(cusolverH, *stream);
+        status = cusolverDnSetStream(*cusolverH, *stream);
         if (CUSOLVER_STATUS_SUCCESS != status) {
             throw cuda_exception::build("Cannot set up stream for cuda solver", status);
         }
@@ -368,7 +370,7 @@ namespace helpers {
                 // compute internal buffer size
                 double *matrix = reinterpret_cast<double *>(input->specialBuffer());
                 status = cusolverDnDgetrf_bufferSize(
-                        cusolverH,
+                        *cusolverH,
                         n,
                         n,
                         matrix,
@@ -386,7 +388,7 @@ namespace helpers {
 
                 if (permutation == nullptr) {
                     status = cusolverDnDgetrf(
-                            cusolverH,
+                            *cusolverH,
                             n,
                             n,
                             matrix,
@@ -404,7 +406,7 @@ namespace helpers {
                     NDArray permutVector('c', {n}, sd::DataType::INT32, context);
                     int* permutationBuf = permutVector.dataBuffer()->specialAsT<int>();
                     status = cusolverDnDgetrf(
-                            cusolverH,
+                            *cusolverH,
                             n,
                             n,
                             matrix,
@@ -440,7 +442,7 @@ namespace helpers {
                 float *d_work = nullptr;
 
                 status = cusolverDnSgetrf_bufferSize(
-                        cusolverH,
+                        *cusolverH,
                         n,
                         n,
                         matrix,
@@ -458,7 +460,7 @@ namespace helpers {
 
                 if (permutation == nullptr)
                     status = cusolverDnSgetrf(
-                            cusolverH,
+                            *cusolverH,
                             n,
                             n,
                             matrix,
@@ -470,7 +472,7 @@ namespace helpers {
                     NDArray permutVector('c', {n}, DataType::INT32, context);
                     int *permutationBuf = reinterpret_cast<int *>(permutVector.specialBuffer());
                     status = cusolverDnSgetrf(
-                            cusolverH,
+                            *cusolverH,
                             n,
                             n,
                             matrix,
@@ -504,7 +506,7 @@ namespace helpers {
         if (err) {
             throw cuda_exception::build("helpers::lup_: Cannot deallocate memory for solver info buffer", err);
         }
-        cusolverDnDestroy(cusolverH);
+//        cusolverDnDestroy(cusolverH);
 //        NDArray::registerSpecialUse({input}, {input});
         input->tickWriteDevice();
     }
