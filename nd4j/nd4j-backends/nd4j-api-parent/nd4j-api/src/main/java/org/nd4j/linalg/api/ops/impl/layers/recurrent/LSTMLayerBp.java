@@ -24,7 +24,6 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.shade.guava.primitives.Booleans;
@@ -37,33 +36,10 @@ import java.util.Map;
 
 
 /**
- * LSTM layer implemented as a single operation.
- * Implementation of operation for LSTM layer with optional peep hole connections.<br>
- * S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation and <a href="https://research.google.com/pubs/archive/43905.pdf">https://research.google.com/pubs/archive/43905.pdf</a><br>
- * Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.<br>
- * See also: <a href="https://arxiv.org/pdf/1503.04069.pdf">https://arxiv.org/pdf/1503.04069.pdf</a><br>
- * Input arrays:<br>
- * 0: input <br>
- * [sL, bS, nIn]  when dataFormat - TNS <br>
- * [bS, sL, nIn]  when dataFormat - NST <br>
- * [bS, nIn, sL]  when dataFormat - NST <br>
- * 1: previous/initial cell state<br>
- * shapes [nIn, 4*nOut] for FWD, BWD  Direction Mode <br>
- * shapes [2, nIn, 4*nOut] BIDIR_SUM, BIDIR_CONCAT and BIDIR_EXTRA_DIM  Direction Mode <br>
- * 2: previous/initial output [bS, numUnits]<br>
- * * shapes [nIn, 4*nOut] for FWD, BWD  Direction Mode <br>
- * * shapes [2, nIn, 4*nOut] BIDIR_SUM, BIDIR_CONCAT and BIDIR_EXTRA_DIM  Direction Mode <br>
- * 3  max sequence length [bS] <br>
- * 4: LSTMLayerWeights - {@link LSTMLayerWeights} <br>
- * 5: LSTMLayerConfig - {@link LSTMLayerConfig}<br>
- * <p>
- * Output arrays:<br>
- * 0: output h  - rank 3 or 4, depends on DirectionMode and dataFormat<br>
- * 1: output at last step hL - rank 3 or 4, depends on DirectionMode and dataFormat<<br>
- * 2: cell state at last step cL  - same shape as in hL<br>
+ * LSTM layer backpropagation
  */
 @NoArgsConstructor
-public class LSTMLayer extends DynamicCustomOp {
+public class LSTMLayerBp extends DynamicCustomOp {
 
     @Getter
     private LSTMLayerConfig configuration;
@@ -76,8 +52,10 @@ public class LSTMLayer extends DynamicCustomOp {
     private SDVariable maxTSLength;
 
 
-    public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable x, SDVariable cLast, SDVariable yLast, SDVariable maxTSLength, LSTMLayerWeights weights, LSTMLayerConfig configuration) {
-        super(null, sameDiff, weights.argsWithInputs(x, maxTSLength, cLast, yLast));
+    public LSTMLayerBp(@NonNull SameDiff sameDiff, @NonNull SDVariable x, SDVariable cLast, SDVariable yLast, SDVariable maxTSLength, @NonNull LSTMLayerWeights weights, @NonNull LSTMLayerConfig configuration,
+                       SDVariable dLdh, SDVariable dLdhL, SDVariable dLdcL) {
+        super("lstmLayer_bp", sameDiff, wrapFilterNull(x, weights.getWeights(), weights.getRWeights(), weights.getBias(),
+                maxTSLength, yLast, cLast, weights.getPeepholeWeights(), dLdh, dLdhL, dLdcL));
         this.configuration = configuration;
         this.weights = weights;
         this.cLast = cLast;
@@ -87,63 +65,47 @@ public class LSTMLayer extends DynamicCustomOp {
         addTArgument(tArgs());
         addBArgument(bArgs(weights, maxTSLength, yLast, cLast));
 
-        Preconditions.checkState(this.configuration.isRetLastH() || this.configuration.isRetLastC() || this.configuration.isRetFullSequence(),
-                "You have to specify at least one output you want to return. Use isRetLastC, isRetLast and isRetFullSequence  methods  in LSTMLayerConfig builder to specify them");
-
-
-    }
-
-    public LSTMLayer(INDArray x, INDArray cLast, INDArray yLast, INDArray maxTSLength, LSTMLayerWeights lstmWeights, LSTMLayerConfig LSTMLayerConfig) {
-        super(null, null, lstmWeights.argsWithInputs(maxTSLength, x, cLast, yLast));
-        this.configuration = LSTMLayerConfig;
-        this.weights = lstmWeights;
-        addIArgument(iArgs());
-        addTArgument(tArgs());
-        addBArgument(bArgs(weights, maxTSLength, yLast, cLast));
 
         Preconditions.checkState(this.configuration.isRetLastH() || this.configuration.isRetLastC() || this.configuration.isRetFullSequence(),
                 "You have to specify at least one output you want to return. Use isRetLastC, isRetLast and isRetFullSequence  methods  in LSTMLayerConfig builder to specify them");
+
+
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
-        Preconditions.checkState(inputDataTypes != null && 3 <= inputDataTypes.size() && inputDataTypes.size() <= 8, "Expected amount of inputs to LSTMLayer between 3 inputs minimum (input, Wx, Wr only) or 8 maximum, got %s", inputDataTypes);
-        //7 outputs, all of same type as input. Note that input 0 is max sequence length (int64), input 1 is actual input
+
         DataType dt = inputDataTypes.get(1);
-        ArrayList<DataType> list = new ArrayList<>();
-        if (configuration.isRetFullSequence()) {
-
-            list.add(dt);
-        }
-
-        if (configuration.isRetLastC()) {
-
-            list.add(dt);
-        }
-        if (configuration.isRetLastH()){
-
-            list.add(dt);
-        }
-
         Preconditions.checkState(dt.isFPType(), "Input type 1 must be a floating point type, got %s", dt);
+        ArrayList<DataType> list = new ArrayList<>();
+        list.add(dt); // dLdx
+        list.add(dt); // dLdWx
+        list.add(dt); // dLdWr
+
+        if (this.weights.hasBias()) {
+            list.add(dt);
+        } // dLdb
+
+        if (this.maxTSLength != null) {
+            list.add(dt);
+        } // dLdSl
+        if (this.yLast != null) {
+            list.add(dt);
+        } //dLdhI
+        if (this.cLast != null) {
+            list.add(dt);
+        } // dLdcI
+        if (this.weights.hasPH()) {
+            list.add(dt);
+        } // dLdWp
+
         return list;
-    }
-
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> grads) {
-        int i=0;
-        SDVariable grad0 = this.configuration.isRetFullSequence() ? grads.get(i++): null;
-        SDVariable grad1 = this.configuration.isRetLastH() ? grads.get(i++): null;
-        SDVariable grad2 = this.configuration.isRetLastC() ? grads.get(i++): null;
-
-        return Arrays.asList(new LSTMLayerBp(sameDiff, arg(0), this.cLast, this.yLast, this.maxTSLength,
-                this.weights, this.configuration, grad0, grad1,grad2).outputVariables());
     }
 
 
     @Override
     public String opName() {
-        return "lstmLayer";
+        return "lstmLayer_bp";
     }
 
     @Override
@@ -192,17 +154,21 @@ public class LSTMLayer extends DynamicCustomOp {
         return "configuration";
     }
 
+
     @Override
-    public int getNumOutputs(){
+    public int getNumOutputs() {
 
         return Booleans.countTrue(
-                configuration.isRetFullSequence(), //retFullSequence: B_ARG(5)
-                configuration.isRetLastH(),  //  retLastH: B_ARG(6)
-                configuration.isRetLastC()    // retLastC: B_ARG(7)
+                true,
+                true,
+                true,
+                weights.hasBias(),
+                this.maxTSLength != null,
+                this.yLast != null,
+                this.cLast != null,
+                weights.hasPH()
         );
     }
-
-
 
 
 }

@@ -21,6 +21,7 @@ package org.nd4j.linalg.factory.ops;
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.base.Preconditions;
+import org.nd4j.enums.PartitionMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
@@ -29,6 +30,34 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 
 public class NDMath {
   public NDMath() {
+  }
+
+  /**
+   * Clips tensor values to a maximum average L2-norm.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param clipValue Value for clipping
+   * @param dimensions Dimensions to reduce over (Size: AtLeast(min=0))
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray clipByAvgNorm(INDArray x, double clipValue, int... dimensions) {
+    NDValidation.validateNumerical("ClipByAvgNorm", "x", x);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm(x, clipValue, dimensions))[0];
+  }
+
+  /**
+   * Looks up ids in a list of embedding tensors.<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param indices A Tensor containing the ids to be looked up. (INT type)
+   * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
+   * @return output Shifted output (NUMERIC type)
+   */
+  public INDArray embeddingLookup(INDArray x, INDArray indices, PartitionMode PartitionMode) {
+    NDValidation.validateNumerical("EmbeddingLookup", "x", x);
+    NDValidation.validateInteger("EmbeddingLookup", "indices", indices);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(x, indices, PartitionMode))[0];
   }
 
   /**

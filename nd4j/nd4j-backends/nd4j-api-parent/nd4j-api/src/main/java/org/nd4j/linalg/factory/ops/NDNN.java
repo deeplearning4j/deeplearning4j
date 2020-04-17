@@ -30,6 +30,17 @@ public class NDNN {
   }
 
   /**
+   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray cReLU(INDArray x) {
+    NDValidation.validateNumerical("CReLU", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(x))[0];
+  }
+
+  /**
    * Neural network batch normalization operation.<br>
    * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a><br>
    *

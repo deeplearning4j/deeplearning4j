@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Ignore;
@@ -35,6 +34,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
@@ -265,7 +265,7 @@ public class LayerOpValidation extends BaseOpValidation {
                         msg = "7 - upsampling2d, NCHW, 2x2 - " + Arrays.toString(inSizeNCHW);
                         inSize = inSizeNCHW;
                         in = sd.var("in", inSize);
-                        out = sd.cnn().upsampling2d(in, 2, 2, true);
+                        out = sd.cnn().upsampling2d(in,  2, 2, true);
                         break;
                     default:
                         throw new RuntimeException();
@@ -1469,6 +1469,43 @@ public class LayerOpValidation extends BaseOpValidation {
         }
     }
 
+    @Test
+    public void testDepthwiseConv2D(){
+
+        int bS = 10;
+
+        int kernelHeight = 2;
+        int kernelWidth = 2;
+        int strideHeight = 2;
+        int strideWidth = 2;
+        int inChannels = 2;
+        int outChannels = 3;
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.var("in", Nd4j.rand(bS, inChannels, 5,5));
+        SDVariable weights = sd.var("weights", Nd4j.rand(DataType.DOUBLE, kernelHeight, kernelWidth, inChannels, outChannels));
+        SDVariable bias = sd.var("bias", Nd4j.rand(DataType.DOUBLE, inChannels*outChannels));
+        Conv2DConfig config = Conv2DConfig.builder()
+                .kH(kernelHeight)
+                .kW(kernelWidth)
+                .sH(strideHeight)
+                .sW(strideWidth)
+                .dataFormat("NCHW")
+                .build();
+
+        SDVariable out = sd.cnn.depthWiseConv2d(in, weights, bias, config);
+        SDVariable loss = sd.standardDeviation("loss", out, true);
+        loss.markAsLoss();
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true)
+        );
+        assertNull(err);
+
+
+
+    }
+
 
     @Test
     public void LSTMLayerTestCase1() {
@@ -1476,9 +1513,8 @@ public class LayerOpValidation extends BaseOpValidation {
         int bS = 5;
         int nIn = 3;
         int numUnits = 7;
-        int sL = 10; //small just for test
+        int sL = 3; //small just for test
 
-        SameDiff sd = SameDiff.create();
 
         // notations:
         // bS - batch size, numExamples
@@ -1492,50 +1528,66 @@ public class LayerOpValidation extends BaseOpValidation {
         //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
 
 
-        SDVariable in = sd.var("in", Nd4j.rand(DataType.FLOAT, bS, nIn, sL));
+        for (boolean useCLast : new boolean[]{false, true}) {
+            for (boolean useYLast : new boolean[]{false, true}) {
+
+                SameDiff sd = SameDiff.create();
+                SDVariable in = sd.var("in", Nd4j.randn(DataType.DOUBLE, bS, nIn, sL));
 
 
-        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
-        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
+                SDVariable cLast = useCLast ? sd.var("cLast", Nd4j.zeros(DataType.DOUBLE, bS, numUnits)) : null;
+                SDVariable yLast = useYLast ? sd.var("yLast", Nd4j.zeros(DataType.DOUBLE, bS, numUnits)) : null;
 
-        LSTMLayerConfig c = LSTMLayerConfig.builder()
-                .lstmdataformat(LSTMDataFormat.NST)
-                .directionMode(LSTMDirectionMode.FWD)
-                .gateAct(LSTMActivations.SIGMOID)
-                .cellAct(LSTMActivations.TANH)
-                .outAct(LSTMActivations.TANH)
-                .retFullSequence(true)
-                .retLastC(true)
-                .retLastH(true)
-                .build();
 
-        LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(
-                in, cLast, yLast, null,
-                LSTMLayerWeights.builder()
-                        .weights(sd.var("weights", Nd4j.rand(DataType.FLOAT, nIn, 4 * numUnits)))
-                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.FLOAT, numUnits, 4 * numUnits)))
-                        .peepholeWeights(sd.var("inputPeepholeWeights", Nd4j.rand(DataType.FLOAT, 3 * numUnits)))
-                        .bias(sd.var("bias", Nd4j.rand(DataType.FLOAT, 4 * numUnits))).build(),
-                c), c);
+                LSTMLayerConfig c = LSTMLayerConfig.builder()
+                        .lstmdataformat(LSTMDataFormat.NST)
+                        .directionMode(LSTMDirectionMode.FWD)
+                        .gateAct(LSTMActivations.SIGMOID)
+                        .cellAct(LSTMActivations.TANH)
+                        .outAct(LSTMActivations.TANH)
+                        .retFullSequence(true)
+                        .retLastC(true)
+                        .retLastH(true)
+                        .build();
 
-        long[] out = new long[]{bS, numUnits, sL};
-        long[] hL = new long[]{bS, numUnits};
-        long[] cL = new long[]{bS, numUnits};
+                LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(
+                        in, cLast, yLast, null,
+                        LSTMLayerWeights.builder()
+                                .weights(sd.var("weights", Nd4j.randn(DataType.DOUBLE, nIn, 4 * numUnits)))
+                                .rWeights(sd.var("rWeights", Nd4j.randn(DataType.DOUBLE, numUnits, 4 * numUnits)))
+                                .peepholeWeights(sd.var("inputPeepholeWeights", Nd4j.randn(DataType.DOUBLE, 3 * numUnits)))
+                                .bias(sd.var("bias", Nd4j.rand(DataType.DOUBLE, 4 * numUnits))).build(),
+                        c), c);
 
-        assertArrayEquals(out, outputs.getOutput().eval().shape());
-        assertArrayEquals(hL, outputs.getLastTimeStepOutput().eval().shape());
-        assertArrayEquals(cL, outputs.getLastCellStateOutput().eval().shape());
+                long[] out = new long[]{bS, numUnits, sL};
+                long[] hL = new long[]{bS, numUnits};
+                long[] cL = new long[]{bS, numUnits};
+
+                assertArrayEquals(out, outputs.getOutput().eval().shape());
+                assertArrayEquals(hL, outputs.getLastOutput().eval().shape());
+                assertArrayEquals(cL, outputs.getLastState().eval().shape());
+
+                sd.setLossVariables(outputs.getOutput(), outputs.getLastTimeStepOutput(), outputs.getTimeSeriesOutput());
+
+                String err = OpValidation.validate(new TestCase(sd)
+                        .gradientCheck(true)
+                        .testName("cLast=" + cLast + ", yLast=" + yLast)
+                );
+
+                assertNull(err);
+            }
+        }
 
 
     }
 
 
-    @Test @Ignore //AB 2020/04/08 - https://github.com/eclipse/deeplearning4j/issues/8824
+    @Test
     public void LSTMLayerTestCase2() {
         int bS = 5;
         int nIn = 3;
         int numUnits = 7;
-        int sL = 10; //small just for test
+        int sL = 3; //small just for test
 
         SameDiff sd = SameDiff.create();
 
@@ -1549,11 +1601,11 @@ public class LayerOpValidation extends BaseOpValidation {
         //  NTS: shape [numExamples, timeLength, inOutSize]<br>
         //  for bidirectional:
         //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
-        SDVariable in = sd.var("in", Nd4j.rand(DataType.FLOAT, sL, bS, nIn));
+        SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, sL, bS, nIn));
 
 
-        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
-        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, bS, numUnits));
+        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.DOUBLE, bS, numUnits));
+        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.DOUBLE, bS, numUnits));
 
         LSTMLayerConfig c = LSTMLayerConfig.builder()
                 .lstmdataformat(LSTMDataFormat.TNS)
@@ -1569,8 +1621,8 @@ public class LayerOpValidation extends BaseOpValidation {
         LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(
                 in, cLast, yLast, null,
                 LSTMLayerWeights.builder()
-                        .weights(sd.var("weights", Nd4j.rand(DataType.FLOAT, nIn, 4 * numUnits)))
-                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.FLOAT, numUnits, 4 * numUnits)))
+                        .weights(sd.var("weights", Nd4j.rand(DataType.DOUBLE, nIn, 4 * numUnits)))
+                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.DOUBLE, numUnits, 4 * numUnits)))
                         .build(),
                 c), c);
 
@@ -1578,14 +1630,22 @@ public class LayerOpValidation extends BaseOpValidation {
         long[] out = new long[]{sL, bS, numUnits};
         assertArrayEquals(out, outputs.getOutput().eval().shape());
 
+        sd.setLossVariables(outputs.getOutput());
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true)
+        );
+
+        assertNull(err);
+
     }
 
-    @Test @Ignore //AB 2020/04/08 - https://github.com/eclipse/deeplearning4j/issues/8824
+    @Test
     public void LSTMLayerTestCase3() {
         int bS = 5;
         int nIn = 3;
         int numUnits = 7;
-        int sL = 10; //small just for test
+        int sL = 3; //small just for test
 
         SameDiff sd = SameDiff.create();
 
@@ -1599,14 +1659,14 @@ public class LayerOpValidation extends BaseOpValidation {
         //  NTS: shape [numExamples, timeLength, inOutSize]<br>
         //  for bidirectional:
         //  T2NS: 3 = [timeLength, 2, numExamples, inOutSize] (for ONNX)
-        SDVariable in = sd.var("in", Nd4j.rand(DataType.FLOAT, bS, sL, nIn));
+        SDVariable in = sd.var("in", Nd4j.rand(DataType.DOUBLE, bS, sL, nIn));
 
 
         // when directionMode >= 2 (BIDIR_CONCAT=3)
         // Wx, Wr [2, nIn, 4*nOut]
         // hI, cI [2, bS, nOut]
-        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.FLOAT, 2, bS, numUnits));
-        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.FLOAT, 2, bS, numUnits));
+        SDVariable cLast = sd.var("cLast", Nd4j.zeros(DataType.DOUBLE, 2, bS, numUnits));
+        SDVariable yLast = sd.var("yLast", Nd4j.zeros(DataType.DOUBLE, 2, bS, numUnits));
 
         LSTMLayerConfig c = LSTMLayerConfig.builder()
                 .lstmdataformat(LSTMDataFormat.NTS)
@@ -1622,8 +1682,8 @@ public class LayerOpValidation extends BaseOpValidation {
         LSTMLayerOutputs outputs = new LSTMLayerOutputs(sd.rnn.lstmLayer(new String[]{"out"},
                 in, cLast, yLast, null,
                 LSTMLayerWeights.builder()
-                        .weights(sd.var("weights", Nd4j.rand(DataType.FLOAT, 2, nIn, 4 * numUnits)))
-                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.FLOAT, 2, numUnits, 4 * numUnits)))
+                        .weights(sd.var("weights", Nd4j.rand(DataType.DOUBLE, 2, nIn, 4 * numUnits)))
+                        .rWeights(sd.var("rWeights", Nd4j.rand(DataType.DOUBLE, 2, numUnits, 4 * numUnits)))
                         .build(),
                 c), c);
 
@@ -1631,5 +1691,17 @@ public class LayerOpValidation extends BaseOpValidation {
         long[] out = new long[]{bS, sL, 2 * numUnits};
 
         assertArrayEquals(out, outputs.getOutput().eval().shape());
+
+        sd.setLossVariables(outputs.getOutput());
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true)
+        );
+
+        assertNull(err);
     }
+
+
+
+
 }

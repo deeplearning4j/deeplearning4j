@@ -24,14 +24,12 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.MergeMaxBp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class MergeMax extends DynamicCustomOp {
@@ -71,14 +69,8 @@ public class MergeMax extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        List<SDVariable> ret = new ArrayList<>();
-        SDVariable out = outputVariable();
-        for (int i = 0; i < args().length; i++){
-            SDVariable isMax = out.eq(arg(i)).castTo(arg(i).dataType());
-            ret.add(isMax.mul(gradient));
-        }
-        return ret;
+        return Arrays.asList(new MergeMaxBp(sameDiff, args(), i_v.get(0)).outputVariables());
+
     }
 
     @Override

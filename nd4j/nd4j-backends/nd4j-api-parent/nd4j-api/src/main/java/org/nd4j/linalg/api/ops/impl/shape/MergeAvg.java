@@ -24,15 +24,13 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.MergeAvgBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class MergeAvg extends DynamicCustomOp {
@@ -74,12 +72,8 @@ public class MergeAvg extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        int nArgs = args().length;
-        SDVariable gradient = sameDiff.setupFunction(i_v.get(0)).div(nArgs);
-        List<SDVariable> ret = new ArrayList<>();
-        for (int i = 0; i < args().length; i++)
-            ret.add(gradient);
-        return ret;
+        return Arrays.asList(new MergeAvgBp(sameDiff, args(), i_v.get(0)).outputVariables());
+
     }
 
     @Override
