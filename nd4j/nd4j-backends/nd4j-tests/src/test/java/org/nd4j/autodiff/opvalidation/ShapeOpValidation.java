@@ -33,6 +33,8 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.Tri;
+import org.nd4j.linalg.api.ops.custom.Triu;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -2524,5 +2526,42 @@ public class ShapeOpValidation extends BaseOpValidation {
             out = rs2.eval(Collections.singletonMap("orig", Nd4j.create(DataType.FLOAT, orig)));
             assertArrayEquals(exp, out.shape());
         }
+    }
+
+
+    @Test
+    public void testMergeMaxIndex() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable inputX = sd.var(Nd4j.createFromArray(new float[] {1, 0, 0}));
+        SDVariable inputY = sd.var(Nd4j.createFromArray(new float[] {0, 1, 0}));
+        SDVariable inputZ = sd.var(Nd4j.createFromArray(new float[] {0, 0, 1}));
+        SDVariable out = new MergeMaxIndex(sd, inputX, inputY, inputZ).outputVariable();
+        INDArray expected = Nd4j.createFromArray(new long[]{0,1,2});
+        assertArrayEquals(expected.toIntVector(), out.eval().toIntVector());
+
+
+    }
+
+    @Test
+    public void testTriOp() {
+
+        SameDiff sd = SameDiff.create();
+        SDVariable out = new Tri(sd, 3, 3, 0).outputVariable();
+        // TODO: finish testcase with expected value
+    }
+
+    @Test
+    public void testTriuOp() {
+
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.var(Nd4j.rand(DataType.DOUBLE, 3,3));
+        SDVariable out = new Triu(sd, input,1).outputVariable();
+        out.markAsLoss();
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+
     }
 }

@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.shape.MergeAvg;
 import org.nd4j.linalg.api.ops.impl.shape.MergeMax;
+import org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm;
@@ -2212,6 +2213,23 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
     }
+
+    @Test
+    public void testReverseBp() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.var(Nd4j.createFromArray(new double[][]{{2,7}, {3,5}, {4,5}}));
+        SDVariable out = new Reverse(sd, input,0,1).outputVariable();
+        out.markAsLoss();
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+
+
+    }
+
+
 
 
     }

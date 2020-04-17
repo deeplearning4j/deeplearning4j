@@ -23,6 +23,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.MergeAvgBp;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -100,8 +101,8 @@ public class Reverse extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable ret = f().reverse(f1.get(0), dimensions);
-        return Arrays.asList(ret);
+
+        return Arrays.asList(new ReverseBp(sameDiff, arg(0), sameDiff.reverse(f1.get(0)), dimensions).outputVariables());
     }
 
     @Override
