@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -19,9 +20,9 @@ package org.nd4j.linalg.learning;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AdaDelta;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -104,16 +105,11 @@ public class AdaDeltaUpdater implements GradientUpdater<AdaDelta> {
 
         //Line 4 of Algorithm 1: https://arxiv.org/pdf/1212.5701v1.pdf
         //E[g^2]_t = rho * E[g^2]_{t-1} + (1-rho)*g^2_t
-        msg.muli(rho).addi(gradient.mul(gradient).muli(1 - rho));
-
         //Calculate update:
         //dX = - g * RMS[delta x]_{t-1} / RMS[g]_t
         //Note: negative is applied in the DL4J step function: params -= update rather than params += update
-        INDArray rmsdx_t1 = Transforms.sqrt(msdx.add(epsilon), false);
-        INDArray rmsg_t = Transforms.sqrt(msg.add(epsilon), false);
-        INDArray update = gradient.muli(rmsdx_t1.divi(rmsg_t));
-
         //Accumulate gradients: E[delta x^2]_t = rho * E[delta x^2]_{t-1} + (1-rho)* (delta x_t)^2
-        msdx.muli(rho).addi(update.mul(update).muli(1 - rho));
+
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaDeltaUpdater(gradient, msg, msdx, rho, epsilon));
     }
 }

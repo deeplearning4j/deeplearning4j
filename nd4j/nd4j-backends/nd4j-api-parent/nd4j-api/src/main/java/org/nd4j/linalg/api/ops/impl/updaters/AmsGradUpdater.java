@@ -30,11 +30,14 @@ public class AmsGradUpdater extends DynamicCustomOp {
         //
     }
 
-    public AmsGradUpdater(@NonNull INDArray gradients, @NonNull INDArray stateV, @NonNull INDArray stateM, @NonNull INDArray stateH, double lr, double beta1, double beta2, double epsilon, int iteration) {
+    public AmsGradUpdater(@NonNull INDArray gradients, @NonNull INDArray stateV, @NonNull INDArray stateM, @NonNull INDArray stateH,
+                          double lr, double beta1, double beta2, double epsilon, int iteration) {
         this(gradients, stateV, stateM, stateH, gradients, stateV, stateM, stateH, lr, beta1, beta2, epsilon, iteration);
     }
 
-    public AmsGradUpdater(@NonNull INDArray gradients, @NonNull INDArray stateV, @NonNull INDArray stateM, @NonNull INDArray stateH, @NonNull INDArray updates, @NonNull INDArray updatedStateV, @NonNull INDArray updatedStateM, @NonNull INDArray updatedStateH, double lr, double beta1, double beta2, double epsilon, int iteration) {
+    public AmsGradUpdater(@NonNull INDArray gradients, @NonNull INDArray stateV, @NonNull INDArray stateM, @NonNull INDArray stateH,
+                          @NonNull INDArray updates, @NonNull INDArray updatedStateV, @NonNull INDArray updatedStateM,
+                          @NonNull INDArray updatedStateH, double lr, double beta1, double beta2, double epsilon, int iteration) {
         addInputArgument(gradients, stateV, stateM, stateH);
         addOutputArgument(updates, updatedStateV, updatedStateM, updatedStateH);
         addTArgument(lr, beta1, beta2, epsilon);

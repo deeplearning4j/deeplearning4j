@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -19,14 +20,12 @@ package org.nd4j.linalg.learning;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.val;
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
+import org.nd4j.linalg.api.ops.impl.updaters.AmsGradUpdater;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AMSGrad;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -103,27 +102,11 @@ public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
         double epsilon = config.getEpsilon();
 
         //m_t = b_1 * m_{t-1} + (1-b_1) * g_t       eq 1 pg 3
-        INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);
-        m.muli(beta1).addi(oneMinusBeta1Grad);
-
         //v_t = b_2 * v_{t-1} + (1-b_2) * (g_t)^2   eq 1 pg 3
-        INDArray oneMinusBeta2GradSquared = gradient.mul(gradient).muli(1 - beta2);
-        v.muli(beta2).addi(oneMinusBeta2GradSquared);
-
-        double beta1t = FastMath.pow(beta1, iteration + 1);
-        double beta2t = FastMath.pow(beta2, iteration + 1);
-
         //vHat_t = max(vHat_{t-1}, v_t)
-        Transforms.max(vHat, v, false);
-
-        double alphat = learningRate * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
-        if (Double.isNaN(alphat) || alphat == 0.0)
-            alphat = epsilon;
-
         //gradient array contains: sqrt(vHat) + eps
-        Nd4j.getExecutioner().exec(new Sqrt(vHat, gradient)).addi(epsilon);
-
         //gradient = alphat * m_t / (sqrt(vHat) + eps)
-        gradient.rdivi(m).muli(alphat);
+
+        Nd4j.exec(new AmsGradUpdater(gradient, v, m, vHat, learningRate, beta1, beta2, epsilon, iteration));
     }
 }

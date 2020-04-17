@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -21,6 +22,7 @@ import lombok.NonNull;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Nadam;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -101,21 +103,6 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
         double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
-        INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);
-        m.muli(beta1).addi(oneMinusBeta1Grad);
-
-        INDArray oneMinusBeta2GradSquared = gradient.mul(gradient).muli(1.0 - beta2);
-        v.muli(beta2).addi(oneMinusBeta2GradSquared);
-
-        double beta1t = FastMath.pow(beta1, iteration + 1);
-
-        INDArray biasCorrectedEstimateOfMomentum = m.mul(beta1).divi(1.0 - beta1t);
-        INDArray secondTerm = oneMinusBeta1Grad.divi(1 - beta1t);
-
-        INDArray alphat = biasCorrectedEstimateOfMomentum.add(secondTerm).muli(learningRate);
-
-        INDArray sqrtV = Transforms.sqrt(v.dup(gradientReshapeOrder), false).addi(epsilon);
-
-        gradient.assign(alphat).divi(sqrtV);
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater(gradient, v, m, learningRate, beta1, beta2, epsilon, iteration));
     }
 }
