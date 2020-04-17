@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.image.ImageResize;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
@@ -2221,6 +2222,26 @@ public class TransformOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable input = sd.var(Nd4j.createFromArray(new double[][]{{2,7}, {3,5}, {4,5}}));
         SDVariable out = new Reverse(sd, input,0,1).outputVariable();
+        out.markAsLoss();
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+
+
+    }
+
+    @Test
+    public void testUpsampling3d() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+
+        // NCDHW input
+        SDVariable input = sd.var(Nd4j.rand(DataType.DOUBLE, 10, 2, 28,28,28));
+        int scaleD = 2;
+        int scaleH = 2;
+        int scaleW = 2;
+        SDVariable out = new Upsampling3d(sd, input,true, scaleD, scaleH, scaleW).outputVariable();
         out.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
