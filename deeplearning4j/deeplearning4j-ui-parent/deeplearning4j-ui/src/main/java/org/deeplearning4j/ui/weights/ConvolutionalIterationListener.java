@@ -140,7 +140,7 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
                 ComputationGraph l = (ComputationGraph) model;
                 Layer[] layers = l.getLayers();
                 if(layers.length != activations.size())
-                    throw new RuntimeException();
+                    throw new RuntimeException("layers.length != activations.size(). Got layers.length="+layers.length+", activations.size()="+activations.size());
                 for( int i=0; i<layers.length; i++ ){
                     if(layers[i].type() == Layer.Type.CONVOLUTIONAL){
                         String layerName = layers[i].conf().getLayer().getLayerName();
