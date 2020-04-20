@@ -234,9 +234,9 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         INDArray array = Nd4j.create(new double[] {1, 2, 0, 4, 5});
         INDArray comp = Nd4j.create(new double[] {1, 2, 3, 4, 5});
 
-        Nd4j.getExecutioner().exec(new CompareAndReplace(array, comp, Conditions.lessThan(1)));
+        INDArray z = Nd4j.exec(new CompareAndReplace(array, comp, Conditions.lessThan(1)));
 
-        assertEquals(comp, array);
+        assertEquals(comp, z);
     }
 
     @Test
@@ -256,9 +256,9 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
         INDArray comp = Nd4j.create(new double[] {2, 4, 0, 4, 5});
 
-        Nd4j.getExecutioner().exec(new CompareAndReplace(x, y, Conditions.epsNotEquals(0.0)));
+        INDArray z = Nd4j.exec(new CompareAndReplace(x, y, Conditions.epsNotEquals(0.0)));
 
-        assertEquals(comp, x);
+        assertEquals(comp, z);
     }
 
     @Test
@@ -267,9 +267,9 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
         INDArray comp = Nd4j.create(new double[] {2, 4, 3, 4, 5});
 
-        Nd4j.getExecutioner().exec(new CompareAndReplace(x, y, Conditions.lessThan(4)));
+        INDArray z = Nd4j.exec(new CompareAndReplace(x, y, Conditions.lessThan(4)));
 
-        assertEquals(comp, x);
+        assertEquals(comp, z);
     }
 
     @Test
@@ -278,9 +278,9 @@ public class BooleanIndexingTest extends BaseNd4jTest {
         INDArray y = Nd4j.create(new double[] {2, 4, 3, 4, 5});
         INDArray comp = Nd4j.create(new double[] {2, 2, 3, 4, 5});
 
-        Nd4j.getExecutioner().exec(new CompareAndReplace(x, y, Conditions.lessThan(2)));
+        INDArray z = Nd4j.exec(new CompareAndReplace(x, y, Conditions.lessThan(2)));
 
-        assertEquals(comp, x);
+        assertEquals(comp, z);
     }
 
 

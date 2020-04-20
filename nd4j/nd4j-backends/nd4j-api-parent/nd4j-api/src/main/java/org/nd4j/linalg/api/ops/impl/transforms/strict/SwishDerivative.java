@@ -39,8 +39,8 @@ public class SwishDerivative extends BaseTransformStrictOp {
         super(sameDiff, i_v1, i_v2, inPlace);
     }
 
-    public SwishDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+    public SwishDerivative(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v, false);
     }
 
     public SwishDerivative() {}

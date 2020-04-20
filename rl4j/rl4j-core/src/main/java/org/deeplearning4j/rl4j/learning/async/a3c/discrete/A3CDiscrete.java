@@ -57,7 +57,7 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
         this.iActorCritic = iActorCritic;
         this.mdp = mdp;
         this.configuration = conf;
-        asyncGlobal = new AsyncGlobal<>(iActorCritic, conf, this);
+        asyncGlobal = new AsyncGlobal<>(iActorCritic, conf);
 
         Long seed = conf.getSeed();
         Random rnd = Nd4j.getRandom();

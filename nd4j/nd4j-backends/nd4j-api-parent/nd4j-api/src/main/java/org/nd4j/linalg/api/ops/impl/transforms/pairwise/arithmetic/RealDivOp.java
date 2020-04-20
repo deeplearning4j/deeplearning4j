@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.DivBpOp;
 
 import java.util.List;
 
@@ -60,7 +61,7 @@ public class RealDivOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return f().divBp(larg(), rarg(), i_v.get(0));
+        return new DivBpOp(sameDiff, larg(), rarg(), i_v.get(0)).outputs();
     }
 
 

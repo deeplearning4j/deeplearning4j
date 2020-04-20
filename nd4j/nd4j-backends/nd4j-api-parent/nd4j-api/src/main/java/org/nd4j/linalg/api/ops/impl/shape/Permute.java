@@ -55,13 +55,14 @@ public class Permute extends Transpose {
         addIArgument(permuteDims);
     }
 
-    public Permute(INDArray input, int... permuteDims){
-        addInputArgument(input);
-        addIArgument(permuteDims);
-    }
-
     public Permute(SameDiff sd, SDVariable input, SDVariable permuteDims){
         super(sd, input, permuteDims);
+    }
+
+    public Permute(INDArray input, int... permuteDims){
+        super(input, null);
+        this.permuteDims = permuteDims;
+        addIArgument(permuteDims);
     }
 
     public Permute() {
@@ -77,10 +78,10 @@ public class Permute extends Transpose {
         SDVariable ret;
         if(args().length == 1) {
             //Static dimensions
-            ret = f().permute(i_v.get(0), reverseDims);
+            ret = sameDiff.permute(i_v.get(0), reverseDims);
         } else {
             //Dynamic dimensions
-            ret = f().permute(i_v.get(0), sameDiff.invertPermutation(arg(1)));
+            ret = sameDiff.permute(i_v.get(0), sameDiff.invertPermutation(arg(1)));
         }
         return Collections.singletonList(ret);
     }

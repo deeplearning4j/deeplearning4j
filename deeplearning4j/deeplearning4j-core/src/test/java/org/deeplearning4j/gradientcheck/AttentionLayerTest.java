@@ -46,6 +46,11 @@ public class AttentionLayerTest extends BaseDL4JTest {
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testSelfAttentionLayer() {
         int nIn = 3;

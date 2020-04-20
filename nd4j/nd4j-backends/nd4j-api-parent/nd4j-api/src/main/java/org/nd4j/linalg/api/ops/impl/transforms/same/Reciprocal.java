@@ -74,7 +74,7 @@ public class Reciprocal extends BaseTransformSameOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         // -1/(x^2)
-        SDVariable g = f().pow(arg(), 2).rdiv(-1).mul(i_v1.get(0));
+        SDVariable g = sameDiff.math.pow(arg(), 2).rdiv(-1).mul(i_v1.get(0));
         return Collections.singletonList(g);
     }
 }

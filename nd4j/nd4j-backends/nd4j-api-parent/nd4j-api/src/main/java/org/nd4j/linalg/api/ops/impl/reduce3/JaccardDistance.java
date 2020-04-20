@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce3;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -90,18 +91,18 @@ public class JaccardDistance extends BaseReduce3Op {
         //Jaccard distance: https://en.wikipedia.org/wiki/Jaccard_index#Generalized_Jaccard_similarity_and_distance
         //J(x,y) = 1 - sum_i min(x_i, y_i) / sum_i max(x_i, y_i)
 
-        SDVariable min = f().min(larg(), rarg());
-        SDVariable max = f().max(larg(), rarg());
+        SDVariable min = sameDiff.math.min(larg(), rarg());
+        SDVariable max = sameDiff.math.max(larg(), rarg());
         SDVariable sumMax = max.sum(true, dimensions);
         SDVariable sumMin = min.sum(true, dimensions);
 
         DataType d = arg().dataType();
-        SDVariable xIsMin = f().eq(min, larg()).castTo(d);
-        SDVariable xIsMax = f().eq(max, larg()).castTo(d);
-        SDVariable yIsMin = f().eq(min, rarg()).castTo(d);
-        SDVariable yIsMax = f().eq(max, rarg()).castTo(d);
+        SDVariable xIsMin = sameDiff.eq(min, larg()).castTo(d);
+        SDVariable xIsMax = sameDiff.eq(max, larg()).castTo(d);
+        SDVariable yIsMin = sameDiff.eq(min, rarg()).castTo(d);
+        SDVariable yIsMax = sameDiff.eq(max, rarg()).castTo(d);
 
-        SDVariable sqSumMax = f().square(sumMax);
+        SDVariable sqSumMax = sameDiff.math.square(sumMax);
         SDVariable dldx = xIsMax.mul(sumMin).sub(xIsMin.mul(sumMax)).div(sqSumMax);
         SDVariable dldy = yIsMax.mul(sumMin).sub(yIsMin.mul(sumMax)).div(sqSumMax);
 
@@ -110,7 +111,7 @@ public class JaccardDistance extends BaseReduce3Op {
             //KeepDims or full array reduction - already broadcastable
             bcGradOut = f1.get(0);
         } else {
-            bcGradOut = sameDiff.f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), f1.get(0));
+            bcGradOut = SameDiffUtils.reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), f1.get(0));
         }
         return Arrays.asList(dldx.mul(bcGradOut), dldy.mul(bcGradOut));
     }

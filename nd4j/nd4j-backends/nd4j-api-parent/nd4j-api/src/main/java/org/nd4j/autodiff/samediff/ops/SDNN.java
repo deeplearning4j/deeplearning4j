@@ -24,10 +24,35 @@ import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.enums.PadMode;
 
 public class SDNN extends SDOps {
   public SDNN(SameDiff sameDiff) {
     super(sameDiff);
+  }
+
+  /**
+   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable cReLU(SDVariable x) {
+    SDValidation.validateNumerical("CReLU", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(sd,x).outputVariable();
+  }
+
+  /**
+   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable cReLU(String name, SDVariable x) {
+    SDValidation.validateNumerical("CReLU", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
@@ -703,13 +728,46 @@ public class SDNN extends SDOps {
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
+   * @param PadMode Padding format
+   * @param constant Padding constant
+   * @return output Padded input (NUMERIC type)
+   */
+  public SDVariable pad(SDVariable input, SDVariable padding, PadMode PadMode, double constant) {
+    SDValidation.validateNumerical("pad", "input", input);
+    SDValidation.validateNumerical("pad", "padding", padding);
+    return new org.nd4j.linalg.api.ops.impl.transforms.Pad(sd,input, padding, PadMode, constant).outputVariable();
+  }
+
+  /**
+   * Padding operation <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input tensor (NUMERIC type)
+   * @param padding Padding value (NUMERIC type)
+   * @param PadMode Padding format
+   * @param constant Padding constant
+   * @return output Padded input (NUMERIC type)
+   */
+  public SDVariable pad(String name, SDVariable input, SDVariable padding, PadMode PadMode,
+      double constant) {
+    SDValidation.validateNumerical("pad", "input", input);
+    SDValidation.validateNumerical("pad", "padding", padding);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.Pad(sd,input, padding, PadMode, constant).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Padding operation <br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param padding Padding value (NUMERIC type)
    * @param constant Padding constant
    * @return output Padded input (NUMERIC type)
    */
   public SDVariable pad(SDVariable input, SDVariable padding, double constant) {
     SDValidation.validateNumerical("pad", "input", input);
     SDValidation.validateNumerical("pad", "padding", padding);
-    return new org.nd4j.linalg.api.ops.impl.transforms.Pad(sd,input, padding, constant).outputVariable();
+    return new org.nd4j.linalg.api.ops.impl.transforms.Pad(sd,input, padding, PadMode.CONSTANT, constant).outputVariable();
   }
 
   /**
@@ -724,7 +782,35 @@ public class SDNN extends SDOps {
   public SDVariable pad(String name, SDVariable input, SDVariable padding, double constant) {
     SDValidation.validateNumerical("pad", "input", input);
     SDValidation.validateNumerical("pad", "padding", padding);
-    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.Pad(sd,input, padding, constant).outputVariable();
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.Pad(sd,input, padding, PadMode.CONSTANT, constant).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * GELU activation function - Gaussian Error Linear Units<br>
+   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
+   * This method uses the precise method<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable preciseGelu(SDVariable x) {
+    SDValidation.validateNumerical("preciseGelu", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU(sd,x).outputVariable();
+  }
+
+  /**
+   * GELU activation function - Gaussian Error Linear Units<br>
+   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
+   * This method uses the precise method<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable preciseGelu(String name, SDVariable x) {
+    SDValidation.validateNumerical("preciseGelu", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU(sd,x).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

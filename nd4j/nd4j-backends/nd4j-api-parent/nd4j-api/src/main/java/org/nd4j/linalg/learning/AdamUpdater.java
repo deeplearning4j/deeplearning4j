@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -18,12 +19,11 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import lombok.NonNull;
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -102,20 +102,6 @@ public class AdamUpdater implements GradientUpdater<Adam> {
         double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
-        INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);
-        m.muli(beta1).addi(oneMinusBeta1Grad);
-
-        INDArray oneMinusBeta2GradSquared = gradient.mul(gradient).muli(1 - beta2);
-        v.muli(beta2).addi(oneMinusBeta2GradSquared);
-
-        double beta1t = FastMath.pow(beta1, iteration + 1);
-        double beta2t = FastMath.pow(beta2, iteration + 1);
-
-        double alphat = learningRate * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
-        if (Double.isNaN(alphat) || alphat == 0.0)
-            alphat = epsilon;
-        INDArray sqrtV = Transforms.sqrt(v.dup(gradientReshapeOrder), false).addi(epsilon);
-
-        gradient.assign(m).muli(alphat).divi(sqrtV);
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdamUpdater(gradient, v, m, learningRate, beta1, beta2, epsilon, iteration));
     }
 }

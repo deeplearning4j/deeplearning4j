@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidDerivative;
 
 import java.util.Collections;
@@ -74,7 +75,7 @@ public class HardSigmoid extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().hardSigmoidBp(arg(), f1.get(0)));
+        return new HardSigmoidBp(sameDiff, arg(), f1.get(0)).outputs();
     }
 
 

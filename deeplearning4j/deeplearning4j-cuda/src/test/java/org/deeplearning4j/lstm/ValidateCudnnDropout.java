@@ -30,6 +30,11 @@ import static org.junit.Assert.assertTrue;
 
 public class ValidateCudnnDropout extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;
+    }
+
     @Test
     public void testCudnnDropoutSimple() {
         for (int[] shape : new int[][]{{10, 10}, {5, 2, 5, 2}}) {

@@ -494,7 +494,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
             List<Writable> c = list.get(i);
             if (details.entireReader) {
                 //Convert entire reader contents, without modification
-                INDArray converted = RecordConverter.toArray(c);
+                INDArray converted = RecordConverter.toArray(Nd4j.defaultFloatingPointType(), c);
                 putExample(arr, converted, i);
             } else if (details.oneHot) {
                 //Convert a single column to a one-hot representation

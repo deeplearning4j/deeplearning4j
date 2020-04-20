@@ -19,9 +19,11 @@ package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarBoolOp;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 import java.util.List;
@@ -56,7 +58,7 @@ public class ScalarGreaterThan extends BaseScalarBoolOp {
     }
 
     public ScalarGreaterThan(INDArray x, Number num) {
-        super(x, num);
+        this(x, null, num);
     }
 
 

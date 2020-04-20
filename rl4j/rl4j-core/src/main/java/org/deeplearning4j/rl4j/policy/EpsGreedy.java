@@ -25,6 +25,7 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 
@@ -40,7 +41,7 @@ import org.nd4j.linalg.api.rng.Random;
  */
 @AllArgsConstructor
 @Slf4j
-public class EpsGreedy<O, A, AS extends ActionSpace<A>> extends Policy<O, A> {
+public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extends Policy<O, A> {
 
     final private Policy<O, A> policy;
     final private MDP<O, A, AS> mdp;
@@ -57,8 +58,8 @@ public class EpsGreedy<O, A, AS extends ActionSpace<A>> extends Policy<O, A> {
     public A nextAction(INDArray input) {
 
         double ep = getEpsilon();
-        if (learning.getStepCounter() % 500 == 1)
-            log.info("EP: " + ep + " " + learning.getStepCounter());
+        if (learning.getStepCount() % 500 == 1)
+            log.info("EP: " + ep + " " + learning.getStepCount());
         if (rnd.nextDouble() > ep)
             return policy.nextAction(input);
         else
@@ -70,6 +71,6 @@ public class EpsGreedy<O, A, AS extends ActionSpace<A>> extends Policy<O, A> {
     }
 
     public double getEpsilon() {
-        return Math.min(1.0, Math.max(minEpsilon, 1.0 - (learning.getStepCounter() - updateStart) * 1.0 / epsilonNbStep));
+        return Math.min(1.0, Math.max(minEpsilon, 1.0 - (learning.getStepCount() - updateStart) * 1.0 / epsilonNbStep));
     }
 }

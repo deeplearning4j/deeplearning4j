@@ -120,7 +120,7 @@ public class SequenceMask extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //Input is integer indices
-        return Collections.singletonList(f().zerosLike(arg()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
     @Override

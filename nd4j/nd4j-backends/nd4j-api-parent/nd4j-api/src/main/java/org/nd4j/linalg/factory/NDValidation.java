@@ -130,13 +130,20 @@ public class NDValidation {
                     " type; got array with non-integer data type " + v.dataType());
     }
 
-    public static void validateInteger(String opName, String inputName, INDArray[] vars) {
-        for (INDArray v : vars) {
-            if (v == null)
-                return;
-            if (!v.dataType().isIntType())
+    /**
+     * Validate that the operation is being applied on an integer type INDArray []
+     *
+     * @param opName    Operation name to print in the exception
+     * @param inputName Name of the input to the op to validate
+     * @param v         Variable to validate datatype for (input to operation)
+     */
+    public static void validateInteger(String opName, String inputName, INDArray [] v) {
+        if (v == null)
+            return;
+        for (int i = 0; i < v.length; i++) {
+            if (!v[i].dataType().isIntType())
                 throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an integer" +
-                        " type; got array with non-integer data type " + v.dataType());
+                        " type; got array with non-integer data type member" + v[i].dataType());
         }
     }
 
@@ -246,11 +253,12 @@ public class NDValidation {
     }
 
     public static boolean isSameType(INDArray[] x) {
-        DataType firstDataType = x[0].dataType();
-        if (x.length > 1) {
-            for (int i = 1; i < x.length; ++i) {
-                if (firstDataType != x[i].dataType())
-                    return false;
+        if(x.length == 0)
+            return true;
+        DataType first = x[0].dataType();
+        for( int i=1; i<x.length; i++ ){
+            if(first != x[i].dataType()){
+                return false;
             }
         }
         return true;

@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce3;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -86,11 +87,11 @@ public class ManhattanDistance extends BaseReduce3Op {
             //keepDims or full array reduction
             gradBroadcastable = i_v1.get(0);
         } else {
-            gradBroadcastable = sameDiff.f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), i_v1.get(0));
+            gradBroadcastable = SameDiffUtils.reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), i_v1.get(0));
         }
 
         SDVariable gradX = sameDiff.math().sign(difference).mul(gradBroadcastable);
-        SDVariable gradY = f().neg(gradX);
+        SDVariable gradY = sameDiff.math().neg(gradX);
         return Arrays.asList(gradX, gradY);
     }
 }

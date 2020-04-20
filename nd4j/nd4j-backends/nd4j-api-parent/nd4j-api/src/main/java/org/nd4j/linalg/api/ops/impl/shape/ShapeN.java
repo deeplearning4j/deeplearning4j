@@ -65,7 +65,7 @@ public class ShapeN extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         List<SDVariable> out = new ArrayList<>();
         for(SDVariable in : args()){
-            out.add(f().zerosLike(in));
+            out.add(sameDiff.zerosLike(in));
         }
         return out;
     }

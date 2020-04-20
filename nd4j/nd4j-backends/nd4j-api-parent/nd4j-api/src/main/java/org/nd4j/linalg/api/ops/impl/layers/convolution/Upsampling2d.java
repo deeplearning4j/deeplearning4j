@@ -99,7 +99,7 @@ public class Upsampling2d extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().upsampling2dBp(arg(), f1.get(0), nchw, scaleH, scaleW));
+        return new Upsampling2dDerivative(sameDiff, arg(), f1.get(0), nchw, scaleH, scaleW).outputs();
     }
 
     @Override

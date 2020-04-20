@@ -27,6 +27,7 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.util.ArrayList;
@@ -39,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 3/21/17.
  */
-public class TransformProcessRecordReaderTests {
+public class TransformProcessRecordReaderTests extends BaseND4JTest {
 
     @Test
     public void simpleTransformTest() throws Exception {

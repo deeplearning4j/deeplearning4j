@@ -61,6 +61,11 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;
+    }
+
     @Test
     public void testGradientCNNMLN() {
         //Parameterized test, testing combinations of:

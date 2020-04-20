@@ -27,6 +27,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.api.loader.FileBatch;
 
 import java.io.File;
@@ -36,7 +37,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class FileBatchRecordReaderTest {
+public class FileBatchRecordReaderTest  extends BaseND4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

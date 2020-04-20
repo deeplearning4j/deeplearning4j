@@ -34,6 +34,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -49,7 +50,7 @@ import static org.junit.Assert.assertEquals;
  * Note however that not all are used/usable with spark (such as Collection[Sequence]RecordReader
  * and the rest are generally used without being initialized on a particular dataset
  */
-public class TestSerialization {
+public class TestSerialization extends BaseND4JTest {
 
     @Test
     public void testRR() throws Exception {

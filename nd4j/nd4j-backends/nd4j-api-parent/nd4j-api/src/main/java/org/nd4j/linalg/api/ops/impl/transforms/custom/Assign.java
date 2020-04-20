@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -44,6 +45,10 @@ public class Assign extends DynamicCustomOp {
 
     public Assign(INDArray[] inputs, INDArray[] outputs) {
         super(null,inputs, outputs);
+    }
+
+    public Assign(INDArray x, INDArray y ) {
+        this( new INDArray[]{y ,x},new INDArray[]{y}); // TODO: Still check. y cannot be null, must be same shape as x.
     }
 
     @Override
@@ -89,7 +94,7 @@ public class Assign extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1){
         //TODO replace with assign backprop op from libnd4j (that handles the broadcast case properly)
-        return Arrays.asList(f().zerosLike(larg()), f1.get(0));
+        return Arrays.asList(sameDiff.zerosLike(larg()), f1.get(0));
     }
 
     @Override

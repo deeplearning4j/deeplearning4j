@@ -16,6 +16,7 @@
 
 package org.datavec.api.split.parittion;
 
+import org.nd4j.BaseND4JTest;
 import org.nd4j.shade.guava.io.Files;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.split.FileSplit;
@@ -31,7 +32,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class PartitionerTests {
+public class PartitionerTests extends BaseND4JTest {
     @Test
     public void testRecordsPerFilePartition() {
         Partitioner partitioner = new NumberOfRecordsPartitioner();

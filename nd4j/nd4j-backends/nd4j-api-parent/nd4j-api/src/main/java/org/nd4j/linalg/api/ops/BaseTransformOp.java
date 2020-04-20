@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -52,8 +53,8 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
                            boolean inPlace) {
         super(sameDiff,inPlace,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
-            f().validateDifferentialFunctionsameDiff(i_v1);
-            f().validateDifferentialFunctionsameDiff(i_v2);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v1, this);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v2, this);
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
             this.xVertexId = i_v1.name();
@@ -77,8 +78,8 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         super(sameDiff,extraArgs);
         if (i_v1 != null && i_v2 != null) {
 
-            f().validateDifferentialFunctionsameDiff(i_v1);
-            f().validateDifferentialFunctionsameDiff(i_v2);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v1, this);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v2, this);
             this.sameDiff = sameDiff;
             this.xVertexId = i_v1.name();
             this.yVertexId = i_v2.name();
@@ -104,7 +105,7 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
         super(sameDiff,inPlace,extraArgs);
 
         if (i_v != null) {
-            f().validateDifferentialFunctionsameDiff(i_v);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
             this.xVertexId = i_v.name();
             sameDiff.addArgsFor(new SDVariable[]{i_v},this);
         } else {

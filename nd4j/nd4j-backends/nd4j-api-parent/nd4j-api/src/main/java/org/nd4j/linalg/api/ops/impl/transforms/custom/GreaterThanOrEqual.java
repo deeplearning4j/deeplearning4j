@@ -52,9 +52,9 @@ public class GreaterThanOrEqual extends BaseDynamicTransformOp {
         this(new INDArray[]{x, y}, new INDArray[]{z});
     }
 
-    public GreaterThanOrEqual(INDArray x, INDArray y) {
 
-        this(new INDArray[]{x,y}, null);
+    public GreaterThanOrEqual(INDArray x, INDArray y){
+        this(new INDArray[]{x, y}, null);
     }
 
     @Override

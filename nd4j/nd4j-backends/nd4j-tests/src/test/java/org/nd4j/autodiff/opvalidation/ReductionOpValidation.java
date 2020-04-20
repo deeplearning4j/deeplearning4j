@@ -821,8 +821,8 @@ public class ReductionOpValidation extends BaseOpValidation {
             SameDiff sd = SameDiff.create();
 
             SDVariable s = sd.var("in", in[i]);
-            SDVariable all = sd.f().all(s);
-            SDVariable any = sd.f().any(s);
+            SDVariable all = sd.all(s);
+            SDVariable any = sd.any(s);
 
             String err = OpValidation.validate(new TestCase(sd)
                     .gradientCheck(false)

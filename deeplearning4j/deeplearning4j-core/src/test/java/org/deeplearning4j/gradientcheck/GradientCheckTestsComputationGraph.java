@@ -69,6 +69,11 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testBasicIris() {
         Nd4j.getRandom().setSeed(12345);

@@ -31,6 +31,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.arrow.recordreader.ArrowRecordReader;
 import org.datavec.arrow.recordreader.ArrowRecordWriter;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.primitives.Triple;
 
 import java.io.File;
@@ -41,7 +42,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class RecordMapperTest {
+public class RecordMapperTest extends BaseND4JTest {
 
     @Test
     public void testMultiWrite() throws Exception {

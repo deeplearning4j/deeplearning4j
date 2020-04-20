@@ -792,6 +792,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        boolean keepDims = op.isKeepDims();
+        long[] retShape = Shape.reductionShape(x, dimension, true, keepDims);
+
+        if(z == null || x == z) {
+            val ret = Nd4j.createUninitialized(DataType.LONG, retShape);
+
+            setZ(ret, op, oc);
+            z = ret;
+        } else if(!Arrays.equals(retShape, z.shape())){
+            throw new IllegalStateException("Z array shape does not match expected return type for op " + op
+                    + ": expected shape " + Arrays.toString(retShape) + ", z.shape()=" + Arrays.toString(z.shape()));
+        }
+
         long st = profilingConfigurableHookIn(op);
 
         checkForCompression(op);
@@ -1947,7 +1960,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<LongShapeDescriptor>();
         int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
-        if(nIn == 0 && op.getDescriptor().getNumInputs() != -2) {
+        if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());
@@ -2060,7 +2073,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     throw new ND4JIllegalStateException("Op name " + op.opName() + " failed to execute. You can't execute non-inplace CustomOp without outputs being specified");
 
                 for (val shape: list)
-                    op.addOutputArgument(Nd4j.create(shape));
+                    op.addOutputArgument(Nd4j.create(shape, false));
 
                 shapeOverride = true;
             } catch (Exception e) {

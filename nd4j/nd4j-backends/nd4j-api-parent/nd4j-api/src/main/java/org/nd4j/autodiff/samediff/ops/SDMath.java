@@ -24,12 +24,74 @@ import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.enums.PartitionMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 public class SDMath extends SDOps {
   public SDMath(SameDiff sameDiff) {
     super(sameDiff);
+  }
+
+  /**
+   * Clips tensor values to a maximum average L2-norm.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param clipValue Value for clipping
+   * @param dimensions Dimensions to reduce over (Size: AtLeast(min=0))
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable clipByAvgNorm(SDVariable x, double clipValue, int... dimensions) {
+    SDValidation.validateNumerical("ClipByAvgNorm", "x", x);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
+    return new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm(sd,x, clipValue, dimensions).outputVariable();
+  }
+
+  /**
+   * Clips tensor values to a maximum average L2-norm.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param clipValue Value for clipping
+   * @param dimensions Dimensions to reduce over (Size: AtLeast(min=0))
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable clipByAvgNorm(String name, SDVariable x, double clipValue, int... dimensions) {
+    SDValidation.validateNumerical("ClipByAvgNorm", "x", x);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm(sd,x, clipValue, dimensions).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Looks up ids in a list of embedding tensors.<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param indices A Tensor containing the ids to be looked up. (NUMERIC type)
+   * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
+   * @return output Shifted output (NUMERIC type)
+   */
+  public SDVariable embeddingLookup(SDVariable x, SDVariable indices, PartitionMode PartitionMode) {
+    SDValidation.validateNumerical("EmbeddingLookup", "x", x);
+    SDValidation.validateNumerical("EmbeddingLookup", "indices", indices);
+    return new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(sd,x, indices, PartitionMode).outputVariable();
+  }
+
+  /**
+   * Looks up ids in a list of embedding tensors.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input tensor (NUMERIC type)
+   * @param indices A Tensor containing the ids to be looked up. (NUMERIC type)
+   * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
+   * @return output Shifted output (NUMERIC type)
+   */
+  public SDVariable embeddingLookup(String name, SDVariable x, SDVariable indices,
+      PartitionMode PartitionMode) {
+    SDValidation.validateNumerical("EmbeddingLookup", "x", x);
+    SDValidation.validateNumerical("EmbeddingLookup", "indices", indices);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(sd,x, indices, PartitionMode).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
@@ -101,6 +163,68 @@ public class SDMath extends SDOps {
   public SDVariable acosh(String name, SDVariable x) {
     SDValidation.validateNumerical("acosh", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Pairwise addition operation, out = x + y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable add(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("add", "x", x);
+    SDValidation.validateNumerical("add", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise addition operation, out = x + y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable add(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("add", "x", x);
+    SDValidation.validateNumerical("add", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scalar add operation, out = in + scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable add(SDVariable x, double value) {
+    SDValidation.validateNumerical("add", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd(sd,x, value).outputVariable();
+  }
+
+  /**
+   * Scalar add operation, out = in + scalar<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable add(String name, SDVariable x, double value) {
+    SDValidation.validateNumerical("add", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd(sd,x, value).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -1065,6 +1189,68 @@ public class SDMath extends SDOps {
   }
 
   /**
+   * Pairwise division operation, out = x / y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable div(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("div", "x", x);
+    SDValidation.validateNumerical("div", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise division operation, out = x / y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable div(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("div", "x", x);
+    SDValidation.validateNumerical("div", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scalar division operation, out = in / scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable div(SDVariable x, double value) {
+    SDValidation.validateNumerical("div", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision(sd,x, value).outputVariable();
+  }
+
+  /**
+   * Scalar division operation, out = in / scalar<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable div(String name, SDVariable x, double value) {
+    SDValidation.validateNumerical("div", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision(sd,x, value).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Entropy reduction: -sum(x * log(x))<br>
    *
    * @param in Input variable (NUMERIC type)
@@ -1487,6 +1673,104 @@ public class SDMath extends SDOps {
   public SDVariable floor(String name, SDVariable x) {
     SDValidation.validateNumerical("floor", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.same.Floor(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Pairwise floor division operation, out = floor(x / y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable floorDiv(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("floorDiv", "x", x);
+    SDValidation.validateNumerical("floorDiv", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorDivOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise floor division operation, out = floor(x / y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable floorDiv(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("floorDiv", "x", x);
+    SDValidation.validateNumerical("floorDiv", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorDivOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Pairwise Modulus division operation<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable floorMod(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("floorMod", "x", x);
+    SDValidation.validateNumerical("floorMod", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise Modulus division operation<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable floorMod(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("floorMod", "x", x);
+    SDValidation.validateNumerical("floorMod", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scalar floor modulus operation<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable floorMod(SDVariable x, double value) {
+    SDValidation.validateNumerical("floorMod", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod(sd,x, value).outputVariable();
+  }
+
+  /**
+   * Scalar floor modulus operation<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable floorMod(String name, SDVariable x, double value) {
+    SDValidation.validateNumerical("floorMod", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod(sd,x, value).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2199,6 +2483,42 @@ public class SDMath extends SDOps {
   }
 
   /**
+   * Pairwise max operation, out = max(x, y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x First input variable, x (NUMERIC type)
+   * @param y Second input variable, y (NUMERIC type)
+   * @return out Output (NUMERIC type)
+   */
+  public SDVariable max(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("max", "x", x);
+    SDValidation.validateNumerical("max", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise max operation, out = max(x, y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input variable, x (NUMERIC type)
+   * @param y Second input variable, y (NUMERIC type)
+   * @return out Output (NUMERIC type)
+   */
+  public SDVariable max(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("max", "x", x);
+    SDValidation.validateNumerical("max", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Merge add function: merges an arbitrary number of equal shaped arrays using element-wise addition:<br>
    * out = sum_i in[i]<br>
    *
@@ -2309,6 +2629,78 @@ public class SDMath extends SDOps {
   }
 
   /**
+   * Pairwise max operation, out = min(x, y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x First input variable, x (NUMERIC type)
+   * @param y Second input variable, y (NUMERIC type)
+   * @return out Output (NUMERIC type)
+   */
+  public SDVariable min(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("min", "x", x);
+    SDValidation.validateNumerical("min", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise max operation, out = min(x, y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x First input variable, x (NUMERIC type)
+   * @param y Second input variable, y (NUMERIC type)
+   * @return out Output (NUMERIC type)
+   */
+  public SDVariable min(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("min", "x", x);
+    SDValidation.validateNumerical("min", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Pairwise modulus (remainder) operation, out = x % y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable mod(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("mod", "x", x);
+    SDValidation.validateNumerical("mod", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise modulus (remainder) operation, out = x % y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable mod(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("mod", "x", x);
+    SDValidation.validateNumerical("mod", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
    *
    * @param input Input to calculate moments for (NUMERIC type)
@@ -2332,6 +2724,68 @@ public class SDMath extends SDOps {
     Preconditions.checkArgument(axes.length >= 0, "axes has incorrect size/length. Expected: axes.length >= 0, got %s", axes.length);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.reduce.Moments(sd,input, axes).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
+   * Pairwise multiplication operation, out = x * y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable mul(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("mul", "x", x);
+    SDValidation.validateNumerical("mul", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise multiplication operation, out = x * y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable mul(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("mul", "x", x);
+    SDValidation.validateNumerical("mul", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scalar multiplication operation, out = in * scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable mul(SDVariable x, double value) {
+    SDValidation.validateNumerical("mul", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication(sd,x, value).outputVariable();
+  }
+
+  /**
+   * Scalar multiplication operation, out = in * scalar<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable mul(String name, SDVariable x, double value) {
+    SDValidation.validateNumerical("mul", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication(sd,x, value).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
   }
 
   /**
@@ -2481,6 +2935,96 @@ public class SDMath extends SDOps {
   }
 
   /**
+   * Rational Tanh Approximation elementwise function, as described in the paper:<br>
+   * Compact Convolutional Neural Network Cascade for Face Detection<br>
+   * This is a faster Tanh approximation<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rationalTanh(SDVariable x) {
+    SDValidation.validateNumerical("rationalTanh", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh(sd,x).outputVariable();
+  }
+
+  /**
+   * Rational Tanh Approximation elementwise function, as described in the paper:<br>
+   * Compact Convolutional Neural Network Cascade for Face Detection<br>
+   * This is a faster Tanh approximation<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rationalTanh(String name, SDVariable x) {
+    SDValidation.validateNumerical("rationalTanh", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Pairwise reverse division operation, out = y / x<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rdiv(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("rdiv", "x", x);
+    SDValidation.validateNumerical("rdiv", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RDivOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise reverse division operation, out = y / x<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rdiv(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("rdiv", "x", x);
+    SDValidation.validateNumerical("rdiv", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RDivOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scalar reverse division operation, out = scalar / in<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rdiv(SDVariable x, double value) {
+    SDValidation.validateNumerical("rdiv", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision(sd,x, value).outputVariable();
+  }
+
+  /**
+   * Scalar reverse division operation, out = scalar / in<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rdiv(String name, SDVariable x, double value) {
+    SDValidation.validateNumerical("rdiv", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision(sd,x, value).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]<br>
    *
    * @param x Input variable (NUMERIC type)
@@ -2501,6 +3045,30 @@ public class SDMath extends SDOps {
   public SDVariable reciprocal(String name, SDVariable x) {
     SDValidation.validateNumerical("reciprocal", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.same.Reciprocal(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Rectified tanh operation: max(0, tanh(in))<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rectifiedTanh(SDVariable x) {
+    SDValidation.validateNumerical("rectifiedTanh", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh(sd,x).outputVariable();
+  }
+
+  /**
+   * Rectified tanh operation: max(0, tanh(in))<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rectifiedTanh(String name, SDVariable x) {
+    SDValidation.validateNumerical("rectifiedTanh", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh(sd,x).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2551,6 +3119,68 @@ public class SDMath extends SDOps {
   public SDVariable rsqrt(String name, SDVariable x) {
     SDValidation.validateNumerical("rsqrt", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt(sd,x).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Pairwise reverse subtraction operation, out = y - x<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rsub(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("rsub", "x", x);
+    SDValidation.validateNumerical("rsub", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RSubOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise reverse subtraction operation, out = y - x<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rsub(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("rsub", "x", x);
+    SDValidation.validateNumerical("rsub", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RSubOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scalar reverse subtraction operation, out = scalar - in<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rsub(SDVariable x, double value) {
+    SDValidation.validateNumerical("rsub", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction(sd,x, value).outputVariable();
+  }
+
+  /**
+   * Scalar reverse subtraction operation, out = scalar - in<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable rsub(String name, SDVariable x, double value) {
+    SDValidation.validateNumerical("rsub", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction(sd,x, value).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 
@@ -2753,6 +3383,42 @@ public class SDMath extends SDOps {
   }
 
   /**
+   * Pairwise squared difference operation.<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable squaredDifference(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("squaredDifference", "x", x);
+    SDValidation.validateNumerical("squaredDifference", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SquaredDifferenceOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise squared difference operation.<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable squaredDifference(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("squaredDifference", "x", x);
+    SDValidation.validateNumerical("squaredDifference", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SquaredDifferenceOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Standardize input variable along given axis<br>
    * <p><br>
    * out = (x - mean) / stdev<br>
@@ -2829,6 +3495,68 @@ public class SDMath extends SDOps {
   public SDVariable step(String name, SDVariable x, double value) {
     SDValidation.validateNumerical("step", "x", x);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.Step(sd,x, value).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Pairwise subtraction operation, out = x - y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable sub(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("sub", "x", x);
+    SDValidation.validateNumerical("sub", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp(sd,x, y).outputVariable();
+  }
+
+  /**
+   * Pairwise subtraction operation, out = x - y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable sub(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("sub", "x", x);
+    SDValidation.validateNumerical("sub", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Scalar subtraction operation, out = in - scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable sub(SDVariable x, double value) {
+    SDValidation.validateNumerical("sub", "x", x);
+    return new org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction(sd,x, value).outputVariable();
+  }
+
+  /**
+   * Scalar subtraction operation, out = in - scalar<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public SDVariable sub(String name, SDVariable x, double value) {
+    SDValidation.validateNumerical("sub", "x", x);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction(sd,x, value).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

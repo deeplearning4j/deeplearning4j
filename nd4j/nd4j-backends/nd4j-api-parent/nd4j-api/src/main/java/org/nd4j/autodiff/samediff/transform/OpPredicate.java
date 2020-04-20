@@ -21,7 +21,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 /**
  * An OpPredicate defines whether an operation ({@link DifferentialFunction}) matches or not.<br>
- * Used mainly in {@link org.nd4j.autodiff.functions.DifferentialFunctionFactory}
  *
  * @author Alex Black
  */

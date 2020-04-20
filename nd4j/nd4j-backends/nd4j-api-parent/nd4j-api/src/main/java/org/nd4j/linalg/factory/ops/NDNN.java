@@ -21,12 +21,24 @@ package org.nd4j.linalg.factory.ops;
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.base.Preconditions;
+import org.nd4j.enums.PadMode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class NDNN {
   public NDNN() {
+  }
+
+  /**
+   * Concatenates a ReLU which selects only the positive part of the activation with a ReLU which selects only the negative part of the activation. Note that as a result this non-linearity doubles the depth of the activations.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray cReLU(INDArray x) {
+    NDValidation.validateNumerical("CReLU", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU(x))[0];
   }
 
   /**
@@ -349,13 +361,41 @@ public class NDNN {
    *
    * @param input Input tensor (NUMERIC type)
    * @param padding Padding value (NUMERIC type)
+   * @param PadMode Padding format
+   * @param constant Padding constant
+   * @return output Padded input (NUMERIC type)
+   */
+  public INDArray pad(INDArray input, INDArray padding, PadMode PadMode, double constant) {
+    NDValidation.validateNumerical("pad", "input", input);
+    NDValidation.validateNumerical("pad", "padding", padding);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode, constant))[0];
+  }
+
+  /**
+   * Padding operation <br>
+   *
+   * @param input Input tensor (NUMERIC type)
+   * @param padding Padding value (NUMERIC type)
    * @param constant Padding constant
    * @return output Padded input (NUMERIC type)
    */
   public INDArray pad(INDArray input, INDArray padding, double constant) {
     NDValidation.validateNumerical("pad", "input", input);
     NDValidation.validateNumerical("pad", "padding", padding);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, constant))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.Pad(input, padding, PadMode.CONSTANT, constant))[0];
+  }
+
+  /**
+   * GELU activation function - Gaussian Error Linear Units<br>
+   * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a><br>
+   * This method uses the precise method<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray preciseGelu(INDArray x) {
+    NDValidation.validateNumerical("preciseGelu", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU(x));
   }
 
   /**

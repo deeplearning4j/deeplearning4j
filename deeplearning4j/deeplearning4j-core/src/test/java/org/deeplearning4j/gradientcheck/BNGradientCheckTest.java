@@ -61,6 +61,11 @@ public class BNGradientCheckTest extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testGradient2dSimple() {
         DataNormalization scaler = new NormalizerMinMaxScaler();

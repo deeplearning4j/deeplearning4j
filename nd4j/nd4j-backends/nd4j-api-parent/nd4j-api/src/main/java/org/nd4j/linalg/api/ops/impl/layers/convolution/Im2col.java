@@ -90,7 +90,7 @@ public class Im2col extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().im2ColBp(arg(), grad.get(0), conv2DConfig));
+        return new Im2colBp(sameDiff, arg(), grad.get(0), conv2DConfig).outputs();
     }
 
     @Override

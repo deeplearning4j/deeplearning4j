@@ -29,6 +29,11 @@ import java.util.Map;
 public class BaseSparkKryoTest extends BaseSparkTest {
 
     @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
+    @Override
     public JavaSparkContext getContext() {
         if (sc != null) {
             return sc;

@@ -68,6 +68,11 @@ public class GradientCheckTests extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testMinibatchApplication() {
         IrisDataSetIterator iter = new IrisDataSetIterator(30, 150);

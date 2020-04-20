@@ -16,10 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.FloorDivBpOp;
 
 import java.util.List;
 
@@ -37,6 +39,10 @@ public class FloorDivOp extends BaseDynamicTransformOp {
 
     public FloorDivOp( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
+    }
+
+    public FloorDivOp(@NonNull INDArray x, @NonNull INDArray y) {
+        this(new INDArray[]{x, y}, null);
     }
 
     public FloorDivOp( INDArray[] inputs, INDArray[] outputs) {
@@ -63,6 +69,6 @@ public class FloorDivOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return f().floorDivBp(larg(), rarg(), i_v.get(0));
+        return new FloorDivBpOp(sameDiff, larg(), rarg(), i_v.get(0)).outputs();
     }
 }

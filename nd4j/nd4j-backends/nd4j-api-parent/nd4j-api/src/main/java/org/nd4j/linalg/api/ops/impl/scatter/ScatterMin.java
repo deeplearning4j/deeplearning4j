@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.scatter;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -42,11 +43,11 @@ public class ScatterMin extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
     }
 
-    public ScatterMin(INDArray ref, INDArray indices, INDArray updates) {
-        addInputArgument(ref, indices, updates);
-    }
-
     public ScatterMin() {}
+
+    public ScatterMin(@NonNull INDArray ref, @NonNull INDArray indices, @NonNull INDArray update){
+        super(new INDArray[]{ref, indices, update}, null);
+    }
 
     @Override
     public String opName() {
@@ -88,12 +89,12 @@ public class ScatterMin extends DynamicCustomOp {
         SDVariable notModified = arg(0).eq(outputVariable()).castTo(arg(0).dataType());   //0 if modified, 1 otherwise
         SDVariable refGrad = gradOut.get(0).mul(notModified);
 
-        SDVariable gatherOut = f().gather(outputVariable(), arg(1), 0);
-        SDVariable gatherGrad = f().gather(gradOut.get(0), arg(1), 0);
+        SDVariable gatherOut = sameDiff.gather(outputVariable(), arg(1), 0);
+        SDVariable gatherGrad = sameDiff.gather(gradOut.get(0), arg(1), 0);
         SDVariable outIsUpdate = gatherOut.eq(arg(2)).castTo(arg(2).dataType());
         SDVariable updateGrad = gatherGrad.mul(outIsUpdate);
 
-        return Arrays.asList(refGrad, f().zerosLike(arg(1)), updateGrad);
+        return Arrays.asList(refGrad, sameDiff.zerosLike(arg(1)), updateGrad);
     }
 
     @Override

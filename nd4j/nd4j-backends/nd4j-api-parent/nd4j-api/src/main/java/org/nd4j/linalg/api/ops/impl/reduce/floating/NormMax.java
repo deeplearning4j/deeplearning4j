@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.NormMaxBp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Collections;
@@ -46,7 +47,6 @@ public class NormMax extends BaseReduceFloatOp {
     public NormMax(INDArray x, INDArray z, int... dimensions) {
         super(x, null, z, dimensions);
     }
-
 
     public NormMax(INDArray x, int... dimensions) {
         super(x, dimensions);
@@ -77,7 +77,7 @@ public class NormMax extends BaseReduceFloatOp {
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         //maxnorm(in) = max_i |x_i|
         //d maxnorm(in)/dx = 0 if x_i is not the max, or d|x|/dx otherwise
-        return Collections.singletonList(f().normmaxBp(arg(), grad.get(0), keepDims, dimensions));
+        return new NormMaxBp(sameDiff, arg(), grad.get(0), keepDims, dimensions).outputs();
     }
 
     @Override

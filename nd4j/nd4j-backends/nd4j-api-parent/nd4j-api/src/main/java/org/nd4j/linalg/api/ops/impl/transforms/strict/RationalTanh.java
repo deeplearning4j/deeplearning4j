@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +34,10 @@ import java.util.List;
 public class RationalTanh extends BaseTransformStrictOp {
     public RationalTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
+    }
+
+    public RationalTanh(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
     public RationalTanh() {}
@@ -68,6 +73,6 @@ public class RationalTanh extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().tanhRationalBp(arg(), f1.get(0)));
+        return new RationalTanhBp(sameDiff, arg(), f1.get(0)).outputs();
     }
 }

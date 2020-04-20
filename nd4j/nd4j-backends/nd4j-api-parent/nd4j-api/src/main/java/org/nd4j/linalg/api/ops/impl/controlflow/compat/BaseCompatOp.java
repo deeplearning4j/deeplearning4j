@@ -25,6 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
@@ -39,6 +40,10 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
 
     public BaseCompatOp(SameDiff sameDiff, SDVariable[] inputs){
         super(null, sameDiff, inputs);
+    }
+
+    public BaseCompatOp(INDArray... inputs) {
+        addInputArgument(inputs);
     }
 
     public BaseCompatOp(){

@@ -75,6 +75,6 @@ public class Round extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(f().zerosLike(arg()));
+        return Arrays.asList(sameDiff.zerosLike(arg()));
     }
 }

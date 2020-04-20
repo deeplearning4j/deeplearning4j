@@ -35,6 +35,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.BaseND4JTest;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -46,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 25/03/2016.
  */
-public class TestUI {
+public class TestUI extends BaseND4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

@@ -22,6 +22,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.LogSoftMaxDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
@@ -76,11 +77,9 @@ public class LogSoftMax extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         if(dimension == null) {
-            SDVariable ret = f().logSoftmaxDerivative(arg(), i_v.get(0));
-            return Collections.singletonList(ret);
+            return new LogSoftMaxDerivative(sameDiff, arg(), i_v.get(0)).outputs();
         } else {
-            SDVariable ret = f().logSoftmaxDerivative(arg(), i_v.get(0), dimension);
-            return Collections.singletonList(ret);
+            return new LogSoftMaxDerivative(sameDiff, arg(), i_v.get(0), dimension).outputs();
         }
     }
 

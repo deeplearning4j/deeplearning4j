@@ -36,14 +36,21 @@ public class SquaredDifferenceOp extends BaseDynamicTransformOp {
 
     public SquaredDifferenceOp() {}
 
-    public SquaredDifferenceOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(sameDiff, args, inPlace);
+    public SquaredDifferenceOp(SameDiff sameDiff, SDVariable x, SDVariable y, boolean inPlace) {
+        super(sameDiff, new SDVariable[]{x,y}, inPlace);
     }
 
-    public SquaredDifferenceOp(INDArray[] inputs, INDArray[] outputs) {
-        super(inputs, outputs);
+    public SquaredDifferenceOp(SameDiff sameDiff, SDVariable x, SDVariable y) {
+        this(sameDiff, x, y, false);
     }
 
+    public SquaredDifferenceOp(INDArray x, INDArray y, INDArray output) {
+        super(new INDArray[]{x,y}, new INDArray[]{output});
+    }
+
+    public SquaredDifferenceOp(INDArray x, INDArray y) {
+        addInputArgument(new INDArray[]{x,y});
+    }
 
     @Override
     public String opName() {
@@ -63,8 +70,7 @@ public class SquaredDifferenceOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable[] outputs = new SquaredDifferenceBpOp(f().sameDiff(), new SDVariable[]{larg(), rarg(), i_v1.get(0)}).outputVariables();
-        return Arrays.asList(outputs);
+        return new SquaredDifferenceBpOp(sameDiff, new SDVariable[]{larg(), rarg(), i_v1.get(0)}).outputs();
     }
 
 }

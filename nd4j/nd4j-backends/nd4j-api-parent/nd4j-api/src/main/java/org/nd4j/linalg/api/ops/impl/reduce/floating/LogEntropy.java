@@ -70,7 +70,7 @@ public class  LogEntropy extends BaseReduceFloatOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //If y=log(x), and x=entropy(in) then dL/dx = dL/dy * dy/dx; d(log(x))/dx = 1/x
-        List<SDVariable> entropyGrad = Entropy.grad(f(), arg(), f1.get(0), dimensions);
-        return Collections.singletonList(entropyGrad.get(0).div(f().exp(outputVariable())));
+        List<SDVariable> entropyGrad = Entropy.grad(sameDiff, arg(), f1.get(0), dimensions);
+        return Collections.singletonList(entropyGrad.get(0).div(sameDiff.math.exp(outputVariable())));
     }
 }

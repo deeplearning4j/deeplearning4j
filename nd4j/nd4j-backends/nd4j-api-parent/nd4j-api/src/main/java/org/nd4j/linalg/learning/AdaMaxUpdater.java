@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -18,14 +19,11 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import lombok.NonNull;
-import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AdaMax;
-import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -99,22 +97,13 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
             throw new IllegalStateException("Updater has not been initialized with view state");
 
         //m = B_1 * m + (1-B_1)*grad
-        m.muli(config.getBeta1()).addi(gradient.mul(1 - config.getBeta1()));
-
         //u = max(B_2 * u, |grad|)
-        u.muli(config.getBeta2());
-        Transforms.abs(gradient, false); //In-place should be OK here, original gradient values aren't used again later
-        Nd4j.getExecutioner().exec(new Max(u, gradient, u));
 
-        double beta1t = FastMath.pow(config.getBeta1(), iteration + 1);
+        double lr = config.getLearningRate(iteration, epoch);
+        double b1 = config.getBeta1();
+        double b2 = config.getBeta2();
+        double eps = config.getEpsilon();
 
-        double learningRate = config.getLearningRate(iteration, epoch);
-        double alphat = learningRate / (1.0 - beta1t);
-        if (Double.isNaN(alphat) || Double.isInfinite(alphat) || alphat == 0.0) {
-            alphat = config.getEpsilon();
-        }
-
-        u.addi(1e-32); // prevent NaNs in params
-        gradient.assign(m).muli(alphat).divi(u);
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaMaxUpdater(gradient, u, m, lr, b1, b2, eps, iteration));
     }
 }

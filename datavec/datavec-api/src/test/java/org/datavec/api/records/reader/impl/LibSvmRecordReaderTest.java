@@ -24,6 +24,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.IOException;
@@ -44,7 +45,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author dave@skymind.io
  */
-public class LibSvmRecordReaderTest {
+public class LibSvmRecordReaderTest  extends BaseND4JTest {
 
     @Test
     public void testBasicRecord() throws IOException, InterruptedException {

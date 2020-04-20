@@ -24,7 +24,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.listeners.*;
 import org.nd4j.autodiff.listeners.impl.HistoryListener;
 import org.nd4j.autodiff.listeners.records.History;
@@ -53,8 +52,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
@@ -95,7 +93,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
+import static org.nd4j.autodiff.util.SameDiffUtils.stackOutputs;
 
 /**
  * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.
@@ -141,7 +139,7 @@ public class SameDiff extends SDBaseOps {
 
     ////////////////////////////////////////
 
-    private DifferentialFunctionFactory functionFactory;
+//    private DifferentialFunctionFactory functionFactory;
 
     // counter for auto-naming variables
     private int variableId = 0;
@@ -294,15 +292,6 @@ public class SameDiff extends SDBaseOps {
     public SameDiff enableDebugMode() {
         debugMode = true;
         return this;
-    }
-
-    /**
-     * Returns this samediff instance's {@link DifferentialFunctionFactory}
-     *
-     * @return DifferentialFunctionFactory
-     */
-    public DifferentialFunctionFactory f() {
-        return functionFactory;
     }
 
     /**
@@ -917,7 +906,6 @@ public class SameDiff extends SDBaseOps {
     private SameDiff() {
         super(null);
         super.sd = this;
-        functionFactory = new DifferentialFunctionFactory(this);
         sameDiffFunctionInstances = new LinkedHashMap<>();
         fieldVariableResolutionMapping = HashBasedTable.create();
     }
@@ -5945,7 +5933,7 @@ public class SameDiff extends SDBaseOps {
                 if(switches.containsKey(argument.name()))
                     return switches.get(argument.name())[1];
 
-                SDVariable[] s = f().switchOp(argument, pred);
+                SDVariable[] s = switchOp(argument, pred);
                 switches.put(argument.name(), s);
                 return s[1];
             }
@@ -5955,7 +5943,7 @@ public class SameDiff extends SDBaseOps {
         this.removeArgumentInterceptor();
 
         if(declared.contains(trueOut.name())) {
-            SDVariable[] s = f().switchOp(trueOut, pred);
+            SDVariable[] s = switchOp(trueOut, pred);
             switches.put(trueOut.name(), s);
             trueOut = s[1];
         }
@@ -5975,7 +5963,7 @@ public class SameDiff extends SDBaseOps {
                 if(switches.containsKey(argument.name()))
                     return switches.get(argument.name())[0];
 
-                SDVariable[] s = f().switchOp(argument, pred);
+                SDVariable[] s = switchOp(argument, pred);
                 switches.put(argument.name(), s);
                 return s[0];
             }
@@ -5985,13 +5973,13 @@ public class SameDiff extends SDBaseOps {
         this.removeArgumentInterceptor();
 
         if(declared2.contains(falseOut.name())) {
-            SDVariable[] s = f().switchOp(falseOut, pred);
+            SDVariable[] s = switchOp(falseOut, pred);
             switches.put(falseOut.name(), s);
             falseOut = s[0];
         }
         falseScope.close();
 
-        SDVariable output = f().merge(trueOut, falseOut);
+        SDVariable output = merge(trueOut, falseOut);
 
         ifScope.close();
 
@@ -6042,10 +6030,8 @@ public class SameDiff extends SDBaseOps {
 
         SDVariable[] entered = new SDVariable[loopVars.length];
         for(int i = 0 ; i < loopVars.length ; i++){
-            entered[i] = f().enter(loopVars[i], frameName);
+            entered[i] = new Enter(this, frameName, loopVars[i]).outputVariable();
         }
-
-        //counter = SD.f().enter(counter, frameName);
 
         SDVariable[] merged = new SDVariable[loopVars.length];
         Merge[] mergeOps = new Merge[loopVars.length];
@@ -6072,19 +6058,16 @@ public class SameDiff extends SDBaseOps {
         SDVariable[] trueSwitches = new SDVariable[loopVars.length];
         SDVariable[] exits = new SDVariable[loopVars.length];
         for(int i = 0 ; i < loopVars.length ; i++){
-            SDVariable[] s = f().switchOp(merged[i], cond_result);
+            SDVariable[] s = switchOp(merged[i], cond_result);
             trueSwitches[i] = s[1];
             alreadyEntered.add(s[1].name());
-            exits[i] = f().exit(s[0]);
+            exits[i] = new Exit(this, s[0]).outputVariable();
         }
-
-        //SDVariable[] cs = SD.f().switchOp(counter, cond_result);
-        //SDVariable counterExit = SD.f().exit(cs[0]);
-        //counter = cs[1];
 
         final Set<String> declared = Sets.newHashSet(this.variableMap().keySet());
         final Map<String, SDVariable> done = new HashMap<>();
 
+        final SameDiff sd = this;
         this.addArgumentInterceptor(new ArgumentInterceptor() {
             @Override
             public SDVariable intercept(SDVariable argument) {
@@ -6098,7 +6081,7 @@ public class SameDiff extends SDBaseOps {
                 if(done.containsKey(argument.name()))
                     return done.get(argument.name());
 
-                SDVariable e = f().enter(argument, frameName, true);
+                SDVariable e = new Enter(sd, frameName, argument, true).outputVariable();
                 done.put(argument.name(), e);
                 return e;
             }
@@ -6112,7 +6095,7 @@ public class SameDiff extends SDBaseOps {
         //counter.add(1);
 
         for(int i = 0 ; i < loopVars.length ; i++){
-            SDVariable n = f().nextIteration(outs[i]);
+            SDVariable n = new NextIteration(this, outs[i]).outputVariable();
             mergeOps[i].replaceArg(1,n);
         }
 

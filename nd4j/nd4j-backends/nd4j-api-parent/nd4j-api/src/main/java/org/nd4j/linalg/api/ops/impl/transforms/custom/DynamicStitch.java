@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -61,14 +62,8 @@ public class DynamicStitch extends DynamicCustomOp {
         this.numPartitions = inputs.length;
     }
 
-    public DynamicStitch(INDArray[] inputs, INDArray[] indices) {
-        for (INDArray input : inputs) {
-            addInputArgument(input);
-        }
-
-        for (INDArray index : indices) {
-            addInputArgument(index);
-        }
+    public DynamicStitch(@NonNull INDArray[] indices, @NonNull INDArray[] inputs) {
+        super(ArrayUtils.addAll(indices, inputs), null);
     }
 
     @Override
@@ -83,7 +78,7 @@ public class DynamicStitch extends DynamicCustomOp {
         SDVariable[] partition = sameDiff.dynamicPartition(gradient, partitions, numPartitions);
         List<SDVariable> ret = new ArrayList<>();
         for (SDVariable i : indices)
-            ret.add(f().zerosLike(i));
+            ret.add(sameDiff.zerosLike(i));
         Collections.addAll(ret, partition);
         return ret;
     }

@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentProdBp;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,8 +45,9 @@ public class UnsortedSegmentProd extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
-    public UnsortedSegmentProd(INDArray data, INDArray segmentIds, int numSegments) {
-        addInputArgument(data, segmentIds);
+    public UnsortedSegmentProd(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
         addIArgument(numSegments);
     }
 
@@ -61,7 +63,7 @@ public class UnsortedSegmentProd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentProdBp(arg(0), arg(1), gradients.get(0), numSegments));
+        return new UnsortedSegmentProdBp(sameDiff, arg(0), arg(1), gradients.get(0), numSegments).outputs();
     }
 
     @Override

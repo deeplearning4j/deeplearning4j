@@ -45,15 +45,14 @@ public class IMax extends BaseIndexAccumulation {
         super(x, z, dimensions);
     }
 
-    public IMax(INDArray x, boolean keepDims, int... dimensions) {
-        super(x, keepDims, dimensions);
-
-    }
-
     public IMax(INDArray x, int... dimensions) {
         super(x, null, dimensions);
     }
 
+    public IMax(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, null, dimensions);
+        this.keepDims = keepDims;
+    }
 
     @Override
     public int opNum() {
@@ -83,6 +82,6 @@ public class IMax extends BaseIndexAccumulation {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not differentiable, but (assuming no ties) output does not change for a given infinitesimal change in the input
-        return Collections.singletonList(f().zerosLike(arg()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }

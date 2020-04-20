@@ -34,10 +34,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossL2;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
-import org.nd4j.shade.serde.jackson.VectorDeSerializer;
-import org.nd4j.shade.serde.jackson.VectorSerializer;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -77,8 +76,8 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     private double lambdaNoObj;
     private ILossFunction lossPositionScale;
     private ILossFunction lossClassPredictions;
-    @JsonSerialize(using = VectorSerializer.class)
-    @JsonDeserialize(using = VectorDeSerializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = BoundingBoxesDeserializer.class)
     private INDArray boundingBoxes;
 
     private Yolo2OutputLayer() {

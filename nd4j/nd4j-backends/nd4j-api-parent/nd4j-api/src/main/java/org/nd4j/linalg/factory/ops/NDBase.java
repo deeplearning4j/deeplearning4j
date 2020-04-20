@@ -34,12 +34,11 @@ public class NDBase {
   /**
    * Boolean and array reduction operation, optionally along specified dimensions<br>
    *
-   * @param x Input variable (BOOL type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output reduced array of rank (input rank - num dimensions) (BOOL type)
    */
   public INDArray all(INDArray x, int... dimensions) {
-    NDValidation.validateBool("all", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.bool.All(x, dimensions));
   }
@@ -47,12 +46,11 @@ public class NDBase {
   /**
    * Boolean or array reduction operation, optionally along specified dimensions<br>
    *
-   * @param x  Input variable (BOOL type)
+   * @param x  Input variable (NDARRAY type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output reduced array of rank (input rank - num dimensions) (BOOL type)
    */
   public INDArray any(INDArray x, int... dimensions) {
-    NDValidation.validateBool("any", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.bool.Any(x, dimensions));
   }
@@ -114,6 +112,8 @@ public class NDBase {
    * keepDims = false: [a,c]<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -138,6 +138,8 @@ public class NDBase {
    * keepDims = false: [a,c]<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -369,6 +371,8 @@ public class NDBase {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -472,6 +476,8 @@ public class NDBase {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -504,6 +510,8 @@ public class NDBase {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -602,6 +610,8 @@ public class NDBase {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -634,6 +644,8 @@ public class NDBase {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -760,6 +772,8 @@ public class NDBase {
    * Element-wise maximum operation: out[i] = max(first[i], second[i])<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param first First input array (NUMERIC type)
    * @param second Second input array (NUMERIC type)
@@ -813,6 +827,21 @@ public class NDBase {
   }
 
   /**
+   * The merge operation is a control operation that forwards the either of the inputs to the output, when<br>
+   * the first of them becomes available. If both are available, the output is undefined (either input could<br>
+   * be forwarded to the output)<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output (NUMERIC type)
+   */
+  public INDArray merge(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("merge", "x", x);
+    NDValidation.validateNumerical("merge", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge(x, y))[0];
+  }
+
+  /**
    * Minimum array reduction operation, optionally along specified dimensions. out = min(in)<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
@@ -857,6 +886,8 @@ public class NDBase {
    * Element-wise minimum operation: out[i] = min(first[i], second[i])<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param first First input array (NUMERIC type)
    * @param second Second input array (NUMERIC type)
@@ -919,6 +950,8 @@ public class NDBase {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1976,6 +2009,18 @@ public class NDBase {
     NDValidation.validateNumerical("sum", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(x, false, dimensions));
+  }
+
+  /**
+   * Switch operation<br>
+   * Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   *
+   * @param x Input variable (NDARRAY type)
+   * @param predicate Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output (BOOL type)
+   */
+  public INDArray[] switchOp(INDArray x, INDArray predicate) {
+    NDValidation.validateBool("switchOp", "predicate", predicate);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch(x, predicate));
   }
 
   /**

@@ -1904,6 +1904,7 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP16) {
     const bool isGradCorrect = GradCheck::checkGrad(op, op_bp, argsHolderFF, argsHolderBP, {1,0});
     ASSERT_TRUE(isGradCorrect);
 }
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, TestTensorMmul_BP17) {
 
@@ -1922,3 +1923,68 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP17) {
     ASSERT_TRUE(isGradCorrect);
 }
 
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, gru_1) {
+
+    const int sL = 3;
+    const int bS = 2;
+    const int nIn = 5;
+    const int nOut = 4;
+
+
+    NDArray x('c', {sL, bS, nIn}, {0.5,  1. ,  1.5,  2. ,  2.5, 3. ,  3.5,  4. ,  4.5,  5. ,  5.5,  6. ,  6.5,  7. ,  7.5, 8. ,  8.5,  9. ,  9.5, 10. ,  10.5, 11. , 11.5, 12. , 12.5, 13. , 13.5, 14. , 14.5, 15.}, sd::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, {-3,-2,-1,0,1,2,3,4}, sd::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 3*nOut}, sd::DataType::FLOAT32);
+    NDArray Wh('c', {nOut, 3*nOut}, sd::DataType::FLOAT32);
+    NDArray b('c', {3*nOut}, sd::DataType::FLOAT32);
+
+    NDArray expH('c', {sL, bS, nOut}, {-1.681847, -1.062565, -0.443283,  0.175998,0.837823,  1.488041,  2.13826 ,  2.788478, -0.888747, -0.491826, -0.094907,  0.302014,
+                  0.751355,  1.182715,  1.614075,  2.045434, -0.388876, -0.126716,  0.135444,  0.397604,0.710558,  1.002922,  1.295287,  1.587651}, sd::DataType::FLOAT32);
+
+    Wx = 0.003;
+    Wh = 0.006;
+    b  = 0.5;
+
+    NDArray dLdC('c', { 2, 2 }, sd::DataType::DOUBLE);
+
+    sd::ops::gru op;
+    auto results = op.evaluate({&x, &hI, &Wx, &Wh, &b}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto* h = results.at(0);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, gru_bp_1) {
+
+    const int sL = 3;
+    const int bS = 2;
+    const int nIn = 5;
+    const int nOut = 4;
+
+
+    NDArray x('c', {sL, bS, nIn}, {0.5,  1. ,  1.5,  2. ,  2.5, 3. ,  3.5,  4. ,  4.5,  5. ,  5.5,  6. ,  6.5,  7. ,  7.5, 8. ,  8.5,  9. ,  9.5, 10. ,  10.5, 11. , 11.5, 12. , 12.5, 13. , 13.5, 14. , 14.5, 15.}, sd::DataType::DOUBLE);
+    NDArray hI('c', {bS, nOut}, {-3,-2,-1,0,1,2,3,4}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {nIn, 3*nOut}, sd::DataType::DOUBLE);
+    NDArray Wh('c', {nOut, 3*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {3*nOut}, sd::DataType::DOUBLE);
+
+    NDArray dLdh('c', {sL, bS, nOut}, sd::DataType::DOUBLE);
+
+    Wx.linspace(1,-0.1);
+    Wh.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    const OpArgsHolder argsHolderFF({&x, &hI, &Wx, &Wh, &b}, {}, {});
+    const OpArgsHolder argsHolderBP({&x, &hI, &Wx, &Wh, &b, &dLdh}, {}, {});
+
+    sd::ops::gru opFF;
+    sd::ops::gru_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+}

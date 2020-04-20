@@ -69,7 +69,7 @@ public class CompareAndReplace extends BaseTransformSameOp {
      * @param condition
      */
     public CompareAndReplace(INDArray x, INDArray y, Condition condition) {
-        this(x, y, x, condition);
+        this(x, y, null, condition);
     }
 
     /**

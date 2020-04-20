@@ -27,6 +27,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +36,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class ArrowWritableRecordTimeSeriesBatchTests {
+public class ArrowWritableRecordTimeSeriesBatchTests extends BaseND4JTest {
 
     private static BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
 

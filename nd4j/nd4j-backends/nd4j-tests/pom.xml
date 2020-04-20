@@ -14,7 +14,8 @@
   ~ SPDX-License-Identifier: Apache-2.0
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>nd4j-backends</artifactId>
         <groupId>org.nd4j</groupId>
@@ -27,7 +28,6 @@
     <packaging>jar</packaging>
 
     <name>nd4j-tests</name>
-
 
 
     <properties>
@@ -73,12 +73,6 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jackson</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -179,7 +173,8 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <environmentVariables>
-                                <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/</LD_LIBRARY_PATH>
+                                <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/
+                                </LD_LIBRARY_PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
@@ -191,8 +186,10 @@
                             </includes>
                             <junitArtifactName>junit:junit</junitArtifactName>
                             <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                </org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                </org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
                                 Maximum heap size was set to 8g, as a minimum required value for tests run.
@@ -233,7 +230,9 @@
                         </dependencies>
                         <configuration>
                             <environmentVariables>
-                                <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/</LD_LIBRARY_PATH>
+                                <LD_LIBRARY_PATH>
+                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/
+                                </LD_LIBRARY_PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
@@ -245,8 +244,10 @@
                             </includes>
                             <junitArtifactName>junit:junit</junitArtifactName>
                             <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend
+                                </org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend
+                                </org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.

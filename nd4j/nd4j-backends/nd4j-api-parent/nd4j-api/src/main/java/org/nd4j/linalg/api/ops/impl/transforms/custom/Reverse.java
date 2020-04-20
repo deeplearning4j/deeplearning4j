@@ -100,8 +100,8 @@ public class Reverse extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable ret = f().reverse(f1.get(0), dimensions);
-        return Arrays.asList(ret);
+        SDVariable ret = sameDiff.reverse(f1.get(0), dimensions);
+        return Collections.singletonList(ret);
     }
 
     @Override

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -19,7 +20,6 @@ package org.nd4j.linalg.learning;
 import lombok.Data;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -95,16 +95,8 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
         //DL4J default is negative step function thus we flipped the signs:
         // x += mu * v_prev + (-1 - mu) * v
         //i.e., we do params -= updatedGradient, not params += updatedGradient
-
         //v = mu * v - lr * gradient
-        INDArray vPrev = v.dup(gradientReshapeOrder);
-        v.muli(momentum).subi(gradient.dup(gradientReshapeOrder).muli(learningRate)); //Modify state array in-place
 
-        /*
-        Next line is equivalent to:
-        INDArray ret = vPrev.muli(momentum).addi(v.mul(-momentum - 1));
-        gradient.assign(ret);
-        */
-        Nd4j.getExecutioner().exec(new AddOp(vPrev.muli(momentum), v.mul(-momentum - 1), gradient));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater(gradient, v, learningRate, momentum));
     }
 }

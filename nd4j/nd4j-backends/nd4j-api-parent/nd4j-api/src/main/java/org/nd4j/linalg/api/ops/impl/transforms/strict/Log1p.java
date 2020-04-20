@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.strict;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
@@ -73,7 +74,7 @@ public class Log1p extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        f().validateDifferentialFunctionsameDiff(arg());
+        SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, arg(), this);
         return Collections.singletonList(i_v.get(0).div(arg().add(1.0)));
     }
 

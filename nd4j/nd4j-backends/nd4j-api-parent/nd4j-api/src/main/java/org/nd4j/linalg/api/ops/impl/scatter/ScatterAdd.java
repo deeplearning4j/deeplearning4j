@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.scatter;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -44,11 +45,11 @@ public class ScatterAdd extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
     }
 
-    public ScatterAdd(INDArray ref, INDArray indices, INDArray updates) {
-        addInputArgument(ref, indices, updates);
-    }
-
     public ScatterAdd(){}
+
+    public ScatterAdd(@NonNull INDArray ref, @NonNull INDArray indices, @NonNull INDArray update){
+        super(new INDArray[]{ref, indices, update}, null);
+    }
 
     @Override
     public String opName() {
@@ -88,9 +89,9 @@ public class ScatterAdd extends DynamicCustomOp {
 
         List<SDVariable> ret = new ArrayList<>(3);
         ret.add(gradOut.get(0));            //Reference array
-        ret.add(f().zerosLike(arg(1)));  //Indices
+        ret.add(sameDiff.zerosLike(arg(1)));  //Indices
 
-        SDVariable gather = f().gather(gradOut.get(0), arg(1), 0);       //Updates
+        SDVariable gather = sameDiff.gather(gradOut.get(0), arg(1), 0);       //Updates
         ret.add(gather);
 
         return ret;

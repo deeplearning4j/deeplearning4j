@@ -61,6 +61,7 @@ import org.datavec.api.writable.comparator.DoubleWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -70,7 +71,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 20/07/2016.
  */
-public class TestYamlJsonSerde {
+public class TestYamlJsonSerde  extends BaseND4JTest {
 
     public static YamlSerializer y = new YamlSerializer();
     public static JsonSerializer j = new JsonSerializer();

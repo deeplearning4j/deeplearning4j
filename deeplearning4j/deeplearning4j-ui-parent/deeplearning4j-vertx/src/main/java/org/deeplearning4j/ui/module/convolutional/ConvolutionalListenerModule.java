@@ -105,22 +105,22 @@ public class ConvolutionalListenerModule implements UIModule {
                 BufferedImage bi = clp.getImg();
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 try {
-                    ImageIO.write(bi, "jpg", baos);
+                    ImageIO.write(bi, "png", baos);
                 } catch (IOException e) {
                     log.warn("Error displaying image", e);
                 }
 
                 rc.response()
-                        .putHeader("content-type", "image/jpg")
+                        .putHeader("content-type", "image/png")
                         .end(Buffer.buffer(baos.toByteArray()));
             } else {
                 rc.response()
-                        .putHeader("content-type", "image/jpg")
+                        .putHeader("content-type", "image/png")
                         .end(Buffer.buffer(new byte[0]));
             }
         } else {
             rc.response()
-                    .putHeader("content-type", "image/jpg")
+                    .putHeader("content-type", "image/png")
                     .end(Buffer.buffer(new byte[0]));
         }
     }

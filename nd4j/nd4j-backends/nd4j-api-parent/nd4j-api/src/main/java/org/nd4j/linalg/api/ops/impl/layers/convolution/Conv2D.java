@@ -60,7 +60,6 @@ public class Conv2D extends DynamicCustomOp {
                   SDVariable bias, @NonNull Conv2DConfig conv2DConfig) {
         this(sameDiff, wrapFilterNull(input, weights, bias), conv2DConfig);
     }
-
     @Builder(builderMethodName = "sameDiffBuilder")
     public Conv2D(SameDiff sameDiff,
                   SDVariable[] inputFunctions,
@@ -71,7 +70,7 @@ public class Conv2D extends DynamicCustomOp {
     }
 
     public Conv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
-        super(inputs, outputs);
+            super(inputs, outputs);
 
         initConfig(config);
     }
@@ -103,7 +102,8 @@ public class Conv2D extends DynamicCustomOp {
                 config.getDH(),
                 config.getDW(),
                 ArrayUtil.fromBoolean(config.isSameMode()),
-                config.getDataFormat().equalsIgnoreCase(Conv2DConfig.NCHW) ? 0 : 1);
+                config.getDataFormat().equalsIgnoreCase("NCHW") ? 0 : 1,
+                config.getWeightsFormat().ordinal());
     }
 
     @Override

@@ -1868,7 +1868,26 @@ TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSqrtN_5) {
    // exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
 
-    
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestUnsortedSegmentSqrtN_6) {
+    auto x = NDArrayFactory::create<double>({5,1,7,2,3,4,1,3});
+    auto idx = NDArrayFactory::create<int>({0,0,0,1,2,2,3,3});
+    //NDArray<double> exp({1.7320508075688772, 1.,      1.4142135623730951,        1.4142135623730951});
+//    auto exp = NDArrayFactory::create<double>({7.5055537, 2.,        4.9497476, 2.828427});
+    sd::ops::unsorted_segment_sqrt_n op;
+
+try {
+    auto result = op.evaluate({&x, &idx}, {}, {1});
+    ASSERT_NE(result.status(), Status::OK());
+}
+catch (std::exception& err) {
+
+}
+    // result.at(0)->printIndexedBuffer("Output");
+    // exp.printIndexedBuffer("Expect");
+    //ASSERT_TRUE(exp.equalsTo(result.at(0)));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

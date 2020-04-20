@@ -21,6 +21,7 @@ package org.nd4j.linalg.factory.ops;
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.base.Preconditions;
+import org.nd4j.enums.ImageResizeMethod;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -132,6 +133,49 @@ public class NDImage {
   public INDArray hsvToRgb(INDArray input) {
     NDValidation.validateNumerical("hsvToRgb", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.HsvToRgb(input))[0];
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param input 4D image [NCHW] (NUMERIC type)
+   * @param size new height and width (INT type)
+   * @param preserveAspectRatio Whether to preserve the aspect ratio. If this is set, then images will be resized to a size that fits in size while preserving the aspect ratio of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False.
+   * @param antialis Whether to use an anti-aliasing filter when downsampling an image
+   * @param ImageResizeMethod ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
+   * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
+   * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
+   * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
+   * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
+   * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
+   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * @return output Output image (NUMERIC type)
+   */
+  public INDArray imageResize(INDArray input, INDArray size, boolean preserveAspectRatio,
+      boolean antialis, ImageResizeMethod ImageResizeMethod) {
+    NDValidation.validateNumerical("imageResize", "input", input);
+    NDValidation.validateInteger("imageResize", "size", size);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, preserveAspectRatio, antialis, ImageResizeMethod))[0];
+  }
+
+  /**
+   * Resize images to size using the specified method.<br>
+   *
+   * @param input 4D image [NCHW] (NUMERIC type)
+   * @param size new height and width (INT type)
+   * @param ImageResizeMethod ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
+   * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.
+   * ResizeBicubic: Cubic interpolant of Keys. Equivalent to Catmull-Rom kernel. Reasonably good quality and faster than Lanczos3Kernel, particularly when upsampling.
+   * ResizeGaussian: Gaussian kernel with radius 3, sigma = 1.5 / 3.0.
+   * ResizeNearest: Nearest neighbor interpolation. 'antialias' has no effect when used with nearest neighbor interpolation.
+   * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
+   * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp.
+   * @return output Output image (NUMERIC type)
+   */
+  public INDArray imageResize(INDArray input, INDArray size, ImageResizeMethod ImageResizeMethod) {
+    NDValidation.validateNumerical("imageResize", "input", input);
+    NDValidation.validateInteger("imageResize", "size", size);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.image.ImageResize(input, size, false, false, ImageResizeMethod))[0];
   }
 
   /**

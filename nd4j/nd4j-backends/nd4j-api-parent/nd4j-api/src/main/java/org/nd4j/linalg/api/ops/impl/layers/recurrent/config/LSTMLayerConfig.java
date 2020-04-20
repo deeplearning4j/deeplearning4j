@@ -15,8 +15,10 @@
  ******************************************************************************/
 package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 
@@ -26,8 +28,9 @@ import java.util.Map;
 
 @Builder
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class LSTMLayerConfig {
-
 
     /**
      * notations <br>
@@ -90,23 +93,23 @@ public class LSTMLayerConfig {
      * Cell clipping value, if it = 0 then do not apply clipping
      */
     @Builder.Default
-    private double cellClip;   //T_ARG(0)
+    private double cellClip = 0;   //T_ARG(0)
 
 
     public Map<String, Object> toProperties(boolean includeLSTMDataFormat, boolean includeLSTMDirectionMode) {
         Map<String, Object> ret = new LinkedHashMap<>();
-        ret.put("gateAct", gateAct.ordinal());
-        ret.put("outAct", outAct.ordinal());
-        ret.put("cellAct", cellAct.ordinal());
+        ret.put("gateAct", gateAct.toString());
+        ret.put("outAct", outAct.toString());
+        ret.put("cellAct", cellAct.toString());
         ret.put("retFullSequence", retFullSequence);
         ret.put("retLastH", retLastH);
         ret.put("retLastC", retLastC);
         ret.put("cellClip", cellClip);
 
         if (includeLSTMDataFormat)
-            ret.put("LSTMDataFormat", lstmdataformat.ordinal());
+            ret.put("lstmdataformat", lstmdataformat.toString());
         if (includeLSTMDirectionMode)
-            ret.put("LSTMDirectionMode", directionMode.ordinal());
+            ret.put("directionMode", directionMode.toString());
         return ret;
     }
 

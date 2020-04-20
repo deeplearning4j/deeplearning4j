@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
 
 import java.util.Arrays;
 import java.util.List;
@@ -74,7 +75,6 @@ public class Tanh extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().tanhDerivative(arg(), i_v.get(0));
-        return Arrays.asList(ret);
+        return new TanhDerivative(sameDiff, arg(), i_v.get(0)).outputs();
     }
 }

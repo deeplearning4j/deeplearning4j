@@ -56,9 +56,11 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
 
+
     public DepthwiseConv2D(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
                            @NonNull SDVariable weights, SDVariable bias, @NonNull Conv2DConfig conv2DConfig) {
         this(sameDiff, wrapFilterNull(input, weights, bias), conv2DConfig);
+
     }
 
     @Builder(builderMethodName = "sameDiffBuilder")
@@ -71,14 +73,14 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         addArgs();
     }
 
-    public DepthwiseConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
+    public DepthwiseConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config) {
         super(inputs, outputs);
 
         this.config = config;
         addArgs();
     }
 
-    public DepthwiseConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config){
+    public DepthwiseConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config) {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
@@ -127,7 +129,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        if(config == null && !iArguments.isEmpty()){
+        if (config == null && !iArguments.isEmpty()) {
             config = Conv2DConfig.builder()
                     .kH(iArguments.get(0))
                     .kW(iArguments.get(1))
@@ -308,7 +310,9 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        SDVariable bias = args().length==2  ? null : arg(2);
+        return Arrays.asList(new DepthwiseConv2DBp(sameDiff, arg(0), arg(1), bias, f1.get(0), this.config).outputVariables());
+
     }
 
 
@@ -323,7 +327,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));

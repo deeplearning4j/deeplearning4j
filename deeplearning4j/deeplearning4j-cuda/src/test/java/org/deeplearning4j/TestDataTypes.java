@@ -39,6 +39,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
@@ -51,27 +53,9 @@ import static org.junit.Assert.*;
 @Slf4j
 public class TestDataTypes extends BaseDL4JTest {
 
-    private static DataType typeBefore;
-
-    @BeforeClass
-    public static void beforeClass(){
-        typeBefore = Nd4j.dataType();
-    }
-
-    @AfterClass
-    public static void afterClass(){
-        Nd4j.setDataType(typeBefore);
-    }
-
     @Override
-    public void beforeTest(){
-        Nd4j.getExecutioner().setProfilingMode(getProfilingMode());
-        Nd4j.setDataType(DataType.HALF);
-    }
-
-    @Override
-    public OpExecutioner.ProfilingMode getProfilingMode(){
-        return OpExecutioner.ProfilingMode.NAN_PANIC;
+    public long getTimeoutMilliseconds() {
+        return 180000L;
     }
 
     @Test
@@ -87,6 +71,7 @@ public class TestDataTypes extends BaseDL4JTest {
                 assertEquals(globalDtype, Nd4j.defaultFloatingPointType());
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .updater(new Sgd(1e-2))
                         .dataType(netDType)
                         .convolutionMode(ConvolutionMode.Same)
                         .activation(Activation.TANH)
@@ -140,11 +125,22 @@ public class TestDataTypes extends BaseDL4JTest {
         INDArray fp32Train = outMapTrain.get(DataType.FLOAT).castTo(DataType.DOUBLE);
         INDArray fp16Train = outMapTrain.get(DataType.HALF).castTo(DataType.DOUBLE);
 
-        assertTrue(fp64Train.equalsWithEps(fp32Train, 1e-3));
-        assertTrue(fp64Train.equalsWithEps(fp16Train, 1e-2));
+        boolean eq64_32 = fp64Train.equalsWithEps(fp32Train, 1e-3);
+        boolean eq64_16 = fp64Train.equalsWithEps(fp16Train, 1e-2);
 
+        if(!eq64_32){
+            System.out.println("FP64/32");
+            System.out.println("fp64Train:\n" + fp64Train);
+            System.out.println("fp32Train:\n" + fp32Train);
+        }
 
+        if(!eq64_16){
+            System.out.println("FP64/16");
+            System.out.println("fp64Train:\n" + fp64Train);
+            System.out.println("fp16Train:\n" + fp16Train);
+        }
+
+        assertTrue(eq64_32);
+        assertTrue(eq64_16);
     }
-
-
 }

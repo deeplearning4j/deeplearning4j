@@ -63,7 +63,8 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
     public void simpleFineTune() {
 
         long rng = 12345L;
-        DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
+        Nd4j.getRandom().setSeed(rng);
+        DataSet randomData = new DataSet(Nd4j.rand(DataType.FLOAT, 10, 4), TestUtils.randomOneHot(DataType.FLOAT, 10, 3));
         //original conf
         NeuralNetConfiguration.Builder confToChange =
                         new NeuralNetConfiguration.Builder().seed(rng).optimizationAlgo(OptimizationAlgorithm.LBFGS)
@@ -123,7 +124,8 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
 
     @Test
     public void testNoutChanges() {
-        DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 2));
+        Nd4j.getRandom().setSeed(12345);
+        DataSet randomData = new DataSet(Nd4j.rand(DataType.FLOAT, 10, 4), TestUtils.randomOneHot(DataType.FLOAT,10, 2));
 
         NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1));
         FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().updater(new Sgd(0.1))
@@ -185,7 +187,8 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
 
     @Test
     public void testRemoveAndAdd() {
-        DataSet randomData = new DataSet(Nd4j.rand(10, 4), Nd4j.rand(10, 3));
+        Nd4j.getRandom().setSeed(12345);
+        DataSet randomData = new DataSet(Nd4j.rand(DataType.FLOAT,10, 4), TestUtils.randomOneHot(DataType.FLOAT, 10, 3));
 
         NeuralNetConfiguration.Builder equivalentConf = new NeuralNetConfiguration.Builder().updater(new Sgd(0.1));
         FineTuneConfiguration overallConf = new FineTuneConfiguration.Builder().updater(new Sgd(0.1)).build();
@@ -377,8 +380,9 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
 
     @Test
     public void testAllWithCNN() {
+        Nd4j.getRandom().setSeed(12345);
 
-        DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
+        DataSet randomData = new DataSet(Nd4j.rand(DataType.FLOAT, 10, 28 * 28 * 3).reshape(10, 3, 28, 28), TestUtils.randomOneHot(DataType.FLOAT,10, 10));
         MultiLayerNetwork modelToFineTune =
                         new MultiLayerNetwork(
                                         new NeuralNetConfiguration.Builder().seed(123)
@@ -528,8 +532,9 @@ public class TransferLearningMLNTest extends BaseDL4JTest {
 
     @Test
     public void testAllWithCNNNew() {
+        Nd4j.getRandom().setSeed(12345);
 
-        DataSet randomData = new DataSet(Nd4j.rand(10, 28 * 28 * 3).reshape(10, 3, 28, 28), Nd4j.rand(10, 10));
+        DataSet randomData = new DataSet(Nd4j.rand(DataType.FLOAT,10, 28 * 28 * 3).reshape(10, 3, 28, 28), TestUtils.randomOneHot(10, 10));
         MultiLayerNetwork modelToFineTune =
                 new MultiLayerNetwork(
                         new NeuralNetConfiguration.Builder().seed(123)

@@ -772,8 +772,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (y != null) {
 
-                if (z == null)
+                if (z == null) {
                     setZ(Nd4j.create(op.resultType(), x.shape()), op, oc);
+                    z = getZ(op, oc);
+                }
 
 
                 op.validateDataTypes(oc, experimentalMode.get());
@@ -1754,7 +1756,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val result = new ArrayList<LongShapeDescriptor>();
         int nIn = opContext != null ? opContext.numInputArguments() : op.numInputArguments();
-        if(nIn == 0 && op.getDescriptor().getNumInputs() != -2) {
+        if(nIn == 0 && op.getDescriptor().getNumInputs() >= 1) {
             if(log.isTraceEnabled()){
                 log.trace("Could not calculate output shape for op {}: number of input args was 0",
                         op.getClass().getName());

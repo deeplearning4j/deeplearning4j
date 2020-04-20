@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.scatter;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -44,11 +45,11 @@ public class ScatterMul extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
     }
 
-    public ScatterMul(INDArray ref, INDArray indices, INDArray updates) {
-        addInputArgument(ref, indices, updates);
-    }
-
     public ScatterMul() {}
+
+    public ScatterMul(@NonNull INDArray ref, @NonNull INDArray indices, @NonNull INDArray update){
+        super(new INDArray[]{ref, indices, update}, null);
+    }
 
     @Override
     public String opName() {
@@ -91,12 +92,12 @@ public class ScatterMul extends DynamicCustomOp {
         SDVariable updates = arg(2);
 
         List<SDVariable> ret = new ArrayList<>(3);
-        SDVariable gradRef = f().scatterMul(gradOut.get(0), indices, updates);
+        SDVariable gradRef = sameDiff.scatterMul(gradOut.get(0), indices, updates);
         ret.add(gradRef);            //Reference array
-        ret.add(f().zerosLike(arg(1)));  //Indices
+        ret.add(sameDiff.zerosLike(arg(1)));  //Indices
 
-        SDVariable gatherOutGrad = f().gather(gradOut.get(0), indices, 0);       //Updates
-        SDVariable gatherRef = f().gather(ref, indices, 0);
+        SDVariable gatherOutGrad = sameDiff.gather(gradOut.get(0), indices, 0);       //Updates
+        SDVariable gatherRef = sameDiff.gather(ref, indices, 0);
         SDVariable updateGrad = gatherOutGrad.mul(gatherRef);
         ret.add(updateGrad);
 

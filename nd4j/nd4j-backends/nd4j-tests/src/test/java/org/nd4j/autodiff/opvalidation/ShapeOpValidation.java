@@ -162,7 +162,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
-                SDVariable permute = sd.f().permute(in, perm);
+                SDVariable permute = sd.permute(in, perm);
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", permute, true);
 
@@ -241,7 +241,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
-                SDVariable expand = sd.f().expandDims(in, i);
+                SDVariable expand = sd.expandDims(in, i);
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", expand, true);
 
@@ -284,7 +284,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
-                SDVariable squeeze = sd.f().squeeze(in, i);
+                SDVariable squeeze = sd.squeeze(in, i);
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", squeeze, true);
 
@@ -1166,7 +1166,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", in);
-        SDVariable md = sd.f().matrixDeterminant(var);
+        SDVariable md = sd.math().matrixDeterminant(var);
 
         double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();
 
@@ -1188,7 +1188,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", in);
-        SDVariable md = sd.f().matrixDeterminant(var);
+        SDVariable md = sd.math().matrixDeterminant(var);
 
         double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();
         double d2 = in.getDouble(0,0) * in.getDouble(1,1) - in.getDouble(1,0) * in.getDouble(0,1);
@@ -1212,7 +1212,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", in);
-        SDVariable md = sd.f().matrixDeterminant(var);
+        SDVariable md = sd.math().matrixDeterminant(var);
 
         double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();
 
@@ -1243,7 +1243,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", in);
-        SDVariable md = sd.f().matrixDeterminant(var);
+        SDVariable md = sd.math().matrixDeterminant(var);
 
         double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();   //-0.06713878100086641
         //System.out.println(d);

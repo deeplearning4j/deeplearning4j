@@ -43,6 +43,12 @@ import static org.junit.Assert.assertNotEquals;
  * @author raver119@gmail.com
  */
 public class SparkSequenceVectorsTest extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
     protected static List<Sequence<VocabWord>> sequencesCyclic;
     private JavaSparkContext sc;
 

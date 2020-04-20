@@ -17,6 +17,7 @@
 package org.deeplearning4j.rl4j.observation;
 
 import lombok.Getter;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

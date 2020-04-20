@@ -89,12 +89,6 @@
             <version>${nd4j.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jackson</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
-
         <!-- oshi: Used for collecting system information for memory crash dump reporting -->
         <dependency>
             <groupId>com.github.oshi</groupId>

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,8 +14,14 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.learning;
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
-public interface EpochStepCounter {
-    int getCurrentEpochStep();
+package org.nd4j.enums;
+
+/**
+ * partition_mode == 0 - i.e. 'mod' , 1 - 'div' */
+public enum PartitionMode {
+  MOD,
+
+  DIV
 }

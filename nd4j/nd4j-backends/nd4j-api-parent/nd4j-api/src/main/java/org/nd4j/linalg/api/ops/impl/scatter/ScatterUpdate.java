@@ -54,11 +54,11 @@ public class ScatterUpdate extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
     }
 
-    public ScatterUpdate(INDArray ref, INDArray indices, INDArray updates) {
-        addInputArgument(ref, indices, updates);
-    }
-
     public ScatterUpdate(){}
+
+    public ScatterUpdate(INDArray ref, INDArray indices, INDArray update){
+        super(new INDArray[]{ref, indices, update}, null);
+    }
 
     @Override
     public String opName() {
@@ -98,12 +98,12 @@ public class ScatterUpdate extends DynamicCustomOp {
         SDVariable updates = arg(2);
 
         List<SDVariable> ret = new ArrayList<>(3);
-        SDVariable zerosUpdate = f().zerosLike(updates);
-        SDVariable gradRef = f().scatterMul(gradOut.get(0), indices, zerosUpdate);  //TODO optimize
+        SDVariable zerosUpdate = sameDiff.zerosLike(updates);
+        SDVariable gradRef = sameDiff.scatterMul(gradOut.get(0), indices, zerosUpdate);  //TODO optimize
         ret.add(gradRef);            //Reference array gradient
-        ret.add(f().zerosLike(arg(1)));  //Indices
+        ret.add(sameDiff.zerosLike(arg(1)));  //Indices
 
-        SDVariable gather = f().gather(gradOut.get(0), indices, 0);       //Updates
+        SDVariable gather = sameDiff.gather(gradOut.get(0), indices, 0);       //Updates
         ret.add(gather);
 
         return ret;

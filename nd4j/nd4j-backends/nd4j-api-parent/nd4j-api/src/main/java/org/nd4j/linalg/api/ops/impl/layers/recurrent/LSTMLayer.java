@@ -16,6 +16,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -23,6 +24,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2DBp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMLayerWeights;
 import org.nd4j.shade.guava.primitives.Booleans;
@@ -60,6 +62,7 @@ import java.util.Map;
  * 1: output at last step hL - rank 3 or 4, depends on DirectionMode and dataFormat<<br>
  * 2: cell state at last step cL  - same shape as in hL<br>
  */
+@NoArgsConstructor
 public class LSTMLayer extends DynamicCustomOp {
 
     @Getter
@@ -68,14 +71,18 @@ public class LSTMLayer extends DynamicCustomOp {
     @Getter
     private LSTMLayerWeights weights;
 
+    private SDVariable cLast;
+    private SDVariable yLast;
+    private SDVariable maxTSLength;
 
-    public LSTMLayer() {
-    }
 
     public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable x, SDVariable cLast, SDVariable yLast, SDVariable maxTSLength, LSTMLayerWeights weights, LSTMLayerConfig configuration) {
         super(null, sameDiff, weights.argsWithInputs(x, maxTSLength, cLast, yLast));
         this.configuration = configuration;
         this.weights = weights;
+        this.cLast = cLast;
+        this.yLast = yLast;
+        this.maxTSLength = maxTSLength;
         addIArgument(iArgs());
         addTArgument(tArgs());
         addBArgument(bArgs(weights, maxTSLength, yLast, cLast));
@@ -124,7 +131,13 @@ public class LSTMLayer extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grads) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        int i=0;
+        SDVariable grad0 = this.configuration.isRetFullSequence() ? grads.get(i++): null;
+        SDVariable grad1 = this.configuration.isRetLastH() ? grads.get(i++): null;
+        SDVariable grad2 = this.configuration.isRetLastC() ? grads.get(i++): null;
+
+        return Arrays.asList(new LSTMLayerBp(sameDiff, arg(0), this.cLast, this.yLast, this.maxTSLength,
+                this.weights, this.configuration, grad0, grad1,grad2).outputVariables());
     }
 
 
@@ -155,7 +168,7 @@ public class LSTMLayer extends DynamicCustomOp {
     }
 
 
-    public <T> boolean[] bArgs(LSTMLayerWeights weights, T maxTSLength, T yLast, T cLast) {
+    protected <T> boolean[] bArgs(LSTMLayerWeights weights, T maxTSLength, T yLast, T cLast) {
         return new boolean[]{
                 weights.hasBias(),         // hasBiases: B_ARG(0)
                 maxTSLength != null,         // hasSeqLen: B_ARG(1)
@@ -167,6 +180,16 @@ public class LSTMLayer extends DynamicCustomOp {
                 configuration.isRetLastC()   // retLastC: B_ARG(7)
         };
 
+    }
+
+    @Override
+    public boolean isConfigProperties() {
+        return true;
+    }
+
+    @Override
+    public String configFieldName() {
+        return "configuration";
     }
 
     @Override

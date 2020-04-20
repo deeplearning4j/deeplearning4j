@@ -59,17 +59,23 @@ public class ReverseSequence extends DynamicCustomOp {
         addArguments();
     }
 
+    public ReverseSequence(INDArray x, INDArray seq_lengths, int seqDim, int batchDim){
+        super(new INDArray[]{x, seq_lengths}, null);
+        this.seqDim = seqDim;
+        this.batchDim = batchDim;
+        addArguments();
+    }
+
+    public ReverseSequence(INDArray x, INDArray seq_lengths){
+        this(x, seq_lengths, 1, 0);
+    }
+
     private void addArguments(){
         addIArgument(seqDim);
         addIArgument(batchDim);
     }
 
     public ReverseSequence() {
-    }
-
-    public ReverseSequence(INDArray x, INDArray seq_lengths, int seqDim, int batchDim) {
-        addInputArgument(x, seq_lengths);
-        addIArgument(seqDim, batchDim);
     }
 
     @Override
@@ -115,8 +121,8 @@ public class ReverseSequence extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable ret = f().reverseSequence(f1.get(0), arg(1), seqDim, batchDim);
-        return Arrays.asList(ret, f().zerosLike(arg(1)));
+        SDVariable ret = sameDiff.reverseSequence(f1.get(0), arg(1), seqDim, batchDim);
+        return Arrays.asList(ret, sameDiff.zerosLike(arg(1)));
     }
 
     @Override

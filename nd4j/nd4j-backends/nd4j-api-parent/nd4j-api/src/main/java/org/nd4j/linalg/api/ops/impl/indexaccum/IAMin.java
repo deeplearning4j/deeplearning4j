@@ -76,6 +76,6 @@ public class IAMin extends BaseIndexAccumulation {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
-        return Collections.singletonList(f().zerosLike(arg()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }

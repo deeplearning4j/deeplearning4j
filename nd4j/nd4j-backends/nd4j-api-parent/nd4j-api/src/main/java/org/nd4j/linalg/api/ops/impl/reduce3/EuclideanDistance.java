@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce3;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -89,11 +90,11 @@ public class EuclideanDistance extends BaseReduce3Op {
         SDVariable divBroadcastable = i_v1.get(0).div(euc);
         if(!keepDims && !(dimensions == null || dimensions.length == 0 || (dimensions.length == 1 && dimensions[0] == Integer.MAX_VALUE))){
             //Not keep dims, and not full array reduction -> need to make broadcastable
-            divBroadcastable = f().reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), divBroadcastable);
+            divBroadcastable = SameDiffUtils.reductionBroadcastableWithOrigShape(arg(), sameDiff.constant(Nd4j.createFromArray(dimensions)), divBroadcastable);
         }
 
         SDVariable gradX = difference.mul(divBroadcastable);
-        SDVariable gradY = f().neg(gradX);
+        SDVariable gradY = sameDiff.math.neg(gradX);
         return Arrays.asList(gradX, gradY);
     }
 }

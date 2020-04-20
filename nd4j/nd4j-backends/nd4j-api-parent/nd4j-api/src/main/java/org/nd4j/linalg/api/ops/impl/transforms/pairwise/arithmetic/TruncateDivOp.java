@@ -64,8 +64,8 @@ public class TruncateDivOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable gradWrtX = f().div(i_v.get(0),rarg());
-        SDVariable gradWrtY = f().mul(f().neg(gradWrtX),f().div(larg(),rarg()));
+        SDVariable gradWrtX = sameDiff.math.div(i_v.get(0),rarg());
+        SDVariable gradWrtY = sameDiff.math.mul(sameDiff.math.neg(gradWrtX),sameDiff.math.div(larg(),rarg()));
         List<SDVariable> ret = new ArrayList<>(2);
         ret.add(gradWrtX);
         ret.add(gradWrtY);

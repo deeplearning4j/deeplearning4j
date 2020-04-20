@@ -18,7 +18,6 @@ package org.deeplearning4j.rl4j.learning.async.nstep.discrete;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.UpdateAlgorithm;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,22 +27,16 @@ import java.util.List;
 
 public class QLearningUpdateAlgorithm implements UpdateAlgorithm<IDQN> {
 
-    private final IAsyncGlobal asyncGlobal;
     private final int[] shape;
     private final int actionSpaceSize;
-    private final int targetDqnUpdateFreq;
     private final double gamma;
 
-    public QLearningUpdateAlgorithm(IAsyncGlobal asyncGlobal,
-                                    int[] shape,
+    public QLearningUpdateAlgorithm(int[] shape,
                                     int actionSpaceSize,
-                                    int targetDqnUpdateFreq,
                                     double gamma) {
 
-        this.asyncGlobal = asyncGlobal;
         this.shape = shape;
         this.actionSpaceSize = actionSpaceSize;
-        this.targetDqnUpdateFreq = targetDqnUpdateFreq;
         this.gamma = gamma;
     }
 
@@ -58,16 +51,11 @@ public class QLearningUpdateAlgorithm implements UpdateAlgorithm<IDQN> {
         StateActionPair<Integer> stateActionPair = experience.get(size - 1);
 
         double r;
-        if(stateActionPair.isTerminal()) {
+        if (stateActionPair.isTerminal()) {
             r = 0;
-        }
-        else {
+        } else {
             INDArray[] output = null;
-            if (targetDqnUpdateFreq == -1)
-                output = current.outputAll(stateActionPair.getObservation().getData());
-            else synchronized (asyncGlobal) {
-                output = asyncGlobal.getTarget().outputAll(stateActionPair.getObservation().getData());
-            }
+            output = current.outputAll(stateActionPair.getObservation().getData());
             r = Nd4j.max(output[0]).getDouble(0);
         }
 

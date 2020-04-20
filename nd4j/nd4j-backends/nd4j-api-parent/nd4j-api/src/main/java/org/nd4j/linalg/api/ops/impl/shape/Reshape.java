@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -41,6 +42,7 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @Slf4j
+@NoArgsConstructor
 public class Reshape extends DynamicCustomOp {
 
     private long[] shape;
@@ -61,15 +63,13 @@ public class Reshape extends DynamicCustomOp {
         addIArgument(shape);
     }
 
-    public Reshape(INDArray in, INDArray shape){
-        this(in, shape, null);
-    }
 
     public Reshape(@NonNull INDArray in, @NonNull INDArray shape, INDArray out){
         super(null, new INDArray[]{in, shape}, wrapOrNull(out), null, (List<Integer>)null);
     }
 
-    public Reshape() {
+    public Reshape(INDArray in, INDArray shape){
+        this(in, shape, null);
     }
 
 
@@ -152,8 +152,8 @@ public class Reshape extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable origShape = f().shape(arg());
-        SDVariable ret = f().reshape(i_v.get(0), origShape);
+        SDVariable origShape = sameDiff.shape(arg());
+        SDVariable ret = sameDiff.reshape(i_v.get(0), origShape);
         return Collections.singletonList(ret);
     }
 

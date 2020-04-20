@@ -44,6 +44,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
 <!-- Do not depend on FFmpeg by default due to licensing concerns. -->
 <!--
         <dependency>

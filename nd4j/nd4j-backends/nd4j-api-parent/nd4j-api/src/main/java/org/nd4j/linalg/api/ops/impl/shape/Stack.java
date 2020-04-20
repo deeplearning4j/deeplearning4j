@@ -129,7 +129,7 @@ public class Stack extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(f().unstack(f1.get(0), jaxis, args().length));
+        return Arrays.asList(sameDiff.unstack(f1.get(0), jaxis, args().length));
     }
 
     @Override

@@ -42,7 +42,7 @@ void ND4J_EXPORT lstmLayerCell(const NDArray* x, const NDArray* Wx, const NDArra
 
 //////////////////////////////////////////////////////////////////////////
 void ND4J_EXPORT lstmLayerCellBp(const NDArray* x, const NDArray* Wx, const NDArray* Wr, const NDArray* b, const NDArray* hI, const NDArray* cI, const NDArray* Wp,
-                     const NDArray* dLdh, const NDArray* dLdc,
+                     const NDArray* dLdh, const NDArray* dLdhL, const NDArray* dLdcL,
                      const NDArray* z, const NDArray* a, const NDArray* c, const std::vector<float>& params,
                      NDArray* dLdx, NDArray* dLdWx, NDArray* dLdWr, NDArray* dLdhI, NDArray* dLdcI, NDArray* dLdb, NDArray* dLdWp);
 

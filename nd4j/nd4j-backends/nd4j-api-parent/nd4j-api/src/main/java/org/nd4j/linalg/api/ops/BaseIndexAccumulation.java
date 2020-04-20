@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -46,7 +47,6 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         super(sameDiff,null);
         if (i_v != null) {
             this.dimensions = dimensions;
-            f().validateDifferentialFunctionsameDiff(i_v);
             sameDiff.addArgsFor(new SDVariable[]{i_v},this);
 
             this.xVertexId = i_v.name();
@@ -65,8 +65,8 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
         super(sameDiff,null);
         if (i_v != null) {
             this.dimensions = dimensions;
-            f().validateDifferentialFunctionsameDiff(i_v);
-            f().validateDifferentialFunctionsameDiff(i_v2);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v2, this);
             this.xVertexId = i_v.name();
             this.yVertexId = i_v2.name();
             sameDiff.addArgsFor(new SDVariable[]{i_v,i_v2},this);

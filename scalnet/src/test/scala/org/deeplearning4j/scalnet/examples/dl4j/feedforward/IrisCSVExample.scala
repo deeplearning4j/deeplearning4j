@@ -21,6 +21,7 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader
 import org.datavec.api.split.FileSplit
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
+import org.deeplearning4j.nn.conf.Updater
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.core.Dense
 import org.deeplearning4j.scalnet.logging.Logging
@@ -29,6 +30,7 @@ import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.dataset.{ DataSet, SplitTestAndTrain }
 import org.nd4j.linalg.io.ClassPathResource
+import org.nd4j.linalg.learning.config.Adam
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 object IrisCSVExample extends App with Logging {
@@ -41,7 +43,7 @@ object IrisCSVExample extends App with Logging {
   val hiddenSize = 128
   val inputSize = 4
   val outputSize = 3
-  val epochs = 1000
+  val epochs = 20
   val scoreFrequency = 5
   val seed = 1234
 
@@ -64,7 +66,7 @@ object IrisCSVExample extends App with Logging {
   model.add(Dense(nOut = hiddenSize, activation = Activation.RELU))
   model.add(Dense(nOut = hiddenSize, activation = Activation.RELU))
   model.add(Dense(outputSize, activation = Activation.SOFTMAX))
-  model.compile(LossFunction.MCXENT)
+  model.compile(LossFunction.MCXENT, updater = Updater.ADAM)
 
   logger.info("Train model...")
   model.fit(training_data, epochs, List(new ScoreIterationListener(scoreFrequency)))

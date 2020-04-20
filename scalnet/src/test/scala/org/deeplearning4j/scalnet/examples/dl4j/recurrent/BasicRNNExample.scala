@@ -34,7 +34,7 @@ object BasicRNNExample extends App with Logging {
   val learningString = "*Der Cottbuser Postkutscher putzt den Cottbuser Postkutschkasten.".toVector
   val learningChars = learningString.distinct
   val hiddenSize = 64
-  val epochs = 200
+  val epochs = 20
   val seed = 1234
   val rand = new Random(seed)
 

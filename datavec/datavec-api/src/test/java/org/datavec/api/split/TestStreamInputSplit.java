@@ -24,6 +24,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.function.Function;
 
 import java.io.File;
@@ -40,7 +41,7 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-public class TestStreamInputSplit {
+public class TestStreamInputSplit extends BaseND4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

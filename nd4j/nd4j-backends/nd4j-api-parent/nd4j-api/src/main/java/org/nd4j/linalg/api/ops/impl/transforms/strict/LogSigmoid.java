@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,10 +75,8 @@ public class LogSigmoid extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-//        SDVariable ret = f().logSigmoidDerivative(arg(), i_v.get(0));
-//        return Arrays.asList(ret);
-        SDVariable sigmDeriv = f().sigmoidDerivative(arg(), i_v.get(0)).div(f().sigmoid(arg()));
-        return Collections.singletonList(sigmDeriv);
+        SDVariable v = new SigmoidDerivative(sameDiff, arg(), i_v.get(0)).outputVariable().div(sameDiff.nn.sigmoid(arg()));
+        return Collections.singletonList(v);
     }
 
 

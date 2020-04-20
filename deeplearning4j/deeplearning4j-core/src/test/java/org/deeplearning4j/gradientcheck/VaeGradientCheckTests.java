@@ -56,6 +56,11 @@ public class VaeGradientCheckTests extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testVaeAsMLP() {
         //Post pre-training: a VAE can be used as a MLP, by taking the mean value from p(z|x) as the output

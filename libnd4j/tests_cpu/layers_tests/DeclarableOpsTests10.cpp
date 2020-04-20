@@ -2012,6 +2012,34 @@ TEST_F(DeclarableOpsTests10, LinSpace_Test1) {
 
 }
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, LinSpace_Test2) {
+
+    NDArray expect = NDArrayFactory::create<float>({1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5,
+                                                        8., 8.5, 9., 9.5, 10., 10.5, 11., 11.5, 12.});
+
+    sd::ops::lin_space op;
+    auto result = op.evaluate({}, {1, 12}, {23});
+    ASSERT_EQ(result.status(), ND4J_STATUS_OK);
+    auto res = result.at(0);
+    ASSERT_EQ( res->dataType(), sd::DataType::FLOAT32 );
+    ASSERT_TRUE(expect.equalsTo(res));
+
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, LinSpace_Test3) {
+
+    NDArray expect('c', { 23 }, {1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 5.5, 6., 6.5, 7., 7.5, 8., 8.5, 9., 9.5, 10., 10.5, 11., 11.5, 12.}, sd::DataType::DOUBLE );
+ 
+    sd::ops::lin_space op;
+    auto result = op.evaluate({}, {1, 12}, {23}, {}, { sd::DOUBLE });
+    ASSERT_EQ(result.status(), ND4J_STATUS_OK);
+    auto res = result.at(0);
+    
+    ASSERT_EQ( res->dataType(), expect.dataType());
+    ASSERT_TRUE(expect.equalsTo(res));
+
+}
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
 
     NDArray input    = NDArrayFactory::create<double>('c', {1, 2, 3, 4});

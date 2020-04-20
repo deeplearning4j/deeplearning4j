@@ -28,6 +28,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.CumProdBp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -142,7 +143,7 @@ public class CumProd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().cumprodBp(arg(0), grad.get(0), exclusive, reverse, jaxis));
+        return new CumProdBp(sameDiff, arg(0), grad.get(0), exclusive, reverse, jaxis).outputs();
     }
 
     @Override

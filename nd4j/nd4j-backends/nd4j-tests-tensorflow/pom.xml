@@ -30,7 +30,6 @@
     <name>nd4j-tests-tensorflow</name>
 
 
-
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -216,8 +215,10 @@
                                 <include>**/*.java</include>
                             </includes>
                             <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend
+                                </org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend
+                                </org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.
@@ -289,8 +290,10 @@
                                 <include>**/*.java</include>
                             </includes>
                             <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                </org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                </org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.

@@ -22,6 +22,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.SegmentMeanBp;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,11 +39,11 @@ public class SegmentMean extends DynamicCustomOp {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
     }
 
-    public SegmentMean(INDArray data, INDArray segmentIds) {
-        addInputArgument(data, segmentIds);
-    }
-
     public SegmentMean(){ }
+
+    public SegmentMean(INDArray data, INDArray segmentIds){
+        super(new INDArray[]{data, segmentIds}, null);
+    }
 
     @Override
     public String opName(){
@@ -56,7 +57,7 @@ public class SegmentMean extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().segmentMeanBp(arg(0), arg(1), gradients.get(0)));
+        return new SegmentMeanBp(sameDiff, arg(0), arg(1), gradients.get(0)).outputs();
     }
 
     @Override

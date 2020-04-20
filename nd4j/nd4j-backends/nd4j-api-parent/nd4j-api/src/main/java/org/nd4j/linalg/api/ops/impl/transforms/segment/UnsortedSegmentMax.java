@@ -22,6 +22,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentMaxBp;
 
 import java.util.*;
 
@@ -40,12 +41,13 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
-    public UnsortedSegmentMax(INDArray data, INDArray segmentIds, int numSegments) {
-        addInputArgument(data, segmentIds);
+    public UnsortedSegmentMax(){ }
+
+    public UnsortedSegmentMax(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
         addIArgument(numSegments);
     }
-
-    public UnsortedSegmentMax(){ }
 
     @Override
     public String opName(){
@@ -59,7 +61,7 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentMaxBp(arg(0), arg(1), gradients.get(0), numSegments));
+        return new UnsortedSegmentMaxBp(sameDiff, arg(0), arg(1), gradients.get(0), numSegments).outputs();
     }
 
     @Override

@@ -24,6 +24,7 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 19/09/2016.
  */
-public class CSVNLinesSequenceRecordReaderTest {
+public class CSVNLinesSequenceRecordReaderTest extends BaseND4JTest {
 
     @Test
     public void testCSVNLinesSequenceRecordReader() throws Exception {

@@ -345,6 +345,10 @@ namespace ops  {
         DECLARE_CUSTOM_OP(gru, 5, 1, false, 0, 0);
         #endif
 
+        #if NOT_EXCLUDED(OP_gru)
+        DECLARE_CUSTOM_OP(gru_bp, 6, 5, false, 0, 0);
+        #endif
+
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation "static RNN time sequences" with peep hole connections:

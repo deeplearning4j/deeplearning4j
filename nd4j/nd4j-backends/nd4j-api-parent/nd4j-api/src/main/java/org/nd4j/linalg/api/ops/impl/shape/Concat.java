@@ -44,7 +44,7 @@ public class Concat extends DynamicCustomOp {
     }
 
     public Concat(int concatDimension, INDArray... arrays) {
-        super(null, arrays, new INDArray[0]);
+        super(null, arrays, null);
         this.concatDimension = concatDimension;
         addIArgument(concatDimension);
     }

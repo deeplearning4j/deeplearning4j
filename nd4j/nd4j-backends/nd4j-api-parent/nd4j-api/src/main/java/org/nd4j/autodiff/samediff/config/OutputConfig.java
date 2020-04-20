@@ -27,7 +27,7 @@ import lombok.Setter;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.util.TrainingUtils;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
@@ -165,7 +165,7 @@ public class OutputConfig {
         Preconditions.checkState(outputs.size() == 1,
                 "Can only use execSingleBatches() when exactly one output is specified, there were %s", outputs.size());
 
-        return TrainingUtils
+        return SameDiffUtils
                 .getSingleOutput(sd.outputBatches(data, listeners, outputs.toArray(new String[0])), outputs.get(0));
     }
 }

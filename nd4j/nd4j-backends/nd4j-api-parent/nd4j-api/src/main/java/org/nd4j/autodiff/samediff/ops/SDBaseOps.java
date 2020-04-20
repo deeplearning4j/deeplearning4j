@@ -37,12 +37,11 @@ public class SDBaseOps {
   /**
    * Boolean and array reduction operation, optionally along specified dimensions<br>
    *
-   * @param x Input variable (BOOL type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output reduced array of rank (input rank - num dimensions) (BOOL type)
    */
   public SDVariable all(SDVariable x, int... dimensions) {
-    SDValidation.validateBool("all", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return new org.nd4j.linalg.api.ops.impl.reduce.bool.All(sd,x, dimensions).outputVariable();
   }
@@ -51,12 +50,11 @@ public class SDBaseOps {
    * Boolean and array reduction operation, optionally along specified dimensions<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x Input variable (BOOL type)
+   * @param x Input variable (NDARRAY type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output reduced array of rank (input rank - num dimensions) (BOOL type)
    */
   public SDVariable all(String name, SDVariable x, int... dimensions) {
-    SDValidation.validateBool("all", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.bool.All(sd,x, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -65,12 +63,11 @@ public class SDBaseOps {
   /**
    * Boolean or array reduction operation, optionally along specified dimensions<br>
    *
-   * @param x  Input variable (BOOL type)
+   * @param x  Input variable (NDARRAY type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output reduced array of rank (input rank - num dimensions) (BOOL type)
    */
   public SDVariable any(SDVariable x, int... dimensions) {
-    SDValidation.validateBool("any", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return new org.nd4j.linalg.api.ops.impl.reduce.bool.Any(sd,x, dimensions).outputVariable();
   }
@@ -79,12 +76,11 @@ public class SDBaseOps {
    * Boolean or array reduction operation, optionally along specified dimensions<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x  Input variable (BOOL type)
+   * @param x  Input variable (NDARRAY type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output reduced array of rank (input rank - num dimensions) (BOOL type)
    */
   public SDVariable any(String name, SDVariable x, int... dimensions) {
-    SDValidation.validateBool("any", "x", x);
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.bool.Any(sd,x, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
@@ -196,6 +192,8 @@ public class SDBaseOps {
    * keepDims = false: [a,c]<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param in Input variable (NUMERIC type)
    * @param keepDims If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions
@@ -220,6 +218,8 @@ public class SDBaseOps {
    * keepDims = false: [a,c]<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -246,6 +246,8 @@ public class SDBaseOps {
    * keepDims = false: [a,c]<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param in Input variable (NUMERIC type)
    * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
@@ -269,6 +271,8 @@ public class SDBaseOps {
    * keepDims = false: [a,c]<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param name name May be null. Name for the output variable
    * @param in Input variable (NUMERIC type)
@@ -744,6 +748,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -762,6 +768,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -964,6 +972,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -982,6 +992,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1032,6 +1044,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1050,6 +1064,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1245,6 +1261,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1263,6 +1281,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1313,6 +1333,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1331,6 +1353,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1581,6 +1605,8 @@ public class SDBaseOps {
    * Element-wise maximum operation: out[i] = max(first[i], second[i])<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param first First input array (NUMERIC type)
    * @param second Second input array (NUMERIC type)
@@ -1596,6 +1622,8 @@ public class SDBaseOps {
    * Element-wise maximum operation: out[i] = max(first[i], second[i])<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param name name May be null. Name for the output variable
    * @param first First input array (NUMERIC type)
@@ -1696,6 +1724,38 @@ public class SDBaseOps {
   }
 
   /**
+   * The merge operation is a control operation that forwards the either of the inputs to the output, when<br>
+   * the first of them becomes available. If both are available, the output is undefined (either input could<br>
+   * be forwarded to the output)<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output (NUMERIC type)
+   */
+  public SDVariable merge(SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("merge", "x", x);
+    SDValidation.validateNumerical("merge", "y", y);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge(sd,x, y).outputVariable();
+  }
+
+  /**
+   * The merge operation is a control operation that forwards the either of the inputs to the output, when<br>
+   * the first of them becomes available. If both are available, the output is undefined (either input could<br>
+   * be forwarded to the output)<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output (NUMERIC type)
+   */
+  public SDVariable merge(String name, SDVariable x, SDVariable y) {
+    SDValidation.validateNumerical("merge", "x", x);
+    SDValidation.validateNumerical("merge", "y", y);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge(sd,x, y).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Minimum array reduction operation, optionally along specified dimensions. out = min(in)<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>
@@ -1785,6 +1845,8 @@ public class SDBaseOps {
    * Element-wise minimum operation: out[i] = min(first[i], second[i])<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param first First input array (NUMERIC type)
    * @param second Second input array (NUMERIC type)
@@ -1800,6 +1862,8 @@ public class SDBaseOps {
    * Element-wise minimum operation: out[i] = min(first[i], second[i])<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * @param name name May be null. Name for the output variable
    * @param first First input array (NUMERIC type)
@@ -1916,6 +1980,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -1934,6 +2000,8 @@ public class SDBaseOps {
    * If x and y arrays have equal shape, the output shape is the same as these inputs.<br>
    *
    * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
    *
    * Return boolean array with values true where satisfied, or false otherwise.<br>
    *
@@ -4174,6 +4242,32 @@ public class SDBaseOps {
     Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.reduce.same.Sum(sd,x, false, dimensions).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Switch operation<br>
+   * Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   *
+   * @param x Input variable (NDARRAY type)
+   * @param predicate Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output (BOOL type)
+   */
+  public SDVariable[] switchOp(SDVariable x, SDVariable predicate) {
+    SDValidation.validateBool("switchOp", "predicate", predicate);
+    return new org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch(sd,x, predicate).outputVariables();
+  }
+
+  /**
+   * Switch operation<br>
+   * Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param x Input variable (NDARRAY type)
+   * @param predicate Predictate - if false, values are output to left (first) branch/output; if true, to right (second) branch/output (BOOL type)
+   */
+  public SDVariable[] switchOp(String[] names, SDVariable x, SDVariable predicate) {
+    SDValidation.validateBool("switchOp", "predicate", predicate);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch(sd,x, predicate).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
   }
 
   /**

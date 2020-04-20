@@ -23,6 +23,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -83,7 +84,7 @@ public class ELU extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //ELU: e^x-1 if x<0, x otherwise
         //dL/dIn = dL/Out * dOut/dIn
-        return Collections.singletonList(f().eluBp(arg(), i_v.get(0), alpha));
+        return new EluBp(sameDiff, arg(), i_v.get(0), alpha).outputs();
     }
 
     @Override

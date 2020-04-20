@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -94,7 +95,7 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
         this.scalarValue = Nd4j.scalar(i_v.dataType(), scalar);
         this.xVertexId = i_v.name();
         sameDiff.addArgsFor(new String[]{xVertexId},this);
-        f().validateDifferentialFunctionsameDiff(i_v);
+        SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
     }
 
 

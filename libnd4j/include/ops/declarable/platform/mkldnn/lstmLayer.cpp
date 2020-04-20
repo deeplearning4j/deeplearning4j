@@ -369,6 +369,7 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
     REQUIRE_TRUE(dataFormat < 2, 0, "LSTM_LAYER_MKLDNN operation: wrong data format, only two formats are allowed for input/output tensors in mkl dnn library: TNC and NTC!");
     REQUIRE_TRUE(directionMode < 4, 0, "LSTM_LAYER_MKLDNN operation: option for bidirectional extra output dimension is not valid in mkl dnn library !");
     REQUIRE_TRUE(retLastH == retLastC, 0, "LSTM_LAYER_MKLDNN operation: only two options are present: 1) calculate both output at last time and cell state at last time; 2) do not calculate both !");
+	REQUIRE_TRUE(hasInitH == hasInitC, 0, "LSTM_LAYER_MKLDNN operation: either both of or neither of initial C and initial H must be provided");
 
     count = 0;
     auto h  = retFullSeq ? OUTPUT_VARIABLE(count++) : nullptr;           // output
@@ -498,7 +499,7 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     DataType WrType = Wr->dataType();
     DataType bType  = b  != nullptr ? b->dataType() : (xType == DataType::HALF ? xType : DataType::FLOAT32);
     DataType hIType = hI != nullptr ? hI->dataType() : xType;
-    DataType cIType = cI != nullptr ? hI->dataType() : xType;
+    DataType cIType = cI != nullptr ? cI->dataType() : xType;
     DataType hType  = h  != nullptr ? h->dataType()  : xType;
     DataType hLType = hL != nullptr ? hL->dataType() : xType;
     DataType cLType = cL != nullptr ? cL->dataType() : xType;
@@ -509,7 +510,8 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
 		&& !hasSeqLen                            //Sequence length array not supported in MKL DNN
 		&& dataFormat < 2                        //Data format - only 0 and 1 supported in MKL DNN- 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn]
 		&& directionMode < 4                     //Direction mode - only 0-3 supported in MKL DNN (no extra dim option) - 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat
-		&& retLastH == retLastC;                 //Return both lastH and lastC, or return neither (not just 1 or other)
+		&& retLastH == retLastC                  //Return both lastH and lastC, or return neither (not just 1 or other)
+		&& hasInitH == hasInitC;				 //Need both or neither initial H and C
 
     return block.isUseMKLDNN() && featuresSupported && (
             (xType==DataType::FLOAT32 && WxType==DataType::FLOAT32 && WrType==DataType::FLOAT32 && bType==DataType::FLOAT32 && hIType==DataType::FLOAT32 && cIType==DataType::FLOAT32 && hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32) ||

@@ -45,8 +45,8 @@ public class IsNumericTensor extends DynamicCustomOp {
         super(null, inputs, outputs);
     }
 
-    public IsNumericTensor(INDArray input) {
-        addInputArgument(input);
+    public IsNumericTensor(INDArray inputs) {
+        super( new INDArray[] {inputs}, null);
     }
 
     @Override

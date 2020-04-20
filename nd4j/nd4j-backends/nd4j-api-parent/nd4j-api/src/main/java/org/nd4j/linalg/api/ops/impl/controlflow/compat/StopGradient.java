@@ -50,6 +50,6 @@ public class StopGradient extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Collections.singletonList(f().zerosLike(arg()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 }

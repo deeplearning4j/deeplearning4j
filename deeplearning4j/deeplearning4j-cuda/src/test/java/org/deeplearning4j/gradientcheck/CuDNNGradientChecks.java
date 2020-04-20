@@ -77,6 +77,10 @@ public class CuDNNGradientChecks extends BaseDL4JTest {
         DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;
+    }
 
     @Test
     public void testConvolutional() throws Exception {
