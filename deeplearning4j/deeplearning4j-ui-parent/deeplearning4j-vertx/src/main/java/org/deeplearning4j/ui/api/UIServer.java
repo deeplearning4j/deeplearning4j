@@ -43,7 +43,7 @@ public interface UIServer {
      * @throws InterruptedException if interrupted while waiting for completion
      */
     static UIServer getInstance() throws DL4JException, InterruptedException {
-        if (VertxUIServer.getInstance() != null) {
+        if (VertxUIServer.getInstance() != null && !VertxUIServer.getInstance().isStopped()) {
             return VertxUIServer.getInstance();
         } else {
             return getInstance(false, null);
