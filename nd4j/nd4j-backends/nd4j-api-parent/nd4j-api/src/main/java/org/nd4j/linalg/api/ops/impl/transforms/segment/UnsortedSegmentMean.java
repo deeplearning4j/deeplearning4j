@@ -45,8 +45,9 @@ public class UnsortedSegmentMean extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
-    public UnsortedSegmentMean(INDArray data, INDArray segmentIds, int numSegments) {
-        addInputArgument(data, segmentIds);
+    public UnsortedSegmentMean(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
         addIArgument(numSegments);
     }
 

@@ -53,6 +53,7 @@ public class IMin extends BaseIndexAccumulation {
     }
 
 
+
     @Override
     public int opNum() {
         return 1;

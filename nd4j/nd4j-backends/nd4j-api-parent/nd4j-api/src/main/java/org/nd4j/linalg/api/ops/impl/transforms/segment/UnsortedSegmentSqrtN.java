@@ -39,14 +39,14 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
 
     private int numSegments;
 
-    public UnsortedSegmentSqrtN(INDArray data, INDArray segmentIds, int numSegments) {
-        addInputArgument(data, segmentIds);
-        addIArgument(numSegments);
-        this.numSegments = numSegments;
-    }
-
     public UnsortedSegmentSqrtN(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
+    }
+
+    public UnsortedSegmentSqrtN(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
         this.numSegments = numSegments;
         addIArgument(numSegments);
     }

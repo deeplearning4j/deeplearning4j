@@ -46,8 +46,9 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
-    public UnsortedSegmentSum(INDArray data, INDArray segmentIds, int numSegments) {
-        addInputArgument(data, segmentIds);
+    public UnsortedSegmentSum(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
         addIArgument(numSegments);
     }
 

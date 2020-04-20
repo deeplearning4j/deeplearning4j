@@ -59,17 +59,23 @@ public class ReverseSequence extends DynamicCustomOp {
         addArguments();
     }
 
+    public ReverseSequence(INDArray x, INDArray seq_lengths, int seqDim, int batchDim){
+        super(new INDArray[]{x, seq_lengths}, null);
+        this.seqDim = seqDim;
+        this.batchDim = batchDim;
+        addArguments();
+    }
+
+    public ReverseSequence(INDArray x, INDArray seq_lengths){
+        this(x, seq_lengths, 1, 0);
+    }
+
     private void addArguments(){
         addIArgument(seqDim);
         addIArgument(batchDim);
     }
 
     public ReverseSequence() {
-    }
-
-    public ReverseSequence(INDArray x, INDArray seq_lengths, int seqDim, int batchDim) {
-        addInputArgument(x, seq_lengths);
-        addIArgument(seqDim, batchDim);
     }
 
     @Override

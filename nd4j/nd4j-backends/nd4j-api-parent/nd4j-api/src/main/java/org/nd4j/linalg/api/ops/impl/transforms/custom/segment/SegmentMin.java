@@ -39,11 +39,11 @@ public class SegmentMin extends DynamicCustomOp {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
     }
 
-    public SegmentMin(INDArray data, INDArray segmentIds) {
-        addInputArgument(data, segmentIds);
-    }
-
     public SegmentMin(){ }
+
+    public SegmentMin(INDArray data, INDArray segmentIds){
+        super(new INDArray[]{data, segmentIds}, null);
+    }
 
     @Override
     public String opName(){

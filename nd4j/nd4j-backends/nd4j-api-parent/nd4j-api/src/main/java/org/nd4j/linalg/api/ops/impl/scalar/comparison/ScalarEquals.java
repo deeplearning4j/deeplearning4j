@@ -40,7 +40,7 @@ public class ScalarEquals extends BaseScalarBoolOp {
     }
 
     public ScalarEquals(INDArray x, Number num) {
-        super(x, num);
+        this(x, null, num);
     }
 
 

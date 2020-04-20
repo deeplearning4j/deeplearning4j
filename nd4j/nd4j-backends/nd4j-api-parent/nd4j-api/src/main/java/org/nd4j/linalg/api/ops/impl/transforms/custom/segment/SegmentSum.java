@@ -39,11 +39,11 @@ public class SegmentSum extends DynamicCustomOp {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
     }
 
-    public SegmentSum(INDArray data, INDArray segmentIds) {
-        addInputArgument(data, segmentIds);
-    }
-
     public SegmentSum(){ }
+
+    public SegmentSum(INDArray data, INDArray segmentIds){
+        super(new INDArray[]{data, segmentIds}, null);
+    }
 
     @Override
     public String opName(){

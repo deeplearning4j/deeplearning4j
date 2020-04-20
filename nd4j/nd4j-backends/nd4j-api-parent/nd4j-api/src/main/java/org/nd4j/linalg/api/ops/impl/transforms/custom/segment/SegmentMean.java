@@ -39,11 +39,11 @@ public class SegmentMean extends DynamicCustomOp {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
     }
 
-    public SegmentMean(INDArray data, INDArray segmentIds) {
-        addInputArgument(data, segmentIds);
-    }
-
     public SegmentMean(){ }
+
+    public SegmentMean(INDArray data, INDArray segmentIds){
+        super(new INDArray[]{data, segmentIds}, null);
+    }
 
     @Override
     public String opName(){

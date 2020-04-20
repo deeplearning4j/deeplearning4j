@@ -772,8 +772,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             if (y != null) {
 
-                if (z == null)
+                if (z == null) {
                     setZ(Nd4j.create(op.resultType(), x.shape()), op, oc);
+                    z = getZ(op, oc);
+                }
 
 
                 op.validateDataTypes(oc, experimentalMode.get());

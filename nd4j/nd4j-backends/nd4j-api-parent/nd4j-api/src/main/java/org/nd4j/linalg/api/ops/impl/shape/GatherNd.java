@@ -42,6 +42,10 @@ public class GatherNd extends DynamicCustomOp {
         super(new INDArray[]{df, indices}, null);
     }
 
+    public GatherNd(INDArray[] inputs, INDArray[] outputs){
+        super(inputs, outputs);
+    }
+
     @Override
     public String opName() {
         return "gather_nd";

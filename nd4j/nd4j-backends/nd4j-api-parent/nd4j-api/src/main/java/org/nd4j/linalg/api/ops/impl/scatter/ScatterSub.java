@@ -44,11 +44,11 @@ public class ScatterSub extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
     }
 
-    public ScatterSub(INDArray ref, INDArray indices, INDArray updates) {
-        addInputArgument(ref, indices, updates);
-    }
-
     public ScatterSub() {}
+
+    public ScatterSub(INDArray ref, INDArray indices, INDArray update){
+        super(new INDArray[]{ref, indices, update}, null);
+    }
 
     @Override
     public String opName() {

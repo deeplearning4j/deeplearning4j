@@ -41,12 +41,13 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
-    public UnsortedSegmentMax(INDArray data, INDArray segmentIds, int numSegments) {
-        addInputArgument(data, segmentIds);
+    public UnsortedSegmentMax(){ }
+
+    public UnsortedSegmentMax(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
         addIArgument(numSegments);
     }
-
-    public UnsortedSegmentMax(){ }
 
     @Override
     public String opName(){

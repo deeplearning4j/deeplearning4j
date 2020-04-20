@@ -67,8 +67,7 @@ public class OneHot extends DynamicCustomOp {
     }
 
     public OneHot(INDArray indices, int depth) {
-        addInputArgument(indices);
-        addIArgument(depth);
+        this(indices, null, depth, 0, 1.0, 0.0);
     }
 
     public OneHot(INDArray indices, INDArray output, int depth, int axis, double on, double off) {
@@ -80,14 +79,16 @@ public class OneHot extends DynamicCustomOp {
         addArgs();
     }
 
-    public OneHot(INDArray indices, int depth, int axis, double on, double off, DataType dataType) {
-        addInputArgument(indices);
-        addIArgument(depth, axis);
-        addTArgument(on, off);
-        addDArgument(dataType);
+    public OneHot(INDArray indices, int depth, int axis, double on, double off) {
+        this(indices, null, depth, axis, on, off);
     }
 
-
+    public OneHot(INDArray indices, int depth, int axis, double on, double off, DataType dataType) {
+        this(indices, null, depth, axis, on, off);
+        this.outputType = dataType;
+        if (outputType != null)
+            addDArgument(outputType);
+    }
 
     protected void addArgs() {
         addIArgument(jaxis);

@@ -41,7 +41,6 @@ public class Sum extends BaseReduceSameOp {
         super(sameDiff, i_v, i_v2, dimensions);
     }
 
-
     public Sum() {
     }
 

@@ -141,8 +141,8 @@ public class Mmul extends DynamicCustomOp {
                 boolean transposeZ) {
         super(null,sameDiff,new SDVariable[]{x,y});
         addIArgument(ArrayUtil.fromBoolean(transposeX),
-                     ArrayUtil.fromBoolean(transposeY),
-                     ArrayUtil.fromBoolean(transposeZ));
+                ArrayUtil.fromBoolean(transposeY),
+                ArrayUtil.fromBoolean(transposeZ));
 
         addTArgument(alpha, beta);
         mt = MMulTranspose.builder().transposeA(transposeX).transposeB(transposeY).transposeResult(transposeZ).build();
@@ -306,4 +306,3 @@ public class Mmul extends DynamicCustomOp {
         return Collections.singletonList(dataTypes.get(0));
     }
 }
-

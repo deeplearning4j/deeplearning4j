@@ -48,10 +48,9 @@ public class Size extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {input}, false);
     }
 
-    public Size(INDArray in) {
-        addInputArgument(in);
+    public Size(INDArray in){
+        super(new INDArray[] {in}, null);
     }
-
 
     @Override
     public String onnxName() {

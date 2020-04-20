@@ -55,13 +55,14 @@ public class Permute extends Transpose {
         addIArgument(permuteDims);
     }
 
-    public Permute(INDArray input, int... permuteDims){
-        addInputArgument(input);
-        addIArgument(permuteDims);
-    }
-
     public Permute(SameDiff sd, SDVariable input, SDVariable permuteDims){
         super(sd, input, permuteDims);
+    }
+
+    public Permute(INDArray input, int... permuteDims){
+        super(input, null);
+        this.permuteDims = permuteDims;
+        addIArgument(permuteDims);
     }
 
     public Permute() {

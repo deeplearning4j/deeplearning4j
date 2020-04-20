@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -67,11 +68,19 @@ public class DynamicPartition extends DynamicCustomOp {
         addArgs();
     }
 
-    public DynamicPartition(INDArray input, INDArray partitions, int numPartitions) {
-        addInputArgument(input);
-        addIArgument(numPartitions);
+    public DynamicPartition(@NonNull INDArray input, @NonNull INDArray partitions, int numPartitions) {
+        super(new INDArray[]{input, partitions}, null);
+        this.numPartitions = numPartitions;
+        addArgs();
     }
 
+    public DynamicPartition(INDArray x, INDArray [] partitions, int numPartitions){
+        //TODO; This needs fixing.
+        super(new INDArray[]{x}, null);
+        // this.partitions = partitions;
+        this.numPartitions = numPartitions;
+        addArgs();
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

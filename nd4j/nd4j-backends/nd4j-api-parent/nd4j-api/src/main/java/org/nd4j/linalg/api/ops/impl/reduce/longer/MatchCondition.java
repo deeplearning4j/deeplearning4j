@@ -52,9 +52,13 @@ public class MatchCondition extends BaseReduceLongOp {
 
     public MatchCondition() {}
 
-
     public MatchCondition(INDArray x, Condition condition, int... dimensions) {
         this(x, Nd4j.EPS_THRESHOLD, condition, dimensions);
+    }
+
+    public MatchCondition(INDArray x, Condition condition, boolean keepDims, int... dimensions) {
+        this(x, Nd4j.EPS_THRESHOLD, condition, dimensions);
+        this.keepDims = keepDims;
     }
 
     public MatchCondition(INDArray x, double eps, Condition condition, int... dimensions) {
@@ -66,10 +70,6 @@ public class MatchCondition extends BaseReduceLongOp {
         this.extraArgs = new Object[] {compare, eps, (double) mode};
 
         defineDimensions(dimensions);
-    }
-
-    public MatchCondition(INDArray in, Condition condition, boolean keepDim,  int... dimensions) {
-        this(in, condition, dimensions);
     }
 
     @Override

@@ -54,8 +54,10 @@ public class Slice extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{input, begin, end});
     }
 
-    public Slice(INDArray in, int[] begin, int... size) {
-        addInputArgument(in);
+    public Slice(INDArray input, int[] begin, int... size){
+        super(new INDArray[] {input}, null);
+        this.begin = begin;
+        this.size = size;
         addIArgument(begin);
         addIArgument(size);
     }

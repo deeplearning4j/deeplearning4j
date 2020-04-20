@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.scatter;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -42,11 +43,11 @@ public class ScatterMin extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{ref, indices, updates}, false);
     }
 
-    public ScatterMin(INDArray ref, INDArray indices, INDArray updates) {
-        addInputArgument(ref, indices, updates);
-    }
-
     public ScatterMin() {}
+
+    public ScatterMin(@NonNull INDArray ref, @NonNull INDArray indices, @NonNull INDArray update){
+        super(new INDArray[]{ref, indices, update}, null);
+    }
 
     @Override
     public String opName() {

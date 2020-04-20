@@ -67,13 +67,14 @@ public class ExpandDims extends DynamicCustomOp {
         super(null, inputs, outputs);
     }
 
-    public ExpandDims(INDArray input, int axis) {
-        addInputArgument(input);
-        addIArgument(axis);
-    }
-
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(null, sameDiff, args, inPlace);
+    }
+
+    public ExpandDims(INDArray x, int axis){
+        super(new INDArray[]{x}, null);
+        this.jaxis = axis;
+        addIArgument(axis);
     }
 
     @Override

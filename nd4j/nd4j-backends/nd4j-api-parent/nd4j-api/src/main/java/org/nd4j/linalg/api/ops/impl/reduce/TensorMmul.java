@@ -51,6 +51,35 @@ public class TensorMmul extends DynamicCustomOp {
     protected boolean addedEdges;
     protected MMulTranspose mMulTranspose;
 
+
+    public TensorMmul(INDArray x, INDArray y, int[][] axes) {
+        this(x,y,axes[0], axes[1], false, false, false);
+    }
+
+    /**
+     * Initialize with the given
+     * input, pairwise transform, result, and number
+     * of elements
+     *
+     * @param x the input
+     * @param y the pairwise transform
+     * @param z the result
+     */
+    public TensorMmul(INDArray x, INDArray y, INDArray z, int[][] axes) {
+        this(x, y, axes[0], axes[1], false, false, false);
+    }
+
+    public TensorMmul(INDArray x, INDArray y, int[] dimensionsX, int[] dimensionsY,
+                      boolean transposeX, boolean transposeY, boolean transposeZ) {
+        super(null,new INDArray[]{x, y},null);
+        this.axes = new int[][]{dimensionsX, dimensionsY};
+        addIArgument(dimensionsX.length);
+        addIArgument(dimensionsX);
+        addIArgument(dimensionsY.length);
+        addIArgument(dimensionsY);
+        addBArgument(transposeX, transposeY, transposeZ);
+    }
+
     public TensorMmul(SameDiff sameDiff,
                       SDVariable i_v1,
                       SDVariable i_v2,
@@ -227,34 +256,6 @@ public class TensorMmul extends DynamicCustomOp {
         SDVariable ret = sameDiff.mmul(at,bt);
         long[] aPlusB = Longs.concat(oldShapeA, oldShapeB);
         return sameDiff.reshape(ret, aPlusB);
-    }
-
-
-    public TensorMmul(INDArray x, INDArray y, int[][] axes) {
-        super(null,new INDArray[]{x, y},null);
-        this.axes = axes;
-        this.extraArgs = new Object[] {axes};
-    }
-
-    /**
-     * Initialize with the given
-     * input, pairwise transform, result, and number
-     * of elements
-     *
-     * @param x the input
-     * @param y the pairwise transform
-     * @param z the result
-     */
-    public TensorMmul(INDArray x, INDArray y, INDArray z, int[][] axes) {
-        super(null,new INDArray[]{x, y, z},null);
-        this.axes = axes;
-    }
-
-    public TensorMmul(INDArray x, INDArray y, int[] dimensionsX, int[] dimensionsY,
-                      boolean transposeX, boolean transposeY, boolean transposeZ) {
-        super(null,new INDArray[]{x, y},null);
-        this.axes = new int[][]{dimensionsX, dimensionsY};
-        addBArgument(transposeX, transposeY, transposeZ);
     }
 
     @Override

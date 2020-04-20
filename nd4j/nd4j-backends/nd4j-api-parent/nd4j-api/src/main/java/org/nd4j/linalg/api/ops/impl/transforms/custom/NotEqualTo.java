@@ -48,12 +48,12 @@ public class NotEqualTo extends BaseDynamicTransformOp {
         super(inputs, outputs);
     }
 
-    public NotEqualTo( INDArray x, INDArray y) {
-        addInputArgument(x,y);
-    }
-
     public NotEqualTo(INDArray x, INDArray y, INDArray z){
         this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
+
+    public NotEqualTo(INDArray x, INDArray y){
+        this(new INDArray[]{x, y}, null);
     }
 
     @Override

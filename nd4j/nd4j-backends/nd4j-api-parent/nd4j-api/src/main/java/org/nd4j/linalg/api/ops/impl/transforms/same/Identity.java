@@ -42,7 +42,7 @@ public class Identity extends BaseDynamicTransformOp {
     }
 
     public Identity(INDArray x){
-        addInputArgument(x);
+        super(new INDArray[]{x}, null);
     }
 
     public Identity(){ }

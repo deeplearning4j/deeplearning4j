@@ -45,8 +45,9 @@ public class UnsortedSegmentProd extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
-    public UnsortedSegmentProd(INDArray data, INDArray segmentIds, int numSegments) {
-        addInputArgument(data, segmentIds);
+    public UnsortedSegmentProd(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
         addIArgument(numSegments);
     }
 

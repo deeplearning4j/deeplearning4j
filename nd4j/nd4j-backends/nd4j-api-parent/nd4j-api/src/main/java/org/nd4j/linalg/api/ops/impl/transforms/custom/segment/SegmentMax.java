@@ -39,8 +39,8 @@ public class SegmentMax extends DynamicCustomOp {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
     }
 
-    public SegmentMax(INDArray data, INDArray segmentIds) {
-        addInputArgument(data, segmentIds);
+    public SegmentMax(INDArray data, INDArray segmentIds){
+        super(new INDArray[]{data, segmentIds}, null);
     }
 
     public SegmentMax(){ }

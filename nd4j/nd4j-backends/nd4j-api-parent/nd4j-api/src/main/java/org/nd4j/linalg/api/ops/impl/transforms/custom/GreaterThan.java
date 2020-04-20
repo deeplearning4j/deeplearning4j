@@ -49,12 +49,12 @@ public class GreaterThan extends BaseDynamicTransformOp {
         super(inputs, outputs);
     }
 
-    public GreaterThan( INDArray x, INDArray y) {
-        addInputArgument(x,y);
-    }
-
     public GreaterThan(INDArray x, INDArray y, INDArray z){
         this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
+
+    public GreaterThan(INDArray x, INDArray y){
+        this(new INDArray[]{x, y}, null);
     }
 
     @Override
