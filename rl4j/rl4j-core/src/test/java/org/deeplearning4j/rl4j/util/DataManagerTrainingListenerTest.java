@@ -151,19 +151,25 @@ public class DataManagerTrainingListenerTest {
     private static class TestTrainer implements IEpochTrainer, ILearning
     {
         @Override
-        public int getStepCounter() {
+        public int getStepCount() {
             return 0;
         }
 
         @Override
-        public int getEpochCounter() {
+        public int getEpochCount() {
             return 0;
         }
 
         @Override
-        public int getCurrentEpochStep() {
+        public int getEpisodeCount() {
             return 0;
         }
+
+        @Override
+        public int getCurrentEpisodeStepCount() {
+            return 0;
+        }
+
 
         @Getter
         @Setter

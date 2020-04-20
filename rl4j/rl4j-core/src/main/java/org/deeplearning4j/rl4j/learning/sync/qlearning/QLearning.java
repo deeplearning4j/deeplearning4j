@@ -19,21 +19,16 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.rl4j.learning.EpochStepCounter;
-import org.deeplearning4j.rl4j.learning.configuration.ILearningConfiguration;
+import org.deeplearning4j.rl4j.learning.IEpochTrainer;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
-import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
-import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
@@ -43,8 +38,6 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager.StatEntry;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
-import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +51,7 @@ import java.util.List;
 @Slf4j
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
                 extends SyncLearning<O, A, AS, IDQN>
-                implements TargetQNetworkSource, EpochStepCounter {
+                implements TargetQNetworkSource, IEpochTrainer {
 
     protected abstract LegacyMDPWrapper<O, A, AS> getLegacyMDPWrapper();
 
@@ -90,7 +83,10 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     protected abstract QLStepReturn<Observation> trainStep(Observation obs);
 
     @Getter
-    private int currentEpochStep = 0;
+    private int episodeCount;
+
+    @Getter
+    private int currentEpisodeStepCount = 0;
 
     protected StatEntry trainEpoch() {
         resetNetworks();
@@ -104,9 +100,9 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         double meanQ = 0;
         int numQ = 0;
         List<Double> scores = new ArrayList<>();
-        while (currentEpochStep < getConfiguration().getMaxEpochStep() && !getMdp().isDone()) {
+        while (currentEpisodeStepCount < getConfiguration().getMaxEpochStep() && !getMdp().isDone()) {
 
-            if (getStepCounter() % getConfiguration().getTargetDqnUpdateFreq() == 0) {
+            if (this.getStepCount() % getConfiguration().getTargetDqnUpdateFreq() == 0) {
                 updateTargetNetwork();
             }
 
@@ -132,20 +128,20 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         meanQ /= (numQ + 0.001); //avoid div zero
 
 
-        StatEntry statEntry = new QLStatEntry(getStepCounter(), getEpochCounter(), reward, currentEpochStep, scores,
+        StatEntry statEntry = new QLStatEntry(this.getStepCount(), getEpochCount(), reward, currentEpisodeStepCount, scores,
                         getEgPolicy().getEpsilon(), startQ, meanQ);
 
         return statEntry;
     }
 
     protected void finishEpoch(Observation observation) {
-        // Do Nothing
+        episodeCount++;
     }
 
     @Override
     public void incrementStep() {
         super.incrementStep();
-        ++currentEpochStep;
+        ++currentEpisodeStepCount;
     }
 
     protected void resetNetworks() {
@@ -154,7 +150,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     }
 
     private InitMdp<Observation> refacInitMdp() {
-        currentEpochStep = 0;
+        currentEpisodeStepCount = 0;
 
         double reward = 0;
 

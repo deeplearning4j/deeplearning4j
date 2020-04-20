@@ -40,7 +40,7 @@ public class EncodableToImageWritableTransform implements Operation<Encodable, I
 
     @Override
     public ImageWritable transform(Encodable encodable) {
-        INDArray indArray = Nd4j.create((encodable).toArray()).reshape(height, width, colorChannels);
+        INDArray indArray = Nd4j.create(encodable.toArray()).reshape(height, width, colorChannels);
         Mat mat = new Mat(height, width, CV_32FC(3), indArray.data().pointer());
         return new ImageWritable(converter.convert(mat));
     }

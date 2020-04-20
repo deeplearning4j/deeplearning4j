@@ -17,6 +17,7 @@
 
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
+import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
@@ -26,11 +27,21 @@ import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.observation.Observation;
+import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.deeplearning4j.rl4j.support.*;
 import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
+import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.api.rng.Random;
@@ -40,150 +51,146 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class QLearningDiscreteTest {
+
+    QLearningDiscrete<Encodable> qLearningDiscrete;
+
+    @Mock
+    IHistoryProcessor mockHistoryProcessor;
+
+    @Mock
+    IHistoryProcessor.Configuration mockHistoryConfiguration;
+
+    @Mock
+    MDP<Encodable, Integer, DiscreteSpace> mockMDP;
+
+    @Mock
+    DiscreteSpace mockActionSpace;
+
+    @Mock
+    ObservationSpace<Encodable> mockObservationSpace;
+
+    @Mock
+    IDQN mockDQN;
+
+    @Mock
+    QLearningConfiguration mockQlearningConfiguration;
+
+    int[] observationShape = new int[]{3, 10, 10};
+    int totalObservationSize = 1;
+
+    private void setupMDPMocks() {
+
+        when(mockObservationSpace.getShape()).thenReturn(observationShape);
+
+        when(mockMDP.getObservationSpace()).thenReturn(mockObservationSpace);
+        when(mockMDP.getActionSpace()).thenReturn(mockActionSpace);
+
+        int dataLength = 1;
+        for (int d : observationShape) {
+            dataLength *= d;
+        }
+    }
+
+
+    private void mockTestContext(int maxSteps, int updateStart, int batchSize, double rewardFactor, int maxExperienceReplay) {
+        when(mockQlearningConfiguration.getBatchSize()).thenReturn(batchSize);
+        when(mockQlearningConfiguration.getRewardFactor()).thenReturn(rewardFactor);
+        when(mockQlearningConfiguration.getExpRepMaxSize()).thenReturn(maxExperienceReplay);
+        when(mockQlearningConfiguration.getSeed()).thenReturn(123L);
+
+        qLearningDiscrete = mock(
+                QLearningDiscrete.class,
+                Mockito.withSettings()
+                        .useConstructor(mockMDP, mockDQN, mockQlearningConfiguration, 0)
+                        .defaultAnswer(Mockito.CALLS_REAL_METHODS)
+        );
+    }
+
+    private void mockHistoryProcessor(int skipFrames) {
+        when(mockHistoryConfiguration.getRescaledHeight()).thenReturn(observationShape[1]);
+        when(mockHistoryConfiguration.getRescaledWidth()).thenReturn(observationShape[2]);
+
+        when(mockHistoryConfiguration.getOffsetX()).thenReturn(0);
+        when(mockHistoryConfiguration.getOffsetY()).thenReturn(0);
+
+        when(mockHistoryConfiguration.getCroppingHeight()).thenReturn(observationShape[1]);
+        when(mockHistoryConfiguration.getCroppingWidth()).thenReturn(observationShape[2]);
+        when(mockHistoryConfiguration.getSkipFrame()).thenReturn(skipFrames);
+        when(mockHistoryProcessor.getConf()).thenReturn(mockHistoryConfiguration);
+
+        qLearningDiscrete.setHistoryProcessor(mockHistoryProcessor);
+    }
+
+    @Before
+    public void setup() {
+        setupMDPMocks();
+
+        for (int i : observationShape) {
+            totalObservationSize *= i;
+        }
+
+    }
+
     @Test
-    public void refac_QLearningDiscrete_trainStep() {
+    public void when_singleTrainStep_expect_correctValues() {
+
         // Arrange
-        MockObservationSpace observationSpace = new MockObservationSpace();
-        MockDQN dqn = new MockDQN();
-        MockRandom random = new MockRandom(new double[]{
-                0.7309677600860596,
-                0.8314409852027893,
-                0.2405363917350769,
-                0.6063451766967773,
-                0.6374173760414124,
-                0.3090505599975586,
-                0.5504369735717773,
-                0.11700659990310669
-        },
-                new int[]{1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4});
-        MockMDP mdp = new MockMDP(observationSpace, random);
+        mockTestContext(100,0,2,1.0, 10);
 
-        int initStepCount = 8;
+        // An example observation and 2 Q values output (2 actions)
+        Observation observation = new Observation(Nd4j.zeros(observationShape));
+        when(mockDQN.output(eq(observation))).thenReturn(Nd4j.create(new float[] {1.0f, 0.5f}));
 
-        QLearningConfiguration conf = QLearningConfiguration.builder()
-                .seed(0L)
-                .maxEpochStep(24)
-                .maxStep(0)
-                .expRepMaxSize(5).batchSize(1).targetDqnUpdateFreq(1000)
-                .updateStart(initStepCount)
-                .rewardFactor(1.0)
-                .gamma(0)
-                .errorClamp(0)
-                .minEpsilon(0)
-                .epsilonNbStep(0)
-                .doubleDQN(true)
-                .build();
-
-        MockDataManager dataManager = new MockDataManager(false);
-        MockExperienceHandler experienceHandler = new MockExperienceHandler();
-        TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, dqn, conf, dataManager, experienceHandler, 10, random);
-        IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
-        MockHistoryProcessor hp = new MockHistoryProcessor(hpConf);
-        sut.setHistoryProcessor(hp);
-        sut.getLegacyMDPWrapper().setTransformProcess(MockMDP.buildTransformProcess(observationSpace.getShape(), hpConf.getSkipFrame(), hpConf.getHistoryLength()));
-        List<QLearning.QLStepReturn<MockEncodable>> results = new ArrayList<>();
+        when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(new Box(new double[totalObservationSize]), 0, false, null));
 
         // Act
-        IDataManager.StatEntry result = sut.trainEpoch();
+        QLearning.QLStepReturn<Observation> stepReturn = qLearningDiscrete.trainStep(observation);
 
         // Assert
-        // HistoryProcessor calls
-        double[] expectedRecords = new double[]{0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, 22.0, 23.0, 24.0};
-        assertEquals(expectedRecords.length, hp.recordCalls.size());
-        for (int i = 0; i < expectedRecords.length; ++i) {
-            assertEquals(expectedRecords[i], hp.recordCalls.get(i).getDouble(0), 0.0001);
-        }
-        assertEquals(0, hp.startMonitorCallCount);
-        assertEquals(0, hp.stopMonitorCallCount);
+        assertEquals(1.0, stepReturn.getMaxQ(), 1e-5);
 
-        // DQN calls
-        assertEquals(1, dqn.fitParams.size());
-        assertEquals(123.0, dqn.fitParams.get(0).getFirst().getDouble(0), 0.001);
-        assertEquals(234.0, dqn.fitParams.get(0).getSecond().getDouble(0), 0.001);
-        assertEquals(14, dqn.outputParams.size());
-        double[][] expectedDQNOutput = new double[][]{
-                new double[]{0.0, 2.0, 4.0, 6.0, 8.0},
-                new double[]{2.0, 4.0, 6.0, 8.0, 10.0},
-                new double[]{2.0, 4.0, 6.0, 8.0, 10.0},
-                new double[]{4.0, 6.0, 8.0, 10.0, 12.0},
-                new double[]{6.0, 8.0, 10.0, 12.0, 14.0},
-                new double[]{6.0, 8.0, 10.0, 12.0, 14.0},
-                new double[]{8.0, 10.0, 12.0, 14.0, 16.0},
-                new double[]{8.0, 10.0, 12.0, 14.0, 16.0},
-                new double[]{10.0, 12.0, 14.0, 16.0, 18.0},
-                new double[]{10.0, 12.0, 14.0, 16.0, 18.0},
-                new double[]{12.0, 14.0, 16.0, 18.0, 20.0},
-                new double[]{12.0, 14.0, 16.0, 18.0, 20.0},
-                new double[]{14.0, 16.0, 18.0, 20.0, 22.0},
-                new double[]{14.0, 16.0, 18.0, 20.0, 22.0},
-        };
-        for (int i = 0; i < expectedDQNOutput.length; ++i) {
-            INDArray outputParam = dqn.outputParams.get(i);
+        StepReply<Observation> stepReply = stepReturn.getStepReply();
 
-            assertEquals(5, outputParam.shape()[1]);
-            assertEquals(1, outputParam.shape()[2]);
+        assertEquals(0, stepReply.getReward(), 1e-5);
+        assertFalse(stepReply.isDone());
+        assertFalse(stepReply.getObservation().isSkipped());
+        assertEquals(observation.getData().reshape(observationShape), stepReply.getObservation().getData().reshape(observationShape));
 
-            double[] expectedRow = expectedDQNOutput[i];
-            for (int j = 0; j < expectedRow.length; ++j) {
-                assertEquals("row: " + i + " col: " + j, expectedRow[j], 255.0 * outputParam.getDouble(j), 0.00001);
-            }
-        }
-
-        // MDP calls
-        assertArrayEquals(new Integer[]{0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 4, 4, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4}, mdp.actions.toArray());
-
-        // ExperienceHandler calls
-        double[] expectedTrRewards = new double[] { 9.0, 21.0, 25.0, 29.0, 33.0, 37.0, 41.0 };
-        int[] expectedTrActions = new int[] { 1, 4, 2, 4, 4, 4, 4, 4 };
-        double[] expectedTrNextObservation = new double[] { 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0 };
-        double[][] expectedTrObservations = new double[][] {
-                new double[] { 0.0, 2.0, 4.0, 6.0, 8.0 },
-                new double[] { 2.0, 4.0, 6.0, 8.0, 10.0 },
-                new double[] { 4.0, 6.0, 8.0, 10.0, 12.0 },
-                new double[] { 6.0, 8.0, 10.0, 12.0, 14.0 },
-                new double[] { 8.0, 10.0, 12.0, 14.0, 16.0 },
-                new double[] { 10.0, 12.0, 14.0, 16.0, 18.0 },
-                new double[] { 12.0, 14.0, 16.0, 18.0, 20.0 },
-                new double[] { 14.0, 16.0, 18.0, 20.0, 22.0 },
-        };
-
-        assertEquals(expectedTrObservations.length, experienceHandler.addExperienceArgs.size());
-        for(int i = 0; i < expectedTrRewards.length; ++i) {
-            StateActionPair<Integer> stateActionPair = experienceHandler.addExperienceArgs.get(i);
-            assertEquals(expectedTrRewards[i], stateActionPair.getReward(), 0.0001);
-            assertEquals((int)expectedTrActions[i], (int)stateActionPair.getAction());
-            for(int j = 0; j < expectedTrObservations[i].length; ++j) {
-                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], 255.0 * stateActionPair.getObservation().getData().getDouble(0, j, 0), 0.0001);
-            }
-        }
-        assertEquals(expectedTrNextObservation[expectedTrNextObservation.length - 1], 255.0 * experienceHandler.finalObservation.getData().getDouble(0), 0.0001);
-
-        // trainEpoch result
-        assertEquals(initStepCount + 16, result.getStepCounter());
-        assertEquals(300.0, result.getReward(), 0.00001);
-        assertTrue(dqn.hasBeenReset);
-        assertTrue(((MockDQN) sut.getTargetQNetwork()).hasBeenReset);
     }
 
-    public static class TestQLearningDiscrete extends QLearningDiscrete<MockEncodable> {
-        public TestQLearningDiscrete(MDP<MockEncodable, Integer, DiscreteSpace> mdp, IDQN dqn,
-                                     QLearningConfiguration conf, IDataManager dataManager, ExperienceHandler<Integer, Transition<Integer>> experienceHandler,
-                                     int epsilonNbStep, Random rnd) {
-            super(mdp, dqn, conf, epsilonNbStep, rnd);
-            addListener(new DataManagerTrainingListener(dataManager));
-            setExperienceHandler(experienceHandler);
-        }
+    @Test
+    public void when_singleTrainStepSkippedFrames_expect_correctValues() {
+        // Arrange
+        mockTestContext(100,0,2,1.0, 10);
 
-        @Override
-        protected DataSet setTarget(List<Transition<Integer>> transitions) {
-            return new org.nd4j.linalg.dataset.DataSet(Nd4j.create(new double[] { 123.0 }), Nd4j.create(new double[] { 234.0 }));
-        }
+        mockHistoryProcessor(2);
 
-        @Override
-        public IDataManager.StatEntry trainEpoch() {
-            return super.trainEpoch();
-        }
+        // An example observation and 2 Q values output (2 actions)
+        Observation observation = new Observation(Nd4j.zeros(observationShape));
+        when(mockDQN.output(eq(observation))).thenReturn(Nd4j.create(new float[] {1.0f, 0.5f}));
+
+        when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(new Box(new double[totalObservationSize]), 0, false, null));
+
+        // Act
+        QLearning.QLStepReturn<Observation> stepReturn = qLearningDiscrete.trainStep(observation);
+
+        // Assert
+        assertEquals(1.0, stepReturn.getMaxQ(), 1e-5);
+
+        StepReply<Observation> stepReply = stepReturn.getStepReply();
+
+        assertEquals(0, stepReply.getReward(), 1e-5);
+        assertFalse(stepReply.isDone());
+        assertTrue(stepReply.getObservation().isSkipped());
     }
+
+    //TODO: there are much more test cases here that can be improved upon
+
 }

@@ -30,7 +30,7 @@ import java.util.List;
  */
 public class StateActionExperienceHandler<A> implements ExperienceHandler<A, StateActionPair<A>> {
 
-    private List<StateActionPair<A>> stateActionPairs;
+    private List<StateActionPair<A>> stateActionPairs = new ArrayList<>();
 
     public void setFinalObservation(Observation observation) {
         // Do nothing

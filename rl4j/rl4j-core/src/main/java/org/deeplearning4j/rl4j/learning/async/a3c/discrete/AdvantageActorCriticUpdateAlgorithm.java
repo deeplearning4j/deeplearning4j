@@ -18,7 +18,6 @@ package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.UpdateAlgorithm;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,28 +26,25 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.List;
 
-public class A3CUpdateAlgorithm implements UpdateAlgorithm<IActorCritic> {
+/**
+ * The Advantage Actor-Critic update algorithm can be used by A2C and A3C algorithms alike
+ */
+public class AdvantageActorCriticUpdateAlgorithm implements UpdateAlgorithm<IActorCritic> {
 
-    private final IAsyncGlobal asyncGlobal;
     private final int[] shape;
     private final int actionSpaceSize;
-    private final int targetDqnUpdateFreq;
     private final double gamma;
     private final boolean recurrent;
 
-    public A3CUpdateAlgorithm(IAsyncGlobal asyncGlobal,
-                              int[] shape,
-                              int actionSpaceSize,
-                              int targetDqnUpdateFreq,
-                              double gamma) {
-
-        this.asyncGlobal = asyncGlobal;
+    public AdvantageActorCriticUpdateAlgorithm(boolean recurrent,
+                                               int[] shape,
+                                               int actionSpaceSize,
+                                               double gamma) {
 
         //if recurrent then train as a time serie with a batch size of 1
-        recurrent = asyncGlobal.getCurrent().isRecurrent();
+        this.recurrent = recurrent;
         this.shape = shape;
         this.actionSpaceSize = actionSpaceSize;
-        this.targetDqnUpdateFreq = targetDqnUpdateFreq;
         this.gamma = gamma;
     }
 
@@ -65,18 +61,12 @@ public class A3CUpdateAlgorithm implements UpdateAlgorithm<IActorCritic> {
                 : Nd4j.zeros(size, actionSpaceSize);
 
         StateActionPair<Integer> stateActionPair = experience.get(size - 1);
-        double r;
-        if(stateActionPair.isTerminal()) {
-            r = 0;
-        }
-        else {
-            INDArray[] output = null;
-            if (targetDqnUpdateFreq == -1)
-                output = current.outputAll(stateActionPair.getObservation().getData());
-            else synchronized (asyncGlobal) {
-                output = asyncGlobal.getTarget().outputAll(stateActionPair.getObservation().getData());
-            }
-            r = output[0].getDouble(0);
+        double value;
+        if (stateActionPair.isTerminal()) {
+            value = 0;
+        } else {
+            INDArray[] output = current.outputAll(stateActionPair.getObservation().getData());
+            value = output[0].getDouble(0);
         }
 
         for (int i = size - 1; i >= 0; --i) {
@@ -86,7 +76,7 @@ public class A3CUpdateAlgorithm implements UpdateAlgorithm<IActorCritic> {
 
             INDArray[] output = current.outputAll(observationData);
 
-            r = stateActionPair.getReward() + gamma * r;
+            value = stateActionPair.getReward() + gamma * value;
             if (recurrent) {
                 input.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(i)).assign(observationData);
             } else {
@@ -94,11 +84,11 @@ public class A3CUpdateAlgorithm implements UpdateAlgorithm<IActorCritic> {
             }
 
             //the critic
-            targets.putScalar(i, r);
+            targets.putScalar(i, value);
 
             //the actor
             double expectedV = output[0].getDouble(0);
-            double advantage = r - expectedV;
+            double advantage = value - expectedV;
             if (recurrent) {
                 logSoftmax.putScalar(0, stateActionPair.getAction(), i, advantage);
             } else {
@@ -108,6 +98,6 @@ public class A3CUpdateAlgorithm implements UpdateAlgorithm<IActorCritic> {
 
         // targets -> value, critic
         // logSoftmax -> policy, actor
-        return current.gradient(input, new INDArray[] {targets, logSoftmax});
+        return current.gradient(input, new INDArray[]{targets, logSoftmax});
     }
 }

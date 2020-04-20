@@ -257,9 +257,9 @@ public class PolicyTest {
         }
 
         @Override
-        protected <AS extends ActionSpace<Integer>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<MockEncodable, Integer, AS> mdpWrapper, IHistoryProcessor hp, RefacEpochStepCounter epochStepCounter) {
+        protected <AS extends ActionSpace<Integer>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<MockEncodable, Integer, AS> mdpWrapper, IHistoryProcessor hp) {
             mdpWrapper.setTransformProcess(MockMDP.buildTransformProcess(shape, skipFrame, historyLength));
-            return super.refacInitMdp(mdpWrapper, hp, epochStepCounter);
+            return super.refacInitMdp(mdpWrapper, hp);
         }
     }
 }

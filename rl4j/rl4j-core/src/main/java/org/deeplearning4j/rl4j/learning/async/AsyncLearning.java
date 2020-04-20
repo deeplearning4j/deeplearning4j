@@ -40,9 +40,9 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alexandre Boulanger
  */
 @Slf4j
-public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-        extends Learning<O, A, AS, NN>
-        implements IAsyncLearning {
+public abstract class AsyncLearning<OBSERVATION extends Encodable, ACTION, ACTION_SPACE extends ActionSpace<ACTION>, NN extends NeuralNet>
+                extends Learning<OBSERVATION, ACTION, ACTION_SPACE, NN>
+                implements IAsyncLearning {
 
     private Thread monitorThread = null;
 
@@ -69,10 +69,6 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 
-    protected void startGlobalThread() {
-        getAsyncGlobal().start();
-    }
-
     protected boolean isTrainingComplete() {
         return getAsyncGlobal().isTrainingComplete();
     }
@@ -87,7 +83,6 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
     private int progressMonitorFrequency = 20000;
 
     private void launchThreads() {
-        startGlobalThread();
         for (int i = 0; i < getConfiguration().getNumThreads(); i++) {
             Thread t = newThread(i, i % Nd4j.getAffinityManager().getNumberOfDevices());
             t.start();
@@ -99,8 +94,8 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
      * @return The current step
      */
     @Override
-    public int getStepCounter() {
-        return getAsyncGlobal().getT().get();
+    public int getStepCount() {
+        return getAsyncGlobal().getStepCount();
     }
 
     /**
@@ -129,14 +124,13 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
             monitorTraining();
         }
 
-        cleanupPostTraining();
         listeners.notifyTrainingFinished();
     }
 
     protected void monitorTraining() {
         try {
             monitorThread = Thread.currentThread();
-            while (canContinue && !isTrainingComplete() && getAsyncGlobal().isRunning()) {
+            while (canContinue && !isTrainingComplete()) {
                 canContinue = listeners.notifyTrainingProgress(this);
                 if (!canContinue) {
                     return;
@@ -150,11 +144,6 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
             log.error("Training interrupted.", e);
         }
         monitorThread = null;
-    }
-
-    protected void cleanupPostTraining() {
-        // Worker threads stops automatically when the global thread stops
-        getAsyncGlobal().terminate();
     }
 
     /**

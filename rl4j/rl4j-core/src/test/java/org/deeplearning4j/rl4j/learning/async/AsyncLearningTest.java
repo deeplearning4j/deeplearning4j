@@ -18,132 +18,93 @@
 package org.deeplearning4j.rl4j.learning.async;
 
 import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
-import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.policy.IPolicy;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.support.MockAsyncConfiguration;
-import org.deeplearning4j.rl4j.support.MockAsyncGlobal;
-import org.deeplearning4j.rl4j.support.MockEncodable;
-import org.deeplearning4j.rl4j.support.MockNeuralNet;
-import org.deeplearning4j.rl4j.support.MockPolicy;
-import org.deeplearning4j.rl4j.support.MockTrainingListener;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
+import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Box;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+
+@RunWith(MockitoJUnitRunner.class)
 public class AsyncLearningTest {
 
-    @Test
-    public void when_training_expect_AsyncGlobalStarted() {
-        // Arrange
-        TestContext context = new TestContext();
-        context.asyncGlobal.setMaxLoops(1);
+    AsyncLearning<Box, INDArray, ActionSpace<INDArray>, NeuralNet> asyncLearning;
 
-        // Act
-        context.sut.train();
+    @Mock
+    TrainingListener mockTrainingListener;
 
-        // Assert
-        assertTrue(context.asyncGlobal.hasBeenStarted);
-        assertTrue(context.asyncGlobal.hasBeenTerminated);
+    @Mock
+    AsyncGlobal<NeuralNet> mockAsyncGlobal;
+
+    @Mock
+    IAsyncLearningConfiguration mockConfiguration;
+
+    @Before
+    public void setup() {
+        asyncLearning = mock(AsyncLearning.class, Mockito.withSettings()
+                .useConstructor()
+                .defaultAnswer(Mockito.CALLS_REAL_METHODS));
+
+        asyncLearning.addListener(mockTrainingListener);
+
+        when(asyncLearning.getAsyncGlobal()).thenReturn(mockAsyncGlobal);
+        when(asyncLearning.getConfiguration()).thenReturn(mockConfiguration);
+
+        // Don't actually start any threads in any of these tests
+        when(mockConfiguration.getNumThreads()).thenReturn(0);
     }
 
     @Test
     public void when_trainStartReturnsStop_expect_noTraining() {
         // Arrange
-        TestContext context = new TestContext();
-        context.listener.setRemainingTrainingStartCallCount(0);
+        when(mockTrainingListener.onTrainingStart()).thenReturn(TrainingListener.ListenerResponse.STOP);
+
         // Act
-        context.sut.train();
+        asyncLearning.train();
 
         // Assert
-        assertEquals(1, context.listener.onTrainingStartCallCount);
-        assertEquals(1, context.listener.onTrainingEndCallCount);
-        assertEquals(0, context.policy.playCallCount);
-        assertTrue(context.asyncGlobal.hasBeenTerminated);
+        verify(mockTrainingListener, times(1)).onTrainingStart();
+        verify(mockTrainingListener, times(1)).onTrainingEnd();
     }
 
     @Test
     public void when_trainingIsComplete_expect_trainingStop() {
         // Arrange
-        TestContext context = new TestContext();
+        when(mockAsyncGlobal.isTrainingComplete()).thenReturn(true);
 
         // Act
-        context.sut.train();
+        asyncLearning.train();
 
         // Assert
-        assertEquals(1, context.listener.onTrainingStartCallCount);
-        assertEquals(1, context.listener.onTrainingEndCallCount);
-        assertTrue(context.asyncGlobal.hasBeenTerminated);
+        verify(mockTrainingListener, times(1)).onTrainingStart();
+        verify(mockTrainingListener, times(1)).onTrainingEnd();
     }
 
     @Test
     public void when_training_expect_onTrainingProgressCalled() {
         // Arrange
-        TestContext context = new TestContext();
+        asyncLearning.setProgressMonitorFrequency(100);
+        when(mockTrainingListener.onTrainingProgress(eq(asyncLearning))).thenReturn(TrainingListener.ListenerResponse.STOP);
 
         // Act
-        context.sut.train();
+        asyncLearning.train();
 
         // Assert
-        assertEquals(1, context.listener.onTrainingProgressCallCount);
+        verify(mockTrainingListener, times(1)).onTrainingStart();
+        verify(mockTrainingListener, times(1)).onTrainingEnd();
+        verify(mockTrainingListener, times(1)).onTrainingProgress(eq(asyncLearning));
     }
-
-
-    public static class TestContext {
-        MockAsyncConfiguration config = new MockAsyncConfiguration(1L, 11, 0, 0, 0, 0,0, 0, 0, 0);
-        public final MockAsyncGlobal asyncGlobal = new MockAsyncGlobal();
-        public final MockPolicy policy = new MockPolicy();
-        public final TestAsyncLearning sut = new TestAsyncLearning(config, asyncGlobal, policy);
-        public final MockTrainingListener listener = new MockTrainingListener(asyncGlobal);
-
-        public TestContext() {
-            sut.addListener(listener);
-            asyncGlobal.setMaxLoops(1);
-            sut.setProgressMonitorFrequency(1);
-        }
-    }
-
-    public static class TestAsyncLearning extends AsyncLearning<MockEncodable, Integer, DiscreteSpace, MockNeuralNet> {
-        private final IAsyncLearningConfiguration conf;
-        private final IAsyncGlobal asyncGlobal;
-        private final IPolicy<MockEncodable, Integer> policy;
-
-        public TestAsyncLearning(IAsyncLearningConfiguration conf, IAsyncGlobal asyncGlobal, IPolicy<MockEncodable, Integer> policy) {
-            this.conf = conf;
-            this.asyncGlobal = asyncGlobal;
-            this.policy = policy;
-        }
-
-        @Override
-        public IPolicy getPolicy() {
-            return policy;
-        }
-
-        @Override
-        public IAsyncLearningConfiguration getConfiguration() {
-            return conf;
-        }
-
-        @Override
-        protected AsyncThread newThread(int i, int deviceAffinity) {
-            return null;
-        }
-
-        @Override
-        public MDP getMdp() {
-            return null;
-        }
-
-        @Override
-        protected IAsyncGlobal getAsyncGlobal() {
-            return asyncGlobal;
-        }
-
-        @Override
-        public MockNeuralNet getNeuralNet() {
-            return null;
-        }
-    }
-
 }

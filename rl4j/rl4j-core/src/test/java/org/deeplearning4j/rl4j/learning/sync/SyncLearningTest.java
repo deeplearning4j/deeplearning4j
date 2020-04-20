@@ -1,151 +1,117 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
-
 package org.deeplearning4j.rl4j.learning.sync;
 
-import lombok.Getter;
+import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.configuration.ILearningConfiguration;
-import org.deeplearning4j.rl4j.learning.configuration.LearningConfiguration;
-import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 import org.deeplearning4j.rl4j.learning.sync.support.MockStatEntry;
-import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.policy.IPolicy;
-import org.deeplearning4j.rl4j.support.MockTrainingListener;
+import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.util.IDataManager;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class SyncLearningTest {
+
+    @Mock
+    TrainingListener mockTrainingListener;
+
+    SyncLearning<Box, INDArray, ActionSpace<INDArray>, NeuralNet> syncLearning;
+
+    @Mock
+    ILearningConfiguration mockLearningConfiguration;
+
+    @Before
+    public void setup() {
+
+        syncLearning = mock(SyncLearning.class, Mockito.withSettings()
+                .useConstructor()
+                .defaultAnswer(Mockito.CALLS_REAL_METHODS));
+
+        syncLearning.addListener(mockTrainingListener);
+
+        when(syncLearning.trainEpoch()).thenAnswer(invocation -> {
+            //syncLearning.incrementEpoch();
+            syncLearning.incrementStep();
+            return new MockStatEntry(syncLearning.getEpochCount(), syncLearning.getStepCount(), 1.0);
+        });
+
+        when(syncLearning.getConfiguration()).thenReturn(mockLearningConfiguration);
+        when(mockLearningConfiguration.getMaxStep()).thenReturn(100);
+    }
 
     @Test
     public void when_training_expect_listenersToBeCalled() {
-        // Arrange
-        QLearningConfiguration lconfig = QLearningConfiguration.builder().maxStep(10).build();
-        MockTrainingListener listener = new MockTrainingListener();
-        MockSyncLearning sut = new MockSyncLearning(lconfig);
-        sut.addListener(listener);
 
         // Act
-        sut.train();
+        syncLearning.train();
 
-        assertEquals(1, listener.onTrainingStartCallCount);
-        assertEquals(10, listener.onNewEpochCallCount);
-        assertEquals(10, listener.onEpochTrainingResultCallCount);
-        assertEquals(1, listener.onTrainingEndCallCount);
+        verify(mockTrainingListener, times(1)).onTrainingStart();
+        verify(mockTrainingListener, times(100)).onNewEpoch(eq(syncLearning));
+        verify(mockTrainingListener, times(100)).onEpochTrainingResult(eq(syncLearning), any(IDataManager.StatEntry.class));
+        verify(mockTrainingListener, times(1)).onTrainingEnd();
+
     }
 
     @Test
     public void when_trainingStartCanContinueFalse_expect_trainingStopped() {
         // Arrange
-        QLearningConfiguration lconfig = QLearningConfiguration.builder().maxStep(10).build();
-        MockTrainingListener listener = new MockTrainingListener();
-        MockSyncLearning sut = new MockSyncLearning(lconfig);
-        sut.addListener(listener);
-        listener.setRemainingTrainingStartCallCount(0);
+        when(mockTrainingListener.onTrainingStart()).thenReturn(TrainingListener.ListenerResponse.STOP);
 
         // Act
-        sut.train();
+        syncLearning.train();
 
-        assertEquals(1, listener.onTrainingStartCallCount);
-        assertEquals(0, listener.onNewEpochCallCount);
-        assertEquals(0, listener.onEpochTrainingResultCallCount);
-        assertEquals(1, listener.onTrainingEndCallCount);
+        verify(mockTrainingListener, times(1)).onTrainingStart();
+        verify(mockTrainingListener, times(0)).onNewEpoch(eq(syncLearning));
+        verify(mockTrainingListener, times(0)).onEpochTrainingResult(eq(syncLearning), any(IDataManager.StatEntry.class));
+        verify(mockTrainingListener, times(1)).onTrainingEnd();
     }
 
     @Test
     public void when_newEpochCanContinueFalse_expect_trainingStopped() {
         // Arrange
-        QLearningConfiguration lconfig = QLearningConfiguration.builder().maxStep(10).build();
-        MockTrainingListener listener = new MockTrainingListener();
-        MockSyncLearning sut = new MockSyncLearning(lconfig);
-        sut.addListener(listener);
-        listener.setRemainingOnNewEpochCallCount(2);
+        when(mockTrainingListener.onNewEpoch(eq(syncLearning)))
+                .thenReturn(TrainingListener.ListenerResponse.CONTINUE)
+                .thenReturn(TrainingListener.ListenerResponse.CONTINUE)
+                .thenReturn(TrainingListener.ListenerResponse.STOP);
 
         // Act
-        sut.train();
+        syncLearning.train();
 
-        assertEquals(1, listener.onTrainingStartCallCount);
-        assertEquals(3, listener.onNewEpochCallCount);
-        assertEquals(2, listener.onEpochTrainingResultCallCount);
-        assertEquals(1, listener.onTrainingEndCallCount);
+        verify(mockTrainingListener, times(1)).onTrainingStart();
+        verify(mockTrainingListener, times(3)).onNewEpoch(eq(syncLearning));
+        verify(mockTrainingListener, times(2)).onEpochTrainingResult(eq(syncLearning), any(IDataManager.StatEntry.class));
+        verify(mockTrainingListener, times(1)).onTrainingEnd();
+
     }
 
     @Test
     public void when_epochTrainingResultCanContinueFalse_expect_trainingStopped() {
         // Arrange
-        LearningConfiguration lconfig = QLearningConfiguration.builder().maxStep(10).build();
-        MockTrainingListener listener = new MockTrainingListener();
-        MockSyncLearning sut = new MockSyncLearning(lconfig);
-        sut.addListener(listener);
-        listener.setRemainingOnEpochTrainingResult(2);
+        when(mockTrainingListener.onEpochTrainingResult(eq(syncLearning), any(IDataManager.StatEntry.class)))
+                .thenReturn(TrainingListener.ListenerResponse.CONTINUE)
+                .thenReturn(TrainingListener.ListenerResponse.CONTINUE)
+                .thenReturn(TrainingListener.ListenerResponse.STOP);
 
         // Act
-        sut.train();
+        syncLearning.train();
 
-        assertEquals(1, listener.onTrainingStartCallCount);
-        assertEquals(3, listener.onNewEpochCallCount);
-        assertEquals(3, listener.onEpochTrainingResultCallCount);
-        assertEquals(1, listener.onTrainingEndCallCount);
-    }
-
-    public static class MockSyncLearning extends SyncLearning {
-
-        private final ILearningConfiguration conf;
-
-        @Getter
-        private int currentEpochStep = 0;
-
-        public MockSyncLearning(ILearningConfiguration conf) {
-            this.conf = conf;
-        }
-
-        @Override
-        protected void preEpoch() { currentEpochStep = 0;  }
-
-        @Override
-        protected void postEpoch() { }
-
-        @Override
-        protected IDataManager.StatEntry trainEpoch() {
-            setStepCounter(getStepCounter() + 1);
-            return new MockStatEntry(getCurrentEpochStep(), getStepCounter(), 1.0);
-        }
-
-        @Override
-        public NeuralNet getNeuralNet() {
-            return null;
-        }
-
-        @Override
-        public IPolicy getPolicy() {
-            return null;
-        }
-
-        @Override
-        public ILearningConfiguration getConfiguration() {
-            return conf;
-        }
-
-        @Override
-        public MDP getMdp() {
-            return null;
-        }
+        verify(mockTrainingListener, times(1)).onTrainingStart();
+        verify(mockTrainingListener, times(3)).onNewEpoch(eq(syncLearning));
+        verify(mockTrainingListener, times(3)).onEpochTrainingResult(eq(syncLearning), any(IDataManager.StatEntry.class));
+        verify(mockTrainingListener, times(1)).onTrainingEnd();
     }
 }
