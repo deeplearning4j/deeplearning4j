@@ -226,7 +226,9 @@ public class TrainModule implements UIModule {
      * @param rc   Routing context
      */
     private void renderFtl(String file, RoutingContext rc) {
-        Map<String, String> input = DefaultI18N.getInstance().getMessages(DefaultI18N.getInstance().getDefaultLanguage());
+        String sessionId = rc.request().getParam("sessionID");
+        String langCode = DefaultI18N.getInstance(sessionId).getDefaultLanguage();
+        Map<String, String> input = DefaultI18N.getInstance().getMessages(langCode);
         String html;
         try {
             String content = FileUtils.readFileToString(Resources.asFile("templates/" + file), StandardCharsets.UTF_8);

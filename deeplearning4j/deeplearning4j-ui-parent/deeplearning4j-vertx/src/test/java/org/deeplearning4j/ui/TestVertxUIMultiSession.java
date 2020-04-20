@@ -190,7 +190,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     @Test
     public void testUIAutoAttachDetach() throws Exception {
 
-        long detachTimeoutMillis = 10_000;
+        long detachTimeoutMillis = 30_000;
         AutoDetachingStatsStorageProvider statsProvider = new AutoDetachingStatsStorageProvider(detachTimeoutMillis);
         UIServer uIServer = UIServer.getInstance(true, statsProvider);
         statsProvider.setUIServer(uIServer);
