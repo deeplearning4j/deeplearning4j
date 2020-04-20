@@ -326,7 +326,7 @@ public class TextPipelineTest extends BaseSparkTest {
         sc.stop();
     }
 
-    @Test
+    @Test @Ignore   //AB 2020/04/20 https://github.com/eclipse/deeplearning4j/issues/8849
     public void testCountCumSum() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
