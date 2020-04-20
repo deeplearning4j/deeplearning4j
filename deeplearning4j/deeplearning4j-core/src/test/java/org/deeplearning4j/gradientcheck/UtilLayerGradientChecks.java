@@ -52,6 +52,11 @@ public class UtilLayerGradientChecks extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testMaskLayer() {
         Nd4j.getRandom().setSeed(12345);

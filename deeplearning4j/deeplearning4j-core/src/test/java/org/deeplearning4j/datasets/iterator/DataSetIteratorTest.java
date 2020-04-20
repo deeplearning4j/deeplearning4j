@@ -59,7 +59,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 90000;
+        return 360000;  //Should run quickly; increased to large timeout due to occasonal slow CI downloads
     }
 
     @Test

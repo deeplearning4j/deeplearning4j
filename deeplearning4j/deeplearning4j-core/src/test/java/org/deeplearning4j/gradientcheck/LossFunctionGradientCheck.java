@@ -73,6 +73,11 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void lossFunctionGradientCheck() {
         ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(),

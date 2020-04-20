@@ -98,7 +98,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 90000L;
+        return 180000L;     //Most benchmarks should run very quickly; large timeout is to avoid issues with unusually slow download of test resources
     }
 
     @Test(expected = IllegalStateException.class)

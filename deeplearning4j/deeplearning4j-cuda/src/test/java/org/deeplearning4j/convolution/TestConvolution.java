@@ -70,6 +70,11 @@ public class TestConvolution extends BaseDL4JTest {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 240000L;
+    }
+
     @Test
     public void testSameModeActivationSizes() {
         int inH = 3;
@@ -117,6 +122,8 @@ public class TestConvolution extends BaseDL4JTest {
         for (ConvolutionMode c : cm) {
             for (ConvolutionLayer.AlgoMode a : new ConvolutionLayer.AlgoMode[]{ConvolutionLayer.AlgoMode.NO_WORKSPACE, ConvolutionLayer.AlgoMode.PREFER_FASTEST}) {
                 for (boolean conv : new boolean[]{true, false}) {
+                    String msg = c + " - " + a + " - " + (conv ? "conv" : "subsampling");
+                    System.out.println(msg);
 
                     org.deeplearning4j.nn.conf.layers.Layer l;
                     if (conv) {
@@ -125,7 +132,9 @@ public class TestConvolution extends BaseDL4JTest {
                         l = new SubsamplingLayer.Builder().kernelSize(4, 4).stride(2, 2).build();
                     }
 
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
+                            .seed(12345)
                             .l2(0.0005).updater(new Sgd(0.01)).weightInit(WeightInit.XAVIER).convolutionMode(c).cudnnAlgoMode(a).list()
                             .layer(0, l)
                             .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
@@ -159,32 +168,32 @@ public class TestConvolution extends BaseDL4JTest {
                         throw new RuntimeException();
 
 
-                    INDArray in = Nd4j.rand(new int[]{1, 1, 20, 20}); //(20-4+0)/2 +1 = 9
+                    INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{1, 1, 20, 20}); //(20-4+0)/2 +1 = 9
 
                     INDArray outCudnn = layerCudnn.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
                     INDArray outStd = layerStandard.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
 
-                    assertEquals(outStd, outCudnn);
+                    assertEquals(msg, outStd, outCudnn);
 
 
                     //Check backprop:
-                    INDArray epsilon = Nd4j.rand(outStd.shape());
-                    Pair<Gradient, INDArray> pCudnn = layerCudnn.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
-                    Pair<Gradient, INDArray> pStd = layerStandard.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
+                    INDArray epsilon = Nd4j.rand(DataType.DOUBLE, outStd.shape());
+                    Pair<Gradient, INDArray> pCudnn = layerCudnn.backpropGradient(epsilon.dup(), LayerWorkspaceMgr.noWorkspaces());
+                    Pair<Gradient, INDArray> pStd = layerStandard.backpropGradient(epsilon.dup(), LayerWorkspaceMgr.noWorkspaces());
 
-                    System.out.println(Arrays.toString(pStd.getSecond().data().asFloat()));
-                    System.out.println(Arrays.toString(pCudnn.getSecond().data().asFloat()));
+//                    System.out.println(Arrays.toString(pStd.getSecond().data().asFloat()));
+//                    System.out.println(Arrays.toString(pCudnn.getSecond().data().asFloat()));
 
                     INDArray epsOutStd = pStd.getSecond();
                     INDArray epsOutCudnn = pCudnn.getSecond();
 
-                    assertTrue(epsOutStd.equalsWithEps(epsOutCudnn, 1e-4));
+                    assertTrue(msg, epsOutStd.equalsWithEps(epsOutCudnn, 1e-4));
 
                     if (conv) {
                         INDArray gradStd = pStd.getFirst().gradient();
                         INDArray gradCudnn = pCudnn.getFirst().gradient();
 
-                        assertTrue(gradStd.equalsWithEps(gradCudnn, 1e-4));
+                        assertTrue(msg, gradStd.equalsWithEps(gradCudnn, 1e-4));
                     }
                 }
             }
@@ -192,7 +201,7 @@ public class TestConvolution extends BaseDL4JTest {
     }
 
 
-    @Test @Ignore   //AB 2019/05/21 - Ignored to get master passing - issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7766
+    @Test
     public void validateXceptionImport() throws Exception {
         File dir = testDir.newFolder();
         File fSource = Resources.asFile("modelimport/keras/examples/xception/xception_tf_keras_2.h5");

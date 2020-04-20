@@ -55,6 +55,11 @@ public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable
     protected transient DataSet data;
     protected transient JavaRDD<DataSet> sparkData;
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
     @Before
     public void before() {
 

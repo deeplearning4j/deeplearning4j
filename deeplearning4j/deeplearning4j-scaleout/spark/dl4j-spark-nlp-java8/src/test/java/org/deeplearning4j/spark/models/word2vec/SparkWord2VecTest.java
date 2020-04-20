@@ -48,6 +48,12 @@ import static org.junit.Assert.*;
  * @author raver119@gmail.com
  */
 public class SparkWord2VecTest extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
     private static List<String> sentences;
     private JavaSparkContext sc;
 

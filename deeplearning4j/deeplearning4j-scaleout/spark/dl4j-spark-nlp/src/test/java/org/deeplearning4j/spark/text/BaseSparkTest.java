@@ -34,6 +34,11 @@ import java.util.Map;
 public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable {
     protected transient JavaSparkContext sc;
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
     @Before
     public void before() throws Exception {
         sc = getContext();

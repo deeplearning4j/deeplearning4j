@@ -88,5 +88,15 @@ find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
 #Scala maven plugin, <scalaVersion>2.11</scalaVersion>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(scalaVersion>\)'$FROM_VERSION'<\/scalaVersion>/\1'$TO_VERSION'<\/scalaVersion>/g' {}" \;
+  
+# Disable deeplearning4j-nlp-korean for scala 2.12 - see https://github.com/eclipse/deeplearning4j/issues/8840
+if [ $TO_VERSION = $SCALA_211_VERSION ]; then
+  #Enable
+  sed -i 's/        <!--<module>deeplearning4j-nlp-korean<\/module>-->/        <module>deeplearning4j-nlp-korean<\/module>/g' deeplearning4j/deeplearning4j-nlp-parent/pom.xml
+else
+  #Disable
+  sed -i 's/        <module>deeplearning4j-nlp-korean<\/module>/        <!--<module>deeplearning4j-nlp-korean<\/module>-->/g' deeplearning4j/deeplearning4j-nlp-parent/pom.xml
+fi
+
 
 echo "Done updating Scala versions.";

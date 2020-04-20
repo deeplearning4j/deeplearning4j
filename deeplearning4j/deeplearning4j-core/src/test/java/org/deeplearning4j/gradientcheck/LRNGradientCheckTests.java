@@ -53,6 +53,11 @@ public class LRNGradientCheckTests extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
 
     @Test
     public void testGradientLRNSimple() {

@@ -46,6 +46,11 @@ import static org.junit.Assert.*;
  */
 public class ValidateCudnnLSTM extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;
+    }
+
     @Test
     public void validateImplSimple() throws Exception {
 
@@ -109,7 +114,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
         mln1.computeGradientAndScore();
         mln2.computeGradientAndScore();
 
-        assertEquals(mln1.score(), mln2.score(), 1e-8);
+        assertEquals(mln1.score(), mln2.score(), 1e-5);
 
         Gradient g1 = mln1.gradient();
         Gradient g2 = mln2.gradient();

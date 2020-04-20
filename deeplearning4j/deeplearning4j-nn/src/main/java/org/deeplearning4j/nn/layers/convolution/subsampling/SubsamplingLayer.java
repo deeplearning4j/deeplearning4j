@@ -116,10 +116,10 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int[] dilation = layerConf().getDilation();
 
         int[] pad;
-        int[] outSize = new int[]{(int)input.size(2), (int)input.size(3)};    //NCHW
+        int[] outSizeFwd = new int[]{(int)epsilon.size(2), (int)epsilon.size(3)};    //NCHW
         boolean same = convolutionMode == ConvolutionMode.Same;
         if (same) {
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSizeFwd, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
         }

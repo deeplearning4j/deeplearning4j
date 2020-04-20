@@ -64,6 +64,11 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testYoloOutputLayer() {
         int depthIn = 2;

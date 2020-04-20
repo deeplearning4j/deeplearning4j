@@ -52,6 +52,11 @@ import java.util.List;
 @Slf4j
 public class ValidateCuDNN extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 360000L;
+    }
+
     @Test
     public void validateConvLayers() {
         Nd4j.getRandom().setSeed(12345);
@@ -124,15 +129,16 @@ public class ValidateCuDNN extends BaseDL4JTest {
         validateLayers(net, classesToTest, true, fShape, lShape, CuDNNValidationUtil.MAX_REL_ERROR, CuDNNValidationUtil.MIN_ABS_ERROR);
     }
 
-    @Test @Ignore //AB 2019/05/21 - https://github.com/deeplearning4j/deeplearning4j/issues/7766
+    @Test
     public void validateConvLayersSimpleBN() {
         //Test ONLY BN - no other CuDNN functionality (i.e., DL4J impls for everything else)
         Nd4j.getRandom().setSeed(12345);
 
+        int minibatch = 8;
         int numClasses = 10;
         //imageHeight,imageWidth,channels
-        int imageHeight = 240;
-        int imageWidth = 240;
+        int imageHeight = 48;
+        int imageWidth = 48;
         int channels = 3;
         IActivation activation = new ActivationIdentity();
         MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
@@ -171,8 +177,8 @@ public class ValidateCuDNN extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(multiLayerConfiguration);
         net.init();
 
-        int[] fShape = new int[]{32, channels, imageHeight, imageWidth};
-        int[] lShape = new int[]{32, numClasses};
+        int[] fShape = new int[]{minibatch, channels, imageHeight, imageWidth};
+        int[] lShape = new int[]{minibatch, numClasses};
 
         List<Class<?>> classesToTest = new ArrayList<>();
         classesToTest.add(org.deeplearning4j.nn.layers.normalization.BatchNormalization.class);
@@ -185,10 +191,11 @@ public class ValidateCuDNN extends BaseDL4JTest {
         //Test ONLY LRN - no other CuDNN functionality (i.e., DL4J impls for everything else)
         Nd4j.getRandom().setSeed(12345);
 
+        int minibatch = 8;
         int numClasses = 10;
         //imageHeight,imageWidth,channels
-        int imageHeight = 240;
-        int imageWidth = 240;
+        int imageHeight = 48;
+        int imageWidth = 48;
         int channels = 3;
         IActivation activation = new ActivationIdentity();
         MultiLayerConfiguration multiLayerConfiguration = new NeuralNetConfiguration.Builder()
@@ -229,8 +236,8 @@ public class ValidateCuDNN extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(multiLayerConfiguration);
         net.init();
 
-        int[] fShape = new int[]{32, channels, imageHeight, imageWidth};
-        int[] lShape = new int[]{32, numClasses};
+        int[] fShape = new int[]{minibatch, channels, imageHeight, imageWidth};
+        int[] lShape = new int[]{minibatch, numClasses};
 
         List<Class<?>> classesToTest = new ArrayList<>();
         classesToTest.add(org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class);
