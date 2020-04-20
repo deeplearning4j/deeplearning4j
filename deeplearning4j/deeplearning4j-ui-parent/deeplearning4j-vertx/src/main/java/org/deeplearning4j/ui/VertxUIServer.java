@@ -78,15 +78,58 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
     private TrainModule trainModule;
 
+    /**
+     * Get (and, initialize if necessary) the UI server. This synchronous function will wait until the server started.
+     * @param port TCP socket port for {@link HttpServer} to listen
+     * @param multiSession         in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
+     *                             <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
+     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             as URL path parameter in multi-session mode, or leave it {@code null}.
+     * @return UI instance for this JVM
+     * @throws DL4JException if UI server failed to start;
+     * if the instance has already started in a different mode (multi/single-session)
+     * @throws InterruptedException if interrupted while waiting for completion
+     */
     public static VertxUIServer getInstance(Integer port, boolean multiSession,
-                                            Function<String, StatsStorage> statsStorageProvider)
+                                                    Function<String, StatsStorage> statsStorageProvider)
+            throws DL4JException, InterruptedException {
+        return getInstance(port, multiSession, statsStorageProvider, null);
+    }
+
+    /**
+     *
+     * Get (and, initialize if necessary) the UI server. This function will wait until the server started
+     * (synchronous way), or pass the given callback to handle success or failure (asynchronous way).
+     * @param port TCP socket port for {@link HttpServer} to listen
+     * @param multiSession         in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
+     *                             <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
+     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             as URL path parameter in multi-session mode, or leave it {@code null}.
+     * @param startCallback asynchronous deployment handler callback that will be notify of success or failure.
+     *                      If {@code null} given, then this method will wait until deployment is complete.
+     *                      If the deployment is successful the result will contain a String representing the
+     *                      unique deployment ID of the deployment.
+     * @return UI server instance
+     * @throws DL4JException if UI server failed to start
+     * @throws InterruptedException if interrupted while waiting for completion
+     */
+    public static VertxUIServer getInstance(Integer port, boolean multiSession,
+                                    Function<String, StatsStorage> statsStorageProvider, Promise<String> startCallback)
             throws DL4JException, InterruptedException {
         if (instance == null || instance.isStopped()) {
             VertxUIServer.multiSession.set(multiSession);
             VertxUIServer.setStatsStorageProvider(statsStorageProvider);
             instancePort = port;
-            //Launch UI server verticle and wait for it to start
-            deploy();
+
+            if (startCallback != null) {
+                //Launch UI server verticle and pass asynchronous callback that will be notified of completion
+                deploy(startCallback);
+            } else {
+                //Launch UI server verticle and wait for it to start
+                deploy();
+            }
         } else if (!instance.isStopped()) {
             if (multiSession && !instance.isMultiSession()) {
                 throw new DL4JException("Cannot return multi-session instance." +
@@ -126,24 +169,21 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
     /**
      * Deploy (start) {@link VertxUIServer},
-     * and handle successful or failed completion of deployment with given promise
-     * @param startCallback promise that will handle success or failure of deployment
+     * and pass callback to handle successful or failed completion of deployment.
+     * @param startCallback promise that will handle success or failure of deployment.
+     * If the deployment is successful the result will contain a String representing the unique deployment ID of the
+     * deployment.
      */
-    public static void deploy(Promise<String> startCallback) {
+    private static void deploy(Promise<String> startCallback) {
         log.debug("Deeplearning4j UI server is starting.");
         Promise<String> promise = Promise.promise();
         promise.future().compose(
-                success -> Future.future(prom -> {prom.complete();}),
-                failure -> Future.future(prom -> {
-                    prom.fail(new RuntimeException(failure));
-                })
-        ).compose(
-                success -> Future.future(prom -> { startCallback.complete(); }),
-                failure -> Future.future(prom -> { startCallback.fail(failure); })
+                success -> Future.future(prom -> startCallback.complete(success)),
+                failure -> Future.future(prom -> startCallback.fail(new RuntimeException(failure)))
         );
 
         Vertx vertx = Vertx.vertx();
-        vertx.deployVerticle(VertxUIServer.class.getName(), res -> {promise.handle(res);});
+        vertx.deployVerticle(VertxUIServer.class.getName(), promise);
     }
 
 

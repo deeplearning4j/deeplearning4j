@@ -17,6 +17,8 @@
 
 package org.deeplearning4j.ui;
 
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
@@ -336,15 +338,40 @@ public class TestVertxUI extends BaseDL4JTest {
     }
 
     @Test (expected = DL4JException.class)
-    public void testUIStartFailure() throws InterruptedException {
+    public void testUIStartPortAlreadyBound() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
+        //Create HttpServer that binds the same port
         int port = VertxUIServer.DEFAULT_UI_PORT;
-        Vertx.vertx().createHttpServer()
+        Vertx vertx = Vertx.vertx();
+        vertx.createHttpServer()
                 .requestHandler(event -> {})
                 .listen(port, result -> latch.countDown());
         latch.await();
 
-        UIServer.getInstance();
+        try {
+            //DL4JException signals that the port cannot be bound, UI server cannot start
+            UIServer.getInstance();
+        } finally {
+            vertx.close();
+        }
+    }
 
+    @Test
+    public void testUIStartAsync() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        int port = VertxUIServer.DEFAULT_UI_PORT;
+        Promise<String> promise = Promise.promise();
+        promise.future().compose(
+                success -> Future.future(prom -> latch.countDown()),
+                failure -> Future.future(prom -> latch.countDown())
+        );
+        VertxUIServer.getInstance(port, false, null, promise);
+        latch.await();
+        if (promise.future().succeeded()) {
+            String deploymentId = promise.future().result();
+            log.debug("UI server deployed, deployment ID = {}", deploymentId);
+        } else {
+            log.debug("UI server failed to deploy.", promise.future().cause());
+        }
     }
 }
