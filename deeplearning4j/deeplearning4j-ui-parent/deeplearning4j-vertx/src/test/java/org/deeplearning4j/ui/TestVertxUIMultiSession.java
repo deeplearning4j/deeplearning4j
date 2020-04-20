@@ -127,7 +127,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
 
                 assertEquals(HttpResponseStatus.OK.code(), conn.getResponseCode());
                 assertTrue(uIServer.isAttached(ss));
-            } catch (InterruptedException | IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
                 fail(e.getMessage());
             } finally {
@@ -243,7 +243,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     }
 
     @Test (expected = DL4JException.class)
-    public void testUIServerGetInstanceMultipleCalls1() throws InterruptedException {
+    public void testUIServerGetInstanceMultipleCalls1() {
         UIServer uiServer = UIServer.getInstance();
         assertFalse(uiServer.isMultiSession());
         UIServer.getInstance(true, null);
@@ -251,7 +251,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     }
 
     @Test (expected = DL4JException.class)
-    public void testUIServerGetInstanceMultipleCalls2() throws InterruptedException {
+    public void testUIServerGetInstanceMultipleCalls2() {
         UIServer uiServer = UIServer.getInstance(true, null);
         assertTrue(uiServer.isMultiSession());
         UIServer.getInstance(false, null);

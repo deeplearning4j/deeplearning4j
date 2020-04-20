@@ -39,10 +39,10 @@ public interface UIServer {
      *
      * @return UI instance for this JVM
      * @throws DL4JException if UI server failed to start;
-     * if the instance has already started in a different mode (multi/single-session)
-     * @throws InterruptedException if interrupted while waiting for completion
+     * if the instance has already started in a different mode (multi/single-session);
+     * if interrupted while waiting for completion
      */
-    static UIServer getInstance() throws DL4JException, InterruptedException {
+    static UIServer getInstance() throws DL4JException {
         if (VertxUIServer.getInstance() != null && !VertxUIServer.getInstance().isStopped()) {
             return VertxUIServer.getInstance();
         } else {
@@ -61,11 +61,11 @@ public interface UIServer {
      *                             as URL path parameter in multi-session mode, or leave it {@code null}.
      * @return UI instance for this JVM
      * @throws DL4JException if UI server failed to start;
-     * if the instance has already started in a different mode (multi/single-session)
-     * @throws InterruptedException if interrupted while waiting for completion
+     * if the instance has already started in a different mode (multi/single-session);
+     * if interrupted while waiting for completion
      */
     static UIServer getInstance(boolean multiSession, Function<String, StatsStorage> statsStorageProvider)
-            throws DL4JException, InterruptedException {
+            throws DL4JException {
         return VertxUIServer.getInstance(null, multiSession, statsStorageProvider);
     }
 
