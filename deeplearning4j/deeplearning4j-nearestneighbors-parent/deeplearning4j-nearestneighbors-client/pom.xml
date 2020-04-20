@@ -41,11 +41,6 @@
             <artifactId>deeplearning4j-nearestneighbors-model</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jackson</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
     </dependencies>
 
 

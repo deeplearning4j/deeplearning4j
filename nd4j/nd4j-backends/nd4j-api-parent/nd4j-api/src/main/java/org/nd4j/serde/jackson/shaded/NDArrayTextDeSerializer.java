@@ -36,6 +36,10 @@ public class NDArrayTextDeSerializer extends JsonDeserializer<INDArray> {
     @Override
     public INDArray deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException {
         JsonNode n = jp.getCodec().readTree(jp);
+        return deserialize(n);
+    }
+
+    public INDArray deserialize(JsonNode n){
 
         //First: check for backward compatilibity (RowVectorSerializer/Deserializer)
         if(!n.has("dataType")){
