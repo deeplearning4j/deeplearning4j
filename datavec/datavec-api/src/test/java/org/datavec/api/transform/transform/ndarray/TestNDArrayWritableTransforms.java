@@ -26,6 +26,7 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -39,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 02/06/2017.
  */
-public class TestNDArrayWritableTransforms {
+public class TestNDArrayWritableTransforms extends BaseND4JTest {
 
     @Test
     public void testNDArrayWritableBasic() {

@@ -27,6 +27,8 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.enums.DataFormat;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.imports.TFGraphs.NodeReader;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level1;
@@ -56,6 +58,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
@@ -8252,6 +8255,69 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{0, 1}, out1.shape());
         assertArrayEquals(new long[]{10, 0}, out2.shape());
     }
+
+    @Test
+    public void testConv2DWeightsFormat1() {
+        int bS = 2, iH = 4, iW = 3, iC = 4, oC = 3, kH = 3, kW = 2, sH = 1, sW = 1, pH = 0, pW = 0, dH = 1, dW = 1;
+        int       oH=2,oW=2;
+        // Weights format tip :
+        // 0 - kH, kW, iC, oC
+        // 1 - oC, iC, kH, kW
+        // 2 - oC, kH, kW, iC
+        WeightsFormat format = WeightsFormat.OIYX;
+
+        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iC, iH, iW});
+        INDArray weights = Nd4j.createFromArray(new float[]{
+                -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
+                2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
+                2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
+                reshape(new long[]{oC, iC, kH, kW});
+
+        INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(pH).pW(pW)
+                .sH(sH).sW(sW)
+                .dH(dH).dW(dW)
+                .isSameMode(false)
+                .weightsFormat(format)
+                .build();
+
+        INDArray[] ret = Nd4j.exec(new Conv2D(inArr, weights, bias, c));
+        assertArrayEquals(new long[]{bS, oC, oH, oW}, ret[0].shape());
+    }
+
+    @Test
+    public void testConv2DWeightsFormat2() {
+        int bS=2, iH=4,iW=3,  iC=4,oC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+        int oH=4,oW=3;
+        WeightsFormat format = WeightsFormat.OYXI;
+
+        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iH, iW, iC});
+        INDArray weights = Nd4j.createFromArray(new float[]{
+                -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
+                2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
+                2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
+                reshape(new long[]{oC, kH, kW, iC});
+
+        INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(pH).pW(pW)
+                .sH(sH).sW(sW)
+                .dH(dH).dW(dW)
+                .isSameMode(true)
+                .dataFormat("NHWC")
+                .weightsFormat(format)
+                .build();
+
+        INDArray[] ret = Nd4j.exec(new Conv2D(inArr, weights, bias, c));
+        System.out.println(Arrays.toString(ret[0].shape()));
+        assertArrayEquals(new long[]{bS, oH, oW, oC}, ret[0].shape());
+    }
+
 
     @Override
     public char ordering() {

@@ -23,13 +23,14 @@ import org.datavec.api.transform.serde.testClasses.CustomCondition;
 import org.datavec.api.transform.serde.testClasses.CustomFilter;
 import org.datavec.api.transform.serde.testClasses.CustomTransform;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 11/01/2017.
  */
-public class TestCustomTransformJsonYaml {
+public class TestCustomTransformJsonYaml extends BaseND4JTest {
 
     @Test
     public void testCustomTransform() {

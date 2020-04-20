@@ -16,6 +16,7 @@
 
 package org.datavec.api.writable;
 
+import org.nd4j.BaseND4JTest;
 import org.nd4j.shade.guava.collect.Lists;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.util.ndarray.RecordConverter;
@@ -31,7 +32,7 @@ import java.util.TimeZone;
 
 import static org.junit.Assert.assertEquals;
 
-public class RecordConverterTest {
+public class RecordConverterTest extends BaseND4JTest {
     @Test
     public void toRecords_PassInClassificationDataSet_ExpectNDArrayAndIntWritables() {
         INDArray feature1 = Nd4j.create(new double[]{4, -5.7, 10, -0.1}, new long[]{1, 4}, DataType.FLOAT);
@@ -86,7 +87,7 @@ public class RecordConverterTest {
                 new IntWritable(1));
 
         INDArray exp = Nd4j.create(new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 1}, new long[]{1, 10}, DataType.FLOAT);
-        INDArray act = RecordConverter.toArray(l);
+        INDArray act = RecordConverter.toArray(DataType.FLOAT, l);
 
         assertEquals(exp, act);
     }
@@ -101,7 +102,7 @@ public class RecordConverterTest {
                 {1,2,3,4,5},
                 {6,7,8,9,10}}).castTo(DataType.FLOAT);
 
-        INDArray act = RecordConverter.toMatrix(Arrays.asList(l1,l2));
+        INDArray act = RecordConverter.toMatrix(DataType.FLOAT, Arrays.asList(l1,l2));
 
         assertEquals(exp, act);
     }

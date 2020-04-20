@@ -23,6 +23,7 @@ import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 18/04/2016.
  */
-public class TestJoin {
+public class TestJoin extends BaseND4JTest {
 
     @Test
     public void testJoin() {

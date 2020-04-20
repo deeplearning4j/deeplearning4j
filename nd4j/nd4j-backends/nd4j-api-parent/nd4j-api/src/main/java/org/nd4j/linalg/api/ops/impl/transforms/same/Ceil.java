@@ -75,6 +75,6 @@ public class Ceil extends BaseTransformSameOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //not continuously differentiable, but dOut/dIn = 0 in most places
 
-        return Arrays.asList(f().zerosLike(arg()));
+        return Arrays.asList(sameDiff.zerosLike(arg()));
     }
 }

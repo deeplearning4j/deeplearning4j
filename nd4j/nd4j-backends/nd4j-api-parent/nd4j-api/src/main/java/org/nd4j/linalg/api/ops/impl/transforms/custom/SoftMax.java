@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -106,8 +107,7 @@ public class SoftMax extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().softmaxDerivative(arg(), i_v.get(0), this.dimension);
-        return Collections.singletonList(ret);
+        return new SoftmaxBp(sameDiff, arg(), i_v.get(0), this.dimension).outputs();
     }
 
     @Override

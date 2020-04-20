@@ -17,13 +17,14 @@
 package org.deeplearning4j.arbiter.server;
 
 import lombok.AllArgsConstructor;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 
 @AllArgsConstructor
-public class TestDataFactoryProviderMnist implements DataSetIteratorFactory {
+public class TestDataFactoryProviderMnist extends BaseDL4JTest implements DataSetIteratorFactory {
 
     private int batchSize;
     private int terminationIter;

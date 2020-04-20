@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -67,7 +68,7 @@ public class Mean extends BaseReduceFloatOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         //If out = mean(in), then dL/dIn = 1/N * dL/dOut  (broadcast to appropriate shape)
         //Note that N differs for "along dimension" vs. "whole array" reduce cases
-        return Collections.singletonList(f().meanBp(arg(), i_v1.get(0), keepDims, dimensions));
+        return new MeanBp(sameDiff, arg(), i_v1.get(0), keepDims, dimensions).outputs();
     }
 
     @Override

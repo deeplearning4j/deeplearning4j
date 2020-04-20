@@ -40,6 +40,7 @@ import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -56,7 +57,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class ArrowConverterTest {
+public class ArrowConverterTest extends BaseND4JTest {
 
     private static BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
 

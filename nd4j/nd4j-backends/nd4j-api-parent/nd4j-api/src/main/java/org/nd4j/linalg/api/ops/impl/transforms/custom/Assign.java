@@ -89,7 +89,7 @@ public class Assign extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1){
         //TODO replace with assign backprop op from libnd4j (that handles the broadcast case properly)
-        return Arrays.asList(f().zerosLike(larg()), f1.get(0));
+        return Arrays.asList(sameDiff.zerosLike(larg()), f1.get(0));
     }
 
     @Override

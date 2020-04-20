@@ -63,8 +63,7 @@ public class Standardize extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        SDVariable ret = f().standardizeBp(arg(0), grad.get(0), dimensions);
-        return Arrays.asList(ret);
+        return new StandardizeBp(sameDiff, arg(0), grad.get(0), dimensions).outputs();
     }
 
     @Override

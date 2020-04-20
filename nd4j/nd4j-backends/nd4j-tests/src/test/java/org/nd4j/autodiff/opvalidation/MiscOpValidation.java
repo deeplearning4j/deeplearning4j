@@ -45,6 +45,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorDivOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -113,11 +115,13 @@ public class MiscOpValidation extends BaseOpValidation {
                         name = "rdiv";
                         break;
                     case 6:
-                        bcOp = sd.f().floorDiv(in3, in2);
+                        //bcOp = sd.scalarFloorDiv(in3, in2);
+                        bcOp = new FloorDivOp(sd, in3, in2).outputVariable();
                         name = "floordiv";
                         break;
                     case 7:
-                        bcOp = sd.f().floorMod(in3, in2);
+                        //bcOp = sd.scalarFloorMod(in3, in2);
+                        bcOp = new FloorModOp(sd, in3, in2).outputVariable();
                         name = "floormod";
                         if(OpValidationSuite.IGNORE_FAILING){
                             //https://github.com/deeplearning4j/deeplearning4j/issues/5976
@@ -201,11 +205,13 @@ public class MiscOpValidation extends BaseOpValidation {
                         name = "rdiv";
                         break;
                     case 6:
-                        bcOp = sd.f().floorDiv(in3, in2);
+                        //bcOp = sd.scalarFloorDiv(in3, in2);
+                        bcOp = new FloorDivOp(sd, in3, in2).outputVariable();
                         name = "floordiv";
                         break;
                     case 7:
-                        bcOp = sd.f().floorMod(in3, in2);
+                        //bcOp = sd.scalarFloorMod(in3, in2);
+                        bcOp = new FloorModOp(sd, in3, in2).outputVariable();
                         name = "floormod";
                         if(OpValidationSuite.IGNORE_FAILING){
                             //https://github.com/deeplearning4j/deeplearning4j/issues/5976
@@ -300,11 +306,13 @@ public class MiscOpValidation extends BaseOpValidation {
                         name = "rdiv";
                         break;
                     case 6:
-                        bcOp = sd.f().floorDiv(in3, in2);
+                        //bcOp = sd.scalarFloorDiv(in3, in2);
+                        bcOp = new FloorDivOp(sd, in3, in2).outputVariable();
                         name = "floordiv";
                         break;
                     case 7:
-                        bcOp = sd.f().floorMod(in3, in2);
+                        //bcOp = sd.scalarFloorMod(in3, in2);
+                        bcOp = new FloorModOp(sd, in3, in2).outputVariable();
                         name = "floormod";
                         if(OpValidationSuite.IGNORE_FAILING){
                             //https://github.com/deeplearning4j/deeplearning4j/issues/5976
@@ -766,7 +774,7 @@ public class MiscOpValidation extends BaseOpValidation {
                     .transposeB(false)
                     .transposeResult(false)
                     .build();
-            SDVariable mmul = sd.f().mmul(f, s, mt);
+            SDVariable mmul = sd.mmul(f, s, true, false, false);
             sd.updateVariableNameAndReference(mmul, "mmul");
 
             INDArray out = mmul.eval();

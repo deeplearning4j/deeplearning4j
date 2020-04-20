@@ -68,7 +68,7 @@ public class GELU extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().geluDerivative(arg(), false).mul(i_v.get(0));
+        SDVariable ret = new GELUDerivative(sameDiff, arg(), false).outputVariable().mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 

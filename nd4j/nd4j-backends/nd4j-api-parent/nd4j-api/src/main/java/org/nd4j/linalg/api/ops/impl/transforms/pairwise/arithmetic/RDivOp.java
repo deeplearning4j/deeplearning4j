@@ -16,12 +16,15 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RDivBpOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -34,12 +37,16 @@ public class RDivOp extends BaseDynamicTransformOp {
 
     public RDivOp() {}
 
-    public RDivOp( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(sameDiff, args, inPlace);
+    public RDivOp(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable y) {
+        super(sameDiff, new SDVariable[]{x, y}, false);
     }
 
     public RDivOp(INDArray first, INDArray second, INDArray result){
         this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
+    }
+
+    public RDivOp(@NonNull INDArray x, @NonNull INDArray y){
+        this(new INDArray[]{x, y}, null);
     }
 
     public RDivOp( INDArray[] inputs, INDArray[] outputs) {
@@ -64,6 +71,6 @@ public class RDivOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return f().rdivBp(larg(), rarg(), i_v.get(0));
+        return Arrays.asList(new RDivBpOp(sameDiff, larg(), rarg(), i_v.get(0)).outputVariables());
     }
 }

@@ -68,7 +68,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
         SameDiff sd = SameDiff.create();
         INDArray arr = Nd4j.linspace(1,12,12).reshape(3,4);
         SDVariable in = sd.placeHolder("in", arr.dataType(), arr.shape() );
-        SDVariable tanh = sd.f().tanh(in);
+        SDVariable tanh = sd.math().tanh(in);
         tanh.markAsLoss();
 
         ByteBuffer bb = sd.asFlatBuffers(true);
@@ -134,7 +134,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                         break;
                     case 1:
                         //Transform
-                        x = sd.f().tanh(in);
+                        x = sd.math().tanh(in);
                         break;
                     case 2:
                     case 3:

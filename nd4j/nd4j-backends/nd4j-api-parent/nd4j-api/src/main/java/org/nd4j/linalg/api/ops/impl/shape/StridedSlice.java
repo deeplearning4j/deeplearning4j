@@ -27,6 +27,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -259,12 +260,12 @@ public class StridedSlice extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         if(args().length == 1) {
             //Array inputs for begin/end/strides
-            return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), begin, end, strides, beginMask, endMask,
-                    ellipsisMask, newAxisMask, shrinkAxisMask));
+            return new StridedSliceBp(sameDiff, arg(), i_v.get(0), begin, end, strides, beginMask, endMask,
+                    ellipsisMask, newAxisMask, shrinkAxisMask).outputs();
         } else {
             //SDVariable inputs for begin/end/strides
-            return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), arg(1), arg(2), arg(3), beginMask, endMask,
-                    ellipsisMask, newAxisMask, shrinkAxisMask));
+            return new StridedSliceBp(sameDiff, arg(), i_v.get(0), arg(1), arg(2), arg(3), beginMask, endMask,
+                    ellipsisMask, newAxisMask, shrinkAxisMask).outputs();
         }
     }
 

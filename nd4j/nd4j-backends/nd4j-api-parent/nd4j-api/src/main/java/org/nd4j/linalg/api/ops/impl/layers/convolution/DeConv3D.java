@@ -161,8 +161,7 @@ public class DeConv3D extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         SDVariable bias = args().length > 2 ? arg(2) : null;
-        SDVariable[] outVars = f().deconv3dDerivative(arg(0), arg(1), bias, f1.get(0), config);
-        return Arrays.asList(outVars);
+        return new DeConv3DDerivative(sameDiff, arg(0), arg(1), bias, f1.get(0), config).outputs();
     }
 
     @Override

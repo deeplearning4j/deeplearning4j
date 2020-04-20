@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -67,8 +68,8 @@ public class InvertPermutation extends BaseDynamicTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         SDVariable gradient = grad.get(0);
-        SDVariable invertedGradient = f().invertPermutation(gradient, false);
-        return Arrays.asList(invertedGradient);
+        SDVariable invertedGradient = sameDiff.invertPermutation(gradient);
+        return Collections.singletonList(invertedGradient);
     }
 
     @Override

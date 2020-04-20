@@ -29,6 +29,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.PReluBp;
 
 /**
  * Parameterized ReLU op
@@ -80,6 +81,6 @@ public class PRelu extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Arrays.asList(f().preluBp(arg(0), arg(1), i_v.get(0), sharedAxes));
+        return new PReluBp(sameDiff, arg(0), arg(1), i_v.get(0), sharedAxes).outputs();
     }
 }

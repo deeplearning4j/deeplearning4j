@@ -104,7 +104,7 @@ public class NormalizationTests extends BaseSparkTest {
 
         }
 
-        INDArray arr = RecordConverter.toMatrix(data);
+        INDArray arr = RecordConverter.toMatrix(DataType.DOUBLE, data);
 
         Schema schema = builder.build();
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
@@ -127,9 +127,9 @@ public class NormalizationTests extends BaseSparkTest {
         zeroToOne.transform(new DataSet(zeroToOnes, zeroToOnes));
 
         INDArray zeroMeanUnitVarianceDataFrame =
-                        RecordConverter.toMatrix(Normalization.zeromeanUnitVariance(schema, rdd).collect());
+                        RecordConverter.toMatrix(DataType.DOUBLE, Normalization.zeromeanUnitVariance(schema, rdd).collect());
         INDArray zeroMeanUnitVarianceDataFrameZeroToOne =
-                        RecordConverter.toMatrix(Normalization.normalize(schema, rdd).collect());
+                        RecordConverter.toMatrix(DataType.DOUBLE, Normalization.normalize(schema, rdd).collect());
         assertEquals(standardScalered, zeroMeanUnitVarianceDataFrame);
         assertTrue(zeroToOnes.equalsWithEps(zeroMeanUnitVarianceDataFrameZeroToOne, 1e-1));
 

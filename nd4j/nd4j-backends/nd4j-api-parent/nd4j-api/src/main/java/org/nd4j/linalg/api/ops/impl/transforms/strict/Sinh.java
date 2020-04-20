@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -75,8 +76,8 @@ public class Sinh extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().cosh(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        SDVariable ret = sameDiff.math.cosh(arg()).mul(i_v.get(0));
+        return Collections.singletonList(ret);
     }
 
 

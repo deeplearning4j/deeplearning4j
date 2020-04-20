@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,6 +41,10 @@ public class SELUDerivative extends BaseTransformStrictOp {
 
     private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
     private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;
+
+    public SELUDerivative(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
 
     public SELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
@@ -79,9 +84,8 @@ public class SELUDerivative extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().div(arg(),f().seluDerivative(arg()));
-
-        return Arrays.asList(ret);
+        SDVariable ret = sameDiff.math.div(arg(), new SELUDerivative(sameDiff, arg()).outputVariable());
+        return Collections.singletonList(ret);
     }
 
 }

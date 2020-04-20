@@ -23,6 +23,7 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -59,7 +60,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                 dimensions = new int[] {Integer.MAX_VALUE};
 
             this.dimensions = dimensions;
-            f().validateDifferentialFunctionsameDiff(i_v);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
             this.keepDims = keepDims;
             this.xVertexId = i_v.name();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
@@ -83,8 +84,8 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
             this.xVertexId = i_v.name();
             this.yVertexId = i_v2.name();
-            f().validateDifferentialFunctionsameDiff(i_v);
-            f().validateDifferentialFunctionsameDiff(i_v2);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v2, this);
             this.keepDims = keepDims;
             sameDiff.addArgsFor(new String[]{xVertexId,yVertexId},this);
 

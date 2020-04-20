@@ -62,6 +62,6 @@ public class L2Loss extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //L2 loss: L = 1/2 * sum(x_i^2)
         //dL/dxi = xi
-        return Collections.singletonList(f().identity(arg()));
+        return Collections.singletonList(sameDiff.identity(arg()));
     }
 }

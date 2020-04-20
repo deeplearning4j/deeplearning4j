@@ -33,6 +33,7 @@ import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchCSVRecord;
 import org.datavec.spark.transform.model.SequenceBatchCSVRecord;
 import org.datavec.spark.transform.model.SingleCSVRecord;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.base64.Nd4jBase64;
 
@@ -91,7 +92,7 @@ public class CSVSparkTransform {
                         transformProcess.getInitialSchema(),record.getValues()),
                 transformProcess.getInitialSchema());
         List<Writable> finalRecord = execute(Arrays.asList(record2),transformProcess).get(0);
-        INDArray convert = RecordConverter.toArray(finalRecord);
+        INDArray convert = RecordConverter.toArray(DataType.DOUBLE, finalRecord);
         return new Base64NDArrayBody(Nd4jBase64.base64String(convert));
     }
 

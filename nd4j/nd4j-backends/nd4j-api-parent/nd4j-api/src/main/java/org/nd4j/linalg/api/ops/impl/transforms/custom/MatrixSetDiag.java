@@ -57,8 +57,8 @@ public class MatrixSetDiag extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable grad = i_v.get(0);
-        SDVariable in1Grad = f().setDiag(grad, sameDiff.zerosLike(arg(1)));
-        SDVariable in2Grad = f().diagPart(grad);
+        SDVariable in1Grad = sameDiff.math.setDiag(grad, sameDiff.zerosLike(arg(1)));
+        SDVariable in2Grad = sameDiff.math.diagPart(grad);
         return Arrays.asList(in1Grad, in2Grad);
     }
 

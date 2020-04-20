@@ -83,8 +83,8 @@ public class ClipByValue extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         //dOut/dIn is 0 if clipped, 1 otherwise
-        SDVariable notClippedLower = f().gt(arg(), clipValueMin).castTo(arg().dataType());
-        SDVariable notClippedUpper = f().lt(arg(), clipValueMax).castTo(arg().dataType());
+        SDVariable notClippedLower = sameDiff.gt(arg(), clipValueMin).castTo(arg().dataType());
+        SDVariable notClippedUpper = sameDiff.lt(arg(), clipValueMax).castTo(arg().dataType());
         SDVariable ret = notClippedLower.mul(notClippedUpper).mul(grad.get(0));
         return Collections.singletonList(ret);
     }

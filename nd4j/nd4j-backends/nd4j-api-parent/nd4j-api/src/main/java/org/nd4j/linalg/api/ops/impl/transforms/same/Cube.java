@@ -25,6 +25,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -77,6 +78,6 @@ public class Cube extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().cubeBp(arg(), f1.get(0)));
+        return new CubeBp(sameDiff, arg(), f1.get(0)).outputs();
     }
 }

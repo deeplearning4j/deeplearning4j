@@ -20,11 +20,12 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestConcatenatingRecordReader {
+public class TestConcatenatingRecordReader extends BaseND4JTest {
 
     @Test
     public void test() throws Exception {

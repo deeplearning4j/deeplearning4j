@@ -83,7 +83,7 @@ public class DynamicStitch extends DynamicCustomOp {
         SDVariable[] partition = sameDiff.dynamicPartition(gradient, partitions, numPartitions);
         List<SDVariable> ret = new ArrayList<>();
         for (SDVariable i : indices)
-            ret.add(f().zerosLike(i));
+            ret.add(sameDiff.zerosLike(i));
         Collections.addAll(ret, partition);
         return ret;
     }

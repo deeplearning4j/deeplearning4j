@@ -18,6 +18,7 @@ package org.datavec.api.writable;
 
 import org.datavec.api.writable.batch.NDArrayRecordBatch;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,9 +32,7 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-public class WritableTest {
-
-
+public class WritableTest extends BaseND4JTest {
 
     @Test
     public void testWritableEqualityReflexive() {

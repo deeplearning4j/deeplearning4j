@@ -85,17 +85,7 @@ public class ATan2 extends BaseDynamicTransformOp {
         SDVariable y = larg();
         SDVariable x = rarg();
 
-/*        SDVariable r = y.div(x);
-
-        SDVariable dOutdr = f().square(r).add(1.0).rdiv(1.0);
-        SDVariable drdy = x.rdiv(1.0);
-        SDVariable drdx = f().neg(y).div(f().square(x));
-
-        SDVariable xGrad = dOutdr.mul(drdx).mul(i_v.get(0));
-        SDVariable yGrad = dOutdr.mul(drdy).mul(i_v.get(0));
-*/
-
-        val xGrad = f().neg(y.div(x.pow(2).add(y.pow(2)))).mul(i_v.get(0));
+        val xGrad = sameDiff.math.neg(y.div(x.pow(2).add(y.pow(2)))).mul(i_v.get(0));
         val yGrad = x.div(x.pow(2).add(y.pow(2))).mul(i_v.get(0));
 
         return Arrays.asList(yGrad, xGrad);

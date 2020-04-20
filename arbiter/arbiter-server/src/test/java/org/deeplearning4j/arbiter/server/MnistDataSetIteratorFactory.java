@@ -17,6 +17,7 @@
 package org.deeplearning4j.arbiter.server;
 
 import lombok.Data;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
@@ -27,7 +28,7 @@ import java.io.IOException;
  * Created by agibsonccc on 3/13/17.
  */
 @Data
-public class MnistDataSetIteratorFactory implements DataSetIteratorFactory {
+public class MnistDataSetIteratorFactory  extends BaseDL4JTest implements DataSetIteratorFactory {
     /**
      * @return
      */

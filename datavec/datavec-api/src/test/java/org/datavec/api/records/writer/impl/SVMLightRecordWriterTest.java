@@ -25,6 +25,7 @@ import org.datavec.api.split.partition.NumberOfRecordsPartitioner;
 import org.datavec.api.writable.*;
 import org.datavec.api.writable.NDArrayWritable;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
@@ -47,7 +48,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author dave@skymind.io
  */
-public class SVMLightRecordWriterTest {
+public class SVMLightRecordWriterTest extends BaseND4JTest {
 
     @Test
     public void testBasic() throws Exception {

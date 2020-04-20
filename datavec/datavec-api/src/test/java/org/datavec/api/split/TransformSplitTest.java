@@ -17,6 +17,7 @@
 package org.datavec.api.split;
 
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -28,7 +29,7 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * @author Ede Meijer
  */
-public class TransformSplitTest {
+public class TransformSplitTest extends BaseND4JTest {
     @Test
     public void testTransform() throws URISyntaxException {
         Collection<URI> inputFiles = asList(new URI("file:///foo/bar/../0.csv"), new URI("file:///foo/1.csv"));

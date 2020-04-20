@@ -64,7 +64,7 @@ public class Cos extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().neg(f().sin(arg())).mul(i_v.get(0));
+        SDVariable ret = sameDiff.math.neg(sameDiff.math.sin(arg())).mul(i_v.get(0));
         return Arrays.asList(ret);
     }
 

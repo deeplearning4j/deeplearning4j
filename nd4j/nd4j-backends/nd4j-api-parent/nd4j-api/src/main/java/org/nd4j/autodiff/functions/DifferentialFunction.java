@@ -475,6 +475,11 @@ public abstract class DifferentialFunction {
         return outputVariables()[0];
     }
 
+    public List<SDVariable> outputs(){
+        SDVariable[] out = outputVariables();
+        return out == null ? null : Arrays.asList(out);
+    }
+
 
     public String[] outputVariablesNames(){
         SDVariable[] outputVars = outputVariables();
@@ -501,14 +506,6 @@ public abstract class DifferentialFunction {
      * @return
      */
     public abstract List<SDVariable> doDiff(List<SDVariable> f1);
-
-    /**
-     * Shortcut for the {@link DifferentialFunctionFactory}
-     * @return
-     */
-    public DifferentialFunctionFactory f() {
-        return sameDiff.f();
-    }
 
 
     /**
@@ -576,7 +573,7 @@ public abstract class DifferentialFunction {
                     copied = true;
                 }
 
-                SDVariable gradVar =  f().add(grad, vals.get(i));
+                SDVariable gradVar =  var.getSameDiff().math.add(grad, vals.get(i));
                 vals.set(i, gradVar);
                 sameDiff.setGradientForVariableName(var.name(), gradVar);
             } else {

@@ -16,12 +16,11 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce.floating;
 
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -70,13 +69,13 @@ public class Entropy extends BaseReduceFloatOp {
         //Then we can do sumBp(z, -dL/dOut)
         //Note d/dx(x*log(x)) = log(x)+1
 
-        return grad(f(), arg(), f1.get(0), dimensions);
+        return grad(sameDiff, arg(), f1.get(0), dimensions);
     }
 
-    public static List<SDVariable> grad(DifferentialFunctionFactory f, SDVariable arg, SDVariable grad, int[] dimensions){
-        SDVariable logx = f.log(arg);
+    public static List<SDVariable> grad(SameDiff sd, SDVariable arg, SDVariable grad, int[] dimensions){
+        SDVariable logx = sd.math.log(arg);
         SDVariable xLogX = arg.mul(logx);
-        SDVariable sumBp = f.sumBp(xLogX, grad.neg(), false, dimensions);
+        SDVariable sumBp = new SumBp(sd, xLogX, grad.neg(), false, dimensions).outputVariable();
         return Collections.singletonList(sumBp.mul(logx.add(1.0)));
     }
 }

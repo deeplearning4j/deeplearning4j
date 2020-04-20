@@ -77,7 +77,7 @@ public class Abs extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().sign(arg()).mul(i_v.get(0));
+        SDVariable ret = sameDiff.math.sign(arg()).mul(i_v.get(0));
         return Arrays.asList(ret);
     }
 

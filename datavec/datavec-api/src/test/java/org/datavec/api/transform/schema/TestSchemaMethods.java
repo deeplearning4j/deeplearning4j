@@ -18,13 +18,14 @@ package org.datavec.api.transform.schema;
 
 import org.datavec.api.transform.ColumnType;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 04/09/2016.
  */
-public class TestSchemaMethods {
+public class TestSchemaMethods extends BaseND4JTest {
 
     @Test
     public void testNumberedColumnAdding() {

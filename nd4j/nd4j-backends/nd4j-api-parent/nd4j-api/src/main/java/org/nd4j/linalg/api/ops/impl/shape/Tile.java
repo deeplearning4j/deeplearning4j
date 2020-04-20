@@ -24,6 +24,7 @@ import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -126,9 +127,9 @@ public class Tile extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         if(jaxis != null){
-            return Collections.singletonList(f().tileBp(arg(), i_v.get(0), jaxis));
+            return new TileBp(sameDiff, arg(), i_v.get(0), jaxis).outputs();
         }else{
-            return Collections.singletonList(f().tileBp(arg(0), arg(1), i_v.get(0)));
+            return new TileBp(sameDiff, arg(0), arg(1), i_v.get(0)).outputs();
         }
     }
 

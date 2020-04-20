@@ -30,6 +30,8 @@ import org.nd4j.enums.DataFormat;
 import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.enums.PadMode;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.enums.ImageResizeMethod;
 import org.nd4j.enums.PartitionMode;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -154,8 +156,8 @@ public class TransformOpValidation extends BaseOpValidation {
                         msg = "pow - " + inOrder;
                         break;
                     case 7:
-                        inArr.assign(Nd4j.rand(inArr.shape()).muli(5).subi(2.5));
-                        out = sd.scalarFloorMod(in, 2);
+                        inArr.assign(Nd4j.rand(inArr.dataType(), inArr.shape()).muli(5).subi(2.5));
+                        out = sd.math().floorMod(in, 2.0);
                         tc.expected(out, Nd4j.getExecutioner().exec(new ScalarFMod(inArr.dup(), 2.0)));
                         msg = "scalarFloorMod - " + inOrder;
                         break;
@@ -942,7 +944,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 65:
                     continue; // assign op was removed.
                 case 66:
-                    t = sd.scalarFloorMod(in, 0.5);
+                    t = sd.math().floorMod(in, 0.5);
                     tc.expectedOutput(t.name(), Nd4j.getExecutioner().exec(new ScalarFMod(ia.dup(), 0.5)));
                     break;
                 case 67:
@@ -975,12 +977,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     tc.expected(t, ia.gte(1.0).castTo(DataType.DOUBLE));
                     break;
                 case 74:
-                    if (OpValidationSuite.IGNORE_FAILING) {
-                        continue;
-                    }
-                    t = sd.f().noop(in);
-                    tc.expected(t, ia.dup());
-                    break;
+                    continue;
                 case 75:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape());
                     t = sd.math().log(in, 2);
@@ -999,12 +996,12 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 78:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(2).subi(1);
-                    t = sd.f().tanhRational(in);
+                    t = sd.math().rationalTanh(in);
                     tc.expected(t, Nd4j.getExecutioner().exec(new RationalTanh(ia.dup())));
                     break;
                 case 79:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(2).subi(1);
-                    t = sd.f().tanhRectified(in);
+                    t = sd.math().rectifiedTanh(in);
                     tc.expected(t, Nd4j.getExecutioner().exec(new RectifiedTanh(ia.dup())));
                     break;
                 case 80:
@@ -1014,7 +1011,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 81:
                     ia = Nd4j.rand(DataType.DOUBLE, ia.shape()).muli(0.5);
-                    t = sd.f().gelu(in, true);
+                    t = sd.nn().preciseGelu(in);
                     INDArray x3 = Transforms.pow(ia.mul(0.044715), 3, true);
                     INDArray inner1 = ia.add(x3).mul(Math.sqrt(2.0 / Math.PI));
                     INDArray inner2 = Transforms.tanh(inner1, true).addi(1.0);
@@ -1486,7 +1483,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable s = sd.var("in", in);
-        SDVariable padded = sd.f().pad(s, sd.constant(pad), Pad.Mode.CONSTANT, 10.0);
+        SDVariable padded = sd.nn().pad(s, sd.constant(pad), 10.0);
         String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
         assertNull(err2);
     }
@@ -1520,7 +1517,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
         SameDiff sd = SameDiff.create();
         SDVariable s = sd.var("in", in);
-        SDVariable padded = sd.f().pad(s, sd.constant(Nd4j.createFromArray(new int[][]{{1, 1}, {2, 2}})), Pad.Mode.REFLECT, 0.0);
+        SDVariable padded = sd.nn().pad(s, sd.constant(Nd4j.createFromArray(new int[][]{{1,1},{2,2}})), PadMode.REFLECT, 0.0);
         String err2 = OpValidation.validate(new TestCase(sd).expected(padded, exp).gradientCheck(false));
         assertNull(err2);
     }

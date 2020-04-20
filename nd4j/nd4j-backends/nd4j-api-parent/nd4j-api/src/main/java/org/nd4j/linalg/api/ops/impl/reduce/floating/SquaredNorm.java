@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.SquaredNormBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -69,6 +70,6 @@ public class SquaredNorm extends BaseReduceFloatOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
-        return Collections.singletonList(f().squaredNormBp(arg(), grad.get(0), keepDims, dimensions));
+        return new SquaredNormBp(sameDiff, arg(), grad.get(0), keepDims, dimensions).outputs();
     }
 }

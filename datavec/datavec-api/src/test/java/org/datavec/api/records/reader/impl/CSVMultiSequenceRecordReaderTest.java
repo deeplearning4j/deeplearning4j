@@ -26,6 +26,8 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.BaseND4JTest;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +39,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class CSVMultiSequenceRecordReaderTest {
+public class CSVMultiSequenceRecordReaderTest extends BaseND4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

@@ -30,6 +30,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.BaseND4JTest;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -48,7 +49,7 @@ import static org.junit.Assert.assertFalse;
 /**
  * Created by Alex on 11/04/2016.
  */
-public class JacksonRecordReaderTest {
+public class JacksonRecordReaderTest  extends BaseND4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

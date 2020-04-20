@@ -22,6 +22,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.SegmentMinBp;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,7 +57,7 @@ public class SegmentMin extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().segmentMinBp(arg(0), arg(1), gradients.get(0)));
+        return new SegmentMinBp(sameDiff, arg(0), arg(1), gradients.get(0)).outputs();
     }
 
     @Override

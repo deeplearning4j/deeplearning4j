@@ -152,8 +152,8 @@ public class Reshape extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable origShape = f().shape(arg());
-        SDVariable ret = f().reshape(i_v.get(0), origShape);
+        SDVariable origShape = sameDiff.shape(arg());
+        SDVariable ret = sameDiff.reshape(i_v.get(0), origShape);
         return Collections.singletonList(ret);
     }
 

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.reduce3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.DotBp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -86,6 +87,6 @@ public class Dot extends BaseReduce3Op {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //TODO KEEP DIMS
-        return Arrays.asList(f().dotBp(arg(0), arg(1), f1.get(0), false, dimensions));
+        return new DotBp(sameDiff, arg(0), arg(1), f1.get(0), false, dimensions).outputs();
     }
 }

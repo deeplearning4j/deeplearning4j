@@ -129,7 +129,7 @@ public class Cast extends BaseDynamicTransformOp {
         if(arg().dataType().isFPType()){
             return Collections.singletonList(i_v.get(0).castTo(arg().dataType()));
         } else {
-            return Collections.singletonList(f().zerosLike(arg()));
+            return Collections.singletonList(sameDiff.zerosLike(arg()));
         }
     }
 

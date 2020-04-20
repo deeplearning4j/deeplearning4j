@@ -156,7 +156,7 @@ public class NameScopeTests extends BaseNd4jTest {
 
         NameScope scope = SD.withNameScope("test");
 
-        SDVariable out = SD.f().switchOp(a, b)[0];
+        SDVariable out = SD.switchOp(a, b)[0];
 
         out.add(45);
 

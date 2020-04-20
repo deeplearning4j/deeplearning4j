@@ -17,13 +17,14 @@
 package org.datavec.api.split;
 
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 
 import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class NumberedFileInputSplitTests {
+public class NumberedFileInputSplitTests  extends BaseND4JTest {
     @Test
     public void testNumberedFileInputSplitBasic() {
         String baseString = "/path/to/files/prefix%d.suffix";

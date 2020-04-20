@@ -128,7 +128,7 @@ public class TestSessions extends BaseNd4jTest {
         SDVariable ph1 = sd.placeHolder("x", DataType.FLOAT, 3,3);
         SDVariable ph2 = sd.placeHolder("y", DataType.FLOAT, 3,3);
 
-        SDVariable merge = sd.f().merge(ph1, ph2);
+        SDVariable merge = sd.merge(ph1, ph2);
 
         SDVariable outVar = sd.identity(merge);
 
@@ -163,11 +163,11 @@ public class TestSessions extends BaseNd4jTest {
         SDVariable x = sd.placeHolder("x", DataType.FLOAT, 3,3);
         SDVariable b = sd.placeHolder("b", DataType.BOOL);
 
-        SDVariable[] switchOut = sd.f().switchOp(x, b); //Order: false then true
+        SDVariable[] switchOut = sd.switchOp(x,b); //Order: false then true
         SDVariable falsePlusOne = switchOut[0].add("addFalseBranch", 1);
         SDVariable truePlusTen = switchOut[1].add("addTrueBranch", 10.0);
 
-        SDVariable merge = sd.f().merge(falsePlusOne, truePlusTen);
+        SDVariable merge = sd.merge(falsePlusOne, truePlusTen);
 
         INDArray xArr = Nd4j.create(DataType.FLOAT, 3,3);
         INDArray bArr = Nd4j.scalar(true);

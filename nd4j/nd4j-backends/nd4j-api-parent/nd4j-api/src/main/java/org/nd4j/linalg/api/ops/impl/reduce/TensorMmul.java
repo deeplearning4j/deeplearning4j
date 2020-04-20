@@ -138,13 +138,13 @@ public class TensorMmul extends DynamicCustomOp {
         //tensor matrix multiply gradient wrt second variable
         int[] firstPerm = argsort(combine(deletedAxes[0],keep(argsort(sumAxes[1]),sumAxes[0])));
         SDVariable firstResult = doTensorMmul(i_v1.get(0), rarg(), firstAxes);
-        SDVariable permuted = f().permute(firstResult,firstPerm);
+        SDVariable permuted = sameDiff.permute(firstResult,firstPerm);
         ret.add(permuted);
 
         //tensor matrix multiply gradient wrt first variable
         int[] secondPerm = argsort(combine(keep(argsort(sumAxes[0]),sumAxes[1]),deletedAxes[1]));
         SDVariable secondResult = doTensorMmul(i_v1.get(0), larg(), secondAxes);
-        SDVariable secondPermuted = f().permute(secondResult,secondPerm);
+        SDVariable secondPermuted = sameDiff.permute(secondResult,secondPerm);
         ret.add(secondPermuted);
         return ret;
     }
@@ -210,7 +210,7 @@ public class TensorMmul extends DynamicCustomOp {
         }
 
 
-        int[] newShapeB = {n3, -1};
+        long[] newShapeB = {n3, -1};
         long[] oldShapeB;
         if (listB.size() == 0) {
             oldShapeB = new long[] {1};
@@ -221,16 +221,12 @@ public class TensorMmul extends DynamicCustomOp {
         }
 
 
-        SDVariable at = f()
-                .reshape(f().permute
-                        (a,newAxesA),newShapeA);
-        SDVariable bt = f()
-                .reshape(f()
-                        .permute(b,newAxesB),newShapeB);
+        SDVariable at = sameDiff.reshape(sameDiff.permute(a,newAxesA),newShapeA);
+        SDVariable bt = sameDiff.reshape(sameDiff.permute(b,newAxesB),newShapeB);
 
-        SDVariable ret = f().mmul(at,bt);
+        SDVariable ret = sameDiff.mmul(at,bt);
         long[] aPlusB = Longs.concat(oldShapeA, oldShapeB);
-        return f().reshape(ret, aPlusB);
+        return sameDiff.reshape(ret, aPlusB);
     }
 
 

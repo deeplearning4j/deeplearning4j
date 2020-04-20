@@ -75,7 +75,7 @@ public class RSqrt extends BaseTransformFloatOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable xPowNeg32 = f().pow(arg(), -1.5).mul(-0.5);
+        SDVariable xPowNeg32 = sameDiff.math.pow(arg(), -1.5).mul(-0.5);
         return Collections.singletonList(i_v.get(0).mul(xPowNeg32));
     }
 

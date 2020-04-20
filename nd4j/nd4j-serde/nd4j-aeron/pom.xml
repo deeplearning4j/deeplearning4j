@@ -16,179 +16,186 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>org.nd4j</groupId>
-  <artifactId>nd4j-aeron</artifactId>
-  <packaging>jar</packaging>
-
-  <name>nd4j-aeron</name>
-
-  <parent>
     <groupId>org.nd4j</groupId>
-    <artifactId>nd4j-serde</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-  </parent>
-  <properties>
-    <maven.compiler.source>1.8</maven.compiler.source>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <sbe.version>1.5.4</sbe.version>
-    <aeron.version>1.4.0</aeron.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-  </properties>
+    <artifactId>nd4j-aeron</artifactId>
+    <packaging>jar</packaging>
 
-  <profiles>
-    <profile>
-      <id>jdk9</id>
-      <activation>
-        <jdk>1.9</jdk>
-      </activation>
-      <properties>
-        <maven.compiler.release>8</maven.compiler.release>
-      </properties>
-    </profile>
-    <profile>
-      <id>testresources</id>
-    </profile>
+    <name>nd4j-aeron</name>
 
-    <profile>
-      <id>nd4j-tests-cpu</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.nd4j</groupId>
-          <artifactId>nd4j-native</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <environmentVariables>
-                <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/</LD_LIBRARY_PATH>
-              </environmentVariables>
-              <testSourceDirectory>src/test/java</testSourceDirectory>
-              <includes>
-                <include>*.java</include>
-                <include>**/*.java</include>
-                <include>**/Test*.java</include>
-                <include>**/*Test.java</include>
-                <include>**/*TestCase.java</include>
-              </includes>
-              <junitArtifactName>junit:junit</junitArtifactName>
-              <systemPropertyVariables>
-                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
-                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
-              </systemPropertyVariables>
-              <!--
-                  Maximum heap size was set to 8g, as a minimum required value for tests run.
-                  Depending on a build machine, default value is not always enough.
+    <parent>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-serde</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <sbe.version>1.5.4</sbe.version>
+        <aeron.version>1.4.0</aeron.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
 
-                  For testing large zoo models, this may not be enough (so comment it out).
-              -->
-              <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
+    <profiles>
+        <profile>
+            <id>jdk9</id>
+            <activation>
+                <jdk>1.9</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>8</maven.compiler.release>
+            </properties>
+        </profile>
+        <profile>
+            <id>testresources</id>
+        </profile>
 
-    <profile>
-      <id>nd4j-tests-cuda</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.nd4j</groupId>
-          <artifactId>nd4j-cuda-10.2</artifactId>
-          <version>${project.version}</version>
-        </dependency>
-      </dependencies>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
+        <profile>
+            <id>nd4j-tests-cpu</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
             <dependencies>
-              <dependency>
-                <groupId>org.apache.maven.surefire</groupId>
-                <artifactId>surefire-junit47</artifactId>
-                <version>2.19.1</version>
-              </dependency>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
             </dependencies>
-            <configuration>
-              <environmentVariables>
-                <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/</LD_LIBRARY_PATH>
-              </environmentVariables>
-              <testSourceDirectory>src/test/java</testSourceDirectory>
-              <includes>
-                <include>*.java</include>
-                <include>**/*.java</include>
-                <include>**/Test*.java</include>
-                <include>**/*Test.java</include>
-                <include>**/*TestCase.java</include>
-              </includes>
-              <junitArtifactName>junit:junit</junitArtifactName>
-              <systemPropertyVariables>
-                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
-                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>
-              </systemPropertyVariables>
-              <!--
-                  Maximum heap size was set to 6g, as a minimum required value for tests run.
-                  Depending on a build machine, default value is not always enough.
-              -->
-              <argLine>-Ddtype=float -Xmx6g</argLine>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <environmentVariables>
+                                <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/
+                                </LD_LIBRARY_PATH>
+                            </environmentVariables>
+                            <testSourceDirectory>src/test/java</testSourceDirectory>
+                            <includes>
+                                <include>*.java</include>
+                                <include>**/*.java</include>
+                                <include>**/Test*.java</include>
+                                <include>**/*Test.java</include>
+                                <include>**/*TestCase.java</include>
+                            </includes>
+                            <junitArtifactName>junit:junit</junitArtifactName>
+                            <systemPropertyVariables>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                </org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                </org.nd4j.linalg.tests.backendstorun>
+                            </systemPropertyVariables>
+                            <!--
+                                Maximum heap size was set to 8g, as a minimum required value for tests run.
+                                Depending on a build machine, default value is not always enough.
+
+                                For testing large zoo models, this may not be enough (so comment it out).
+                            -->
+                            <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>nd4j-tests-cuda</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-10.2</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit47</artifactId>
+                                <version>2.19.1</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <environmentVariables>
+                                <LD_LIBRARY_PATH>
+                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/
+                                </LD_LIBRARY_PATH>
+                            </environmentVariables>
+                            <testSourceDirectory>src/test/java</testSourceDirectory>
+                            <includes>
+                                <include>*.java</include>
+                                <include>**/*.java</include>
+                                <include>**/Test*.java</include>
+                                <include>**/*Test.java</include>
+                                <include>**/*TestCase.java</include>
+                            </includes>
+                            <junitArtifactName>junit:junit</junitArtifactName>
+                            <systemPropertyVariables>
+                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend
+                                </org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend
+                                </org.nd4j.linalg.tests.backendstorun>
+                            </systemPropertyVariables>
+                            <!--
+                                Maximum heap size was set to 6g, as a minimum required value for tests run.
+                                Depending on a build machine, default value is not always enough.
+                            -->
+                            <argLine>-Ddtype=float -Xmx6g</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 
-  <dependencies>
-    <dependency>
-      <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-api</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>io.aeron</groupId>
-      <artifactId>aeron-all</artifactId>
-      <version>${aeron.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.aeron</groupId>
+            <artifactId>aeron-all</artifactId>
+            <version>${aeron.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>${logback.version}</version>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+            <scope>test</scope>
+        </dependency>
 
 
-    <dependency>
-      <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-common-tests</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

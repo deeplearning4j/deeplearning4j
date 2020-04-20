@@ -50,13 +50,13 @@ public class NDMath {
    * Looks up ids in a list of embedding tensors.<br>
    *
    * @param x Input tensor (NUMERIC type)
-   * @param indices A Tensor containing the ids to be looked up. (INT type)
+   * @param indices A Tensor containing the ids to be looked up. (NUMERIC type)
    * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
    * @return output Shifted output (NUMERIC type)
    */
   public INDArray embeddingLookup(INDArray x, INDArray indices, PartitionMode PartitionMode) {
     NDValidation.validateNumerical("EmbeddingLookup", "x", x);
-    NDValidation.validateInteger("EmbeddingLookup", "indices", indices);
+    NDValidation.validateNumerical("EmbeddingLookup", "indices", indices);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(x, indices, PartitionMode))[0];
   }
 
@@ -91,6 +91,35 @@ public class NDMath {
   public INDArray acosh(INDArray x) {
     NDValidation.validateNumerical("acosh", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh(x));
+  }
+
+  /**
+   * Pairwise addition operation, out = x + y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray add(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("add", "x", x);
+    NDValidation.validateNumerical("add", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp(x, y))[0];
+  }
+
+  /**
+   * Scalar add operation, out = in + scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray add(INDArray x, double value) {
+    NDValidation.validateNumerical("add", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd(x, value));
   }
 
   /**
@@ -541,6 +570,35 @@ public class NDMath {
   }
 
   /**
+   * Pairwise division operation, out = x / y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray div(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("div", "x", x);
+    NDValidation.validateNumerical("div", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp(x, y))[0];
+  }
+
+  /**
+   * Scalar division operation, out = in / scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray div(INDArray x, double value) {
+    NDValidation.validateNumerical("div", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision(x, value));
+  }
+
+  /**
    * Entropy reduction: -sum(x * log(x))<br>
    *
    * @param in Input variable (NUMERIC type)
@@ -737,6 +795,52 @@ public class NDMath {
   public INDArray floor(INDArray x) {
     NDValidation.validateNumerical("floor", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.same.Floor(x));
+  }
+
+  /**
+   * Pairwise floor division operation, out = floor(x / y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray floorDiv(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("floorDiv", "x", x);
+    NDValidation.validateNumerical("floorDiv", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorDivOp(x, y))[0];
+  }
+
+  /**
+   * Pairwise Modulus division operation<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray floorMod(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("floorMod", "x", x);
+    NDValidation.validateNumerical("floorMod", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp(x, y))[0];
+  }
+
+  /**
+   * Scalar floor modulus operation<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray floorMod(INDArray x, double value) {
+    NDValidation.validateNumerical("floorMod", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod(x, value));
   }
 
   /**
@@ -1070,6 +1174,23 @@ public class NDMath {
   }
 
   /**
+   * Pairwise max operation, out = max(x, y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x First input variable, x (NUMERIC type)
+   * @param y Second input variable, y (NUMERIC type)
+   * @return out Output (NUMERIC type)
+   */
+  public INDArray max(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("max", "x", x);
+    NDValidation.validateNumerical("max", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(x, y))[0];
+  }
+
+  /**
    * Merge add function: merges an arbitrary number of equal shaped arrays using element-wise addition:<br>
    * out = sum_i in[i]<br>
    *
@@ -1121,6 +1242,40 @@ public class NDMath {
   }
 
   /**
+   * Pairwise max operation, out = min(x, y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x First input variable, x (NUMERIC type)
+   * @param y Second input variable, y (NUMERIC type)
+   * @return out Output (NUMERIC type)
+   */
+  public INDArray min(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("min", "x", x);
+    NDValidation.validateNumerical("min", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(x, y))[0];
+  }
+
+  /**
+   * Pairwise modulus (remainder) operation, out = x % y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray mod(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("mod", "x", x);
+    NDValidation.validateNumerical("mod", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp(x, y))[0];
+  }
+
+  /**
    * Calculate the mean and (population) variance for the input variable, for the specified axis<br>
    *
    * @param input Input to calculate moments for (NUMERIC type)
@@ -1130,6 +1285,35 @@ public class NDMath {
     NDValidation.validateNumerical("moments", "input", input);
     Preconditions.checkArgument(axes.length >= 0, "axes has incorrect size/length. Expected: axes.length >= 0, got %s", axes.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Moments(input, axes));
+  }
+
+  /**
+   * Pairwise multiplication operation, out = x * y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray mul(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("mul", "x", x);
+    NDValidation.validateNumerical("mul", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp(x, y))[0];
+  }
+
+  /**
+   * Scalar multiplication operation, out = in * scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray mul(INDArray x, double value) {
+    NDValidation.validateNumerical("mul", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication(x, value));
   }
 
   /**
@@ -1201,6 +1385,48 @@ public class NDMath {
   }
 
   /**
+   * Rational Tanh Approximation elementwise function, as described in the paper:<br>
+   * Compact Convolutional Neural Network Cascade for Face Detection<br>
+   * This is a faster Tanh approximation<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rationalTanh(INDArray x) {
+    NDValidation.validateNumerical("rationalTanh", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh(x));
+  }
+
+  /**
+   * Pairwise reverse division operation, out = y / x<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rdiv(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("rdiv", "x", x);
+    NDValidation.validateNumerical("rdiv", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RDivOp(x, y))[0];
+  }
+
+  /**
+   * Scalar reverse division operation, out = scalar / in<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rdiv(INDArray x, double value) {
+    NDValidation.validateNumerical("rdiv", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision(x, value));
+  }
+
+  /**
    * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]<br>
    *
    * @param x Input variable (NUMERIC type)
@@ -1209,6 +1435,17 @@ public class NDMath {
   public INDArray reciprocal(INDArray x) {
     NDValidation.validateNumerical("reciprocal", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.same.Reciprocal(x));
+  }
+
+  /**
+   * Rectified tanh operation: max(0, tanh(in))<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rectifiedTanh(INDArray x) {
+    NDValidation.validateNumerical("rectifiedTanh", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh(x));
   }
 
   /**
@@ -1232,6 +1469,35 @@ public class NDMath {
   public INDArray rsqrt(INDArray x) {
     NDValidation.validateNumerical("rsqrt", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt(x));
+  }
+
+  /**
+   * Pairwise reverse subtraction operation, out = y - x<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rsub(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("rsub", "x", x);
+    NDValidation.validateNumerical("rsub", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RSubOp(x, y))[0];
+  }
+
+  /**
+   * Scalar reverse subtraction operation, out = scalar - in<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rsub(INDArray x, double value) {
+    NDValidation.validateNumerical("rsub", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction(x, value));
   }
 
   /**
@@ -1327,6 +1593,23 @@ public class NDMath {
   }
 
   /**
+   * Pairwise squared difference operation.<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray squaredDifference(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("squaredDifference", "x", x);
+    NDValidation.validateNumerical("squaredDifference", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SquaredDifferenceOp(x, y))[0];
+  }
+
+  /**
    * Standardize input variable along given axis<br>
    * <p><br>
    * out = (x - mean) / stdev<br>
@@ -1362,6 +1645,35 @@ public class NDMath {
   public INDArray step(INDArray x, double value) {
     NDValidation.validateNumerical("step", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.Step(x, value));
+  }
+
+  /**
+   * Pairwise subtraction operation, out = x - y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray sub(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("sub", "x", x);
+    NDValidation.validateNumerical("sub", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp(x, y))[0];
+  }
+
+  /**
+   * Scalar subtraction operation, out = in - scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray sub(INDArray x, double value) {
+    NDValidation.validateNumerical("sub", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction(x, value));
   }
 
   /**

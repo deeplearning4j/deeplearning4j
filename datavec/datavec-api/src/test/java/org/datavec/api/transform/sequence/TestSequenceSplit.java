@@ -24,6 +24,7 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.nd4j.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 19/04/2016.
  */
-public class TestSequenceSplit {
+public class TestSequenceSplit extends BaseND4JTest {
 
     @Test
     public void testSequenceSplitTimeSeparation() {

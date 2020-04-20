@@ -76,7 +76,7 @@ public class Tan extends BaseTransformStrictOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //d(tan(x))/dx = (sec(x))^2 = 1 / (cos(x))^2
-        SDVariable cosx = f().cos(arg());
+        SDVariable cosx = sameDiff.math.cos(arg());
         SDVariable cosSqx = sameDiff.math().square(cosx);
         return Collections.singletonList(i_v.get(0).div(cosSqx));
     }

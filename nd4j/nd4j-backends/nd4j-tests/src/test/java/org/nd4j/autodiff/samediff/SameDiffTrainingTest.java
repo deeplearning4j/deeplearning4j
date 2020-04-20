@@ -82,7 +82,7 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
             SDVariable z1 = a0.mmul(w1).add("prediction", b1);
             SDVariable a1 = sd.nn().softmax(z1,-1);
 
-            SDVariable diff = sd.f().squaredDifference(a1, label);
+            SDVariable diff = sd.math().squaredDifference(a1, label);
             SDVariable lossMse = diff.mul(diff).mean();
 
             IUpdater updater;
@@ -152,7 +152,7 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
         SDVariable z1 = a0.mmul(w1).add("prediction", b1);
         SDVariable a1 = sd.nn().softmax(z1);
 
-        SDVariable diff = sd.f().squaredDifference(a1, label);
+        SDVariable diff = sd.math().squaredDifference(a1, label);
         SDVariable lossMse = diff.mul(diff).mean();
 
         TrainingConfig conf = new TrainingConfig.Builder()
@@ -207,7 +207,7 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
         SDVariable z1 = a0.mmul(w1).add("prediction", b1);
         SDVariable a1 = sd.nn().softmax(z1);
 
-        SDVariable diff = sd.f().squaredDifference(a1, label);
+        SDVariable diff = sd.math().squaredDifference(a1, label);
         SDVariable lossMse = diff.mul(diff).mean();
 
         TrainingConfig conf = new TrainingConfig.Builder()

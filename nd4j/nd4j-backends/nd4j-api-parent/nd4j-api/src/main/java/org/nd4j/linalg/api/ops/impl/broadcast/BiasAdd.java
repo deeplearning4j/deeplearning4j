@@ -85,7 +85,7 @@ public class BiasAdd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient){
-        return Arrays.asList(f().biasAddBp(arg(0), arg(1), gradient.get(0), nchw));
+        return new BiasAddGrad(sameDiff, arg(0), arg(1), gradient.get(0), nchw).outputs();
     }
 
     @Override

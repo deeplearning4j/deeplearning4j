@@ -16,6 +16,7 @@
 
 package org.datavec.api.split;
 
+import org.nd4j.BaseND4JTest;
 import org.nd4j.shade.guava.io.Files;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.filters.RandomPathFilter;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertEquals;
  *
  * @author saudet
  */
-public class InputSplitTests {
+public class InputSplitTests extends BaseND4JTest {
 
     @Test
     public void testSample() throws URISyntaxException {

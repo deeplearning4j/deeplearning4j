@@ -75,7 +75,7 @@ public class Expm1 extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().mul(f().exp(arg()), i_v.get(0));
+        SDVariable ret = sameDiff.math.mul(sameDiff.math.exp(arg()), i_v.get(0));
         return Arrays.asList(ret);
     }
 

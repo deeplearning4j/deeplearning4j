@@ -73,7 +73,7 @@ public class Negative extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Arrays.asList(f().neg(i_v.get(0)));
+        return Arrays.asList(sameDiff.math.neg(i_v.get(0)));
     }
 
 

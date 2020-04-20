@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -75,9 +76,9 @@ public class ACos extends BaseTransformStrictOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //dacos(x)/dx = -1 / sqrt(1-x^2)
-        SDVariable oneSubSq = f().square(arg()).rsub(1.0);
-        SDVariable sqrt = f().sqrt(oneSubSq);
+        SDVariable oneSubSq = sameDiff.math.square(arg()).rsub(1.0);
+        SDVariable sqrt = sameDiff.math.sqrt(oneSubSq);
         SDVariable ret = sqrt.rdiv(-1.0).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(ret);
     }
 }

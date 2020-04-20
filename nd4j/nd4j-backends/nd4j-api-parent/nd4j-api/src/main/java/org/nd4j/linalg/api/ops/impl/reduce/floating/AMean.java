@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -73,7 +74,7 @@ public class  AMean extends BaseReduceFloatOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         SDVariable sgn = sameDiff.math().sign(arg());
-        SDVariable meanBp = f().meanBp(sameDiff.math().abs(arg()), f1.get(0), false, dimensions);
+        SDVariable meanBp = new MeanBp(sameDiff, sameDiff.math().abs(arg()), f1.get(0), false, dimensions).outputVariable();
         return Collections.singletonList(sgn.mul(meanBp));
     }
 }

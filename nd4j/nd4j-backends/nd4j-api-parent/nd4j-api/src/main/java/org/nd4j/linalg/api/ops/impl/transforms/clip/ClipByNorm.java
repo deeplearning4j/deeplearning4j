@@ -73,7 +73,7 @@ public class ClipByNorm extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(new ClipByNormBp(f().sameDiff(), arg(), grad.get(0), clipValue, dimensions).outputVariable());
+        return new ClipByNormBp(sameDiff, arg(), grad.get(0), clipValue, dimensions).outputs();
     }
 
     @Override

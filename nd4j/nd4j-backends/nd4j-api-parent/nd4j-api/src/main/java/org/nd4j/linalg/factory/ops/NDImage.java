@@ -138,7 +138,7 @@ public class NDImage {
   /**
    * Resize images to size using the specified method.<br>
    *
-   * @param input 4D image [NHWC] (NUMERIC type)
+   * @param input 4D image [NCHW] (NUMERIC type)
    * @param size new height and width (INT type)
    * @param preserveAspectRatio Whether to preserve the aspect ratio. If this is set, then images will be resized to a size that fits in size while preserving the aspect ratio of the original image. Scales up the image if size is bigger than the current size of the image. Defaults to False.
    * @param antialis Whether to use an anti-aliasing filter when downsampling an image
@@ -161,7 +161,7 @@ public class NDImage {
   /**
    * Resize images to size using the specified method.<br>
    *
-   * @param input 4D image [NHWC] (NUMERIC type)
+   * @param input 4D image [NCHW] (NUMERIC type)
    * @param size new height and width (INT type)
    * @param ImageResizeMethod ResizeBilinear: Bilinear interpolation. If 'antialias' is true, becomes a hat/tent filter function with radius 1 when downsampling.
    * ResizeLanczos5: Lanczos kernel with radius 5. Very-high-quality filter but may have stronger ringing.

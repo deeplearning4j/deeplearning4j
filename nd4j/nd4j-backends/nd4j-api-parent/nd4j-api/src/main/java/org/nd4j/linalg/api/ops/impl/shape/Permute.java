@@ -77,10 +77,10 @@ public class Permute extends Transpose {
         SDVariable ret;
         if(args().length == 1) {
             //Static dimensions
-            ret = f().permute(i_v.get(0), reverseDims);
+            ret = sameDiff.permute(i_v.get(0), reverseDims);
         } else {
             //Dynamic dimensions
-            ret = f().permute(i_v.get(0), sameDiff.invertPermutation(arg(1)));
+            ret = sameDiff.permute(i_v.get(0), sameDiff.invertPermutation(arg(1)));
         }
         return Collections.singletonList(ret);
     }

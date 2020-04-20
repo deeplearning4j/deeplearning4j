@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceSameOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -76,7 +77,7 @@ public class Sum extends BaseReduceSameOp {
         // dL/dIn = dL/dOut * dOut/dIn
         //        = dL/dOut * 1
         // But broadcast to shape of the input
-        return Collections.singletonList(f().sumBp(arg(), i_v1.get(0), keepDims, dimensions));
+        return new SumBp(sameDiff, arg(), i_v1.get(0), keepDims, dimensions).outputs();
     }
 
 
