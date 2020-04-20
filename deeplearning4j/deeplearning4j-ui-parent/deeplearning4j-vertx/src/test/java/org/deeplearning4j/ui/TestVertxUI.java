@@ -22,6 +22,7 @@ import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -78,9 +79,6 @@ public class TestVertxUI extends BaseDL4JTest {
     @Test
     @Ignore
     public void testUI() throws Exception {
-
-        StatsStorage ss = new InMemoryStatsStorage();
-
         VertxUIServer uiServer = (VertxUIServer) UIServer.getInstance();
         assertEquals(9000, uiServer.getPort());
 
@@ -208,7 +206,6 @@ public class TestVertxUI extends BaseDL4JTest {
             Thread.sleep(5000);
         }
 
-
         Thread.sleep(1000000);
     }
 
@@ -287,11 +284,11 @@ public class TestVertxUI extends BaseDL4JTest {
                 }
             });
 
-            String json1 = IOUtils.toString(new URL("http://localhost:9000/train/ss1/overview/data"), StandardCharsets.UTF_8);
-//            System.out.println(json1);
+            String json1 = IOUtils.toString(new URL("http://localhost:9000/train/ss1/overview/data"),
+                    StandardCharsets.UTF_8);
 
-            String json2 = IOUtils.toString(new URL("http://localhost:9000/train/ss2/overview/data"), StandardCharsets.UTF_8);
-//            System.out.println(json2);
+            String json2 = IOUtils.toString(new URL("http://localhost:9000/train/ss2/overview/data"),
+                    StandardCharsets.UTF_8);
 
             assertNotEquals(json1, json2);
 
@@ -338,7 +335,7 @@ public class TestVertxUI extends BaseDL4JTest {
         uiServer.stop();
     }
 
-    @Test (expected = RuntimeException.class)
+    @Test (expected = DL4JException.class)
     public void testUIStartFailure() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         int port = VertxUIServer.DEFAULT_UI_PORT;

@@ -20,6 +20,7 @@ package org.deeplearning4j.ui.api;
 import io.vertx.core.Promise;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.ui.VertxUIServer;
 import org.nd4j.linalg.function.Function;
 
@@ -37,11 +38,11 @@ public interface UIServer {
      * Singleton pattern - all calls to getInstance() will return the same UI instance.
      *
      * @return UI instance for this JVM
-     * @throws RuntimeException if UI server failed to start;
+     * @throws DL4JException if UI server failed to start;
      * if the instance has already started in a different mode (multi/single-session)
      * @throws InterruptedException if interrupted while waiting for completion
      */
-    static UIServer getInstance() throws RuntimeException, InterruptedException {
+    static UIServer getInstance() throws DL4JException, InterruptedException {
         if (VertxUIServer.getInstance() != null) {
             return VertxUIServer.getInstance();
         } else {
@@ -59,12 +60,12 @@ public interface UIServer {
      *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
      *                             as URL path parameter in multi-session mode, or leave it {@code null}.
      * @return UI instance for this JVM
-     * @throws RuntimeException if UI server failed to start;
+     * @throws DL4JException if UI server failed to start;
      * if the instance has already started in a different mode (multi/single-session)
      * @throws InterruptedException if interrupted while waiting for completion
      */
     static UIServer getInstance(boolean multiSession, Function<String, StatsStorage> statsStorageProvider)
-            throws RuntimeException, InterruptedException {
+            throws DL4JException, InterruptedException {
         return VertxUIServer.getInstance(null, multiSession, statsStorageProvider);
     }
 

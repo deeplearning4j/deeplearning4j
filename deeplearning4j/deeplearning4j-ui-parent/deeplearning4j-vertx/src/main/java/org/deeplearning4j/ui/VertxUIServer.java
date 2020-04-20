@@ -37,6 +37,7 @@ import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
@@ -79,7 +80,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
     public static VertxUIServer getInstance(Integer port, boolean multiSession,
                                             Function<String, StatsStorage> statsStorageProvider)
-            throws RuntimeException, InterruptedException {
+            throws DL4JException, InterruptedException {
         if (instance == null || instance.isStopped()) {
             VertxUIServer.multiSession.set(multiSession);
             VertxUIServer.setStatsStorageProvider(statsStorageProvider);
@@ -88,11 +89,11 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
             deploy();
         } else if (!instance.isStopped()) {
             if (multiSession && !instance.isMultiSession()) {
-                throw new RuntimeException("Cannot return multi-session instance." +
+                throw new DL4JException("Cannot return multi-session instance." +
                         " UIServer has already started in single-session mode at " + instance.getAddress() +
                         " You may stop the UI server instance, and start a new one.");
             } else if (!multiSession && instance.isMultiSession()) {
-                throw new RuntimeException("Cannot return single-session instance." +
+                throw new DL4JException("Cannot return single-session instance." +
                         " UIServer has already started in multi-session mode at " + instance.getAddress() +
                         " You may stop the UI server instance, and start a new one.");
             }
@@ -103,10 +104,10 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
     /**
      * Deploy (start) {@link VertxUIServer}, waiting until starting is complete.
-     * @throws RuntimeException if UI server failed to start
+     * @throws DL4JException if UI server failed to start
      * @throws InterruptedException if interrupted while waiting for completion
      */
-    private static void deploy() throws RuntimeException, InterruptedException {
+    private static void deploy() throws DL4JException, InterruptedException {
         CountDownLatch l = new CountDownLatch(1);
         Promise<String> promise = Promise.promise();
         promise.future().compose(
@@ -119,7 +120,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
         Future<String> future = promise.future();
         if (future.failed()) {
-            throw new RuntimeException("Deeplearning4j UI server failed to start.", future.cause());
+            throw new DL4JException("Deeplearning4j UI server failed to start.", future.cause());
         }
     }
 

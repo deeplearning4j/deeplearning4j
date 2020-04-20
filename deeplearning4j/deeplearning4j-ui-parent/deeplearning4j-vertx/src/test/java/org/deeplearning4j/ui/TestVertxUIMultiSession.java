@@ -21,6 +21,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -189,8 +190,8 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     @Test
     public void testUIAutoAttachDetach() throws Exception {
 
-        long autoDetachTimeoutMillis = 10_000;
-        AutoDetachingStatsStorageProvider statsProvider = new AutoDetachingStatsStorageProvider(autoDetachTimeoutMillis);
+        long detachTimeoutMillis = 10_000;
+        AutoDetachingStatsStorageProvider statsProvider = new AutoDetachingStatsStorageProvider(detachTimeoutMillis);
         UIServer uIServer = UIServer.getInstance(true, statsProvider);
         statsProvider.setUIServer(uIServer);
         InMemoryStatsStorage ss = null;
@@ -236,12 +237,12 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
             assertTrue(uIServer.isAttached(ss));
         }
 
-        Thread.sleep(autoDetachTimeoutMillis + 1_000);
+        Thread.sleep(detachTimeoutMillis + 1_000);
         assertFalse(uIServer.isAttached(ss));
 
     }
 
-    @Test (expected = RuntimeException.class)
+    @Test (expected = DL4JException.class)
     public void testUIServerGetInstanceMultipleCalls1() throws InterruptedException {
         UIServer uiServer = UIServer.getInstance();
         assertFalse(uiServer.isMultiSession());
@@ -249,7 +250,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
 
     }
 
-    @Test (expected = RuntimeException.class)
+    @Test (expected = DL4JException.class)
     public void testUIServerGetInstanceMultipleCalls2() throws InterruptedException {
         UIServer uiServer = UIServer.getInstance(true, null);
         assertTrue(uiServer.isMultiSession());
@@ -263,7 +264,8 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
      * @return URL
      * @throws UnsupportedEncodingException if the used encoding is not supported
      */
-    private static String trainingSessionUrl(String serverAddress, String sessionId) throws UnsupportedEncodingException {
+    private static String trainingSessionUrl(String serverAddress, String sessionId)
+            throws UnsupportedEncodingException {
         return String.format("%s/train/%s", serverAddress, URLEncoder.encode(sessionId, "UTF-8"));
     }
 
