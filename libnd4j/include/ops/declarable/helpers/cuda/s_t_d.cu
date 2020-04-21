@@ -90,17 +90,17 @@ namespace helpers {
     }
 
     template <typename T>
-    static void _spaceTodepth_(sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
-        spaceToDepthKernel<T><<<512, 512, 1024, *context->getCudaStream()>>>(input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), block_size, isNHWC);
+    static void _spaceTodepth_(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+        spaceToDepthKernel<T><<<512, 512, 1024, *context->getCudaStream()>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), block_size, isNHWC);
     }
 
-    void _spaceTodepth(sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
-        NDArray::prepareSpecialUse({output}, {input});
-        BUILD_SINGLE_SELECTOR(input->dataType(), _spaceTodepth_, (context, input, output, block_size, isNHWC), LIBND4J_TYPES);
-        NDArray::registerSpecialUse({output}, {input});
+    void _spaceTodepth(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+        NDArray::prepareSpecialUse({output}, {&input});
+        BUILD_SINGLE_SELECTOR(input.dataType(), _spaceTodepth_, (context, input, output, block_size, isNHWC), LIBND4J_TYPES);
+        NDArray::registerSpecialUse({output}, {&input});
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_, (sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_, (sd::LaunchContext *context, const NDArray &input, NDArray *output, int block_size, bool isNHWC), LIBND4J_TYPES);
 
 }
 }
