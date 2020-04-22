@@ -585,7 +585,7 @@ public class JsonModelServerTest extends BaseDL4JTest {
                 assertEquals(exp.argMax().getInt(0), out);
             }
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();
@@ -640,7 +640,7 @@ public class JsonModelServerTest extends BaseDL4JTest {
             server.start();
             //client.predict(new float[]{0.0f, 1.0f, 2.0f});
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();
@@ -700,7 +700,7 @@ public class JsonModelServerTest extends BaseDL4JTest {
             val result = client.predict(new float[]{0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f});
             assertNotNull(result);
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();

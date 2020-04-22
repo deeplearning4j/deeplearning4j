@@ -66,7 +66,7 @@ public class UimaTokenizer implements Tokenizer {
 
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             throw new RuntimeException(e);
         }
 

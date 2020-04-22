@@ -109,7 +109,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
                 try {
                     subscriber.launch();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
 
             });
@@ -133,7 +133,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
                     publisher.publish(arr);
                     log.info("Sent array");
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
             });
 
@@ -189,7 +189,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
             try {
                 subscriber.launch();
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
         });

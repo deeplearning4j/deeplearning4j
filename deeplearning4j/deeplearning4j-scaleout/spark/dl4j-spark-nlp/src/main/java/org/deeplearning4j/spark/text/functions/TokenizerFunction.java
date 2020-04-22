@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.text.functions;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.Function;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.NGramTokenizerFactory;
@@ -29,6 +30,7 @@ import java.util.List;
  * @author Adam Gibson
  */
 @SuppressWarnings("unchecked")
+@Slf4j
 public class TokenizerFunction implements Function<String, List<String>> {
     private String tokenizerFactoryClazz;
     private String tokenizerPreprocessorClazz;
@@ -69,7 +71,7 @@ public class TokenizerFunction implements Function<String, List<String>> {
                 tokenizerFactory = new NGramTokenizerFactory(tokenizerFactory, nGrams, nGrams);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return tokenizerFactory;
     }

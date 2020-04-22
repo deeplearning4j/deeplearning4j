@@ -96,7 +96,7 @@ public class ParameterServerClient implements NDArrayCallback {
                                             .asJson().getBody().toString(),
                             MasterStatus.class).getResponderN();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return 0;
     }
@@ -135,7 +135,7 @@ public class ParameterServerClient implements NDArrayCallback {
                                             .asJson().getBody().toString(), SubscriberState.class);
             return subscriberState.isReady();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return false;
     }
@@ -163,7 +163,7 @@ public class ParameterServerClient implements NDArrayCallback {
                                             .asJson().getBody().toString(),
                             MasterStatus.class).started();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return false;
     }

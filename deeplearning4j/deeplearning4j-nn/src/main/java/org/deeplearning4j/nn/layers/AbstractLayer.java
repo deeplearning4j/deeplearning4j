@@ -63,7 +63,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public AbstractLayer(NeuralNetConfiguration conf, DataType dataType) {
         this.conf = conf;
         if (conf != null)
-        cacheMode = conf.getCacheMode();
+            cacheMode = conf.getCacheMode();
         this.dataType = dataType;
     }
 

@@ -78,10 +78,10 @@ public class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
         EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter, terminateAfter);
 
         earlyEndIter.next(10);
-        assertEquals(earlyEndIter.hasNext(), false);
+        assertEquals(false, earlyEndIter.hasNext());
 
         earlyEndIter.reset();
-        assertEquals(earlyEndIter.hasNext(), true);
+        assertEquals(true, earlyEndIter.hasNext());
 
     }
 

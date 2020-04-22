@@ -18,6 +18,7 @@ package org.datavec.api.records.reader.impl;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.datavec.api.conf.Configuration;
@@ -43,6 +44,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class LineRecordReader extends BaseRecordReader {
 
 
@@ -89,7 +91,7 @@ public class LineRecordReader extends BaseRecordReader {
                     iter = getIterator(splitIndex);
                     onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
 
                 if (iter.hasNext()) {
@@ -120,7 +122,7 @@ public class LineRecordReader extends BaseRecordReader {
                     iter = getIterator(splitIndex);
                     onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
 
                 return iter.hasNext();

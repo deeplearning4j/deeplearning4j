@@ -771,7 +771,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                     .build();
             fail("Exception expected");
         } catch (IllegalStateException e){
-//            e.printStackTrace();
+            log.info(e.toString());
             assertTrue(e.getMessage().contains("TBPTT") && e.getMessage().contains("validateTbpttConfig"));
         }
     }

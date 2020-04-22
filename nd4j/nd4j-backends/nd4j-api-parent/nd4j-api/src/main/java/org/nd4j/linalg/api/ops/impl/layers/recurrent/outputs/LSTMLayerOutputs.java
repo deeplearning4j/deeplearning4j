@@ -1,19 +1,12 @@
 package org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs;
 
-import java.util.Arrays;
-import java.util.List;
-
-import lombok.AccessLevel;
 import lombok.Getter;
-import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMLayerConfig;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
-import org.nd4j.shade.guava.primitives.Booleans;
 
 /**
  * The outputs of a LSTM layer ({@link LSTMLayer}.

@@ -162,7 +162,6 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
             return -1; // not found
         } catch (CharacterCodingException e) {
             // can't get here
-            e.printStackTrace();
             return -1;
         }
     }

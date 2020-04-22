@@ -189,7 +189,7 @@ public abstract class DifferentialFunction {
         try {
             return property.get(this);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return null;

@@ -1045,7 +1045,7 @@ public class IntegrationTestRunner {
                         act[j] = inf.output(in.get(j).getFirst(), inMask);
                         counter.incrementAndGet();
                     } catch (Exception e){
-                        e.printStackTrace();
+                        log.error("",e);
                         failedCount.incrementAndGet();
                     }
                 }

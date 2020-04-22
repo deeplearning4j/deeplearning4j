@@ -60,7 +60,7 @@ public class Hdf5Archive implements Closeable {
             /* This is necessary for the call to the BytePointer constructor below. */
             Loader.load(org.bytedeco.hdf5.global.hdf5.class);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 

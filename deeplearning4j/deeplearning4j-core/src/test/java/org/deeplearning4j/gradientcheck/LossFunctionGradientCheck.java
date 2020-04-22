@@ -216,7 +216,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                     failed.add(testName + "\t" + "EXCEPTION");
                     continue;
                 }
@@ -383,7 +383,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                     failed.add(testName + "\t" + "EXCEPTION");
                     continue;
                 }
@@ -693,7 +693,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("",e);
                         failed.add(testName + "\t" + "EXCEPTION");
                         continue;
                     }

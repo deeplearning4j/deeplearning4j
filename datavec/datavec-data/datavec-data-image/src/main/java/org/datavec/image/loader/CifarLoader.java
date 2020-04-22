@@ -186,7 +186,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 labels.add(line);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 
@@ -300,7 +300,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             try {
                 FileUtils.write(meanVarPath, uMean + "," + uStd + "," + vMean + "," + vStd);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
             meanStdStored = true;
         } else if (uMean == 0 && meanStdStored) {
@@ -312,7 +312,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 vStd = Double.parseDouble(values[3]);
 
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
         for (int i = 0; i < result.numExamples(); i++) {
@@ -356,12 +356,12 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                     dataSets.add(new DataSet(asMatrix(matConversion.getSecond()), matConversion.getFirst()));
                     batchNumCount++;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                     break;
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         if(dataSets.size() == 0){

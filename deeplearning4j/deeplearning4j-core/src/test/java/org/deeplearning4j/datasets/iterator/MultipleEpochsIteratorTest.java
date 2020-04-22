@@ -98,7 +98,7 @@ public class MultipleEpochsIteratorTest extends BaseDL4JTest {
         while (multiIter.hasNext()) {
             DataSet path = multiIter.next(10);
             assertNotNull(path);
-            assertEquals(path.numExamples(), 10, 0.0);
+            assertEquals(10, path.numExamples(), 0.0);
         }
 
         assertEquals(epochs, multiIter.epochs);

@@ -18,6 +18,7 @@ package org.datavec.spark.transform;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -53,7 +54,7 @@ import static org.datavec.local.transforms.LocalTransformExecutor.executeToSeque
  * @author Adan Gibson
  */
 @AllArgsConstructor
-
+@Slf4j
 public class CSVSparkTransform {
     @Getter
     private TransformProcess transformProcess;
@@ -252,7 +253,7 @@ public class CSVSparkTransform {
         try {
             return new Base64NDArrayBody(Nd4jBase64.base64String(arr));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return null;

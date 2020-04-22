@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.factory;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.factory.ops.*;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
@@ -112,6 +113,7 @@ import java.util.logging.Logger;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class Nd4j {
 
     /**
@@ -2460,7 +2462,7 @@ public class Nd4j {
                             //noinspection ConstantConditions
                             newArr.addi((format.parse(entries[0])).doubleValue());
                         } catch (ParseException e) {
-                            e.printStackTrace();
+                            log.error("",e);
                         }
                     } else {
                         Preconditions.checkState(entries.length == theShape[rank-1], "Invalid number of entries - format does not match expected shape." +
@@ -2470,7 +2472,7 @@ public class Nd4j {
                                 BigDecimal number = (BigDecimal) format.parse(entries[i]);
                                 subsetArr[i] = number.doubleValue();
                             } catch (ParseException e) {
-                                e.printStackTrace();
+                                log.error("",e);
                             }
                         }
                         INDArray subTensor = Nd4j.create(subsetArr, new long[]{subsetArr.length}, Nd4j.defaultFloatingPointType());

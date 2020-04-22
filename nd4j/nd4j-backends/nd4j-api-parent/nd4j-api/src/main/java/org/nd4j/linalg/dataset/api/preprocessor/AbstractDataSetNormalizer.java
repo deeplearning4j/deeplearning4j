@@ -154,13 +154,13 @@ public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> exten
 
     @Override
     public void transform(INDArray features, INDArray featuresMask) {
-        S featureStats = getFeatureStats();
+        S featureStatsLocal = getFeatureStats();
 
-        if(featureStats == null){
+        if(featureStatsLocal == null){
             throw new ND4JIllegalStateException("Features statistics were not yet calculated. Make sure to run fit() first.");
         }
 
-        strategy.preProcess(features, featuresMask, featureStats);    }
+        strategy.preProcess(features, featuresMask, featureStatsLocal);    }
 
     /**
      * Transform the labels. If {@link #isFitLabel()} == false, this is a no-op

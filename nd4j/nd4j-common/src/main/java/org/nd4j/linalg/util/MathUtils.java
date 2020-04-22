@@ -1326,11 +1326,11 @@ public class MathUtils {
 
     public static float randomFloatBetween(float begin, float end) {
         float rand = (float) Math.random();
-        return begin + (rand * ((end - begin)));
+        return begin + (rand * (end - begin));
     }
 
     public static double randomDoubleBetween(double begin, double end) {
-        return begin + (Math.random() * ((end - begin)));
+        return begin + (Math.random() * (end - begin));
     }
 
     /**

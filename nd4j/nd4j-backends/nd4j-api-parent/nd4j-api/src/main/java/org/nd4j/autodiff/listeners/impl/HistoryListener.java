@@ -17,10 +17,7 @@
 package org.nd4j.autodiff.listeners.impl;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -34,9 +31,6 @@ import org.nd4j.autodiff.listeners.records.LossCurve;
 import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
-import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
  * HistoryListener is mainly used internally to collect information such as the loss curve and evaluations,

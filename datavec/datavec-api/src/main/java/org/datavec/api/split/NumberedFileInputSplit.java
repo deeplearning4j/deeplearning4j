@@ -16,6 +16,7 @@
 
 package org.datavec.api.split;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.files.UriFromPathIterator;
 import org.datavec.api.writable.WritableType;
 
@@ -34,6 +35,7 @@ import java.util.regex.Pattern;
  * NumberedFileInputSplit utilizes String.format(), hence the requirement for "%d" to represent
  * the integer index.
  */
+@Slf4j
 public class NumberedFileInputSplit implements InputSplit {
     private final String baseString;
     private final int minIdx;
@@ -93,7 +95,7 @@ public class NumberedFileInputSplit implements InputSplit {
             try {
                 writeFile.createNewFile();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
 

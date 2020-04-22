@@ -793,8 +793,9 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return Nd4j.getExecutioner().exec(new LessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())))[0];
-
+        val op = dup ? new LessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())) :
+                       new LessThanOrEqual(first, ndArray);
+        return Nd4j.getExecutioner().exec(op)[0];
     }
 
 
@@ -805,7 +806,9 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return Nd4j.getExecutioner().exec(new GreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())))[0];
+        val op = dup ? new GreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())) :
+                new GreaterThanOrEqual(first, ndArray);
+        return Nd4j.getExecutioner().exec(op)[0];
 
     }
 

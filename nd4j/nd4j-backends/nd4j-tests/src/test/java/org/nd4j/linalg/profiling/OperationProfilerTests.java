@@ -476,7 +476,7 @@ public class OperationProfilerTests extends BaseNd4jTest {
                 Nd4j.exec(op);  //Should trigger NaN panic
                 fail();
             } catch (Exception e){
-                e.printStackTrace();
+                log.error("",e);
                 assertTrue(e.getMessage(), e.getMessage().contains("Inf"));
             }
 

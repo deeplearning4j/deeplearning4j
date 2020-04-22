@@ -16,6 +16,8 @@
 
 package org.nd4j.jdbc.driverfinder;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Driver;
@@ -29,6 +31,7 @@ import java.util.Set;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class DriverFinder {
 
     public final static String ND4j_JDBC_PROPERTIES = "nd4j.jdbc.properties";
@@ -43,9 +46,9 @@ public class DriverFinder {
             try {
                 driver = clazz.newInstance();
             } catch (InstantiationException e) {
-                e.printStackTrace();
+                log.error("",e);
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
         return driver;

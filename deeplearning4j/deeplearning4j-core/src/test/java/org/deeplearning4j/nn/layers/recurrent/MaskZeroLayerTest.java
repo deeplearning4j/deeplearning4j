@@ -79,13 +79,13 @@ public class MaskZeroLayerTest extends BaseDL4JTest {
         INDArray firstExampleOutput = out.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all());
         INDArray secondExampleOutput = out.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all());
 
-        assertEquals(firstExampleOutput.getDouble(0), 0.0, 1e-6);
-        assertEquals(firstExampleOutput.getDouble(1), 1.0, 1e-6);
-        assertEquals(firstExampleOutput.getDouble(2), 2.0, 1e-6);
+        assertEquals(0.0, firstExampleOutput.getDouble(0),  1e-6);
+        assertEquals(1.0, firstExampleOutput.getDouble(1), 1e-6);
+        assertEquals(2.0, firstExampleOutput.getDouble(2), 1e-6);
 
-        assertEquals(secondExampleOutput.getDouble(0), 0.0, 1e-6);
-        assertEquals(secondExampleOutput.getDouble(1), 0.0, 1e-6);
-        assertEquals(secondExampleOutput.getDouble(2), 1.0, 1e-6);
+        assertEquals(0.0, secondExampleOutput.getDouble(0), 1e-6);
+        assertEquals(0.0, secondExampleOutput.getDouble(1),  1e-6);
+        assertEquals(1.0, secondExampleOutput.getDouble(2), 1e-6);
 
     }
 

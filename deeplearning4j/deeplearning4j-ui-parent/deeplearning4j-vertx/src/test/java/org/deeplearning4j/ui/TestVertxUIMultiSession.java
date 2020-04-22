@@ -18,6 +18,7 @@
 package org.deeplearning4j.ui;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -53,6 +54,7 @@ import static org.junit.Assert.*;
  * @author Tamas Fenyvesi
  */
 @Ignore
+@Slf4j
 public class TestVertxUIMultiSession extends BaseDL4JTest {
     @Before
     public void setUp() throws Exception {
@@ -121,7 +123,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
                 assertEquals(HttpResponseStatus.OK.code(), conn.getResponseCode());
                 assertTrue(uIServer.isAttached(ss));
             } catch (InterruptedException | IOException e) {
-                e.printStackTrace();
+                log.error("",e);
                 fail(e.getMessage());
             } finally {
                 uIServer.detach(ss);
@@ -294,7 +296,7 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
                                 " after " + autoDetachTimeoutMillis + " ms ");
                         Thread.sleep(autoDetachTimeoutMillis);
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+                        log.error("",e);
                     } finally {
                         System.out.println("Auto-detaching StatsStorage (session ID: " + sessionId + ") after " +
                                 autoDetachTimeoutMillis + " ms.");

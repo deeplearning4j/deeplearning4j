@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -33,6 +34,7 @@ import java.nio.ByteBuffer;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
     /**
      * Meant for creating another view of a buffer
@@ -169,7 +171,7 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
             try {
                 dos.writeFloat(data[i]);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         return bos.toByteArray();
     }

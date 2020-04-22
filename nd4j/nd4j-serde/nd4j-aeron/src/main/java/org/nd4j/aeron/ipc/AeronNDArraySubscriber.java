@@ -174,7 +174,7 @@ public class AeronNDArraySubscriber implements AutoCloseable {
             try {
                 subscriber.launch();
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
         });
@@ -206,7 +206,7 @@ public class AeronNDArraySubscriber implements AutoCloseable {
             try {
                 subscriber.launch();
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
         });
