@@ -297,9 +297,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     protected void init() {
-        //  we want params validation here
-
-        if (currentSize.get() > 0) {
+        // we don't want overallocation in case of MMAP
+        if (currentSize.get() > 0 && workspaceConfiguration.getPolicyLocation()  != LocationPolicy.MMAP) {
             if (!isOver.get()) {
                 if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE
                                 && workspaceConfiguration.getOverallocationLimit() > 0) {

@@ -92,10 +92,8 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
             if (currentSize.get() > 0) {
                 isInit.set(true);
 
-
-                //if (isDebug.get())
+                if (isDebug.get())
                     log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
-
 
                 workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.WORKSPACE, 0, currentSize.get() + SAFETY_OFFSET);
