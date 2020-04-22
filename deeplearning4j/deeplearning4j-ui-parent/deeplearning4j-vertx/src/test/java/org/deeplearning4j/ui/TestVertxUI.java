@@ -56,6 +56,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
@@ -407,5 +408,15 @@ public class TestVertxUI extends BaseDL4JTest {
         } else {
             log.debug("UI server failed to deploy.", promise.future().cause());
         }
+    }
+
+    @Test
+    public void testUIAutoStopOnThreadExit() throws InterruptedException {
+        AtomicReference<UIServer> uiServer = new AtomicReference<>();
+        Thread thread = new Thread(() -> uiServer.set(UIServer.getInstance()));
+        thread.start();
+        thread.join();
+        Thread.sleep(1_000);
+        assertTrue(uiServer.get().isStopped());
     }
 }

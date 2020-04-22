@@ -75,6 +75,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     private static Function<String, StatsStorage> statsStorageProvider;
 
     private static Integer instancePort;
+    private static Thread autoStopThread;
 
     private TrainModule trainModule;
 
@@ -188,6 +189,19 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(VertxUIServer.class.getName(), promise);
+
+        Thread currentThread = Thread.currentThread();
+        VertxUIServer.autoStopThread = new Thread(() -> {
+            try {
+                currentThread.join();
+                log.info("Deeplearning4j UI server is auto-stopping.");
+                if (VertxUIServer.instance != null && !VertxUIServer.instance.isStopped()) {
+                    instance.stop();
+                }
+            } catch (InterruptedException e) {
+                log.error("Deeplearning4j UI server auto-stop thread was interrupted.", e);
+            }
+        });
     }
 
 
@@ -356,6 +370,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
                                 + server.actualPort(), result.cause()));
                     }
                 });
+        VertxUIServer.autoStopThread.start();
     }
 
     private List<String> extractArgsFromRoute(String path, RoutingContext rc) {
