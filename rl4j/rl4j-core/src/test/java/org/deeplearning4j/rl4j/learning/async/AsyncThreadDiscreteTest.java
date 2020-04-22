@@ -62,7 +62,7 @@ public class AsyncThreadDiscreteTest {
     IAsyncGlobal<NeuralNet> mockAsyncGlobal;
 
     @Mock
-    Policy<Encodable, Integer> mockGlobalCurrentPolicy;
+    Policy<Integer> mockGlobalCurrentPolicy;
 
     @Mock
     NeuralNet mockGlobalTargetNetwork;

@@ -32,8 +32,10 @@ import java.io.IOException;
  * DQN policy returns the action with the maximum Q-value as evaluated
  * by the dqn model
  */
+
+// FIXME: Should we rename this "GreedyPolicy"?
 @AllArgsConstructor
-public class DQNPolicy<O extends Encodable> extends Policy<O, Integer> {
+public class DQNPolicy<O> extends Policy<Integer> {
 
     final private IDQN dqn;
 

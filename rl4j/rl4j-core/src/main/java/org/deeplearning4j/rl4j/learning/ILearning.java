@@ -30,7 +30,7 @@ import org.deeplearning4j.rl4j.space.Encodable;
  */
 public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> {
 
-    IPolicy<O, A> getPolicy();
+    IPolicy<A> getPolicy();
 
     void train();
 

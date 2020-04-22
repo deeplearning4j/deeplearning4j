@@ -5,18 +5,19 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class MockPolicy implements IPolicy<MockEncodable, Integer> {
+public class MockPolicy implements IPolicy<Integer> {
 
     public int playCallCount = 0;
     public List<INDArray> actionInputs = new ArrayList<INDArray>();
 
     @Override
-    public <AS extends ActionSpace<Integer>> double play(MDP<MockEncodable, Integer, AS> mdp, IHistoryProcessor hp) {
+    public <O extends Encodable, AS extends ActionSpace<Integer>> double play(MDP<O, Integer, AS> mdp, IHistoryProcessor hp) {
         ++playCallCount;
         return 0;
     }
@@ -30,5 +31,10 @@ public class MockPolicy implements IPolicy<MockEncodable, Integer> {
     @Override
     public Integer nextAction(Observation observation) {
         return nextAction(observation.getData());
+    }
+
+    @Override
+    public void reset() {
+
     }
 }

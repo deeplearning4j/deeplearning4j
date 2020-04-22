@@ -221,7 +221,7 @@ public abstract class AsyncThread<OBSERVATION extends Encodable, ACTION, ACTION_
 
     protected abstract IAsyncLearningConfiguration getConf();
 
-    protected abstract IPolicy<OBSERVATION, ACTION> getPolicy(NN net);
+    protected abstract IPolicy<ACTION> getPolicy(NN net);
 
     protected abstract SubEpochReturn trainSubEpoch(Observation obs, int nstep);
 

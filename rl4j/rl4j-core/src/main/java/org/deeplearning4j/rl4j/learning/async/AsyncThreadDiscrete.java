@@ -97,7 +97,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         current.copy(getAsyncGlobal().getTarget());
 
         Observation obs = sObs;
-        IPolicy<O, Integer> policy = getPolicy(current);
+        IPolicy<Integer> policy = getPolicy(current);
 
         Integer action = getMdp().getActionSpace().noOp();
 
