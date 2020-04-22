@@ -408,13 +408,18 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
                 successEvent -> Future.future(prom -> l.countDown()),
                 failureEvent -> Future.future(prom -> l.countDown())
         );
+        stopAsync(promise);
+        // synchronous function should wait until the server is stopped
+        l.await();
+    }
+
+    @Override
+    public void stopAsync(Promise<Void> stopCallback) {
         /**
          * Stop Vertx instance and release any resources held by it.
          * Pass promise to {@link #stop(Promise)}.
          */
-        vertx.close(ar -> promise.handle(ar));
-        // synchronous function should wait until the server is stopped
-        l.await();
+        vertx.close(ar -> stopCallback.handle(ar));
     }
 
     @Override

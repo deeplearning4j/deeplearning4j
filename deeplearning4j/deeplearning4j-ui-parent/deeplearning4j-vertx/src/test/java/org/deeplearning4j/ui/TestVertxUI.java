@@ -20,6 +20,7 @@ package org.deeplearning4j.ui;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -49,8 +50,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -63,10 +62,9 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 08/10/2016.
  */
+@Slf4j
 @Ignore
 public class TestVertxUI extends BaseDL4JTest {
-
-    private static final Logger log = LoggerFactory.getLogger(TestVertxUIMultiSession.class);
 
     @Override
     public long getTimeoutMilliseconds() {
@@ -321,11 +319,47 @@ public class TestVertxUI extends BaseDL4JTest {
     public void testUIServerStop() throws Exception {
         UIServer uiServer = UIServer.getInstance(true, null);
         assertTrue(uiServer.isMultiSession());
+        assertFalse(uiServer.isStopped());
 
         long sleepMilliseconds = 10_000;
         log.info("Waiting {} ms before stopping.", sleepMilliseconds);
         Thread.sleep(sleepMilliseconds);
         uiServer.stop();
+        assertTrue(uiServer.isStopped());
+
+        log.info("UI server is stopped. Waiting {} ms before starting new UI server.", sleepMilliseconds);
+        Thread.sleep(sleepMilliseconds);
+        uiServer = UIServer.getInstance(false, null);
+        assertFalse(uiServer.isMultiSession());
+        assertFalse(uiServer.isStopped());
+
+        log.info("Waiting {} ms before stopping.", sleepMilliseconds);
+        Thread.sleep(sleepMilliseconds);
+        uiServer.stop();
+        assertTrue(uiServer.isStopped());
+    }
+
+
+    @Test
+    public void testUIServerStopAsync() throws Exception {
+        UIServer uiServer = UIServer.getInstance(true, null);
+        assertTrue(uiServer.isMultiSession());
+        assertFalse(uiServer.isStopped());
+
+        long sleepMilliseconds = 10_000;
+        log.info("Waiting {} ms before stopping.", sleepMilliseconds);
+        Thread.sleep(sleepMilliseconds);
+
+        CountDownLatch latch = new CountDownLatch(1);
+        Promise<Void> promise = Promise.promise();
+        promise.future().compose(
+                success -> Future.future(prom -> latch.countDown()),
+                failure -> Future.future(prom -> latch.countDown())
+        );
+
+        uiServer.stopAsync(promise);
+        latch.await();
+        assertTrue(uiServer.isStopped());
 
         log.info("UI server is stopped. Waiting {} ms before starting new UI server.", sleepMilliseconds);
         Thread.sleep(sleepMilliseconds);
@@ -359,12 +393,12 @@ public class TestVertxUI extends BaseDL4JTest {
     @Test
     public void testUIStartAsync() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
-        int port = VertxUIServer.DEFAULT_UI_PORT;
         Promise<String> promise = Promise.promise();
         promise.future().compose(
                 success -> Future.future(prom -> latch.countDown()),
                 failure -> Future.future(prom -> latch.countDown())
         );
+        int port = VertxUIServer.DEFAULT_UI_PORT;
         VertxUIServer.getInstance(port, false, null, promise);
         latch.await();
         if (promise.future().succeeded()) {

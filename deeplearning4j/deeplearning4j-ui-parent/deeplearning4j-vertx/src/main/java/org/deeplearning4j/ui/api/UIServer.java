@@ -165,5 +165,5 @@ public interface UIServer {
      * either call {@link Promise#complete} or {@link io.vertx.core.Promise#fail}.
      * @param stopCallback callback {@link Promise} to notify on completion
      */
-    void stop(Promise<Void> stopCallback);
+    void stopAsync(Promise<Void> stopCallback);
 }

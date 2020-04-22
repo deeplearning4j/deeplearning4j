@@ -18,6 +18,7 @@
 package org.deeplearning4j.ui;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -40,8 +41,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -55,9 +54,9 @@ import static org.junit.Assert.*;
 /**
  * @author Tamas Fenyvesi
  */
+@Slf4j
 @Ignore
 public class TestVertxUIMultiSession extends BaseDL4JTest {
-    private static final Logger log = LoggerFactory.getLogger(TestVertxUIMultiSession.class);
     @Override
     public long getTimeoutMilliseconds() {
         return 600_000L;
