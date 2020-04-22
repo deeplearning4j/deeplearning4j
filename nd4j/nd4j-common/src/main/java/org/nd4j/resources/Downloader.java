@@ -34,30 +34,49 @@ import java.net.URL;
  */
 @Slf4j
 public class Downloader {
+    /**
+     * Default connection timeout in milliseconds when using {@link FileUtils#copyURLToFile(URL, File, int, int)}
+     */
+    public static final int DEFAULT_CONNECTION_TIMEOUT = 60000;
+    /**
+     * Default read timeout in milliseconds when using {@link FileUtils#copyURLToFile(URL, File, int, int)}
+     */
+    public static final int DEFAULT_READ_TIMEOUT = 60000;
 
     private Downloader(){ }
 
     /**
-     * Download the specified URL to the specified file, and verify that the target MD5 matches
-     * @param name      Name (mainly for providing useful exceptions)
-     * @param url       URL to download
-     * @param f         Destination file
-     * @param targetMD5 Expected MD5 for file
-     * @param maxTries  Maximum number of download attempts before failing and throwing an exception
-     * @throws IOException If an error occurs during downloading
+     * As per {@link #download(String, URL, File, String, int, int, int)} with the connection and read timeouts
+     * set to their default values - {@link #DEFAULT_CONNECTION_TIMEOUT} and {@link #DEFAULT_READ_TIMEOUT} respectively
      */
     public static void download(String name, URL url, File f, String targetMD5, int maxTries) throws IOException {
-        download(name, url, f, targetMD5, maxTries, 0);
+        download(name, url, f, targetMD5, maxTries, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_READ_TIMEOUT);
     }
 
-    private static void download(String name, URL url, File f, String targetMD5, int maxTries, int attempt) throws IOException {
+    /**
+     * Download the specified URL to the specified file, and verify that the target MD5 matches
+     *
+     * @param name              Name (mainly for providing useful exceptions)
+     * @param url               URL to download
+     * @param f                 Destination file
+     * @param targetMD5         Expected MD5 for file
+     * @param maxTries          Maximum number of download attempts before failing and throwing an exception
+     * @param connectionTimeout connection timeout in milliseconds, as used by {@link org.apache.commons.io.FileUtils#copyURLToFile(URL, File, int, int)}
+     * @param readTimeout       read timeout in milliseconds, as used by {@link org.apache.commons.io.FileUtils#copyURLToFile(URL, File, int, int)}
+     * @throws IOException If an error occurs during downloading
+     */
+    public static void download(String name, URL url, File f, String targetMD5, int maxTries, int connectionTimeout, int readTimeout) throws IOException {
+        download(name, url, f, targetMD5, maxTries, 0, connectionTimeout, readTimeout);
+    }
+
+    private static void download(String name, URL url, File f, String targetMD5, int maxTries, int attempt, int connectionTimeout, int readTimeout) throws IOException {
         boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
         if (attempt < maxTries) {
             if(!isCorrectFile) {
-                FileUtils.copyURLToFile(url, f);
+                FileUtils.copyURLToFile(url, f, connectionTimeout, readTimeout);
                 if (!checkMD5OfFile(targetMD5, f)) {
                     f.delete();
-                    download(name, url, f, targetMD5, maxTries, attempt + 1);
+                    download(name, url, f, targetMD5, maxTries, attempt + 1, connectionTimeout, readTimeout);
                 }
             }
         } else if (!isCorrectFile) {
@@ -65,6 +84,14 @@ public class Downloader {
             throw new IOException("Could not download " + name + " from " + url + "\n properly despite trying " + maxTries
                     + " times, check your connection.");
         }
+    }
+
+    /**
+     * As per {@link #downloadAndExtract(String, URL, File, File, String, int, int, int)} with the connection and read timeouts
+     *      * set to their default values - {@link #DEFAULT_CONNECTION_TIMEOUT} and {@link #DEFAULT_READ_TIMEOUT} respectively
+     */
+    public static void downloadAndExtract(String name, URL url, File f, File extractToDir, String targetMD5, int maxTries) throws IOException {
+        downloadAndExtract(name, url, f, extractToDir, targetMD5, maxTries, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_READ_TIMEOUT);
     }
 
     /**
@@ -77,20 +104,24 @@ public class Downloader {
      * @param extractToDir Destination directory to extract all files
      * @param targetMD5    Expected MD5 for file
      * @param maxTries     Maximum number of download attempts before failing and throwing an exception
+     * @param connectionTimeout connection timeout in milliseconds, as used by {@link org.apache.commons.io.FileUtils#copyURLToFile(URL, File, int, int)}
+     * @param readTimeout       read timeout in milliseconds, as used by {@link org.apache.commons.io.FileUtils#copyURLToFile(URL, File, int, int)}
      * @throws IOException If an error occurs during downloading
      */
-    public static void downloadAndExtract(String name, URL url, File f, File extractToDir, String targetMD5, int maxTries) throws IOException {
-        downloadAndExtract(0, maxTries, name, url, f, extractToDir, targetMD5);
+    public static void downloadAndExtract(String name, URL url, File f, File extractToDir, String targetMD5, int maxTries,
+                                          int connectionTimeout, int readTimeout) throws IOException {
+        downloadAndExtract(0, maxTries, name, url, f, extractToDir, targetMD5, connectionTimeout, readTimeout);
     }
 
-    private static void downloadAndExtract(int attempt, int maxTries, String name, URL url, File f, File extractToDir, String targetMD5) throws IOException {
+    private static void downloadAndExtract(int attempt, int maxTries, String name, URL url, File f, File extractToDir,
+                                           String targetMD5, int connectionTimeout, int readTimeout) throws IOException {
         boolean isCorrectFile = f.exists() && f.isFile() && checkMD5OfFile(targetMD5, f);
         if (attempt < maxTries) {
             if(!isCorrectFile) {
-                FileUtils.copyURLToFile(url, f);
+                FileUtils.copyURLToFile(url, f, connectionTimeout, readTimeout);
                 if (!checkMD5OfFile(targetMD5, f)) {
                     f.delete();
-                    downloadAndExtract(attempt + 1, maxTries, name, url, f, extractToDir, targetMD5);
+                    downloadAndExtract(attempt + 1, maxTries, name, url, f, extractToDir, targetMD5, connectionTimeout, readTimeout);
                 }
             }
             // try extracting
@@ -99,7 +130,7 @@ public class Downloader {
             } catch (Throwable t){
                 log.warn("Error extracting {} files from file {} - retrying...", name, f.getAbsolutePath(), t);
                 f.delete();
-                downloadAndExtract(attempt + 1, maxTries, name, url, f, extractToDir, targetMD5);
+                downloadAndExtract(attempt + 1, maxTries, name, url, f, extractToDir, targetMD5, connectionTimeout, readTimeout);
             }
         } else if (!isCorrectFile) {
             //Too many attempts

@@ -1,5 +1,6 @@
 package org.nd4j.resources.strumpf;
 
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.shade.guava.io.Files;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -32,6 +33,14 @@ import java.util.Map;
 @JsonIgnoreProperties("filePath")
 @Slf4j
 public class ResourceFile {
+    /**
+     * Default value for resource downloading connection timeout - see {@link ND4JSystemProperties#RESOURCES_CONNECTION_TIMEOUT}
+     */
+    public static final int DEFAULT_CONNECTION_TIMEOUT = 60000;        //Timeout for connections to be established
+    /**
+     * Default value for resource downloading read timeout - see {@link ND4JSystemProperties#RESOURCES_READ_TIMEOUT}
+     */
+    public static final int DEFAULT_READ_TIMEOUT = 60000;              //Timeout for amount of time between connection established and data is available
     protected static final String PATH_KEY = "full_remote_path";
     protected static final String HASH = "_hash";
     protected static final String COMPRESSED_HASH = "_compressed_hash";
@@ -146,14 +155,19 @@ public class ResourceFile {
 
         String sha256PropertyCompressed = relativePath() + COMPRESSED_HASH;
 
-        //TODO NEXT LINE IN TEMPORARY UNTIL FIXED IN STRUMPF 0.3.2
-//        sha256PropertyCompressed = sha256PropertyCompressed.replaceAll("/", "\\\\");
-
         String sha256Compressed = v1.get(sha256PropertyCompressed);
         Preconditions.checkState(sha256Compressed != null, "Expected JSON property %s was not found in resource reference file %s", sha256PropertyCompressed, filePath);
 
         String sha256Property = relativePath() + HASH;
         String sha256Uncompressed = v1.get(sha256Property);
+
+        String connTimeoutStr = System.getProperty(ND4JSystemProperties.RESOURCES_CONNECTION_TIMEOUT);
+        String readTimeoutStr = System.getProperty(ND4JSystemProperties.RESOURCES_READ_TIMEOUT);
+        boolean validCTimeout = connTimeoutStr != null && connTimeoutStr.matches("\\d+");
+        boolean validRTimeout = readTimeoutStr != null && readTimeoutStr.matches("\\d+");
+
+        int connectTimeout = validCTimeout ? Integer.parseInt(connTimeoutStr) : DEFAULT_CONNECTION_TIMEOUT;
+        int readTimeout = validRTimeout ? Integer.parseInt(readTimeoutStr) : DEFAULT_READ_TIMEOUT;
 
         try {
             boolean correctHash = false;
@@ -162,7 +176,7 @@ public class ResourceFile {
                     if (tempFile.exists())
                         tempFile.delete();
                     log.info("Downloading remote resource {} to {}", remotePath, tempFile);
-                    FileUtils.copyURLToFile(new URL(remotePath), tempFile);
+                    FileUtils.copyURLToFile(new URL(remotePath), tempFile, connectTimeout, readTimeout);
                     //Now: check if downloaded archive hash is OK
                     String hash = sha256(tempFile);
                     correctHash = sha256Compressed.equals(hash);
