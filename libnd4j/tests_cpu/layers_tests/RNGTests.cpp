@@ -790,6 +790,75 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1_SGA) {
     
 }
 
+TEST_F(RNGTests, Test_ExponentialDistribution_2_SGA) {
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10, 10});
+    auto exp0 = NDArrayFactory::create<float>('c', {10, 10});
+    RandomGenerator oc(2716049175077475646L, -6182841917129177862L);
+
+    sd::ops::random_exponential op;
+    RandomLauncher::fillExponential(x.getContext(), oc, &exp0, 2.f);
+    auto result = op.evaluate({&x}, {1.f}, {0});
+    ASSERT_EQ(Status::OK(), result.status());
+
+    auto z = result.at(0);
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+    //
+//    z->printBuffer("\nExponential2+");
+    auto mean = z->reduceNumber(reduce::Mean);
+    auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
+    mean.printBuffer("Mean for exponential with param 1.0 (1 exp) is");
+    variance.printBuffer("Variance for exponential with param 1. (1 exp) is");
+    ASSERT_FALSE(nexp0->equalsTo(z));
+    ASSERT_FALSE(nexp1->equalsTo(z));
+    ASSERT_FALSE(nexp2->equalsTo(z));
+    mean = exp0.reduceNumber(reduce::Mean);
+    variance = exp0.varianceNumber(variance::SummaryStatsVariance, false);
+    mean.printBuffer("Mean for exponential with param 2.0 (1/2 exp) is");
+    variance.printBuffer("Variance for exponential with param 2. (1/2 exp) is");
+}
+
+TEST_F(RNGTests, Test_ExponentialDistribution_3_SGA) {
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {1000, 1000});
+    auto exp0 = NDArrayFactory::create<double>('c', {1000, 1000});
+    RandomGenerator oc(2716049175077475646L, -6182841917129177862L);
+    auto expMean = NDArrayFactory::create<double>(0.5f);
+    auto expVar = NDArrayFactory::create<double>(0.25f);
+    sd::ops::random_exponential op;
+    RandomLauncher::fillExponential(exp0.getContext(), oc, &exp0, 2.f);
+
+    auto result = op.evaluate({&x}, {1.});
+    ASSERT_EQ(Status::OK(), result.status());
+
+    auto z = result.at(0);
+    //ASSERT_TRUE(exp0.isSameShape(z));
+    //ASSERT_FALSE(exp0.equalsTo(z));
+    //
+//    z->printBuffer("\nExponential2+");
+   auto mean = z->reduceNumber(reduce::Mean);
+   auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
+   mean.printBuffer("Mean");
+   variance.printBuffer("Variance");
+    ASSERT_NEAR(mean.e<double>(0), 1.f, 1.e-2f);
+    ASSERT_NEAR(variance.e<double>(0), 1.f, 1.e-2f);
+//    mean.printBuffer("Mean for exponential with param 1.0 (1 exp) is");
+//    variance.printBuffer("Variance for exponential with param 1. (1 exp) is");
+//    ASSERT_FALSE(nexp0->equalsTo(z));
+//    ASSERT_FALSE(nexp1->equalsTo(z));
+//    ASSERT_FALSE(nexp2->equalsTo(z));
+    mean = exp0.reduceNumber(reduce::Mean);
+    variance = exp0.varianceNumber(variance::SummaryStatsVariance, false);
+    mean.printBuffer("Mean for exponential with param 2.0 (1/2 exp) is");
+    variance.printBuffer("Variance for exponential with param 2. (1/4 exp) is");
+    ASSERT_TRUE(mean.equalsTo(expMean, 1.e-3));
+    ASSERT_TRUE(variance.equalsTo(expVar, 1.e-3));
+    RandomLauncher::fillExponential(exp0.getContext(), oc, &exp0, 1.f);
+    mean = exp0.reduceNumber(reduce::Mean);
+    variance = exp0.varianceNumber(variance::SummaryStatsVariance, false);
+    mean.printBuffer("Mean for exponential with param 1.0 (1 exp) is");
+    variance.printBuffer("Variance for exponential with param 1.0 (1 exp) is");
+}
+
 TEST_F(RNGTests, Test_ExponentialDistribution_2) {
     auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10, 10});
     auto y = NDArrayFactory::create<float>('c', {10, 10});
