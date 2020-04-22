@@ -178,8 +178,6 @@ public abstract class BaseCudnnHelper {
         }
     }
 
-    protected static final int TENSOR_FORMAT = CUDNN_TENSOR_NCHW;
-
     protected final DataType nd4jDataType;
     protected final int dataType;
     protected final int dataTypeSize;

@@ -17,12 +17,14 @@
 package org.deeplearning4j.nn.conf.layers.convolutional;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.NoParamLayer;
+import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.convolution.Cropping2DLayer;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -47,6 +49,7 @@ import java.util.Map;
 public class Cropping2D extends NoParamLayer {
 
     private int[] cropping;
+    private CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
     /**
      * @param cropTopBottom Amount of cropping to apply to both the top and the bottom of the input activations
@@ -56,6 +59,10 @@ public class Cropping2D extends NoParamLayer {
         this(cropTopBottom, cropTopBottom, cropLeftRight, cropLeftRight);
     }
 
+    public Cropping2D(CNN2DFormat dataFormat, int cropTopBottom, int cropLeftRight) {
+        this(dataFormat, cropTopBottom, cropTopBottom, cropLeftRight, cropLeftRight);
+    }
+
     /**
      * @param cropTop Amount of cropping to apply to the top of the input activations
      * @param cropBottom Amount of cropping to apply to the bottom of the input activations
@@ -63,7 +70,11 @@ public class Cropping2D extends NoParamLayer {
      * @param cropRight Amount of cropping to apply to the right of the input activations
      */
     public Cropping2D(int cropTop, int cropBottom, int cropLeft, int cropRight) {
-        this(new Builder(cropTop, cropBottom, cropLeft, cropRight));
+        this(CNN2DFormat.NCHW, cropTop, cropBottom, cropLeft, cropRight);
+    }
+
+    public Cropping2D(CNN2DFormat format, int cropTop, int cropBottom, int cropLeft, int cropRight) {
+        this(new Builder(cropTop, cropBottom, cropLeft, cropRight).dataFormat(format));
     }
 
     /**
@@ -77,6 +88,7 @@ public class Cropping2D extends NoParamLayer {
     protected Cropping2D(Builder builder) {
         super(builder);
         this.cropping = builder.cropping;
+        this.dataFormat = builder.cnn2DFormat;
     }
 
     @Override
@@ -98,7 +110,9 @@ public class Cropping2D extends NoParamLayer {
         int outH = hwd[0] - cropping[0] - cropping[1];
         int outW = hwd[1] - cropping[2] - cropping[3];
 
-        return InputType.convolutional(outH, outW, hwd[2]);
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+
+        return InputType.convolutional(outH, outW, hwd[2], c.getFormat());
     }
 
     @Override
@@ -113,6 +127,10 @@ public class Cropping2D extends NoParamLayer {
         return null;
     }
 
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        this.dataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
+    }
 
     @Getter
     @Setter
@@ -123,6 +141,19 @@ public class Cropping2D extends NoParamLayer {
          */
         @Setter(AccessLevel.NONE)
         private int[] cropping = new int[] {0, 0, 0, 0};
+
+        private CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.cnn2DFormat = format;
+            return this;
+        }
 
         /**
          * @param cropping Cropping amount for top/bottom/left/right (in that order). Must be length 1, 2, or 4 array.

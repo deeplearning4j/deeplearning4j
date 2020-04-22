@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
@@ -123,7 +124,12 @@ public abstract class InputType implements Serializable {
      * @return InputTypeConvolutional
      */
     public static InputType convolutional(long height, long width, long depth) {
-        return new InputTypeConvolutional(height, width, depth);
+//        return new InputTypeConvolutional(height, width, depth);
+        return convolutional(height, width, depth, CNN2DFormat.NCHW);
+    }
+
+    public static InputType convolutional(long height, long width, long depth, CNN2DFormat format){
+        return new InputTypeConvolutional(height, width, depth, format);
     }
 
     /**
@@ -257,11 +263,18 @@ public abstract class InputType implements Serializable {
         private long height;
         private long width;
         private long channels;
+        private CNN2DFormat format = CNN2DFormat.NCHW;  //Default for JSON deserialization of older configurations
 
-        public InputTypeConvolutional(@JsonProperty("height") long height, @JsonProperty("width") long width, @JsonProperty("channels") long channels) {
+        public InputTypeConvolutional(@JsonProperty("height") long height, @JsonProperty("width") long width,
+                                      @JsonProperty("channels") long channels, @JsonProperty("format") CNN2DFormat format) {
             this.height = height;
             this.width = width;
             this.channels = channels;
+            this.format = format;
+        }
+
+        public InputTypeConvolutional(long height, long width, long channels) {
+            this(height, width, channels, CNN2DFormat.NCHW);
         }
 
         /**
@@ -292,7 +305,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeConvolutional(h=" + height + ",w=" + width + ",c=" + channels + ")";
+            return "InputTypeConvolutional(h=" + height + ",w=" + width + ",c=" + channels + "," + format + ")";
         }
 
         @Override
@@ -302,8 +315,13 @@ public abstract class InputType implements Serializable {
 
         @Override
         public long[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new long[]{-1, channels, height, width};
-            else return new long[]{channels, height, width};
+            if(format == CNN2DFormat.NCHW){
+                if(includeBatchDim) return new long[]{-1, channels, height, width};
+                else return new long[]{channels, height, width};
+            } else {
+                if(includeBatchDim) return new long[]{-1, height, width, channels};
+                else return new long[]{height, width, channels};
+            }
         }
     }
 

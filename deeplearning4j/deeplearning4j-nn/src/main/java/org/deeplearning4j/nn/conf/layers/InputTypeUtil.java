@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -70,13 +71,13 @@ public class InputTypeUtil {
         if (convolutionMode == ConvolutionMode.Same) {
             long hOut = stride[0] * hIn;
             long wOut = stride[1] * wIn;
-            return InputType.convolutional(hOut, wOut, outputDepth);
+            return InputType.convolutional(hOut, wOut, outputDepth, i.getFormat());
         }
 
         long hOut = sH * (hIn - 1) + kH - 2 * padH;
         long wOut = sW * (wIn - 1) + kW - 2 * padW;
 
-        return InputType.convolutional(hOut, wOut, outputDepth);
+        return InputType.convolutional(hOut, wOut, outputDepth, i.getFormat());
     }
 
     public static InputType getOutputTypeDeconv3dLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
@@ -332,10 +333,20 @@ public class InputTypeUtil {
         return InputType.recurrent(outputDepth, outH);
     }
 
+    /**
+     * @deprecated Use {@link #getOutputTypeCnnLayers(InputType, int[], int[], int[], int[], ConvolutionMode, long, long, String, CNN2DFormat, Class)}
+     */
+    @Deprecated
+    public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
+                                                   int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
+                                                   Class<?> layerClass) {
+        return getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode, outputDepth,
+                layerIdx, layerName, CNN2DFormat.NCHW, layerClass);
+    }
 
     public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
                     int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
-                    Class<?> layerClass) {
+                    CNN2DFormat format, Class<?> layerClass) {
 
         if (convolutionMode == null) {
             String name = layerName == null ? "(not named)" : layerName;
@@ -424,12 +435,12 @@ public class InputTypeUtil {
             int outH = (int) Math.ceil(inHeight / ((double) stride[0]));
             int outW = (int) Math.ceil(inWidth / ((double) stride[1]));
 
-            return InputType.convolutional(outH, outW, outputDepth);
+            return InputType.convolutional(outH, outW, outputDepth, format);
         }
 
         long hOut = (inHeight - kH + 2 * padH) / sH + 1;
         long wOut = (inWidth - kW + 2 * padW) / sW + 1;
-        return InputType.convolutional(hOut, wOut, outputDepth);
+        return InputType.convolutional(hOut, wOut, outputDepth, format);
     }
 
     private static String getConfigErrorCommonLine(long layerIdx, String layerName, Class<?> layerClass,

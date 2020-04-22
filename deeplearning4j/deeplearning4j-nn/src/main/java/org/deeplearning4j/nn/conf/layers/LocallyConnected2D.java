@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -70,6 +71,7 @@ public class LocallyConnected2D extends SameDiffLayer {
     private int[] inputSize;
     private int[] outputSize;
     private int featureDim;
+    protected CNN2DFormat format = CNN2DFormat.NCHW;
 
     protected LocallyConnected2D(Builder builder) {
         super(builder);
@@ -84,6 +86,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         this.hasBias = builder.hasBias;
         this.inputSize = builder.inputSize;
         this.featureDim = kernel[0] * kernel[1] * (int) nIn;
+        this.format = builder.format;
     }
 
     private LocallyConnected2D() {
@@ -97,17 +100,19 @@ public class LocallyConnected2D extends SameDiffLayer {
             throw new IllegalArgumentException("Input size has to be specified for locally connected layers.");
         }
 
-        int[] inputShape = new int[] {1, nIn, inputSize[0], inputSize[1]};
+        boolean nchw = format == CNN2DFormat.NCHW;
+
+        int[] inputShape = nchw ? new int[] {1, nIn, inputSize[0], inputSize[1]} : new int[] {1, inputSize[0], inputSize[1], nIn};
         INDArray dummyInputForShapeInference = Nd4j.ones(inputShape);
 
         if (cm == ConvolutionMode.Same) {
             this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, null, cm,
-                            dilation);
+                            dilation, format);
             this.padding = ConvolutionUtils.getSameModeTopLeftPadding(outputSize, inputSize, kernel, stride, dilation);
             this.paddingBr = ConvolutionUtils.getSameModeBottomRightPadding(outputSize, inputSize, kernel, stride, dilation);
         } else {
             this.outputSize = ConvolutionUtils.getOutputSize(dummyInputForShapeInference, kernel, stride, padding, cm,
-                            dilation);
+                            dilation, format);
         }
     }
 
@@ -123,7 +128,7 @@ public class LocallyConnected2D extends SameDiffLayer {
         computeOutputSize();
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernel, stride, padding, new int[] {1, 1}, cm, nOut,
-                        layerIndex, getLayerName(), LocallyConnected2D.class);
+                        layerIndex, getLayerName(), format, LocallyConnected2D.class);
     }
 
     @Override
@@ -133,6 +138,7 @@ public class LocallyConnected2D extends SameDiffLayer {
             this.nIn = c.getChannels();
             this.featureDim = kernel[0] * kernel[1] * (int) nIn;
         }
+        this.format = ((InputType.InputTypeConvolutional)inputType).getFormat();
     }
 
     @Override
@@ -181,6 +187,10 @@ public class LocallyConnected2D extends SameDiffLayer {
         int kH = kernel[0];
         int kW = kernel[1];
 
+        boolean nchw = format == CNN2DFormat.NCHW;
+        if(!nchw)
+            layerInput = layerInput.permute(0,3,1,2);       //NHWC to NCHW
+
         if(padding[0] > 0 || padding[1] > 0 || (cm == ConvolutionMode.Same && (paddingBr[0] > 0 || paddingBr[1] > 0))){
             //Note: for same mode, bottom/right padding can be 1 more than top/left padding
             //NCHW format
@@ -210,16 +220,15 @@ public class LocallyConnected2D extends SameDiffLayer {
 
         SDVariable reshapeResult = sameDiff.reshape(mmulResult, outH, outW, miniBatch, nOut);
 
-        SDVariable permutedResult = sameDiff.permute(reshapeResult, 2, 3, 0, 1); // (mb, nOut, outH, outW)
+        SDVariable permutedResult = nchw ? reshapeResult.permute(2, 3, 0, 1) : reshapeResult.permute(2, 0, 1, 3); // (mb, nOut, outH, outW) or (mb, outH, outW, nOut)
 
         if (hasBias) {
             SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
-            SDVariable biasAddedResult = sameDiff.nn().biasAdd(permutedResult, b, true);
+            SDVariable biasAddedResult = sameDiff.nn().biasAdd(permutedResult, b, nchw);
             return activation.asSameDiff("out", sameDiff, biasAddedResult);
         } else {
             return activation.asSameDiff("out", sameDiff, permutedResult);
         }
-
     }
 
     @Override
@@ -292,6 +301,7 @@ public class LocallyConnected2D extends SameDiffLayer {
          */
         private boolean hasBias = true;
 
+        protected CNN2DFormat format = CNN2DFormat.NCHW;
 
 
         /**
@@ -383,6 +393,17 @@ public class LocallyConnected2D extends SameDiffLayer {
          */
         public Builder dilation(int... d) {
             this.setDilation(d);
+            return this;
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.format = format;
             return this;
         }
 

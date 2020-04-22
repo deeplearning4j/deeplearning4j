@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import lombok.Data;
 import lombok.val;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,6 +53,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     protected long inputHeight;
     protected long inputWidth;
     protected long numChannels;
+    protected CNN2DFormat format = CNN2DFormat.NCHW;    //Default for legacy JSON deserialization
 
     /**
      * @param inputHeight the columns
@@ -61,16 +63,20 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @JsonCreator
     public CnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") long inputHeight,
-                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels) {
+                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels,
+                        @JsonProperty("format") CNN2DFormat format) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
+        this.format = format;
     }
 
     public CnnToFeedForwardPreProcessor(long inputHeight, long inputWidth) {
-        this.inputHeight = inputHeight;
-        this.inputWidth = inputWidth;
-        this.numChannels = 1;
+        this(inputHeight, inputWidth, 1, CNN2DFormat.NCHW);
+    }
+
+    public CnnToFeedForwardPreProcessor(long inputHeight, long inputWidth, long numChannels) {
+        this(inputHeight, inputWidth, numChannels, CNN2DFormat.NCHW);
     }
 
     public CnnToFeedForwardPreProcessor() {}
@@ -80,18 +86,32 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() == 2)
             return input; //Should usually never happen
-        if(input.size(1) != numChannels || input.size(2) != inputHeight || input.size(3) != inputWidth){
+
+        int chDim = 1;
+        int hDim = 2;
+        int wDim = 3;
+        if(format == CNN2DFormat.NHWC){
+            chDim = 3;
+            hDim = 1;
+            wDim = 2;
+        }
+
+        if(input.size(chDim) != numChannels || input.size(hDim) != inputHeight || input.size(wDim) != inputWidth){
             throw new IllegalStateException("Invalid input, does not match configuration: expected [minibatch, numChannels="
                     + numChannels + ", inputHeight=" + inputHeight + ", inputWidth=" + inputWidth + "] but got input array of" +
                     "shape " + Arrays.toString(input.shape()));
         }
 
         //Check input: nchw format
-        if(input.size(1) != numChannels || input.size(2) != inputHeight ||
-                input.size(3) != inputWidth){
+        if(input.size(chDim) != numChannels || input.size(hDim) != inputHeight ||
+                input.size(wDim) != inputWidth){
             throw new IllegalStateException("Invalid input array: expected shape [minibatch, channels, height, width] = "
                     + "[minibatch, " + numChannels + ", " + inputHeight + ", " + inputWidth + "] - got "
                     + Arrays.toString(input.shape()));
+        }
+
+        if(format == CNN2DFormat.NHWC) {
+            input = input.permute(0, 3, 1, 2); //NHWC to NCHW
         }
 
         //Assume input is standard rank 4 activations out of CNN layer
@@ -120,6 +140,10 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
                             + Arrays.toString(epsilons.shape()));
 
         INDArray ret = epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+
+        if(format == CNN2DFormat.NHWC){
+            ret = ret.permute(0,2,3,1);   //NCHW to NHWC
+        }
         return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret); //Move if required to specified workspace
     }
 

@@ -20,6 +20,7 @@ import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -60,6 +61,7 @@ public class BatchNormalization extends FeedForwardLayer {
     protected boolean lockGammaBeta = false;
     protected boolean cudnnAllowFallback = true;
     protected boolean useLogStd = false; //Default for deserialized models (1.0.0-beta3) and earlier: store variance as variance. Post 1.0.0-beta3: use log stdev instead
+    protected CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;   //Default for deserialized models, 1.0.0-beta6 and earlier
 
     private BatchNormalization(Builder builder) {
         super(builder);
@@ -71,6 +73,7 @@ public class BatchNormalization extends FeedForwardLayer {
         this.lockGammaBeta = builder.lockGammaBeta;
         this.cudnnAllowFallback = builder.cudnnAllowFallback;
         this.useLogStd = builder.useLogStd;
+        this.cnn2DFormat = builder.cnn2DFormat;
         initializeConstraints(builder);
     }
 
@@ -138,6 +141,7 @@ public class BatchNormalization extends FeedForwardLayer {
                     break;
                 case CNN:
                     nIn = ((InputType.InputTypeConvolutional) inputType).getChannels();
+                    cnn2DFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
                     break;
                 case CNN3D:
                     nIn = ((InputType.InputTypeConvolutional3D) inputType).getChannels();
@@ -307,6 +311,8 @@ public class BatchNormalization extends FeedForwardLayer {
          */
         protected boolean useLogStd = true;
 
+        protected CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;   //Default for deserialized models, 1.0.0-beta6 and earlier
+
         public Builder(double decay, boolean isMinibatch) {
             this.setDecay(decay);
             this.setMinibatch(isMinibatch);
@@ -328,6 +334,16 @@ public class BatchNormalization extends FeedForwardLayer {
         }
 
         public Builder() {}
+
+        /**
+         * Set the input and output array data format. Defaults to NCHW format - i.e., channels first.
+         * See {@link CNN2DFormat} for more details
+         * @param format Format to use
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.cnn2DFormat = format;
+            return this;
+        }
 
         /**
          * If doing minibatch training or not. Default: true. Under most circumstances, this should be set to true. If

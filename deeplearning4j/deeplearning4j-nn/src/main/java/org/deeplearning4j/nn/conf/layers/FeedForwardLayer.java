@@ -91,7 +91,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
             case CNN:
                 //CNN -> FF
                 InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-                return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
+                return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels(), c.getFormat());
             case CNN3D:
                 //CNN3D -> FF
                 InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D) inputType;

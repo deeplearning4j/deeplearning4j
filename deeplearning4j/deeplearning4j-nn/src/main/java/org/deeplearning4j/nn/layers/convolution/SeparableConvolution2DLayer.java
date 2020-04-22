@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -80,7 +81,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
-                    + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
+                    + ". Expected rank 4 array with shape " + layerConf().getCnn2dDataFormat().dimensionNames() + ". "
                     + layerId());
         }
         INDArray bias;
@@ -91,9 +92,12 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         INDArray input = this.input.castTo(dataType);
 
+        CNN2DFormat format = layerConf().getCnn2dDataFormat();
+        boolean nchw = format == CNN2DFormat.NCHW;
+
         long miniBatch = input.size(0);
-        int inH = (int)input.size(2);
-        int inW = (int)input.size(3);
+        int inH = (int)input.size(nchw ? 2 : 1);
+        int inW = (int)input.size(nchw ? 3 : 2);
 
         int inDepth = (int) depthWiseWeights.size(1);
         int kH = (int) depthWiseWeights.size(2);
@@ -104,24 +108,26 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int[] strides = layerConf().getStride();
         int[] pad;
         if (convolutionMode == ConvolutionMode.Same) {
-            int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            int[] outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, format); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, format); //Also performs validation
         }
 
         INDArray biasGradView = gradientViews.get(SeparableConvolutionParamInitializer.BIAS_KEY);
         INDArray depthWiseWeightGradView = gradientViews.get(SeparableConvolutionParamInitializer.DEPTH_WISE_WEIGHT_KEY);
         INDArray pointWiseWeightGradView = gradientViews.get(SeparableConvolutionParamInitializer.POINT_WISE_WEIGHT_KEY);
 
-        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, depthWiseWeights.dataType(), new long[]{miniBatch, inDepth, inH, inW}, 'c');
+        long[] epsShape = nchw ? new long[]{miniBatch, inDepth, inH, inW} : new long[]{miniBatch, inH, inW, inDepth};
+        INDArray outEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, depthWiseWeights.dataType(), epsShape, 'c');
 
-        Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
+        int sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
         int[] args = new int[] {
                 kH, kW, strides[0], strides[1],
-                pad[0], pad[1], dilation[0], dilation[1], sameMode
+                pad[0], pad[1], dilation[0], dilation[1], sameMode,
+                nchw ? 0 : 1
         };
 
         INDArray delta;
@@ -180,6 +186,12 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         INDArray input = this.input.castTo(dataType);
 
+        CNN2DFormat format = layerConf().getCnn2dDataFormat();
+        boolean nchw = format == CNN2DFormat.NCHW;
+        int chIdx = nchw ? 1 : 3;
+        int hIdx = nchw ? 2 : 1;
+        int wIdx = nchw ? 3 : 2;
+
         if (input.rank() != 4) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
@@ -187,7 +199,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SeparableConvolution2D (layer name = " + layerName + ", layer index = "
                     + index + ") with shape " + Arrays.toString(input.shape()) + ". "
-                    + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
+                    + "Expected rank 4 array with shape " + format.dimensionNames() + "."
                     + (input.rank() == 2
                     ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
                     : "")
@@ -197,7 +209,7 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         long inDepth = depthWiseWeights.size(1);
         long outDepth = pointWiseWeights.size(0);
 
-        if (input.size(1) != inDepth) {
+        if (input.size(nchw ? 1 : 3) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
@@ -217,29 +229,31 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, format); //Also performs validation
 
             if (input.size(2) > Integer.MAX_VALUE || input.size(3) > Integer.MAX_VALUE) {
                 throw new ND4JArraySizeException();
             }
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) input.size(2), (int) input.size(3)}, kernel,
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) input.size(hIdx), (int) input.size(wIdx)}, kernel,
                     strides, dilation );
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, format); //Also performs validation
         }
 
         int outH = outSize[0];
         int outW = outSize[1];
 
         val miniBatch = input.size(0);
-        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, depthWiseWeights.dataType(), new long[]{miniBatch, outDepth, outH, outW}, 'c');
+        long[] outShape = nchw ? new long[]{miniBatch, outDepth, outH, outW} : new long[]{miniBatch, outH, outW, outDepth};
+        INDArray output = workspaceMgr.create(ArrayType.ACTIVATIONS, depthWiseWeights.dataType(), outShape, 'c');
 
         Integer sameMode = (convolutionMode == ConvolutionMode.Same) ? 1 : 0;
 
         int[] args = new int[] {
                 kH, kW, strides[0], strides[1],
-                pad[0], pad[1], dilation[0], dilation[1], sameMode
+                pad[0], pad[1], dilation[0], dilation[1], sameMode,
+                nchw ? 0 : 1
         };
 
         //dl4j weights: depth [depthMultiplier, nIn, kH, kW], point [nOut, nIn * depthMultiplier, 1, 1]

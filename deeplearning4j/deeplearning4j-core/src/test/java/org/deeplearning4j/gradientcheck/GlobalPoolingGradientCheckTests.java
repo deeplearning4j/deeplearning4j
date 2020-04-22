@@ -18,6 +18,7 @@ package org.deeplearning4j.gradientcheck;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -115,55 +116,57 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
         //Basic test of global pooling w/ CNN
         Nd4j.getRandom().setSeed(12345L);
 
-        int inputDepth = 3;
-        int inputH = 5;
-        int inputW = 4;
-        int layerDepth = 4;
-        int nOut = 2;
+        for(boolean nchw : new boolean[]{true, false}) {
 
-        int[] minibatchSizes = new int[] {1, 3};
-        PoolingType[] poolingTypes =
-                        new PoolingType[] {PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
+            int inputDepth = 3;
+            int inputH = 5;
+            int inputW = 4;
+            int layerDepth = 4;
+            int nOut = 2;
 
-        for (int miniBatchSize : minibatchSizes) {
-            for (PoolingType pt : poolingTypes) {
+            int[] minibatchSizes = new int[]{1, 3};
+            PoolingType[] poolingTypes =
+                    new PoolingType[]{PoolingType.AVG, PoolingType.SUM, PoolingType.MAX, PoolingType.PNORM};
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .dataType(DataType.DOUBLE)
-                                .updater(new NoOp())
-                                .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                                .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(layerDepth)
-                                                .build())
-                                .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
-                                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                .activation(Activation.SOFTMAX).nOut(nOut).build())
+            for (int miniBatchSize : minibatchSizes) {
+                for (PoolingType pt : poolingTypes) {
 
-                                .setInputType(InputType.convolutional(inputH, inputW, inputDepth)).build();
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
+                            .updater(new NoOp())
+                            .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
+                            .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(layerDepth)
+                                    .build())
+                            .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
+                            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nOut(nOut).build())
+                            .setInputType(InputType.convolutional(inputH, inputW, inputDepth, nchw ? CNN2DFormat.NCHW : CNN2DFormat.NHWC)).build();
 
-                MultiLayerNetwork mln = new MultiLayerNetwork(conf);
-                mln.init();
+                    MultiLayerNetwork mln = new MultiLayerNetwork(conf);
+                    mln.init();
 
-                Random r = new Random(12345L);
-                INDArray input = Nd4j.rand(new int[] {miniBatchSize, inputDepth, inputH, inputW}).subi(0.5);
+                    Random r = new Random(12345L);
+                    long[] inShape = nchw ? new long[]{miniBatchSize, inputDepth, inputH, inputW} : new long[]{miniBatchSize, inputH, inputW, inputDepth};
+                    INDArray input = Nd4j.rand(DataType.DOUBLE, inShape).subi(0.5);
 
-                INDArray labels = Nd4j.zeros(miniBatchSize, nOut);
-                for (int i = 0; i < miniBatchSize; i++) {
-                    int idx = r.nextInt(nOut);
-                    labels.putScalar(i, idx, 1.0);
-                }
+                    INDArray labels = Nd4j.zeros(miniBatchSize, nOut);
+                    for (int i = 0; i < miniBatchSize; i++) {
+                        int idx = r.nextInt(nOut);
+                        labels.putScalar(i, idx, 1.0);
+                    }
 
-                if (PRINT_RESULTS) {
-                    System.out.println(
-                                    "testCnnGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = " + miniBatchSize);
+                    if (PRINT_RESULTS) {
+                        System.out.println("testCnnGlobalPoolingBasicMultiLayer() - " + pt + ", minibatch = " + miniBatchSize + " - " + (nchw ? "NCHW" : "NHWC"));
 //                    for (int j = 0; j < mln.getnLayers(); j++)
 //                        System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+                    }
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+                    assertTrue(gradOK);
+                    TestUtils.testModelSerialization(mln);
                 }
-
-                boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                                DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                assertTrue(gradOK);
-                TestUtils.testModelSerialization(mln);
             }
         }
     }

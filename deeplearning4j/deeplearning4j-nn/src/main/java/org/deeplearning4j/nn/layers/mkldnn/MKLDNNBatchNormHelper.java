@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.mkldnn;
 
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.normalization.BatchNormalizationHelper;
@@ -28,9 +29,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNormDerivative;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
-import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -47,7 +47,8 @@ import java.util.Map;
  */
 public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     private static final int[] RANK2_DIMS = {0};
-    private static final int[] RANK4_DIMS = {0,2,3};
+    private static final int[] RANK4_DIMS_NCHW = {0,2,3};
+    private static final int[] RANK4_DIMS_NHWC = {0,1,2};
 
     protected OpContext context;
     private INDArray meanCache;
@@ -64,11 +65,18 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, long[] shape, INDArray gamma,
-                                                     INDArray beta, INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr) {
+                                                     INDArray beta, INDArray dGammaView, INDArray dBetaView, double eps,
+                                                     CNN2DFormat format, LayerWorkspaceMgr workspaceMgr) {
+
+        //Workaround for: https://github.com/eclipse/deeplearning4j/issues/8860
+        if(!Shape.hasDefaultStridesForShape(epsilon))
+            epsilon = epsilon.dup('c');
+
         if(input.dataType() != DataType.FLOAT)
             return null;    //MKL-DNN only supports float
 
-        //TODO FIXME - AB 2019/11/01 - https://github.com/eclipse/deeplearning4j/issues/8335
+        int axis = (input.rank() != 4 || format == CNN2DFormat.NCHW) ? 1 : 3;
+
         List<INDArray> args = new ArrayList<>();
         args.add(input);
         args.add(meanCache);
@@ -85,7 +93,7 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
                 .addIntegerArguments(
                         gamma == null ? 0 : 1,          //Apply scale
                         beta == null ? 0 : 1,           //Apply beta
-                        1)                              //Axis (NCHW)
+                        axis)                              //Axis (NCHW) - 1=NCHW, 3=NHWC
                 .addFloatingPointArguments(eps)
                 .build();
 
@@ -114,16 +122,18 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
 
     @Override
     public INDArray preOutput(INDArray x, boolean training, long[] shape, INDArray gamma, INDArray beta, INDArray mean, INDArray var,
-                              double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
+                              double decay, double eps, CNN2DFormat format, LayerWorkspaceMgr workspaceMgr) {
         if(x.dataType() != DataType.FLOAT)
             return null;    //MKL-DNN only supports float
+
+        int axis = (x.rank() != 4 || format == CNN2DFormat.NCHW) ? 1 : 3;
 
         if(context == null){
             context = Nd4j.getExecutioner().buildContext();
             context.setIArguments(
                     ArrayUtil.fromBoolean(gamma != null),
                     ArrayUtil.fromBoolean(beta != null),
-                    1);   //Axis
+                    axis);   //Axis - 1 = NCHW, 3 = NHWC
             context.setTArguments(eps);
         }
 
@@ -132,12 +142,22 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
         if(training){
             if(meanCache == null){
                 try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    meanCache = Nd4j.createUninitialized(x.dataType(), x.size(1));
-                    varCache = Nd4j.createUninitialized(x.dataType(), x.size(1));
+                    meanCache = Nd4j.createUninitialized(x.dataType(), x.size(axis));
+                    varCache = Nd4j.createUninitialized(x.dataType(), x.size(axis));
                 }
             }
-            x.mean(meanCache, x.rank() == 2 ? RANK2_DIMS : RANK4_DIMS);
-            Nd4j.exec(new Variance(x, varCache, false, x.rank() == 2 ? RANK2_DIMS : RANK4_DIMS));
+
+            int[] dims;
+            if(x.rank() == 2){
+                dims = RANK2_DIMS;
+            } else if(format == CNN2DFormat.NCHW){
+                dims = RANK4_DIMS_NCHW;
+            } else {
+                dims = RANK4_DIMS_NHWC;
+            }
+
+            x.mean(meanCache, dims);
+            Nd4j.exec(new Variance(x, varCache, false, dims));
 
             m = meanCache;
             v = varCache;
