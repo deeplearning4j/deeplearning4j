@@ -140,10 +140,10 @@
     </modules>
 
     <scm>
-        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git
+        <connection>scm:git://github.com:eclipse/deeplearning4j.git</connection>
+        <developerConnection>scm:git:git@github.com:eclipse/deeplearning4j.git
         </developerConnection>
-        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
+        <url>git@github.com:eclipse/deeplearning4j.git</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -409,6 +409,31 @@
     </properties>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>1.4.1</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-maven</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <requireMavenVersion>
+                                        <version>3.3</version>
+                                        <message>Please install maven 3.3 or higher</message>
+                                    </requireMavenVersion>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -416,16 +441,12 @@
                 <version>1.4.1</version>
                 <executions>
                     <execution>
-                        <id>enforce-maven</id>
+                        <id>enforce-excluded-dependencies</id>
                         <goals>
                             <goal>enforce</goal>
                         </goals>
                         <configuration>
                             <rules>
-                                <requireMavenVersion>
-                                    <version>3.3</version>
-                                    <message>Please install maven 3.3 or higher</message>
-                                </requireMavenVersion>
                                 <bannedDependencies>
                                     <excludes>
                                         <exclude>org.projectlombok:*:*:*:compile</exclude>
@@ -440,7 +461,6 @@
     </build>
 
     <profiles>
-
         <profile>
             <id>doclint-java8-disable</id>
             <activation>
@@ -546,8 +566,6 @@
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
         </profile>
-        <!-- end of backend choice enforcement control -->
-
         <!--
         testresources profile must be running when executing tests. However, maven enforcer plugin seems to be unable
          to enforce only when actually running tests - so we'll skip the enforcement (using profiles skipTestRun and skipTestCompileAndRun)
@@ -593,67 +611,53 @@
             </build>
         </profile>
         <profile>
-            <id>release-sign-artifacts</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
-                        <configuration>
-                            <passphrase>${gpg.passphrase}</passphrase>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>sign-artifacts</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>sign</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
             <id>release</id>
             <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>${maven-source-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>${maven-javadoc-plugin.version}</version>
-                        <configuration>
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                            <quiet>true</quiet>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
+                <pluginManagement>
+                    <plugins>
+                        <plugin>
+                            <artifactId>maven-source-plugin</artifactId>
+                            <version>${maven-source-plugin.version}</version>
+                            <executions>
+                                <execution>
+                                    <id>attach-sources</id>
+                                    <goals>
+                                        <goal>jar-no-fork</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <artifactId>maven-javadoc-plugin</artifactId>
+                            <version>${maven-javadoc-plugin.version}</version>
+                            <configuration>
+                                <doclint>all,-missing</doclint>
+                                <quiet>true</quiet>
+                            </configuration>
+                            <executions>
+                                <execution>
+                                    <id>attach-javadocs</id>
+                                    <goals>
+                                        <goal>jar</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                        <plugin>
+                            <artifactId>maven-gpg-plugin</artifactId>
+                            <version>${maven-gpg-plugin.version}</version>
+                            <executions>
+                                <execution>
+                                    <id>sign-artifacts</id>
+                                    <phase>verify</phase>
+                                    <goals>
+                                        <goal>sign</goal>
+                                    </goals>
+                                </execution>
+                            </executions>
+                        </plugin>
+                    </plugins>
+                </pluginManagement>
             </build>
         </profile>
         <profile>
@@ -698,7 +702,6 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <id>libnd4jhome-defined</id>
             <activation>
@@ -721,20 +724,18 @@
                 <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
             </properties>
         </profile>
-
         <!-- For Android: -Dplatform=android-arm -->
         <profile>
             <id>javacpp-platform-default</id>
             <activation>
                 <property>
-                  <name>!javacpp.platform</name>
+                    <name>!javacpp.platform</name>
                 </property>
             </activation>
             <properties>
                 <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
             </properties>
         </profile>
-
         <!-- Profiles to set the default javacpp.platform property: If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>
@@ -882,7 +883,6 @@
                 <os.arch>x86_64</os.arch>
             </properties>
         </profile>
-
         <!-- Integration Tests Profile. By default (when this profile is not enabled) unit tests are run only.
              Note also that some tests may run fewer/quicker cases for unit tests vs. integration tests
         -->
