@@ -67,28 +67,19 @@ import static org.junit.Assert.*;
 @Ignore
 public class TestVertxUI extends BaseDL4JTest {
 
-    @Override
-    public long getTimeoutMilliseconds() {
-        return 600_000L;
-    }
-
     @Before
     public void setUp() throws Exception {
         UIServer.stopInstance();
     }
 
     @Test
-    @Ignore
     public void testUI() throws Exception {
         VertxUIServer uiServer = (VertxUIServer) UIServer.getInstance();
         assertEquals(9000, uiServer.getPort());
-
-        Thread.sleep(30_000);
         uiServer.stop();
     }
 
     @Test
-    @Ignore
     public void testUI_VAE() throws Exception {
         //Variational autoencoder - for unsupervised layerwise pretraining
 
@@ -126,13 +117,9 @@ public class TestVertxUI extends BaseDL4JTest {
             Thread.sleep(100);
         }
 
-
-        Thread.sleep(100000);
     }
 
-
     @Test
-    @Ignore
     public void testUIMultipleSessions() throws Exception {
 
         for (int session = 0; session < 3; session++) {
@@ -160,59 +147,10 @@ public class TestVertxUI extends BaseDL4JTest {
                 Thread.sleep(100);
             }
         }
-
-
-        Thread.sleep(1000000);
-    }
-    
-    @Test
-    @Ignore
-    public void testUISequentialSessions() throws Exception {
-        UIServer uiServer = UIServer.getInstance();
-        StatsStorage ss = null;
-        for (int session = 0; session < 3; session++) {
-            
-            if (ss != null) {
-                uiServer.detach(ss);
-            }
-            ss = new InMemoryStatsStorage();
-            uiServer.attach(ss);
-
-            int numInputs = 4;
-            int outputNum = 3;
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .activation(Activation.TANH)
-                .weightInit(WeightInit.XAVIER)
-                .updater(new Sgd(0.03))
-                .l2(1e-4)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(numInputs).nOut(3)
-                        .build())
-                .layer(1, new DenseLayer.Builder().nIn(3).nOut(3)
-                        .build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(3).nOut(outputNum).build())
-                .build();
-
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
-            net.setListeners(new StatsListener(ss), new ScoreIterationListener(1));
-
-            DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-            for (int i = 0; i < 1000; i++) {
-                net.fit(iter);
-            }
-            Thread.sleep(5000);
-        }
-
-        Thread.sleep(1000000);
     }
 
     @Test
-    @Ignore
-    public void testUICompGraph() throws Exception {
+    public void testUICompGraph() {
 
         StatsStorage ss = new InMemoryStatsStorage();
 
@@ -235,10 +173,7 @@ public class TestVertxUI extends BaseDL4JTest {
 
         for (int i = 0; i < 100; i++) {
             net.fit(iter);
-            Thread.sleep(100);
         }
-
-        Thread.sleep(1000000);
     }
 
     @Test
@@ -322,7 +257,7 @@ public class TestVertxUI extends BaseDL4JTest {
         assertTrue(uiServer.isMultiSession());
         assertFalse(uiServer.isStopped());
 
-        long sleepMilliseconds = 10_000;
+        long sleepMilliseconds = 1_000;
         log.info("Waiting {} ms before stopping.", sleepMilliseconds);
         Thread.sleep(sleepMilliseconds);
         uiServer.stop();
@@ -347,7 +282,7 @@ public class TestVertxUI extends BaseDL4JTest {
         assertTrue(uiServer.isMultiSession());
         assertFalse(uiServer.isStopped());
 
-        long sleepMilliseconds = 10_000;
+        long sleepMilliseconds = 1_000;
         log.info("Waiting {} ms before stopping.", sleepMilliseconds);
         Thread.sleep(sleepMilliseconds);
 

@@ -34,7 +34,6 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -55,12 +54,7 @@ import static org.junit.Assert.*;
  * @author Tamas Fenyvesi
  */
 @Slf4j
-@Ignore
 public class TestVertxUIMultiSession extends BaseDL4JTest {
-    @Override
-    public long getTimeoutMilliseconds() {
-        return 600_000L;
-    }
 
     @Before
     public void setUp() throws Exception {
@@ -186,61 +180,6 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testUIAutoAttachDetach() throws Exception {
-
-        long detachTimeoutMillis = 30_000;
-        AutoDetachingStatsStorageProvider statsProvider = new AutoDetachingStatsStorageProvider(detachTimeoutMillis);
-        UIServer uIServer = UIServer.getInstance(true, statsProvider);
-        statsProvider.setUIServer(uIServer);
-        InMemoryStatsStorage ss = null;
-        for (int session = 0; session < 3; session++) {
-            int layerSize = session + 4;
-
-            ss = new InMemoryStatsStorage();
-            String sessionId = Integer.toString(session);
-            statsProvider.put(sessionId, ss);
-            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
-                    .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(layerSize).build())
-                    .layer(1, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                            .activation(Activation.SOFTMAX).nIn(layerSize).nOut(3).build())
-                    .build();
-
-            MultiLayerNetwork net = new MultiLayerNetwork(conf);
-            net.init();
-
-            StatsListener statsListener = new StatsListener(ss, 1);
-            statsListener.setSessionID(sessionId);
-            net.setListeners(statsListener, new ScoreIterationListener(1));
-            uIServer.attach(ss);
-
-            DataSetIterator iter = new IrisDataSetIterator(150, 150);
-
-            for (int i = 0; i < 20; i++) {
-                net.fit(iter);
-            }
-
-            assertTrue(uIServer.isAttached(ss));
-            uIServer.detach(ss);
-            assertFalse(uIServer.isAttached(ss));
-
-            /*
-             * Visiting /train/:sessionId to auto-attach StatsStorage
-             */
-            String sessionUrl = trainingSessionUrl(uIServer.getAddress(), sessionId);
-            HttpURLConnection conn = (HttpURLConnection) new URL(sessionUrl).openConnection();
-            conn.connect();
-
-            assertEquals(HttpResponseStatus.OK.code(), conn.getResponseCode());
-            assertTrue(uIServer.isAttached(ss));
-        }
-
-        Thread.sleep(detachTimeoutMillis + 1_000);
-        assertFalse(uIServer.isAttached(ss));
-
-    }
-
     @Test (expected = DL4JException.class)
     public void testUIServerGetInstanceMultipleCalls1() {
         UIServer uiServer = UIServer.getInstance();
@@ -268,51 +207,4 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
         return String.format("%s/train/%s", serverAddress, URLEncoder.encode(sessionId, "UTF-8"));
     }
 
-    /**
-     * StatsStorage provider with automatic detaching of StatsStorage after a timeout
-     * @author fenyvesit
-     *
-     */
-    private static class AutoDetachingStatsStorageProvider implements Function<String, StatsStorage> {
-        HashMap<String, InMemoryStatsStorage> storageForSession = new HashMap<>();
-        UIServer uIServer;
-        long autoDetachTimeoutMillis;
-
-        public AutoDetachingStatsStorageProvider(long autoDetachTimeoutMillis) {
-            this.autoDetachTimeoutMillis = autoDetachTimeoutMillis;
-        }
-
-        public void put(String sessionId, InMemoryStatsStorage statsStorage) {
-            storageForSession.put(sessionId, statsStorage);
-        }
-
-        public void setUIServer(UIServer uIServer) {
-            this.uIServer = uIServer;
-        }
-
-        @Override
-        public StatsStorage apply(String sessionId) {
-            StatsStorage statsStorage = storageForSession.get(sessionId);
-
-            if (statsStorage != null) {
-                new Thread(() -> {
-                    try {
-                        log.info("Waiting to detach StatsStorage (session ID: {})" +
-                                " after {} ms ", sessionId, autoDetachTimeoutMillis);
-                        Thread.sleep(autoDetachTimeoutMillis);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } finally {
-                        log.info("Auto-detaching StatsStorage (session ID: {}) after {} ms.",
-                                sessionId, autoDetachTimeoutMillis);
-                        uIServer.detach(statsStorage);
-                        log.info(" To re-attach StatsStorage of training session, visit {}}/train/{}",
-                                uIServer.getAddress(), sessionId);
-                    }
-                }).start();
-            }
-
-            return statsStorage;
-        }
-    }
 }
