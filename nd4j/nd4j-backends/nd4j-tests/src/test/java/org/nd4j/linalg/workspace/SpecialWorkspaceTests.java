@@ -336,6 +336,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testMmapedWorkspaceLimits_1() throws Exception {
+        if (!Nd4j.getEnvironment().isCPU())
+            return;
+
         val tmpFile = Files.createTempFile("some", "file");
         val mmap = WorkspaceConfiguration.builder()
                 .initialSize(200 * 1024L * 1024L) // 200mbs
