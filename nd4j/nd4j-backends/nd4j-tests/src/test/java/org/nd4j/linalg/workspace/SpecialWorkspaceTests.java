@@ -344,6 +344,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 .initialSize(200 * 1024L * 1024L) // 200mbs
                 .tempFilePath(tmpFile.toAbsolutePath().toString())
                 .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
                 .build();
 
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
@@ -373,11 +374,55 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 .initialSize(200 * 1024L * 1024L) // 200mbs
                 .tempFilePath(tmpFile.toAbsolutePath().toString())
                 .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
                 .build();
 
         try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
             val x = Nd4j.rand(DataType.FLOAT, 1024);
         }
+    }
+
+    @Test
+    public void testDeleteMappedFile_1() throws Exception {
+        if (!Nd4j.getEnvironment().isCPU())
+            return;
+
+        val tmpFile = Files.createTempFile("some", "file");
+        val mmap = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L) // 200mbs
+                .tempFilePath(tmpFile.toAbsolutePath().toString())
+                .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            val x = Nd4j.rand(DataType.FLOAT, 1024);
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+
+        Files.delete(tmpFile);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testDeleteMappedFile_2() throws Exception {
+        if (!Nd4j.getEnvironment().isCPU())
+            throw new IllegalArgumentException("Don't try to run on CUDA");
+
+        val tmpFile = Files.createTempFile("some", "file");
+        val mmap = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L) // 200mbs
+                .tempFilePath(tmpFile.toAbsolutePath().toString())
+                .policyLocation(LocationPolicy.MMAP)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            val x = Nd4j.rand(DataType.FLOAT, 1024);
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+
+        Files.delete(tmpFile);
     }
 
     @Override

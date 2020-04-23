@@ -297,8 +297,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     protected void init() {
+        // in case of MMAP we don't want any learning applied
+        if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP && workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE)
+            throw new IllegalArgumentException("Workspace backed by memory-mapped file can't have LearningPolicy defined");
+
         // we don't want overallocation in case of MMAP
-        if (currentSize.get() > 0 && workspaceConfiguration.getPolicyLocation()  != LocationPolicy.MMAP) {
+        if (currentSize.get() > 0 && workspaceConfiguration.getPolicyLocation() != LocationPolicy.MMAP) {
             if (!isOver.get()) {
                 if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE
                                 && workspaceConfiguration.getOverallocationLimit() > 0) {
@@ -309,7 +313,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             if (workspaceConfiguration.getMaxSize() > 0 && currentSize.get() > workspaceConfiguration.getMaxSize())
                 currentSize.set(workspaceConfiguration.getMaxSize());
-
         }
     }
 

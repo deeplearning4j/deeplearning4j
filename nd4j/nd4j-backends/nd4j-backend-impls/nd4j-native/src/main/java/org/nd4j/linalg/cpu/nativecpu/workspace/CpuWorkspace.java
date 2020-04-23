@@ -138,6 +138,13 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
         }
     }
 
+    protected long mappedFileSize() {
+        if (workspaceConfiguration.getPolicyLocation() != LocationPolicy.MMAP)
+            return 0;
+
+        return tempFile.length();
+    }
+
     @Override
     protected void clearExternalAllocations() {
         if (isDebug.get())

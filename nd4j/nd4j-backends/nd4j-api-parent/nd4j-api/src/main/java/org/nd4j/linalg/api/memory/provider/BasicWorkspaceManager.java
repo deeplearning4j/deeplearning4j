@@ -159,7 +159,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         if (workspace == null || workspace instanceof DummyWorkspace)
             return;
 
-        //workspace.destroyWorkspace();
+        workspace.destroyWorkspace(true);
         backingMap.get().remove(workspace.getId());
     }
 

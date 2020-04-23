@@ -138,13 +138,6 @@ void _mmap(Nd4jLong* result, size_t length, const char *fileName) {
     OffsetType off  = 0;
     int prot = PROT_READ | PROT_WRITE;
 
-    // we need to convert long path (probably) to short pat (actually)
-    // it's Windows API, in the middle of 2018!
-    auto sz = GetShortPathName(fileName, nullptr, 0);
-
-    auto shortName = new TCHAR[sz];
-    GetShortPathName(fileName, shortName, sz);
-
 #ifdef _MSC_VER
     #pragma warning(push)
     #pragma warning(disable: 4293)
@@ -169,8 +162,6 @@ void _mmap(Nd4jLong* result, size_t length, const char *fileName) {
 #endif
 
     h = CreateFileA(fileName, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-
-    delete[] shortName;
 
     if (h == INVALID_HANDLE_VALUE) {
         errno = __map_mman_error(GetLastError(), EPERM);
