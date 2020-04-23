@@ -17,7 +17,7 @@ public class MockPolicy implements IPolicy<Integer> {
     public List<INDArray> actionInputs = new ArrayList<INDArray>();
 
     @Override
-    public <O extends Encodable, AS extends ActionSpace<Integer>> double play(MDP<O, Integer, AS> mdp, IHistoryProcessor hp) {
+    public <MockObservation extends Encodable, AS extends ActionSpace<Integer>> double play(MDP<MockObservation, Integer, AS> mdp, IHistoryProcessor hp) {
         ++playCallCount;
         return 0;
     }

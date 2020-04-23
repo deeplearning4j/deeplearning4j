@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K. K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,32 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.space;
+package org.deeplearning4j.rl4j.support;
 
+
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
- *
- * A Box observation
- *
- * @see <a href="https://gym.openai.com/envs#box2d">https://gym.openai.com/envs#box2d</a>
- */
-public class Box implements Encodable {
+public class MockObservation implements Encodable {
 
-    private final INDArray data;
+    final INDArray data;
 
-    public Box(double... arr) {
-        this.data = Nd4j.create(arr);
-    }
-
-    public Box(int[] shape, double... arr) {
-        this.data = Nd4j.create(arr).reshape(shape);
-    }
-
-    private Box(INDArray toDup) {
-        data = toDup.dup();
+    public MockObservation(int value) {
+        this.data = Nd4j.ones(1).mul(value);
     }
 
     @Override
@@ -59,6 +46,6 @@ public class Box implements Encodable {
 
     @Override
     public Encodable dup() {
-        return new Box(data);
+        return null;
     }
 }

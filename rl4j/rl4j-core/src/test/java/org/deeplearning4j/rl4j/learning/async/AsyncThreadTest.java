@@ -39,7 +39,6 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -130,7 +129,7 @@ public class AsyncThreadTest {
 
         when(mockAsyncConfiguration.getMaxEpochStep()).thenReturn(maxStepsPerEpisode);
         when(mockAsyncConfiguration.getNStep()).thenReturn(nstep);
-        when(thread.getConf()).thenReturn(mockAsyncConfiguration);
+        when(thread.getConfiguration()).thenReturn(mockAsyncConfiguration);
 
         // if we hit the max step count
         when(mockAsyncGlobal.isTrainingComplete()).thenAnswer(invocation -> thread.getStepCount() >= maxSteps);

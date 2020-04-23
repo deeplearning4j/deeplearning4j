@@ -1,6 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
+ * Copyright (c) 2020 Konduit K. K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,33 +14,15 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.learning;
+package org.deeplearning4j.rl4j.observation.transform;
 
-import org.deeplearning4j.rl4j.learning.configuration.ILearningConfiguration;
-import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.policy.IPolicy;
-import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.datavec.api.transform.Operation;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/19/16.
- *
- * A common interface that any training method should implement
- */
-public interface ILearning<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>> {
-
-    IPolicy<A> getPolicy();
-
-    void train();
-
-    int getStepCount();
-
-    ILearningConfiguration getConfiguration();
-
-    MDP<OBSERVATION, A, AS> getMdp();
-
-    IHistoryProcessor getHistoryProcessor();
-
-
-
+public class EncodableToINDArrayTransform implements Operation<Encodable, INDArray> {
+    @Override
+    public INDArray transform(Encodable encodable) {
+        return encodable.getData();
+    }
 }

@@ -18,24 +18,16 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.rl4j.experience.ExperienceHandler;
-import org.deeplearning4j.rl4j.experience.StateActionPair;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
-import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
-import org.deeplearning4j.rl4j.support.*;
-import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
-import org.deeplearning4j.rl4j.util.IDataManager;
-import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,17 +35,17 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -82,6 +74,7 @@ public class QLearningDiscreteTest {
     @Mock
     QLearningConfiguration mockQlearningConfiguration;
 
+    // HWC
     int[] observationShape = new int[]{3, 10, 10};
     int totalObservationSize = 1;
 
@@ -123,6 +116,7 @@ public class QLearningDiscreteTest {
         when(mockHistoryConfiguration.getCroppingHeight()).thenReturn(observationShape[1]);
         when(mockHistoryConfiguration.getCroppingWidth()).thenReturn(observationShape[2]);
         when(mockHistoryConfiguration.getSkipFrame()).thenReturn(skipFrames);
+        when(mockHistoryConfiguration.getHistoryLength()).thenReturn(1);
         when(mockHistoryProcessor.getConf()).thenReturn(mockHistoryConfiguration);
 
         qLearningDiscrete.setHistoryProcessor(mockHistoryProcessor);
@@ -148,7 +142,7 @@ public class QLearningDiscreteTest {
         Observation observation = new Observation(Nd4j.zeros(observationShape));
         when(mockDQN.output(eq(observation))).thenReturn(Nd4j.create(new float[] {1.0f, 0.5f}));
 
-        when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(new Box(new double[totalObservationSize]), 0, false, null));
+        when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(new Observation(Nd4j.zeros(observationShape)), 0, false, null));
 
         // Act
         QLearning.QLStepReturn<Observation> stepReturn = qLearningDiscrete.trainStep(observation);
@@ -170,25 +164,26 @@ public class QLearningDiscreteTest {
         // Arrange
         mockTestContext(100,0,2,1.0, 10);
 
-        mockHistoryProcessor(2);
+        Observation skippedObservation = Observation.SkippedObservation;
+        Observation nextObservation = new Observation(Nd4j.zeros(observationShape));
 
-        // An example observation and 2 Q values output (2 actions)
-        Observation observation = new Observation(Nd4j.zeros(observationShape));
-        when(mockDQN.output(eq(observation))).thenReturn(Nd4j.create(new float[] {1.0f, 0.5f}));
-
-        when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(new Box(new double[totalObservationSize]), 0, false, null));
+        when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(nextObservation, 0, false, null));
 
         // Act
-        QLearning.QLStepReturn<Observation> stepReturn = qLearningDiscrete.trainStep(observation);
+        QLearning.QLStepReturn<Observation> stepReturn = qLearningDiscrete.trainStep(skippedObservation);
 
         // Assert
-        assertEquals(1.0, stepReturn.getMaxQ(), 1e-5);
+        assertEquals(Double.NaN, stepReturn.getMaxQ(), 1e-5);
 
         StepReply<Observation> stepReply = stepReturn.getStepReply();
 
         assertEquals(0, stepReply.getReward(), 1e-5);
         assertFalse(stepReply.isDone());
-        assertTrue(stepReply.getObservation().isSkipped());
+        assertFalse(stepReply.getObservation().isSkipped());
+        assertEquals(0, qLearningDiscrete.getExperienceHandler().getTrainingBatchSize());
+
+        verify(mockDQN, never()).output(any(INDArray.class));
+
     }
 
     //TODO: there are much more test cases here that can be improved upon

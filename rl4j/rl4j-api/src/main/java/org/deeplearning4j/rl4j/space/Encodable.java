@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K. K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,17 +16,19 @@
 
 package org.deeplearning4j.rl4j.space;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/19/16.
- *         Encodable is an interface that ensure that the state is convertible to a double array
- */
+import org.nd4j.linalg.api.ndarray.INDArray;
+
 public interface Encodable {
 
-    /**
-     * $
-     * encodes all the information of an Observation in an array double and can be used as input of a DQN directly
-     *
-     * @return the encoded informations
-     */
+    @Deprecated
     double[] toArray();
+
+    boolean isSkipped();
+
+    /**
+     * Any image data should be in CHW format.
+     */
+    INDArray getData();
+
+    Encodable dup();
 }

@@ -20,12 +20,11 @@ package org.deeplearning4j.rl4j.policy;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.IEpochTrainer;
-import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 
@@ -41,10 +40,10 @@ import org.nd4j.linalg.api.rng.Random;
  */
 @AllArgsConstructor
 @Slf4j
-public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extends Policy<A> {
+public class EpsGreedy<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>> extends Policy<A> {
 
     final private Policy<A> policy;
-    final private MDP<O, A, AS> mdp;
+    final private MDP<OBSERVATION, A, AS> mdp;
     final private int updateStart;
     final private int epsilonNbStep;
     final private Random rnd;

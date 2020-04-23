@@ -28,6 +28,9 @@ import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import vizdoom.*;
 
 import java.util.ArrayList;
@@ -155,7 +158,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
                         + Pointer.formatBytes(Pointer.totalPhysicalBytes()));
 
         game.newEpisode();
-        return new GameScreen(game.getState().screenBuffer);
+        return new GameScreen(observationSpace.getShape(), game.getState().screenBuffer);
     }
 
 
@@ -168,7 +171,7 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
         double r = game.makeAction(actions.get(action)) * scaleFactor;
         log.info(game.getEpisodeTime() + " " + r + " " + action + " ");
-        return new StepReply(new GameScreen(game.isEpisodeFinished()
+        return new StepReply(new GameScreen(observationSpace.getShape(), game.isEpisodeFinished()
                 ? new byte[game.getScreenSize()]
                 : game.getState().screenBuffer), r, game.isEpisodeFinished(), null);
 
@@ -201,18 +204,34 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
     public static class GameScreen implements Encodable {
 
+        final INDArray data;
+        public GameScreen(int[] shape, byte[] screen) {
 
-        double[] array;
-
-        public GameScreen(byte[] screen) {
-            array = new double[screen.length];
-            for (int i = 0; i < screen.length; i++) {
-                array[i] = (screen[i] & 0xFF) / 255.0;
-            }
+            data = Nd4j.create(screen, new long[] {shape[1], shape[2], 3}, DataType.UINT8).permute(2,0,1);
         }
 
+        private GameScreen(INDArray toDup) {
+            data = toDup.dup();
+        }
+
+        @Override
         public double[] toArray() {
-            return array;
+            return data.data().asDouble();
+        }
+
+        @Override
+        public boolean isSkipped() {
+            return false;
+        }
+
+        @Override
+        public INDArray getData() {
+            return data;
+        }
+
+        @Override
+        public GameScreen dup() {
+            return new GameScreen(data);
         }
     }
 

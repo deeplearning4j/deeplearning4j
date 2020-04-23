@@ -28,13 +28,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alexandre Boulanger
  */
 public class CircularFifoStore implements HistoryMergeElementStore {
-    private static final int DEFAULT_STORE_SIZE = 4;
 
     private final CircularFifoQueue<INDArray> queue;
-
-    public CircularFifoStore() {
-        this(DEFAULT_STORE_SIZE);
-    }
 
     public CircularFifoStore(int size) {
         Preconditions.checkArgument(size > 0, "The size must be at least 1, got %s", size);

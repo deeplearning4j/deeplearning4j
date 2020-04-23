@@ -115,7 +115,7 @@ public class AsyncThreadDiscreteTest {
 
         asyncThreadDiscrete.setUpdateAlgorithm(mockUpdateAlgorithm);
 
-        when(asyncThreadDiscrete.getConf()).thenReturn(mockAsyncConfiguration);
+        when(asyncThreadDiscrete.getConfiguration()).thenReturn(mockAsyncConfiguration);
         when(mockAsyncConfiguration.getRewardFactor()).thenReturn(1.0);
         when(asyncThreadDiscrete.getAsyncGlobal()).thenReturn(mockAsyncGlobal);
         when(asyncThreadDiscrete.getPolicy(eq(mockGlobalTargetNetwork))).thenReturn(mockGlobalCurrentPolicy);
