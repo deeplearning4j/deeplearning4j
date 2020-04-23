@@ -137,7 +137,7 @@ public class TrainModule implements UIModule {
             maxChartPoints = DEFAULT_MAX_CHART_POINTS;
         }
 
-        configuration = new Configuration(new Version(2, 3, 29));
+        configuration = new Configuration(new Version(2, 3, 23));
         configuration.setDefaultEncoding("UTF-8");
         configuration.setLocale(Locale.US);
         configuration.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
@@ -199,6 +199,7 @@ public class TrainModule implements UIModule {
                 }
             }));
             r.add(new Route("/train/:sessionId/info", HttpMethod.GET, (path, rc) -> this.sessionInfoForSession(path.get(0), rc)));
+            r.add(new Route("/train/:sessionId/system/data", HttpMethod.GET, (path, rc) -> this.getSystemDataForSession(path.get(0), rc)));
         } else {
             r.add(new Route("/train", HttpMethod.GET, (path, rc) -> rc.reroute("/train/overview")));
             r.add(new Route("/train/sessions/current", HttpMethod.GET, (path, rc) -> rc.response().end(currentSessionID == null ? "" : currentSessionID)));
@@ -226,7 +227,9 @@ public class TrainModule implements UIModule {
      * @param rc   Routing context
      */
     private void renderFtl(String file, RoutingContext rc) {
-        Map<String, String> input = DefaultI18N.getInstance().getMessages(DefaultI18N.getInstance().getDefaultLanguage());
+        String sessionId = rc.request().getParam("sessionID");
+        String langCode = DefaultI18N.getInstance(sessionId).getDefaultLanguage();
+        Map<String, String> input = DefaultI18N.getInstance().getMessages(langCode);
         String html;
         try {
             String content = FileUtils.readFileToString(Resources.asFile("templates/" + file), StandardCharsets.UTF_8);

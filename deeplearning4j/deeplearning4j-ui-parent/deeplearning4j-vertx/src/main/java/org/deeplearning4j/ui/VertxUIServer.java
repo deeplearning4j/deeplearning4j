@@ -19,6 +19,8 @@ package org.deeplearning4j.ui;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.impl.MimeMapping;
@@ -35,6 +37,7 @@ import org.deeplearning4j.api.storage.StatsStorageEvent;
 import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
@@ -72,41 +75,133 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     private static Function<String, StatsStorage> statsStorageProvider;
 
     private static Integer instancePort;
+    private static Thread autoStopThread;
 
     private TrainModule trainModule;
 
-    public static VertxUIServer getInstance() {
-        return getInstance(null, multiSession.get(), null);
+    /**
+     * Get (and, initialize if necessary) the UI server. This synchronous function will wait until the server started.
+     * @param port TCP socket port for {@link HttpServer} to listen
+     * @param multiSession         in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
+     *                             <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
+     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             as URL path parameter in multi-session mode, or leave it {@code null}.
+     * @return UI instance for this JVM
+     * @throws DL4JException if UI server failed to start;
+     * if the instance has already started in a different mode (multi/single-session);
+     * if interrupted while waiting for completion
+     */
+    public static VertxUIServer getInstance(Integer port, boolean multiSession,
+                                            Function<String, StatsStorage> statsStorageProvider) throws DL4JException {
+        return getInstance(port, multiSession, statsStorageProvider, null);
     }
 
-    public static VertxUIServer getInstance(Integer port, boolean multiSession, Function<String, StatsStorage> statsStorageProvider){
+    /**
+     *
+     * Get (and, initialize if necessary) the UI server. This function will wait until the server started
+     * (synchronous way), or pass the given callback to handle success or failure (asynchronous way).
+     * @param port TCP socket port for {@link HttpServer} to listen
+     * @param multiSession         in multi-session mode, multiple training sessions can be visualized in separate browser tabs.
+     *                             <br/>URL path will include session ID as a parameter, i.e.: /train becomes /train/:sessionId
+     * @param statsStorageProvider function that returns a StatsStorage containing the given session ID.
+     *                             <br/>Use this to auto-attach StatsStorage if an unknown session ID is passed
+     *                             as URL path parameter in multi-session mode, or leave it {@code null}.
+     * @param startCallback asynchronous deployment handler callback that will be notify of success or failure.
+     *                      If {@code null} given, then this method will wait until deployment is complete.
+     *                      If the deployment is successful the result will contain a String representing the
+     *                      unique deployment ID of the deployment.
+     * @return UI server instance
+     * @throws DL4JException if UI server failed to start;
+     * if the instance has already started in a different mode (multi/single-session);
+     * if interrupted while waiting for completion
+     */
+    public static VertxUIServer getInstance(Integer port, boolean multiSession,
+                                    Function<String, StatsStorage> statsStorageProvider, Promise<String> startCallback)
+            throws DL4JException {
         if (instance == null || instance.isStopped()) {
             VertxUIServer.multiSession.set(multiSession);
             VertxUIServer.setStatsStorageProvider(statsStorageProvider);
             instancePort = port;
-            Vertx vertx = Vertx.vertx();
 
-            //Launch UI server verticle and wait for it to start
-            CountDownLatch l = new CountDownLatch(1);
-            vertx.deployVerticle(VertxUIServer.class.getName(), res -> {
-                l.countDown();
-            });
-            try {
-                l.await(5000, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e){ } //Ignore
+            if (startCallback != null) {
+                //Launch UI server verticle and pass asynchronous callback that will be notified of completion
+                deploy(startCallback);
+            } else {
+                //Launch UI server verticle and wait for it to start
+                deploy();
+            }
         } else if (!instance.isStopped()) {
-            if (instance.multiSession.get() && !instance.isMultiSession()) {
-                throw new RuntimeException("Cannot return multi-session instance." +
+            if (multiSession && !instance.isMultiSession()) {
+                throw new DL4JException("Cannot return multi-session instance." +
                         " UIServer has already started in single-session mode at " + instance.getAddress() +
                         " You may stop the UI server instance, and start a new one.");
-            } else if (!instance.multiSession.get() && instance.isMultiSession()) {
-                throw new RuntimeException("Cannot return single-session instance." +
+            } else if (!multiSession && instance.isMultiSession()) {
+                throw new DL4JException("Cannot return single-session instance." +
                         " UIServer has already started in multi-session mode at " + instance.getAddress() +
                         " You may stop the UI server instance, and start a new one.");
             }
         }
 
         return instance;
+    }
+
+    /**
+     * Deploy (start) {@link VertxUIServer}, waiting until starting is complete.
+     * @throws DL4JException if UI server failed to start;
+     * if interrupted while waiting for completion
+     */
+    private static void deploy() throws DL4JException {
+        CountDownLatch l = new CountDownLatch(1);
+        Promise<String> promise = Promise.promise();
+        promise.future().compose(
+                success -> Future.future(prom -> l.countDown()),
+                failure -> Future.future(prom -> l.countDown())
+        );
+        deploy(promise);
+        // synchronous function
+        try {
+            l.await();
+        } catch (InterruptedException e) {
+            throw new DL4JException(e);
+        }
+
+        Future<String> future = promise.future();
+        if (future.failed()) {
+            throw new DL4JException("Deeplearning4j UI server failed to start.", future.cause());
+        }
+    }
+
+    /**
+     * Deploy (start) {@link VertxUIServer},
+     * and pass callback to handle successful or failed completion of deployment.
+     * @param startCallback promise that will handle success or failure of deployment.
+     * If the deployment is successful the result will contain a String representing the unique deployment ID of the
+     * deployment.
+     */
+    private static void deploy(Promise<String> startCallback) {
+        log.debug("Deeplearning4j UI server is starting.");
+        Promise<String> promise = Promise.promise();
+        promise.future().compose(
+                success -> Future.future(prom -> startCallback.complete(success)),
+                failure -> Future.future(prom -> startCallback.fail(new RuntimeException(failure)))
+        );
+
+        Vertx vertx = Vertx.vertx();
+        vertx.deployVerticle(VertxUIServer.class.getName(), promise);
+
+        Thread currentThread = Thread.currentThread();
+        VertxUIServer.autoStopThread = new Thread(() -> {
+            try {
+                currentThread.join();
+                log.info("Deeplearning4j UI server is auto-stopping.");
+                if (VertxUIServer.instance != null && !VertxUIServer.instance.isStopped()) {
+                    instance.stop();
+                }
+            } catch (InterruptedException e) {
+                log.error("Deeplearning4j UI server auto-stop thread was interrupted.", e);
+            }
+        });
     }
 
 
@@ -132,10 +227,18 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         instance = this;
     }
 
-    public static void stopInstance(){
-        if(instance == null)
+    public static void stopInstance() throws Exception {
+        if(instance == null || instance.isStopped())
             return;
         instance.stop();
+        VertxUIServer.reset();
+    }
+
+    private static void reset() {
+        VertxUIServer.instance = null;
+        VertxUIServer.statsStorageProvider = null;
+        VertxUIServer.instancePort = null;
+        VertxUIServer.multiSession.set(false);
     }
 
     /**
@@ -145,12 +248,14 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     public void autoAttachStatsStorageBySessionId(Function<String, StatsStorage> statsStorageProvider) {
         if (statsStorageProvider != null) {
             this.statsStorageLoader = new StatsStorageLoader(statsStorageProvider);
-            this.trainModule.setSessionLoader(this.statsStorageLoader);
+            if (trainModule != null) {
+                this.trainModule.setSessionLoader(this.statsStorageLoader);
+            }
         }
     }
 
     @Override
-    public void start() throws Exception {
+    public void start(Promise<Void> startCallback) throws Exception {
         //Create REST endpoints
         File uploadDir = new File(System.getProperty("java.io.tmpdir"), "DL4JUI_" + System.currentTimeMillis());
         uploadDir.mkdirs();
@@ -192,6 +297,9 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
             });
         }
 
+        if (VertxUIServer.statsStorageProvider != null) {
+            autoAttachStatsStorageBySessionId(VertxUIServer.statsStorageProvider);
+        }
 
         uiModules.add(new DefaultModule(isMultiSession())); //For: navigation page "/"
         trainModule = new TrainModule(isMultiSession(), statsStorageLoader, this::getAddress);
@@ -246,17 +354,23 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
             }
         }
 
-
-        server = vertx.createHttpServer()
-                .requestHandler(r)
-                .listen(port);
-
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
         uiEventRoutingThread.setDaemon(true);
         uiEventRoutingThread.start();
 
-        String address = UIServer.getInstance().getAddress();
-        log.info("Deeplearning4j UI server started at: {}", address);
+        server = vertx.createHttpServer()
+                .requestHandler(r)
+                .listen(port, result -> {
+                    if (result.succeeded()) {
+                        String address = UIServer.getInstance().getAddress();
+                        log.info("Deeplearning4j UI server started at: {}", address);
+                        startCallback.complete();
+                    } else {
+                        startCallback.fail(new RuntimeException("Deeplearning4j UI server failed to listen on port "
+                                + server.actualPort(), result.cause()));
+                    }
+                });
+        VertxUIServer.autoStopThread.start();
     }
 
     private List<String> extractArgsFromRoute(String path, RoutingContext rc) {
@@ -302,11 +416,33 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     }
 
     @Override
-    public void stop() {
-        server.close();
-        shutdown.set(true);
+    public void stop() throws InterruptedException {
+        CountDownLatch l = new CountDownLatch(1);
+        Promise<Void> promise = Promise.promise();
+        promise.future().compose(
+                successEvent -> Future.future(prom -> l.countDown()),
+                failureEvent -> Future.future(prom -> l.countDown())
+        );
+        stopAsync(promise);
+        // synchronous function should wait until the server is stopped
+        l.await();
     }
 
+    @Override
+    public void stopAsync(Promise<Void> stopCallback) {
+        /**
+         * Stop Vertx instance and release any resources held by it.
+         * Pass promise to {@link #stop(Promise)}.
+         */
+        vertx.close(ar -> stopCallback.handle(ar));
+    }
+
+    @Override
+    public void stop(Promise<Void> stopCallback) {
+        shutdown.set(true);
+        stopCallback.complete();
+        log.info("Deeplearning4j UI server stopped.");
+    }
 
     @Override
     public boolean isStopped() {
@@ -353,8 +489,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         if (!statsStorageInstances.contains(statsStorage))
             return; //No op
         boolean found = false;
-        for (Iterator<Pair<StatsStorage, StatsStorageListener>> iterator = listeners.iterator(); iterator.hasNext(); ) {
-            Pair<StatsStorage, StatsStorageListener> p = iterator.next();
+        for (Pair<StatsStorage, StatsStorageListener> p : listeners) {
             if (p.getFirst() == statsStorage) { //Same object, not equality
                 statsStorage.deregisterStatsStorageListener(p.getSecond());
                 listeners.remove(p);
