@@ -36,6 +36,7 @@ import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
 import org.deeplearning4j.arbiter.ui.misc.UIUtils;
 import org.deeplearning4j.arbiter.util.ObjectUtils;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
+import org.deeplearning4j.ui.VertxUIServer;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.components.chart.ChartLine;
@@ -76,7 +77,6 @@ public class ArbiterModule implements UIModule {
     private String currentSessionID;
 
     private Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
-
 
     //Styles for UI:
     private static final StyleTable STYLE_TABLE = new StyleTable.Builder()
@@ -134,20 +134,69 @@ public class ArbiterModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r1 = new Route("/arbiter", HttpMethod.GET, (path, rc) -> rc.response()
-                .putHeader("content-type", "text/html; charset=utf-8").sendFile("templates/ArbiterUI.html"));
-        Route r3 = new Route("/arbiter/lastUpdate", HttpMethod.GET, (path, rc) -> this.getLastUpdateTime(rc));
-        Route r4 = new Route("/arbiter/lastUpdate/:ids", HttpMethod.GET, (path, rc) -> this.getModelLastUpdateTimes(path.get(0), rc));
-        Route r5 = new Route("/arbiter/candidateInfo/:id", HttpMethod.GET, (path, rc) -> this.getCandidateInfo(path.get(0), rc));
-        Route r6 = new Route("/arbiter/config", HttpMethod.GET, (path, rc) -> this.getOptimizationConfig(rc));
-        Route r7 = new Route("/arbiter/results", HttpMethod.GET, (path, rc) -> this.getSummaryResults(rc));
-        Route r8 = new Route("/arbiter/summary", HttpMethod.GET, (path, rc) -> this.getSummaryStatus(rc));
+        boolean multiSession = VertxUIServer.getMultiSession().get();
+        List<Route> r = new ArrayList<>();
+        r.add(new Route("/arbiter/multisession", HttpMethod.GET,
+                (path, rc) -> rc.response().end(multiSession ? "true" : "false")));
+        if (multiSession) {
+            r.add(new Route("/arbiter", HttpMethod.GET, (path, rc) -> this.listSessions(rc)));
+        } else {
+            r.add(new Route("/arbiter", HttpMethod.GET, (path, rc) -> rc.response()
+                    .putHeader("content-type", "text/html; charset=utf-8")
+                    .sendFile("templates/ArbiterUI.html")));
+            r.add(new Route("/arbiter/lastUpdate", HttpMethod.GET, (path, rc) -> this.getLastUpdateTime(rc)));
+            r.add(new Route("/arbiter/lastUpdate/:ids", HttpMethod.GET,
+                    (path, rc) -> this.getModelLastUpdateTimes(path.get(0), rc)));
+            r.add(new Route("/arbiter/candidateInfo/:id", HttpMethod.GET,
+                    (path, rc) -> this.getCandidateInfo(path.get(0), rc)));
+            r.add(new Route("/arbiter/config", HttpMethod.GET, (path, rc) -> this.getOptimizationConfig(rc)));
+            r.add(new Route("/arbiter/results", HttpMethod.GET, (path, rc) -> this.getSummaryResults(rc)));
+            r.add(new Route("/arbiter/summary", HttpMethod.GET, (path, rc) -> this.getSummaryStatus(rc)));
 
-        Route r9a = new Route("/arbiter/sessions/all", HttpMethod.GET, (path, rc) -> this.listSessions(rc));
-        Route r9b = new Route("/arbiter/sessions/current", HttpMethod.GET, (path, rc) -> this.currentSession(rc));
-        Route r9c = new Route("/arbiter/sessions/set/:to", HttpMethod.GET, (path, rc) -> this.setSession(path.get(0), rc));
+            r.add(new Route("/arbiter/sessions/all", HttpMethod.GET, (path, rc) -> this.sessionInfo(rc)));
+            r.add(new Route("/arbiter/sessions/current", HttpMethod.GET, (path, rc) -> this.currentSession(rc)));
+            r.add(new Route("/arbiter/sessions/set/:to", HttpMethod.GET,
+                    (path, rc) -> this.setSession(path.get(0), rc)));
+        }
 
-        return Arrays.asList(r1, r3, r4, r5, r6, r7, r8, r9a, r9b, r9c);
+        return r;
+    }
+
+
+    /**
+     * List optimization sessions. Returns a HTML list of arbiter sessions
+     */
+    private synchronized void listSessions(RoutingContext rc) {
+        StringBuilder sb = new StringBuilder("<!DOCTYPE html>\n" +
+                "<html lang=\"en\">\n" +
+                "<head>\n" +
+                "        <meta charset=\"utf-8\">\n" +
+                "        <title>Optimization sessions - DL4J Arbiter UI</title>\n" +
+                "    </head>\n" +
+                "\n" +
+                "    <body>\n" +
+                "        <h1>DL4J Arbiter UI</h1>\n" +
+                "        <p>UI server is in multi-session mode." +
+                " To visualize an optimization session, please select one from the following list.</p>\n" +
+                "        <h2>List of attached optimization sessions</h2>\n");
+        if (!knownSessionIDs.isEmpty()) {
+            sb.append("        <ul>");
+            for (String sessionId : knownSessionIDs.keySet()) {
+                sb.append("            <li><a href=\"train/")
+                        .append(sessionId).append("\">")
+                        .append(sessionId).append("</a></li>\n");
+            }
+            sb.append("        </ul>");
+        } else {
+            sb.append("No optimization session attached.");
+        }
+
+        sb.append("    </body>\n" +
+                "</html>\n");
+
+        rc.response()
+                .putHeader("content-type", "text/html; charset=utf-8")
+                .end(sb.toString());
     }
 
     @Override
@@ -201,7 +250,7 @@ public class ArbiterModule implements UIModule {
                 .end(asJson(sid));
     }
 
-    private void listSessions(RoutingContext rc) {
+    private void sessionInfo(RoutingContext rc) {
         rc.response()
                 .putHeader("content-type", "application/json")
                 .end(asJson(knownSessionIDs.keySet()));
@@ -309,7 +358,6 @@ public class ArbiterModule implements UIModule {
      * Get the info for a specific candidate - last section in the UI
      *
      * @param candidateId ID for the candidate
-     * @return Content/info for the candidate
      */
     private void getCandidateInfo(String candidateId, RoutingContext rc){
 
@@ -320,7 +368,8 @@ public class ArbiterModule implements UIModule {
             return;
         }
 
-        GlobalConfigPersistable gcp = (GlobalConfigPersistable)ss.getStaticInfo(currentSessionID, ARBITER_UI_TYPE_ID, GlobalConfigPersistable.GLOBAL_WORKER_ID);;
+        GlobalConfigPersistable gcp = (GlobalConfigPersistable)ss
+                .getStaticInfo(currentSessionID, ARBITER_UI_TYPE_ID, GlobalConfigPersistable.GLOBAL_WORKER_ID);
         OptimizationConfiguration oc = gcp.getOptimizationConfiguration();
 
         Persistable p = ss.getLatestUpdate(currentSessionID, ARBITER_UI_TYPE_ID, candidateId);

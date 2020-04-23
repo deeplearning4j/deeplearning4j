@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.arbiter.optimize;
 
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
@@ -59,6 +61,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -71,13 +74,96 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by Alex on 19/07/2017.
  */
+@Slf4j
 public class TestBasic extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 3600_000L;
+    }
 
     @Test
     @Ignore
     public void testBasicUiOnly() throws Exception {
 
         UIServer.getInstance();
+
+        Thread.sleep(1000000);
+    }
+
+    @Test
+    @Ignore
+    public void testBasicUiMultiSession() throws Exception {
+
+        Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .updater(new SgdSpace(new ContinuousParameterSpace(0.0001, 0.2)))
+                .l2(new ContinuousParameterSpace(0.0001, 0.05))
+                .addLayer(
+                        new ConvolutionLayerSpace.Builder().nIn(1)
+                                .nOut(new IntegerParameterSpace(5, 30))
+                                .kernelSize(new DiscreteParameterSpace<>(new int[]{3, 3},
+                                        new int[]{4, 4}, new int[]{5, 5}))
+                                .stride(new DiscreteParameterSpace<>(new int[]{1, 1},
+                                        new int[]{2, 2}))
+                                .activation(new DiscreteParameterSpace<>(Activation.RELU,
+                                        Activation.SOFTPLUS, Activation.LEAKYRELU))
+                                .build())
+                .addLayer(new DenseLayerSpace.Builder().nOut(new IntegerParameterSpace(32, 128))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
+                        .build(), new IntegerParameterSpace(0, 1), true) //0 to 1 layers
+                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                .build();
+        Map<String, Object> commands = new HashMap<>();
+//        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, TestDataFactoryProviderMnist.class.getCanonicalName());
+
+        //Define configuration:
+        CandidateGenerator candidateGenerator = new RandomSearchGenerator(mls, commands);
+        DataProvider dataProvider = new MnistDataSetProvider();
+
+
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterUiTestBasicMnist\\").getAbsolutePath();
+
+        File f = new File(modelSavePath);
+        if (f.exists())
+            f.delete();
+        f.mkdir();
+        if (!f.exists())
+            throw new RuntimeException();
+
+        OptimizationConfiguration configuration =
+                new OptimizationConfiguration.Builder()
+                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                        .modelSaver(new FileModelSaver(modelSavePath))
+                        .scoreFunction(new TestSetLossScoreFunction(true))
+                        .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
+                                new MaxCandidatesCondition(100))
+                        .build();
+
+        IOptimizationRunner runner =
+                new LocalOptimizationRunner(configuration, new MultiLayerNetworkTaskCreator());
+
+        // add 3 different sessions to the same execution
+        HashMap<String, StatsStorage> statsStorageForSession = new HashMap<>();
+        for (int i = 0; i < 3; i++) {
+            StatsStorage ss = new InMemoryStatsStorage();
+            @NonNull String sessionId = "sid" + i;
+            statsStorageForSession.put(sessionId, ss);
+            StatusListener sl = new ArbiterStatusListener(sessionId, ss);
+            runner.addListeners(sl);
+        }
+
+        Function<String, StatsStorage> statsStorageProvider = statsStorageForSession::get;
+        UIServer uIServer = UIServer.getInstance(true, statsStorageProvider);
+        String serverAddress = uIServer.getAddress();
+        for (String sessionId : statsStorageForSession.keySet()) {
+            log.info("Arbiter session will start at {}/arbiter/{}", serverAddress, sessionId);
+        }
+
+        runner.execute();
 
         Thread.sleep(1000000);
     }
