@@ -77,8 +77,6 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     private static Integer instancePort;
     private static Thread autoStopThread;
 
-    private TrainModule trainModule;
-
     /**
      * Get (and, initialize if necessary) the UI server. This synchronous function will wait until the server started.
      * @param port TCP socket port for {@link HttpServer} to listen
@@ -208,7 +206,11 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
     private List<UIModule> uiModules = new CopyOnWriteArrayList<>();
     private RemoteReceiverModule remoteReceiverModule;
-    private StatsStorageLoader statsStorageLoader;
+    /**
+     * Loader that attaches {@code StatsStorage} provided by {@code #statsStorageProvider} for the given session ID
+     */
+    @Getter
+    private Function<String, Boolean> statsStorageLoader;
 
     //typeIDModuleMap: Records which modules are registered for which type IDs
     private Map<String, List<UIModule>> typeIDModuleMap = new ConcurrentHashMap<>();
@@ -248,10 +250,23 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
      */
     public void autoAttachStatsStorageBySessionId(Function<String, StatsStorage> statsStorageProvider) {
         if (statsStorageProvider != null) {
-            this.statsStorageLoader = new StatsStorageLoader(statsStorageProvider);
-            if (trainModule != null) {
-                this.trainModule.setSessionLoader(this.statsStorageLoader);
-            }
+            this.statsStorageLoader = (sessionId) -> {
+                log.info("Loading StatsStorage via StatsStorageProvider for session ID (" + sessionId + ").");
+                StatsStorage statsStorage = statsStorageProvider.apply(sessionId);
+                if (statsStorage != null) {
+                    if (statsStorage.sessionExists(sessionId)) {
+                        attach(statsStorage);
+                        return true;
+                    }
+                    log.info("Failed to load StatsStorage via StatsStorageProvider for session ID. " +
+                            "Session ID (" + sessionId + ") does not exist in StatsStorage.");
+                    return false;
+                } else {
+                    log.info("Failed to load StatsStorage via StatsStorageProvider for session ID (" + sessionId + "). " +
+                            "StatsStorageProvider returned null.");
+                    return false;
+                }
+            };
         }
     }
 
@@ -303,8 +318,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         }
 
         uiModules.add(new DefaultModule(isMultiSession())); //For: navigation page "/"
-        trainModule = new TrainModule(isMultiSession(), statsStorageLoader, this::getAddress);
-        uiModules.add(trainModule);
+        uiModules.add(new TrainModule());
         uiModules.add(new ConvolutionalListenerModule());
         uiModules.add(new TsneModule());
         uiModules.add(new SameDiffModule());
@@ -593,37 +607,6 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
                         throw new RuntimeException("Unexpected interrupted exception", e);
                     }
                 }
-            }
-        }
-    }
-
-    /**
-     * Loader that attaches {@code StatsStorage} provided by {@code #statsStorageProvider} for the given session ID
-     */
-    private class StatsStorageLoader implements Function<String, Boolean> {
-
-        Function<String, StatsStorage> statsStorageProvider;
-
-        StatsStorageLoader(Function<String, StatsStorage> statsStorageProvider) {
-            this.statsStorageProvider = statsStorageProvider;
-        }
-
-        @Override
-        public Boolean apply(String sessionId) {
-            log.info("Loading StatsStorage via StatsStorageProvider for session ID (" + sessionId + ").");
-            StatsStorage statsStorage = statsStorageProvider.apply(sessionId);
-            if (statsStorage != null) {
-                if (statsStorage.sessionExists(sessionId)) {
-                    attach(statsStorage);
-                    return true;
-                }
-                log.info("Failed to load StatsStorage via StatsStorageProvider for session ID. " +
-                        "Session ID (" + sessionId + ") does not exist in StatsStorage.");
-                return false;
-            } else {
-                log.info("Failed to load StatsStorage via StatsStorageProvider for session ID (" + sessionId + "). " +
-                        "StatsStorageProvider returned null.");
-                return false;
             }
         }
     }
