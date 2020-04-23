@@ -75,7 +75,7 @@ public class TrainingSession extends InferenceSession {
             this.listeners = filtered.isEmpty() ? null : filtered;
         }
 
-        List<String> requiredActivations = new ArrayList<>();
+        Set<String> requiredActivations = new HashSet<>();
         gradVarToVarMap = new HashMap<>();       //Key: gradient variable. Value: variable that the key is gradient for
         for (String s : paramsToTrain) {
             Preconditions.checkState(sameDiff.hasVariable(s), "SameDiff instance does not have a variable with name \"%s\"", s);
@@ -93,6 +93,12 @@ public class TrainingSession extends InferenceSession {
             requiredActivations.add(grad.name());
 
             gradVarToVarMap.put(grad.name(), s);
+        }
+
+        //Also add evaluations - in case we want to evaluate something that isn't required to determine loss
+        // (hence wouldn't normally be calculated)
+        if(config.getTrainEvaluations() != null){
+            requiredActivations.addAll(config.getTrainEvaluations().keySet());
         }
 
         //Set up losses
