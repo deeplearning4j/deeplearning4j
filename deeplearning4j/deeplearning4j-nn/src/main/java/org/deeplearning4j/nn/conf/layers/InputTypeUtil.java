@@ -22,6 +22,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
@@ -528,7 +529,7 @@ public class InputTypeUtil {
         }
     }
 
-    public static InputPreProcessor getPreprocessorForInputTypeRnnLayers(InputType inputType, String layerName) {
+    public static InputPreProcessor getPreprocessorForInputTypeRnnLayers(InputType inputType, RNNFormat rnnDataFormat, String layerName) {
         if (inputType == null) {
             throw new IllegalStateException(
                             "Invalid input for RNN layer (layer name = \"" + layerName + "\"): input type is null");
@@ -539,14 +540,14 @@ public class InputTypeUtil {
             case CNNFlat:
                 //FF -> RNN or CNNFlat -> RNN
                 //In either case, input data format is a row vector per example
-                return new FeedForwardToRnnPreProcessor();
+                return new FeedForwardToRnnPreProcessor(rnnDataFormat);
             case RNN:
                 //RNN -> RNN: No preprocessor necessary
                 return null;
             case CNN:
                 //CNN -> RNN
                 InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-                return new CnnToRnnPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
+                return new CnnToRnnPreProcessor(c.getHeight(), c.getWidth(), c.getChannels(), rnnDataFormat);
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }

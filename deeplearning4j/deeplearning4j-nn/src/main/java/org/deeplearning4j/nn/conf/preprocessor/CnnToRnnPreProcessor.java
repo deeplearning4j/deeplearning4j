@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.base.Preconditions;
@@ -38,7 +39,7 @@ import java.util.Arrays;
  * Functionally equivalent to combining CnnToFeedForwardPreProcessor + FeedForwardToRnnPreProcessor<br>
  * Specifically, this does two things:<br>
  * (a) Reshape 4d activations out of CNN layer, with shape [timeSeriesLength*miniBatchSize, numChannels, inputHeight, inputWidth])
- * into 3d (time series) activations (with shape [numExamples, inputHeight*inputWidth*numChannels, timeSeriesLength])
+ * into 3d (time series) activations (with shape [miniBatchSize, inputHeight*inputWidth*numChannels, timeSeriesLength])
  * for use in RNN layers<br>
  * (b) Reshapes 3d epsilons (weights.*deltas) out of RNN layer (with shape
  * [miniBatchSize,inputHeight*inputWidth*numChannels,timeSeriesLength]) into 4d epsilons with shape
@@ -52,6 +53,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
     private long inputHeight;
     private long inputWidth;
     private long numChannels;
+    private RNNFormat rnnDataFormat = RNNFormat.NCW;
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
@@ -59,11 +61,20 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
 
     @JsonCreator
     public CnnToRnnPreProcessor(@JsonProperty("inputHeight") long inputHeight,
-                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels) {
+                                @JsonProperty("inputWidth") long inputWidth,
+                                @JsonProperty("numChannels") long numChannels,
+                                @JsonProperty("rnnDataFormat") RNNFormat rnnDataFormat) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
         this.product = inputHeight * inputWidth * numChannels;
+        this.rnnDataFormat = rnnDataFormat;
+    }
+
+    public CnnToRnnPreProcessor(long inputHeight,
+                                long inputWidth,
+                                long numChannels){
+        this(inputHeight, inputWidth, numChannels, RNNFormat.NCW);
     }
 
     @Override
@@ -90,14 +101,19 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
         //Second: reshape 2d to 3d, as per FeedForwardToRnnPreProcessor
         INDArray reshaped = workspaceMgr.dup(ArrayType.ACTIVATIONS, twod, 'f');
         reshaped = reshaped.reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
-        return reshaped.permute(0, 2, 1);
+        if (rnnDataFormat == RNNFormat.NCW) {
+            return reshaped.permute(0, 2, 1);
+        }
+        return reshaped;
     }
 
     @Override
     public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (output.ordering() == 'c' || !Shape.hasDefaultStridesForShape(output))
             output = output.dup('f');
-
+        if (rnnDataFormat == RNNFormat.NWC){
+            output = output.permute(0, 2, 1);
+        }
         val shape = output.shape();
         INDArray output2d;
         if (shape[0] == 1) {
@@ -122,7 +138,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
 
     @Override
     public CnnToRnnPreProcessor clone() {
-        return new CnnToRnnPreProcessor(inputHeight, inputWidth, numChannels);
+        return new CnnToRnnPreProcessor(inputHeight, inputWidth, numChannels, rnnDataFormat);
     }
 
     @Override
@@ -133,7 +149,7 @@ public class CnnToRnnPreProcessor implements InputPreProcessor {
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         val outSize = c.getChannels() * c.getHeight() * c.getWidth();
-        return InputType.recurrent(outSize);
+        return InputType.recurrent(outSize, rnnDataFormat);
     }
 
     @Override

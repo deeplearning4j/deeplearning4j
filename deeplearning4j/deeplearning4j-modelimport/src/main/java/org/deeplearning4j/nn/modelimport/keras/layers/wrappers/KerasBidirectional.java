@@ -218,7 +218,7 @@ public class KerasBidirectional extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Bidirectional layer accepts only one input (received " + inputType.length + ")");
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], ((Bidirectional)layer).getRNNDataFormat(), layerName);
     }
 
     /**

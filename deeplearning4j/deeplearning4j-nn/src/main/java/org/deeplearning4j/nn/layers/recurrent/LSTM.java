@@ -123,17 +123,16 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         } else {
             fwdPass = activateHelper(true, null, null, true, workspaceMgr);
         }
-
-
+        fwdPass.fwdPassOutput = permuteIfNWC(fwdPass.fwdPassOutput);
         Pair<Gradient,INDArray> p = LSTMHelpers.backpropGradientHelper(this,
-                        this.conf, this.layerConf().getGateActivationFn(), this.input,
-                        recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
+                        this.conf, this.layerConf().getGateActivationFn(), permuteIfNWC(this.input),
+                        recurrentWeights, inputWeights, permuteIfNWC(epsilon), truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
                         LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper, workspaceMgr,
                         layerConf().isHelperAllowFallback());
 
         weightNoiseParams.clear();
-        p.setSecond(backpropDropOutIfPresent(p.getSecond()));
+        p.setSecond(permuteIfNWC(backpropDropOutIfPresent(p.getSecond())));
         return p;
     }
 
@@ -167,17 +166,18 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         final INDArray recurrentWeights = getParamWithNoise(LSTMParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
         final INDArray inputWeights = getParamWithNoise(LSTMParamInitializer.INPUT_WEIGHT_KEY, training, workspaceMgr); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
         final INDArray biases = getParamWithNoise(LSTMParamInitializer.BIAS_KEY, training, workspaceMgr); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
-
+        INDArray input = permuteIfNWC(this.input);
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                        this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
+                        input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, (training && cacheMode != CacheMode.NONE) || forBackprop, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, false, helper,
                         forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
+        fwd.fwdPassOutput = permuteIfNWC(fwd.fwdPassOutput);
+
         if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;
         }
-
         return fwd;
     }
 

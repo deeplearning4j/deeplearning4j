@@ -20,6 +20,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.dropout.TestDropout;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.LSTM;
@@ -31,6 +32,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -46,8 +49,18 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
+@RunWith(Parameterized.class)
 public class TestRnnLayers extends BaseDL4JTest {
 
+    private RNNFormat rnnDataFormat;
+
+    public TestRnnLayers(RNNFormat rnnDataFormat){
+        this.rnnDataFormat = rnnDataFormat;
+    }
+    @Parameterized.Parameters
+    public static Object[] params(){
+        return RNNFormat.values();
+    }
     @Test
     public void testTimeStepIs3Dimensional() {
 
@@ -58,8 +71,8 @@ public class TestRnnLayers extends BaseDL4JTest {
                 .updater(new NoOp())
                 .weightInit(WeightInit.XAVIER)
                 .list()
-                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(3).build())
-                .layer(new LSTM.Builder().nIn(3).nOut(5).build())
+                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(3).dataFormat(rnnDataFormat).build())
+                .layer(new LSTM.Builder().nIn(3).nOut(5).dataFormat(rnnDataFormat).build())
                 .layer(new RnnOutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX).build())
                 .build();
 
@@ -70,9 +83,9 @@ public class TestRnnLayers extends BaseDL4JTest {
         org.deeplearning4j.nn.layers.recurrent.SimpleRnn simpleRnn =
                 (org.deeplearning4j.nn.layers.recurrent.SimpleRnn) net.getLayer(0);
 
-        INDArray rnnInput3d = Nd4j.create(10, 12, 1);
+        INDArray rnnInput3d = (rnnDataFormat==RNNFormat.NCW)?Nd4j.create(10,12, 1):Nd4j.create(10, 1, 12);
         INDArray simpleOut = simpleRnn.rnnTimeStep(rnnInput3d, LayerWorkspaceMgr.noWorkspaces());
-        assertTrue(Arrays.equals(simpleOut.shape(), new long[] {10, 3, 1}));
+        assertTrue(Arrays.equals(simpleOut.shape(), (rnnDataFormat==RNNFormat.NCW)?new long[] {10, 3, 1}:new long[]{10, 1, 3}));
 
         INDArray rnnInput2d = Nd4j.create(10, 12);
         try {
@@ -84,9 +97,9 @@ public class TestRnnLayers extends BaseDL4JTest {
         org.deeplearning4j.nn.layers.recurrent.LSTM lstm =
                 (org.deeplearning4j.nn.layers.recurrent.LSTM) net.getLayer(1);
 
-        INDArray lstmInput3d = Nd4j.create(10, 3, 1);
+        INDArray lstmInput3d = (rnnDataFormat==RNNFormat.NCW)?Nd4j.create(10, 3, 1):Nd4j.create(10, 1, 3);
         INDArray lstmOut = lstm.rnnTimeStep(lstmInput3d, LayerWorkspaceMgr.noWorkspaces());
-        assertTrue(Arrays.equals(lstmOut.shape(), new long[] {10, 5, 1}));
+        assertTrue(Arrays.equals(lstmOut.shape(), (rnnDataFormat==RNNFormat.NCW)?new long[] {10, 5, 1}:new long[]{10, 1, 5}));
 
         INDArray lstmInput2d = Nd4j.create(10, 3);
         try {
@@ -112,19 +125,19 @@ public class TestRnnLayers extends BaseDL4JTest {
             TestDropout.CustomDropout cd = new TestDropout.CustomDropout();
             switch (s){
                 case "graves":
-                    layer = new GravesLSTM.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD = new GravesLSTM.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD2 = new GravesLSTM.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layer = new GravesLSTM.Builder().activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
+                    layerD = new GravesLSTM.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
+                    layerD2 = new GravesLSTM.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
                     break;
                 case "lstm":
-                    layer = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD2 = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layer = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
+                    layerD = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
+                    layerD2 = new org.deeplearning4j.nn.conf.layers.LSTM.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
                     break;
                 case "simple":
-                    layer = new SimpleRnn.Builder().activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD = new SimpleRnn.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).build();
-                    layerD2 = new SimpleRnn.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).build();
+                    layer = new SimpleRnn.Builder().activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
+                    layerD = new SimpleRnn.Builder().dropOut(0.5).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
+                    layerD2 = new SimpleRnn.Builder().dropOut(cd).activation(Activation.TANH).nIn(10).nOut(10).dataFormat(rnnDataFormat).build();
                     break;
                 default:
                     throw new RuntimeException(s);
@@ -134,21 +147,21 @@ public class TestRnnLayers extends BaseDL4JTest {
                     .seed(12345)
                     .list()
                     .layer(layer)
-                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
+                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
                     .build();
 
             MultiLayerConfiguration confD = new NeuralNetConfiguration.Builder()
                     .seed(12345)
                     .list()
                     .layer(layerD)
-                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
+                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
                     .build();
 
             MultiLayerConfiguration confD2 = new NeuralNetConfiguration.Builder()
                     .seed(12345)
                     .list()
                     .layer(layerD2)
-                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).build())
+                    .layer(new RnnOutputLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -178,7 +191,6 @@ public class TestRnnLayers extends BaseDL4JTest {
             assertNotEquals(s, out2, out2D);
 
             INDArray l = TestUtils.randomOneHotTimeSeries(3, 10, 10, 12345);
-
             net.fit(f.dup(), l);
             netD.fit(f.dup(), l);
             assertNotEquals(s, net.params(), netD.params());
@@ -209,10 +221,10 @@ public class TestRnnLayers extends BaseDL4JTest {
 
             switch (i){
                 case 0:
-                    lb.layer(new RnnOutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(5).build());
+                    lb.layer(new RnnOutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(5).dataFormat(rnnDataFormat).build());
                     break;
                 case 1:
-                    lb.layer(new RnnLossLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build());
+                    lb.layer(new RnnLossLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).dataFormat(rnnDataFormat).build());
                     break;
                 default:
                     throw new RuntimeException();
@@ -224,13 +236,16 @@ public class TestRnnLayers extends BaseDL4JTest {
 
             INDArray in = Nd4j.rand(DataType.FLOAT, 3, 5, 5);
             INDArray l = TestUtils.randomOneHotTimeSeries(3, 5, 10);
-
+            if (rnnDataFormat == RNNFormat.NWC){
+                l = l.permute(0, 2, 1);
+            }
             try{
                 net.fit(in,l);
             } catch (Throwable t){
                 String msg = t.getMessage();
                 if(msg == null)
                     t.printStackTrace();
+                System.out.println(i);
                 assertTrue(msg, msg != null && msg.contains("sequence length") && msg.contains("input") && msg.contains("label"));
             }
 

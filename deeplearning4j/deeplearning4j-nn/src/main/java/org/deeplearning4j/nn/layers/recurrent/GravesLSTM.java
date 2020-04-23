@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.nd4j.base.Preconditions;
@@ -89,17 +90,17 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         } else {
             fwdPass = activateHelper(true, null, null, true, workspaceMgr);
         }
-
+        fwdPass.fwdPassOutput = permuteIfNWC(fwdPass.fwdPassOutput);
 
         Pair<Gradient, INDArray> p = LSTMHelpers.backpropGradientHelper(this,
-                        this.conf, this.layerConf().getGateActivationFn(), this.input,
-                        recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
+                        this.conf, this.layerConf().getGateActivationFn(), permuteIfNWC(this.input),
+                        recurrentWeights, inputWeights, permuteIfNWC(epsilon), truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
                         GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true, null,
                         workspaceMgr, layerConf().isHelperAllowFallback());
 
         weightNoiseParams.clear();
-        p.setSecond(backpropDropOutIfPresent(p.getSecond()));
+        p.setSecond(permuteIfNWC(backpropDropOutIfPresent(p.getSecond())));
         return p;
     }
 
@@ -117,8 +118,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
-        Preconditions.checkState(input.rank() == 3,
-                "3D input expected to RNN layer expected, got " + input.rank());
+        Preconditions.checkState(this.input.rank() == 3,
+                "3D input expected to RNN layer expected, got " + this.input.rank());
         applyDropOutIfNecessary(training, workspaceMgr);
 
 //        if (cacheMode == null)
@@ -136,18 +137,17 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         final INDArray recurrentWeights = getParamWithNoise(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY, training, workspaceMgr); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
         final INDArray inputWeights = getParamWithNoise(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, training, workspaceMgr); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
         final INDArray biases = getParamWithNoise(GravesLSTMParamInitializer.BIAS_KEY, training, workspaceMgr); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
-
+        INDArray input = permuteIfNWC(this.input);
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                        this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
+                        input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, forBackprop || (cacheMode != CacheMode.NONE && training), true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true, null,
                         cacheMode, workspaceMgr, layerConf().isHelperAllowFallback());
 
-
+        fwd.fwdPassOutput = permuteIfNWC(fwd.fwdPassOutput);
         if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;
         }
-
         return fwd;
     }
 

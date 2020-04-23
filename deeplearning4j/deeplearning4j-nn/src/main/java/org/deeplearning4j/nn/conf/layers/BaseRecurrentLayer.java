@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.weights.IWeightInit;
@@ -35,10 +36,12 @@ import java.util.List;
 public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
     protected IWeightInit weightInitFnRecurrent;
+    protected RNNFormat rnnDataFormat = RNNFormat.NCW;
 
     protected BaseRecurrentLayer(Builder builder) {
         super(builder);
         this.weightInitFnRecurrent = builder.weightInitFnRecurrent;
+        this.rnnDataFormat = builder.rnnDataFormat;
     }
 
     @Override
@@ -51,7 +54,7 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
 
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
 
-        return InputType.recurrent(nOut, itr.getTimeSeriesLength());
+        return InputType.recurrent(nOut, itr.getTimeSeriesLength(), itr.getFormat());
     }
 
     @Override
@@ -64,18 +67,25 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         if (nIn <= 0 || override) {
             InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
             this.nIn = r.getSize();
+            this.rnnDataFormat = r.getFormat();
         }
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, rnnDataFormat,getLayerName());
     }
 
     @NoArgsConstructor
     @Getter
     @Setter
     public static abstract class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
+
+        /**
+         * Set the format of data expected by the RNN. NCW = [miniBatchSize, size, timeSeriesLength],
+         * NWC = [miniBatchSize, timeSeriesLength, size]. Defaults to NCW.
+         */
+        protected RNNFormat rnnDataFormat = RNNFormat.NCW;
 
         /**
          * Set constraints to be applied to the RNN recurrent weight parameters of this layer. Default: no
@@ -162,6 +172,11 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
         public T weightInitRecurrent(Distribution dist) {
             this.setWeightInitFnRecurrent(new WeightInitDistribution(dist));
             return (T) this;
+        }
+
+        public T dataFormat(RNNFormat rnnDataFormat){
+            this.rnnDataFormat = rnnDataFormat;
+            return (T)this;
         }
     }
 }

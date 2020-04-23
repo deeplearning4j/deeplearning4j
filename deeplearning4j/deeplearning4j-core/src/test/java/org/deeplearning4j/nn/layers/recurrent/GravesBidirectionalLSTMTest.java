@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -31,6 +32,8 @@ import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,10 +45,18 @@ import org.nd4j.linalg.primitives.Pair;
 
 import static org.junit.Assert.*;
 
-
+@RunWith(Parameterized.class)
 public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
     private double score = 0.0;
+    private RNNFormat rnnDataFormat;
 
+    public GravesBidirectionalLSTMTest(RNNFormat rnnDataFormat){
+        this.rnnDataFormat = rnnDataFormat;
+    }
+    @Parameterized.Parameters
+    public static Object[] params(){
+        return RNNFormat.values();
+    }
     @Test
     public void testBidirectionalLSTMGravesForwardBasic() {
         //Very basic test of forward prop. of LSTM layer with a time series.
@@ -55,7 +66,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         final NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(nHiddenUnits).activation(Activation.TANH).build())
+                                        .nOut(nHiddenUnits).dataFormat(rnnDataFormat).activation(Activation.TANH).build())
                         .build();
 
         val numParams = conf.getLayer().initializer().numParams(conf);
@@ -65,22 +76,41 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         //Data: has shape [miniBatchSize,nIn,timeSeriesLength];
         //Output/activations has shape [miniBatchsize,nHiddenUnits,timeSeriesLength];
+        if (rnnDataFormat == RNNFormat.NCW){
+            final INDArray dataSingleExampleTimeLength1 = Nd4j.ones(1, nIn, 1);
+            final INDArray activations1 = layer.activate(dataSingleExampleTimeLength1, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(activations1.shape(), new long[] {1, nHiddenUnits, 1});
 
-        final INDArray dataSingleExampleTimeLength1 = Nd4j.ones(1, nIn, 1);
-        final INDArray activations1 = layer.activate(dataSingleExampleTimeLength1, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations1.shape(), new long[] {1, nHiddenUnits, 1});
+            final INDArray dataMultiExampleLength1 = Nd4j.ones(10, nIn, 1);
+            final INDArray activations2 = layer.activate(dataMultiExampleLength1, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(activations2.shape(), new long[] {10, nHiddenUnits, 1});
 
-        final INDArray dataMultiExampleLength1 = Nd4j.ones(10, nIn, 1);
-        final INDArray activations2 = layer.activate(dataMultiExampleLength1, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations2.shape(), new long[] {10, nHiddenUnits, 1});
+            final INDArray dataSingleExampleLength12 = Nd4j.ones(1, nIn, 12);
+            final INDArray activations3 = layer.activate(dataSingleExampleLength12, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(activations3.shape(), new long[] {1, nHiddenUnits, 12});
 
-        final INDArray dataSingleExampleLength12 = Nd4j.ones(1, nIn, 12);
-        final INDArray activations3 = layer.activate(dataSingleExampleLength12, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations3.shape(), new long[] {1, nHiddenUnits, 12});
+            final INDArray dataMultiExampleLength15 = Nd4j.ones(10, nIn, 15);
+            final INDArray activations4 = layer.activate(dataMultiExampleLength15, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(activations4.shape(), new long[] {10, nHiddenUnits, 15});
+        }
+        else{
+            final INDArray dataSingleExampleTimeLength1 = Nd4j.ones(1, 1, nIn);
+            final INDArray activations1 = layer.activate(dataSingleExampleTimeLength1, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(activations1.shape(), new long[] {1, 1, nHiddenUnits});
 
-        final INDArray dataMultiExampleLength15 = Nd4j.ones(10, nIn, 15);
-        final INDArray activations4 = layer.activate(dataMultiExampleLength15, false, LayerWorkspaceMgr.noWorkspaces());
-        assertArrayEquals(activations4.shape(), new long[] {10, nHiddenUnits, 15});
+            final INDArray dataMultiExampleLength1 = Nd4j.ones(10, 1, nIn);
+            final INDArray activations2 = layer.activate(dataMultiExampleLength1, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(activations2.shape(), new long[] {10, 1, nHiddenUnits});
+
+            final INDArray dataSingleExampleLength12 = Nd4j.ones(1, 12, nIn);
+            final INDArray activations3 = layer.activate(dataSingleExampleLength12, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(activations3.shape(), new long[] {1, 12, nHiddenUnits});
+
+            final INDArray dataMultiExampleLength15 = Nd4j.ones(10, 15, nIn);
+            final INDArray activations4 = layer.activate(dataMultiExampleLength15, false, LayerWorkspaceMgr.noWorkspaces());
+            assertArrayEquals(activations4.shape(), new long[] {10, 15, nHiddenUnits});
+        }
+
     }
 
     @Test
@@ -94,14 +124,15 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         testGravesBackwardBasicHelper(13, 3, 17, 1, 1); //Edge case: both miniBatchSize = 1 and timeSeriesLength = 1
     }
 
-    private static void testGravesBackwardBasicHelper(int nIn, int nOut, int lstmNHiddenUnits, int miniBatchSize,
+    private void testGravesBackwardBasicHelper(int nIn, int nOut, int lstmNHiddenUnits, int miniBatchSize,
                     int timeSeriesLength) {
 
-        INDArray inputData = Nd4j.ones(miniBatchSize, nIn, timeSeriesLength);
+        INDArray inputData = (rnnDataFormat == RNNFormat.NCW)?Nd4j.ones(miniBatchSize, nIn, timeSeriesLength):
+                Nd4j.ones(miniBatchSize, timeSeriesLength, nIn);
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder()
                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(lstmNHiddenUnits)
+                                        .nOut(lstmNHiddenUnits).dataFormat(rnnDataFormat)
                                         .dist(new UniformDistribution(0, 1)).activation(Activation.TANH).build())
                         .build();
 
@@ -114,7 +145,8 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         lstm.activate(inputData, false, LayerWorkspaceMgr.noWorkspaces());
         assertNotNull(lstm.input());
 
-        INDArray epsilon = Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength);
+        INDArray epsilon =(rnnDataFormat == RNNFormat.NCW)? Nd4j.ones(miniBatchSize, lstmNHiddenUnits, timeSeriesLength):
+                Nd4j.ones(miniBatchSize, timeSeriesLength, lstmNHiddenUnits);
 
         Pair<Gradient, INDArray> out = lstm.backpropGradient(epsilon, LayerWorkspaceMgr.noWorkspaces());
         Gradient outGradient = out.getFirst();
@@ -147,7 +179,11 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         assertArrayEquals(recurrentWeightGradientB.shape(), new long[] {lstmNHiddenUnits, 4 * lstmNHiddenUnits + 3});
 
         assertNotNull(nextEpsilon);
-        assertArrayEquals(nextEpsilon.shape(), new long[] {miniBatchSize, nIn, timeSeriesLength});
+        if (rnnDataFormat == RNNFormat.NCW) {
+            assertArrayEquals(nextEpsilon.shape(), new long[]{miniBatchSize, nIn, timeSeriesLength});
+        }else{
+            assertArrayEquals(nextEpsilon.shape(), new long[]{miniBatchSize, timeSeriesLength, nIn });
+        }
 
         //Check update:
         for (String s : outGradient.gradientForVariable().keySet()) {
@@ -226,7 +262,7 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         final NeuralNetConfiguration confBidirectional = new NeuralNetConfiguration.Builder()
                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder().nIn(nIn)
-                                        .nOut(layerSize)
+                                        .nOut(layerSize).dataFormat(rnnDataFormat)
                                         .dist(new UniformDistribution(-0.1, 0.1)).activation(Activation.TANH).build())
                         .build();
 
@@ -237,7 +273,8 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         .instantiate(confBidirectional, null, 0, params, true, params.dataType());
 
 
-        final INDArray sig = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
+        final INDArray sig = (rnnDataFormat == RNNFormat.NCW)?Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength}):
+                Nd4j.rand(new int[] {miniBatchSize, timeSeriesLength, nIn});
 
         final INDArray act1 = bidirectionalLSTM.activate(sig, false, LayerWorkspaceMgr.noWorkspaces());
 
@@ -265,13 +302,13 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         final NeuralNetConfiguration confBidirectional =
                         new NeuralNetConfiguration.Builder()
                                         .layer(new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
-                                                        .nIn(nIn).nOut(layerSize)
+                                                        .nIn(nIn).nOut(layerSize).dataFormat(rnnDataFormat)
                                                         .dist(new UniformDistribution(-0.1, 0.1))
                                                         .activation(Activation.TANH).updater(new NoOp()).build())
                                         .build();
 
         final NeuralNetConfiguration confForwards = new NeuralNetConfiguration.Builder()
-                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
+                        .layer(new org.deeplearning4j.nn.conf.layers.GravesLSTM.Builder().nIn(nIn).nOut(layerSize).dataFormat(rnnDataFormat)
                                         .weightInit(WeightInit.ZERO).activation(Activation.TANH).build())
                         .build();
 
@@ -290,9 +327,16 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                         Nd4j.create(1, confForwards.getLayer().initializer().numParams(confForwards)));
 
 
-        final INDArray sig = Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength});
+        final INDArray sig = (rnnDataFormat == RNNFormat.NCW)?Nd4j.rand(new int[] {miniBatchSize, nIn, timeSeriesLength}):
+                Nd4j.rand(new int[] {miniBatchSize, timeSeriesLength, nIn});
         final INDArray sigb = sig.dup();
-        reverseColumnsInPlace(sigb.slice(0));
+
+        if (rnnDataFormat == RNNFormat.NCW) {
+            reverseColumnsInPlace(sigb.slice(0));
+        }
+        else{
+            reverseColumnsInPlace(sigb.slice(0).permute(1, 0));
+        }
 
         final INDArray recurrentWeightsF = bidirectionalLSTM
                         .getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS);
@@ -345,10 +389,14 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
         assertArrayEquals(activation1.data().asFloat(), activation2.data().asFloat(), 1e-5f);
 
-        final INDArray randSig = Nd4j.rand(new int[] {1, layerSize, timeSeriesLength});
-        final INDArray randSigBackwards = randSig.dup();
-        reverseColumnsInPlace(randSigBackwards.slice(0));
-
+        final INDArray randSig = (rnnDataFormat == RNNFormat.NCW)?Nd4j.rand(new int[] {1, layerSize, timeSeriesLength}):
+                Nd4j.rand(new int[] {1, timeSeriesLength, layerSize});
+        INDArray randSigBackwards = randSig.dup();
+        if (rnnDataFormat == RNNFormat.NCW){
+            reverseColumnsInPlace(randSigBackwards.slice(0));
+        }else{
+            reverseColumnsInPlace(randSigBackwards.slice(0).permute(1, 0));
+        }
 
         final Pair<Gradient, INDArray> backprop1 = forwardsLSTM.backpropGradient(randSig, LayerWorkspaceMgr.noWorkspaces());
         final Pair<Gradient, INDArray> backprop2 = bidirectionalLSTM.backpropGradient(randSig, LayerWorkspaceMgr.noWorkspaces());
@@ -399,10 +447,16 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         final INDArray activation3 = bidirectionalLSTM.activate(sigb, false, LayerWorkspaceMgr.noWorkspaces()).slice(0);
 
         final INDArray activation3Reverse = activation3.dup();
-        reverseColumnsInPlace(activation3Reverse);
+        if (rnnDataFormat == RNNFormat.NCW){
+            reverseColumnsInPlace(activation3Reverse);
+        }
+        else{
+            reverseColumnsInPlace(activation3Reverse.permute(1, 0));
+        }
 
-        assertEquals(activation3Reverse, activation1);
         assertArrayEquals(activation3Reverse.shape(), activation1.shape());
+        assertEquals(activation3Reverse, activation1);
+
 
         //test backprop now
         final INDArray refBackGradientReccurrent =
@@ -434,7 +488,12 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
         final INDArray refEpsilon = backprop1.getSecond().dup();
         final INDArray backEpsilon = backprop3.getSecond().dup();
 
-        reverseColumnsInPlace(refEpsilon.slice(0));
+        if (rnnDataFormat == RNNFormat.NCW) {
+            reverseColumnsInPlace(refEpsilon.slice(0));
+        }
+        else{
+            reverseColumnsInPlace(refEpsilon.slice(0).permute(1, 0));
+        }
         assertArrayEquals(backEpsilon.dup().data().asDouble(), refEpsilon.dup().data().asDouble(), 1e-6);
 
     }
@@ -477,10 +536,10 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
                             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                             .seed(12345).list()
                             .layer(0, new org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM.Builder()
-                                            .gateActivationFunction(gateAfn).activation(Activation.TANH).nIn(2).nOut(2)
+                                            .gateActivationFunction(gateAfn).activation(Activation.TANH).nIn(2).nOut(2).dataFormat(rnnDataFormat)
                                             .build())
                             .layer(1, new org.deeplearning4j.nn.conf.layers.RnnOutputLayer.Builder()
-                                            .lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(2)
+                                            .lossFunction(LossFunctions.LossFunction.MSE).nIn(2).nOut(2).dataFormat(rnnDataFormat)
                                             .activation(Activation.TANH).build())
                             .build();
 
@@ -492,7 +551,10 @@ public class GravesBidirectionalLSTMTest extends BaseDL4JTest {
 
             INDArray in = Nd4j.rand(new int[] {3, 2, 5});
             INDArray labels = Nd4j.rand(new int[] {3, 2, 5});
-
+            if (rnnDataFormat == RNNFormat.NWC){
+                in = in.permute(0, 2, 1);
+                labels = labels.permute(0, 2, 1);
+            }
             net.fit(in, labels);
         }
     }

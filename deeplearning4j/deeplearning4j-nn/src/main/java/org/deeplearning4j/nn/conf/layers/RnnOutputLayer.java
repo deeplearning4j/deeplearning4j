@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
@@ -51,9 +52,11 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class RnnOutputLayer extends BaseOutputLayer {
 
+    private RNNFormat rnnDataFormat = RNNFormat.NCW;
     private RnnOutputLayer(Builder builder) {
         super(builder);
         initializeConstraints(builder);
+        this.rnnDataFormat = builder.rnnDataFormat;
     }
 
     @Override
@@ -85,7 +88,7 @@ public class RnnOutputLayer extends BaseOutputLayer {
         }
         InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent) inputType;
 
-        return InputType.recurrent(nOut, itr.getTimeSeriesLength());
+        return InputType.recurrent(nOut, itr.getTimeSeriesLength(), itr.getFormat());
     }
 
     @Override
@@ -97,18 +100,20 @@ public class RnnOutputLayer extends BaseOutputLayer {
 
         if (nIn <= 0 || override) {
             InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+            this.rnnDataFormat = r.getFormat();
             this.nIn = r.getSize();
         }
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, rnnDataFormat, getLayerName());
     }
 
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
+        private RNNFormat rnnDataFormat = RNNFormat.NCW;
         public Builder() {
             //Set default activation function to softmax (to match default loss function MCXENT)
             this.setActivationFn(new ActivationSoftmax());
@@ -136,6 +141,15 @@ public class RnnOutputLayer extends BaseOutputLayer {
         @SuppressWarnings("unchecked")
         public RnnOutputLayer build() {
             return new RnnOutputLayer(this);
+        }
+
+        /**
+         * @param rnnDataFormat Data format expected by the layer. NCW = [miniBatchSize, size, timeSeriesLength],
+         * NWC = [miniBatchSize, timeSeriesLength, size]. Defaults to NCW.
+         */
+        public Builder dataFormat(RNNFormat rnnDataFormat){
+            this.rnnDataFormat = rnnDataFormat;
+            return this;
         }
     }
 }

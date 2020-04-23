@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
@@ -160,8 +161,8 @@ public class KerasConvolution1D extends KerasConvolution {
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
+                    "Keras Conv1D layer accepts only one input (received " + inputType.length + ")");
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], RNNFormat.NCW,layerName);
     }
 
 

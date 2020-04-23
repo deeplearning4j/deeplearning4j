@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -111,9 +112,16 @@ public abstract class InputType implements Serializable {
      * @return InputTypeRecurrent
      */
     public static InputType recurrent(long size, long timeSeriesLength) {
-        return new InputTypeRecurrent(size, timeSeriesLength);
+        return new InputTypeRecurrent(size, timeSeriesLength, RNNFormat.NCW);
     }
 
+    public static InputType recurrent(long size, RNNFormat format){
+        return new InputTypeRecurrent(size, format);
+    }
+
+    public static InputType recurrent(long size, long timeSeriesLength, RNNFormat format){
+        return new InputTypeRecurrent(size, timeSeriesLength, format);
+    }
     /**
      * Input type for convolutional (CNN) data, that is 4d with shape [miniBatchSize, channels, height, width].
      * For CNN data that has been flattened, use {@link #convolutionalFlat(long, long, long)}
@@ -216,14 +224,23 @@ public abstract class InputType implements Serializable {
     public static class InputTypeRecurrent extends InputType {
         private long size;
         private long timeSeriesLength;
-
+        private RNNFormat format = RNNFormat.NCW;
         public InputTypeRecurrent(long size) {
             this(size, -1);
         }
+        public InputTypeRecurrent(long size, long timeSeriesLength){
+            this(size, timeSeriesLength, RNNFormat.NCW);
+        }
 
-        public InputTypeRecurrent(@JsonProperty("size") long size, @JsonProperty("timeSeriesLength") long timeSeriesLength) {
+        public  InputTypeRecurrent(long size, RNNFormat format){
+            this(size, -1, format);
+        }
+        public InputTypeRecurrent(@JsonProperty("size") long size,
+                                  @JsonProperty("timeSeriesLength") long timeSeriesLength,
+                                  @JsonProperty("format") RNNFormat format) {
             this.size = size;
             this.timeSeriesLength = timeSeriesLength;
+            this.format = format;
         }
 
         @Override
@@ -234,9 +251,9 @@ public abstract class InputType implements Serializable {
         @Override
         public String toString() {
             if (timeSeriesLength > 0) {
-                return "InputTypeRecurrent(" + size + ",timeSeriesLength=" + timeSeriesLength + ")";
+                return "InputTypeRecurrent(" + size + ",timeSeriesLength=" + timeSeriesLength + ",format=" + format + ")";
             } else {
-                return "InputTypeRecurrent(" + size + ")";
+                return "InputTypeRecurrent(" + size + ",format=" + format + ")";
             }
         }
 
@@ -251,8 +268,23 @@ public abstract class InputType implements Serializable {
 
         @Override
         public long[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new long[]{-1, size, timeSeriesLength};
-            else return new long[]{size, timeSeriesLength};
+            if (includeBatchDim){
+                if (format == RNNFormat.NCW){
+                    return new long[]{-1, size, timeSeriesLength};
+                }
+                else{
+                    return new long[]{-1, timeSeriesLength, size};
+                }
+
+            }
+            else{
+                if (format == RNNFormat.NCW){
+                    return new long[]{size, timeSeriesLength};
+                }
+                else{
+                    return new long[]{timeSeriesLength, size};
+                }
+            }
         }
     }
 

@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -57,11 +58,15 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
                     "Input is not rank 3. RnnOutputLayer expects rank 3 input with shape [minibatch, layerInSize, sequenceLength]." +
                             " Got input with rank " + input.rank() + " and shape " + Arrays.toString(input.shape()) + " - " + layerId());
         }
+        int td = (layerConf().getRnnDataFormat()==RNNFormat.NCW)? 2: 1;
         Preconditions.checkState(labels.rank() == 3, "Expected rank 3 labels array, got label array with shape %ndShape", labels);
-        Preconditions.checkState(input.size(2) == labels.size(2), "Sequence lengths do not match for RnnOutputLayer input and labels:" +
+        Preconditions.checkState(input.size(td) == labels.size(td), "Sequence lengths do not match for RnnOutputLayer input and labels:" +
                 "Arrays should be rank 3 with shape [minibatch, size, sequenceLength] - mismatch on dimension 2 (sequence length) - input=%ndShape vs. label=%ndShape", input, labels);
 
         INDArray inputTemp = input;
+        if (layerConf().getRnnDataFormat() == RNNFormat.NWC){
+            this.input = input.permute(0, 2, 1);
+        }
         this.input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.BP_WORKING_MEM);
 
         applyDropOutIfNecessary(true, workspaceMgr);    //Edge case: we skip OutputLayer forward pass during training as this isn't required to calculate gradients
@@ -71,7 +76,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray epsilon2d = gradAndEpsilonNext.getSecond();
 
         INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0), workspaceMgr, ArrayType.ACTIVATION_GRAD);
-
+        if (layerConf().getRnnDataFormat() == RNNFormat.NWC){
+            epsilon3d = epsilon3d.permute(0, 2, 1);
+        }
         weightNoiseParams.clear();
 
         //epsilon3d = backpropDropOutIfPresent(epsilon3d);
@@ -104,6 +111,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() == 3) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
+            input = (layerConf().getRnnDataFormat()==RNNFormat.NWC)? input.permute(0, 2, 1):input;
             input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
             INDArray out = super.preOutput(training, workspaceMgr);
             this.input = inputTemp;
@@ -117,13 +125,17 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
-        if (labels.rank() == 3)
+        INDArray labels = this.labels;
+        if (labels.rank() == 3){
+            labels = (layerConf().getRnnDataFormat()==RNNFormat.NWC)?labels.permute(0, 2, 1):labels;
             return TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, arrayType);
+        }
         return labels;
     }
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
+        INDArray input = this.input;
         if (input.rank() != 3)
             throw new UnsupportedOperationException(
                             "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
@@ -131,6 +143,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray W = getParamWithNoise(DefaultParamInitializer.WEIGHT_KEY, training, workspaceMgr);
 
         applyDropOutIfNecessary(training, workspaceMgr);
+        if (layerConf().getRnnDataFormat() == RNNFormat.NWC){
+            input = input.permute(0, 2, 1);
+        }
         INDArray input2d = TimeSeriesUtils.reshape3dTo2d(input.castTo(W.dataType()), workspaceMgr, ArrayType.FF_WORKING_MEM);
 
         INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
@@ -144,7 +159,11 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             }
         }
 
-        return TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
+        INDArray ret = TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
+        if (layerConf().getRnnDataFormat() == RNNFormat.NWC){
+            ret = ret.permute(0, 2, 1);
+        }
+        return ret;
     }
 
     @Override

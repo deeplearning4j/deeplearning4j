@@ -819,7 +819,7 @@ public class DTypeTests extends BaseDL4JTest {
                             .layer(new DenseLayer.Builder().nOut(5).build())
                             .layer(new GravesBidirectionalLSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
                             .layer(new Bidirectional(new LSTM.Builder().nIn(5).nOut(5).activation(Activation.TANH).build()))
-                            .layer(new TimeDistributed(new DenseLayer.Builder().nIn(10).nOut(5).activation(Activation.TANH).build(), 2))
+                            .layer(new TimeDistributed(new DenseLayer.Builder().nIn(10).nOut(5).activation(Activation.TANH).build()))
                             .layer(new SimpleRnn.Builder().nIn(5).nOut(5).build())
                             .layer(new MaskZeroLayer.Builder().underlying(new SimpleRnn.Builder().nIn(5).nOut(5).build()).maskValue(0.0).build())
                             .layer(secondLast)
