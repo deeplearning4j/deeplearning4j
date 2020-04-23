@@ -145,8 +145,6 @@ void _mmap(Nd4jLong* result, size_t length, const char *fileName) {
     auto shortName = new TCHAR[sz];
     GetShortPathName(fileName, shortName, sz);
 
-    delete[] shortName;
-
 #ifdef _MSC_VER
     #pragma warning(push)
     #pragma warning(disable: 4293)
@@ -170,7 +168,9 @@ void _mmap(Nd4jLong* result, size_t length, const char *fileName) {
     #pragma warning(pop)
 #endif
 
-    h = CreateFile(shortName, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+    h = CreateFileA(fileName, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+
+    delete[] shortName;
 
     if (h == INVALID_HANDLE_VALUE) {
         errno = __map_mman_error(GetLastError(), EPERM);

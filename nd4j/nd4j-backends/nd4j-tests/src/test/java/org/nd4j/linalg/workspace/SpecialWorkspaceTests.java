@@ -357,6 +357,29 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testMmapedWorkspace_Path_Limits_1() throws Exception {
+        if (!Nd4j.getEnvironment().isCPU())
+            return;
+
+        // getting very long file name
+        val builder = new StringBuilder("long_file_name_");
+        for (int e = 0; e < 100; e++)
+            builder.append("9");
+
+
+        val tmpFile = Files.createTempFile("some", builder.toString());
+        val mmap = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L) // 200mbs
+                .tempFilePath(tmpFile.toAbsolutePath().toString())
+                .policyLocation(LocationPolicy.MMAP)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            val x = Nd4j.rand(DataType.FLOAT, 1024);
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';
