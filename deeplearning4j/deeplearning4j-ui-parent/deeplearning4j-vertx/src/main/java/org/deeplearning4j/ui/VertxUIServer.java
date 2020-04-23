@@ -194,8 +194,9 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         VertxUIServer.autoStopThread = new Thread(() -> {
             try {
                 currentThread.join();
-                log.info("Deeplearning4j UI server is auto-stopping.");
                 if (VertxUIServer.instance != null && !VertxUIServer.instance.isStopped()) {
+                    log.info("Deeplearning4j UI server is auto-stopping after thread (name: {}) died.",
+                            currentThread.getName());
                     instance.stop();
                 }
             } catch (InterruptedException e) {

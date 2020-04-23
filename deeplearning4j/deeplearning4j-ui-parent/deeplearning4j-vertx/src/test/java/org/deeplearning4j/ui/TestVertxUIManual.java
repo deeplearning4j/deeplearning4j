@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 public class TestVertxUIManual extends BaseDL4JTest {
 
     @Override
-        public long getTimeoutMilliseconds() {
+    public long getTimeoutMilliseconds() {
         return 3600_000L;
     }
 
