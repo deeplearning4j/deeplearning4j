@@ -342,7 +342,7 @@
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
-                        <additionalparam>-Xdoclint:none</additionalparam>
+                        <doclint>none</doclint>
                     </configuration>
                     <executions>
                         <execution>
@@ -373,7 +373,7 @@
                         <!--
                          By default: Surefire will set the classpath based on the manifest. Because tests are not included
                          in the JAR, any tests that rely on class path scanning for resources in the tests directory will not
-                         function correctly without this configuratino.
+                         function correctly without this configuration.
                          For example, tests for custom layers (where the custom layer is defined in the test directory)
                          will fail due to the custom layer not being found on the classpath.
                          http://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
@@ -423,7 +423,6 @@
                         <target>1.7</target>
                     </configuration>
                 </plugin>
-
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
                     <artifactId>lifecycle-mapping</artifactId>
