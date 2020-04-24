@@ -144,6 +144,8 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2dDerivative.class,
+            org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU.class,
+            org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUBp.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell.class,
             org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMCell.class,

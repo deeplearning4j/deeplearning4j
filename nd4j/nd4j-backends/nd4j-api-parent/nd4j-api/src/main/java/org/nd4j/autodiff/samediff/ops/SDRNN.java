@@ -36,15 +36,57 @@ public class SDRNN extends SDOps {
   }
 
   /**
+   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.<br>
+   *
+   * @param x input [time, bS, nIn] (NUMERIC type)
+   * @param hLast initial cell output (at time step = 0) [bS, nOut] (NUMERIC type)
+   * @param Wx input-to-hidden  weights, [nIn, 3*nOut] (NUMERIC type)
+   * @param Wh hidden-to-hidden weights, [nOut, 3*nOut] (NUMERIC type)
+   * @param biases biases, [3*nOut] (NUMERIC type)
+   * @return h cell outputs [time, bS, nOut], that is per each time step (NUMERIC type)
+   */
+  public SDVariable gru(SDVariable x, SDVariable hLast, SDVariable Wx, SDVariable Wh,
+      SDVariable biases) {
+    SDValidation.validateNumerical("gru", "x", x);
+    SDValidation.validateNumerical("gru", "hLast", hLast);
+    SDValidation.validateNumerical("gru", "Wx", Wx);
+    SDValidation.validateNumerical("gru", "Wh", Wh);
+    SDValidation.validateNumerical("gru", "biases", biases);
+    return new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU(sd,x, hLast, Wx, Wh, biases).outputVariable();
+  }
+
+  /**
+   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x input [time, bS, nIn] (NUMERIC type)
+   * @param hLast initial cell output (at time step = 0) [bS, nOut] (NUMERIC type)
+   * @param Wx input-to-hidden  weights, [nIn, 3*nOut] (NUMERIC type)
+   * @param Wh hidden-to-hidden weights, [nOut, 3*nOut] (NUMERIC type)
+   * @param biases biases, [3*nOut] (NUMERIC type)
+   * @return h cell outputs [time, bS, nOut], that is per each time step (NUMERIC type)
+   */
+  public SDVariable gru(String name, SDVariable x, SDVariable hLast, SDVariable Wx, SDVariable Wh,
+      SDVariable biases) {
+    SDValidation.validateNumerical("gru", "x", x);
+    SDValidation.validateNumerical("gru", "hLast", hLast);
+    SDValidation.validateNumerical("gru", "Wx", Wx);
+    SDValidation.validateNumerical("gru", "Wh", Wh);
+    SDValidation.validateNumerical("gru", "biases", biases);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU(sd,x, hLast, Wx, Wh, biases).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * The GRU cell.  Does a single time step operation<br>
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param hLast Output of the previous cell/time step, with shape [batchSize, numUnits] (NUMERIC type)
    * @param GRUWeights Configuration Object
    */
-  public SDVariable[] gru(SDVariable x, SDVariable hLast, GRUWeights GRUWeights) {
-    SDValidation.validateNumerical("gru", "x", x);
-    SDValidation.validateNumerical("gru", "hLast", hLast);
+  public SDVariable[] gruCell(SDVariable x, SDVariable hLast, GRUWeights GRUWeights) {
+    SDValidation.validateNumerical("gruCell", "x", x);
+    SDValidation.validateNumerical("gruCell", "hLast", hLast);
     return new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell(sd,x, hLast, GRUWeights).outputVariables();
   }
 
@@ -56,9 +98,10 @@ public class SDRNN extends SDOps {
    * @param hLast Output of the previous cell/time step, with shape [batchSize, numUnits] (NUMERIC type)
    * @param GRUWeights Configuration Object
    */
-  public SDVariable[] gru(String[] names, SDVariable x, SDVariable hLast, GRUWeights GRUWeights) {
-    SDValidation.validateNumerical("gru", "x", x);
-    SDValidation.validateNumerical("gru", "hLast", hLast);
+  public SDVariable[] gruCell(String[] names, SDVariable x, SDVariable hLast,
+      GRUWeights GRUWeights) {
+    SDValidation.validateNumerical("gruCell", "x", x);
+    SDValidation.validateNumerical("gruCell", "hLast", hLast);
     SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell(sd,x, hLast, GRUWeights).outputVariables();
     return sd.updateVariableNamesAndReferences(out, names);
   }

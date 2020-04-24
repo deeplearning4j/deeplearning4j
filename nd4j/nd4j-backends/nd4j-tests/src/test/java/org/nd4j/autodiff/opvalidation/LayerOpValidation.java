@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMActivations;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;
@@ -1699,6 +1700,35 @@ public class LayerOpValidation extends BaseOpValidation {
         );
 
         assertNull(err);
+    }
+
+    @Test
+    public void GRUTestCase() {
+        int bS = 5;
+        int nIn = 4;
+        int nOut = 6;
+        int time = 2;
+
+        SameDiff sd = SameDiff.create();
+
+        SDVariable in = sd.var("in", Nd4j.randn(DataType.DOUBLE, time, bS, nIn).muli(10));
+        SDVariable hLast = sd.var("cLast", Nd4j.zeros(DataType.DOUBLE, bS, nOut));
+        SDVariable Wx = sd.var("Wx", Nd4j.randn(DataType.DOUBLE, nIn, 3*nOut));
+        SDVariable Wh = sd.var("Wh", Nd4j.randn(DataType.DOUBLE, nOut, 3*nOut));
+        SDVariable biases = sd.var("bias", Nd4j.randn(DataType.DOUBLE, 3*nOut));
+
+        SDVariable out = new GRU(sd, in, hLast, Wx, Wh,biases).outputVariable();
+
+        long[] outShapes = new long[]{time,bS, nOut};
+        assertArrayEquals(new long[]{time,bS, nOut}, out.eval().shape());
+
+        sd.setLossVariables(out.std(true));
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true)
+        );
+
+        assertNull(err);
+
     }
 
 
