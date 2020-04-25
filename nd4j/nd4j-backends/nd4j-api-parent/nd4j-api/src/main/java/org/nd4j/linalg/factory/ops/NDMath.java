@@ -50,14 +50,39 @@ public class NDMath {
    * Looks up ids in a list of embedding tensors.<br>
    *
    * @param x Input tensor (NUMERIC type)
-   * @param indices A Tensor containing the ids to be looked up. (NUMERIC type)
+   * @param indices A Tensor containing the ids to be looked up. (INT type)
    * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
    * @return output Shifted output (NUMERIC type)
    */
   public INDArray embeddingLookup(INDArray x, INDArray indices, PartitionMode PartitionMode) {
     NDValidation.validateNumerical("EmbeddingLookup", "x", x);
-    NDValidation.validateNumerical("EmbeddingLookup", "indices", indices);
+    NDValidation.validateInteger("EmbeddingLookup", "indices", indices);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(x, indices, PartitionMode))[0];
+  }
+
+  /**
+   * Return array of max elements indices with along tensor dimensions <br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param dataType Data type
+   * @return output Array max elements indices with along dimensions. (INT type)
+   */
+  public INDArray mergeMaxIndex(INDArray[] x, DataType dataType) {
+    NDValidation.validateNumerical("MergeMaxIndex", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex(x, dataType))[0];
+  }
+
+  /**
+   * Return array of max elements indices with along tensor dimensions <br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @return output Array max elements indices with along dimensions. (INT type)
+   */
+  public INDArray mergeMaxIndex(INDArray... x) {
+    NDValidation.validateNumerical("MergeMaxIndex", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex(x, DataType.INT))[0];
   }
 
   /**

@@ -40,11 +40,13 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.image.ImageResize;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.shape.MergeAvg;
 import org.nd4j.linalg.api.ops.impl.shape.MergeMax;
+import org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm;
@@ -2126,7 +2128,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 };
 
 
-                SDVariable out = new ImageResize(sd, inputImage, requestedSize, preserveAspectRatio, antialias, method).outputVariable();
+                SDVariable out = new ImageResize(sd, inputImage, requestedSize, preserveAspectRatio, antialias, method).outputVariable().std(true);
 
                 String err = OpValidation.validate(new TestCase(sd)
                         .gradientCheck(false)
@@ -2150,7 +2152,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable inputY = sd.var(Nd4j.rand(2, 3));
 
 
-        SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sd, inputX, inputY).outputVariable();
+        SDVariable out = new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(sd, inputX, inputY).outputVariable().std(true);
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
         assertNull(err);
@@ -2166,7 +2168,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable inputX = sd.var(Nd4j.rand(2, 3));
         SDVariable inputY = sd.var(Nd4j.rand(2, 3));
         SDVariable inputZ = sd.var(Nd4j.rand(2, 3));
-        SDVariable out = new MergeAddOp(sd, new SDVariable[]{inputX, inputY, inputZ}).outputVariable();
+        SDVariable out = new MergeAddOp(sd, new SDVariable[]{inputX, inputY, inputZ}).outputVariable().std(true);
         out.markAsLoss();
         String err =  OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
@@ -2183,7 +2185,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable inputX = sd.var(Nd4j.rand(2, 3));
         SDVariable inputY = sd.var(Nd4j.rand(2, 3));
         SDVariable inputZ = sd.var(Nd4j.rand(2, 3));
-        SDVariable out = new MergeMax(sd, new SDVariable[]{inputX, inputY, inputZ}).outputVariable();
+        SDVariable out = new MergeMax(sd, inputX, inputY, inputZ).outputVariable().std(true);
         out.markAsLoss();
         String err =  OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
@@ -2201,7 +2203,7 @@ public class TransformOpValidation extends BaseOpValidation {
         SDVariable inputX = sd.var(Nd4j.rand(2, 3));
         SDVariable inputY = sd.var(Nd4j.rand(2, 3));
         SDVariable inputZ = sd.var(Nd4j.rand(2, 3));
-        SDVariable out = new MergeAvg(sd, new SDVariable[]{inputX, inputY, inputZ}).outputVariable();
+        SDVariable out = new MergeAvg(sd, inputX, inputY, inputZ).outputVariable().std(true);
         out.markAsLoss();
         String err = OpValidation.validate(new TestCase(sd)
                 .gradientCheck(true));
@@ -2209,6 +2211,44 @@ public class TransformOpValidation extends BaseOpValidation {
 
 
     }
+
+    @Test
+    public void testReverseBp() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.var(Nd4j.createFromArray(new double[][]{{2,7}, {3,5}, {4,5}}));
+        SDVariable out = new Reverse(sd, input,0).outputVariable();
+        SDVariable loss = out.std(true);
+        loss.markAsLoss();
+        String err = OpValidation.validate(new TestCase(sd)
+                .gradientCheck(true));
+        assertNull(err);
+    }
+
+    @Test
+    public void testUpsampling3dBp() {
+
+        Nd4j.getRandom().setSeed(12345);
+        for (boolean dataformat : new boolean[]{true, false}) {
+
+            SameDiff sd = SameDiff.create();
+
+            // NCDHW input
+            SDVariable input = dataformat ? sd.var(Nd4j.rand(DataType.DOUBLE, 2, 1, 5, 5, 5)) : sd.var(Nd4j.rand(DataType.DOUBLE, 2, 5, 5, 5, 1));
+            int scaleD = 2;
+            int scaleH = 2;
+            int scaleW = 2;
+            SDVariable out = new Upsampling3d(sd, input, true, scaleD, scaleH, scaleW).outputVariable().std(true);
+            out.markAsLoss();
+            String err = OpValidation.validate(new TestCase(sd)
+                    .gradientCheck(true));
+            assertNull(err);
+        }
+
+
+    }
+
 
 
     }

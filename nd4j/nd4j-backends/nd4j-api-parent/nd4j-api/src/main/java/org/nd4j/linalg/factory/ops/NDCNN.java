@@ -508,4 +508,19 @@ public class NDCNN {
     NDValidation.validateNumerical("upsampling2d", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(input, scaleH, scaleW, nchw))[0];
   }
+
+  /**
+   * 3D Convolution layer operation - Upsampling 3d <br>
+   *
+   * @param input Input in NCHW format (NUMERIC type)
+   * @param ncdhw If true: input is in NCDHW (minibatch, channels, depth, height, width) format. False: NDHWC format
+   * @param scaleD Scale to upsample in depth dimension
+   * @param scaleH Scale to upsample in height dimension
+   * @param scaleW Scale to upsample in width dimension
+   * @return output Upsampled input (NUMERIC type)
+   */
+  public INDArray upsampling3d(INDArray input, boolean ncdhw, int scaleD, int scaleH, int scaleW) {
+    NDValidation.validateNumerical("upsampling3d", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d(input, ncdhw, scaleD, scaleH, scaleW))[0];
+  }
 }

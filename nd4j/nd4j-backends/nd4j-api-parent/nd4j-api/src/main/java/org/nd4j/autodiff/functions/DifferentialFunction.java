@@ -447,7 +447,7 @@ public abstract class DifferentialFunction {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
         setInstanceId();
-        if(sameDiff != null) {
+        if(sameDiff != null && args != null) {
             sameDiff.addArgsFor(args, this);
         }
     }
