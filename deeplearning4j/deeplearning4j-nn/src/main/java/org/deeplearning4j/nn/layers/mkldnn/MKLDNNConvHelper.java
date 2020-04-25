@@ -66,10 +66,6 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
         if(input.dataType() != DataType.FLOAT || weights.dataType() != DataType.FLOAT)
             return null;    //MKL-DNN only supports floating point dtype
 
-        //Note: conv2d op expects [kH, kW, iC, oC] weights... DL4J conv uses [oC, iC, kH, kW]
-        INDArray weightsPermute = weights.permute(2,3,1,0);
-        INDArray weightGradViewPermute = weightGradView.permute(2,3,1,0);
-
         int hDim = 2;
         int wDim = 3;
         if(format == CNN2DFormat.NHWC){
@@ -89,14 +85,15 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
                     pad[0], pad[1],
                     dilation[0], dilation[1],
                     ArrayUtil.fromBoolean(convolutionMode == ConvolutionMode.Same),
-                    format == CNN2DFormat.NCHW ? 0 : 1   //0=NCHW, 1=NHWC
+                    format == CNN2DFormat.NCHW ? 0 : 1,  //0=NCHW, 1=NHWC
+                    1   //Weight format: 1 - [oC, iC, kH, kW]
             );
         };
 
         INDArray gradAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape());
 
-        INDArray[] inputsArr = biasGradView == null ? new INDArray[]{input, weightsPermute, delta} : new INDArray[]{input, weightsPermute, bias, delta};
-        INDArray[] outputArr = biasGradView == null ? new INDArray[]{gradAtInput, weightGradViewPermute} : new INDArray[]{gradAtInput, weightGradViewPermute, biasGradView};
+        INDArray[] inputsArr = biasGradView == null ? new INDArray[]{input, weights, delta} : new INDArray[]{input, weights, bias, delta};
+        INDArray[] outputArr = biasGradView == null ? new INDArray[]{gradAtInput, weightGradView} : new INDArray[]{gradAtInput, weightGradView, biasGradView};
         contextBwd.purge();
         for( int i=0; i<inputsArr.length; i++ ){
             contextBwd.setInputArray(i, inputsArr[i]);
@@ -149,16 +146,14 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
                     pad[0], pad[1],
                     dilation[0], dilation[1],
                     ArrayUtil.fromBoolean(convolutionMode == ConvolutionMode.Same),
-                    format == CNN2DFormat.NCHW ? 0 : 1   //0=NCHW, 1=NHWC
+                    format == CNN2DFormat.NCHW ? 0 : 1,  //0=NCHW, 1=NHWC
+                    1   //Weight format: 1 - [oC, iC, kH, kW]
             );
         };
 
         int outDepth = (int) weights.size(0);
         long[] outShape = (format == CNN2DFormat.NCHW) ? new long[]{input.size(0), outDepth, outSize[0], outSize[1]} : new long[]{input.size(0), outSize[0], outSize[1], outDepth};
         INDArray out = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape);
-
-        //Note: conv2d op expects [kH, kW, iC, oC] weights... DL4J conv uses [oC, iC, kH, kW]
-        weights = weights.permute(2,3,1,0);
 
         INDArray[] inputsArr = bias == null ? new INDArray[]{input, weights} : new INDArray[]{input, weights, bias};
         context.purge();

@@ -81,7 +81,7 @@ public abstract class BaseImageLoader implements Serializable {
             String fileName = file.toString();
             if (fileName.endsWith(".tgz") || fileName.endsWith(".tar.gz") || fileName.endsWith(".gz")
                             || fileName.endsWith(".zip"))
-                ArchiveUtils.unzipFileTo(file.getAbsolutePath(), fullDir.getAbsolutePath());
+                ArchiveUtils.unzipFileTo(file.getAbsolutePath(), fullDir.getAbsolutePath(), false);
         } catch (IOException e) {
             throw new IllegalStateException("Unable to fetch images", e);
         }

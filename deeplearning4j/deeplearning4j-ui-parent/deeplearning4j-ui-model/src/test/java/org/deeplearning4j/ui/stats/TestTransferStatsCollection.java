@@ -62,13 +62,11 @@ public class TestTransferStatsCollection extends BaseDL4JTest {
                                                         new FineTuneConfiguration.Builder().updater(new Sgd(0.01)).build())
                                         .setFeatureExtractor(0).build();
 
-        File f = testDir.newFile("dl4jTestTransferStatsCollection.bin");
-        f.delete();
+        File dir = testDir.newFolder();
+        File f = new File(dir, "dl4jTestTransferStatsCollection.bin");
         net2.setListeners(new StatsListener(new FileStatsStorage(f)));
 
         //Previosuly: failed on frozen layers
         net2.fit(new DataSet(Nd4j.rand(8, 10), Nd4j.rand(8, 10)));
-
-        f.deleteOnExit();
     }
 }
