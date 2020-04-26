@@ -258,6 +258,14 @@ public class StrumpfResolver implements Resolver {
         return cacheDir;
     }
 
+    @Override
+    public String normalizePath(@NonNull String path) {
+        if(path.endsWith(REF)){
+            return path.substring(0, path.length()-REF.length());
+        }
+        return path;
+    }
+
 
     protected void assertExists(String resourcePath) {
         if (!exists(resourcePath)) {
