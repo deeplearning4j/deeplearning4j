@@ -90,6 +90,9 @@ namespace sd {
                     return result;
                 }
             }
+
+            // safe return
+            return std::string("");
         }
 
 #endif
