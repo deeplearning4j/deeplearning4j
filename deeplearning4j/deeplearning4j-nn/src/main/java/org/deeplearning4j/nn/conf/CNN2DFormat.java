@@ -9,7 +9,7 @@ package org.deeplearning4j.nn.conf;
  *
  * @author Alex Black
  */
-public enum CNN2DFormat {
+public enum CNN2DFormat implements DataFormat {
     NCHW,
     NHWC;
 

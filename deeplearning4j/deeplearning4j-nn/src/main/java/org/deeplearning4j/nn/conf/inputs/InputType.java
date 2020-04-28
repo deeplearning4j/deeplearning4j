@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
@@ -91,7 +92,11 @@ public abstract class InputType implements Serializable {
      * @return InputTypeFeedForward
      */
     public static InputType feedForward(long size) {
-        return new InputTypeFeedForward(size);
+        return new InputTypeFeedForward(size, null);
+    }
+
+    public static InputType feedForward(long size, DataFormat timeDistributedFormat) {
+        return new InputTypeFeedForward(size,timeDistributedFormat);
     }
 
     /**
@@ -132,7 +137,6 @@ public abstract class InputType implements Serializable {
      * @return InputTypeConvolutional
      */
     public static InputType convolutional(long height, long width, long depth) {
-//        return new InputTypeConvolutional(height, width, depth);
         return convolutional(height, width, depth, CNN2DFormat.NCHW);
     }
 
@@ -191,9 +195,11 @@ public abstract class InputType implements Serializable {
     @EqualsAndHashCode(callSuper = false)
     public static class InputTypeFeedForward extends InputType {
         private long size;
+        private DataFormat timeDistributedFormat;
 
-        public InputTypeFeedForward(@JsonProperty("size") long size) {
+        public InputTypeFeedForward(@JsonProperty("size") long size, @JsonProperty("timeDistributedFormat") DataFormat timeDistributedFormat) {
             this.size = size;
+            this.timeDistributedFormat = timeDistributedFormat;
         }
 
         @Override
@@ -203,7 +209,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeFeedForward(" + size + ")";
+            return "InputTypeFeedForward(" + size + (timeDistributedFormat != null ? "," + timeDistributedFormat : "") + ")";
         }
 
         @Override
@@ -302,7 +308,8 @@ public abstract class InputType implements Serializable {
             this.height = height;
             this.width = width;
             this.channels = channels;
-            this.format = format;
+            if(format != null)
+                this.format = format;
         }
 
         public InputTypeConvolutional(long height, long width, long channels) {

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
@@ -13,17 +13,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-
-
 package org.deeplearning4j.nn.conf;
 
-/**
- * NCW = "channels first" - arrays of shape [minibatch, channels, width]<br>
- * NWC = "channels last" - arrays of shape [minibatch, width, channels]<br>
- * "width" corresponds to sequence length and "channels" corresponds to sequence item size.
- */
+import org.deeplearning4j.nn.conf.serde.format.DataFormatDeserializer;
+import org.deeplearning4j.nn.conf.serde.format.DataFormatSerializer;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-public enum RNNFormat implements DataFormat {
-    NCW,
-    NWC
+@JsonSerialize(using = DataFormatSerializer.class)
+@JsonDeserialize(using = DataFormatDeserializer.class)
+public interface DataFormat {
 }

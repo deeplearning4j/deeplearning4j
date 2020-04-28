@@ -17,7 +17,9 @@
 package org.deeplearning4j.nn.dtypes;
 
 import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
+import org.deeplearning4j.nn.conf.preprocessor.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.TFOpLayer;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 import org.nd4j.shade.guava.collect.ImmutableSet;
 import org.nd4j.shade.guava.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
@@ -51,16 +53,11 @@ import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer;
-import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.ComposableInputPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnn3DPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.util.IdentityLayer;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.KerasFlattenRnnPreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
-import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
@@ -97,7 +94,8 @@ public class DTypeTests extends BaseDL4JTest {
             Pooling2D.class,        //Alias for SubsamplingLayer
             Convolution2D.class,    //Alias for ConvolutionLayer
             Pooling1D.class,        //Alias for Subsampling1D
-            Convolution1D.class     //Alias for  Convolution1DLayer
+            Convolution1D.class,    //Alias for  Convolution1DLayer
+            TensorFlowCnnToFeedForwardPreProcessor.class    //Deprecated
     ));
 
     @Override
@@ -1078,7 +1076,7 @@ public class DTypeTests extends BaseDL4JTest {
                                     .addLayer("l", new DenseLayer.Builder().nOut(16).build(), "in")
                                     .addVertex("preproc", new PreprocessorVertex(new FeedForwardToCnn3DPreProcessor(2, 2, 2, 2, true)), "l")
                                     .addVertex("preproc2", new PreprocessorVertex(new PermutePreprocessor(0, 2, 3, 4, 1)), "preproc")
-                                    .addVertex("preproc3", new PreprocessorVertex(new ReshapePreprocessor(new long[]{2, 2, 2, 2}, new long[]{16})), "preproc2")
+                                    .addVertex("preproc3", new PreprocessorVertex(new ReshapePreprocessor(new long[]{2, 2, 2, 2}, new long[]{16}, false)), "preproc2")
                                     .addLayer("out", new OutputLayer.Builder().nIn(16).nOut(10).build(), "preproc3")
                                     .setInputTypes(InputType.feedForward(5))
                                     .setOutputs("out");
@@ -1150,7 +1148,7 @@ public class DTypeTests extends BaseDL4JTest {
                         case 7:
                             b.addInputs("in")
                                     .addLayer("1", new ConvolutionLayer.Builder().kernelSize(2, 2).nOut(5).convolutionMode(ConvolutionMode.Same).build(), "in")
-                                    .addVertex("2", new PreprocessorVertex(new TensorFlowCnnToFeedForwardPreProcessor(28, 28, 5)), "1")
+                                    .addVertex("2", new PreprocessorVertex(new CnnToFeedForwardPreProcessor(28, 28, 5)), "1")
                                     .addLayer("out", new OutputLayer.Builder().nOut(10).build(), "2")
                                     .setOutputs("out")
                                     .setInputTypes(InputType.convolutional(28, 28, 1));

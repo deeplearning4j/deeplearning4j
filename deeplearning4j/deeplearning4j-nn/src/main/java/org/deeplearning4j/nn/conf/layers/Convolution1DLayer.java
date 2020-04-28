@@ -44,6 +44,7 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class Convolution1DLayer extends ConvolutionLayer {
+    private RNNFormat rnnDataFormat = RNNFormat.NCW;
     /*
     //TODO: We will eventually want to NOT subclass off of ConvolutionLayer.
     //Currently, we just subclass off the ConvolutionLayer and hard code the "width" dimension to 1
@@ -56,6 +57,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
     private Convolution1DLayer(Builder builder) {
         super(builder);
         initializeConstraints(builder);
+        this.rnnDataFormat = builder.rnnDataFormat;
     }
 
     @Override
@@ -92,7 +94,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
             outLength = Convolution1DUtils.getOutputSize(inputTsLength, kernelSize[0], stride[0], padding[0],
                             convolutionMode, dilation[0]);
         }
-        return InputType.recurrent(nOut, outLength);
+
+        return InputType.recurrent(nOut, outLength, rnnDataFormat);
     }
 
     @Override
@@ -102,10 +105,11 @@ public class Convolution1DLayer extends ConvolutionLayer {
                             + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
             this.nIn = r.getSize();
         }
+        this.rnnDataFormat = r.getFormat();
     }
 
     @Override
@@ -115,10 +119,12 @@ public class Convolution1DLayer extends ConvolutionLayer {
                             + "\"): input is null");
         }
 
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, RNNFormat.NCW,getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, rnnDataFormat,getLayerName());
     }
 
     public static class Builder extends ConvolutionLayer.BaseConvBuilder<Builder> {
+
+        private RNNFormat rnnDataFormat = RNNFormat.NCW;
 
         public Builder() {
             this(0, 1, 0);
@@ -130,6 +136,11 @@ public class Convolution1DLayer extends ConvolutionLayer {
             return true;
         }
 
+
+        public Builder rnnDataFormat(RNNFormat rnnDataFormat){
+            this.rnnDataFormat = rnnDataFormat;
+            return this;
+        }
         /**
          * @param kernelSize Kernel size
          * @param stride Stride

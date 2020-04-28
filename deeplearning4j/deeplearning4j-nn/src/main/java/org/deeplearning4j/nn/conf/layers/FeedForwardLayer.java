@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
@@ -35,6 +36,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
 
     protected long nIn;
     protected long nOut;
+    protected DataFormat timeDistributedFormat;
 
     public FeedForwardLayer(Builder builder) {
         super(builder);
@@ -51,7 +53,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
                             + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
         }
 
-        return InputType.feedForward(nOut);
+        return InputType.feedForward(nOut, timeDistributedFormat);
     }
 
     @Override
@@ -70,6 +72,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
                 this.nIn = f.getFlattenedSize();
             }
+        }
+
+        if(inputType instanceof InputType.InputTypeFeedForward){
+            InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
+            this.timeDistributedFormat = f.getTimeDistributedFormat();
         }
     }
 

@@ -61,11 +61,8 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         long[] newEpsShape = origOutputShape;
-        boolean nwc = (underlying instanceof BaseRecurrentLayer &&
-                ((BaseRecurrentLayer) underlying).getDataFormat() == RNNFormat.NWC)||
-                (underlying instanceof MaskZeroLayer && ((MaskZeroLayer)underlying).getUnderlying() instanceof
-                BaseRecurrentLayer && ((BaseRecurrentLayer)((MaskZeroLayer)underlying).getUnderlying()).getDataFormat()
-                == RNNFormat.NWC);
+
+        boolean nwc = TimeSeriesUtils.getFormatFromRnnLayer(underlying.conf().getLayer()) == RNNFormat.NWC;
         INDArray newEps = Nd4j.create(epsilon.dataType(), newEpsShape, 'f');
         if(lastTimeStepIdxs == null){
             //no mask case

@@ -536,10 +536,16 @@ public class InputTypeUtil {
         }
 
         switch (inputType.getType()) {
-            case FF:
             case CNNFlat:
                 //FF -> RNN or CNNFlat -> RNN
                 //In either case, input data format is a row vector per example
+                return new FeedForwardToRnnPreProcessor(rnnDataFormat);
+            case FF:
+                //If time distributed format is defined, use that. Otherwise use the layer-defined rnnDataFormat, which may be default
+                InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward)inputType;
+                if(ff.getTimeDistributedFormat() != null && ff.getTimeDistributedFormat() instanceof RNNFormat){
+                    return new FeedForwardToRnnPreProcessor((RNNFormat) ff.getTimeDistributedFormat());
+                }
                 return new FeedForwardToRnnPreProcessor(rnnDataFormat);
             case RNN:
                 //RNN -> RNN: No preprocessor necessary

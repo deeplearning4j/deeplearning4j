@@ -98,9 +98,9 @@ public class RnnOutputLayer extends BaseOutputLayer {
                             + "\"): Expected RNN input, got " + inputType);
         }
 
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
+        this.rnnDataFormat = r.getFormat();
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
-            this.rnnDataFormat = r.getFormat();
             this.nIn = r.getSize();
         }
     }

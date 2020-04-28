@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeConvolutional;
@@ -27,7 +28,6 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.KerasFlattenRnnPreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
-import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 
 import java.util.Map;
 
@@ -93,11 +93,10 @@ public class KerasFlatten extends KerasLayer {
             switch (this.getDimOrder()) {
                 case NONE:
                 case THEANO:
-                    preprocessor = new CnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getChannels());
+                    preprocessor = new CnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getChannels(), CNN2DFormat.NCHW);
                     break;
                 case TENSORFLOW:
-                    preprocessor = new TensorFlowCnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(),
-                            it.getChannels());
+                    preprocessor = new CnnToFeedForwardPreProcessor(it.getHeight(), it.getWidth(), it.getChannels(), CNN2DFormat.NHWC);
                     break;
                 default:
                     throw new InvalidKerasConfigurationException("Unknown Keras backend " + this.getDimOrder());
@@ -111,7 +110,7 @@ public class KerasFlatten extends KerasLayer {
             // to RNN type. Otherwise we add this trivial preprocessor (since there's nothing to flatten).
             InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
             val inputShape = new long[]{it.getSize()};
-            preprocessor = new ReshapePreprocessor(inputShape, inputShape, false);
+            preprocessor = new ReshapePreprocessor(inputShape, inputShape, false, null);
         }
         return preprocessor;
     }

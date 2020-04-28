@@ -91,7 +91,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             outLength = Convolution1DUtils.getOutputSize(inputTsLength, kernelSize[0], stride[0], padding[0],
                             convolutionMode, dilation[0]);
         }
-        return InputType.recurrent(r.getSize(), outLength);
+        return InputType.recurrent(r.getSize(), outLength, r.getFormat());
     }
 
     @Override

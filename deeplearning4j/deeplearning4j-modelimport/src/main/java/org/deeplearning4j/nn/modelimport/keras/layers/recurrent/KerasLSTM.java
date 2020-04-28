@@ -186,7 +186,7 @@ public class KerasLSTM extends KerasLayer {
                 .weightInitRecurrent(recurrentInit)
                 .biasInit(0.0) // TODO: this is incorrect
                 .l1(this.weightL1Regularization)
-                .l2(this.weightL2Regularization);
+                .l2(this.weightL2Regularization).dataFormat(RNNFormat.NWC);
         Integer nIn = KerasLayerUtils.getNInFromInputDim(layerConfig, conf);
         if(nIn != null)
             builder.setNIn(nIn);

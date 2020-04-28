@@ -125,17 +125,9 @@ public class TFOpLayerImpl extends AbstractLayer<TFOpLayer> {
     }
 
     private INDArray runGraph(INDArray input){
-        if (input.rank() == 3){
-            // TODO make this a preprocessor
-            input = input.permute(0, 2, 1);
-        }
         Map<String, INDArray> inputMap = new HashMap<>();
         inputMap.put(inputNames.get(0), input);
         INDArray out = graphRunnerService.run(inputMap).values().toArray(new INDArray[0])[0];
-        if (out.rank() == 3){
-            out = out.permute(0, 2, 1); // TODO post-processing?
-        }
-
         return out;
     }
 

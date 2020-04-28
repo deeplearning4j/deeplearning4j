@@ -34,6 +34,7 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -53,7 +54,7 @@ import static org.junit.Assert.*;
 /**
  * @author Tamas Fenyvesi
  */
-@Slf4j
+@Slf4j @Ignore      //https://github.com/eclipse/deeplearning4j/issues/8891
 public class TestVertxUIMultiSession extends BaseDL4JTest {
 
     @Before

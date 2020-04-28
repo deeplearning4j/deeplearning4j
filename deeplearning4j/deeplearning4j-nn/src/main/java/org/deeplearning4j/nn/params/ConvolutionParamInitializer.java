@@ -118,6 +118,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
             params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));
             conf.addVariable(WEIGHT_KEY);
             conf.addVariable(BIAS_KEY);
+            conf.addVariable(BIAS_KEY);
         } else {
             INDArray weightView = paramsView;
             params.put(WEIGHT_KEY, createWeightMatrix(conf, weightView, initializeParams));

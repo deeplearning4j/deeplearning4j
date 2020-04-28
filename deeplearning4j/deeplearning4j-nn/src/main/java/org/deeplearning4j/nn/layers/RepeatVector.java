@@ -21,6 +21,7 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.convolution.upsampling.Upsampling2D;
@@ -71,7 +72,11 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray outEpsilon;
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
-            outEpsilon = epsilon.sum(2);
+            if (layerConf().getDataFormat() == RNNFormat.NCW) {
+                outEpsilon = epsilon.sum(2);
+            }else{
+                outEpsilon = epsilon.sum(1);
+            }
         }
 
         Gradient gradient = new DefaultGradient();
@@ -99,10 +104,22 @@ public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         long miniBatch = input.size(0);
         long size = input.size(1);
-        INDArray output = input.reshape(miniBatch, size, 1).castTo(dataType);
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
-            return output.repeat(2, (long) getN());
+        if (getDataFormat() == RNNFormat.NCW) {
+            INDArray output = input.reshape(miniBatch, size, 1).castTo(dataType);
+            try (MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+                return output.repeat(2, (long) getN());
+            }
         }
+        else{
+            INDArray output = input.reshape(miniBatch, 1, size).castTo(dataType);
+            try (MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
+                return output.repeat(1, (long) getN());
+            }
+        }
+    }
+
+    public RNNFormat getDataFormat(){
+        return layerConf().getDataFormat();
     }
 
     @Override

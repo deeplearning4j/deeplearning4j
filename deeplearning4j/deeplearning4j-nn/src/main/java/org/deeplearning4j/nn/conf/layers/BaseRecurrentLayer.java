@@ -64,11 +64,11 @@ public abstract class BaseRecurrentLayer extends FeedForwardLayer {
                             + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
+        InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
         if (nIn <= 0 || override) {
-            InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
             this.nIn = r.getSize();
-            this.rnnDataFormat = r.getFormat();
         }
+        this.rnnDataFormat = r.getFormat();
     }
 
     @Override

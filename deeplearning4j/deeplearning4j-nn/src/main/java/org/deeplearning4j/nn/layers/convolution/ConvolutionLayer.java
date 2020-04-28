@@ -160,7 +160,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
         INDArray z = p.getFirst();
-        if(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW){
+        CNN2DFormat f = layerConf().getCnn2dDataFormat();
+        if(f != CNN2DFormat.NCHW){
             z = z.permute(0,3,1,2); //NHWC to NCHW
         }
         delta = afn.backprop(z, epsilon).getFirst(); //TODO handle activation function params

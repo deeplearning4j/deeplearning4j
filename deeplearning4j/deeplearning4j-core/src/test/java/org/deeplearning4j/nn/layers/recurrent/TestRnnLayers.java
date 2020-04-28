@@ -44,6 +44,7 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -217,7 +218,7 @@ public class TestRnnLayers extends BaseDL4JTest {
             NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
 
                     .list()
-                    .layer(new SimpleRnn.Builder().nIn(5).nOut(5).build());
+                    .layer(new SimpleRnn.Builder().nIn(5).nOut(5).dataFormat(rnnDataFormat).build());
 
             switch (i){
                 case 0:
@@ -235,10 +236,7 @@ public class TestRnnLayers extends BaseDL4JTest {
             net.init();
 
             INDArray in = Nd4j.rand(DataType.FLOAT, 3, 5, 5);
-            INDArray l = TestUtils.randomOneHotTimeSeries(3, 5, 10);
-            if (rnnDataFormat == RNNFormat.NWC){
-                l = l.permute(0, 2, 1);
-            }
+            INDArray l = TestUtils.randomOneHotTimeSeries(rnnDataFormat, 3, 5, 10, new Random(12345));
             try{
                 net.fit(in,l);
             } catch (Throwable t){

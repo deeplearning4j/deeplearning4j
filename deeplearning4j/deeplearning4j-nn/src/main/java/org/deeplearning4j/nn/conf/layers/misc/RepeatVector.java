@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.layers.misc;
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -46,10 +47,12 @@ import java.util.Map;
 public class RepeatVector extends FeedForwardLayer {
 
     private int n = 1;
+    private RNNFormat dataFormat = RNNFormat.NCW;
 
     protected RepeatVector(Builder builder) {
         super(builder);
         this.n = builder.n;
+        this.dataFormat = builder.dataFormat;
     }
 
     @Override
@@ -83,7 +86,7 @@ public class RepeatVector extends FeedForwardLayer {
                             + "\"): Expected FF input, got " + inputType);
         }
         InputType.InputTypeFeedForward ffInput = (InputType.InputTypeFeedForward) inputType;
-        return InputType.recurrent(ffInput.getSize(), n);
+        return InputType.recurrent(ffInput.getSize(), n, this.dataFormat);
     }
 
     @Override
@@ -101,18 +104,28 @@ public class RepeatVector extends FeedForwardLayer {
     }
 
 
+
     @NoArgsConstructor
     @Getter
     @Setter
     public static class Builder<T extends Builder<T>> extends FeedForwardLayer.Builder<T> {
 
         private int n = 1; // no repetition by default
-
+        private RNNFormat dataFormat = RNNFormat.NCW;
         /**
          * Set repetition factor for RepeatVector layer
          */
         public int getRepetitionFactor() {
             return n;
+        }
+
+        public RNNFormat getDataFormat(){
+            return dataFormat;
+        }
+
+        public Builder dataFormat(RNNFormat dataFormat){
+            this.dataFormat = dataFormat;
+            return this;
         }
 
         /**

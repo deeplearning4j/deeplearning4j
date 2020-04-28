@@ -21,9 +21,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -341,104 +339,112 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
     @Test
     public void testCnnDepthMerge() {
 
-        Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .dataType(DataType.DOUBLE)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .dist(new NormalDistribution(0, 0.1))
-                        .updater(new NoOp()).graphBuilder().addInputs("input")
-                        .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
-                                        .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
-                        .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
-                                        .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
-                        .addVertex("merge", new MergeVertex(), "l1", "l2")
-                        .addLayer("outputLayer",
-                                        new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
-                                                        .activation(Activation.SOFTMAX).nIn(5 * 5 * (2 + 2)).nOut(3)
-                                                        .build(),
-                                        "merge")
-                        .setOutputs("outputLayer")
-                        .inputPreProcessor("outputLayer", new CnnToFeedForwardPreProcessor(5, 5, 4))
-                        .build();
+        for(CNN2DFormat format : CNN2DFormat.values()) {
 
-        ComputationGraph graph = new ComputationGraph(conf);
-        graph.init();
+            String msg = "testCnnDepthMerge - " + format;
 
-        Random r = new Random(12345);
-        INDArray input = Nd4j.rand(new int[] {5, 2, 6, 6}); //Order: examples, channels, height, width
-        INDArray labels = Nd4j.zeros(5, 3);
-        for (int i = 0; i < 5; i++)
-            labels.putScalar(new int[] {i, r.nextInt(3)}, 1.0);
+            Nd4j.getRandom().setSeed(12345);
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                    .dataType(DataType.DOUBLE)
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .dist(new NormalDistribution(0, 0.1))
+                    .updater(new NoOp()).graphBuilder().addInputs("input")
+                    .addLayer("l1", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                            .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
+                    .addLayer("l2", new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).padding(0, 0)
+                            .nIn(2).nOut(2).activation(Activation.TANH).build(), "input")
+                    .addVertex("merge", new MergeVertex(), "l1", "l2")
+                    .addLayer("outputLayer",
+                            new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                    .activation(Activation.SOFTMAX).nIn(5 * 5 * (2 + 2)).nOut(3)
+                                    .build(),
+                            "merge")
+                    .setOutputs("outputLayer")
+                    .setInputTypes(InputType.convolutional(6, 6, 2, format))
+                    .build();
 
-        if (PRINT_RESULTS) {
-            System.out.println("testCnnDepthMerge()");
+            ComputationGraph graph = new ComputationGraph(conf);
+            graph.init();
+
+            Random r = new Random(12345);
+            INDArray input = Nd4j.rand(DataType.DOUBLE, format == CNN2DFormat.NCHW ? new long[]{5,2,6,6} : new long[]{5,6,6,2});
+            INDArray labels = Nd4j.zeros(5, 3);
+            for (int i = 0; i < 5; i++)
+                labels.putScalar(new int[]{i, r.nextInt(3)}, 1.0);
+
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
 //            for (int j = 0; j < graph.getNumLayers(); j++)
 //                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                    .labels(new INDArray[]{labels}));
+
+            assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(graph);
         }
-
-        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
-                .labels(new INDArray[]{labels}));
-
-        String msg = "testCnnDepthMerge()";
-        assertTrue(msg, gradOK);
-        TestUtils.testModelSerialization(graph);
     }
 
     @Test
     public void testRNNWithMerging() {
 
-        Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder().seed(12345)
-                                        .dataType(DataType.DOUBLE)
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .dist(new UniformDistribution(0.2, 0.6))
-                                        .updater(new NoOp()).graphBuilder().addInputs("input")
-                                        .setOutputs("out")
-                                        .addLayer("lstm1",
-                                                        new SimpleRnn.Builder().nIn(3).nOut(3)
-                                                                        .activation(Activation.TANH).build(),
-                                                        "input")
-                                        .addLayer("lstm2",
-                                                        new SimpleRnn.Builder().nIn(3).nOut(3)
-                                                                        .activation(Activation.TANH).build(),
-                                                        "lstm1")
-                                        .addLayer("dense1",
-                                                        new DenseLayer.Builder().nIn(3).nOut(3)
-                                                                        .activation(Activation.SIGMOID).build(),
-                                                        "lstm1")
-                                        .addLayer("lstm3",
-                                                        new SimpleRnn.Builder().nIn(3).nOut(3)
-                                                                        .activation(Activation.TANH).build(),
-                                                        "dense1")
-                                        .addVertex("merge", new MergeVertex(), "lstm2", "lstm3")
-                                        .addLayer("out", new RnnOutputLayer.Builder().nIn(6).nOut(3)
-                                                        .activation(Activation.SOFTMAX)
-                                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
-                                                        "merge")
-                                        .inputPreProcessor("dense1", new RnnToFeedForwardPreProcessor())
-                                        .inputPreProcessor("lstm3", new FeedForwardToRnnPreProcessor())
-                                        .build();
+        for(RNNFormat format : RNNFormat.values()) {
 
-        ComputationGraph graph = new ComputationGraph(conf);
-        graph.init();
+            String msg = "testLSTMWithMerging - " + format;
 
-        Random r = new Random(12345);
-        INDArray input = Nd4j.rand(new int[] {2, 3, 4});
-        INDArray labels = TestUtils.randomOneHotTimeSeries(2, 3, 4);
+            Nd4j.getRandom().setSeed(12345);
+            ComputationGraphConfiguration conf =
+                    new NeuralNetConfiguration.Builder().seed(12345)
+                            .dataType(DataType.DOUBLE)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .dist(new UniformDistribution(0.2, 0.6))
+                            .updater(new NoOp()).graphBuilder().addInputs("input")
+                            .setOutputs("out")
+                            .addLayer("lstm1",
+                                    new SimpleRnn.Builder().nIn(3).nOut(3)
+                                            .activation(Activation.TANH).build(),
+                                    "input")
+                            .addLayer("lstm2",
+                                    new SimpleRnn.Builder().nIn(3).nOut(3)
+                                            .activation(Activation.TANH).build(),
+                                    "lstm1")
+                            .addLayer("dense1",
+                                    new DenseLayer.Builder().nIn(3).nOut(3)
+                                            .activation(Activation.SIGMOID).build(),
+                                    "lstm1")
+                            .addLayer("lstm3",
+                                    new SimpleRnn.Builder().nIn(3).nOut(3)
+                                            .activation(Activation.TANH).build(),
+                            "dense1")
+                            .addVertex("merge", new MergeVertex(), "lstm2", "lstm3")
+                            .addLayer("out", new RnnOutputLayer.Builder().nIn(6).nOut(3)
+                                            .activation(Activation.SOFTMAX)
+                                            .lossFunction(LossFunctions.LossFunction.MCXENT).build(),
+                                    "merge")
+                            .setInputTypes(InputType.recurrent(4, format))
+                            .build();
 
-        if (PRINT_RESULTS) {
-            System.out.println("testLSTMWithMerging()");
+            ComputationGraph graph = new ComputationGraph(conf);
+            graph.init();
+
+            Random r = new Random(12345);
+            INDArray input = Nd4j.rand(DataType.DOUBLE, format == RNNFormat.NCW ? new long[]{2, 3, 4} : new long[]{2,4,3});
+            INDArray labels = TestUtils.randomOneHotTimeSeries(format, 2, 3, 4, new Random(12345));
+
+            if (PRINT_RESULTS) {
+                System.out.println(msg);
 //            for (int j = 0; j < graph.getNumLayers(); j++)
 //                System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
+                    .labels(new INDArray[]{labels}));
+
+            assertTrue(msg, gradOK);
+            TestUtils.testModelSerialization(graph);
+
         }
-
-        boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{input})
-                .labels(new INDArray[]{labels}));
-
-        String msg = "testLSTMWithMerging()";
-        assertTrue(msg, gradOK);
-        TestUtils.testModelSerialization(graph);
     }
 
     @Test

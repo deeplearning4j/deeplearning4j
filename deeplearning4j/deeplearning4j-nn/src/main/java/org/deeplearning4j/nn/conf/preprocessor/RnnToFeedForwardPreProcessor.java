@@ -57,7 +57,8 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
     private RNNFormat rnnDataFormat = RNNFormat.NCW;
 
     public RnnToFeedForwardPreProcessor(@JsonProperty("rnnDataFormat") RNNFormat rnnDataFormat){
-        this.rnnDataFormat = rnnDataFormat;
+        if(rnnDataFormat != null)
+            this.rnnDataFormat = rnnDataFormat;
     }
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
@@ -116,7 +117,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
-        return InputType.feedForward(rnn.getSize());
+        return InputType.feedForward(rnn.getSize(), rnn.getFormat());
     }
 
     @Override

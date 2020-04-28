@@ -15,21 +15,24 @@
  ******************************************************************************/
 package org.deeplearning4j.convolution;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.CuDNNTestUtils;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.ComposableInputPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -816,6 +819,12 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                 .layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).nOut(10).build())
                 .setInputType(inputType != null ? inputType : InputType.convolutional(12, 12, 3, format));
 
+        if(format == CNN2DFormat.NHWC && !(layer instanceof GlobalPoolingLayer)){
+            //Add a preprocessor due to the differences in how NHWC and NCHW activations are flattened
+            //DL4J's flattening behaviour matches Keras (hence TF) for import compatibility
+            builder.inputPreProcessor(2, new ComposableInputPreProcessor(new NHWCToNCHWPreprocessor(), new CnnToFeedForwardPreProcessor()));
+        }
+
         MultiLayerNetwork net = new MultiLayerNetwork(builder.build());
         net.init();
         return net;
@@ -963,5 +972,36 @@ public class ConvDataFormatTests extends BaseDL4JTest {
             }
         }
         return differs;
+    }
+
+    //Converts NHWC to NCHW activations
+    @EqualsAndHashCode
+    private static class NHWCToNCHWPreprocessor implements InputPreProcessor {
+
+        @Override
+        public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.permute(0,3,1,2));
+        }
+
+        @Override
+        public INDArray backprop(INDArray output, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
+            return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, output.permute(0,2,3,1));
+        }
+
+        @Override
+        public InputPreProcessor clone() {
+            return this;
+        }
+
+        @Override
+        public InputType getOutputType(InputType inputType) {
+            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            return InputType.convolutional(c.getHeight(), c.getWidth(), c.getChannels(), CNN2DFormat.NCHW);
+        }
+
+        @Override
+        public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
+            return null;
+        }
     }
 }

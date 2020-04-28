@@ -147,7 +147,7 @@ public class KerasBidirectional extends KerasLayer {
                 break;
             case "SimpleRNN":
                 kerasRnnlayer = new KerasSimpleRnn(innerRnnConfig, enforceTrainingConfig, previousLayers);
-                SimpleRnn rnnLayer = (SimpleRnn) ((KerasSimpleRnn) kerasRnnlayer).getSimpleRnnLayer();
+                Layer rnnLayer = ((KerasSimpleRnn) kerasRnnlayer).getSimpleRnnLayer();
                 this.layer = new Bidirectional(mode, rnnLayer);
                 layer.setLayerName(layerName);
                 break;

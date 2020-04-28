@@ -20,6 +20,7 @@ package org.datavec.python;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.bytedeco.cpython.global.python;
 import org.bytedeco.numpy.global.numpy;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -343,6 +344,19 @@ public class PythonExecutioner {
                 if (path == null) {
                     log.info("Setting python default path");
                     File[] packages = numpy.cachePackages();
+
+                    //// TODO: fix in javacpp
+                    File sitePackagesWindows = new File(python.cachePackage(), "site-packages");
+                    File[] packages2 = new File[packages.length + 1];
+                    for (int i = 0;i < packages.length; i++){
+                        //System.out.println(packages[i].getAbsolutePath());
+                        packages2[i] = packages[i];
+                    }
+                    packages2[packages.length] = sitePackagesWindows;
+                    //System.out.println(sitePackagesWindows.getAbsolutePath());
+                    packages = packages2;
+                    //////////
+
                     Py_SetPath(packages);
                 } else {
                     log.info("Setting python path " + path);

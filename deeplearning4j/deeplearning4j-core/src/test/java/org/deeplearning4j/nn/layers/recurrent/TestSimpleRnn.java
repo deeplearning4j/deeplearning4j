@@ -61,14 +61,12 @@ public class TestSimpleRnn extends BaseDL4JTest {
         int tsLength = 7;
         INDArray in;
         if (rnnDataFormat == RNNFormat.NCW){
-            in = Nd4j.rand(DataType.FLOAT, new int[]{m, nIn, tsLength});
+            in = Nd4j.rand(DataType.FLOAT, m, nIn, tsLength);
         }
         else{
-            in = Nd4j.rand(DataType.FLOAT, new int[]{m, tsLength, nIn});
+            in = Nd4j.rand(DataType.FLOAT, m, tsLength, nIn);
         }
 
-
-//        in.get(all(), all(), interval(1,tsLength)).assign(0);
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new NoOp())
