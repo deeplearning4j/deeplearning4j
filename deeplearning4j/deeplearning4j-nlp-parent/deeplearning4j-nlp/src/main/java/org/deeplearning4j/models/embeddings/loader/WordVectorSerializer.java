@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -160,6 +161,14 @@ public class WordVectorSerializer {
     private WordVectorSerializer() {
     }
 
+    private static InputStream getStream(File f) throws IOException {
+        boolean compressed = GzipUtils.isCompressedFilename(f.getName());
+        InputStream is = new BufferedInputStream(new FileInputStream(f));
+        if(compressed)
+            is = new GZIPInputStream(is);
+        return is;
+    }
+
     /**
      * @param modelFile
      * @return
@@ -217,20 +226,22 @@ public class WordVectorSerializer {
     /**
      * Read a binary word2vec from input stream.
      *
-     * @param inputStream  input stream to read
-     * @param linebreaks  if true, the reader expects each word/vector to be in a separate line, terminated
-     *      by a line break
-     * @param normalize
-     *
+     * @param modelFile  Model file
+     * @param linebreaks if true, the reader expects each word/vector to be in a separate line, terminated by a line break
+     * @param normalize  If true: Normalize the model to be a unit vector (i.e., each vector is scaled to give l2 norm of 1)
      * @return a {@link Word2Vec model}
-     * @throws NumberFormatException
-     * @throws IOException
-     * @throws FileNotFoundException
      */
-    public static Word2Vec readBinaryModel(
-            InputStream inputStream,
-            boolean linebreaks,
-            boolean normalize) throws NumberFormatException, IOException {
+    public static Word2Vec readBinaryModel(File modelFile, boolean linebreaks, boolean normalize)
+            throws NumberFormatException, IOException {
+        //Note: FileInputStream will be closed by the readBinaryModel(InputStream, boolean, boolean) method
+        return readBinaryModel(new BufferedInputStream(new FileInputStream(modelFile)), linebreaks, normalize);
+    }
+
+    /**
+     * As per {@link #readBinaryModel(File, boolean, boolean)} but reading from a stream instead of a file.
+     * Note that the stream will be closed after reading
+     */
+    public static Word2Vec readBinaryModel( InputStream inputStream, boolean linebreaks, boolean normalize) throws NumberFormatException, IOException {
         InMemoryLookupTable<VocabWord> lookupTable;
         VocabCache<VocabWord> cache;
         INDArray syn0;
@@ -1652,6 +1663,21 @@ public class WordVectorSerializer {
     /**
      * Loads an in memory cache from the given input stream (sets syn0 and the vocab).
      *
+     * @param file File to load from
+     * @return a {@link Pair} holding the lookup table and the vocab cache.
+     */
+    public static Pair<InMemoryLookupTable, VocabCache> loadTxt(File file) {
+        try {
+            //Note: loadTxt(InputStream) closes the stream
+            return loadTxt(new BufferedInputStream(new FileInputStream(file)));
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading file", e);
+        }
+    }
+
+    /**
+     * Loads an in memory cache from the given input stream (sets syn0 and the vocab).
+     *
      * @param inputStream  input stream
      * @return a {@link Pair} holding the lookup table and the vocab cache.
      */
@@ -2427,33 +2453,32 @@ public class WordVectorSerializer {
             return readWord2Vec(inputStream, extendedModel);
         } catch (IOException decompressException) {
             try {
-                return extendedModel
-                        ? readAsExtendedModel(file)
-                        : readAsSimplifiedModel(file);
+                return extendedModel ? readAsExtendedModel(file) : readAsSimplifiedModel(file);
             } catch (Exception loadFromFileException) {
                 boolean compressed = GzipUtils.isCompressedFilename(file.getName());
 
-                try (FileInputStream fis = new FileInputStream(file);
-                     BufferedInputStream bis = new BufferedInputStream(fis);
-                     InputStream inputStream = compressed ? new GZIPInputStream(bis) : bis) {
-                    return readAsCsv(inputStream);
+                try {
+                    return readAsCsv(file);
                 } catch (Exception readCsvException) {
-                    try (FileInputStream fis = new FileInputStream(file);
-                         BufferedInputStream bis = new BufferedInputStream(fis);
-                         InputStream inputStream = compressed ? new GZIPInputStream(bis) : bis) {
-                        return readAsBinary(inputStream);
+                    try {
+                        return readAsBinary(file);
                     } catch (Exception readBinaryException) {
-                        try (FileInputStream fis = new FileInputStream(file);
-                             BufferedInputStream bis = new BufferedInputStream(fis);
-                             InputStream inputStream = compressed ? new GZIPInputStream(bis) : bis) {
-                            return readAsBinaryNoLineBreaks(inputStream);
-                        } catch (Exception readModelException) {
-                            log.error("Unable to guess input file format", readModelException);
+                        try {
+                            return readAsBinaryNoLineBreaks(file);
+                        } catch (Exception readBinary2Exception ){
                             throw new RuntimeException("Unable to guess input file format. Please use corresponding loader directly");
                         }
                     }
                 }
             }
+        }
+    }
+
+    public static Word2Vec readAsBinaryNoLineBreaks(@NonNull File file) {
+        try(InputStream is = getStream(file)){
+            return readAsBinary(is);
+        } catch (IOException e){
+            throw new RuntimeException("Error reading from file", e);
         }
     }
 
@@ -2473,6 +2498,21 @@ public class WordVectorSerializer {
         } catch (Exception readModelException) {
             log.error("Cannot read binary model", readModelException);
             throw new RuntimeException("Unable to guess input file format. Please use corresponding loader directly");
+        }
+    }
+
+
+    /**
+     * This method loads Word2Vec model from binary input stream.
+     *
+     * @param file File to read from
+     * @return Word2Vec
+     */
+    public static Word2Vec readAsBinary(@NonNull File file) {
+        try(InputStream is = getStream(file)){
+            return readAsBinary(is);
+        } catch (IOException e){
+            throw new RuntimeException("Error reading from file", e);
         }
     }
 
@@ -2505,7 +2545,21 @@ public class WordVectorSerializer {
     /**
      * This method loads Word2Vec model from csv file
      *
-     * @param inputStream  input stream
+     * @param file File to read from
+     * @return Word2Vec model
+     */
+    public static Word2Vec readAsCsv(@NonNull File file) {
+        try(InputStream is = getStream(file)){
+            return readAsCsv(is);
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading CSV from file", e);
+        }
+    }
+
+    /**
+     * This method loads Word2Vec model from input stream
+     *
+     * @param inputStream input stream
      * @return Word2Vec model
      */
     public static Word2Vec readAsCsv(@NonNull InputStream inputStream) {

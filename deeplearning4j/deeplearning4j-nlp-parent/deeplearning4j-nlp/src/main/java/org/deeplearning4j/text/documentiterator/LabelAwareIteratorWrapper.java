@@ -38,6 +38,11 @@ public class LabelAwareIteratorWrapper implements LabelAwareIterator {
   }
 
   @Override
+  public void remove() {
+    throw new UnsupportedOperationException("Not supported");
+  }
+
+  @Override
   public LabelledDocument nextDocument() {
     LabelledDocument doc = delegate.nextDocument();
     List<String> labels = doc.getLabels();

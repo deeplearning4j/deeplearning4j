@@ -203,25 +203,33 @@ public class FastTextTest extends BaseDL4JTest {
     @Test
     public void testWordsStatistics() throws IOException {
 
-        File output = testDir.newFile();
+        for(boolean stream : new boolean[]{false, true}) {
+            File output = testDir.newFile();
 
-        FastText fastText =
-                FastText.builder().supervised(true).
-                        inputFile(inputFile.getAbsolutePath()).
-                        outputFile(output.getAbsolutePath()).build();
+            FastText fastText =
+                    FastText.builder().supervised(true).
+                            inputFile(inputFile.getAbsolutePath()).
+                            outputFile(output.getAbsolutePath()).build();
 
-        log.info("\nTraining supervised model ...\n");
-        fastText.fit();
+            log.info("\nTraining supervised model ...\n");
+            fastText.fit();
 
-        Word2Vec word2Vec = WordVectorSerializer.readAsCsv(
-                new FileInputStream(new File(output.getAbsolutePath() + ".vec")));
+            Word2Vec word2Vec;
+            if(stream){
+                word2Vec = WordVectorSerializer.readAsCsv(
+                        new FileInputStream(new File(output.getAbsolutePath() + ".vec")));
+            } else {
+                word2Vec = WordVectorSerializer.readAsCsv(new File(output.getAbsolutePath() + ".vec"));
+            }
 
-        assertEquals(48,  word2Vec.getVocab().numWords());
 
-        System.out.println(word2Vec.wordsNearest("association", 3));
-        System.out.println(word2Vec.similarity("Football", "teams"));
-        System.out.println(word2Vec.similarity("professional", "minutes"));
-        System.out.println(word2Vec.similarity("java","cpp"));
+            assertEquals(48, word2Vec.getVocab().numWords());
+
+            System.out.println(word2Vec.wordsNearest("association", 3));
+            System.out.println(word2Vec.similarity("Football", "teams"));
+            System.out.println(word2Vec.similarity("professional", "minutes"));
+            System.out.println(word2Vec.similarity("java", "cpp"));
+        }
     }
 
 
