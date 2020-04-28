@@ -172,7 +172,7 @@ public class AeronNDArrayResponder implements AutoCloseable {
             try {
                 subscriber.launch();
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
         });
@@ -210,7 +210,7 @@ public class AeronNDArrayResponder implements AutoCloseable {
             try {
                 subscriber.launch();
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
         });

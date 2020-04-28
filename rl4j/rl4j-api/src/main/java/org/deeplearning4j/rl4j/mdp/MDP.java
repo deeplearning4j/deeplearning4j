@@ -32,7 +32,7 @@ import org.deeplearning4j.rl4j.space.ObservationSpace;
  * in a "functionnal manner" if step return a mdp
  *
  */
-public interface MDP<OBSERVATION, ACTION, ACTION_SPACE extends ActionSpace<ACTION>> {
+public interface MDP<OBSERVATION extends Encodable, ACTION, ACTION_SPACE extends ActionSpace<ACTION>> {
 
     ObservationSpace<OBSERVATION> getObservationSpace();
 

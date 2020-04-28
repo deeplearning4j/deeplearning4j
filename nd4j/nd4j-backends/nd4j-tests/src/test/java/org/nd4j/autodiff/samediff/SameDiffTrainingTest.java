@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.samediff;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collections;
@@ -35,6 +36,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
 import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.adapter.SingletonDataSetIterator;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
@@ -339,6 +341,39 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
 
         sd.setTrainingConfig(conf);
         History history = sd.fit(new SingletonMultiDataSetIterator(mds), 1);
+    }
+
+    @Test
+    public void testTrainingEvalVarNotReqForLoss(){
+        //If a variable is not required for the loss - normally it won't be calculated
+        //But we want to make sure it IS calculated here - so we can perform evaluation on it
+
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable z = in.mmul(w);
+        SDVariable out = sd.nn.softmax("softmax", z);
+        SDVariable loss = sd.loss.logLoss("loss", label, out);
+        SDVariable notRequiredForLoss = sd.nn.softmax("notRequiredForLoss", z);
+
+        sd.setTrainingConfig(TrainingConfig.builder()
+                .updater(new Adam(0.001))
+                .dataSetFeatureMapping("in")
+                .dataSetLabelMapping("label")
+                .trainEvaluation("notRequiredForLoss", 0, new Evaluation())
+                .build());
+
+//        sd.setListeners(new ScoreListener(1));
+
+        DataSet ds = new DataSet(Nd4j.rand(DataType.FLOAT, 3, 4), Nd4j.createFromArray(new float[][]{{1,0,0}, {0,1,0}, {0,0,1}}));
+
+        History h = sd.fit()
+                .train(new SingletonDataSetIterator(ds), 4)
+                .exec();
+
+        List<Double> l = h.trainingEval(Evaluation.Metric.ACCURACY);
+        assertEquals(4, l.size());
     }
 
 

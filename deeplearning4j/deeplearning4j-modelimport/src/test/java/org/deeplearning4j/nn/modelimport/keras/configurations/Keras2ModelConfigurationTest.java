@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceTo
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.resources.Resources;
@@ -250,7 +251,7 @@ public class Keras2ModelConfigurationTest extends BaseDL4JTest {
                             .enforceTrainingConfig(false).buildSequential().getMultiLayerConfiguration();
             MultiLayerNetwork model = new MultiLayerNetwork(config);
             model.init();
-            INDArray input = Nd4j.create(50, 500, 1500);
+            INDArray input = Nd4j.create(DataType.FLOAT, 50, 1500, 500);        //NWC format - [Minibatch, seqLength, channels]
             INDArray out = model.output(input);
             assertTrue(Arrays.equals(out.shape(), new long[]{50, 64}));
         }

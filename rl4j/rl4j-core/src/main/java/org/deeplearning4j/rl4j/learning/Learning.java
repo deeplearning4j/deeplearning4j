@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -38,8 +37,8 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  */
 @Slf4j
-public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
+public abstract class Learning<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+                implements ILearning<OBSERVATION, A, AS>, NeuralNetFetchable<NN> {
 
     @Getter @Setter
     protected int stepCount = 0;

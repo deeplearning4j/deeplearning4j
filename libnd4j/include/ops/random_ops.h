@@ -119,8 +119,8 @@ namespace randomOps {
 
         random_def T op(Nd4jLong idx, Nd4jLong length, sd::graph::RandomGenerator *helper, T *extraParams) {
             T lambda = extraParams[0];
-            T x = helper->relativeT<T>(idx); //, T(0.f) , max);
-            T xVal = -sd::math::nd4j_log<T,T>(T(1.f) - x);
+            T x = helper->relativeT<T>(idx,  sd::DataTypeUtils::min<T>(), T(1.f) - sd::DataTypeUtils::template min<T>()); // x from (0, 1) without bounds
+            T xVal = -sd::math::nd4j_log<T,T>(x);
 
             return xVal <= (T)0.f ? (T)0.f : xVal / lambda; //pow<T, T, T>((T) M_E, -(lambda * x));
         }
@@ -270,7 +270,7 @@ namespace randomOps {
 
         random_def T op(Nd4jLong idx, Nd4jLong length, sd::graph::RandomGenerator *helper, T *extraParams) {
             T lambda = extraParams[0];
-            T x = helper->relativeT(idx, sd::DataTypeUtils::template min<T>(), (T)1.f);
+            T x = helper->relativeT(idx, sd::DataTypeUtils::template min<T>(), (T)1.f - sd::DataTypeUtils::template min<T>());
             return -sd::math::nd4j_log<T, T>((T)1.f - x) / lambda;
         }
 

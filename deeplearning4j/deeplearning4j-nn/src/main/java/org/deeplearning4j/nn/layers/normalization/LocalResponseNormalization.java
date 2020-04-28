@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -160,12 +161,17 @@ public class LocalResponseNormalization
             }
         }
 
+        boolean nchw = layerConf().getDataFormat() == CNN2DFormat.NCHW;
+        int chDim = nchw ? 1 : 3;
+        int hDim = nchw ? 2 : 1;
+        int wDim = nchw ? 3 : 2;
+
         Triple<INDArray,INDArray,INDArray> triple = activateHelper(true, workspaceMgr, true);
         INDArray activations = triple.getFirst();
         INDArray unitScale = triple.getSecond();
         INDArray scale = triple.getThird();
 
-        val channel = input.size(1);
+        val channel = input.size(chDim);
         INDArray tmp, addVal;
         Gradient retGradient = new DefaultGradient();
         INDArray reverse = activations.mul(epsilon);
@@ -173,15 +179,25 @@ public class LocalResponseNormalization
 
         // sumPart = sum(a^j_{x,y} * gb^j_{x,y})
         for (int i = 1; i < halfN + 1; i++) {
-            tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
-            addVal = reverse.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
-            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
-                            NDArrayIndex.all()}, tmp.addi(addVal));
+            if(nchw) {
+                tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
+                addVal = reverse.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
+                sumPart.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
+                        NDArrayIndex.all()}, tmp.addi(addVal));
 
-            tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
-            addVal = reverse.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
-            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
-                            NDArrayIndex.all()}, tmp.addi(addVal));
+                tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
+                addVal = reverse.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
+                sumPart.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
+                        NDArrayIndex.all()}, tmp.addi(addVal));
+            } else {
+                tmp = sumPart.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(i, channel));
+                addVal = reverse.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(0, channel - i));
+                sumPart.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(i, channel)}, tmp.addi(addVal));
+
+                tmp = sumPart.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(0, channel - i));
+                addVal = reverse.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(i, channel));
+                sumPart.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(0, channel - i)}, tmp.addi(addVal));
+            }
         }
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
@@ -228,7 +244,10 @@ public class LocalResponseNormalization
             }
         }
 
-        val channel = input.size(1);
+        boolean nchw = layerConf().getDataFormat() == CNN2DFormat.NCHW;
+        int chDim = nchw ? 1 : 3;
+
+        val channel = input.size(chDim);
         INDArray tmp, addVal;
         // x^2 = (a^j_{x,y})^2
         INDArray activitySqr = input.mul(input);
@@ -236,16 +255,27 @@ public class LocalResponseNormalization
 
         //sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
         for (int i = 1; i < halfN + 1; i++) {
-            tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
-            addVal = activitySqr.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
-                            NDArrayIndex.all());
-            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
-                            NDArrayIndex.all()}, tmp.addi(addVal));
 
-            tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
-            addVal = activitySqr.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
-            sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
-                            NDArrayIndex.all()}, tmp.addi(addVal));
+            if(nchw) {
+                tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
+                addVal = activitySqr.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
+                        NDArrayIndex.all());
+                sumPart.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
+                        NDArrayIndex.all()}, tmp.addi(addVal));
+
+                tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
+                addVal = activitySqr.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
+                sumPart.put(new INDArrayIndex[]{NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
+                        NDArrayIndex.all()}, tmp.addi(addVal));
+            } else {
+                tmp = sumPart.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(i, channel));
+                addVal = activitySqr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(0, channel - i));
+                sumPart.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(i, channel)}, tmp.addi(addVal));
+
+                tmp = sumPart.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(0, channel - i));
+                addVal = activitySqr.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(i, channel));
+                sumPart.put(new INDArrayIndex[]{NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all(), interval(0, channel - i)}, tmp.addi(addVal));
+            }
         }
 
         INDArray unitScale = null;

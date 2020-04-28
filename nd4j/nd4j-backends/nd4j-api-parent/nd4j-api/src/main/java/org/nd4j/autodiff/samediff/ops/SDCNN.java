@@ -1052,4 +1052,38 @@ public class SDCNN extends SDOps {
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d(sd,input, scaleH, scaleW, nchw).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
+
+  /**
+   * 3D Convolution layer operation - Upsampling 3d <br>
+   *
+   * @param input Input in NCHW format (NUMERIC type)
+   * @param ncdhw If true: input is in NCDHW (minibatch, channels, depth, height, width) format. False: NDHWC format
+   * @param scaleD Scale to upsample in depth dimension
+   * @param scaleH Scale to upsample in height dimension
+   * @param scaleW Scale to upsample in width dimension
+   * @return output Upsampled input (NUMERIC type)
+   */
+  public SDVariable upsampling3d(SDVariable input, boolean ncdhw, int scaleD, int scaleH,
+      int scaleW) {
+    SDValidation.validateNumerical("upsampling3d", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d(sd,input, ncdhw, scaleD, scaleH, scaleW).outputVariable();
+  }
+
+  /**
+   * 3D Convolution layer operation - Upsampling 3d <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input Input in NCHW format (NUMERIC type)
+   * @param ncdhw If true: input is in NCDHW (minibatch, channels, depth, height, width) format. False: NDHWC format
+   * @param scaleD Scale to upsample in depth dimension
+   * @param scaleH Scale to upsample in height dimension
+   * @param scaleW Scale to upsample in width dimension
+   * @return output Upsampled input (NUMERIC type)
+   */
+  public SDVariable upsampling3d(String name, SDVariable input, boolean ncdhw, int scaleD,
+      int scaleH, int scaleW) {
+    SDValidation.validateNumerical("upsampling3d", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling3d(sd,input, ncdhw, scaleD, scaleH, scaleW).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
 }

@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
@@ -94,7 +95,6 @@ public class KerasConvolution1D extends KerasConvolution {
 
         IWeightInit init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
-
         Convolution1DLayer.Builder builder = new Convolution1DLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
@@ -103,7 +103,7 @@ public class KerasConvolution1D extends KerasConvolution {
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
-                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
+                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]).rnnDataFormat(dimOrder == DimOrder.TENSORFLOW? RNNFormat.NWC: RNNFormat.NCW);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
         if (hasBias)
             builder.biasInit(0.0);
@@ -160,8 +160,8 @@ public class KerasConvolution1D extends KerasConvolution {
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
-                    "Keras LSTM layer accepts only one input (received " + inputType.length + ")");
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
+                    "Keras Conv1D layer accepts only one input (received " + inputType.length + ")");
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], RNNFormat.NCW,layerName);
     }
 
 

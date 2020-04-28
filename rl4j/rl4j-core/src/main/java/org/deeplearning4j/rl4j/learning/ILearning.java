@@ -28,9 +28,9 @@ import org.deeplearning4j.rl4j.space.Encodable;
  *
  * A common interface that any training method should implement
  */
-public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> {
+public interface ILearning<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>> {
 
-    IPolicy<O, A> getPolicy();
+    IPolicy<A> getPolicy();
 
     void train();
 
@@ -38,7 +38,7 @@ public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> {
 
     ILearningConfiguration getConfiguration();
 
-    MDP<O, A, AS> getMdp();
+    MDP<OBSERVATION, A, AS> getMdp();
 
     IHistoryProcessor getHistoryProcessor();
 

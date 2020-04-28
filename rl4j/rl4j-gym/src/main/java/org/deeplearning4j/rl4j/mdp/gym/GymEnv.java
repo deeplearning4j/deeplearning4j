@@ -19,8 +19,6 @@ package org.deeplearning4j.rl4j.mdp.gym;
 
 import java.io.IOException;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.Pointer;
@@ -31,8 +29,8 @@ import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.HighLowDiscrete;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
 
 import org.bytedeco.cpython.*;
@@ -47,7 +45,7 @@ import static org.bytedeco.numpy.global.numpy.*;
  * @author saudet
  */
 @Slf4j
-public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
+public class GymEnv<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>> implements MDP<OBSERVATION, A, AS> {
 
     public static final String GYM_MONITOR_DIR = "/tmp/gym-dqn";
 
@@ -82,7 +80,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
     private PyObject locals;
 
     final protected DiscreteSpace actionSpace;
-    final protected ObservationSpace<O> observationSpace;
+    final protected ObservationSpace<OBSERVATION> observationSpace;
     @Getter
     final private String envId;
     @Getter
@@ -119,7 +117,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
             for (int i = 0; i < shape.length; i++) {
                 shape[i] = (int)PyLong_AsLong(PyTuple_GetItem(shapeTuple, i));
             }
-            observationSpace = (ObservationSpace<O>) new ArrayObservationSpace<Box>(shape);
+            observationSpace = (ObservationSpace<OBSERVATION>) new ArrayObservationSpace<Box>(shape);
             Py_DecRef(shapeTuple);
 
             PyObject n = PyRun_StringFlags("env.action_space.n", Py_eval_input, globals, locals, null);
@@ -140,7 +138,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
     }
 
     @Override
-    public ObservationSpace<O> getObservationSpace() {
+    public ObservationSpace<OBSERVATION> getObservationSpace() {
         return observationSpace;
     }
 
@@ -153,7 +151,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
     }
 
     @Override
-    public StepReply<O> step(A action) {
+    public StepReply<OBSERVATION> step(A action) {
         int gstate = PyGILState_Ensure();
         try {
             if (render) {
@@ -186,7 +184,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
     }
 
     @Override
-    public O reset() {
+    public OBSERVATION reset() {
         int gstate = PyGILState_Ensure();
         try {
             Py_DecRef(PyRun_StringFlags("state = env.reset()", Py_single_input, globals, locals, null));
@@ -201,7 +199,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
 
             double[] data = new double[(int)stateData.capacity()];
             stateData.get(data);
-            return (O) new Box(data);
+            return (OBSERVATION) new Box(data);
         } finally {
             PyGILState_Release(gstate);
         }
@@ -220,7 +218,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
     }
 
     @Override
-    public GymEnv<O, A, AS> newInstance() {
-        return new GymEnv<O, A, AS>(envId, render, monitor);
+    public GymEnv<OBSERVATION, A, AS> newInstance() {
+        return new GymEnv<OBSERVATION, A, AS>(envId, render, monitor);
     }
 }

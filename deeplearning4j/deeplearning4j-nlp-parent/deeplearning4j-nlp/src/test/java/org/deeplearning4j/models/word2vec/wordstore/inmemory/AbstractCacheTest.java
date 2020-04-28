@@ -140,7 +140,7 @@ public class AbstractCacheTest extends BaseDL4JTest {
             unserialized = AbstractCache.fromJson(json);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
         assertEquals(cache.totalWordOccurrences(),unserialized.totalWordOccurrences());
@@ -175,7 +175,7 @@ public class AbstractCacheTest extends BaseDL4JTest {
             unserialized = AbstractCache.fromJson(json);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
         assertEquals(cache.totalWordOccurrences(),unserialized.totalWordOccurrences());

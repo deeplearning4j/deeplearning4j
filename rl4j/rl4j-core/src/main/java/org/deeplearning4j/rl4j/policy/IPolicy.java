@@ -7,8 +7,14 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-public interface IPolicy<O extends Encodable, A> {
-    <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp);
-    A nextAction(INDArray input);
-    A nextAction(Observation observation);
+public interface IPolicy<ACTION> {
+    @Deprecated
+    <O extends Encodable, AS extends ActionSpace<ACTION>> double play(MDP<O, ACTION, AS> mdp, IHistoryProcessor hp);
+
+    @Deprecated
+    ACTION nextAction(INDArray input);
+
+    ACTION nextAction(Observation observation);
+
+    void reset();
 }

@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -131,6 +132,13 @@ public class Deconvolution2D extends ConvolutionLayer {
 
         public Builder() {
             super();
+        }
+
+        private CNN2DFormat format = CNN2DFormat.NCHW;
+
+        public Builder format(CNN2DFormat format){
+            this.format = format;
+            return this;
         }
 
         @Override

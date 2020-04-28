@@ -28,6 +28,7 @@ import java.net.URLConnection;
 public abstract class AbstractFileResolvingResource extends AbstractResource {
     public AbstractFileResolvingResource() {}
 
+    @Override
     public File getFile() throws IOException {
         URL url = this.getURL();
         return url.getProtocol().startsWith("vfs")
@@ -35,6 +36,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
                         : ResourceUtils.getFile(url, this.getDescription());
     }
 
+    @Override
     protected File getFileForLastModifiedCheck() throws IOException {
         URL url = this.getURL();
         if (ResourceUtils.isJarURL(url)) {
@@ -53,6 +55,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
                         : ResourceUtils.getFile(uri, this.getDescription());
     }
 
+    @Override
     public boolean exists() {
         try {
             URL ex = this.getURL();
@@ -90,6 +93,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
         }
     }
 
+    @Override
     public boolean isReadable() {
         try {
             URL ex = this.getURL();
@@ -104,6 +108,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
         }
     }
 
+    @Override
     public long contentLength() throws IOException {
         URL url = this.getURL();
         if (ResourceUtils.isFileURL(url)) {
@@ -119,6 +124,7 @@ public abstract class AbstractFileResolvingResource extends AbstractResource {
         }
     }
 
+    @Override
     public long lastModified() throws IOException {
         URL url = this.getURL();
         if (!ResourceUtils.isFileURL(url) && !ResourceUtils.isJarURL(url)) {

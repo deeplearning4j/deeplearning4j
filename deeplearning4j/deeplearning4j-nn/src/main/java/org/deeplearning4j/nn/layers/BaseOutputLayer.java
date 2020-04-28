@@ -79,7 +79,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
-        double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
+        INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM);
+        double score = lossFunction.computeScore(labels2d, preOut,
                 layerConf().getActivationFn(), maskArray,false);
 
         if(conf().isMiniBatch())

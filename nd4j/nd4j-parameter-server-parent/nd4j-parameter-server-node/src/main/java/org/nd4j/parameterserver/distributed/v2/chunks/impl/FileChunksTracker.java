@@ -18,6 +18,7 @@ package org.nd4j.parameterserver.distributed.v2.chunks.impl;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * File-based implementation of ChunksTracker
  */
+@Slf4j
 public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T> {
     @Getter
     private final String originId;
@@ -114,7 +116,7 @@ public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T
         try (val fis = new FileInputStream(holder); val bis = new BufferedInputStream(fis)) {
             return SerializationUtils.deserialize(bis);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             throw new RuntimeException(e);
         }
     }

@@ -40,8 +40,8 @@ public class GymEnvTest {
         assertEquals(false, mdp.isDone());
         Box o = (Box)mdp.reset();
         StepReply r = mdp.step(0);
-        assertEquals(4, o.toArray().length);
-        assertEquals(4, ((Box)r.getObservation()).toArray().length);
+        assertEquals(4, o.getData().shape()[0]);
+        assertEquals(4, ((Box)r.getObservation()).getData().shape()[0]);
         assertNotEquals(null, mdp.newInstance());
         mdp.close();
     }

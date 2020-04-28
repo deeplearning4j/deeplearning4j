@@ -44,16 +44,30 @@ public class ArchiveUtils {
     }
 
     /**
-     * Extracts files to the specified destination
+     * Extracts all files from the archive to the specified destination.<br>
+     * Note: Logs the path of all extracted files by default. Use {@link #unzipFileTo(String, String, boolean)} if
+     * logging is not desired.<br>
+     * Can handle .zip, .jar, .tar.gz, .tgz, .tar, and .gz formats.
+     * Format is interpreted from the filename
      *
-     * @param file the file to extract to
-     * @param dest the destination directory
-     * @throws IOException
+     * @param file the file to extract the files from
+     * @param dest the destination directory. Will be created if it does not exist
+     * @throws IOException If an error occurs accessing the files or extracting
      */
     public static void unzipFileTo(String file, String dest) throws IOException {
         unzipFileTo(file, dest, true);
     }
 
+    /**
+     * Extracts all files from the archive to the specified destination, optionally logging the extracted file path.<br>
+     * Can handle .zip, .jar, .tar.gz, .tgz, .tar, and .gz formats.
+     * Format is interpreted from the filename
+     *
+     * @param file     the file to extract the files from
+     * @param dest     the destination directory. Will be created if it does not exist
+     * @param logFiles If true: log the path of every extracted file; if false do not log
+     * @throws IOException If an error occurs accessing the files or extracting
+     */
     public static void unzipFileTo(String file, String dest, boolean logFiles) throws IOException {
         File target = new File(file);
         if (!target.exists())

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.perf.listener;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import oshi.json.SystemInfo;
@@ -36,6 +37,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class SystemPolling {
 
     private ScheduledExecutorService scheduledExecutorService;
@@ -66,7 +68,7 @@ public class SystemPolling {
                 try {
                     objectMapper.writeValue(hardwareFile,hardwareMetric);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
             }
         },0,pollEveryMillis, TimeUnit.MILLISECONDS);

@@ -17,6 +17,7 @@
 package org.deeplearning4j.models.sequencevectors.listeners;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
@@ -34,6 +35,7 @@ import java.util.concurrent.Semaphore;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SerializingListener<T extends SequenceElement> implements VectorsListener<T> {
     private File targetFolder = new File("./");
     private String modelPrefix = "Model_";
@@ -96,7 +98,7 @@ public class SerializingListener<T extends SequenceElement> implements VectorsLi
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         } finally {
             locker.release();
         }

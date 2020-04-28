@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.exceptions;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -34,6 +35,7 @@ import static org.junit.Assert.fail;
 /**
  * A set of tests to ensure that useful exceptions are thrown on invalid network configurations
  */
+@Slf4j
 public class TestInvalidConfigurations extends BaseDL4JTest {
 
     public static MultiLayerNetwork getDensePlusOutput(int nIn, int nOut) {
@@ -78,7 +80,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testDenseNin0(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -96,7 +98,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testDenseNout0(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -109,7 +111,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testOutputLayerNin0(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -122,7 +124,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testRnnOutputLayerNin0(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -135,7 +137,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testLSTMNIn0(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -153,7 +155,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testLSTMNOut0(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -166,7 +168,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testConvolutionalNin0(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -185,7 +187,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testConvolutionalNOut0(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -216,7 +218,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testCnnInvalidConfigPaddingStridesHeight(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -245,7 +247,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testCnnInvalidConfigOrInput_SmallerDataThanKernel(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -277,7 +279,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testCnnInvalidConfigOrInput_BadStrides(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -318,7 +320,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testCnnInvalidConfigPaddingStridesWidth(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }
@@ -347,7 +349,7 @@ public class TestInvalidConfigurations extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testCnnInvalidConfigPaddingStridesWidthSubsampling(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
     }

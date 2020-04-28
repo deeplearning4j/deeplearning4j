@@ -31,6 +31,20 @@ namespace sd      {
 namespace ops       {
 namespace platforms {
 
+    dnnl::memory::format_tag get_format_tag(const sd::NDArray &array) {
+        switch (array.rankOf()) {
+            case 1:
+                return dnnl::memory::format_tag::ab;
+            case 2:
+                return array.ordering() == 'c' ? dnnl::memory::format_tag::ab : dnnl::memory::format_tag::ba;
+            case 3:
+                return array.ordering() == 'c' ? dnnl::memory::format_tag::abc : dnnl::memory::format_tag::cba;
+            default:
+                throw std::runtime_error("MKLDNN matmul only supports 2D/3D arrays");
+        }
+    }
+
+
 //////////////////////////////////////////////////////////////////////////
 static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const bool transX, const bool transY, float alpha = 1.f, float beta = 0.f) {
 
@@ -69,16 +83,14 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
           NDArray* zR =  xRank <= 3 ? z  : new NDArray(z->reshape(z->ordering(), {z->lengthOf() / (z->sizeAt(-2) * z->sizeAt(-1)), z->sizeAt(-2),  z->sizeAt(-1)})/*, false*/);
 
     // [M,K] x [K,N] = [M,N]
-    const int M  = (xRank > 1) ? xTR->sizeAt(-2) : 1;
-    const int K  = (xRank > 1) ? xTR->sizeAt(-1) : xTR->lengthOf();
-    const int N  = (yRank > 1) ? yTR->sizeAt(-1) : 1;
-    const int bS = (xRank > 2) ? xTR->sizeAt(0)  : 1;                   // [bS, M,K] x [bS, K,N] = [bS, M,N]
+    const int64_t M  = (xRank > 1) ? xTR->sizeAt(-2) : 1;
+    const int64_t K  = (xRank > 1) ? xTR->sizeAt(-1) : xTR->lengthOf();
+    const int64_t N  = (yRank > 1) ? yTR->sizeAt(-1) : 1;
+    const int64_t bS = (xRank > 2) ? xTR->sizeAt(0)  : 1;                   // [bS, M,K] x [bS, K,N] = [bS, M,N]
 
     dnnl::memory::dims xShape = xRank < 3 ? dnnl::memory::dims({M, K}) : dnnl::memory::dims({bS, M, K});
     dnnl::memory::dims yShape = xRank < 3 ? dnnl::memory::dims({K, N}) : dnnl::memory::dims({bS, K, N});
     dnnl::memory::dims zShape = xRank < 3 ? dnnl::memory::dims({M, N}) : dnnl::memory::dims({bS, M, N});
-
-    dnnl::memory::format_tag format = xRank < 3 ? dnnl::memory::format_tag::ab : dnnl::memory::format_tag::abc;
 
     // x type
     dnnl::memory::data_type xType;
@@ -114,9 +126,9 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     // memory descriptors for arrays
 
     // x
-    dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xShape, xType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, xType, format);
-    if(xTR->ews() != 1 || xTR->ordering() != 'c') {
+    dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xShape, xType, get_format_tag(*xTR));
+    dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, xType, get_format_tag(*xTR));
+    if(xTR->ews() != 1) {
         x_user_md.data.format_kind = dnnl_blocked;    // overrides format
         x_user_md.data.format_desc.blocking.strides[0] = xRank == 1 ? 1 : xTR->strideAt(0);
         x_user_md.data.format_desc.blocking.strides[1] = xRank == 1 ? xTR->strideAt(0) : xTR->strideAt(1);
@@ -125,9 +137,9 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     }
 
     // y
-    dnnl::memory::desc y_mkl_md  = dnnl::memory::desc(yShape, yType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc y_user_md = dnnl::memory::desc(yShape, yType, format);
-    if(yTR->ews() != 1 || yTR->ordering() != 'c') {
+    dnnl::memory::desc y_mkl_md  = dnnl::memory::desc(yShape, yType, get_format_tag(*yTR));
+    dnnl::memory::desc y_user_md = dnnl::memory::desc(yShape, yType, get_format_tag(*yTR));
+    if(yTR->ews() != 1) {
         y_user_md.data.format_kind = dnnl_blocked;    // overrides format
         y_user_md.data.format_desc.blocking.strides[0] = yRank == 1 ? 1 : yTR->strideAt(0);
         y_user_md.data.format_desc.blocking.strides[1] = yRank == 1 ? yTR->strideAt(0) : yTR->strideAt(1);
@@ -136,9 +148,9 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     }
 
     // z
-    dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zShape, zType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, zType, format);
-    if(zR->ews() != 1 || zR->ordering() != 'c') {
+    dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zShape, zType, get_format_tag(*zR));
+    dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, zType, get_format_tag(*zR));
+    if(zR->ews() != 1) {
         z_user_md.data.format_kind = dnnl_blocked;    // overrides format
         z_user_md.data.format_desc.blocking.strides[0] = zRank == 1 ? 1 : zR->strideAt(0);
         z_user_md.data.format_desc.blocking.strides[1] = zRank == 1 ? zR->strideAt(0) : zR->strideAt(1);
@@ -289,14 +301,20 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
 
     auto z = OUTPUT_VARIABLE(0);
 
-    const DataType xType = x->dataType();
-    const DataType yType = y->dataType();
-    const DataType zType = z->dataType();
+    const auto xType = x->dataType();
+    const auto yType = y->dataType();
+    const auto zType = z->dataType();
 
-    float alpha = block.numT() > 0 ? T_ARG(0) : 1.0;
-    float beta = block.numT() > 1 ? T_ARG(1) : 0.0;
+    float alpha = block.numT() > 0 ? T_ARG(0) : 1.0f;
+    float beta = block.numT() > 1 ? T_ARG(1) : 0.0f;
 
-    return !(z->ordering() == 'f' && beta != 0.f) && block.isUseMKLDNN() && x->rankOf() < 3 &&
+    // we're skipping if result order is F or arrays are not continuous
+    bool skip2D = z->rankOf() == 2 && (z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+
+    // we're skipping 3D cases if they are not C continuoys
+    bool skip3D = z->rankOf() == 3 && (x->ordering() == 'f' || y->ordering() == 'f' || z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+
+    return !skip2D && !skip3D && block.isUseMKLDNN() && x->rankOf() < 3 &&
           (
             (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
             (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||

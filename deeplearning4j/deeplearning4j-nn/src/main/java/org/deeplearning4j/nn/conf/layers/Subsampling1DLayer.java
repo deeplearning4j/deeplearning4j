@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Convolution1DUtils;
@@ -90,7 +91,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             outLength = Convolution1DUtils.getOutputSize(inputTsLength, kernelSize[0], stride[0], padding[0],
                             convolutionMode, dilation[0]);
         }
-        return InputType.recurrent(r.getSize(), outLength);
+        return InputType.recurrent(r.getSize(), outLength, r.getFormat());
     }
 
     @Override
@@ -105,7 +106,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
                             + "\"): input is null");
         }
 
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, RNNFormat.NCW, getLayerName());
     }
 
     @Override

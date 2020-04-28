@@ -262,7 +262,7 @@ public class BinarySerde {
         try (WritableByteChannel channel = Channels.newChannel(outputStream)) {
             channel.write(buffer);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 

@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -127,7 +128,7 @@ public class GlobalPoolingLayer extends NoParamLayer {
                 if (collapseDimensions) {
                     return InputType.feedForward(conv.getChannels());
                 } else {
-                    return InputType.convolutional(1, 1, conv.getChannels());
+                    return InputType.convolutional(1, 1, conv.getChannels(), conv.getFormat());
                 }
             case CNN3D:
                 InputType.InputTypeConvolutional3D conv3d = (InputType.InputTypeConvolutional3D) inputType;
@@ -150,7 +151,14 @@ public class GlobalPoolingLayer extends NoParamLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        //Not applicable
+        if(inputType.getType() == InputType.Type.CNN){
+            InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+            if(c.getFormat() == CNN2DFormat.NCHW){
+                poolingDimensions = new int[]{2,3};
+            } else {
+                poolingDimensions = new int[]{1,2};
+            }
+        }
     }
 
     @Override

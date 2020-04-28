@@ -39,6 +39,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -49,6 +50,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by raver on 08.06.2016.
  */
+@Slf4j
 public class ProtectedCudaConstantHandler implements ConstantHandler {
     private static ProtectedCudaConstantHandler ourInstance = new ProtectedCudaConstantHandler();
 

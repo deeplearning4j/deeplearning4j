@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -91,9 +92,19 @@ public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
     }
 
     private INDArray inputSubset(INDArray from){
-        //NCHW format
-        return from.get(all(), all(),
-                interval(cropping[0], from.size(2)-cropping[1]),
-                interval(cropping[2], from.size(3)-cropping[3]));
+        boolean nchw = layerConf().getDataFormat() == CNN2DFormat.NCHW;
+
+        if(nchw) {
+            //NCHW format
+            return from.get(all(), all(),
+                    interval(cropping[0], from.size(2) - cropping[1]),
+                    interval(cropping[2], from.size(3) - cropping[3]));
+        } else {
+            //NHWC
+            return from.get(all(),
+                    interval(cropping[0], from.size(1) - cropping[1]),
+                    interval(cropping[2], from.size(2) - cropping[3]),
+                    all());
+        }
     }
 }

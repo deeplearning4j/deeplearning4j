@@ -74,7 +74,10 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
         REQUIRE_TRUE(outSpatialDim >= 0, 0, "BatchToSpaceND: crop left/right values are too big and cause negative output spatial dimension/dimensions !");
     }
 
-    helpers::batchToSpaceND(block.launchContext(), *input, *blockShape, *crop, *output);
+    if (shape::strideDescendingCAscendingF(input->shapeInfo()))
+        helpers::batchToSpaceND(block.launchContext(), *input, *blockShape, *crop, *output);
+    else
+        helpers::batchToSpaceND(block.launchContext(), input->dup(), *blockShape, *crop, *output);
 
     return Status::OK();
 }

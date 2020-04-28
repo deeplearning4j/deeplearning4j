@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -56,12 +57,20 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class SpaceToDepthLayer extends NoParamLayer {
 
+    /**
+     * @deprecated Use {@link CNN2DFormat} instead
+     */
+    @Deprecated
     public enum DataFormat {
-        NCHW, NHWC
+        NCHW, NHWC;
+
+        public CNN2DFormat toFormat(){
+            return this == NCHW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
+        }
     }
 
     protected int blockSize;
-    protected DataFormat dataFormat;
+    protected CNN2DFormat dataFormat;
 
 
     protected SpaceToDepthLayer(Builder builder) {
@@ -108,7 +117,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         return InputType.convolutional(i.getHeight() / blockSize, i.getWidth() / blockSize,
-                        i.getChannels() * blockSize * blockSize);
+                        i.getChannels() * blockSize * blockSize, i.getFormat());
     }
 
     @Override
@@ -119,7 +128,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        //No op: space to batch layer doesn't have nIn value
+        this.dataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
     }
 
     @Override
@@ -147,7 +156,7 @@ public class SpaceToDepthLayer extends NoParamLayer {
         /**
          * Data format for input activations. Note DL4J uses NCHW in most cases
          */
-        protected DataFormat dataFormat = DataFormat.NCHW;
+        protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
         /**
          * @param blockSize Block size
@@ -160,7 +169,12 @@ public class SpaceToDepthLayer extends NoParamLayer {
          * @param blockSize Block size
          * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
          */
+        @Deprecated
         public Builder(int blockSize, DataFormat dataFormat) {
+            this(blockSize, dataFormat.toFormat());
+        }
+
+        public Builder(int blockSize, CNN2DFormat dataFormat) {
             this.setBlockSize(blockSize);
             this.setDataFormat(dataFormat);
         }
@@ -175,8 +189,20 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
         /**
          * @param dataFormat Data format for input activations. Note DL4J uses NCHW in most cases
+         * @deprecated Use {@link #dataFormat(CNN2DFormat)}
          */
+        @Deprecated
         public T dataFormat(DataFormat dataFormat) {
+            return dataFormat(dataFormat.toFormat());
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param dataFormat Format for activations (in and out)
+         */
+        public T dataFormat(CNN2DFormat dataFormat) {
             this.setDataFormat(dataFormat);
             return (T) this;
         }

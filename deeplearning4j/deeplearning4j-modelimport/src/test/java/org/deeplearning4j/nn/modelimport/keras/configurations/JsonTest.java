@@ -22,7 +22,6 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.KerasFlattenRnnPreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
-import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -34,8 +33,7 @@ public class JsonTest extends BaseDL4JTest {
         InputPreProcessor[] pp = new InputPreProcessor[] {
                 new KerasFlattenRnnPreprocessor(10, 5),
                 new PermutePreprocessor(new int[]{0,1,2}),
-                new ReshapePreprocessor(new long[]{10,10}, new long[]{100,1}),
-                new TensorFlowCnnToFeedForwardPreProcessor()
+                new ReshapePreprocessor(new long[]{10,10}, new long[]{100,1}, true, null)
 
         };
         for(InputPreProcessor p : pp ){

@@ -196,7 +196,7 @@ public abstract class Nd4jBackend {
             try {
                 Nd4jContext.getInstance().updateProperties(backend.getConfigurationResource().getInputStream());
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
             if(logInit) {

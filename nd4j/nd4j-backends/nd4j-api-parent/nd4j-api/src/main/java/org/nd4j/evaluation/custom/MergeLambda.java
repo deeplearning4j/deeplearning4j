@@ -16,8 +16,6 @@
 
 package org.nd4j.evaluation.custom;
 
-import org.nd4j.shade.guava.collect.Lists;
-
 import java.util.List;
 
 /**

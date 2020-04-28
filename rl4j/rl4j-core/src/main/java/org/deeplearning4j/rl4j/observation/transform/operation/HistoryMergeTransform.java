@@ -46,19 +46,20 @@ public class HistoryMergeTransform implements Operation<INDArray, INDArray>, Res
     private final HistoryMergeElementStore historyMergeElementStore;
     private final HistoryMergeAssembler historyMergeAssembler;
     private final boolean shouldStoreCopy;
-    private final boolean isFirstDimenstionBatch;
+    private final boolean isFirstDimensionBatch;
 
     private HistoryMergeTransform(Builder builder) {
         this.historyMergeElementStore = builder.historyMergeElementStore;
         this.historyMergeAssembler = builder.historyMergeAssembler;
         this.shouldStoreCopy = builder.shouldStoreCopy;
-        this.isFirstDimenstionBatch = builder.isFirstDimenstionBatch;
+        this.isFirstDimensionBatch = builder.isFirstDimenstionBatch;
     }
 
     @Override
     public INDArray transform(INDArray input) {
+
         INDArray element;
-        if(isFirstDimenstionBatch) {
+        if(isFirstDimensionBatch) {
             element = input.slice(0, 0);
         }
         else {
@@ -132,9 +133,9 @@ public class HistoryMergeTransform implements Operation<INDArray, INDArray>, Res
             return this;
         }
 
-        public HistoryMergeTransform build() {
+        public HistoryMergeTransform build(int frameStackLength) {
             if(historyMergeElementStore == null) {
-                historyMergeElementStore = new CircularFifoStore();
+                historyMergeElementStore = new CircularFifoStore(frameStackLength);
             }
 
             if(historyMergeAssembler == null) {

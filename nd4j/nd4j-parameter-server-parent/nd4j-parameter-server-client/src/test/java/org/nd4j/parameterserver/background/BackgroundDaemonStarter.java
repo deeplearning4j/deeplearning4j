@@ -123,7 +123,7 @@ public class BackgroundDaemonStarter {
                                 .redirectOutput(System.out).destroyOnExit().redirectError(System.err).execute()
                                 .getExitValue();
             } catch (TimeoutException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         } else {
             List<String> args2 = new ArrayList<>(
@@ -133,7 +133,7 @@ public class BackgroundDaemonStarter {
                 new ProcessExecutor().command(args2).destroyOnExit().readOutput(true).redirectOutput(System.out)
                                 .redirectError(System.err).execute().getExitValue();
             } catch (TimeoutException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
 

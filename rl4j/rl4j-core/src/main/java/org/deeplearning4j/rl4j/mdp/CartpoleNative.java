@@ -4,8 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
+import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
 
 import java.util.Random;
@@ -36,7 +36,7 @@ import java.util.Random;
 
  */
 
-public class CartpoleNative implements MDP<CartpoleNative.State, Integer, DiscreteSpace> {
+public class CartpoleNative implements MDP<Box, Integer, DiscreteSpace> {
     public enum KinematicsIntegrators { Euler, SemiImplicitEuler };
 
     private static final int NUM_ACTIONS = 2;
@@ -74,7 +74,7 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
     @Getter
     private DiscreteSpace actionSpace = new DiscreteSpace(NUM_ACTIONS);
     @Getter
-    private ObservationSpace<CartpoleNative.State> observationSpace = new ArrayObservationSpace(new int[] { OBSERVATION_NUM_FEATURES });
+    private ObservationSpace<Box> observationSpace = new ArrayObservationSpace(new int[] { OBSERVATION_NUM_FEATURES });
 
     public CartpoleNative() {
         rnd = new Random();
@@ -85,7 +85,7 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
     }
 
     @Override
-    public State reset() {
+    public Box reset() {
 
         x = 0.1 * rnd.nextDouble() - 0.05;
         xDot = 0.1 * rnd.nextDouble() - 0.05;
@@ -94,7 +94,7 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
         stepsBeyondDone = null;
         done = false;
 
-        return new State(new double[] { x, xDot, theta, thetaDot });
+        return new Box(x, xDot, theta, thetaDot);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
     }
 
     @Override
-    public StepReply<State> step(Integer action) {
+    public StepReply<Box> step(Integer action) {
         double force = action == ACTION_RIGHT ? forceMag : -forceMag;
         double cosTheta = Math.cos(theta);
         double sinTheta = Math.sin(theta);
@@ -143,26 +143,12 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
             reward = 0;
         }
 
-        return new StepReply<>(new State(new double[] { x, xDot, theta, thetaDot }), reward, done, null);
+        return new StepReply<>(new Box(x, xDot, theta, thetaDot), reward, done, null);
     }
 
     @Override
-    public MDP<State, Integer, DiscreteSpace> newInstance() {
+    public MDP<Box, Integer, DiscreteSpace> newInstance() {
         return new CartpoleNative();
     }
 
-    public static class State  implements Encodable {
-
-        private final double[] state;
-
-        State(double[] state) {
-
-            this.state = state;
-        }
-
-        @Override
-        public double[] toArray() {
-            return state;
-        }
-    }
 }

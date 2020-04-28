@@ -17,7 +17,7 @@ public class HistoryMergeTransformTest {
         HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .isFirstDimenstionBatch(false)
                 .elementStore(store)
-                .build();
+                .build(4);
         INDArray input = Nd4j.create(new double[] { 1.0, 2.0, 3.0 });
 
         // Act
@@ -35,7 +35,7 @@ public class HistoryMergeTransformTest {
         HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .isFirstDimenstionBatch(true)
                 .elementStore(store)
-                .build();
+                .build(4);
         INDArray input = Nd4j.create(new double[] { 1.0, 2.0, 3.0 }).reshape(1, 3);
 
         // Act
@@ -53,7 +53,7 @@ public class HistoryMergeTransformTest {
         HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .isFirstDimenstionBatch(true)
                 .elementStore(store)
-                .build();
+                .build(4);
         INDArray input = Nd4j.create(new double[] { 1.0, 2.0, 3.0 });
 
         // Act
@@ -70,7 +70,7 @@ public class HistoryMergeTransformTest {
         HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .shouldStoreCopy(false)
                 .elementStore(store)
-                .build();
+                .build(4);
         INDArray input = Nd4j.create(new double[] { 1.0, 2.0, 3.0 });
 
         // Act
@@ -87,7 +87,7 @@ public class HistoryMergeTransformTest {
         HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .shouldStoreCopy(true)
                 .elementStore(store)
-                .build();
+                .build(4);
         INDArray input = Nd4j.create(new double[] { 1.0, 2.0, 3.0 });
 
         // Act
@@ -107,7 +107,7 @@ public class HistoryMergeTransformTest {
         HistoryMergeTransform sut = HistoryMergeTransform.builder()
                 .elementStore(store)
                 .assembler(assemble)
-                .build();
+                .build(4);
         INDArray input = Nd4j.create(new double[] { 1.0, 2.0, 3.0 });
 
         // Act

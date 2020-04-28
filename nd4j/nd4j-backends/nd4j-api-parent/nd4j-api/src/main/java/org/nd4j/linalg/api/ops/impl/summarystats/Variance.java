@@ -165,10 +165,7 @@ public class Variance extends BaseReduceOp {
             return false;
 
         INDArray z = oc != null ? oc.getOutputArray(0) : z();
-        if (z != null && !z.isR())
-            return false;
-
-        return true;
+        return !(z != null && !z.isR());
     }
 
     @Override
@@ -201,6 +198,7 @@ public class Variance extends BaseReduceOp {
         return Type.VARIANCE;
     }
 
+    @Override
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
         //Variance and stdev reduction: Always FP out, but if FP in is float/double/half then it's float/double/half out

@@ -20,6 +20,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
@@ -65,6 +66,9 @@ public class TFOpLayer extends Layer {
         long[] shape = inputType.getShape(true);
         TFOpLayerImpl tempLayer = new TFOpLayerImpl(nodeDef, constants, null, null);
         long[] outputShape = tempLayer.getOutputShape(shape);
+        if (outputShape.length == 3){
+            return InputType.recurrent(outputShape[2], outputShape[1], RNNFormat.NWC);
+        }
         return InputType.inferInputType(Nd4j.create(outputShape));
 
     }

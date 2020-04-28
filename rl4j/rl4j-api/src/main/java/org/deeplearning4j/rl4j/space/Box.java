@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.rl4j.space;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
  *
@@ -25,13 +28,37 @@ package org.deeplearning4j.rl4j.space;
  */
 public class Box implements Encodable {
 
-    private final double[] array;
+    private final INDArray data;
 
-    public Box(double[] arr) {
-        this.array = arr;
+    public Box(double... arr) {
+        this.data = Nd4j.create(arr);
     }
 
+    public Box(int[] shape, double... arr) {
+        this.data = Nd4j.create(arr).reshape(shape);
+    }
+
+    private Box(INDArray toDup) {
+        data = toDup.dup();
+    }
+
+    @Override
     public double[] toArray() {
-        return array;
+        return data.data().asDouble();
+    }
+
+    @Override
+    public boolean isSkipped() {
+        return false;
+    }
+
+    @Override
+    public INDArray getData() {
+        return data;
+    }
+
+    @Override
+    public Encodable dup() {
+        return new Box(data);
     }
 }

@@ -23,7 +23,6 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.loss.bp.HuberLossBp;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**

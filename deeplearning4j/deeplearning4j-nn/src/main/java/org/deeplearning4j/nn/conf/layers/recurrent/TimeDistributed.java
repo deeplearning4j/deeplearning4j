@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
@@ -29,17 +30,19 @@ import java.util.Collection;
 @EqualsAndHashCode(callSuper = true)
 public class TimeDistributed extends BaseWrapperLayer {
 
-    private final int timeAxis;
+    private RNNFormat rnnDataFormat = RNNFormat.NCW;
 
     /**
      * @param underlying Underlying (internal) layer - should be a feed forward type such as DenseLayer
-     * @param timeAxis   Time axis, should be 2 for DL4J RNN activations (shape [minibatch, size, sequenceLength])
      */
-    public TimeDistributed(@JsonProperty("underlying") @NonNull Layer underlying, @JsonProperty("timeAxis") int timeAxis) {
+    public TimeDistributed(@JsonProperty("underlying") @NonNull Layer underlying, @JsonProperty("rnnDataFormat") RNNFormat rnnDataFormat) {
         super(underlying);
-        this.timeAxis = timeAxis;
+        this.rnnDataFormat = rnnDataFormat;
     }
 
+    public TimeDistributed(Layer underlying){
+        super(underlying);
+    }
 
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<TrainingListener> trainingListeners,
@@ -47,7 +50,7 @@ public class TimeDistributed extends BaseWrapperLayer {
         NeuralNetConfiguration conf2 = conf.clone();
         conf2.setLayer(((TimeDistributed) conf2.getLayer()).getUnderlying());
         return new TimeDistributedLayer(underlying.instantiate(conf2, trainingListeners, layerIndex, layerParamsView,
-                initializeParams, networkDataType), timeAxis);
+                initializeParams, networkDataType), rnnDataFormat);
     }
 
     @Override
@@ -59,7 +62,7 @@ public class TimeDistributed extends BaseWrapperLayer {
         InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
         InputType ff = InputType.feedForward(rnn.getSize());
         InputType ffOut = underlying.getOutputType(layerIndex, ff);
-        return InputType.recurrent(ffOut.arrayElementsPerExample(), rnn.getTimeSeriesLength());
+        return InputType.recurrent(ffOut.arrayElementsPerExample(), rnn.getTimeSeriesLength(), rnnDataFormat);
     }
 
     @Override
@@ -70,6 +73,7 @@ public class TimeDistributed extends BaseWrapperLayer {
 
         InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
         InputType ff = InputType.feedForward(rnn.getSize());
+        this.rnnDataFormat = rnn.getFormat();
         underlying.setNIn(ff, override);
     }
 

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.base.EmnistFetcher;
@@ -36,6 +37,7 @@ import java.util.Random;
  * @author Alex Black
  *
  */
+@Slf4j
 public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetcher {
 
     protected EmnistFetcher fetcher;
@@ -64,7 +66,7 @@ public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetche
         try {
             man = new MnistManager(images, labels, totalExamples);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             FileUtils.deleteDirectory(new File(EMNIST_ROOT));
             new EmnistFetcher(dataSet).downloadAndUntar();
             man = new MnistManager(images, labels, totalExamples);

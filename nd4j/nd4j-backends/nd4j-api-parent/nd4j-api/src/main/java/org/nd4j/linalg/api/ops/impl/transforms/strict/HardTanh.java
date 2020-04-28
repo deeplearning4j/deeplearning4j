@@ -16,18 +16,13 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
-import java.util.Collections;
-
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhBp;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**

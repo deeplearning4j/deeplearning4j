@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.fit.util.JCasUtil;
 import org.cleartk.token.type.Token;
@@ -32,6 +33,7 @@ import java.util.List;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class UimaTokenizer implements Tokenizer {
 
     private List<String> tokens;
@@ -66,7 +68,7 @@ public class UimaTokenizer implements Tokenizer {
 
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             throw new RuntimeException(e);
         }
 

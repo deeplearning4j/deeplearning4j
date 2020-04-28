@@ -26,16 +26,14 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -335,6 +333,98 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(exp, res);
     }
+
+    @Test
+    public void testMmapedWorkspaceLimits_1() throws Exception {
+        if (!Nd4j.getEnvironment().isCPU())
+            return;
+
+        val tmpFile = Files.createTempFile("some", "file");
+        val mmap = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L) // 200mbs
+                .tempFilePath(tmpFile.toAbsolutePath().toString())
+                .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            int twoHundredMbsOfFloats = 52_428_800; // 200mbs % 4
+            val addMoreFloats = true;
+            if (addMoreFloats) {
+                twoHundredMbsOfFloats += 1_000;
+            }
+
+            val x = Nd4j.rand(DataType.FLOAT, twoHundredMbsOfFloats);
+        }
+    }
+
+    @Test
+    public void testMmapedWorkspace_Path_Limits_1() throws Exception {
+        if (!Nd4j.getEnvironment().isCPU())
+            return;
+
+        // getting very long file name
+        val builder = new StringBuilder("long_file_name_");
+        for (int e = 0; e < 100; e++)
+            builder.append("9");
+
+
+        val tmpFile = Files.createTempFile("some", builder.toString());
+        val mmap = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L) // 200mbs
+                .tempFilePath(tmpFile.toAbsolutePath().toString())
+                .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            val x = Nd4j.rand(DataType.FLOAT, 1024);
+        }
+    }
+
+    @Test
+    public void testDeleteMappedFile_1() throws Exception {
+        if (!Nd4j.getEnvironment().isCPU())
+            return;
+
+        val tmpFile = Files.createTempFile("some", "file");
+        val mmap = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L) // 200mbs
+                .tempFilePath(tmpFile.toAbsolutePath().toString())
+                .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            val x = Nd4j.rand(DataType.FLOAT, 1024);
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+
+        Files.delete(tmpFile);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testDeleteMappedFile_2() throws Exception {
+        if (!Nd4j.getEnvironment().isCPU())
+            throw new IllegalArgumentException("Don't try to run on CUDA");
+
+        val tmpFile = Files.createTempFile("some", "file");
+        val mmap = WorkspaceConfiguration.builder()
+                .initialSize(200 * 1024L * 1024L) // 200mbs
+                .tempFilePath(tmpFile.toAbsolutePath().toString())
+                .policyLocation(LocationPolicy.MMAP)
+                .build();
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2")) {
+            val x = Nd4j.rand(DataType.FLOAT, 1024);
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+
+        Files.delete(tmpFile);
+    }
+
     @Override
     public char ordering() {
         return 'c';

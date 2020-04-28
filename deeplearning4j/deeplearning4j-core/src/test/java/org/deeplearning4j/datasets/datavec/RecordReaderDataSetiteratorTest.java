@@ -493,7 +493,7 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
                 out.println();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return new Pair<>(dArr,temp);

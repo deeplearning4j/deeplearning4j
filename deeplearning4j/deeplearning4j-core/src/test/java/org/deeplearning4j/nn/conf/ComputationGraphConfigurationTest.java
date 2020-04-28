@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -47,6 +48,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class ComputationGraphConfigurationTest extends BaseDL4JTest {
 
     @Test
@@ -150,7 +152,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
-            //e.printStackTrace();
+            log.info(e.toString());
         }
 
         // Use appendLayer on first layer
@@ -162,7 +164,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
-            //e.printStackTrace();
+            log.info(e.toString());
         }
 
         //Test no network inputs
@@ -174,7 +176,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
-            //e.printStackTrace();
+            log.info(e.toString());
         }
 
         //Test no network outputs
@@ -185,7 +187,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
-            //e.printStackTrace();
+            log.info(e.toString());
         }
 
         //Test: invalid input
@@ -197,7 +199,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
-            //e.printStackTrace();
+            log.info(e.toString());
         }
 
         //Test: graph with cycles
@@ -215,7 +217,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK - exception is good
-            //e.printStackTrace();
+            log.info(e.toString());
         }
 
         //Test: input != inputType count mismatch
@@ -241,7 +243,7 @@ public class ComputationGraphConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalArgumentException e) {
             //OK - exception is good
-            //e.printStackTrace();
+            log.info(e.toString());
         }
     }
 

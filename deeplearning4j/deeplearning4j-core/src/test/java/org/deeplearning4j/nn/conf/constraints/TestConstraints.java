@@ -96,8 +96,8 @@ public class TestConstraints extends BaseDL4JTest {
             } else if (lc instanceof NonNegativeConstraint) {
                 assertTrue(RW0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(RW0.norm2(1).minNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(RW0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
+                assertEquals(1.0, RW0.norm2(1).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, RW0.norm2(1).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -149,8 +149,8 @@ public class TestConstraints extends BaseDL4JTest {
             } else if (lc instanceof NonNegativeConstraint) {
                 assertTrue(b0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(b0.norm2(1).minNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(b0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
+                assertEquals(1.0, b0.norm2(1).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(1).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -201,8 +201,8 @@ public class TestConstraints extends BaseDL4JTest {
             } else if (lc instanceof NonNegativeConstraint) {
                 assertTrue(w0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(w0.norm2(1).minNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(w0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
+                assertEquals(1.0, w0.norm2(1).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, w0.norm2(1).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -259,10 +259,10 @@ public class TestConstraints extends BaseDL4JTest {
                 assertTrue(w0.minNumber().doubleValue() >= 0.0);
                 assertTrue(b0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(w0.norm2(1).minNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(w0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(b0.norm2(1).minNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(b0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
+                assertEquals(1.0, w0.norm2(1).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, w0.norm2(1).maxNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(1).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(1).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -320,10 +320,10 @@ public class TestConstraints extends BaseDL4JTest {
                 assertTrue(w0.minNumber().doubleValue() >= 0.0);
                 assertTrue(b0.minNumber().doubleValue() >= 0.0);
             } else if (lc instanceof UnitNormConstraint) {
-                assertEquals(w0.norm2(1).minNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(w0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(b0.norm2(1).minNumber().doubleValue(), 1.0, 1e-6);
-                assertEquals(b0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6);
+                assertEquals(1.0, w0.norm2(1).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, w0.norm2(1).maxNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(1).minNumber().doubleValue(), 1e-6);
+                assertEquals(1.0, b0.norm2(1).maxNumber().doubleValue(), 1e-6);
             }
 
             TestUtils.testModelSerialization(net);
@@ -378,10 +378,10 @@ public class TestConstraints extends BaseDL4JTest {
             } else if(lc instanceof NonNegativeConstraint ){
                 assertTrue(w0.minNumber().doubleValue() >= 0.0 );
             } else if(lc instanceof UnitNormConstraint ){
-                assertEquals(w0.norm2(1).minNumber().doubleValue(), 1.0, 1e-6 );
-                assertEquals(w0.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6 );
-                assertEquals(w1.norm2(1).minNumber().doubleValue(), 1.0, 1e-6 );
-                assertEquals(w1.norm2(1).maxNumber().doubleValue(), 1.0, 1e-6 );
+                assertEquals(1.0, w0.norm2(1).minNumber().doubleValue(),  1e-6 );
+                assertEquals(1.0, w0.norm2(1).maxNumber().doubleValue(), 1e-6 );
+                assertEquals(1.0, w1.norm2(1).minNumber().doubleValue(), 1e-6 );
+                assertEquals(1.0, w1.norm2(1).maxNumber().doubleValue(), 1e-6 );
             }
 
             TestUtils.testModelSerialization(net);

@@ -22,7 +22,6 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 import org.nd4j.linalg.util.ArrayUtil;
 

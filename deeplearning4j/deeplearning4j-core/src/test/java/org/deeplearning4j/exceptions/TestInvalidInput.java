@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.exceptions;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -36,6 +37,7 @@ import static org.junit.Assert.*;
 /**
  * A set of tests to ensure that useful exceptions are thrown on invalid input
  */
+@Slf4j
 public class TestInvalidInput extends BaseDL4JTest {
 
     @Test
@@ -53,7 +55,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testInputNinMismatchDense(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -73,7 +75,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testInputNinMismatchOutputLayer(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -94,7 +96,7 @@ public class TestInvalidInput extends BaseDL4JTest {
             //From loss function
             System.out.println("testLabelsNOutMismatchOutputLayer(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -115,7 +117,7 @@ public class TestInvalidInput extends BaseDL4JTest {
             //From loss function
             System.out.println("testLabelsNOutMismatchRnnOutputLayer(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -142,7 +144,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testInputNinMismatchConvolutional(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -169,7 +171,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testInputNinRank2Convolutional(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -195,7 +197,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testInputNinRank2Subsampling(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -217,7 +219,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testInputNinMismatchLSTM(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -238,7 +240,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testInputNinMismatchBidirectionalLSTM(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
 
@@ -260,7 +262,7 @@ public class TestInvalidInput extends BaseDL4JTest {
         } catch (DL4JException e) {
             System.out.println("testInputNinMismatchEmbeddingLayer(): " + e.getMessage());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Expected DL4JException");
         }
     }
@@ -305,7 +307,7 @@ public class TestInvalidInput extends BaseDL4JTest {
                 net.rnnTimeStep(Nd4j.create(5, 5, 10));
                 fail("Expected Exception - " + layerType);
             } catch (Exception e) {
-//                e.printStackTrace();
+                log.error("",e);
                 String msg = e.getMessage();
                 assertTrue(msg, msg != null && msg.contains("rnn") && msg.contains("batch"));
             }

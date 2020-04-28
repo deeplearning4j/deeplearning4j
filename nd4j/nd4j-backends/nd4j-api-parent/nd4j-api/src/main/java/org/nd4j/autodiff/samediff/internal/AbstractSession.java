@@ -132,7 +132,7 @@ public abstract class AbstractSession<T, O> {
         Preconditions.checkState(!variables.isEmpty() || !requiredActivations.isEmpty(), "Variables to perform forward pass for must not be empty");
 
         if (requiredActivations == null)
-            requiredActivations = Collections.emptyList();
+            requiredActivations = Collections.emptySet();
 
         if (at == null)
             at = At.defaultAt();

@@ -88,7 +88,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 log.info("Transform process initialized");
                 return ok(objectMapper.writeValueAsString(transform.getImageTransformProcess())).as(contentType);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
                 return internalServerError();
             }
         });
@@ -100,7 +100,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 log.info("Transform process initialized");
                 return ok(objectMapper.writeValueAsString(transformProcess)).as(contentType);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
                 return internalServerError();
             }
         });
@@ -112,7 +112,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                     return badRequest();
                 return ok(objectMapper.writeValueAsString(transformIncrementalArray(record))).as(contentType);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
                 return internalServerError();
             }
         });
@@ -130,7 +130,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
 
                 return ok(objectMapper.writeValueAsString(transformIncrementalArray(record))).as(contentType);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
                 return internalServerError();
             }
         });
@@ -142,7 +142,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                     return badRequest();
                 return ok(objectMapper.writeValueAsString(transformArray(batch))).as(contentType);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
                 return internalServerError();
             }
         });
@@ -169,7 +169,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
 
                 return ok(objectMapper.writeValueAsString(transformArray(batch))).as(contentType);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
                 return internalServerError();
             }
         });

@@ -235,7 +235,7 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
             InputSplit data = train ? inputSplit[0] : inputSplit[1];
             recordReader.initialize(data);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return recordReader;
     }
@@ -250,7 +250,7 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
             InputSplit data = train ? inputSplit[0] : inputSplit[1];
             recordReader.initialize(data);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return recordReader;
     }

@@ -109,7 +109,7 @@ namespace sd {
                 const DataType zType = z->dataType();
 
                 const int xRank = x->rankOf();
-                bool bSupportedRanks = !x->isEmpty() && xRank < 7 && (xType == DataType::FLOAT32 && zType == DataType::FLOAT32);
+                bool bSupportedRanks = !x->isEmpty() && xRank < 7 && xRank > 0 && (xType == DataType::FLOAT32 && zType == DataType::FLOAT32);
                 /*
                 Source     Destination
                 f32 	    f32
@@ -214,7 +214,7 @@ namespace sd {
                 const int xRank = x->rankOf();
                 const int dLdzRank = dLdz->rankOf();
 
-                bool bSupportedRanks = xRank < 7 && dLdzRank == xRank && (!x->isEmpty() && !dLdz->isEmpty());
+                bool bSupportedRanks = xRank < 7 && xRank > 0 && dLdzRank == xRank && (!x->isEmpty() && !dLdz->isEmpty());
                 bSupportedRanks &= (xType == DataType::FLOAT32 && dLdzType == DataType::FLOAT32 && dLdxType == DataType::FLOAT32);
 
                 if (bSupportedRanks) {

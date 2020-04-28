@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.ui;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.datavec.image.loader.LFWLoader;
 import org.deeplearning4j.datasets.iterator.impl.LFWDataSetIterator;
@@ -82,6 +83,7 @@ import static org.junit.Assert.fail;
  * @author raver119@gmail.com
  */
 @Ignore
+@Slf4j
 public class ManualTests {
 
     private static Logger log = LoggerFactory.getLogger(ManualTests.class);
@@ -258,7 +260,7 @@ public class ManualTests {
         try {
             ImageIO.write(imageToRender, "png", file);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
     }

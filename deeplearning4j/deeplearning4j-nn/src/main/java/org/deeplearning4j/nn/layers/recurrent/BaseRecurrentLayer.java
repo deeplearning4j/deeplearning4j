@@ -18,7 +18,10 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.BaseLayer;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -26,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer>
+public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer>
                 extends BaseLayer<LayerConfT> implements RecurrentLayer {
 
     /**
@@ -84,5 +87,20 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
         tBpttStateMap.clear();
         tBpttStateMap.putAll(state);
     }
+
+    public RNNFormat getDataFormat(){
+        return layerConf().getRnnDataFormat();
+    }
+
+    protected INDArray permuteIfNWC(INDArray arr){
+        if (arr == null){
+            return null;
+        }
+        if (getDataFormat() == RNNFormat.NWC){
+            return arr.permute(0, 2, 1);
+        }
+        return arr;
+    }
+
 
 }

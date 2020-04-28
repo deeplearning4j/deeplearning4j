@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -62,10 +63,12 @@ import java.util.Map;
 public class CnnLossLayer extends FeedForwardLayer {
 
     protected ILossFunction lossFn;
+    protected CNN2DFormat format = CNN2DFormat.NCHW;
 
     private CnnLossLayer(Builder builder) {
         super(builder);
         this.lossFn = builder.lossFn;
+        this.format = builder.format;
     }
 
     @Override
@@ -114,11 +117,15 @@ public class CnnLossLayer extends FeedForwardLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        //No op
+        if(inputType instanceof InputType.InputTypeConvolutional){
+            this.format = ((InputType.InputTypeConvolutional) inputType).getFormat();
+        }
     }
 
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
+
+        protected CNN2DFormat format = CNN2DFormat.NCHW;
 
         public Builder() {
             this.activationFn = Activation.IDENTITY.getActivationFunction();
@@ -130,6 +137,11 @@ public class CnnLossLayer extends FeedForwardLayer {
 
         public Builder(ILossFunction lossFunction) {
             this.lossFn = lossFunction;
+        }
+
+        public Builder format(CNN2DFormat format){
+            this.format = format;
+            return this;
         }
 
         @Override

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.normalization;
 
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -32,10 +33,11 @@ public interface BatchNormalizationHelper extends LayerHelper {
     boolean checkSupported(double eps, boolean fixedGammaBeta);
 
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, long[] shape, INDArray gamma, INDArray beta,
-                                              INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr);
+                                              INDArray dGammaView, INDArray dBetaView, double eps, CNN2DFormat format,
+                                              LayerWorkspaceMgr workspaceMgr);
 
     INDArray preOutput(INDArray x, boolean training, long[] shape, INDArray gamma, INDArray beta, INDArray mean,
-                    INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr);
+                    INDArray var, double decay, double eps, CNN2DFormat format, LayerWorkspaceMgr workspaceMgr);
 
     INDArray getMeanCache(DataType dataType);
 

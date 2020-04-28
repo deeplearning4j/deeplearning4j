@@ -110,7 +110,7 @@ public class LargeNdArrayIpcTest extends BaseND4JTest {
                 try {
                     subscriber.launch();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
 
             });

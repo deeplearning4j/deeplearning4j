@@ -68,7 +68,7 @@ public class AvgPooling3D extends Pooling3D {
         return config.toProperties();
     }
 
-
+    @Override
     public String getPoolingPrefix() {
         return "avg";
     }

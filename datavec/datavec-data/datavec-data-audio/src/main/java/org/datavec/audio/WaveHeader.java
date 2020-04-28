@@ -16,6 +16,8 @@
 
 package org.datavec.audio;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -25,6 +27,7 @@ import java.io.InputStream;
  * 
  * @author Jacquet Wong
  */
+@Slf4j
 public class WaveHeader {
 
     public static final String RIFF_HEADER = "RIFF";
@@ -109,7 +112,7 @@ public class WaveHeader {
             // dis.close();
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
             return false;
         }
 

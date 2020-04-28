@@ -25,9 +25,13 @@ import org.bytedeco.javacpp.IntPointer;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
+import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author saudet
@@ -70,10 +74,14 @@ public class ALEMDP implements MDP<ALEMDP.GameScreen, Integer, DiscreteSpace> {
         actions = new int[(int)a.limit()];
         a.get(actions);
 
+        int height = (int)ale.getScreen().height();
+        int width = (int)(int)ale.getScreen().width();
+
         discreteSpace = new DiscreteSpace(actions.length);
-        int[] shape = {(int)ale.getScreen().height(), (int)ale.getScreen().width(), 3};
+        int[] shape = {3, height, width};
         observationSpace = new ArrayObservationSpace<>(shape);
         screenBuffer = new byte[shape[0] * shape[1] * shape[2]];
+
     }
 
     public void setupGame() {
@@ -103,7 +111,7 @@ public class ALEMDP implements MDP<ALEMDP.GameScreen, Integer, DiscreteSpace> {
     public GameScreen reset() {
         ale.reset_game();
         ale.getScreenRGB(screenBuffer);
-        return new GameScreen(screenBuffer);
+        return new GameScreen(observationSpace.getShape(), screenBuffer);
     }
 
 
@@ -115,7 +123,8 @@ public class ALEMDP implements MDP<ALEMDP.GameScreen, Integer, DiscreteSpace> {
         double r = ale.act(actions[action]) * scaleFactor;
         log.info(ale.getEpisodeFrameNumber() + " " + r + " " + action + " ");
         ale.getScreenRGB(screenBuffer);
-        return new StepReply(new GameScreen(screenBuffer), r, ale.game_over(), null);
+
+        return new StepReply(new GameScreen(observationSpace.getShape(), screenBuffer), r, ale.game_over(), null);
     }
 
     public ObservationSpace<GameScreen> getObservationSpace() {
@@ -140,17 +149,35 @@ public class ALEMDP implements MDP<ALEMDP.GameScreen, Integer, DiscreteSpace> {
     }
 
     public static class GameScreen implements Encodable {
-        double[] array;
 
-        public GameScreen(byte[] screen) {
-            array = new double[screen.length];
-            for (int i = 0; i < screen.length; i++) {
-                array[i] = (screen[i] & 0xFF) / 255.0;
-            }
+        final INDArray data;
+        public GameScreen(int[] shape, byte[] screen) {
+
+            data = Nd4j.create(screen, new long[] {shape[1], shape[2], 3}, DataType.UINT8).permute(2,0,1);
         }
 
+        private GameScreen(INDArray toDup) {
+            data = toDup.dup();
+        }
+
+        @Override
         public double[] toArray() {
-            return array;
+            return data.data().asDouble();
+        }
+
+        @Override
+        public boolean isSkipped() {
+            return false;
+        }
+
+        @Override
+        public INDArray getData() {
+            return data;
+        }
+
+        @Override
+        public GameScreen dup() {
+            return new GameScreen(data);
         }
     }
 }

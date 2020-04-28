@@ -930,6 +930,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         WorkspaceConfiguration mmap = WorkspaceConfiguration.builder()
                 .initialSize(1000000)
                 .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
                 .build();
 
         MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2");

@@ -16,6 +16,9 @@
 
 package org.nd4j.config;
 
+import java.io.File;
+import java.net.URL;
+
 public class ND4JSystemProperties {
 
     /**
@@ -124,6 +127,22 @@ public class ND4JSystemProperties {
      * This is generally used for resolving test resources, but can be used for Strumpf resource files generally.
      */
     public static final String RESOURCES_CACHE_DIR = "org.nd4j.test.resources.cache.dir";
+
+    /**
+     * Applicability: nd4j-common {@link org.nd4j.resources.Resources} class (and hence {@link org.nd4j.resources.strumpf.StrumpfResolver})<br>
+     * Description: When resolving resources from a Strumpf resource file (Example: {@code Resources.asFile("myFile.txt")}
+     * what should be the connection timeout, as used by {@link org.apache.commons.io.FileUtils#copyURLToFile(URL, File, int, int)}<br>
+     * Default: {@link org.nd4j.resources.strumpf.ResourceFile#DEFAULT_CONNECTION_TIMEOUT}
+     */
+    public static final String RESOURCES_CONNECTION_TIMEOUT = "org.nd4j.resources.download.connectiontimeout";
+
+    /**
+     * Applicability: nd4j-common {@link org.nd4j.resources.Resources} class (and hence {@link org.nd4j.resources.strumpf.StrumpfResolver})<br>
+     * Description: When resolving resources from a Strumpf resource file (Example: {@code Resources.asFile("myFile.txt")}
+     * what should be the connection timeout, as used by {@link org.apache.commons.io.FileUtils#copyURLToFile(URL, File, int, int)}<br>
+     * Default: {@link org.nd4j.resources.strumpf.ResourceFile#DEFAULT_READ_TIMEOUT}
+     */
+    public static final String RESOURCES_READ_TIMEOUT = "org.nd4j.resources.download.readtimeout";
 
     /**
      * Applicability: nd4j-common {@link org.nd4j.resources.Resources} class (and hence {@link org.nd4j.resources.strumpf.StrumpfResolver})<br>

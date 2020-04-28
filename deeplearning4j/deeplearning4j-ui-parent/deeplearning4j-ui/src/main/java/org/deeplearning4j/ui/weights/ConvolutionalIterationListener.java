@@ -17,6 +17,7 @@
 package org.deeplearning4j.ui.weights;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.datavec.image.loader.ImageLoader;
 import org.deeplearning4j.api.storage.Persistable;
@@ -49,6 +50,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ConvolutionalIterationListener extends BaseTrainingListener {
 
     private enum Orientation {
@@ -661,7 +663,7 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         try {
             ImageIO.write(renderImageGrayscale(array), "png", file);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 
@@ -670,7 +672,7 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         try {
             ImageIO.write(image, "png", file);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
     }

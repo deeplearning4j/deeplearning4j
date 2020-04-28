@@ -20,6 +20,7 @@ package org.nd4j.linalg.factory.ops;
 
 import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -270,5 +271,52 @@ public class NDLinalg {
   public INDArray svd(INDArray input, boolean fullUV, boolean computeUV) {
     NDValidation.validateNumerical("svd", "input", input);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Svd(input, fullUV, computeUV, 16))[0];
+  }
+
+  /**
+   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   *
+   * @param dataType Data type
+   * @param row 
+   * @param column 
+   * @param diagonal 
+   * @return output  (FLOATING_POINT type)
+   */
+  public INDArray tri(DataType dataType, int row, int column, int diagonal) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Tri(dataType, row, column, diagonal))[0];
+  }
+
+  /**
+   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   *
+   * @param row 
+   * @param column 
+   * @return output  (FLOATING_POINT type)
+   */
+  public INDArray tri(int row, int column) {
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Tri(DataType.FLOAT, row, column, 0))[0];
+  }
+
+  /**
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   *
+   * @param input  (NUMERIC type)
+   * @param diag 
+   * @return output  (FLOATING_POINT type)
+   */
+  public INDArray triu(INDArray input, int diag) {
+    NDValidation.validateNumerical("triu", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Triu(input, diag))[0];
+  }
+
+  /**
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   *
+   * @param input  (NUMERIC type)
+   * @return output  (FLOATING_POINT type)
+   */
+  public INDArray triu(INDArray input) {
+    NDValidation.validateNumerical("triu", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.custom.Triu(input, 0))[0];
   }
 }

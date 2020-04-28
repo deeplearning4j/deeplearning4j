@@ -18,6 +18,7 @@ package org.datavec.api.records.reader.impl;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.datavec.api.conf.Configuration;
@@ -43,6 +44,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class LineRecordReader extends BaseRecordReader {
 
 
@@ -58,6 +60,13 @@ public class LineRecordReader extends BaseRecordReader {
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
         super.initialize(split);
+        if(!(inputSplit instanceof StringSplit || inputSplit instanceof InputStreamInputSplit)){
+            final ArrayList<URI> uris = new ArrayList<>();
+            final Iterator<URI> uriIterator = inputSplit.locationsIterator();
+            while(uriIterator.hasNext()) uris.add(uriIterator.next());
+
+            this.locations = uris.toArray(new URI[0]);
+        }
         this.iter = getIterator(0);
         this.initialized = true;
     }
@@ -66,7 +75,6 @@ public class LineRecordReader extends BaseRecordReader {
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         this.conf = conf;
         initialize(split);
-        this.initialized = true;
     }
 
     @Override
@@ -89,7 +97,7 @@ public class LineRecordReader extends BaseRecordReader {
                     iter = getIterator(splitIndex);
                     onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
 
                 if (iter.hasNext()) {
@@ -120,7 +128,7 @@ public class LineRecordReader extends BaseRecordReader {
                     iter = getIterator(splitIndex);
                     onLocationOpen(locations[splitIndex]);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
 
                 return iter.hasNext();
@@ -205,11 +213,6 @@ public class LineRecordReader extends BaseRecordReader {
                 }
             }
         } else {
-            final ArrayList<URI> uris = new ArrayList<>();
-            final Iterator<URI> uriIterator = inputSplit.locationsIterator();
-            while(uriIterator.hasNext()) uris.add(uriIterator.next());
-
-            this.locations = uris.toArray(new URI[uris.size()]);
             if (locations.length > 0) {
                 InputStream inputStream = streamCreatorFn.apply(locations[location]);
                 try {

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce.bp;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -26,7 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Alex Black
  */
-
+@NoArgsConstructor
 public class VarianceBp extends BaseReductionBp {
 
     private boolean biasCorrected;
@@ -42,8 +43,6 @@ public class VarianceBp extends BaseReductionBp {
         this.biasCorrected = biasCorrected;
         addTArgument(biasCorrected ? 1.0 : 0.0);
     }
-
-    public VarianceBp(){}
 
     @Override
     public String opName() {

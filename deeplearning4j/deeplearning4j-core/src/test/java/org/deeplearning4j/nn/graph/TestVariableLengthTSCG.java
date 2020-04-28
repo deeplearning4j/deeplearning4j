@@ -416,8 +416,8 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                     INDArray outRow2 = out2.get(NDArrayIndex.point(i), NDArrayIndex.all(),
                                                     NDArrayIndex.point(j));
                                     for (int k = 0; k < nOut; k++) {
-                                        assertEquals(outRow.getDouble(k), 0.0, 0.0);
-                                        assertEquals(outRow2.getDouble(k), 0.0, 0.0);
+                                        assertEquals(0.0, outRow.getDouble(k), 0.0);
+                                        assertEquals(0.0, outRow2.getDouble(k), 0.0);
                                     }
                                 }
                             }

@@ -20,10 +20,13 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,8 +39,18 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
+@RunWith(Parameterized.class)
 public class TestSimpleRnn extends BaseDL4JTest {
 
+    private RNNFormat rnnDataFormat;
+
+    public TestSimpleRnn(RNNFormat rnnDataFormat){
+        this.rnnDataFormat = rnnDataFormat;
+    }
+    @Parameterized.Parameters
+    public static Object[] params(){
+        return RNNFormat.values();
+    }
     @Test
     public void testSimpleRnn(){
         Nd4j.getRandom().setSeed(12345);
@@ -46,15 +59,21 @@ public class TestSimpleRnn extends BaseDL4JTest {
         int nIn = 5;
         int layerSize = 6;
         int tsLength = 7;
-        INDArray in = Nd4j.rand(DataType.FLOAT, new int[]{m, nIn, tsLength});
-//        in.get(all(), all(), interval(1,tsLength)).assign(0);
+        INDArray in;
+        if (rnnDataFormat == RNNFormat.NCW){
+            in = Nd4j.rand(DataType.FLOAT, m, nIn, tsLength);
+        }
+        else{
+            in = Nd4j.rand(DataType.FLOAT, m, tsLength, nIn);
+        }
+
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .updater(new NoOp())
                 .weightInit(WeightInit.XAVIER)
                 .activation(Activation.TANH)
                 .list()
-                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).build())
+                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).dataFormat(rnnDataFormat).build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -68,7 +87,13 @@ public class TestSimpleRnn extends BaseDL4JTest {
 
         INDArray outLast = null;
         for( int i=0; i<tsLength; i++ ){
-            INDArray inCurrent = in.get(all(), all(), point(i));
+            INDArray inCurrent;
+            if (rnnDataFormat == RNNFormat.NCW){
+                inCurrent = in.get(all(), all(), point(i));
+            }
+            else{
+                inCurrent = in.get(all(), point(i), all());
+            }
 
             INDArray outExpCurrent = inCurrent.mmul(w);
             if(outLast != null){
@@ -79,7 +104,13 @@ public class TestSimpleRnn extends BaseDL4JTest {
 
             Transforms.tanh(outExpCurrent, false);
 
-            INDArray outActCurrent = out.get(all(), all(), point(i));
+            INDArray outActCurrent;
+            if (rnnDataFormat == RNNFormat.NCW){
+                outActCurrent = out.get(all(), all(), point(i));
+            }
+            else{
+                outActCurrent = out.get(all(), point(i), all());
+            }
             assertEquals(String.valueOf(i), outExpCurrent, outActCurrent);
 
             outLast = outExpCurrent;
@@ -100,7 +131,7 @@ public class TestSimpleRnn extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .activation(Activation.TANH)
                 .list()
-                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize)
+                .layer(new SimpleRnn.Builder().nIn(nIn).nOut(layerSize).dataFormat(rnnDataFormat)
                         .biasInit(100)
                         .build())
                 .build();

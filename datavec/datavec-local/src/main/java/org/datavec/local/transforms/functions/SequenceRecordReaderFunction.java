@@ -17,6 +17,7 @@
 package org.datavec.local.transforms.functions;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.function.Function;
@@ -32,6 +33,7 @@ import java.util.List;
  * sequence data into a {@code List<List<Writable>>}
  * @author Alex Black
  */
+@Slf4j
 public class SequenceRecordReaderFunction
                 implements Function<Pair<String, InputStream>, List<List<Writable>>> {
     protected SequenceRecordReader sequenceRecordReader;
@@ -46,7 +48,7 @@ public class SequenceRecordReaderFunction
         try (DataInputStream dis = (DataInputStream) value.getRight()) {
             return sequenceRecordReader.sequenceRecord(uri, dis);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         throw new IllegalStateException("Something went wrong");

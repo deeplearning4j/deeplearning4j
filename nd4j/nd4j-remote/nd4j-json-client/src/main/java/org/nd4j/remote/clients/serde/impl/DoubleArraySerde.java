@@ -17,13 +17,6 @@
 package org.nd4j.remote.clients.serde.impl;
 
 import lombok.*;
-import org.nd4j.remote.clients.serde.JsonDeserializer;
-import org.nd4j.remote.clients.serde.JsonSerializer;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-
-import java.io.IOException;
-
 /**
  * This class provides JSON ser/de for Java double[]
  */

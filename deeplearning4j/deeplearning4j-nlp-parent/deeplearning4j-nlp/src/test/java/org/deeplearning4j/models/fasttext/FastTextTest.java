@@ -177,7 +177,7 @@ public class FastTextTest extends BaseDL4JTest {
             fastText.loadIterator();
 
         } catch (IOException e) {
-            log.error(e.toString());
+            log.error("",e);
         }
     }
 

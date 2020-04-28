@@ -162,14 +162,14 @@ public class RegressionTest060 extends BaseDL4JTest {
         assertArrayEquals(new int[] {2, 2}, l0.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l0.getStride());
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());
-        assertEquals(l0.getConvolutionMode(), ConvolutionMode.Truncate); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
+        assertEquals(ConvolutionMode.Truncate, l0.getConvolutionMode()); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
         SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1).getLayer();
         assertArrayEquals(new int[] {2, 2}, l1.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l1.getStride());
         assertArrayEquals(new int[] {0, 0}, l1.getPadding());
         assertEquals(PoolingType.MAX, l1.getPoolingType());
-        assertEquals(l1.getConvolutionMode(), ConvolutionMode.Truncate); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
+        assertEquals(ConvolutionMode.Truncate, l1.getConvolutionMode()); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
         OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
         assertEquals("sigmoid", l2.getActivationFn().toString());

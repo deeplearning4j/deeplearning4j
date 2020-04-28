@@ -20,8 +20,8 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
-import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,7 +35,7 @@ import java.io.IOException;
  * the softmax output of the actor critic, but objects constructed
  * with a {@link Random} argument of null return the max only.
  */
-public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
+public class ACPolicy<OBSERVATION extends Encodable> extends Policy<Integer> {
 
     final private IActorCritic actorCritic;
     Random rnd;
@@ -48,18 +48,18 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
         this.rnd = rnd;
     }
 
-    public static <O extends Encodable> ACPolicy<O> load(String path) throws IOException {
-        return new ACPolicy<O>(ActorCriticCompGraph.load(path));
+    public static <OBSERVATION extends Encodable> ACPolicy<OBSERVATION> load(String path) throws IOException {
+        return new ACPolicy<>(ActorCriticCompGraph.load(path));
     }
-    public static <O extends Encodable> ACPolicy<O> load(String path, Random rnd) throws IOException {
-        return new ACPolicy<O>(ActorCriticCompGraph.load(path), rnd);
+    public static <OBSERVATION extends Encodable> ACPolicy<OBSERVATION> load(String path, Random rnd) throws IOException {
+        return new ACPolicy<>(ActorCriticCompGraph.load(path), rnd);
     }
 
-    public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy) throws IOException {
-        return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy));
+    public static <OBSERVATION extends Encodable> ACPolicy<OBSERVATION> load(String pathValue, String pathPolicy) throws IOException {
+        return new ACPolicy<>(ActorCriticSeparate.load(pathValue, pathPolicy));
     }
-    public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy, Random rnd) throws IOException {
-        return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy), rnd);
+    public static <OBSERVATION extends Encodable> ACPolicy<OBSERVATION> load(String pathValue, String pathPolicy, Random rnd) throws IOException {
+        return new ACPolicy<>(ActorCriticSeparate.load(pathValue, pathPolicy), rnd);
     }
 
     public IActorCritic getNeuralNet() {

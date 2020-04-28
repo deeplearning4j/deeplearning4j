@@ -47,6 +47,7 @@ public class BinomialDistribution extends BaseRandomOp {
 
     public BinomialDistribution(SameDiff sd, int trials, double probability, DataType dataType, long[] shape){
         this(sd, trials, probability, shape);
+        super.dataType = dataType;
     }
 
     public BinomialDistribution(int trials, double probability, DataType dt, long[] shape){

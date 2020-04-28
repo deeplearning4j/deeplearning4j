@@ -1,5 +1,6 @@
 package org.deeplearning4j.remote;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.datavec.image.loader.Java2DNativeImageLoader;
 import org.deeplearning4j.BaseDL4JTest;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import static org.deeplearning4j.parallelism.inference.InferenceMode.SEQUENTIAL;
 import static org.junit.Assert.*;
 
+@Slf4j
 public class BinaryModelServerTest extends BaseDL4JTest {
     private final int PORT = 18080;
 
@@ -120,7 +122,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
             assertEquals(new Integer(1), result);
 
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();
@@ -189,7 +191,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
             assertEquals(new Integer(1), results[2].get());
 
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();
@@ -244,7 +246,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
             assertEquals(28, result.getWidth());
 
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();

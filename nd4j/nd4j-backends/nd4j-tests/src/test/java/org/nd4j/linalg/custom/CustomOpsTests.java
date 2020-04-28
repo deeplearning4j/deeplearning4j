@@ -1826,4 +1826,78 @@ public class CustomOpsTests extends BaseNd4jTest {
 
     }
 
+    @Test
+    public void testBatchNormBpNHWC(){
+        //Nd4j.getEnvironment().allowHelpers(false);        //Passes if helpers/MKLDNN is disabled
+
+        INDArray in = Nd4j.rand(DataType.FLOAT, 2, 4, 4, 3);
+        INDArray eps = Nd4j.rand(DataType.FLOAT, in.shape());
+        INDArray epsStrided = eps.permute(1,0,2,3).dup().permute(1,0,2,3);
+        INDArray mean = Nd4j.rand(DataType.FLOAT, 3);
+        INDArray var = Nd4j.rand(DataType.FLOAT, 3);
+        INDArray gamma = Nd4j.rand(DataType.FLOAT, 3);
+        INDArray beta = Nd4j.rand(DataType.FLOAT, 3);
+
+        assertEquals(eps, epsStrided);
+
+        INDArray out1eps = in.like();
+        INDArray out1m = mean.like();
+        INDArray out1v = var.like();
+
+        INDArray out2eps = in.like();
+        INDArray out2m = mean.like();
+        INDArray out2v = var.like();
+
+        DynamicCustomOp op1 = DynamicCustomOp.builder("batchnorm_bp")
+                .addInputs(in, mean, var, gamma, beta, eps)
+                .addOutputs(out1eps, out1m, out1v)
+                .addIntegerArguments(1, 1, 3)
+                .addFloatingPointArguments(1e-5)
+                .build();
+
+        DynamicCustomOp op2 = DynamicCustomOp.builder("batchnorm_bp")
+                .addInputs(in, mean, var, gamma, beta, epsStrided)
+                .addOutputs(out2eps, out2m, out2v)
+                .addIntegerArguments(1, 1, 3)
+                .addFloatingPointArguments(1e-5)
+                .build();
+
+        Nd4j.exec(op1);
+        Nd4j.exec(op2);
+
+        assertEquals(out1eps, out2eps);        //Fails here
+        assertEquals(out1m, out2m);
+        assertEquals(out1v, out2v);
+    }
+
+    @Test
+    public void testSpaceToDepthBadStrides(){
+        INDArray in = Nd4j.rand(DataType.FLOAT, 2, 3, 6, 6);
+        INDArray inBadStrides = in.permute(1,0,2,3).dup().permute(1,0,2,3);
+        assertEquals(in, inBadStrides);
+
+        System.out.println("in: " + in.shapeInfoToString());
+        System.out.println("inBadStrides: " + inBadStrides.shapeInfoToString());
+
+
+        INDArray out = Nd4j.create(DataType.FLOAT, 2, 12, 3, 3);
+        INDArray out2 = out.like();
+
+
+        CustomOp op1 = DynamicCustomOp.builder("space_to_depth")
+                .addInputs(in)
+                .addIntegerArguments(2, 0)       //nchw = 0, nhwc = 1
+                .addOutputs(out)
+                .build();
+        Nd4j.exec(op1);
+
+        CustomOp op2 = DynamicCustomOp.builder("space_to_depth")
+                .addInputs(inBadStrides)
+                .addIntegerArguments(2, 0)       //nchw = 0, nhwc = 1
+                .addOutputs(out2)
+                .build();
+        Nd4j.exec(op2);
+
+        assertEquals(out, out2);
+    }
 }

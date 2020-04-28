@@ -459,7 +459,7 @@ public class ArrayUtil {
      * @return the sum of this array
      */
     public static int sum(List<Integer> add) {
-        if (add.size() < 1)
+        if (add.isEmpty())
             return 0;
         int ret = 0;
         for (int i = 0; i < add.size(); i++)
@@ -498,7 +498,7 @@ public class ArrayUtil {
      * @return the product of this array
      */
     public static int prod(List<Integer> mult) {
-        if (mult.size() < 1)
+        if (mult.isEmpty())
             return 0;
         int ret = 1;
         for (int i = 0; i < mult.size(); i++)
@@ -546,7 +546,7 @@ public class ArrayUtil {
      * @return the product of this array
      */
     public static long prodLong(List<? extends Number> mult) {
-        if (mult.size() < 1)
+        if (mult.isEmpty())
             return 0;
         long ret = 1;
         for (int i = 0; i < mult.size(); i++)
@@ -1383,7 +1383,7 @@ public class ArrayUtil {
 
 
         long[] oldShapeB;
-        if (listB.size() == 0) {
+        if (listB.isEmpty()) {
             oldShapeB = new long[] {1};
         } else {
             oldShapeB = Longs.toArray(listB);
@@ -2965,7 +2965,7 @@ public class ArrayUtil {
 
         // now all even elements will be interleaved with odd elements
         for (int i = 0; i < result.length; i++) {
-            if (i % 2 == 0 && indexes.size() >= 1) {
+            if (i % 2 == 0 && !indexes.isEmpty()) {
                 int idx = indexes.get(0);
                 indexes.remove(0);
                 result[i] = idx;
@@ -3004,7 +3004,7 @@ public class ArrayUtil {
 
         // now all even elements will be interleaved with odd elements
         for (int i = 0; i < result.length; i++) {
-            if (i % 2 == 0 && indexes.size() >= 1) {
+            if (i % 2 == 0 && !indexes.isEmpty()) {
                 int idx = indexes.get(0);
                 indexes.remove(0);
                 result[i] = idx;
@@ -3132,7 +3132,7 @@ public class ArrayUtil {
 
 
     public static <T> T getRandomElement(List<T> list) {
-        if (list.size() < 1)
+        if (list.isEmpty())
             return null;
 
         return list.get(RandomUtils.nextInt(0, list.size()));

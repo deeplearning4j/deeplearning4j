@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.datavec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.Function;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.io.converters.WritableConverterException;
@@ -36,6 +37,7 @@ import java.util.List;
  * Analogous to {@link RecordReaderDataSetIterator}, but in the context of Spark.
  * @author Alex Black
  */
+@Slf4j
 public class DataVecDataSetFunction implements Function<List<Writable>, DataSet>, Serializable {
 
     private final int labelIndex;
@@ -129,7 +131,8 @@ public class DataVecDataSetFunction implements Function<List<Writable>, DataSet>
                     try {
                         current = converter.convert(current);
                     } catch (WritableConverterException e) {
-                        e.printStackTrace();
+
+                        log.error("",e);
                     }
                 }
                 if (regression) {

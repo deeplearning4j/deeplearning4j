@@ -176,14 +176,14 @@ public class RegressionTest080 extends BaseDL4JTest {
         assertArrayEquals(new int[] {2, 2}, l0.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l0.getStride());
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());
-        assertEquals(l0.getConvolutionMode(), ConvolutionMode.Same);
+        assertEquals(ConvolutionMode.Same, l0.getConvolutionMode());
 
         SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1).getLayer();
         assertArrayEquals(new int[] {2, 2}, l1.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l1.getStride());
         assertArrayEquals(new int[] {0, 0}, l1.getPadding());
         assertEquals(PoolingType.MAX, l1.getPoolingType());
-        assertEquals(l1.getConvolutionMode(), ConvolutionMode.Same);
+        assertEquals(ConvolutionMode.Same, l1.getConvolutionMode());
 
         OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
         assertTrue(l2.getActivationFn() instanceof ActivationSigmoid);

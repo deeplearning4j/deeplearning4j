@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -560,75 +561,81 @@ public class GradientCheckTests extends BaseDL4JTest {
     public void testEmbeddingSequenceLayer(){
         Nd4j.getRandom().setSeed(12345);
 
-        for(boolean maskArray : new boolean[]{false, true}){
-            for(int inputRank : new int[]{2,3}) {
+        for(RNNFormat seqOutputFormat : RNNFormat.values()) {
+            for (boolean maskArray : new boolean[]{false, true}) {
+                for (int inputRank : new int[]{2, 3}) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .dataType(DataType.DOUBLE)
-                        .seed(12345)
-                        .updater(new NoOp())
-                        .weightInit(new NormalDistribution(0, 1))
-                        .list()
-                        .layer(new EmbeddingSequenceLayer.Builder()
-                                .nIn(8)
-                                .nOut(4)
-                                .build())
-                        .layer(new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH)
-                                .lossFunction(LossFunction.MSE).build())
-                        .build();
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .dataType(DataType.DOUBLE)
+                            .seed(12345)
+                            .updater(new NoOp())
+                            .weightInit(new NormalDistribution(0, 1))
+                            .list()
+                            .layer(new EmbeddingSequenceLayer.Builder()
+                                    .nIn(8)
+                                    .nOut(4)
+                                    .outputDataFormat(seqOutputFormat)
+                                    .build())
+                            .layer(new RnnOutputLayer.Builder().nIn(4).nOut(3).activation(Activation.TANH)
+                                    .dataFormat(seqOutputFormat)
+                                    .lossFunction(LossFunction.MSE).build())
+                            .build();
 
-                MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                net.init();
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
 
-                INDArray in = Transforms.floor(Nd4j.rand(3, 6).muli(8));    //Integers 0 to 7 inclusive
-                INDArray label = Nd4j.rand(new int[]{3, 3, 6});
+                    boolean ncw = seqOutputFormat == RNNFormat.NCW;
 
-                if(inputRank == 3){
-                    //Reshape from [3,6] to [3,1,6]
-                    in = in.reshape('c', 3, 1, 6);
-                }
+                    INDArray in = Transforms.floor(Nd4j.rand(3, 6).muli(8));    //Integers 0 to 7 inclusive
+                    INDArray label = Nd4j.rand(DataType.FLOAT, ncw ? new int[]{3, 3, 6} : new int[]{3,6,3});
 
-                INDArray fMask = null;
-                if (maskArray) {
-                    fMask = Nd4j.create(new double[][]{{1, 1, 1, 1, 1, 1},
-                            {1, 1, 0, 0, 0, 0},
-                            {1, 0, 0, 0, 0, 0}});
-
-                }
-
-                String msg = "mask=" + maskArray + ", inputRank=" + inputRank;
-                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
-                        .labels(label).inputMask(fMask));
-                assertTrue(msg, gradOK);
-                TestUtils.testModelSerialization(net);
-
-
-                //Also: if mask is present, double check that the masked steps don't impact score
-                if (maskArray) {
-                    DataSet ds = new DataSet(in, label, fMask, null);
-                    double score = net.score(ds);
-                    if(inputRank == 2){
-                        in.putScalar(1, 2, 0);
-                        in.putScalar(2, 1, 0);
-                        in.putScalar(2, 2, 0);
-                    } else {
-                        in.putScalar(1, 0, 2, 0);
-                        in.putScalar(2, 0, 1, 0);
-                        in.putScalar(2, 0, 2, 0);
+                    if (inputRank == 3) {
+                        //Reshape from [3,6] to [3,1,6]
+                        in = in.reshape('c', 3, 1, 6);
                     }
-                    double score2 = net.score(ds);
-                    assertEquals(score, score2, 1e-6);
-                    if(inputRank == 2){
-                        in.putScalar(1, 2, 1);
-                        in.putScalar(2, 1, 1);
-                        in.putScalar(2, 2, 1);
-                    } else {
-                        in.putScalar(1, 0, 2, 1);
-                        in.putScalar(2, 0, 1, 1);
-                        in.putScalar(2, 0, 2, 1);
+
+                    INDArray fMask = null;
+                    if (maskArray) {
+                        fMask = Nd4j.create(new double[][]{{1, 1, 1, 1, 1, 1},
+                                {1, 1, 0, 0, 0, 0},
+                                {1, 0, 0, 0, 0, 0}});
+
                     }
-                    double score3 = net.score(ds);
-                    assertEquals(score, score3, 1e-6);
+
+                    String msg = "mask=" + maskArray + ", inputRank=" + inputRank;
+                    boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(in)
+                            .labels(label).inputMask(fMask));
+                    assertTrue(msg, gradOK);
+                    TestUtils.testModelSerialization(net);
+
+
+                    //Also: if mask is present, double check that the masked steps don't impact score
+                    if (maskArray) {
+                        DataSet ds = new DataSet(in, label, fMask, null);
+                        double score = net.score(ds);
+                        if (inputRank == 2) {
+                            in.putScalar(1, 2, 0);
+                            in.putScalar(2, 1, 0);
+                            in.putScalar(2, 2, 0);
+                        } else {
+                            in.putScalar(1, 0, 2, 0);
+                            in.putScalar(2, 0, 1, 0);
+                            in.putScalar(2, 0, 2, 0);
+                        }
+                        double score2 = net.score(ds);
+                        assertEquals(score, score2, 1e-6);
+                        if (inputRank == 2) {
+                            in.putScalar(1, 2, 1);
+                            in.putScalar(2, 1, 1);
+                            in.putScalar(2, 2, 1);
+                        } else {
+                            in.putScalar(1, 0, 2, 1);
+                            in.putScalar(2, 0, 1, 1);
+                            in.putScalar(2, 0, 2, 1);
+                        }
+                        double score3 = net.score(ds);
+                        assertEquals(score, score3, 1e-6);
+                    }
                 }
             }
         }

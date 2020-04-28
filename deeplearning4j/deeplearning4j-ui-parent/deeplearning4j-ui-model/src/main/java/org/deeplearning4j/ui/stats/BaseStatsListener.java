@@ -385,7 +385,7 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                         gpuMaxBytes[i] = nativeOps.getDeviceTotalMemory(0);
                         gpuCurrentBytes[i] = gpuMaxBytes[i] - nativeOps.getDeviceFreeMemory(0);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("",e);
                     }
                 }
             }
