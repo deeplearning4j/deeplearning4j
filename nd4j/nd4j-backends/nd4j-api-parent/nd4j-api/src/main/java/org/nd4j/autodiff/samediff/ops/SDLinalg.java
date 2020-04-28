@@ -23,6 +23,7 @@ import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 
 public class SDLinalg extends SDOps {
   public SDLinalg(SameDiff sameDiff) {
@@ -556,6 +557,108 @@ public class SDLinalg extends SDOps {
   public SDVariable svd(String name, SDVariable input, boolean fullUV, boolean computeUV) {
     SDValidation.validateNumerical("svd", "input", input);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.transforms.custom.Svd(sd,input, fullUV, computeUV, 16).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   *
+   * @param dataType Data type
+   * @param row 
+   * @param column 
+   * @param diagonal 
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable tri(DataType dataType, int row, int column, int diagonal) {
+    return new org.nd4j.linalg.api.ops.custom.Tri(sd,dataType, row, column, diagonal).outputVariable();
+  }
+
+  /**
+   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param dataType Data type
+   * @param row 
+   * @param column 
+   * @param diagonal 
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable tri(String name, DataType dataType, int row, int column, int diagonal) {
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Tri(sd,dataType, row, column, diagonal).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   *
+   * @param row 
+   * @param column 
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable tri(int row, int column) {
+    return new org.nd4j.linalg.api.ops.custom.Tri(sd,DataType.FLOAT, row, column, 0).outputVariable();
+  }
+
+  /**
+   * An array with ones at and below the given diagonal and zeros elsewhere.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param row 
+   * @param column 
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable tri(String name, int row, int column) {
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Tri(sd,DataType.FLOAT, row, column, 0).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   *
+   * @param input  (NUMERIC type)
+   * @param diag 
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable triu(SDVariable input, int diag) {
+    SDValidation.validateNumerical("triu", "input", input);
+    return new org.nd4j.linalg.api.ops.custom.Triu(sd,input, diag).outputVariable();
+  }
+
+  /**
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input  (NUMERIC type)
+   * @param diag 
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable triu(String name, SDVariable input, int diag) {
+    SDValidation.validateNumerical("triu", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Triu(sd,input, diag).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   *
+   * @param input  (NUMERIC type)
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable triu(SDVariable input) {
+    SDValidation.validateNumerical("triu", "input", input);
+    return new org.nd4j.linalg.api.ops.custom.Triu(sd,input, 0).outputVariable();
+  }
+
+  /**
+   * Upper triangle of an array. Return a copy of a input tensor with the elements below the k-th diagonal zeroed.<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param input  (NUMERIC type)
+   * @return output  (FLOATING_POINT type)
+   */
+  public SDVariable triu(String name, SDVariable input) {
+    SDValidation.validateNumerical("triu", "input", input);
+    SDVariable out =  new org.nd4j.linalg.api.ops.custom.Triu(sd,input, 0).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 }

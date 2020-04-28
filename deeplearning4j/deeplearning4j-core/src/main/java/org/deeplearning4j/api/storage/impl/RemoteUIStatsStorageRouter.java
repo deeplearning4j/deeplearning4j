@@ -43,7 +43,8 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializable, Closeable {
-
+    private static final String ROUTE_IS_DOWN = "Info posted to RemoteUIStatsStorageRouter but router is shut down.";
+    private static final String MAX_WARNINGS_REACHED = "RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.";
     /**
      * Default path for posting data to the UI - i.e., http://localhost:9000/remoteReceive or similar
      */
@@ -163,10 +164,10 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializa
         if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
             if (count <= MAX_SHUTDOWN_WARN_COUNT) {
-                log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
+                log.warn(ROUTE_IS_DOWN);
             }
             if (count == MAX_SHUTDOWN_WARN_COUNT) {
-                log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
+                log.warn(MAX_WARNINGS_REACHED);
             }
         } else {
             for (StorageMetaData m : storageMetaData) {
@@ -186,10 +187,10 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializa
         if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
             if (count <= MAX_SHUTDOWN_WARN_COUNT) {
-                log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
+                log.warn(ROUTE_IS_DOWN);
             }
             if (count == MAX_SHUTDOWN_WARN_COUNT) {
-                log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
+                log.warn(MAX_WARNINGS_REACHED);
             }
         } else {
             for (Persistable p : staticInfo) {
@@ -209,10 +210,10 @@ public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializa
         if (shutdown.get()) {
             long count = shutdownWarnCount.getAndIncrement();
             if (count <= MAX_SHUTDOWN_WARN_COUNT) {
-                log.warn("Info posted to RemoteUIStatsStorageRouter but router is shut down.");
+                log.warn(ROUTE_IS_DOWN);
             }
             if (count == MAX_SHUTDOWN_WARN_COUNT) {
-                log.warn("RemoteUIStatsStorageRouter: Reached max shutdown warnings. No further warnings will be produced.");
+                log.warn(MAX_WARNINGS_REACHED);
             }
         } else {
             for (Persistable p : updates) {

@@ -35,15 +35,34 @@ public class NDRNN {
   }
 
   /**
+   * The GRU operation. Gated Recurrent Unit - Cho et al. 2014.<br>
+   *
+   * @param x input [time, bS, nIn] (NUMERIC type)
+   * @param hLast initial cell output (at time step = 0) [bS, nOut] (NUMERIC type)
+   * @param Wx input-to-hidden  weights, [nIn, 3*nOut] (NUMERIC type)
+   * @param Wh hidden-to-hidden weights, [nOut, 3*nOut] (NUMERIC type)
+   * @param biases biases, [3*nOut] (NUMERIC type)
+   * @return h cell outputs [time, bS, nOut], that is per each time step (NUMERIC type)
+   */
+  public INDArray gru(INDArray x, INDArray hLast, INDArray Wx, INDArray Wh, INDArray biases) {
+    NDValidation.validateNumerical("gru", "x", x);
+    NDValidation.validateNumerical("gru", "hLast", hLast);
+    NDValidation.validateNumerical("gru", "Wx", Wx);
+    NDValidation.validateNumerical("gru", "Wh", Wh);
+    NDValidation.validateNumerical("gru", "biases", biases);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU(x, hLast, Wx, Wh, biases))[0];
+  }
+
+  /**
    * The GRU cell.  Does a single time step operation<br>
    *
    * @param x Input, with shape [batchSize, inSize] (NUMERIC type)
    * @param hLast Output of the previous cell/time step, with shape [batchSize, numUnits] (NUMERIC type)
    * @param GRUWeights Configuration Object
    */
-  public INDArray[] gru(INDArray x, INDArray hLast, GRUWeights GRUWeights) {
-    NDValidation.validateNumerical("gru", "x", x);
-    NDValidation.validateNumerical("gru", "hLast", hLast);
+  public INDArray[] gruCell(INDArray x, INDArray hLast, GRUWeights GRUWeights) {
+    NDValidation.validateNumerical("gruCell", "x", x);
+    NDValidation.validateNumerical("gruCell", "hLast", hLast);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell(x, hLast, GRUWeights));
   }
 

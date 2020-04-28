@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.convolution;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -45,6 +46,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 15/11/2016.
  */
+@Slf4j
 public class TestConvolutionModes extends BaseDL4JTest {
 
     @Test
@@ -106,12 +108,12 @@ public class TestConvolutionModes extends BaseDL4JTest {
                                 }
                             } catch (DL4JException e) {
                                 if (inSize == 9 || cm != ConvolutionMode.Strict) {
-                                    e.printStackTrace();
+                                    log.error("",e);
                                     fail("Unexpected exception");
                                 }
                                 continue; //Expected exception
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                log.error("",e);
                                 fail("Unexpected exception");
                             }
 
@@ -184,12 +186,12 @@ public class TestConvolutionModes extends BaseDL4JTest {
                                 }
                             } catch (DL4JException e) {
                                 if (inSize == 9 || cm != ConvolutionMode.Strict) {
-                                    e.printStackTrace();
+                                    log.error("",e);
                                     fail("Unexpected exception");
                                 }
                                 continue; //Expected exception
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                log.error("",e);
                                 fail("Unexpected exception");
                             }
 

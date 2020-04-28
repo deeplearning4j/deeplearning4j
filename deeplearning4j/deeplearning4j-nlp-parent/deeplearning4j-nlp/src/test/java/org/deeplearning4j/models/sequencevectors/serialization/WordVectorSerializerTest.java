@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.sequencevectors.serialization;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang.StringUtils;
 import org.deeplearning4j.BaseDL4JTest;
@@ -48,6 +49,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class WordVectorSerializerTest extends BaseDL4JTest {
     private AbstractCache<VocabWord> cache;
 
@@ -97,7 +99,7 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
             byte[] bytesResult = baos.toByteArray();
             deser = WordVectorSerializer.readSequenceVectors(new ByteArrayInputStream(bytesResult), true);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
 
@@ -175,7 +177,7 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
             byte[] bytesResult = baos.toByteArray();
             deser = WordVectorSerializer.readWord2Vec(new ByteArrayInputStream(bytesResult), true);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
 
@@ -223,7 +225,7 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
             byte[] bytesResult = baos.toByteArray();
             deser = WordVectorSerializer.readWord2Vec(new ByteArrayInputStream(bytesResult), true);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
 
@@ -268,7 +270,7 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             deser = WordVectorSerializer.readLookupTable(file);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
         assertEquals(lookupTable.getVocab().totalWordOccurrences(), ((InMemoryLookupTable<VocabWord>)deser).getVocab().totalWordOccurrences());
@@ -306,7 +308,7 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             deser = WordVectorSerializer.readWordVectors(new File(dir, "some.data"));
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
 

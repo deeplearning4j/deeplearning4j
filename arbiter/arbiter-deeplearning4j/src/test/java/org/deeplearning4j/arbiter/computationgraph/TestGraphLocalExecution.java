@@ -98,7 +98,7 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 90000L;
+        return 120_000L;
     }
 
     @Test
@@ -156,7 +156,7 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
                     .dataSource(ds, dsP)
                     .modelSaver(new FileModelSaver(modelSave))
                     .scoreFunction(new TestSetLossScoreFunction())
-                    .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                    .terminationConditions(new MaxTimeCondition(20, TimeUnit.SECONDS),
                             new MaxCandidatesCondition(3))
                     .build();
 

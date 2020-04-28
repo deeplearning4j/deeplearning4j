@@ -16,6 +16,7 @@
 
 package org.datavec.image.loader;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Loader;
@@ -53,6 +54,7 @@ import static org.junit.Assert.fail;
  *
  * @author saudet
  */
+@Slf4j
 public class TestNativeImageLoader {
     static final long seed = 10;
     static final Random rng = new Random(seed);
@@ -123,7 +125,7 @@ public class TestNativeImageLoader {
         try {
             array6 = loader5.asMatrix(new ClassPathResource(path2MitosisFile).getFile().getAbsolutePath());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
         assertEquals(5, array6.rank());
@@ -156,7 +158,7 @@ public class TestNativeImageLoader {
         try {
             array8 = loader7.asMatrix(new ClassPathResource(path2MitosisFile).getFile().getAbsolutePath());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         assertEquals(5, array8.rank());
         assertEquals(pages2, array8.size(0));
@@ -172,7 +174,7 @@ public class TestNativeImageLoader {
         try {
             array9 = loader8.asMatrix(new ClassPathResource(braintiff).getFile().getAbsolutePath());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
         assertEquals(5, array9.rank());

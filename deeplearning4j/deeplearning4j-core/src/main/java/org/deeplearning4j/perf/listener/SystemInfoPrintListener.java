@@ -43,7 +43,7 @@ public class SystemInfoPrintListener implements TrainingListener {
     private boolean printOnBackwardPass;
     private boolean printOnGradientCalculation;
 
-
+    private static final String SYSTEM_INFO = "System info on epoch end: ";
     @Override
     public void iterationDone(Model model, int iteration, int epoch) {
 
@@ -65,7 +65,7 @@ public class SystemInfoPrintListener implements TrainingListener {
             return;
 
         SystemInfo systemInfo = new SystemInfo();
-        log.info("System info on epoch end: ");
+        log.info(SYSTEM_INFO);
         log.info(systemInfo.toPrettyJSON());
     }
 
@@ -75,7 +75,7 @@ public class SystemInfoPrintListener implements TrainingListener {
             return;
 
         SystemInfo systemInfo = new SystemInfo();
-        log.info("System info on epoch end: ");
+        log.info(SYSTEM_INFO);
         log.info(systemInfo.toPrettyJSON());
     }
 
@@ -85,7 +85,7 @@ public class SystemInfoPrintListener implements TrainingListener {
             return;
 
         SystemInfo systemInfo = new SystemInfo();
-        log.info("System info on epoch end: ");
+        log.info(SYSTEM_INFO);
         log.info(systemInfo.toPrettyJSON());
     }
 
@@ -95,7 +95,7 @@ public class SystemInfoPrintListener implements TrainingListener {
             return;
 
         SystemInfo systemInfo = new SystemInfo();
-        log.info("System info on epoch end: ");
+        log.info(SYSTEM_INFO);
         log.info(systemInfo.toPrettyJSON());
     }
 
@@ -104,7 +104,7 @@ public class SystemInfoPrintListener implements TrainingListener {
         if(!printOnBackwardPass)
             return;
         SystemInfo systemInfo = new SystemInfo();
-        log.info("System info on epoch end: ");
+        log.info(SYSTEM_INFO);
         log.info(systemInfo.toPrettyJSON());
     }
 }

@@ -67,13 +67,13 @@ public class SDMath extends SDOps {
    * Looks up ids in a list of embedding tensors.<br>
    *
    * @param x Input tensor (NUMERIC type)
-   * @param indices A Tensor containing the ids to be looked up. (NUMERIC type)
+   * @param indices A Tensor containing the ids to be looked up. (INT type)
    * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
    * @return output Shifted output (NUMERIC type)
    */
   public SDVariable embeddingLookup(SDVariable x, SDVariable indices, PartitionMode PartitionMode) {
     SDValidation.validateNumerical("EmbeddingLookup", "x", x);
-    SDValidation.validateNumerical("EmbeddingLookup", "indices", indices);
+    SDValidation.validateInteger("EmbeddingLookup", "indices", indices);
     return new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(sd,x, indices, PartitionMode).outputVariable();
   }
 
@@ -82,15 +82,69 @@ public class SDMath extends SDOps {
    *
    * @param name name May be null. Name for the output variable
    * @param x Input tensor (NUMERIC type)
-   * @param indices A Tensor containing the ids to be looked up. (NUMERIC type)
+   * @param indices A Tensor containing the ids to be looked up. (INT type)
    * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
    * @return output Shifted output (NUMERIC type)
    */
   public SDVariable embeddingLookup(String name, SDVariable x, SDVariable indices,
       PartitionMode PartitionMode) {
     SDValidation.validateNumerical("EmbeddingLookup", "x", x);
-    SDValidation.validateNumerical("EmbeddingLookup", "indices", indices);
+    SDValidation.validateInteger("EmbeddingLookup", "indices", indices);
     SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(sd,x, indices, PartitionMode).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return array of max elements indices with along tensor dimensions <br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param dataType Data type
+   * @return output Array max elements indices with along dimensions. (INT type)
+   */
+  public SDVariable mergeMaxIndex(SDVariable[] x, DataType dataType) {
+    SDValidation.validateNumerical("MergeMaxIndex", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    return new org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex(sd,x, dataType).outputVariable();
+  }
+
+  /**
+   * Return array of max elements indices with along tensor dimensions <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input tensor (NUMERIC type)
+   * @param dataType Data type
+   * @return output Array max elements indices with along dimensions. (INT type)
+   */
+  public SDVariable mergeMaxIndex(String name, SDVariable[] x, DataType dataType) {
+    SDValidation.validateNumerical("MergeMaxIndex", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex(sd,x, dataType).outputVariable();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
+   * Return array of max elements indices with along tensor dimensions <br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @return output Array max elements indices with along dimensions. (INT type)
+   */
+  public SDVariable mergeMaxIndex(SDVariable... x) {
+    SDValidation.validateNumerical("MergeMaxIndex", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    return new org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex(sd,x, DataType.INT).outputVariable();
+  }
+
+  /**
+   * Return array of max elements indices with along tensor dimensions <br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param x Input tensor (NUMERIC type)
+   * @return output Array max elements indices with along dimensions. (INT type)
+   */
+  public SDVariable mergeMaxIndex(String name, SDVariable... x) {
+    SDValidation.validateNumerical("MergeMaxIndex", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex(sd,x, DataType.INT).outputVariable();
     return sd.updateVariableNameAndReference(out, name);
   }
 

@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -53,12 +54,13 @@ import java.util.Map;
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class RnnLossLayer extends FeedForwardLayer {
-
+    private RNNFormat rnnDataFormat = RNNFormat.NCW;
     protected ILossFunction lossFn;
 
     private RnnLossLayer(Builder builder) {
         super(builder);
         this.setLossFn(builder.lossFn);
+        this.rnnDataFormat = builder.rnnDataFormat;
     }
 
     @Override
@@ -91,7 +93,7 @@ public class RnnLossLayer extends FeedForwardLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, RNNFormat.NCW, getLayerName());
     }
 
     @Override
@@ -111,8 +113,9 @@ public class RnnLossLayer extends FeedForwardLayer {
 
     public static class Builder extends BaseOutputLayer.Builder<Builder> {
 
-        public Builder() {
+        private RNNFormat rnnDataFormat = RNNFormat.NCW;
 
+        public Builder() {
         }
 
         /**
@@ -153,6 +156,14 @@ public class RnnLossLayer extends FeedForwardLayer {
                     "This layer has no parameters, thus nIn will always equal nOut.");
         }
 
+        /**
+         * @param rnnDataFormat Data format expected by the layer. NCW = [miniBatchSize, size, timeSeriesLength],
+         * NWC = [miniBatchSize, timeSeriesLength, size]. Defaults to NCW.
+         */
+        public Builder dataFormat(RNNFormat rnnDataFormat){
+            this.rnnDataFormat = rnnDataFormat;
+            return this;
+        }
         @Override
         @SuppressWarnings("unchecked")
         public RnnLossLayer build() {

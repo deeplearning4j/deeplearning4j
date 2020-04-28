@@ -82,7 +82,7 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        if(config == null && iArguments.size() > 0){
+        if(config == null && !iArguments.isEmpty()){
             //Perhaps loaded from FlatBuffers - hence we have IArgs but not Config object
             config = Pooling2DConfig.builder()
                     .kH(iArguments.get(0))

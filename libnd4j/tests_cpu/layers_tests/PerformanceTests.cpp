@@ -60,6 +60,52 @@ public:
 
 #ifdef RELEASE_BUILD
 
+TEST_F(PerformanceTests, test_matmul_c_f_1) {
+    int iterations = 500;
+    std::vector<ino64_t> valuesC, valuesF;
+    for (int e = 0; e < iterations; e++) {
+        auto xc = NDArrayFactory::create<float>('c', {512, 2048});
+        auto yc = NDArrayFactory::create<float>('c', {2048, 512});
+        auto zc = NDArrayFactory::create<float>('c', {512, 512});
+
+        auto xf = NDArrayFactory::create<float>('f', {512, 2048});
+        auto yf = NDArrayFactory::create<float>('f', {2048, 512});
+        auto zf = NDArrayFactory::create<float>('f', {512, 512});
+
+        auto warm = xc.like();
+        warm.linspace(1.0);
+
+        //zc.linspace(1.0);
+        //zf.linspace(1.0);
+
+        sd::ops::matmul op;
+
+        auto timeStartF = std::chrono::system_clock::now();
+
+        op.execute({&xf, &yf}, {&zf});
+
+        auto timeEndF = std::chrono::system_clock::now();
+        auto outerTimeF = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEndF - timeStartF).count();
+
+
+        auto timeStartC = std::chrono::system_clock::now();
+
+        op.execute({&xc, &yc}, {&zc});
+
+        auto timeEndC = std::chrono::system_clock::now();
+        auto outerTimeC = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEndC - timeStartC).count();
+
+        valuesF.emplace_back(outerTimeF);
+        valuesC.emplace_back(outerTimeC);
+    }
+
+    std::sort(valuesC.begin(), valuesC.end());
+    std::sort(valuesF.begin(), valuesF.end());
+
+
+    nd4j_printf("Median time C: [%lld]; Median time F: [%lld];", valuesC[valuesC.size() / 2], valuesF[valuesF.size() / 2]);
+}
+
 TEST_F(PerformanceTests, test_maxpooling2d_1) {
     std::vector<Nd4jLong> valuesX;
     // auto x = NDArrayFactory::create<float>('c', {32, 3, 224, 224});

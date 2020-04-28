@@ -18,6 +18,7 @@ package org.deeplearning4j.rl4j.mdp.toy;
 
 import lombok.Value;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
@@ -28,11 +29,24 @@ public class SimpleToyState implements Encodable {
     int i;
     int step;
 
-    @Override
     public double[] toArray() {
         double[] ar = new double[1];
         ar[0] = (20 - i);
         return ar;
     }
 
+    @Override
+    public boolean isSkipped() {
+        return false;
+    }
+
+    @Override
+    public INDArray getData() {
+        return null;
+    }
+
+    @Override
+    public Encodable dup() {
+        return null;
+    }
 }

@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
@@ -75,7 +76,7 @@ public class SelfAttentionLayer extends SameDiffLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, RNNFormat.NCW,getLayerName());
     }
 
     @Override

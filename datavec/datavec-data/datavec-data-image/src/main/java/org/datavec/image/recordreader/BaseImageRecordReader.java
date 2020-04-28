@@ -225,7 +225,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 finishedInputStreamSplit = true;
                 return Arrays.<Writable>asList(ndArrayWritable);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
         if (iter != null) {

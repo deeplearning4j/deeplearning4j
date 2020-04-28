@@ -23,6 +23,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.regex.Pattern;
 
 /**
  * A simple utility method to convert a {@code Iterator<String>} to an {@code Iterator<URI>}, where each
@@ -32,6 +33,7 @@ import java.util.NoSuchElementException;
  */
 @AllArgsConstructor
 public class UriFromPathIterator implements Iterator<URI> {
+    final Pattern schemaPattern = Pattern.compile("^.*?:/.*");
 
     private final Iterator<String> paths;
 
@@ -42,16 +44,17 @@ public class UriFromPathIterator implements Iterator<URI> {
 
     @Override
     public URI next() {
+
         if (!hasNext()) {
             throw new NoSuchElementException("No next element");
         }
         try {
             String s = paths.next();
-            if(!s.matches(".*:/.*")){
+            if(schemaPattern.matcher(s).matches()){
+                return new URI(s);
+            } else {
                 //No scheme - assume file for backward compatibility
                 return new File(s).toURI();
-            } else {
-                return new URI(s);
             }
 
         } catch (URISyntaxException e) {

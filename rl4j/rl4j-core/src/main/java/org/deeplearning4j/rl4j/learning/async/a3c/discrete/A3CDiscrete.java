@@ -28,9 +28,9 @@ import org.deeplearning4j.rl4j.learning.async.AsyncThread;
 import org.deeplearning4j.rl4j.learning.configuration.A3CLearningConfiguration;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -41,19 +41,19 @@ import org.nd4j.linalg.factory.Nd4j;
  * All methods are fully implemented as described in the
  * https://arxiv.org/abs/1602.01783 paper.
  */
-public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, Integer, DiscreteSpace, IActorCritic> {
+public abstract class A3CDiscrete<OBSERVATION extends Encodable> extends AsyncLearning<OBSERVATION, Integer, DiscreteSpace, IActorCritic> {
 
     @Getter
     final public A3CLearningConfiguration configuration;
     @Getter
-    final protected MDP<O, Integer, DiscreteSpace> mdp;
+    final protected MDP<OBSERVATION, Integer, DiscreteSpace> mdp;
     final private IActorCritic iActorCritic;
     @Getter
     final private AsyncGlobal asyncGlobal;
     @Getter
-    final private ACPolicy<O> policy;
+    final private ACPolicy<OBSERVATION> policy;
 
-    public A3CDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic iActorCritic, A3CLearningConfiguration conf) {
+    public A3CDiscrete(MDP<OBSERVATION, Integer, DiscreteSpace> mdp, IActorCritic iActorCritic, A3CLearningConfiguration conf) {
         this.iActorCritic = iActorCritic;
         this.mdp = mdp;
         this.configuration = conf;

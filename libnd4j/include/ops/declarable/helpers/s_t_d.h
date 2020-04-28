@@ -24,7 +24,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-    void _spaceTodepth(sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC);
+    void _spaceTodepth(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC);
 }
 }
 }

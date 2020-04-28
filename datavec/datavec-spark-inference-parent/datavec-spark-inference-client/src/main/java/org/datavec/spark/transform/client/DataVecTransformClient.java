@@ -74,7 +74,6 @@ public class DataVecTransformClient implements DataVecTransformService {
 
         } catch (UnirestException e) {
             log.error("Error in setCSVTransformProcess()", e);
-            e.printStackTrace();
         }
     }
 
@@ -94,7 +93,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return TransformProcess.fromJson(s);
         } catch (UnirestException e) {
             log.error("Error in getCSVTransformProcess()",e);
-            e.printStackTrace();
         }
 
         return null;
@@ -119,7 +117,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return singleCsvRecord;
         } catch (UnirestException e) {
             log.error("Error in transformIncremental(SingleCSVRecord)",e);
-            e.printStackTrace();
         }
         return null;
     }
@@ -140,8 +137,7 @@ public class DataVecTransformClient implements DataVecTransformService {
                     .getBody();
             return batchCSVRecord1;
         } catch (UnirestException e) {
-            log.error("Error in transform(BatchCSVRecord)", e);
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return null;
@@ -162,7 +158,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return batchCSVRecord1;
         } catch (UnirestException e) {
             log.error("Error in transform(BatchCSVRecord)", e);
-            e.printStackTrace();
         }
 
         return null;
@@ -181,7 +176,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return batchArray1;
         } catch (UnirestException e) {
             log.error("Error in transformArray(BatchCSVRecord)",e);
-            e.printStackTrace();
         }
 
         return null;
@@ -200,7 +194,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return array;
         } catch (UnirestException e) {
             log.error("Error in transformArrayIncremental(SingleCSVRecord)",e);
-            e.printStackTrace();
         }
 
         return null;
@@ -231,7 +224,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return array;
         } catch (UnirestException e) {
             log.error("Error in transformSequenceArrayIncremental",e);
-            e.printStackTrace();
         }
 
         return null;
@@ -252,7 +244,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return batchArray1;
         } catch (UnirestException e) {
             log.error("Error in transformSequenceArray",e);
-            e.printStackTrace();
         }
 
         return null;
@@ -274,7 +265,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return batchCSVRecord1;
         } catch (UnirestException e) {
             log.error("Error in transformSequence");
-            e.printStackTrace();
         }
 
         return null;
@@ -295,7 +285,6 @@ public class DataVecTransformClient implements DataVecTransformService {
             return singleCsvRecord;
         } catch (UnirestException e) {
             log.error("Error in transformSequenceIncremental");
-            e.printStackTrace();
         }
         return null;
     }

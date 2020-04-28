@@ -62,7 +62,7 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
 
     public String getUniqueId() {
-        return "Workspace_" + getId();
+        return "Workspace_" + getId() + "_" + Nd4j.getDeallocatorService().nextValue();
     }
 
     @Override
@@ -91,7 +91,6 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 
             if (currentSize.get() > 0) {
                 isInit.set(true);
-
 
                 if (isDebug.get())
                     log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
@@ -137,6 +136,13 @@ public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
                 break;
             }
         }
+    }
+
+    protected long mappedFileSize() {
+        if (workspaceConfiguration.getPolicyLocation() != LocationPolicy.MMAP)
+            return 0;
+
+        return tempFile.length();
     }
 
     @Override

@@ -69,7 +69,7 @@ public class KerasModelImportTest extends BaseDL4JTest {
             network = KerasModelImport.importKerasSequentialModelAndWeights(Resources.asFile(modelJsonFilename).getAbsolutePath(),
                     Resources.asFile(modelWeightFilename).getAbsolutePath(), false);
         } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return network;
@@ -80,7 +80,7 @@ public class KerasModelImportTest extends BaseDL4JTest {
         try {
             model = KerasModelImport.importKerasSequentialModelAndWeights(Resources.asFile(modelFilename).getAbsolutePath());
         } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return model;

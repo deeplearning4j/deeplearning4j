@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -114,23 +115,29 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
-                 int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+                                                     int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode,
+                                                     int[] dilation, CNN2DFormat format, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] != 1 || dilation[1] != 1){
             //CuDNN doesn't support dilated subsampling
             return null;
         }
 
+        boolean nchw = format == CNN2DFormat.NCHW;
+        int chIdx = nchw ? 1 : 3;
+        int hIdx = nchw ? 2 : 1;
+        int wIdx = nchw ? 3 : 2;
+
         //We require the output as one of the arguments for backprop here
         //TODO we could add cache mode support here somehow...
-        INDArray reduced = activate(input, true, kernel, strides, pad, poolingType, convolutionMode, dilation, workspaceMgr);
+        INDArray reduced = activate(input, true, kernel, strides, pad, poolingType, convolutionMode, dilation, format, workspaceMgr);
 
         val miniBatch = input.size(0);
-        val depth = input.size(1);
+        val depth = input.size(chIdx);
 
-        CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode, poolingType);
+        CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode, poolingType, format);
         input = args.getInput();
-        val inH = input.size(2);
-        val inW = input.size(3);
+        val inH = input.size(hIdx);
+        val inW = input.size(wIdx);
         val srcStride = input.stride();
         int[] outSize = args.getOutSize();
         int outH = outSize[0];
@@ -160,23 +167,26 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
             epsilon = epsilon.dup('c');
         }
 
+        input = input.dup();
+
         val deltaStride = epsilon.stride();
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
-                (int) srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]));
+                (int) srcStride[0], (int) srcStride[chIdx], (int) srcStride[hIdx], (int) srcStride[wIdx]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, (int) miniBatch, (int) depth, (int) outH, (int) outW,
-                (int) deltaStride[0], (int) deltaStride[1], (int) deltaStride[2], (int) deltaStride[3]));
+                (int) deltaStride[0], (int) deltaStride[chIdx], (int) deltaStride[hIdx], (int) deltaStride[wIdx]));
         checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
                         kernel[1], pad[0], pad[1], strides[0], strides[1]));
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[] {(int) miniBatch, (int) depth, (int) inH, (int) inW}, 'c');
+        long[] outEpsShape = nchw ? new long[] {miniBatch, depth, inH, inW} : new long[] {miniBatch, inH, inW, depth};
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), outEpsShape, 'c');
 
         val dstStride = outEpsilon.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) depth, (int) inH, (int) inW,
-                (int) dstStride[0], (int) dstStride[1], (int) dstStride[2], (int) dstStride[3]));
+                (int) dstStride[0], (int) dstStride[chIdx], (int) dstStride[hIdx], (int) dstStride[wIdx]));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, epsilon, reduced, outEpsilon);
@@ -198,9 +208,16 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         //Note that: if we had to manually pad for SAME mode, we have to 'undo' this manual padding for the epsilon
         // we return. The returned epsilon (i.e., dL/dIn array) has to be the same shape as the *original* input.
         if(args.isManualPadBottom() || args.isManualPadRight()) {
-            outEpsilon = outEpsilon.get(all(), all(),
-                    interval(0, outEpsilon.size(2) - (args.isManualPadBottom() ? 1 : 0)),
-                    interval(0, outEpsilon.size(3) - (args.isManualPadRight() ? 1 : 0)));
+            if(nchw){
+                outEpsilon = outEpsilon.get(all(), all(),
+                        interval(0, outEpsilon.size(2) - (args.isManualPadBottom() ? 1 : 0)),
+                        interval(0, outEpsilon.size(3) - (args.isManualPadRight() ? 1 : 0)));
+            } else {
+                outEpsilon = outEpsilon.get(all(),
+                        interval(0, outEpsilon.size(1) - (args.isManualPadBottom() ? 1 : 0)),
+                        interval(0, outEpsilon.size(2) - (args.isManualPadRight() ? 1 : 0)),
+                        all());
+            }
         }
 
         return new Pair<>(retGradient, outEpsilon);
@@ -209,19 +226,24 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
     @Override
     public INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad,
-                    PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+                    PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format, LayerWorkspaceMgr workspaceMgr) {
         if(dilation[0] != 1 || dilation[1] != 1){
             //CuDNN doesn't support dilated subsampling
             return null;
         }
 
-        val miniBatch = input.size(0);
-        val inDepth = input.size(1);
+        boolean nchw = format == CNN2DFormat.NCHW;
+        int chIdx = nchw ? 1 : 3;
+        int hIdx = nchw ? 2 : 1;
+        int wIdx = nchw ? 3 : 2;
 
-        CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode, poolingType);
+        val miniBatch = input.size(0);
+        val inDepth = input.size(nchw ? 1 : 3);
+
+        CudnnConvolutionHelper.CudnnForwardArgs args = getCudnnForwardArgs(input, kernel, strides, pad, dilation, convolutionMode, poolingType, format);
         input = args.getInput();
-        val inH = input.size(2);
-        val inW = input.size(3);
+        val inH = input.size(nchw ? 2 : 1);
+        val inW = input.size(nchw ? 3 : 2);
         val srcStride = input.stride();
         val outSize = args.getOutSize();
         int outH = outSize[0];
@@ -246,13 +268,14 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         checkCudnn(cudnnSetPooling2dDescriptor(cudnnContext.poolingDesc, poolingMode, CUDNN_PROPAGATE_NAN, kernel[0],
                         kernel[1], pad[0], pad[1], strides[0], strides[1]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) inH, (int) inW,
-                (int) srcStride[0], (int) srcStride[1], (int) srcStride[2], (int) srcStride[3]));
+                (int) srcStride[0], (int) srcStride[chIdx], (int) srcStride[hIdx], (int) srcStride[wIdx]));
 
-        INDArray reduced = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), new long[] {(int) miniBatch, (int) inDepth, outH, outW}, 'c');
+        long[] outShape = nchw ? new long[] {miniBatch, inDepth, outH, outW} : new long[] {miniBatch, outH, outW, inDepth};
+        INDArray reduced = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 
         val dstStride = reduced.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) outH, (int) outW,
-                (int) dstStride[0], (int) dstStride[1], (int) dstStride[2], (int) dstStride[3]));
+                (int) dstStride[0], (int) dstStride[chIdx], (int) dstStride[hIdx], (int) dstStride[wIdx]));
 
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareAction(input, reduced);

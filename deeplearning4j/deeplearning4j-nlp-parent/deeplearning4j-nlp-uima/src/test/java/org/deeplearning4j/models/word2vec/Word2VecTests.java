@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.word2vec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
@@ -64,6 +65,7 @@ import static org.junit.Assert.*;
 /**
  * @author jeffreytang
  */
+@Slf4j
 public class Word2VecTests extends BaseDL4JTest {
 
     private static final Logger log = LoggerFactory.getLogger(Word2VecTests.class);
@@ -621,7 +623,7 @@ public class Word2VecTests extends BaseDL4JTest {
             unserialized = Word2Vec.fromJson(json);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
 

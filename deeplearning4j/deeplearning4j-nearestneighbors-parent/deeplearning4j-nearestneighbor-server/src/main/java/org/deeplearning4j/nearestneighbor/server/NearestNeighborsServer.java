@@ -210,7 +210,6 @@ public class NearestNeighborsServer extends AbstractVerticle {
                 return;
             } catch (Throwable e) {
                 log.error("Error in POST /knn",e);
-                e.printStackTrace();
                 rc.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
                         .end("Error parsing request - " + e.getMessage());
                 return;
@@ -265,7 +264,6 @@ public class NearestNeighborsServer extends AbstractVerticle {
                         .end(j);
             } catch (Throwable e) {
                 log.error("Error in POST /knnnew",e);
-                e.printStackTrace();
                 rc.response().setStatusCode(HttpResponseStatus.INTERNAL_SERVER_ERROR.code())
                         .end("Error parsing request - " + e.getMessage());
                 return;

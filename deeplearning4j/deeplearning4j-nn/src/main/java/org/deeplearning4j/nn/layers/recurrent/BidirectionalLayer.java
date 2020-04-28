@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -78,6 +79,9 @@ public class BidirectionalLayer implements RecurrentLayer {
         this.paramsView = paramsView;
     }
 
+    private RNNFormat getRNNDataFormat(){
+        return layerConf.getRNNDataFormat();
+    }
     @Override
     public INDArray rnnTimeStep(INDArray input, LayerWorkspaceMgr workspaceMgr) {
         throw new UnsupportedOperationException("Cannot RnnTimeStep bidirectional layers");
@@ -140,7 +144,10 @@ public class BidirectionalLayer implements RecurrentLayer {
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         INDArray eFwd;
         INDArray eBwd;
-
+        boolean permute = getRNNDataFormat() == RNNFormat.NWC && epsilon.rank() == 3;
+        if (permute){
+            epsilon = epsilon.permute(0, 2, 1);
+        }
         val n = epsilon.size(1)/2;
         switch (layerConf.getMode()){
             case ADD:
@@ -165,6 +172,10 @@ public class BidirectionalLayer implements RecurrentLayer {
 
         eBwd = TimeSeriesUtils.reverseTimeSeries(eBwd, workspaceMgr, ArrayType.BP_WORKING_MEM);
 
+        if (permute){
+            eFwd = eFwd.permute(0, 2, 1);
+            eBwd = eBwd.permute(0, 2, 1);
+        }
         Pair<Gradient,INDArray> g1 = fwd.backpropGradient(eFwd, workspaceMgr);
         Pair<Gradient,INDArray> g2 = bwd.backpropGradient(eBwd, workspaceMgr);
 
@@ -176,7 +187,9 @@ public class BidirectionalLayer implements RecurrentLayer {
             g.gradientForVariable().put(BidirectionalParamInitializer.BACKWARD_PREFIX + e.getKey(), e.getValue());
         }
 
-        INDArray g2Reversed = TimeSeriesUtils.reverseTimeSeries(g2.getRight(), workspaceMgr, ArrayType.BP_WORKING_MEM);
+        INDArray g2Right = permute ? g2.getRight().permute(0, 2, 1): g2.getRight();
+        INDArray g2Reversed = TimeSeriesUtils.reverseTimeSeries(g2Right, workspaceMgr, ArrayType.BP_WORKING_MEM);
+        g2Reversed = permute? g2Reversed.permute(0, 2, 1): g2Reversed;
         INDArray epsOut = g1.getRight().addi(g2Reversed);
 
         return new Pair<>(g, epsOut);
@@ -186,25 +199,38 @@ public class BidirectionalLayer implements RecurrentLayer {
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         INDArray out1 = fwd.activate(training, workspaceMgr);
         INDArray out2 = bwd.activate(training, workspaceMgr);
+        boolean permute = getRNNDataFormat() == RNNFormat.NWC && out1.rank() == 3;
+        if(permute){
+            out1 = out1.permute(0, 2, 1);
+            out2 = out2.permute(0, 2, 1);
+        }
         //Reverse the output time series. Note: when using LastTimeStepLayer, output can be rank 2
         out2 = out2.rank() == 2 ? out2 : TimeSeriesUtils.reverseTimeSeries(out2, workspaceMgr, ArrayType.FF_WORKING_MEM);
-
+        INDArray ret;
         switch (layerConf.getMode()){
             case ADD:
-                return out1.addi(out2);
+                ret = out1.addi(out2);
+                break;
             case MUL:
                 //TODO may be more efficient ways than this...
                 this.outFwd = out1.detach();
                 this.outBwd = out2.detach();
-                return workspaceMgr.dup(ArrayType.ACTIVATIONS, out1).muli(out2);
+                ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, out1).muli(out2);
+                break;
             case AVERAGE:
-                return out1.addi(out2).muli(0.5);
+                ret = out1.addi(out2).muli(0.5);
+                break;
             case CONCAT:
-                INDArray ret = Nd4j.concat(1, out1, out2);
-                return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
+                ret = Nd4j.concat(1, out1, out2);
+                ret = workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
+                break;
             default:
                 throw new RuntimeException("Unknown mode: " + layerConf.getMode());
         }
+        if (permute){
+            ret = ret.permute(0, 2, 1);
+        }
+        return ret;
     }
 
     @Override
@@ -465,7 +491,9 @@ public class BidirectionalLayer implements RecurrentLayer {
     public void setInput(INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
         this.input = input;
         fwd.setInput(input, layerWorkspaceMgr);
-
+        if (getRNNDataFormat() == RNNFormat.NWC){
+            input = input.permute(0, 2, 1);
+        }
         INDArray reversed;
         if(!input.isAttached()){
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
@@ -477,6 +505,9 @@ public class BidirectionalLayer implements RecurrentLayer {
                 //Put the reversed input into the same workspace as the original input
                 reversed = TimeSeriesUtils.reverseTimeSeries(input);
             }
+        }
+        if (getRNNDataFormat() == RNNFormat.NWC){
+            reversed = reversed.permute(0, 2, 1);
         }
         bwd.setInput(reversed, layerWorkspaceMgr);
     }

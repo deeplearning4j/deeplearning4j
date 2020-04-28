@@ -33,6 +33,8 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.Tri;
+import org.nd4j.linalg.api.ops.custom.Triu;
 import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -2524,5 +2526,50 @@ public class ShapeOpValidation extends BaseOpValidation {
             out = rs2.eval(Collections.singletonMap("orig", Nd4j.create(DataType.FLOAT, orig)));
             assertArrayEquals(exp, out.shape());
         }
+    }
+
+
+    @Test
+    public void testMergeMaxIndex() {
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+        SDVariable inputX = sd.var(Nd4j.createFromArray(new float[] {1, 0, 0}));
+        SDVariable inputY = sd.var(Nd4j.createFromArray(new float[] {0, 1, 0}));
+        SDVariable inputZ = sd.var(Nd4j.createFromArray(new float[] {0, 0, 1}));
+        SDVariable out = new MergeMaxIndex(sd, new SDVariable[]{inputX, inputY, inputZ},DataType.INT32).outputVariable();
+        INDArray expected = Nd4j.createFromArray(0,1,2);
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("mergemaxindex", expected)
+                .gradientCheck(false));
+        assertNull(err);
+
+    }
+
+    @Test
+    public void testTriOp() {
+
+        SameDiff sd = SameDiff.create();
+        SDVariable out = new Tri(sd, DataType.INT32, 3, 5, 2).outputVariable();
+        INDArray expected = Nd4j.createFromArray(new int[][]{{1, 1, 1, 0, 0}, {1, 1, 1, 1, 0}, {1, 1, 1, 1, 1}});
+        String err = OpValidation.validate(new TestCase(sd)
+                .expectedOutput("tri", expected)
+                .gradientCheck(false));
+        assertNull(err);
+    }
+
+    @Test
+    public void testTriuOp() {
+
+        SameDiff sd = SameDiff.create();
+        SDVariable input = sd.var(Nd4j.createFromArray(new double[][]{{1,2,3}, {4,5,6}, {7,8,9},{10,11,12}}));
+        SDVariable out = new Triu(sd, input,-1).outputVariable();
+        out.markAsLoss();
+        INDArray expected = Nd4j.createFromArray(new double[][]{{1,2,3}, {4,5,6}, {0,8,9},{0,0,12}});
+        String err = OpValidation.validate(new TestCase(sd)
+                 .expectedOutput("triu", expected)
+                 .gradientCheck(true));
+        assertNull(err);
+
     }
 }

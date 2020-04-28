@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.conf;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Layer;
@@ -46,6 +47,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 11/27/14.
  */
+@Slf4j
 public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
 
     @Rule
@@ -272,9 +274,9 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK
-            e.printStackTrace();
+            log.error("",e);
         } catch (Throwable e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Unexpected exception thrown for invalid config");
         }
 
@@ -288,9 +290,9 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK
-            e.printStackTrace();
+            log.info(e.toString());
         } catch (Throwable e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Unexpected exception thrown for invalid config");
         }
 
@@ -304,9 +306,9 @@ public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
             fail("No exception thrown for invalid configuration");
         } catch (IllegalStateException e) {
             //OK
-            e.printStackTrace();
+            log.info(e.toString());
         } catch (Throwable e) {
-            e.printStackTrace();
+            log.error("",e);
             fail("Unexpected exception thrown for invalid config");
         }
     }

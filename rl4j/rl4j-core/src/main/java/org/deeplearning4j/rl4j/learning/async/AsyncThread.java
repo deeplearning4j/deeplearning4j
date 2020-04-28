@@ -29,10 +29,10 @@ import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.factory.Nd4j;
@@ -188,7 +188,7 @@ public abstract class AsyncThread<OBSERVATION extends Encodable, ACTION, ACTION_
     }
 
     private boolean handleTraining(RunContext context) {
-        int maxTrainSteps = Math.min(getConf().getNStep(), getConf().getMaxEpochStep() - currentEpisodeStepCount);
+        int maxTrainSteps = Math.min(getConfiguration().getNStep(), getConfiguration().getMaxEpochStep() - currentEpisodeStepCount);
         SubEpochReturn subEpochReturn = trainSubEpoch(context.obs, maxTrainSteps);
 
         context.obs = subEpochReturn.getLastObs();
@@ -219,9 +219,9 @@ public abstract class AsyncThread<OBSERVATION extends Encodable, ACTION, ACTION_
 
     protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 
-    protected abstract IAsyncLearningConfiguration getConf();
+    protected abstract IAsyncLearningConfiguration getConfiguration();
 
-    protected abstract IPolicy<OBSERVATION, ACTION> getPolicy(NN net);
+    protected abstract IPolicy<ACTION> getPolicy(NN net);
 
     protected abstract SubEpochReturn trainSubEpoch(Observation obs, int nstep);
 

@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.graph;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
@@ -54,6 +55,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
+@Slf4j
 public class ComputationGraphTestRNN extends BaseDL4JTest {
 
     @Test
@@ -618,7 +620,7 @@ public class ComputationGraphTestRNN extends BaseDL4JTest {
                     .build();
             fail("Exception expected");
         } catch (IllegalStateException e){
-//            e.printStackTrace();
+            log.error("",e);
             assertTrue(e.getMessage().contains("TBPTT") && e.getMessage().contains("validateTbpttConfig"));
         }
     }

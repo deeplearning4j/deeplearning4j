@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -43,6 +44,7 @@ import java.util.*;
  * A layer with parameters
  * @author Adam Gibson
  */
+@Slf4j
 public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer>
         extends AbstractLayer<LayerConfT> {
 
@@ -371,7 +373,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             }
             layer.setParamTable(linkedTable);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return layer;

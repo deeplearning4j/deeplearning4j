@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.text.corpora.sentiwordnet;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.shade.guava.collect.Sets;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
@@ -37,6 +38,7 @@ import java.util.*;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class SWN3 implements Serializable {
     /**
      * 
@@ -120,7 +122,7 @@ public class SWN3 implements Serializable {
                 try {
                     csv.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
             }
         }

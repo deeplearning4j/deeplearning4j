@@ -101,7 +101,7 @@ public class RandomWalkerTest extends BaseDL4JTest {
     @Test
     public void testGraphTraverseRandom1() throws Exception {
         RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graph)
-                        .setNoEdgeHandling(NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED).setWalkLength(3).build();
+                .setNoEdgeHandling(NoEdgeHandling.SELF_LOOP_ON_DISCONNECTED).setWalkLength(3).build();
 
         int cnt = 0;
         while (walker.hasNext()) {
@@ -123,9 +123,10 @@ public class RandomWalkerTest extends BaseDL4JTest {
     @Test
     public void testGraphTraverseRandom2() throws Exception {
         RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graph)
-                        .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED).setWalkLength(20)
-                        .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
-                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
+                .setSeed(12345)
+                .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED).setWalkLength(20)
+                .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
+                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
 
         int cnt = 0;
         while (walker.hasNext()) {
@@ -147,9 +148,9 @@ public class RandomWalkerTest extends BaseDL4JTest {
     @Test
     public void testGraphTraverseRandom3() throws Exception {
         RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graph)
-                        .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED).setWalkLength(20)
-                        .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
-                        .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED).build();
+                .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED).setWalkLength(20)
+                .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
+                .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED).build();
 
         try {
             while (walker.hasNext()) {
@@ -169,9 +170,10 @@ public class RandomWalkerTest extends BaseDL4JTest {
     @Test
     public void testGraphTraverseRandom4() throws Exception {
         RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graphBig)
-                        .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED).setWalkLength(20)
-                        .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
-                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
+                .setSeed(12345)
+                .setNoEdgeHandling(NoEdgeHandling.EXCEPTION_ON_DISCONNECTED).setWalkLength(20)
+                .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
+                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
 
         Sequence<VocabWord> sequence1 = walker.next();
 
@@ -185,8 +187,8 @@ public class RandomWalkerTest extends BaseDL4JTest {
     @Test
     public void testGraphTraverseRandom5() throws Exception {
         RandomWalker<VocabWord> walker = (RandomWalker<VocabWord>) new RandomWalker.Builder<>(graphBig)
-                        .setWalkLength(20).setWalkDirection(WalkDirection.FORWARD_UNIQUE)
-                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
+                .setWalkLength(20).setWalkDirection(WalkDirection.FORWARD_UNIQUE)
+                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
 
         Sequence<VocabWord> sequence1 = walker.next();
 
@@ -200,8 +202,8 @@ public class RandomWalkerTest extends BaseDL4JTest {
     @Test
     public void testGraphTraverseRandom6() throws Exception {
         GraphWalker<VocabWord> walker = new RandomWalker.Builder<>(graphDirected).setWalkLength(20)
-                        .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
-                        .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
+                .setWalkDirection(WalkDirection.FORWARD_UNIQUE)
+                .setNoEdgeHandling(NoEdgeHandling.CUTOFF_ON_DISCONNECTED).build();
 
         Sequence<VocabWord> sequence = walker.next();
         assertEquals("0", sequence.getElements().get(0).getLabel());

@@ -1164,7 +1164,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
             unserialized = ParagraphVectors.fromJson(json);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
 

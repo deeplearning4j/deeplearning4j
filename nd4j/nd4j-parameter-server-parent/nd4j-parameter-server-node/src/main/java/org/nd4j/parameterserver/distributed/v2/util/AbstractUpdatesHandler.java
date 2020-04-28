@@ -16,7 +16,6 @@
 
 package org.nd4j.parameterserver.distributed.v2.util;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
 import org.reactivestreams.Subscription;
 

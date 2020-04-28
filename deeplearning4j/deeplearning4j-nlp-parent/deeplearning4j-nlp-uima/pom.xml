@@ -95,6 +95,13 @@
             <artifactId>deeplearning4j-common-tests</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
+            <!-- Exclude due to dependency issue -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

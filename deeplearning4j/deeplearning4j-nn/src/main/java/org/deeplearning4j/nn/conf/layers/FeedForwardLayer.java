@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
@@ -35,6 +36,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
 
     protected long nIn;
     protected long nOut;
+    protected DataFormat timeDistributedFormat;
 
     public FeedForwardLayer(Builder builder) {
         super(builder);
@@ -51,7 +53,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
                             + getLayerName() + "\"): expected FeedForward input type. Got: " + inputType);
         }
 
-        return InputType.feedForward(nOut);
+        return InputType.feedForward(nOut, timeDistributedFormat);
     }
 
     @Override
@@ -71,6 +73,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 this.nIn = f.getFlattenedSize();
             }
         }
+
+        if(inputType instanceof InputType.InputTypeFeedForward){
+            InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
+            this.timeDistributedFormat = f.getTimeDistributedFormat();
+        }
     }
 
     @Override
@@ -87,11 +94,11 @@ public abstract class FeedForwardLayer extends BaseLayer {
                 return null;
             case RNN:
                 //RNN -> FF
-                return new RnnToFeedForwardPreProcessor();
+                return new RnnToFeedForwardPreProcessor(((InputType.InputTypeRecurrent)inputType).getFormat());
             case CNN:
                 //CNN -> FF
                 InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-                return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
+                return new CnnToFeedForwardPreProcessor(c.getHeight(), c.getWidth(), c.getChannels(), c.getFormat());
             case CNN3D:
                 //CNN3D -> FF
                 InputType.InputTypeConvolutional3D c3d = (InputType.InputTypeConvolutional3D) inputType;

@@ -64,7 +64,7 @@ public interface IHistoryProcessor {
         @Builder.Default int skipFrame = 4;
 
         public int[] getShape() {
-            return new int[] {getHistoryLength(), getCroppingHeight(), getCroppingWidth()};
+            return new int[] {getHistoryLength(), getRescaledHeight(), getRescaledWidth()};
         }
     }
 }

@@ -16,11 +16,14 @@
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,6 +31,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
@@ -47,8 +51,15 @@ import java.util.Arrays;
  */
 @Data
 @Slf4j
+@NoArgsConstructor
 public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
+    private RNNFormat rnnDataFormat = RNNFormat.NCW;
+
+    public RnnToFeedForwardPreProcessor(@JsonProperty("rnnDataFormat") RNNFormat rnnDataFormat){
+        if(rnnDataFormat != null)
+            this.rnnDataFormat = rnnDataFormat;
+    }
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         //Need to reshape RNN activations (3d) activations to 2d (for input into feed forward layer)
@@ -59,10 +70,13 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         if (input.ordering() != 'f' || !Shape.hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'f');
 
+        if (rnnDataFormat == RNNFormat.NWC){
+            input = input.permute(0, 2, 1);
+        }
         val shape = input.shape();
         INDArray ret;
         if (shape[0] == 1) {
-            ret = input.tensorAlongDimension(0, 1, 2).permutei(1, 0); //Edge case: miniBatchSize==1
+            ret = input.tensorAlongDimension(0, 1, 2).permute(1, 0); //Edge case: miniBatchSize==1
         } else if (shape[2] == 1) {
             ret = input.tensorAlongDimension(0, 1, 0); //Edge case: timeSeriesLength=1
         } else {
@@ -85,17 +99,15 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         val shape = output.shape();
         INDArray reshaped = output.reshape('f', miniBatchSize, shape[0] / miniBatchSize, shape[1]);
-        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, reshaped.permute(0, 2, 1));
+        if (rnnDataFormat == RNNFormat.NCW){
+            reshaped = reshaped.permute(0, 2, 1);
+        }
+        return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, reshaped);
     }
 
     @Override
     public RnnToFeedForwardPreProcessor clone() {
-        try {
-            RnnToFeedForwardPreProcessor clone = (RnnToFeedForwardPreProcessor) super.clone();
-            return clone;
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
+        return new RnnToFeedForwardPreProcessor(rnnDataFormat);
     }
 
     @Override
@@ -105,7 +117,7 @@ public class RnnToFeedForwardPreProcessor implements InputPreProcessor {
         }
 
         InputType.InputTypeRecurrent rnn = (InputType.InputTypeRecurrent) inputType;
-        return InputType.feedForward(rnn.getSize());
+        return InputType.feedForward(rnn.getSize(), rnn.getFormat());
     }
 
     @Override

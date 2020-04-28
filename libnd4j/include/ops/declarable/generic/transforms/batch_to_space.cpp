@@ -75,7 +75,10 @@ CUSTOM_OP_IMPL(batch_to_space, 2, 1, false, 0, 1) {
     REQUIRE_TRUE(oH >= 0, 0, "BatchToSpace: crop top/bottom values are too big and cause negative output height dimension !");
     REQUIRE_TRUE(oW >= 0, 0, "BatchToSpace: crop left/right values are too big and cause negative output width dimension !");
 
-    helpers::batchToSpace(block.launchContext(), *input, *output, cropBottom, cropTop, cropLeft, cropRight, blockSize);
+    if (shape::strideDescendingCAscendingF(input->shapeInfo()))
+        helpers::batchToSpace(block.launchContext(), *input, *output, cropBottom, cropTop, cropLeft, cropRight, blockSize);
+    else
+        helpers::batchToSpace(block.launchContext(), input->dup(), *output, cropBottom, cropTop, cropLeft, cropRight, blockSize);
 
     return Status::OK();
 }

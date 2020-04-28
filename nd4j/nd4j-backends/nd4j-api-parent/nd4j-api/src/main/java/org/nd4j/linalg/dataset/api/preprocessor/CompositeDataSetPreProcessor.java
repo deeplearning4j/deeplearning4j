@@ -19,8 +19,6 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 
 /**
  * A simple Composite DataSetPreProcessor - allows you to apply multiple DataSetPreProcessors sequentially

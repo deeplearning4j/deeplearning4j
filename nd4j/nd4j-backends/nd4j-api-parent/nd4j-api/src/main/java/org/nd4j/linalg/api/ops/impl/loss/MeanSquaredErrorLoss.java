@@ -22,7 +22,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.loss.bp.MeanSquaredErrorLossBp;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**

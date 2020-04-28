@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -58,6 +59,7 @@ public class SubsamplingLayer extends NoParamLayer {
     protected int pnorm;
     protected double eps;
     protected boolean cudnnAllowFallback = true;
+    protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW;
     /*
     Default here for JSON deserialization of 1.0.0-beta4 and earlier models. New models default to false via builder.
     This impacts average pooling only - whether the divisor should include or exclude padding along image edges.
@@ -121,6 +123,7 @@ public class SubsamplingLayer extends NoParamLayer {
         if (clone.dilation != null) {
             clone.dilation = clone.dilation.clone();
         }
+
         return clone;
     }
 
@@ -153,12 +156,13 @@ public class SubsamplingLayer extends NoParamLayer {
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
                         ((InputType.InputTypeConvolutional) inputType).getChannels(), layerIndex, getLayerName(),
-                        SubsamplingLayer.class);
+                        cnn2dDataFormat, SubsamplingLayer.class);
     }
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
         //No op: subsampling layer doesn't have nIn value
+        this.cnn2dDataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
     }
 
     @Override
@@ -229,6 +233,7 @@ public class SubsamplingLayer extends NoParamLayer {
          * Dilation for kernel
          */
         private int[] dilation = new int[] {1, 1};
+        protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
         public Builder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             super(poolingType, kernelSize, stride);
@@ -308,6 +313,17 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.dataFormat = format;
+            return this;
+        }
+
+        /**
          * Kernel dilation. Default: {1, 1}, which is standard convolutions. Used for implementing dilated convolutions,
          * which are also known as atrous convolutions.<br> NOTE: Kernel dilation is less common in practice for
          * subsampling layers, compared to convolutional layers.
@@ -357,6 +373,10 @@ public class SubsamplingLayer extends NoParamLayer {
 
         public void setDilation(int[] dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
+        }
+
+        public void setDataFormat(CNN2DFormat format){
+            this.dataFormat = format;
         }
     }
 

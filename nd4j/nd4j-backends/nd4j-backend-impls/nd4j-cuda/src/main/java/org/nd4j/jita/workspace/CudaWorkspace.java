@@ -413,7 +413,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     public String getUniqueId() {
-        return "Workspace_" + getId();
+        return "Workspace_" + getId() + "_" + Nd4j.getDeallocatorService().nextValue();
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.loss.bp;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -25,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
  *
  * @author Paul Dubs
  */
+@NoArgsConstructor
 public class LogPoissonLossBp extends BaseLossBp {
 
     private boolean full = false;
@@ -39,9 +41,7 @@ public class LogPoissonLossBp extends BaseLossBp {
         addArgs();
     }
 
-    public LogPoissonLossBp(){ }
-
-
+    @Override
     protected void addArgs(){
        super.addArgs();
         if(full){

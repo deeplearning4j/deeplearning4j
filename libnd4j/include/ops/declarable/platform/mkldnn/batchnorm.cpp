@@ -151,7 +151,7 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
 
 
 //////////////////////////////////////////////////////////////////////////
-static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const NDArray* variance, const NDArray* dLdO, const NDArray* weights,
+static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const NDArray* variance, const NDArray &dLdO, const NDArray* weights,
                                     NDArray* dLdI, NDArray* dLdW, const float epsilon, const bool isNCHW) {
 
     // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any) for x
@@ -213,7 +213,7 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     dnnl::memory::desc dLdO_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
     dnnl::memory::desc dLdO_user_md = dnnl::memory::desc(dims, type, format);
 
-    mkldnnUtils::setBlockStrides(dLdO, dLdO_user_md);
+    mkldnnUtils::setBlockStrides(&dLdO, dLdO_user_md);
 
     // dLdI
     dnnl::memory::desc dLdI_mkl_md  = dnnl::memory::desc(dims, type, dnnl::memory::format_tag::any);
@@ -242,7 +242,7 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     mkldnnUtils::loadDataToMklStream(x, engine, stream, x_user_md, op_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // dLdO
-    mkldnnUtils::loadDataToMklStream(dLdO, engine, stream, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
+    mkldnnUtils::loadDataToMklStream(&dLdO, engine, stream, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // mean
     auto mean_mkl_mem = dnnl::memory(op_bp_prim_desc.mean_desc(), engine, mean->getBuffer());
@@ -316,7 +316,7 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     stdInv.applyTransform(transform::Sqrt, stdInv);                                 // 1 / (variance + epsilon)^0.5
 
     // dfdm / N
-    auto dfdm = dLdO->reduceAlongDimension(sd::reduce::Sum, excludedAxes);
+    auto dfdm = dLdO.reduceAlongDimension(sd::reduce::Sum, excludedAxes);
     dfdm *= stdInv;
     dfdm *= -Ninv;
 
@@ -327,7 +327,7 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
 
     // (2/N)*dfdv
     NDArray dfdv(variance);                 // empty array with same shape as variance
-    (xMinusMean * *dLdO).reduceAlongDimension(sd::reduce::Sum, dfdv, excludedAxes);
+    (xMinusMean * dLdO).reduceAlongDimension(sd::reduce::Sum, dfdv, excludedAxes);
     dfdv *= stdInv*stdInv*stdInv;
     dfdv *= -Ninv;
 
@@ -661,7 +661,10 @@ PLATFORM_IMPL(batchnorm_bp, ENGINE_CPU) {
 
     const bool isNCHW = !(axes[0] == inRank - 1 && inRank > 2);
 
-    batchnormBackPropMKLDNN(input, mean, variance, dLdO, weights, dLdI, dLdW, epsilon, isNCHW);
+    if (shape::strideDescendingCAscendingF(dLdO->shapeInfo()))
+        batchnormBackPropMKLDNN(input, mean, variance, *dLdO, weights, dLdI, dLdW, epsilon, isNCHW);
+    else
+        batchnormBackPropMKLDNN(input, mean, variance, dLdO->dup(), weights, dLdI, dLdW, epsilon, isNCHW);
 
     *dLdM = 0;
     *dLdV = 0;

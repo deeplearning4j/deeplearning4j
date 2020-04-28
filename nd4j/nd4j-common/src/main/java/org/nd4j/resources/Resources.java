@@ -87,6 +87,15 @@ public class Resources {
         INSTANCE.copyDir(directoryPath, destinationDir);
     }
 
+    /**
+     * Normalize the path that may be a resource reference.
+     * For example: "someDir/myFile.zip.resource_reference" --> "someDir/myFile.zip"
+     * Returns null if the file cannot be resolved.
+     * If the file is not a reference, the original path is returned
+     */
+    public static String normalizePath(String path){
+        return INSTANCE.normalize(path);
+    }
 
     protected boolean resourceExists(String resourcePath) {
         for (Resolver r : resolvers) {
@@ -126,6 +135,13 @@ public class Resources {
                 return;
             }
         }
+    }
+
+    public String normalize(String path){
+        for(Resolver r : resolvers){
+            path = r.normalizePath(path);
+        }
+        return path;
     }
 
 }

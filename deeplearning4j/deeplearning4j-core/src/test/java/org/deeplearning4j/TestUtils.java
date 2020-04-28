@@ -20,6 +20,7 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -153,11 +154,22 @@ public class TestUtils {
         return randomOneHotTimeSeries(minibatch, outSize, tsLength, new Random(rngSeed));
     }
 
-    public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength, Random rng){
-        INDArray out = Nd4j.create(new int[]{minibatch, outSize, tsLength}, 'f');
+    public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength, Random rng) {
+        return randomOneHotTimeSeries(RNNFormat.NCW, minibatch, outSize, tsLength, rng);
+    }
+
+    public static INDArray randomOneHotTimeSeries(RNNFormat format, int minibatch, int outSize, int tsLength, Random rng){
+        boolean ncw = format == RNNFormat.NCW;
+        long[] shape = ncw ? new long[]{minibatch, outSize, tsLength} : new long[]{minibatch, tsLength, outSize};
+        char order = ncw ? 'f' : 'c';
+        INDArray out = Nd4j.create(DataType.FLOAT, shape, order);
         for( int i=0; i<minibatch; i++ ){
             for( int j=0; j<tsLength; j++ ){
-                out.putScalar(i, rng.nextInt(outSize), j, 1.0);
+                if(ncw){
+                    out.putScalar(i, rng.nextInt(outSize), j, 1.0);
+                } else {
+                    out.putScalar(i, j, rng.nextInt(outSize), 1.0);
+                }
             }
         }
         return out;

@@ -156,7 +156,7 @@ public class LayerBuilderTest extends BaseDL4JTest {
 
         checkSerialization(glstm);
 
-        assertEquals(glstm.getForgetGateBiasInit(), 1.5, 0.0);
+        assertEquals(1.5, glstm.getForgetGateBiasInit(), 0.0);
         assertEquals(glstm.nIn, numIn);
         assertEquals(glstm.nOut, numOut);
         assertTrue(glstm.getActivationFn() instanceof ActivationTanH);

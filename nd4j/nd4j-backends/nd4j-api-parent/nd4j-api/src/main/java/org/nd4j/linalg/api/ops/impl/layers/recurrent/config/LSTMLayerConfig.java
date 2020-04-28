@@ -19,8 +19,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

@@ -63,7 +63,7 @@ public class RemoteParameterServerClientTests extends BaseND4JTest {
                 masterStatus.set(
                                 BackgroundDaemonStarter.startMaster(parameterLength, mediaDriver.aeronDirectoryName()));
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         });
 
@@ -73,7 +73,7 @@ public class RemoteParameterServerClientTests extends BaseND4JTest {
             try {
                 slaveStatus.set(BackgroundDaemonStarter.startSlave(parameterLength, mediaDriver.aeronDirectoryName()));
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         });
         t2.start();

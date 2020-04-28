@@ -540,7 +540,7 @@ public class GraphRunner implements Closeable {
             org.tensorflow.framework.GraphDef graphDef1 = org.tensorflow.framework.GraphDef.parseFrom(graphToUse);
             initSessionAndStatusIfNeeded(graphDef1);
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 
@@ -562,7 +562,7 @@ public class GraphRunner implements Closeable {
             org.tensorflow.framework.ConfigProto configProto = org.tensorflow.framework.ConfigProto.parseFrom(binaryString);
             return configProto;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return null;
@@ -641,7 +641,7 @@ public class GraphRunner implements Closeable {
         try {
             return org.nd4j.shade.protobuf.util.JsonFormat.printer().print(sessionOptionsConfigProto);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return null;
@@ -681,7 +681,7 @@ public class GraphRunner implements Closeable {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return builder1.build();

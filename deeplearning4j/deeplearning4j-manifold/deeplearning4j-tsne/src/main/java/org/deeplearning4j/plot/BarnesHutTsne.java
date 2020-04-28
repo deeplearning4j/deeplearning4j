@@ -687,9 +687,7 @@ public class BarnesHutTsne implements Model {
      * @throws IOException
      */
     public void saveAsFile(List<String> labels, String path) throws IOException {
-        BufferedWriter write = null;
-        try {
-            write = new BufferedWriter(new FileWriter(new File(path)));
+        try (BufferedWriter write = new BufferedWriter(new FileWriter(new File(path)))) {
             for (int i = 0; i < Y.rows(); i++) {
                 if (i >= labels.size())
                     break;
@@ -711,17 +709,11 @@ public class BarnesHutTsne implements Model {
 
             }
             write.flush();
-            write.close();
-        } finally {
-            if (write != null)
-                write.close();
         }
     }
 
     public void saveAsFile(String path) throws IOException {
-        BufferedWriter write = null;
-        try {
-            write = new BufferedWriter(new FileWriter(new File(path)));
+        try (BufferedWriter write = new BufferedWriter(new FileWriter(new File(path)))) {
             for (int i = 0; i < Y.rows(); i++) {
                 StringBuilder sb = new StringBuilder();
                 INDArray wordVector = Y.getRow(i);
@@ -734,10 +726,6 @@ public class BarnesHutTsne implements Model {
                 write.write(sb.toString());
             }
             write.flush();
-            write.close();
-        } finally {
-            if (write != null)
-                write.close();
         }
     }
     /**

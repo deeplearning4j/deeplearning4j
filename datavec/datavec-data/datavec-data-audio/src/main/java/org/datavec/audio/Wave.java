@@ -61,7 +61,7 @@ public class Wave implements Serializable {
             initWaveWithInputStream(inputStream);
             inputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println(e.toString());
         }
     }
 
@@ -96,7 +96,7 @@ public class Wave implements Serializable {
                 data = new byte[inputStream.available()];
                 inputStream.read(data);
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.println(e.toString());
             }
             // end load data
         } else {

@@ -21,6 +21,7 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.DirectBuffer;
 import org.nd4j.aeron.ipc.AeronNDArrayPublisher;
 import org.nd4j.aeron.ipc.AeronUtil;
@@ -42,6 +43,7 @@ import java.nio.ByteOrder;
  */
 @AllArgsConstructor
 @Builder
+@Slf4j
 public class NDArrayResponseFragmentHandler implements FragmentHandler {
     private NDArrayHolder holder;
     private Aeron.Context context;
@@ -80,13 +82,13 @@ public class NDArrayResponseFragmentHandler implements FragmentHandler {
             try {
                 publisher.publish(arrGet);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
             try {
                 publisher.close();
             } catch (Exception e) {
-
+                log.error("",e);
             }
         }
     }

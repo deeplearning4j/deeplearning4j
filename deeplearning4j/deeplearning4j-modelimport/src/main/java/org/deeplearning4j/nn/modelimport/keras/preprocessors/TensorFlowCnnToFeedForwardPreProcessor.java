@@ -27,26 +27,25 @@ import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Specialized CnnToFeedForwardInputPreProcessor for use with
- * Convolutional layers imported from Keras using the TensorFlow
- * backend.
- *
- * @author dave@skymind.io
+ * @deprecated Exists only for backward compatibility of older pretrained models. Should not be used.
+ * Use {@link CnnToFeedForwardPreProcessor} for all new models instead.
  */
-@Slf4j
+@Slf4j @Deprecated
 public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreProcessor {
 
-    @JsonCreator
+    @JsonCreator @Deprecated
     public TensorFlowCnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") long inputHeight,
                                                   @JsonProperty("inputWidth") long inputWidth,
                                                   @JsonProperty("numChannels") long numChannels) {
         super(inputHeight, inputWidth, numChannels);
     }
 
+    @Deprecated
     public TensorFlowCnnToFeedForwardPreProcessor(long inputHeight, long inputWidth) {
         super(inputHeight, inputWidth);
     }
 
+    @Deprecated
     public TensorFlowCnnToFeedForwardPreProcessor() {
         super();
     }

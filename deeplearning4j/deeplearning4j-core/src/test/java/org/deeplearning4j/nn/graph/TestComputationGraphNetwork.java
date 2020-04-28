@@ -1394,7 +1394,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
 
 
             } catch (Exception e) {
-                //e.printStackTrace();
+                log.error("",e);
                 if(allowDisconnected){
                     fail("No exception expected");
                 } else {

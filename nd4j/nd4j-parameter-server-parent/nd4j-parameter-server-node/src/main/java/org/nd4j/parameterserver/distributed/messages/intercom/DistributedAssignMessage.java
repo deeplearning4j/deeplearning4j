@@ -20,7 +20,6 @@ import lombok.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
-import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 
 /**
  * Assign target row to specified value

@@ -227,7 +227,7 @@ public class RnnOpValidation extends BaseOpValidation {
                 .cBias(bc)
                 .build();
 
-        SDVariable[] v = sd.rnn().gru(x, hLast, weights);
+        SDVariable[] v = sd.rnn().gruCell(x, hLast, weights);
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v){
             toExec.add(sdv.name());

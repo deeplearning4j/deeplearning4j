@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -121,6 +122,7 @@ public class KerasEmbedding extends KerasLayer {
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)
+                .outputDataFormat(RNNFormat.NWC)
                 .hasBias(false);
         if (embeddingConstraint != null)
             builder.constrainWeights(embeddingConstraint);

@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.DepthwiseConvolution2DLayer;
@@ -47,13 +48,14 @@ import java.util.*;
 @EqualsAndHashCode(callSuper = true)
 public class DepthwiseConvolution2D extends ConvolutionLayer {
 
-    int depthMultiplier;
+    protected int depthMultiplier;
 
     protected DepthwiseConvolution2D(Builder builder) {
         super(builder);
         Preconditions.checkState(builder.depthMultiplier > 0, "Depth multiplier must be > 0,  got %s", builder.depthMultiplier);
         this.depthMultiplier = builder.depthMultiplier;
         this.nOut = this.nIn * this.depthMultiplier;
+        this.cnn2dDataFormat = builder.cnn2DFormat;
 
         initializeConstraints(builder);
     }
@@ -95,7 +97,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        nOut, layerIndex, getLayerName(), DepthwiseConvolution2DLayer.class);
+                        nOut, layerIndex, getLayerName(), cnn2dDataFormat, DepthwiseConvolution2DLayer.class);
     }
 
     @Override
@@ -105,6 +107,7 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
         if(nOut == 0 || override){
             nOut = this.nIn * this.depthMultiplier;
         }
+        this.cnn2dDataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
     }
 
     @Getter
@@ -115,7 +118,9 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
          * Set channels multiplier for depth-wise convolution
          *
          */
-        public int depthMultiplier = 1;
+        protected int depthMultiplier = 1;
+        protected CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;
+
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
             super(kernelSize, stride, padding);
@@ -137,6 +142,17 @@ public class DepthwiseConvolution2D extends ConvolutionLayer {
         protected boolean allowCausal() {
             //Causal convolution - allowed for 1D only
             return false;
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.cnn2DFormat = format;
+            return this;
         }
 
         /**

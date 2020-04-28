@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.shade.guava.primitives.Ints;
 
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -75,6 +76,7 @@ import java.util.concurrent.locks.LockSupport;
 @NoArgsConstructor
 @Data
 @Parameters(separators = ",")
+@Slf4j
 public class ParameterServerSubscriber implements AutoCloseable {
 
     private static Logger log = LoggerFactory.getLogger(ParameterServerSubscriber.class);
@@ -223,7 +225,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
         try {
             jcmdr.parse(args);
         } catch (ParameterException e) {
-            e.printStackTrace();
+            log.error("",e);
             //User provides invalid input -> print the usage info
             jcmdr.usage();
             try {

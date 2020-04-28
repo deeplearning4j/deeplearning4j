@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.util.Iterator;
@@ -29,6 +30,7 @@ import java.util.Iterator;
  *
  * @author raver119@gmail.com
   */
+@Slf4j
 public class BasicLineIterator implements SentenceIterator, Iterable<String> {
 
     private BufferedReader reader;
@@ -113,7 +115,7 @@ public class BasicLineIterator implements SentenceIterator, Iterable<String> {
                 reader.close();
         } catch (Exception e) {
             // do nothing here
-            e.printStackTrace();
+            log.error("",e);
         }
         super.finalize();
     }

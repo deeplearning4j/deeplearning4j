@@ -660,7 +660,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                     //OK
                     System.out.println("Expected exception: " + e.getMessage());
                 } catch (Exception e){
-                    e.printStackTrace();
+                    log.error("",e);
                     fail("Expected other exception type");
                 }
 
@@ -903,7 +903,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                             int idx = t.getRight();
                             act[idx] = inf.output(t.getFirst(), t.getSecond());
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            log.error("",e);
                             failedCount.incrementAndGet();
                         }
                     }
@@ -955,7 +955,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                         act[j] = inf.output(in.get(j), inMask);
                         counter.incrementAndGet();
                     } catch (Exception e){
-                        e.printStackTrace();
+                        log.error("",e);
                         failedCount.incrementAndGet();
                     }
                 }

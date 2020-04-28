@@ -19,6 +19,8 @@ package org.deeplearning4j.malmo;
 import java.util.Arrays;
 
 import com.microsoft.msr.malmo.WorldState;
+import org.deeplearning4j.rl4j.space.Box;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * A Malmo consistency policy that ensures the both there is a reward and next observation has a different position that the previous one.
@@ -30,14 +32,14 @@ public class MalmoDescretePositionPolicy implements MalmoObservationPolicy {
 
     @Override
     public boolean isObservationConsistant(WorldState world_state, WorldState original_world_state) {
-        MalmoBox last_observation = observationSpace.getObservation(world_state);
-        MalmoBox old_observation = observationSpace.getObservation(original_world_state);
+        Box last_observation = observationSpace.getObservation(world_state);
+        Box old_observation = observationSpace.getObservation(original_world_state);
 
-        double[] newvalues = old_observation == null ? null : old_observation.toArray();
-        double[] oldvalues = last_observation == null ? null : last_observation.toArray();
+        INDArray newvalues = old_observation == null ? null : old_observation.getData();
+        INDArray oldvalues = last_observation == null ? null : last_observation.getData();
 
         return !(world_state.getObservations().isEmpty() || world_state.getRewards().isEmpty()
-                        || Arrays.equals(oldvalues, newvalues));
+                        || oldvalues.eq(newvalues).all());
     }
 
 }

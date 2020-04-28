@@ -329,7 +329,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             dos.flush();
             dos.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 

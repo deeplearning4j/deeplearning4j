@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.BaseRecurrentLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
@@ -30,6 +31,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.layers.recurrent.BidirectionalLayer;
 import org.deeplearning4j.nn.params.BidirectionalParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
@@ -124,6 +126,10 @@ public class Bidirectional extends Layer {
         }
     }
 
+    public RNNFormat getRNNDataFormat(){
+        return TimeSeriesUtils.getFormatFromRnnLayer(fwd);
+    }
+
     @Override
     public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
@@ -170,7 +176,7 @@ public class Bidirectional extends Layer {
         } else {
             InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) outOrig;
             if (mode == Mode.CONCAT) {
-                return InputType.recurrent(2 * r.getSize());
+                return InputType.recurrent(2 * r.getSize(), getRNNDataFormat());
             } else {
                 return r;
             }

@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.convolution.upsampling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BaseUpsamplingLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -52,6 +53,10 @@ public class Upsampling1D extends Upsampling2D {
         super(conf, dataType);
     }
 
+    @Override
+    protected CNN2DFormat getFormat(){
+        return CNN2DFormat.NCHW;
+    }
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {

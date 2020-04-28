@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -18,7 +19,7 @@ package org.deeplearning4j.nn.layers.convolution.upsampling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -62,32 +63,39 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        long miniBatch = (int) input.size(0);
-        long inDepth = (int) input.size(1);
-        long inH = (int) input.size(2);
-        long inW = (int) input.size(3);
+        CNN2DFormat format = getFormat();
+        boolean nchw = format == CNN2DFormat.NCHW;
 
-        INDArray reshapedEpsilon =  workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), new long[]{miniBatch, inDepth, inH, inW}, 'c');
+        long miniBatch = (int) input.size(0);
+        long inDepth = (int) input.size(nchw ? 1 : 3);
+        long inH = (int) input.size(nchw ? 2 : 1);
+        long inW = (int) input.size(nchw ? 3 : 2);
+
+        long[] epsShape = nchw ? new long[]{miniBatch, inDepth, inH, inW} : new long[]{miniBatch, inH, inW, inDepth};
+        INDArray epsOut =  workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), epsShape, 'c');
 
         Gradient gradient = new DefaultGradient();
 
-        int[] intArgs = new int[] {1}; // 1 is for NCHW
-
-
         CustomOp op = DynamicCustomOp.builder("upsampling_bp")
-                .addIntegerArguments(intArgs)
+                .addIntegerArguments(nchw ? 1 : 0)      //1=NCHW, 0=NHWC
                 .addInputs(input, epsilon)
-                .addOutputs(reshapedEpsilon)
+                .addOutputs(epsOut)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        reshapedEpsilon = backpropDropOutIfPresent(reshapedEpsilon);
-        return new Pair<>(gradient, reshapedEpsilon);
+        epsOut = backpropDropOutIfPresent(epsOut);
+
+        return new Pair<>(gradient, epsOut);
     }
 
     protected int[] getSize(){
         return layerConf().getSize();
+    }
+
+    protected CNN2DFormat getFormat(){
+        //Here so it can be overridden by Upsampling1D
+        return layerConf().getFormat();
     }
 
     protected INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
@@ -97,7 +105,7 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
-                    + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
+                    + ". Expected rank 4 array with shape " + layerConf().getFormat().dimensionNames() + ". "
                     + layerId());
         }
 
@@ -105,18 +113,22 @@ public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
+        CNN2DFormat format = getFormat();
+        boolean nchw = format == CNN2DFormat.NCHW;
+
         long miniBatch = (int) input.size(0);
-        long inDepth = (int) input.size(1);
-        long inH = (int) input.size(2);
-        long inW = (int) input.size(3);
+        long inDepth = (int) input.size(nchw ? 1 : 3);
+        long inH = (int) input.size(nchw ? 2 : 1);
+        long inW = (int) input.size(nchw ? 3 : 2);
 
         int[] size = getSize();
         int outH = (int)inH * size[0];
         int outW = (int)inW * size[1];
 
-        INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), new long[]{miniBatch, inDepth, outH, outW}, 'c');
+        long[] outShape = nchw ? new long[]{miniBatch, inDepth, outH, outW} : new long[]{miniBatch, outH, outW, inDepth};
+        INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
 
-        int[] intArgs = new int[] {size[0], size[1], 1}; // 1 is for NCHW
+        int[] intArgs = new int[] {size[0], size[1], nchw ? 1 : 0}; // 1 = NCHW, 0 = NHWC
 
         CustomOp upsampling = DynamicCustomOp.builder("upsampling2d")
                 .addIntegerArguments(intArgs)

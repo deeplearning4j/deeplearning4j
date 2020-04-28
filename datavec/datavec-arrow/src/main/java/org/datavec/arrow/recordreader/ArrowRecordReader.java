@@ -17,6 +17,7 @@
 package org.datavec.arrow.recordreader;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
@@ -50,6 +51,7 @@ import static org.datavec.arrow.ArrowConverter.readFromBytes;
  * @author Adam Gibson
  *
  */
+@Slf4j
 public class ArrowRecordReader implements RecordReader {
 
     private InputSplit split;
@@ -132,7 +134,7 @@ public class ArrowRecordReader implements RecordReader {
             currIdx++;
             this.currentPath = url;
         }catch(Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
     }
@@ -242,7 +244,7 @@ public class ArrowRecordReader implements RecordReader {
             try {
                 currentBatch.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
     }

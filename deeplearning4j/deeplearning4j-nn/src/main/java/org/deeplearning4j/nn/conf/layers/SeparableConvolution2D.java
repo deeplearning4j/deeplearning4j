@@ -20,6 +20,7 @@ import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.layers.convolution.SeparableConvolution2DLayer;
@@ -85,6 +86,8 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
+        this.cnn2dDataFormat = builder.dataFormat;
+
 
         initializeConstraints(builder);
     }
@@ -153,8 +156,10 @@ public class SeparableConvolution2D extends ConvolutionLayer {
                             + "\"): Expected CNN input, got " + inputType);
         }
 
+        CNN2DFormat format = ((InputType.InputTypeConvolutional)inputType).getFormat();
+
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        nOut, layerIndex, getLayerName(), SeparableConvolution2DLayer.class);
+                        nOut, layerIndex, getLayerName(), format, SeparableConvolution2DLayer.class);
     }
 
 
@@ -166,7 +171,8 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          * Set channels multiplier of channels-wise step in separable convolution
          *
          */
-        public int depthMultiplier = 1;
+        protected int depthMultiplier = 1;
+        protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
             super(kernelSize, stride, padding);
@@ -188,6 +194,17 @@ public class SeparableConvolution2D extends ConvolutionLayer {
         protected boolean allowCausal() {
             //Causal convolution - allowed for 1D only
             return false;
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.dataFormat = format;
+            return this;
         }
 
         /**

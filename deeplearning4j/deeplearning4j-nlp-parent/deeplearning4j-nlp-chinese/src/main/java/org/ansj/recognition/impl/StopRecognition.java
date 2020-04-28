@@ -75,7 +75,6 @@ public class StopRecognition implements Recognition {
             try {
                 regexList.add(Pattern.compile(regex));
             } catch (Exception e) {
-                e.printStackTrace();
                 LOG.error("regex err : " + regex, e);
             }
         }
