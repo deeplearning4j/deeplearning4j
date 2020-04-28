@@ -24,6 +24,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.documentiterator.DocumentIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.LabelAwareIteratorWrapper;
 import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -186,7 +187,7 @@ public class TfidfVectorizer extends BaseTextVectorizer {
         }
 
         public Builder setIterator(@NonNull LabelAwareIterator iterator) {
-            this.iterator = iterator;
+            this.iterator = new LabelAwareIteratorWrapper(iterator, labelsSource);
             return this;
         }
 
