@@ -490,19 +490,4 @@
             <!-- Default to ALL modules here, unlike nd4j-native -->
         </profile>
     </profiles>
-
-    <reporting>
-        <plugins>
-            <plugin>
-                <artifactId>maven-surefire-report-plugin</artifactId>
-                <version>${maven-surefire-plugin.version}</version>
-            </plugin>
-            <!-- Test coverage -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>cobertura-maven-plugin</artifactId>
-                <version>2.7</version>
-            </plugin>
-        </plugins>
-    </reporting>
 </project>
