@@ -90,6 +90,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
                 <configuration>
                     <forceCreation>true</forceCreation>
                 </configuration>
@@ -121,6 +122,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
                 <executions>
                     <execution>
                         <id>python-install-cython</id>
