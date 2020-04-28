@@ -238,9 +238,6 @@
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
             <plugin>
-                <artifactId>maven-source-plugin</artifactId>
-            </plugin>
-            <plugin>
                 <groupId>com.lewisd</groupId>
                 <artifactId>lint-maven-plugin</artifactId>
                 <version>${maven-lint-plugin.version}</version>
@@ -347,18 +344,6 @@
                     <executions>
                         <execution>
                             <id>attach-javadocs</id>
-                            <goals>
-                                <goal>jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>${maven-source-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <id>attach-sources</id>
                             <goals>
                                 <goal>jar</goal>
                             </goals>
