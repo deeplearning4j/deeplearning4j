@@ -460,9 +460,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         if (length < 0)
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
-        // creating empty native DataBuffer
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-
         if (dataType() == DataType.DOUBLE) {
             attached = true;
             parentWorkspace = workspace;
@@ -559,7 +556,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         }
 
         // storing pointer into native DataBuffer
-        ptrDataBuffer.setPrimaryBuffer(pointer, length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
 
         // adding deallocator reference
         Nd4j.getDeallocatorService().pickObject(this);
@@ -570,8 +567,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     public BaseCpuDataBuffer(Pointer pointer, Indexer indexer, long length) {
         super(pointer, indexer, length);
 
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, type, false);
-        ptrDataBuffer.setPrimaryBuffer(this.pointer, length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);;
     }
 
@@ -633,8 +629,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asFloatPointer().put(data);
 
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-        this.ptrDataBuffer.setPrimaryBuffer(pointer, this.length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
@@ -655,8 +650,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asDoublePointer().put(data);
 
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-        this.ptrDataBuffer.setPrimaryBuffer(pointer, this.length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
@@ -678,8 +672,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asIntPointer().put(data);
 
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-        this.ptrDataBuffer.setPrimaryBuffer(pointer, this.length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
@@ -700,8 +693,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asLongPointer().put(data);
 
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-        this.ptrDataBuffer.setPrimaryBuffer(pointer, this.length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();

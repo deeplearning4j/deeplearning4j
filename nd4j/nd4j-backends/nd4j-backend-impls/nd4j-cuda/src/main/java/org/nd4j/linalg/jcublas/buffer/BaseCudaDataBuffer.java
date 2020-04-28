@@ -101,9 +101,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         initTypeAndSize();
 
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, this.type, false);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, this.type,  pointer, specialPointer);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, this.type.width() * length);
-        this.allocationPoint.setPointers(pointer, specialPointer, length);
 
         Nd4j.getDeallocatorService().pickObject(this);
     }
@@ -411,14 +410,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.offset = 0;
         this.originalOffset = 0;
 
-        // allocating empty databuffer
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, type, false);
-
         if (workspace.getWorkspaceConfiguration().getPolicyMirroring() == MirroringPolicy.FULL) {
             val devicePtr = workspace.alloc(length * elementSize, MemoryKind.DEVICE, type, initialize);
 
             // allocate from workspace, and pass it  to native DataBuffer
-            ptrDataBuffer.setSpecialBuffer(devicePtr, this.length);
+            ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
 
             if (initialize) {
                 val ctx = AtomicAllocator.getInstance().getDeviceContext();
@@ -428,7 +424,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }  else {
             // we can register this pointer as device, because it's pinned memory
             val devicePtr = workspace.alloc(length * elementSize, MemoryKind.HOST, type, initialize);
-            ptrDataBuffer.setSpecialBuffer(devicePtr, this.length);
+            ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
 
             if (initialize) {
                 val ctx = AtomicAllocator.getInstance().getDeviceContext();

@@ -3115,6 +3115,10 @@ bool isOptimalRequirementsMet() {
 #endif
 }
 
+OpaqueDataBuffer* dbAllocateDataBuffer(Nd4jLong elements, int dataType, bool allocateBoth) {
+    return allocateDataBuffer(elements, dataType, allocateBoth);
+}
+
 OpaqueDataBuffer* allocateDataBuffer(Nd4jLong elements, int dataType, bool allocateBoth) {
     try {
         auto dtype = DataTypeUtils::fromInt(dataType);
@@ -3136,6 +3140,18 @@ Nd4jPointer dbSpecialBuffer(OpaqueDataBuffer *dataBuffer) {
 
 void deleteDataBuffer(OpaqueDataBuffer *dataBuffer) {
     delete dataBuffer;
+}
+
+OpaqueDataBuffer* dbCreateExternalDataBuffer(Nd4jLong elements, int dataType, Nd4jPointer primary, Nd4jPointer special) {
+    auto buffer = dbAllocateDataBuffer(0, dataType, false);
+
+    if (primary != nullptr)
+        buffer->setPrimary(primary, elements);
+
+    if (special != nullptr)
+        buffer->setSpecial(special, elements);
+
+    return buffer;
 }
 
 void dbSetPrimaryBuffer(OpaqueDataBuffer *dataBuffer, Nd4jPointer primaryBuffer, Nd4jLong numBytes) {

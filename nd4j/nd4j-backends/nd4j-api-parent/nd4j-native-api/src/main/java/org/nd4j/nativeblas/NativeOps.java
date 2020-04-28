@@ -1201,6 +1201,8 @@ public interface NativeOps {
 
 
     OpaqueDataBuffer allocateDataBuffer(long elements, int dataType, boolean allocateBoth);
+    OpaqueDataBuffer dbAllocateDataBuffer(long elements, int dataType, boolean allocateBoth);
+    OpaqueDataBuffer dbCreateExternalDataBuffer(long elements, int dataType, Pointer primary, Pointer special);
     OpaqueDataBuffer dbCreateView(OpaqueDataBuffer dataBuffer, long length, long offset);
     Pointer dbPrimaryBuffer(OpaqueDataBuffer dataBuffer);
     Pointer dbSpecialBuffer(OpaqueDataBuffer dataBuffer);

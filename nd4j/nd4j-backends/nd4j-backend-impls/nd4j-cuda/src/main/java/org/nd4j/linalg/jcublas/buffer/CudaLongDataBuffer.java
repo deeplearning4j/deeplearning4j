@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -73,9 +74,7 @@ public class CudaLongDataBuffer extends BaseCudaDataBuffer {
         initTypeAndSize();
 
         // creating empty native DataBuffer and filling it with pointers
-        ptrDataBuffer = NativeOpsHolder.getInstance().getDeviceNativeOps().allocateDataBuffer(0, DataType.INT64.toInt(), false);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetPrimaryBuffer(ptrDataBuffer, hostPointer, numberOfElements);
-        NativeOpsHolder.getInstance().getDeviceNativeOps().dbSetSpecialBuffer(ptrDataBuffer, devicePointer, numberOfElements);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(numberOfElements, DataType.INT64, hostPointer, devicePointer);
 
         // setting up java side of things
         this.pointer = new CudaPointer(hostPointer, numberOfElements).asLongPointer();
