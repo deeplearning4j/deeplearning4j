@@ -1,14 +1,11 @@
 package org.deeplearning4j.models.fasttext;
 
-import com.github.jfasttext.JFastText;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
-import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
+import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -17,13 +14,11 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.resources.Resources;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
-
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-
 
 @Slf4j
 public class FastTextTest extends BaseDL4JTest {
@@ -35,7 +30,6 @@ public class FastTextTest extends BaseDL4JTest {
     private File supModelFile = Resources.asFile("models/fasttext/supervised.model.bin");
     private File cbowModelFile = Resources.asFile("models/fasttext/cbow.model.bin");
     private File supervisedVectors = Resources.asFile("models/fasttext/supervised.model.vec");
-
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
@@ -94,7 +88,7 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    public void tesLoadCBOWModel() throws IOException {
+    public void tesLoadCBOWModel() {
 
         FastText fastText = new FastText(cbowModelFile);
         fastText.test(cbowModelFile);
@@ -159,7 +153,7 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testVocabulary() throws IOException {
+    public void testVocabulary() {
         FastText fastText = new FastText(supModelFile);
         assertEquals(48, fastText.vocab().numWords());
         assertEquals(48, fastText.vocabSize());
@@ -190,7 +184,7 @@ public class FastTextTest extends BaseDL4JTest {
     @Test(expected=IllegalStateException.class)
     public void testState() {
         FastText fastText = new FastText();
-        String label = fastText.predict("something");
+        fastText.predict("something");
     }
 
     @Test
@@ -219,7 +213,8 @@ public class FastTextTest extends BaseDL4JTest {
         log.info("\nTraining supervised model ...\n");
         fastText.fit();
 
-        Word2Vec word2Vec = WordVectorSerializer.readAsCsv(new File(output.getAbsolutePath() + ".vec"));
+        Word2Vec word2Vec = WordVectorSerializer.readAsCsv(
+                new FileInputStream(new File(output.getAbsolutePath() + ".vec")));
 
         assertEquals(48,  word2Vec.getVocab().numWords());
 
@@ -231,9 +226,7 @@ public class FastTextTest extends BaseDL4JTest {
 
 
     @Test
-    public void testWordsNativeStatistics() throws IOException {
-
-        File output = testDir.newFile();
+    public void testWordsNativeStatistics() {
 
         FastText fastText = new FastText();
         fastText.loadPretrainedVectors(supervisedVectors);
