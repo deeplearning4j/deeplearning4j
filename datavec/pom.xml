@@ -91,6 +91,7 @@
                 <version>1.2.1</version>
             </extension>
         </extensions>
+
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -132,17 +133,6 @@
                         -->
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>${maven-release-plugin.version}</version>
-                    <configuration>
-                        <mavenExecutorId>forked-path</mavenExecutorId>
-                        <!-- To deploy to an open staging repository: -Darguments=-DstagingRepositoryId=orgnd4j-xxxx -->
-                        <arguments>-Psonatype-oss-release -DskipTests ${arguments}</arguments>
-                        <localCheckout>true</localCheckout>
-                        <pushChanges>false</pushChanges>
                     </configuration>
                 </plugin>
                 <plugin>

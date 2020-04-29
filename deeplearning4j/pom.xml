@@ -359,17 +359,6 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <artifactId>maven-release-plugin</artifactId>
-                    <version>${maven-release-plugin.version}</version>
-                    <configuration>
-                        <mavenExecutorId>forked-path</mavenExecutorId>
-                        <!-- To deploy to an open staging repository: -Darguments=-DstagingRepositoryId=orgdeeplearning4j-xxxx -->
-                        <arguments>-Psonatype-oss-release -DskipTests ${arguments}</arguments>
-                        <localCheckout>true</localCheckout>
-                        <pushChanges>false</pushChanges>
-                    </configuration>
-                </plugin>
-                <plugin>
                     <artifactId>maven-gpg-plugin</artifactId>
                     <version>1.6</version>
                     <configuration>
