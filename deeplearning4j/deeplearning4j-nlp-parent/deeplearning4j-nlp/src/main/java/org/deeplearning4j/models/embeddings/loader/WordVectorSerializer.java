@@ -273,7 +273,7 @@ public class WordVectorSerializer {
             float[] vector = new float[size];
             for (int i = 0; i < words; i++) {
                 word = ReadHelper.readString(dis);
-                log.trace("Loading " + word + " with word " + i);
+                log.trace("Loading {} with word {}", word, i);
 
                 for (int j = 0; j < size; j++) {
                     vector[j] = ReadHelper.readFloat(dis);
@@ -2455,8 +2455,6 @@ public class WordVectorSerializer {
             try {
                 return extendedModel ? readAsExtendedModel(file) : readAsSimplifiedModel(file);
             } catch (Exception loadFromFileException) {
-                boolean compressed = GzipUtils.isCompressedFilename(file.getName());
-
                 try {
                     return readAsCsv(file);
                 } catch (Exception readCsvException) {
@@ -2476,7 +2474,7 @@ public class WordVectorSerializer {
 
     public static Word2Vec readAsBinaryNoLineBreaks(@NonNull File file) {
         try(InputStream is = getStream(file)){
-            return readAsBinary(is);
+            return readAsBinaryNoLineBreaks(is);
         } catch (IOException e){
             throw new RuntimeException("Error reading from file", e);
         }
