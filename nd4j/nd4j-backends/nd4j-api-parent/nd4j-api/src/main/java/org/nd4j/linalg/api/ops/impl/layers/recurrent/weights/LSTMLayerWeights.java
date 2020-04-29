@@ -20,10 +20,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 /**
  * The weight configuration of a LSTMLayer.  For {@link LSTMLayer}

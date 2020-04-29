@@ -22,7 +22,7 @@ import org.apache.commons.math3.linear.NonSquareMatrixException;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.FastMath;
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 
 import java.util.ArrayList;
 import java.util.List;

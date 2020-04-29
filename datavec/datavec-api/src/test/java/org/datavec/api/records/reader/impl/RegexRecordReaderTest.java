@@ -32,8 +32,8 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.BaseND4JTest;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;

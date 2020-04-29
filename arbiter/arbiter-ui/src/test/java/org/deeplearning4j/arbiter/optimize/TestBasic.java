@@ -17,7 +17,7 @@
 package org.deeplearning4j.arbiter.optimize;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.arbiter.ComputationGraphSpace;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
@@ -51,7 +51,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
+import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;

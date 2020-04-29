@@ -29,7 +29,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.*;
 import java.util.Arrays;

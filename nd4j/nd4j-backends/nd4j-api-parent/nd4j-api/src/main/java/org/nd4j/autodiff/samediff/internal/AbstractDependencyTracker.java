@@ -3,9 +3,9 @@ package org.nd4j.autodiff.samediff.internal;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.function.Predicate;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.function.Predicate;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 

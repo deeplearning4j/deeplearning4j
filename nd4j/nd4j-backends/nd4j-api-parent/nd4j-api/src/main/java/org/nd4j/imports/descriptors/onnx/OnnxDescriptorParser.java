@@ -16,7 +16,7 @@
 
 package org.nd4j.imports.descriptors.onnx;
 
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;

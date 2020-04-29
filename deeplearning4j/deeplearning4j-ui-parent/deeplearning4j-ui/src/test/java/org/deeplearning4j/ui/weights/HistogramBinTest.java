@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.ui.weights;
 
+import org.deeplearning4j.ui.model.weights.HistogramBin;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;

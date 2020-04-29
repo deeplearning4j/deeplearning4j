@@ -17,6 +17,7 @@
 package org.nd4j.parameterserver.distributed.v2.messages;
 
 import org.agrona.concurrent.UnsafeBuffer;
+import org.nd4j.common.util.SerializationUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.Serializable;
@@ -51,10 +52,10 @@ public interface VoidMessage extends Serializable {
      * @return
      */
     default UnsafeBuffer asUnsafeBuffer() {
-        return new UnsafeBuffer(org.nd4j.linalg.util.SerializationUtils.toByteArray(this));
+        return new UnsafeBuffer(SerializationUtils.toByteArray(this));
     }
 
     static VoidMessage fromBytes(byte[] bytes) {
-        return org.nd4j.linalg.util.SerializationUtils.readObject(new ByteArrayInputStream(bytes));
+        return SerializationUtils.readObject(new ByteArrayInputStream(bytes));
     }
 }

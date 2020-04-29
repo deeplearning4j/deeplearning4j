@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
@@ -39,11 +39,11 @@ import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.Optional;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.Optional;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 

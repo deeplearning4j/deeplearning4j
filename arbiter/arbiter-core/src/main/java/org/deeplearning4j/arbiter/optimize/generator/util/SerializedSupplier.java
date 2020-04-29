@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.generator.util;
 
-import org.nd4j.linalg.function.Supplier;
+import org.nd4j.common.function.Supplier;
 
 import java.io.*;
 

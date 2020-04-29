@@ -18,10 +18,10 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.config.ND4JEnvironmentVars;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JEnvironmentVars;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
-import org.nd4j.linalg.io.Resource;
+import org.nd4j.common.io.Resource;
 
 import java.io.File;
 import java.io.IOException;

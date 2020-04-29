@@ -17,7 +17,7 @@
 package org.deeplearning4j.spark.text.functions;
 
 import org.apache.spark.api.java.function.Function;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;

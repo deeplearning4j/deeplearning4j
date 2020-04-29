@@ -21,12 +21,11 @@ import lombok.NonNull;
 
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
 import org.bytedeco.opencv.opencv_core.*;
-import static org.bytedeco.opencv.global.opencv_core.*;
 
 /**
  * Allows creation of image transform pipelines, either sequentially or randomly.

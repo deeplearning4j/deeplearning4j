@@ -17,7 +17,7 @@
 package org.deeplearning4j.spark.models.embeddings.glove.cooccurrences;
 
 import org.apache.spark.api.java.function.Function2;
-import org.nd4j.linalg.primitives.CounterMap;
+import org.nd4j.common.primitives.CounterMap;
 
 
 /**

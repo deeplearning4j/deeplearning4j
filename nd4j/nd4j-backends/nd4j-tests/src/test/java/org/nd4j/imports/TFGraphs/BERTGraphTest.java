@@ -34,8 +34,8 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.resources.Downloader;
-import org.nd4j.util.ArchiveUtils;
+import org.nd4j.common.resources.Downloader;
+import org.nd4j.common.util.ArchiveUtils;
 
 import java.io.File;
 import java.net.URL;

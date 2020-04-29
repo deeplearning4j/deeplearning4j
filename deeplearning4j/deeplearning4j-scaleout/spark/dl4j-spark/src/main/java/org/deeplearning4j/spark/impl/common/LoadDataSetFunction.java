@@ -18,10 +18,9 @@ package org.deeplearning4j.spark.impl.common;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.input.PortableDataStream;
-import org.nd4j.api.loader.Loader;
-import org.nd4j.api.loader.Source;
-import org.nd4j.api.loader.SourceFactory;
+import org.nd4j.common.loader.Loader;
+import org.nd4j.common.loader.Source;
+import org.nd4j.common.loader.SourceFactory;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.InputStream;

@@ -35,7 +35,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNormBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.regularization.Regularization;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.lang.reflect.Constructor;
 import java.util.*;

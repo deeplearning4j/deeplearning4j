@@ -19,7 +19,7 @@ package org.deeplearning4j.datasets.fetchers;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.deeplearning4j.base.EmnistFetcher;
+import org.deeplearning4j.datasets.base.EmnistFetcher;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.common.resources.ResourceType;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;

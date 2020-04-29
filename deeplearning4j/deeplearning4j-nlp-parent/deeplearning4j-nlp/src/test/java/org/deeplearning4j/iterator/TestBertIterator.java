@@ -29,9 +29,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Triple;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;

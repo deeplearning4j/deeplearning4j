@@ -21,14 +21,13 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.AtomicBoolean;
 
 import java.util.ArrayList;
 import java.util.Map;

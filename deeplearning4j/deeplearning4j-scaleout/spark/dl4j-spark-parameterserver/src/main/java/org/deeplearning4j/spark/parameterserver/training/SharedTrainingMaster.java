@@ -28,15 +28,14 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
 import org.datavec.spark.util.BroadcastHadoopConfigHolder;
-import org.datavec.spark.util.SerializableHadoopConfig;
-import org.deeplearning4j.api.loader.DataSetLoader;
-import org.deeplearning4j.api.loader.MultiDataSetLoader;
-import org.deeplearning4j.api.loader.impl.SerializedDataSetLoader;
-import org.deeplearning4j.api.loader.impl.SerializedMultiDataSetLoader;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.StorageMetaData;
-import org.deeplearning4j.config.DL4JEnvironmentVars;
+import org.deeplearning4j.core.loader.DataSetLoader;
+import org.deeplearning4j.core.loader.MultiDataSetLoader;
+import org.deeplearning4j.core.loader.impl.SerializedDataSetLoader;
+import org.deeplearning4j.core.loader.impl.SerializedMultiDataSetLoader;
+import org.deeplearning4j.core.storage.Persistable;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.StorageMetaData;
+import org.deeplearning4j.common.config.DL4JEnvironmentVars;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
@@ -62,8 +61,9 @@ import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapPathsMDS;
 import org.deeplearning4j.spark.parameterserver.networking.v1.SilentTrainingDriver;
 import org.deeplearning4j.spark.parameterserver.networking.v2.UpdatesConsumer;
 import org.deeplearning4j.spark.util.SparkUtils;
-import org.deeplearning4j.util.UIDProvider;
-import org.nd4j.base.Preconditions;
+import org.deeplearning4j.core.util.UIDProvider;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -1143,7 +1143,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
          * may have better throughput (i.e., more examples per second) when increasing the number of workers,
          * at the expense of more memory consumed. Note that if you increase the number of workers on a CPU system,
          * you should set the number of OpenMP threads using the {@code OMP_NUM_THREADS} property - see
-         * {@link org.nd4j.config.ND4JEnvironmentVars#OMP_NUM_THREADS} for more details.
+         * {@link ND4JEnvironmentVars#OMP_NUM_THREADS} for more details.
          * For example, a machine with 32 physical cores could use 4 workers with {@code OMP_NUM_THREADS=8}
          *
          * @param numWorkers Number of workers on each node.

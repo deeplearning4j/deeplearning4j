@@ -17,21 +17,16 @@
 package org.nd4j.parameterserver.distributed.logic;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.RandomUtils;
 import org.junit.*;
 import org.junit.rules.Timeout;
-import org.nd4j.BaseND4JTest;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 

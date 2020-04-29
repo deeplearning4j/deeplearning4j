@@ -28,8 +28,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgori
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.residual.ResidualClippingPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
 import org.deeplearning4j.util.ThreadUtils;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -41,8 +40,6 @@ import org.nd4j.linalg.util.AtomicThrowable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;

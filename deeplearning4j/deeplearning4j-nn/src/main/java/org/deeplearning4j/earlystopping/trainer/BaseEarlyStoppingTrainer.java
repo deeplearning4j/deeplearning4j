@@ -26,7 +26,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingListener;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;

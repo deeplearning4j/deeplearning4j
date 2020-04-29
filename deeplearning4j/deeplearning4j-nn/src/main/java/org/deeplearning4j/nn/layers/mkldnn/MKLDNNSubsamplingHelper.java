@@ -35,8 +35,8 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Collections;
 import java.util.Map;

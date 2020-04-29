@@ -15,6 +15,7 @@
     ******************************************************************************/
 package org.nd4s
 
+import org.nd4j.common.primitives.{ Pair, Triple }
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
@@ -350,22 +351,22 @@ object Implicits {
 
   lazy val i = new ImaginaryNumber[Integer](1)
 
-  implicit class Pair2Tuple[T, U](a: org.nd4j.linalg.primitives.Pair[T, U]) {
+  implicit class Pair2Tuple[T, U](a: Pair[T, U]) {
     def asScala: (T, U) = (a.getFirst, a.getSecond)
   }
 
-  implicit class Triple2Tuple[T, U, V](a: org.nd4j.linalg.primitives.Triple[T, U, V]) {
+  implicit class Triple2Tuple[T, U, V](a: Triple[T, U, V]) {
     def asScala: (T, U, V) = (a.getFirst, a.getSecond, a.getThird)
   }
 
   implicit class Tuple2Pair[T, U](a: (T, U)) {
-    def toPair: org.nd4j.linalg.primitives.Pair[T, U] =
-      new org.nd4j.linalg.primitives.Pair(a._1, a._2)
+    def toPair: Pair[T, U] =
+      new Pair(a._1, a._2)
   }
 
   implicit class Tuple2Triple[T, U, V](a: (T, U, V)) {
-    def toTriple: org.nd4j.linalg.primitives.Triple[T, U, V] =
-      new org.nd4j.linalg.primitives.Triple(a._1, a._2, a._3)
+    def toTriple: Triple[T, U, V] =
+      new Triple(a._1, a._2, a._3)
   }
 }
 

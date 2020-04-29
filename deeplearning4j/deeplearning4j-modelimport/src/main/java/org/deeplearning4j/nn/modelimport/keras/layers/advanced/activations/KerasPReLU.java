@@ -28,7 +28,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.PReLUParamInitializer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.HashMap;
 import java.util.List;

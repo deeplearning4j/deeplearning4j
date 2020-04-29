@@ -21,11 +21,9 @@ import lombok.val;
 import org.deeplearning4j.parallelism.inference.InferenceObservable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;

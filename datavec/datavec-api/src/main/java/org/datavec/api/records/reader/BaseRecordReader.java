@@ -21,11 +21,8 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.StreamInputSplit;
 import org.datavec.api.split.streams.FileStreamCreatorFunction;
 import org.datavec.api.writable.Writable;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;

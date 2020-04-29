@@ -18,7 +18,7 @@ package org.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;

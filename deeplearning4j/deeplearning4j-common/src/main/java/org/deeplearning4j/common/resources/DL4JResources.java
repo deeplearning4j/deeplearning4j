@@ -17,8 +17,8 @@
 package org.deeplearning4j.common.resources;
 
 import lombok.NonNull;
-import org.deeplearning4j.config.DL4JSystemProperties;
-import org.nd4j.base.Preconditions;
+import org.deeplearning4j.common.config.DL4JSystemProperties;
+import org.nd4j.common.base.Preconditions;
 
 import java.io.File;
 import java.net.MalformedURLException;

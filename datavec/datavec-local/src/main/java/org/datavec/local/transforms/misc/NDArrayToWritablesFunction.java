@@ -21,7 +21,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 import java.util.ArrayList;
 import java.util.List;

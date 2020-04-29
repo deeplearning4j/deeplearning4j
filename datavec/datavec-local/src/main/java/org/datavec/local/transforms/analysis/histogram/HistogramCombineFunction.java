@@ -17,7 +17,7 @@
 package org.datavec.local.transforms.analysis.histogram;
 
 import org.datavec.api.transform.analysis.histogram.HistogramCounter;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;

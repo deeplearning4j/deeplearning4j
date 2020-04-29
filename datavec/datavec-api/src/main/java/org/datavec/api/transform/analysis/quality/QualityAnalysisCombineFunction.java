@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform.analysis.quality;
 
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 import java.io.Serializable;
 import java.util.ArrayList;

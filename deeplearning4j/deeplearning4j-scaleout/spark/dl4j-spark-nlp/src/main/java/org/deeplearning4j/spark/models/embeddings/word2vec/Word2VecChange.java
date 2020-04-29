@@ -19,7 +19,7 @@ package org.deeplearning4j.spark.models.embeddings.word2vec;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Triple;
 
 import java.io.Serializable;
 import java.util.*;

@@ -36,8 +36,7 @@ import com.atilika.kuromoji.CommonCornerCasesTest;
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;

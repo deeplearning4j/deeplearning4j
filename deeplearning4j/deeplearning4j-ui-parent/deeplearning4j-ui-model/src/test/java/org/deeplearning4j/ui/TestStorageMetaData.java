@@ -17,8 +17,8 @@
 package org.deeplearning4j.ui;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.api.storage.StorageMetaData;
-import org.deeplearning4j.ui.storage.impl.SbeStorageMetaData;
+import org.deeplearning4j.core.storage.StorageMetaData;
+import org.deeplearning4j.ui.model.storage.impl.SbeStorageMetaData;
 import org.junit.Test;
 
 import java.io.Serializable;

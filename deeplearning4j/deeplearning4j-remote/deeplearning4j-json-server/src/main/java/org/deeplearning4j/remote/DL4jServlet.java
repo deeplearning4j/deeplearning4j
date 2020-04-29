@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.parallelism.ParallelInference;
 import org.nd4j.adapters.InferenceAdapter;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.remote.clients.serde.BinaryDeserializer;
 import org.nd4j.remote.clients.serde.BinarySerializer;

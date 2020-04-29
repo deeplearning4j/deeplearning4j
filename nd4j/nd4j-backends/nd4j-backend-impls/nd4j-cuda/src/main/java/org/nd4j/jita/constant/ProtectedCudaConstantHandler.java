@@ -35,7 +35,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.*;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

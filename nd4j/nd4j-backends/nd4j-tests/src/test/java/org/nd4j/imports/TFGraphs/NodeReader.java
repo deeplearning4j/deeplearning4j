@@ -20,7 +20,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.nio.file.Files;

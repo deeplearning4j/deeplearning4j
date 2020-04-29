@@ -21,11 +21,10 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.nd4j.autodiff.validation.functions.EqualityFn;
 import org.nd4j.autodiff.validation.functions.RelErrorFn;
-import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;

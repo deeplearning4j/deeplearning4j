@@ -18,13 +18,13 @@ package org.nd4j.linalg.jcublas;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Loader;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.io.Resource;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.io.Resource;
 import org.nd4j.nativeblas.CudaEnvironment;
 import org.nd4j.nativeblas.Nd4jCuda;
 

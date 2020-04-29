@@ -24,7 +24,7 @@ import lombok.Getter;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;

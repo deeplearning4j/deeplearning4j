@@ -19,8 +19,6 @@ package org.deeplearning4j.models.sequencevectors.transformers.impl.iterables;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.BaseDL4JTest;
-import org.junit.Ignore;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.word2vec.VocabWord;
@@ -33,10 +31,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 

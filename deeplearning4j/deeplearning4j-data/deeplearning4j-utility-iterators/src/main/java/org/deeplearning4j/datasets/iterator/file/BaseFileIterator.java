@@ -21,9 +21,9 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.io.FileUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.collection.CompactHeapStringList;
+import org.nd4j.common.collection.CompactHeapStringList;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.util.MathUtils;
 
 import java.io.File;
 import java.util.*;

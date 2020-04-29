@@ -18,7 +18,7 @@ package org.nd4j.evaluation.classification;
 
 import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
@@ -36,8 +36,8 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Triple;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
@@ -604,7 +604,7 @@ public class ROC extends BaseEvaluation<ROC> {
 
         //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
         long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(predictions2d, Conditions.isNan())).getFinalResult().longValue();
-        org.nd4j.base.Preconditions.checkState(count == 0, "Cannot perform evaluation with NaN(s) present:" +
+        Preconditions.checkState(count == 0, "Cannot perform evaluation with NaN(s) present:" +
                 " %s NaN(s) present in predictions INDArray", count);
 
         double step = 1.0 / thresholdSteps;

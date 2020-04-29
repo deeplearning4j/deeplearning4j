@@ -26,7 +26,7 @@ import org.datavec.image.data.Image;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.recordreader.BaseImageRecordReader;
 import org.datavec.image.util.ImageUtils;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

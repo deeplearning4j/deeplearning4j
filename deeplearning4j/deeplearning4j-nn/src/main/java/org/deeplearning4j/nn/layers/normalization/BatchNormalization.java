@@ -41,9 +41,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.util.OneTimeLogger;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.*;
 
@@ -78,7 +77,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
-                helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
+                helper = Class.forName("org.deeplearning4j.cuda.normalization.CudnnBatchNormalizationHelper")
                         .asSubclass(BatchNormalizationHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnBatchNormalizationHelper successfully initialized");
             } catch (Throwable t) {

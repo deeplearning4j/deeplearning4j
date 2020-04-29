@@ -64,7 +64,7 @@ import org.datavec.api.transform.transform.time.TimeMathOpTransform;
 import org.datavec.api.writable.*;
 import org.datavec.api.writable.comparator.WritableComparator;
 import org.joda.time.DateTimeZone;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;

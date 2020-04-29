@@ -2,7 +2,7 @@ package org.nd4j.remote.serde;
 
 import lombok.val;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.remote.clients.serde.impl.*;
 
 import static org.junit.Assert.assertArrayEquals;

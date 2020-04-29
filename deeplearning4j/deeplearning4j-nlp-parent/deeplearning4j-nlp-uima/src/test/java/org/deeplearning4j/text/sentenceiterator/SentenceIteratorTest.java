@@ -18,13 +18,12 @@ package org.deeplearning4j.text.sentenceiterator;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nlp.uima.sentenceiterator.UimaSentenceIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Arrays;

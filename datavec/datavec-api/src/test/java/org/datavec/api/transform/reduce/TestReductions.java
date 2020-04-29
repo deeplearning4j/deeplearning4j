@@ -21,7 +21,7 @@ import org.datavec.api.transform.reduce.impl.GeographicMidpointReduction;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.Arrays;
 import java.util.List;

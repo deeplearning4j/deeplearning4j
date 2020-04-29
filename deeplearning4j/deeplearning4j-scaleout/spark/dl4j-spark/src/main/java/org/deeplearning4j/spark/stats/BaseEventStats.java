@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.spark.stats;
 
-import org.deeplearning4j.util.UIDProvider;
+import org.deeplearning4j.core.util.UIDProvider;
 
 /**
  * Created by Alex on 26/06/2016.

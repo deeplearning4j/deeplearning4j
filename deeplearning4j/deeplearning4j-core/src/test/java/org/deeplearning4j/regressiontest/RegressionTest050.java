@@ -34,17 +34,15 @@ import org.junit.rules.Timeout;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
-import java.sql.Time;
 
 import static org.junit.Assert.*;
 

@@ -24,7 +24,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;

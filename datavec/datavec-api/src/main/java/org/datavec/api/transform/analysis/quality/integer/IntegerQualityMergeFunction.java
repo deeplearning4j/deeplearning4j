@@ -17,7 +17,7 @@
 package org.datavec.api.transform.analysis.quality.integer;
 
 import org.datavec.api.transform.quality.columns.IntegerQuality;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 import java.io.Serializable;
 

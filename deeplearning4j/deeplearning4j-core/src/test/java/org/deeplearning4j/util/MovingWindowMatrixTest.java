@@ -17,6 +17,7 @@
 package org.deeplearning4j.util;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.core.util.MovingWindowMatrix;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,10 +34,10 @@ public class MovingWindowMatrixTest extends BaseDL4JTest {
     @Test
     public void testMovingWindow() {
         INDArray ones = Nd4j.ones(4, 4);
-        MovingWindowMatrix m = new MovingWindowMatrix(ones, 2, 2);
+        org.deeplearning4j.core.util.MovingWindowMatrix m = new org.deeplearning4j.core.util.MovingWindowMatrix(ones, 2, 2);
         List<INDArray> windows = m.windows();
         assertEquals(4, windows.size());
-        MovingWindowMatrix m2 = new MovingWindowMatrix(ones, 2, 2, true);
+        org.deeplearning4j.core.util.MovingWindowMatrix m2 = new MovingWindowMatrix(ones, 2, 2, true);
         List<INDArray> windowsRotate = m2.windows();
         assertEquals(16, windowsRotate.size());
 

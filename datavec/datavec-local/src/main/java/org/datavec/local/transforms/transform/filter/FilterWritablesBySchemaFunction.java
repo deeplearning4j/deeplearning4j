@@ -20,7 +20,7 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 /**
  * Created by Alex on 6/03/2016.

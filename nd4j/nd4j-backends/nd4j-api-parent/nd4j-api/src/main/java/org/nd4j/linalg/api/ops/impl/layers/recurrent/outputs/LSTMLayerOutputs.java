@@ -2,7 +2,7 @@ package org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs;
 
 import lombok.Getter;
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDirectionMode;

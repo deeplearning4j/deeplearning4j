@@ -21,9 +21,9 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.datavec.api.util.files.URIUtil;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.collection.CompactHeapStringList;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.collection.CompactHeapStringList;
+import org.nd4j.common.util.MathUtils;
 
 import java.io.*;
 import java.net.URI;

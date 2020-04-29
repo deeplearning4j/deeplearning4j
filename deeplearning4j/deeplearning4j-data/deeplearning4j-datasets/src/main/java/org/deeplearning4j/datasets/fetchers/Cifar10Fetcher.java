@@ -25,7 +25,7 @@ import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.transform.ImageTransform;
 import org.deeplearning4j.common.resources.DL4JResources;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 import java.io.File;
 import java.util.Random;

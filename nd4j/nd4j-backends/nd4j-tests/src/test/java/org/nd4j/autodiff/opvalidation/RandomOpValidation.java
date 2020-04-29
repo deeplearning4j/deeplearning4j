@@ -35,7 +35,7 @@ import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;

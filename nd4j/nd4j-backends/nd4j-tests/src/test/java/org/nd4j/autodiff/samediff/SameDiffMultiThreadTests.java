@@ -5,13 +5,13 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.imports.TFGraphs.TFGraphTestZooModels;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.util.Collections;

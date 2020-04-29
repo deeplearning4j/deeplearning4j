@@ -18,11 +18,10 @@ package org.nd4j.tensorflow.conversion.graphrunner;
 
 import lombok.*;
 import org.apache.commons.io.FileUtils;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.protobuf.ByteString;
 import org.nd4j.shade.protobuf.InvalidProtocolBufferException;
 import org.nd4j.shade.protobuf.util.JsonFormat;

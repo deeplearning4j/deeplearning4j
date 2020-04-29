@@ -17,7 +17,7 @@
 package org.nd4j.linalg.convolution;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 
 /**

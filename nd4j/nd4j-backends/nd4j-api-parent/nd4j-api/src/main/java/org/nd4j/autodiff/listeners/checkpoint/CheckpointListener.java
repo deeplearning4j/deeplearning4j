@@ -12,7 +12,7 @@ import org.nd4j.autodiff.listeners.Loss;
 import org.nd4j.autodiff.listeners.records.LossCurve;
 import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.io.*;

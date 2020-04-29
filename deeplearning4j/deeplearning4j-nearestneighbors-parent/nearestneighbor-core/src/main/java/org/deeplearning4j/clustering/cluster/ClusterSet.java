@@ -18,9 +18,8 @@ package org.deeplearning4j.clustering.cluster;
 
 import lombok.Data;
 import org.deeplearning4j.clustering.algorithm.Distance;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.Serializable;
 import java.util.*;

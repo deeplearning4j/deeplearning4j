@@ -19,7 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.preprocessing.sequence;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.junit.Test;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.IOException;
 

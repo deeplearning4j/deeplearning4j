@@ -16,22 +16,10 @@
 
 package org.deeplearning4j.nn.conf.serde;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.legacy.LegacyJsonFormat;
-import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.serde.json.LegacyIActivationDeserializer;
-import org.nd4j.serde.json.LegacyILossFunctionDeserializer;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.cfg.MapperConfig;
@@ -43,13 +31,6 @@ import org.nd4j.shade.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.nd4j.shade.jackson.databind.jsontype.TypeResolverBuilder;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
-import org.nd4j.util.OneTimeLogger;
-
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * JSON mappers for deserializing neural net configurations, etc.

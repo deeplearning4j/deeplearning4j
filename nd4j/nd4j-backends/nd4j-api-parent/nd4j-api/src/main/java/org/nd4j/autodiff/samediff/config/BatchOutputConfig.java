@@ -28,12 +28,8 @@ import lombok.Setter;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.VariableType;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 /**
  * Configuration for a single batch {@link SameDiff} inference operation.

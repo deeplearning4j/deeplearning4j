@@ -22,8 +22,8 @@ import org.datavec.api.writable.*;
 import java.util.List;
 
 import static org.datavec.python.PythonUtils.schemaToPythonVariables;
-import static org.nd4j.base.Preconditions.checkNotNull;
-import static org.nd4j.base.Preconditions.checkState;
+import static org.nd4j.common.base.Preconditions.checkNotNull;
+import static org.nd4j.common.base.Preconditions.checkState;
 
 /**
  * Lets a condition be defined as a python method f that takes no arguments

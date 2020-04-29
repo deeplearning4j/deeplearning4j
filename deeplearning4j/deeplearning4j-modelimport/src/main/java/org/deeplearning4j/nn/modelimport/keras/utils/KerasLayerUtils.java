@@ -44,7 +44,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;

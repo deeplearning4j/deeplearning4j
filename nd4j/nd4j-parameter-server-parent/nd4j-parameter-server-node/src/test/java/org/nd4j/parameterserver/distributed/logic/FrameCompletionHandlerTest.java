@@ -21,7 +21,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHandler;
 
 import static org.junit.Assert.*;

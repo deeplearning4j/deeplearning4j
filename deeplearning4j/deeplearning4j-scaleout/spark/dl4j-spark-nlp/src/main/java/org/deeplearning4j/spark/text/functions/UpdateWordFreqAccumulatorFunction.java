@@ -19,8 +19,8 @@ package org.deeplearning4j.spark.text.functions;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
-import org.nd4j.linalg.primitives.Counter;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Counter;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;

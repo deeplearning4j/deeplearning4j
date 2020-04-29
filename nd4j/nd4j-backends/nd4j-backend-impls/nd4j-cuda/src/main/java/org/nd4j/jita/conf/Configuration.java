@@ -20,7 +20,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.config.ND4JEnvironmentVars;
+import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.linalg.factory.Nd4j;

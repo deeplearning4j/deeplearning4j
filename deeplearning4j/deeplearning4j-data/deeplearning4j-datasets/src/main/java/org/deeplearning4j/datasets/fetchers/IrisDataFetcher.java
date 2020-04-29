@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
-import org.deeplearning4j.base.IrisUtils;
+import org.deeplearning4j.datasets.base.IrisUtils;
 import org.nd4j.linalg.dataset.api.iterator.fetcher.BaseDataFetcher;
 
 import java.io.IOException;

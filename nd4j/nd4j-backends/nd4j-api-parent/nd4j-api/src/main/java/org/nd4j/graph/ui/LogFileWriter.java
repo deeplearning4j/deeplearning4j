@@ -28,7 +28,7 @@ import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.graph.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,7 +37,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.io.IOException;

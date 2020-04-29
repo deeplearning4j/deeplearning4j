@@ -47,7 +47,7 @@ import org.datavec.api.writable.comparator.LongWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;

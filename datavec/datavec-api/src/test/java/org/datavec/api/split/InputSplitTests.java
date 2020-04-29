@@ -16,7 +16,7 @@
 
 package org.datavec.api.split;
 
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.shade.guava.io.Files;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.filters.RandomPathFilter;

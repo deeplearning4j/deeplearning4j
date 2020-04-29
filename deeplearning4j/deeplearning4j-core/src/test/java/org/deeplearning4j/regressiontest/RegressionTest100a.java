@@ -43,7 +43,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.DataInputStream;
 import java.io.File;

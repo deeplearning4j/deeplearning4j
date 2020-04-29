@@ -17,20 +17,21 @@
 package org.deeplearning4j.datasets.iterator.loader;
 
 import lombok.Data;
-import org.nd4j.api.loader.Loader;
-import org.nd4j.api.loader.Source;
-import org.nd4j.api.loader.SourceFactory;
+import org.nd4j.common.loader.Loader;
+import org.nd4j.common.loader.Source;
+import org.nd4j.common.loader.SourceFactory;
+import org.nd4j.common.loader.LocalFileSourceFactory;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.util.MathUtils;
 
 import java.io.IOException;
 import java.util.*;
 
 /**
  * A MultiDataSetLoader that loads MultiDataSets from a path, using a {@code Loader<MultiDataSet>} such as {@link SerializedMultiDataSetLoader}.
- * Paths are converted to input streams using {@link SourceFactory} such as {@link org.nd4j.api.loader.LocalFileSourceFactory}.
+ * Paths are converted to input streams using {@link SourceFactory} such as {@link LocalFileSourceFactory}.
  * Note that this iterator does not implement any sort of merging/batching functionality - it simply returns the DataSets
  * as-is from the path/loader.
  *

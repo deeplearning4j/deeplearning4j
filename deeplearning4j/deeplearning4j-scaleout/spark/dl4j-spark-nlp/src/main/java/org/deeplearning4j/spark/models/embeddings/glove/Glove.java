@@ -34,10 +34,9 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
-import org.nd4j.linalg.primitives.CounterMap;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.CounterMap;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;

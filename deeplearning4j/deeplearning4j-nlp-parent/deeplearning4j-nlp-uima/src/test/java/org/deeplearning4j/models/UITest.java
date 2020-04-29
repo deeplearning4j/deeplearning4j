@@ -22,15 +22,15 @@ import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
+import org.deeplearning4j.nlp.uima.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.ui.UiConnectionInfo;
+import org.deeplearning4j.core.ui.UiConnectionInfo;
 import org.deeplearning4j.ui.api.UIServer;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -69,7 +69,7 @@ public class BaseSparkKryoTest extends BaseSparkTest {
                 .set("spark.driver.host", "localhost");
 
         sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
-        sparkConf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
+        sparkConf.set("spark.kryo.registrator", "org.nd4j.kryo.Nd4jRegistrator");
 
         sc = new JavaSparkContext(sparkConf);
 

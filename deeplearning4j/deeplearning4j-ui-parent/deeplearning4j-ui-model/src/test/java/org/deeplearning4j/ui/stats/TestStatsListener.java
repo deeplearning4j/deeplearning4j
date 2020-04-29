@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.ui.stats;
 
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.core.storage.Persistable;
+import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -25,7 +25,9 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
+import org.deeplearning4j.ui.model.stats.J7StatsListener;
+import org.deeplearning4j.ui.model.stats.StatsListener;
+import org.deeplearning4j.ui.model.storage.mapdb.MapDBStatsStorage;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;

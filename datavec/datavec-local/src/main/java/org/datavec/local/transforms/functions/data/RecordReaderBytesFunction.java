@@ -20,8 +20,8 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.writable.BytesWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.function.Function;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;

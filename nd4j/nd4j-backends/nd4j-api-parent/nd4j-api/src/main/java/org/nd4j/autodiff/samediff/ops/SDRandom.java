@@ -23,7 +23,7 @@ import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 import java.lang.String;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 
 public class SDRandom extends SDOps {

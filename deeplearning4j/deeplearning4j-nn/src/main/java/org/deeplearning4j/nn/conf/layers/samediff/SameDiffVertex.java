@@ -24,7 +24,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.samediff.SameDiffGraphVertex;
@@ -34,10 +33,9 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Map;
 

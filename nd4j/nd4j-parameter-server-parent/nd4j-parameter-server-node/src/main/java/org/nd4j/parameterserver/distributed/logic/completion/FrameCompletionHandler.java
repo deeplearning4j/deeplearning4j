@@ -18,10 +18,8 @@ package org.nd4j.parameterserver.distributed.logic.completion;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;

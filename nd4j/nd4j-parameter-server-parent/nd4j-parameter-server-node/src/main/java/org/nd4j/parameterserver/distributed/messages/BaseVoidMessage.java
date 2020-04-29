@@ -18,7 +18,7 @@ package org.nd4j.parameterserver.distributed.messages;
 
 import lombok.*;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;

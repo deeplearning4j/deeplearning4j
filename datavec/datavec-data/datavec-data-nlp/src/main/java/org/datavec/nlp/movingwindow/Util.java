@@ -17,10 +17,9 @@
 package org.datavec.nlp.movingwindow;
 
 
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

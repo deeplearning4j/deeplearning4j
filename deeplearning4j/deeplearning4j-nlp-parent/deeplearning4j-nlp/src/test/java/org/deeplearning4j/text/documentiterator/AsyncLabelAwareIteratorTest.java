@@ -17,11 +17,10 @@
 package org.deeplearning4j.text.documentiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.junit.Test;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import static org.junit.Assert.assertEquals;
 

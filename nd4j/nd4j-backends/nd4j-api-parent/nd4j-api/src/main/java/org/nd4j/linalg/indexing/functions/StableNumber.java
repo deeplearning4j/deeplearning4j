@@ -18,7 +18,7 @@ package org.nd4j.linalg.indexing.functions;
 
 
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 /**
  * Returns a stable number based on infinity

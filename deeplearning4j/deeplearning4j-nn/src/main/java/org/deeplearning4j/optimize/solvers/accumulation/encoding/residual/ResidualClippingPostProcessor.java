@@ -18,7 +18,7 @@ package org.deeplearning4j.optimize.solvers.accumulation.encoding.residual;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;

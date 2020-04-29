@@ -16,7 +16,7 @@
 
 package org.datavec.api.split.parittion;
 
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.shade.guava.io.Files;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.split.FileSplit;

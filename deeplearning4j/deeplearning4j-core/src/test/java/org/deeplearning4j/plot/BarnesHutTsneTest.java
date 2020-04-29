@@ -27,7 +27,6 @@ import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
 import org.deeplearning4j.clustering.vptree.VPTree;
-import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -41,13 +40,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;

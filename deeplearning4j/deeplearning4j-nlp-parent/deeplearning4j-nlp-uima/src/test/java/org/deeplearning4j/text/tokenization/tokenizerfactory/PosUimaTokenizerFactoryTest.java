@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.tokenization.tokenizerfactory;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nlp.uima.tokenization.tokenizerfactory.PosUimaTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.junit.Assert;
 import org.junit.Before;

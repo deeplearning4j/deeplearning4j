@@ -24,10 +24,10 @@ import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.input.CloseShieldInputStream;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.util.ArchiveUtils;
+import org.nd4j.common.util.ArchiveUtils;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 

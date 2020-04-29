@@ -21,7 +21,6 @@ import org.nd4j.shade.guava.collect.Collections2;
 import org.nd4j.shade.guava.collect.ImmutableMap;
 import org.nd4j.shade.guava.collect.Lists;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,7 +29,7 @@ import java.util.Map;
 
 import lombok.Getter;
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 

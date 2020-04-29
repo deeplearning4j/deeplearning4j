@@ -28,7 +28,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
 import org.datavec.spark.util.SerializableHadoopConfig;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.data.BatchAndExportDataSetsFunction;
@@ -53,7 +53,6 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 

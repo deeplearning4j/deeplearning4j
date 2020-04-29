@@ -31,8 +31,8 @@ import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.primitives.Triple;
 
 import java.io.*;
 import java.net.URI;

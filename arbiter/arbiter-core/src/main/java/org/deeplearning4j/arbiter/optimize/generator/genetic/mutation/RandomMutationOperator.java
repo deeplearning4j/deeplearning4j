@@ -19,7 +19,7 @@ package org.deeplearning4j.arbiter.optimize.generator.genetic.mutation;
 import org.apache.commons.math3.random.JDKRandomGenerator;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 /**
  * A mutation operator where each gene has a chance of being mutated with a <i>mutation rate</i> probability.

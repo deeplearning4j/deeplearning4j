@@ -26,10 +26,11 @@ import org.apache.spark.serializer.SerializerInstance;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.common.primitives.*;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.*;
 import scala.Tuple2;
 
 import java.nio.ByteBuffer;
@@ -54,7 +55,7 @@ public class TestNd4jKryoSerialization extends BaseND4JTest {
         sparkConf.setAppName("Iris");
 
         sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
-        sparkConf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
+        sparkConf.set("spark.kryo.registrator", "org.nd4j.kryo.Nd4jRegistrator");
 
         sc = new JavaSparkContext(sparkConf);
     }

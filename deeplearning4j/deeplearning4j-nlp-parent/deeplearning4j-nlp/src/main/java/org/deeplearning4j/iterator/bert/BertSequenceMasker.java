@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.iterator.bert;
 
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 

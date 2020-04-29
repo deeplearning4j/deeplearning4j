@@ -24,10 +24,9 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Atomic;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Atomic;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.PropagationMode;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;
@@ -42,13 +41,11 @@ import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvid
 import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.StaticPortSupplier;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
-import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 import org.nd4j.parameterserver.distributed.v2.util.UpdaterParametersHolder;
 import org.reactivestreams.Subscriber;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;

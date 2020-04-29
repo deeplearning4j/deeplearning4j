@@ -18,7 +18,7 @@ package org.deeplearning4j.rl4j.observation.transform;
 import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.deeplearning4j.rl4j.observation.Observation;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;

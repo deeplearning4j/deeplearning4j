@@ -20,8 +20,8 @@ package org.datavec.local.transforms.functions;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.function.Function;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.DataInputStream;
 import java.io.IOException;

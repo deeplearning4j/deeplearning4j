@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Arrays;
 

@@ -21,8 +21,8 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.CounterMap;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.CounterMap;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;

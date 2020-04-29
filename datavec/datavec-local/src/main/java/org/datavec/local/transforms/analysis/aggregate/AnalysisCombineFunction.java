@@ -17,7 +17,7 @@
 package org.datavec.local.transforms.analysis.aggregate;
 
 import org.datavec.api.transform.analysis.AnalysisCounter;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;

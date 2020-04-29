@@ -22,7 +22,7 @@ import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.interfaces.VectorsListener;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
-import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.common.util.SerializationUtils;
 
 import java.io.File;
 import java.text.SimpleDateFormat;

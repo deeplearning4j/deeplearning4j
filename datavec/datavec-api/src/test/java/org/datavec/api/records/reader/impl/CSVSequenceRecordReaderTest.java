@@ -26,8 +26,8 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.BaseND4JTest;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.io.InputStream;
@@ -237,11 +237,11 @@ public class CSVSequenceRecordReaderTest  extends BaseND4JTest {
         File baseDir = tempDir.newFolder();
         //Simple sanity check unit test
         for (int i = 0; i < 3; i++) {
-            new org.nd4j.linalg.io.ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive(baseDir);
+            new ClassPathResource(String.format("csvsequence_%d.txt", i)).getTempFileFromArchive(baseDir);
         }
 
         //Load time series from CSV sequence files; compare to SequenceRecordReaderDataSetIterator
-        org.nd4j.linalg.io.ClassPathResource resource = new org.nd4j.linalg.io.ClassPathResource("csvsequence_0.txt");
+        ClassPathResource resource = new ClassPathResource("csvsequence_0.txt");
         String featuresPath = new File(baseDir, "csvsequence_%d.txt").getAbsolutePath();
 
         SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");

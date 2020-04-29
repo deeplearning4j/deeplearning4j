@@ -18,7 +18,7 @@ package org.deeplearning4j.zoo.util.imagenet;
 
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.zoo.util.BaseLabels;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.databind.ObjectMapper;

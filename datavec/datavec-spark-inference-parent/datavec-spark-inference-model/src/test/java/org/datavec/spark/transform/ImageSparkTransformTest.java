@@ -17,14 +17,15 @@
 package org.datavec.spark.transform;
 
 import org.datavec.image.transform.ImageTransformProcess;
-import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchImageRecord;
-import org.datavec.spark.transform.model.SingleImageRecord;
+import org.datavec.spark.inference.model.ImageSparkTransform;
+import org.datavec.spark.inference.model.model.Base64NDArrayBody;
+import org.datavec.spark.inference.model.model.BatchImageRecord;
+import org.datavec.spark.inference.model.model.SingleImageRecord;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.io.File;

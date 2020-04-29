@@ -20,7 +20,7 @@ package org.deeplearning4j.nn.conf;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 

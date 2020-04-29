@@ -16,13 +16,14 @@
 
 package org.nd4j.linalg.util;
 
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
-import org.nd4j.tools.BTools;
-import org.nd4j.tools.InfoLine;
-import org.nd4j.tools.InfoValues;
-import org.nd4j.tools.SIS;
+import org.nd4j.common.tools.BTools;
+import org.nd4j.common.tools.InfoLine;
+import org.nd4j.common.tools.InfoValues;
+import org.nd4j.common.tools.SIS;
 
 
 /**

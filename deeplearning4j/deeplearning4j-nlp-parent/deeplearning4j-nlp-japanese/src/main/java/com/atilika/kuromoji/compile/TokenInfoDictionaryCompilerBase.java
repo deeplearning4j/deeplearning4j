@@ -23,7 +23,7 @@ import com.atilika.kuromoji.buffer.WordIdMap;
 import com.atilika.kuromoji.dict.DictionaryEntryBase;
 import com.atilika.kuromoji.dict.GenericDictionaryEntry;
 import com.atilika.kuromoji.dict.TokenInfoDictionary;
-import org.deeplearning4j.util.DL4JFileUtils;
+import org.deeplearning4j.common.util.DL4JFileUtils;
 
 import java.io.*;
 import java.util.ArrayList;

@@ -20,10 +20,10 @@ import io.reactivex.functions.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.ModelParametersMessage;
@@ -31,14 +31,10 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.ModelParame
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.params.UpdaterParametersRequest;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdaterParametersProvider;
-import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
-import org.nd4j.parameterserver.distributed.v2.transport.impl.DelayedDummyTransport;
 import org.nd4j.parameterserver.distributed.v2.transport.impl.DummyTransport;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractSubscriber;
 import org.nd4j.parameterserver.distributed.v2.util.AbstractUpdatesHandler;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 
 import java.util.ArrayList;
 import java.util.concurrent.LinkedTransferQueue;

@@ -18,8 +18,8 @@ package org.deeplearning4j.parallelism;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.DummyBlockDataSetIterator;
@@ -43,15 +43,13 @@ import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.Supplier;
+import org.nd4j.common.function.Supplier;
 
 import java.util.*;
 import java.util.concurrent.Executors;

@@ -22,7 +22,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;

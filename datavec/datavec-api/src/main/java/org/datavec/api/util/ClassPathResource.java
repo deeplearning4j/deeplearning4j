@@ -16,22 +16,11 @@
 
 package org.datavec.api.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-
 /**
- * @deprecated Use {@link org.nd4j.linalg.io.ClassPathResource}
+ * @deprecated Use {@link org.nd4j.common.io.ClassPathResource}
  */
 @Deprecated
-public class ClassPathResource extends org.nd4j.linalg.io.ClassPathResource {
+public class ClassPathResource extends org.nd4j.common.io.ClassPathResource {
 
     @Deprecated
     public ClassPathResource(String resourceName) {

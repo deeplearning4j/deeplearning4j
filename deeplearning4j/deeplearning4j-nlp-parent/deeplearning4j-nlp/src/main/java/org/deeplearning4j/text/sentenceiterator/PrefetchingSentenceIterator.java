@@ -18,7 +18,7 @@ package org.deeplearning4j.text.sentenceiterator;
 
 import lombok.NonNull;
 
-import org.deeplearning4j.util.ThreadUtils;
+import org.deeplearning4j.core.util.ThreadUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

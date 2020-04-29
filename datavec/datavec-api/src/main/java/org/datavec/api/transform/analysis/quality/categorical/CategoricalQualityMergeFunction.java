@@ -17,7 +17,7 @@
 package org.datavec.api.transform.analysis.quality.categorical;
 
 import org.datavec.api.transform.quality.columns.CategoricalQuality;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 import java.io.Serializable;
 

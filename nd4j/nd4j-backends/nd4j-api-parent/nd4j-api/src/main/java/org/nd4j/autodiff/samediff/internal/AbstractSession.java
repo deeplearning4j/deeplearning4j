@@ -24,11 +24,10 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.function.Predicate;
+import org.nd4j.common.function.Predicate;
 
 import java.util.*;
 

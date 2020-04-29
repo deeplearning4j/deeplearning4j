@@ -20,7 +20,7 @@ import com.github.jaiimageio.impl.plugins.tiff.TIFFImageReaderSpi;
 import com.github.jaiimageio.impl.plugins.tiff.TIFFImageWriterSpi;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.NDArrayUtil;
 
 import javax.imageio.ImageIO;

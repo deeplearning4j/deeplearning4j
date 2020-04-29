@@ -19,7 +19,7 @@ package org.datavec.local.transforms.sequence;
 import lombok.AllArgsConstructor;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 import java.util.List;
 

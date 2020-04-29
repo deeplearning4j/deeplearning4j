@@ -19,8 +19,8 @@ package org.deeplearning4j.spark.impl.paramavg.aggregator;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.core.storage.Persistable;
+import org.deeplearning4j.core.storage.StorageMetaData;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

@@ -21,12 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.AtomicDouble;
-import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.AtomicDouble;
+import org.nd4j.common.primitives.Triple;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.io.*;
 import java.nio.*;

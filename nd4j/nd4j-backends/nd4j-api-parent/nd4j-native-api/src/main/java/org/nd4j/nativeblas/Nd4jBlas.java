@@ -19,9 +19,8 @@ package org.nd4j.nativeblas;
 
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Loader;
-import org.bytedeco.javacpp.Pointer;
-import org.nd4j.config.ND4JEnvironmentVars;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JEnvironmentVars;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.blas.Blas;
 
 

@@ -18,7 +18,7 @@ package org.nd4j.autodiff.execution.input;
 
 import lombok.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 

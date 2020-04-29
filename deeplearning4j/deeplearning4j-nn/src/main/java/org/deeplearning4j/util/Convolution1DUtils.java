@@ -17,20 +17,12 @@
 package org.deeplearning4j.util;
 
 
-import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.workspace.ArrayType;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 

@@ -49,12 +49,12 @@ import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.BiFunction;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.BiFunction;
+import org.nd4j.common.function.Function;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;

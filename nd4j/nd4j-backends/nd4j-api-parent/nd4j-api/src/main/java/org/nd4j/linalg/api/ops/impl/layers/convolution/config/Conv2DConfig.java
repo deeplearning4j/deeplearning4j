@@ -21,7 +21,7 @@ import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.WeightsFormat;
 import org.nd4j.linalg.util.ConvConfigUtil;
 

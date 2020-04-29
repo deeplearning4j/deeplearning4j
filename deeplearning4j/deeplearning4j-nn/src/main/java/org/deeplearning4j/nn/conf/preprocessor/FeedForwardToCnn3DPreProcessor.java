@@ -23,9 +23,8 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 

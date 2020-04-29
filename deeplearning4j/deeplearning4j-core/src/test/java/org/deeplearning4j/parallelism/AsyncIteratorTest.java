@@ -17,6 +17,7 @@
 package org.deeplearning4j.parallelism;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.core.parallelism.AsyncIterator;
 import org.junit.Test;
 
 import java.util.ArrayList;

@@ -19,7 +19,7 @@ package org.nd4j.linalg.dataset;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.IOException;
 import java.util.ArrayList;

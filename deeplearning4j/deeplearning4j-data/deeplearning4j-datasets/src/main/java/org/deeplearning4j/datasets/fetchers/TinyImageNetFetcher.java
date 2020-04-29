@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.datasets.fetchers;
 
-import org.apache.commons.io.FileUtils;
 import org.datavec.api.io.filters.RandomPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.reader.RecordReader;
@@ -25,17 +24,10 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.datavec.image.transform.ImageTransform;
-import org.datavec.image.transform.MultiImageTransform;
-import org.datavec.image.transform.ResizeImageTransform;
 import org.deeplearning4j.common.resources.DL4JResources;
-import org.nd4j.base.Preconditions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.common.base.Preconditions;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 /**

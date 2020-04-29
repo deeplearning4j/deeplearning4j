@@ -19,10 +19,9 @@ package org.deeplearning4j.text.sentenceiterator;
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.Timeout;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.io.FileInputStream;

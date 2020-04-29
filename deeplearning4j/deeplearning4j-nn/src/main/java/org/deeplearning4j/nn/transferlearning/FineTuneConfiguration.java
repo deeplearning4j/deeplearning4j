@@ -40,7 +40,7 @@ import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
-import org.nd4j.linalg.primitives.Optional;
+import org.nd4j.common.primitives.Optional;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;

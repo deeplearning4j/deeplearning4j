@@ -21,7 +21,7 @@ import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;

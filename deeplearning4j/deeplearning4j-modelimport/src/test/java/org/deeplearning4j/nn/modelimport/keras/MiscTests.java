@@ -23,8 +23,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.resources.Resources;
-import org.nd4j.validation.ValidationResult;
+import org.nd4j.common.resources.Resources;
+import org.nd4j.common.validation.ValidationResult;
 
 import java.io.BufferedInputStream;
 import java.io.File;

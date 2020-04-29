@@ -30,7 +30,7 @@ import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.util.ModelSerializer;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;

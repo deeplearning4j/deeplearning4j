@@ -18,13 +18,12 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.val;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -35,8 +34,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNormBp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Quad;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Quad;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 

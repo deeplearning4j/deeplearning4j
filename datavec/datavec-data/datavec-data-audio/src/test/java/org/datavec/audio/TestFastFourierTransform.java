@@ -19,7 +19,7 @@ package org.datavec.audio;
 import org.datavec.audio.dsp.FastFourierTransform;
 import org.junit.Assert;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 public class TestFastFourierTransform extends BaseND4JTest {
 

@@ -18,16 +18,15 @@ package org.nd4j.evaluation.classification;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
-import org.nd4j.evaluation.classification.ROC.Metric;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.evaluation.serde.ROCArraySerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Triple;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;

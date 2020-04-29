@@ -19,7 +19,7 @@ package org.deeplearning4j.text.documentiterator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

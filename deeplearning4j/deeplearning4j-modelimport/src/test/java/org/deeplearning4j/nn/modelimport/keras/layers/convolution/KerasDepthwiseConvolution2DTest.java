@@ -29,7 +29,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasDepthwi
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Test;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 import java.util.*;
 

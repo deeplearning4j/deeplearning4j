@@ -18,7 +18,7 @@ package org.nd4j.linalg.jcublas.blas;
 
 import lombok.val;
 import org.bytedeco.javacpp.*;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;

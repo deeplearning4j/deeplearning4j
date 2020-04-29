@@ -23,7 +23,7 @@ import org.deeplearning4j.spark.api.Repartitioner;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.repartition.EqualPartitioner;
 import org.deeplearning4j.spark.util.SparkUtils;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.util.MathUtils;
 import scala.Tuple2;
 
 import java.util.List;

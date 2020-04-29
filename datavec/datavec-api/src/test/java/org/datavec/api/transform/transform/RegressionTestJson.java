@@ -47,8 +47,8 @@ import org.datavec.api.writable.comparator.LongWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.util.Arrays;
