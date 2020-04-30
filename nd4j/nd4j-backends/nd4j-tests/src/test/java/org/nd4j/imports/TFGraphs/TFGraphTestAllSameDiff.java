@@ -152,6 +152,9 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
            // "bitcast/from_float64_to_uint64"
             // PASSED on 2020/04/27 on CPU/Linux
 
+
+            "primitive_gru"
+
     };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have

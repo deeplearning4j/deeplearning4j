@@ -617,7 +617,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.compat.CompatSparseToDense.class,
             org.nd4j.linalg.api.ops.compat.CompatStringSplit.class,
             org.nd4j.linalg.api.ops.custom.AdjustContrast.class,
-            org.nd4j.linalg.api.ops.custom.AdjustContrastV2.class,
             org.nd4j.linalg.api.ops.custom.HsvToRgb.class,
             org.nd4j.linalg.api.ops.custom.RgbToHsv.class,
             org.nd4j.linalg.api.ops.custom.RgbToYiq.class,

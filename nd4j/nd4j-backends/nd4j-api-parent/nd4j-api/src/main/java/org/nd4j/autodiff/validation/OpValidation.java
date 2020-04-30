@@ -1225,7 +1225,11 @@ public class OpValidation {
                 "absargmax",
                 "absargmin",
                 "entropy_shannon",   //This is a thing, but quite different from our op: https://www.tensorflow.org/versions/r1.2/api_docs/python/tf/contrib/bayesflow/entropy/entropy_shannon
-                "count_zero"
+                "count_zero",
+
+                "SaveV2",
+                "LoadV2",
+                "RestoreV2"
         );
 
         return new HashSet<>(list);
