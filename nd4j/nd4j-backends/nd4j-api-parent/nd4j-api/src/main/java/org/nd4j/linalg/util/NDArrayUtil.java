@@ -24,11 +24,15 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Created by agibsonccc on 2/26/16.
+ *
+ * This class is deprecated. Please use Nd4j.createFromArray(...) methods instead
  */
+@Deprecated
 public class NDArrayUtil {
 
     private NDArrayUtil() {}
 
+    @Deprecated
     public static INDArray toNDArray(int[][] nums) {
         if (Nd4j.dataType() == DataType.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
@@ -42,6 +46,7 @@ public class NDArrayUtil {
 
     }
 
+    @Deprecated
     public static INDArray toNDArray(int[] nums) {
         if (Nd4j.dataType() == DataType.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
@@ -54,6 +59,7 @@ public class NDArrayUtil {
         }
     }
 
+    @Deprecated
     public static INDArray toNDArray(long[] nums) {
         if (Nd4j.dataType() == DataType.DOUBLE) {
             double[] doubles = ArrayUtil.toDoubles(nums);
@@ -66,7 +72,7 @@ public class NDArrayUtil {
         }
     }
 
-
+    @Deprecated
     public static int[] toInts(INDArray n) {
         if (n.length() > Integer.MAX_VALUE)
             throw new ND4JIllegalStateException("Can't convert INDArray with length > Integer.MAX_VALUE");
@@ -78,6 +84,7 @@ public class NDArrayUtil {
         return ret;
     }
 
+    @Deprecated
     public static long[] toLongs(INDArray n) {
         if (n.length() > Integer.MAX_VALUE)
             throw new ND4JIllegalStateException("Can't convert INDArray with length > Integer.MAX_VALUE");
