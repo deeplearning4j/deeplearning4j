@@ -234,7 +234,6 @@
     </build>
 
     <profiles>
-
         <!-- Build on windows can use sh rather than bash due to WSL clashing with msys2 -->
         <profile>
             <id>build-windows</id>
@@ -247,7 +246,6 @@
                 <libnd4j.buildprogram>sh</libnd4j.buildprogram>
             </properties>
         </profile>
-
         <!-- Default build program should be bash on non windows platforms -->
         <profile>
             <id>build-unix</id>
@@ -258,8 +256,6 @@
                 <libnd4j.buildprogram>bash</libnd4j.buildprogram>
             </properties>
         </profile>
-
-
         <!-- Use -Dlibnd4j.singlethread to use single threaded build (multi-threaded by default) -->
         <profile>
             <id>libnd4j-single-thread</id>
@@ -395,7 +391,6 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.6.0</version>
-
                         <executions>
                             <execution>
                                 <id>libnd4j-test-clean</id>
@@ -416,9 +411,6 @@
                 </plugins>
             </build>
         </profile>
-
-
-
         <!-- Profiles to set the default libnd4j.helper property, example: mkdnn -->
         <profile>
             <id>libnd4j-helper-avx2</id>
