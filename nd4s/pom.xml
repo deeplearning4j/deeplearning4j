@@ -80,11 +80,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-   	    <groupId>junit</groupId>	
-	    <artifactId>junit</artifactId>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
-	</dependency>
+	    </dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.binary.version}</artifactId>
@@ -204,23 +204,6 @@
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
-                <version>${maven-git-commit-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                        <phase>package</phase>
-                    </execution>
-                </executions>
-                <configuration>
-                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties
-                    </generateGitPropertiesFilename>
-                    <gitDescribe>
-                        <skip>true</skip>
-                    </gitDescribe>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -257,7 +240,6 @@
                 </dependency>
             </dependencies>
         </profile>
-
         <profile>
             <id>test-nd4j-cuda-10.2</id>
             <dependencies>
