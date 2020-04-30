@@ -233,7 +233,6 @@
                 </dependency>
             </dependencies>
         </profile>
-
         <profile>
             <id>nd4j-tests-cuda</id>
             <dependencies>
