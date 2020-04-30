@@ -160,7 +160,7 @@ public class TestBasic extends BaseDL4JTest {
         UIServer uIServer = UIServer.getInstance(true, statsStorageProvider);
         String serverAddress = uIServer.getAddress();
         for (String sessionId : statsStorageForSession.keySet()) {
-            log.info("Arbiter session will start at {}/arbiter/{}", serverAddress, sessionId);
+            log.info("Arbiter session can be attached at {}/arbiter/{}", serverAddress, sessionId);
         }
 
         runner.execute();
