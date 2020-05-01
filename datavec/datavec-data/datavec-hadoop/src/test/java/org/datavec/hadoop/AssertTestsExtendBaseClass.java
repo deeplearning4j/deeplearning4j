@@ -16,9 +16,10 @@
 package org.datavec.hadoop;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.tests.AbstractAssertTestsClass;
+import org.nd4j.common.tests.BaseND4JTest;
+
 import java.util.*;
-import org.nd4j.AbstractAssertTestsClass;
-import org.nd4j.BaseND4JTest;
 /**
  * This class checks that all test classes (i.e., anything with one or more methods annotated with @Test)
  * extends BaseND4jTest - either directly or indirectly.

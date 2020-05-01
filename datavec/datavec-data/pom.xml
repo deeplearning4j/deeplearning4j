@@ -33,6 +33,8 @@
         <module>datavec-data-codec</module>
         <module>datavec-data-image</module>
         <module>datavec-data-nlp</module>
+        <module>datavec-geo</module>
+        <module>datavec-hadoop</module>
     </modules>
 
     <properties>
@@ -44,12 +46,6 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${nd4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-local</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
