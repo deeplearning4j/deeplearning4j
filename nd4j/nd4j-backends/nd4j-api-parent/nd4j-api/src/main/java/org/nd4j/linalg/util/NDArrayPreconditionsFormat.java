@@ -16,7 +16,8 @@
 
 package org.nd4j.linalg.util;
 
-import org.nd4j.base.PreconditionsFormat;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.base.PreconditionsFormat;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -24,7 +25,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Preconditions format: Defines a set of tags for use with {@link org.nd4j.base.Preconditions} class.<br>
+ * Preconditions format: Defines a set of tags for use with {@link Preconditions} class.<br>
  * %ndRank: rank of INDArray<br>
  * %ndShape: shape of INDArray<br>
  * %ndStride: stride of INDArray<br>

@@ -18,7 +18,7 @@ package org.deeplearning4j.text.documentiterator;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.deeplearning4j.parallelism.AsyncIterator;
+import org.deeplearning4j.core.parallelism.AsyncIterator;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

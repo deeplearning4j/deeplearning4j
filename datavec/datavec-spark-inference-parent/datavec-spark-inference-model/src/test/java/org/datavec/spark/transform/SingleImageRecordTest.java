@@ -16,11 +16,11 @@
 
 package org.datavec.spark.transform;
 
-import org.datavec.spark.transform.model.SingleImageRecord;
+import org.datavec.spark.inference.model.model.SingleImageRecord;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 

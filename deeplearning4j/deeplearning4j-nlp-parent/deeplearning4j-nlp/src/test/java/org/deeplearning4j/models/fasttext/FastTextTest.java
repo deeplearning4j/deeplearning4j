@@ -1,24 +1,20 @@
 package org.deeplearning4j.models.fasttext;
 
-import com.github.jfasttext.JFastText;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.rules.Timeout;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 
 
 import static org.junit.Assert.assertArrayEquals;

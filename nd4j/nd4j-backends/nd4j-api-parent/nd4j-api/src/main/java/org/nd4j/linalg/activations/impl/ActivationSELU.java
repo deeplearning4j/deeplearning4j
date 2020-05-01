@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SELU;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * https://arxiv.org/pdf/1706.02515.pdf

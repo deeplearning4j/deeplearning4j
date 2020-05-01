@@ -18,7 +18,7 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.L1Regularization;

@@ -16,6 +16,8 @@
 package org.nd4j;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.tests.AbstractAssertTestsClass;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.imports.TFGraphs.TFGraphTestAllLibnd4j;
 import org.nd4j.imports.TFGraphs.TFGraphTestAllSameDiff;
 import org.nd4j.imports.TFGraphs.TFGraphTestList;

@@ -29,9 +29,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.BaseND4JTest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.File;
 import java.io.FileInputStream;

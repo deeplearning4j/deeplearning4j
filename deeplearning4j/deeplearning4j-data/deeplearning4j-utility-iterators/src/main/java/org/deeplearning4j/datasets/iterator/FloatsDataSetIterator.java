@@ -17,7 +17,7 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  *

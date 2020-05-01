@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.bagofwords.vectorizer;
 
-import org.deeplearning4j.datasets.vectorizer.Vectorizer;
+import org.deeplearning4j.core.datasets.vectorizer.Vectorizer;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.invertedindex.InvertedIndex;

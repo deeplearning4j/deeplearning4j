@@ -25,7 +25,7 @@ import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.DataInputStream;
 import java.io.File;

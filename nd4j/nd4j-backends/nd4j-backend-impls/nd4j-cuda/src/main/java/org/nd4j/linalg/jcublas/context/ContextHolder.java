@@ -17,7 +17,7 @@
 package org.nd4j.linalg.jcublas.context;
 
 import lombok.Data;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

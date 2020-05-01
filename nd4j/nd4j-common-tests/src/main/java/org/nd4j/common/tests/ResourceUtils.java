@@ -15,8 +15,8 @@
  ******************************************************************************/
 package org.nd4j.common.tests;
 
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.resources.Resources;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;

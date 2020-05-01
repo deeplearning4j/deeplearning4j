@@ -20,7 +20,7 @@ import lombok.NonNull;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 

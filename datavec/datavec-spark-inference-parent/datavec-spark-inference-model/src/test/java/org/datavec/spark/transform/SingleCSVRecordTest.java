@@ -16,7 +16,7 @@
 
 package org.datavec.spark.transform;
 
-import org.datavec.spark.transform.model.SingleCSVRecord;
+import org.datavec.spark.inference.model.model.SingleCSVRecord;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;

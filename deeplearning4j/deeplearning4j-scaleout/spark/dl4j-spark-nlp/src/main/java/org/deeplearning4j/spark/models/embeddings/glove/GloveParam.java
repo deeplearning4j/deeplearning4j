@@ -18,7 +18,7 @@ package org.deeplearning4j.spark.models.embeddings.glove;
 
 import org.apache.spark.broadcast.Broadcast;
 import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.primitives.CounterMap;
+import org.nd4j.common.primitives.CounterMap;
 
 import java.io.Serializable;
 

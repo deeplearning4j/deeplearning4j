@@ -19,7 +19,7 @@ package org.datavec.api.transform.schema;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import static org.junit.Assert.assertEquals;
 

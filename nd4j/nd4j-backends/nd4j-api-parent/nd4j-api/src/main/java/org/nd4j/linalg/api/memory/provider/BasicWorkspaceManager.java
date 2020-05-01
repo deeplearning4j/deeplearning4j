@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
-import org.nd4j.linalg.primitives.SynchronizedObject;
+import org.nd4j.common.primitives.SynchronizedObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -17,6 +17,7 @@
 package org.deeplearning4j.ui;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.core.ui.UiConnectionInfo;
 import org.junit.Before;
 import org.junit.Test;
 

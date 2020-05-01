@@ -18,7 +18,7 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Test;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Arrays;
 

@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.HardTanh;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  *        ⎧  1, if x >  1

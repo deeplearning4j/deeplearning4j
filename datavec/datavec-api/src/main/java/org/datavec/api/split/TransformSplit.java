@@ -17,7 +17,7 @@
 package org.datavec.api.split;
 
 import lombok.NonNull;
-import org.nd4j.linalg.collection.CompactHeapStringList;
+import org.nd4j.common.collection.CompactHeapStringList;
 
 import java.io.*;
 import java.net.URI;

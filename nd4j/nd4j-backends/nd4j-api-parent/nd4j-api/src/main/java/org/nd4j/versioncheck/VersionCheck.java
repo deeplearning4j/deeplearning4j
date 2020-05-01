@@ -17,7 +17,7 @@
 package org.nd4j.versioncheck;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.IOException;
 import java.net.URI;
@@ -38,7 +38,7 @@ import java.util.*;
 public class VersionCheck {
 
     /**
-     * @deprecated Use {@link org.nd4j.config.ND4JSystemProperties#VERSION_CHECK_PROPERTY}
+     * @deprecated Use {@link ND4JSystemProperties#VERSION_CHECK_PROPERTY}
      */
     @Deprecated
     public static final String VERSION_CHECK_PROPERTY = ND4JSystemProperties.VERSION_CHECK_PROPERTY;

@@ -37,7 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.SolrDefaultStreamFactory;
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.util.ModelGuesser;
+import org.deeplearning4j.core.util.ModelGuesser;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

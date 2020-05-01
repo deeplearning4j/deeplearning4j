@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.text.movingwindow;
 
-import org.nd4j.linalg.primitives.Counter;
-import org.nd4j.linalg.primitives.CounterMap;
+import org.nd4j.common.primitives.Counter;
+import org.nd4j.common.primitives.CounterMap;
 
 import java.util.List;
 import java.util.logging.Level;

@@ -24,7 +24,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.audio.recordreader.NativeAudioRecordReader;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.File;
 import java.nio.ShortBuffer;

@@ -28,7 +28,7 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 import org.datavec.hadoop.records.reader.mapfile.index.LongIndexToKey;
 import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritable;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.util.MathUtils;
 
 import java.io.DataInputStream;
 import java.io.File;

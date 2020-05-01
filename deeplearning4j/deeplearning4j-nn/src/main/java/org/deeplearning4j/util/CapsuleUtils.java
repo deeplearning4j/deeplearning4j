@@ -18,7 +18,6 @@ package org.deeplearning4j.util;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Utilities for CapsNet Layers

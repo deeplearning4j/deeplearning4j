@@ -18,9 +18,9 @@ package org.deeplearning4j.spark.impl;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
-import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.StatsStorageRouterProvider;
+import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.impl.listeners.VanillaStatsStorageRouterProvider;

@@ -24,15 +24,12 @@ import org.deeplearning4j.graph.iterator.RandomWalkIterator;
 import org.deeplearning4j.graph.models.embeddings.InMemoryGraphLookupTable;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import static org.junit.Assert.*;
 

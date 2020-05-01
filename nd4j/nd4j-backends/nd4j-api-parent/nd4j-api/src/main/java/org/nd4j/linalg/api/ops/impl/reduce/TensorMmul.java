@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce;
 
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
@@ -32,14 +32,14 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-import static org.nd4j.linalg.util.ArrayUtil.*;
+import static org.nd4j.common.util.ArrayUtil.*;
 
 /**
  * TensorMmul

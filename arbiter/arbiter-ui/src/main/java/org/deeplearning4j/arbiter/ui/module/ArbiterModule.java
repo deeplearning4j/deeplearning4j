@@ -20,10 +20,10 @@ package org.deeplearning4j.arbiter.ui.module;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageEvent;
-import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.deeplearning4j.core.storage.Persistable;
+import org.deeplearning4j.core.storage.StatsStorage;
+import org.deeplearning4j.core.storage.StatsStorageEvent;
+import org.deeplearning4j.core.storage.StatsStorageListener;
 import org.deeplearning4j.arbiter.BaseNetworkSpace;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -50,7 +50,7 @@ import org.deeplearning4j.ui.components.text.style.StyleText;
 import org.deeplearning4j.ui.i18n.I18NResource;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.awt.*;
@@ -58,8 +58,6 @@ import java.text.DecimalFormat;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.deeplearning4j.arbiter.ui.misc.JsonMapper.asJson;
 
 /**
  * A Deeplearning4j {@link UIModule}, for integration with DL4J's user interface

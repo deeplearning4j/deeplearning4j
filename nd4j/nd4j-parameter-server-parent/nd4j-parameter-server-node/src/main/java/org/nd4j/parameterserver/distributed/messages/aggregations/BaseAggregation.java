@@ -24,7 +24,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 

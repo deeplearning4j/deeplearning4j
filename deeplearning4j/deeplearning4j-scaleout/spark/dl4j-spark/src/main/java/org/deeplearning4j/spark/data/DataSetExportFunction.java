@@ -24,7 +24,7 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.util.DefaultHadoopConfig;
 import org.datavec.spark.util.SerializableHadoopConfig;
-import org.deeplearning4j.util.UIDProvider;
+import org.deeplearning4j.core.util.UIDProvider;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.net.URI;

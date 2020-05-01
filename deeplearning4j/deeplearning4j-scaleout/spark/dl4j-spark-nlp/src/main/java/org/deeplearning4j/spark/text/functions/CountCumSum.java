@@ -21,7 +21,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.spark.text.accumulators.MaxPerPartitionAccumulator;
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 
 import java.util.concurrent.atomic.AtomicLong;
 

@@ -19,6 +19,7 @@ package org.nd4j.evaluation.classification;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.EvaluationUtils;
 import org.nd4j.evaluation.IEvaluation;
@@ -29,7 +30,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Triple;
 import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
 import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
@@ -181,7 +182,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         //Check for NaNs in predictions - without this, evaulation could silently be intepreted as class 0 prediction due to argmax
         long count = Nd4j.getExecutioner().execAndReturn(new MatchCondition(predictionsArr, Conditions.isNan())).getFinalResult().longValue();
-        org.nd4j.base.Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
+        Preconditions.checkState(count == 0, "Cannot perform evaluation with NaNs present in predictions:" +
                 " %s NaNs present in predictions INDArray", count);
 
         if (countTruePositive != null && countTruePositive.length != labelsArr.size(axis)) {

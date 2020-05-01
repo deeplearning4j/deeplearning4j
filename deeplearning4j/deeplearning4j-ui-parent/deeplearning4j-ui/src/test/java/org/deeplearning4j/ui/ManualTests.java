@@ -48,6 +48,7 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.weights.ConvolutionalIterationListener;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
@@ -60,7 +61,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,7 +116,7 @@ public class ManualTests {
 
 
 
-        org.nd4j.linalg.io.ClassPathResource labels = new org.nd4j.linalg.io.ClassPathResource("mnist2500_labels.txt");
+        ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
         List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
         b.fit(data);
         File save = new File(System.getProperty("java.io.tmpdir"), "labels-" + UUID.randomUUID().toString());

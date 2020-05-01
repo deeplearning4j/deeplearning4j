@@ -19,7 +19,7 @@ package org.nd4j.linalg.lossfunctions;
 
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.serde.json.LegacyILossFunctionDeserializerHelper;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 

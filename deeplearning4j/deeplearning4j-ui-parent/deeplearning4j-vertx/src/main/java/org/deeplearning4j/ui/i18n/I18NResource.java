@@ -19,7 +19,7 @@ package org.deeplearning4j.ui.i18n;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.IOException;
 import java.io.InputStream;

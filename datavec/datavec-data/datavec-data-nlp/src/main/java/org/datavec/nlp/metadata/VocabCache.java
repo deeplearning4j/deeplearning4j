@@ -18,7 +18,7 @@ package org.datavec.nlp.metadata;
 
 
 import org.datavec.api.conf.Configuration;
-import org.nd4j.util.Index;
+import org.nd4j.common.util.Index;
 
 /**
  * Track metadata about vocabs

@@ -36,7 +36,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-import static org.nd4j.linalg.util.ArrayUtil.prodLong;
+import static org.nd4j.common.util.ArrayUtil.prodLong;
 
 /**
  * Generic reshape preprocessor.

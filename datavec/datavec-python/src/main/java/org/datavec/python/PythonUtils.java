@@ -5,7 +5,7 @@ import org.datavec.api.transform.metadata.BooleanMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 
 import java.util.ArrayList;

@@ -35,8 +35,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.util.OneTimeLogger;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.Arrays;
 
@@ -66,7 +66,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
-                helper = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingHelper")
+                helper = Class.forName("org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper")
                         .asSubclass(SubsamplingHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnSubsamplingHelper successfully initialized");
                 if (!helper.checkSupported()) {

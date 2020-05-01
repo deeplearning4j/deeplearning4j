@@ -20,7 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ColorConversionTransform;
 import org.datavec.image.transform.EqualizeHistTransform;
@@ -35,7 +35,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 import org.bytedeco.opencv.opencv_core.*;
-import org.bytedeco.opencv.opencv_imgproc.*;
+
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 

@@ -18,9 +18,9 @@ package org.deeplearning4j.iterator.provider;
 
 import lombok.NonNull;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.MathUtils;
 
 import java.util.*;
 

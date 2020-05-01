@@ -32,8 +32,8 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.Collections;

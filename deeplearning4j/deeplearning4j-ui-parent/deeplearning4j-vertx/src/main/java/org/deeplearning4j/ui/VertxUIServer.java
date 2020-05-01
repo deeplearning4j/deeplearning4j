@@ -1,4 +1,4 @@
-/* ******************************************************************************
+    /* ******************************************************************************
  * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
@@ -32,11 +32,11 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageEvent;
-import org.deeplearning4j.api.storage.StatsStorageListener;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.core.storage.StatsStorage;
+import org.deeplearning4j.core.storage.StatsStorageEvent;
+import org.deeplearning4j.core.storage.StatsStorageListener;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.common.config.DL4JSystemProperties;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
@@ -48,12 +48,12 @@ import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
 import org.deeplearning4j.ui.module.remote.RemoteReceiverModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
 import org.deeplearning4j.ui.module.tsne.TsneModule;
-import org.deeplearning4j.ui.storage.FileStatsStorage;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
-import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
-import org.deeplearning4j.util.DL4JFileUtils;
-import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.ui.model.storage.FileStatsStorage;
+import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
+import org.deeplearning4j.ui.model.storage.impl.QueueStatsStorageListener;
+import org.deeplearning4j.common.util.DL4JFileUtils;
+import org.nd4j.common.function.Function;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.util.*;

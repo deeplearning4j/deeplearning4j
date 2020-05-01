@@ -18,11 +18,9 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
-import org.nd4j.parameterserver.distributed.v2.messages.pairs.ping.PingMessage;
 
 import static org.junit.Assert.*;
 
@@ -30,6 +28,11 @@ import static org.junit.Assert.*;
 public class AeronUdpTransportTest extends BaseND4JTest {
     private static final String IP = "127.0.0.1";
     private static final int ROOT_PORT = 40781;
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 240_000L;
+    }
 
     @Test
     //@Ignore

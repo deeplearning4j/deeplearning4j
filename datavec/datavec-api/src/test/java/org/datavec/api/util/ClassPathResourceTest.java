@@ -18,7 +18,7 @@ package org.datavec.api.util;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.BufferedReader;
 import java.io.File;

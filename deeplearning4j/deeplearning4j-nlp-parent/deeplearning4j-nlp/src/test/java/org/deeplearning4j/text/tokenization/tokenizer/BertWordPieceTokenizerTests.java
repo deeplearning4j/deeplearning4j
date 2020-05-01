@@ -24,8 +24,8 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.BertWordPieceTokeni
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.resources.Resources;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

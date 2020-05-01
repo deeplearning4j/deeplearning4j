@@ -16,7 +16,7 @@
 package org.deeplearning4j.rl4j.observation.transform.operation;
 
 import org.datavec.api.transform.Operation;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 public class SimpleNormalizationTransform implements Operation<INDArray, INDArray> {

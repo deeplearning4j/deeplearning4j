@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nlp.uima.sentenceiterator.UimaResultSetIterator;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -17,12 +17,11 @@
 package org.deeplearning4j.spark.api;
 
 import org.apache.spark.SparkContext;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.deeplearning4j.api.loader.DataSetLoader;
-import org.deeplearning4j.api.loader.MultiDataSetLoader;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.core.loader.DataSetLoader;
+import org.deeplearning4j.core.loader.MultiDataSetLoader;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
@@ -30,7 +29,6 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-import java.io.OutputStream;
 import java.util.Collection;
 
 /**

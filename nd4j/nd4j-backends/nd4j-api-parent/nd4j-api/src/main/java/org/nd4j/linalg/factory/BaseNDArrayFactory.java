@@ -19,7 +19,7 @@ package org.nd4j.linalg.factory;
 
 import lombok.NonNull;
 import lombok.val;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.blas.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -32,8 +32,8 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.AtomicDouble;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.AtomicDouble;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;

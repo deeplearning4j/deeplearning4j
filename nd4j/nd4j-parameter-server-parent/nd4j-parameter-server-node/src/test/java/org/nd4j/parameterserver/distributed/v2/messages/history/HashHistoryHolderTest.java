@@ -19,7 +19,7 @@ package org.nd4j.parameterserver.distributed.v2.messages.history;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import static org.junit.Assert.*;
 

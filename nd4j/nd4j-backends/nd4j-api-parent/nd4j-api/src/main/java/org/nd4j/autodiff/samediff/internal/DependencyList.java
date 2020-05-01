@@ -2,7 +2,7 @@ package org.nd4j.autodiff.samediff.internal;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 

@@ -20,14 +20,12 @@ import org.apache.commons.io.FileUtils;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVMultiSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.BaseND4JTest;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.BaseCompatOp;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;

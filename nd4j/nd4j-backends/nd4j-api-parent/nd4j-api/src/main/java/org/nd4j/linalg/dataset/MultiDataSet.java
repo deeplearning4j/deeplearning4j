@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.dataset;
 
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.factory.Nd4j;
@@ -43,45 +43,63 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
     }
 
-    /** MultiDataSet constructor with single features/labels input, no mask arrays */
+    /**
+     * MultiDataSet constructor with single features/labels input, no mask arrays
+     */
     public MultiDataSet(INDArray features, INDArray labels) {
         this(features, labels, null, null);
     }
 
-    /** MultiDataSet constructor with single features/labels input, single mask arrays */
+    /**
+     * MultiDataSet constructor with single features/labels input, single mask arrays
+     */
     public MultiDataSet(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
-        this((features != null ? new INDArray[] {features} : null), (labels != null ? new INDArray[] {labels} : null),
-                        (featuresMask != null ? new INDArray[] {featuresMask} : null),
-                        (labelsMask != null ? new INDArray[] {labelsMask} : null));
+        this((features != null ? new INDArray[]{features} : null), (labels != null ? new INDArray[]{labels} : null),
+                (featuresMask != null ? new INDArray[]{featuresMask} : null),
+                (labelsMask != null ? new INDArray[]{labelsMask} : null));
     }
 
-    /** MultiDataSet constructor with no mask arrays */
+    /**
+     * MultiDataSet constructor with no mask arrays
+     */
     public MultiDataSet(INDArray[] features, INDArray[] labels) {
         this(features, labels, null, null);
     }
 
     /**
-     *
-     * @param features The features (inputs) to the algorithm/neural network
-     * @param labels The labels (outputs) to the algorithm/neural network
+     * @param features           The features (inputs) to the algorithm/neural network
+     * @param labels             The labels (outputs) to the algorithm/neural network
      * @param featuresMaskArrays The mask arrays for the features. May be null. Typically used with variable-length time series models, etc
-     * @param labelsMaskArrays The mask arrays for the labels. May be null. Typically used with variable-length time series models, etc
+     * @param labelsMaskArrays   The mask arrays for the labels. May be null. Typically used with variable-length time series models, etc
      */
     public MultiDataSet(INDArray[] features, INDArray[] labels, INDArray[] featuresMaskArrays,
-                    INDArray[] labelsMaskArrays) {
+                        INDArray[] labelsMaskArrays) {
+        this(features, labels, featuresMaskArrays, labelsMaskArrays, null);
+    }
+
+    /**
+     * @param features           The features (inputs) to the algorithm/neural network
+     * @param labels             The labels (outputs) to the algorithm/neural network
+     * @param featuresMaskArrays The mask arrays for the features. May be null. Typically used with variable-length time series models, etc
+     * @param labelsMaskArrays   The mask arrays for the labels. May be null. Typically used with variable-length time series models, etc
+     * @param exampleMetaData    Metadata for each example. May be null
+     */
+    public MultiDataSet(INDArray[] features, INDArray[] labels, INDArray[] featuresMaskArrays,
+                        INDArray[] labelsMaskArrays, List<Serializable> exampleMetaData) {
         if (features != null && featuresMaskArrays != null && features.length != featuresMaskArrays.length) {
             throw new IllegalArgumentException("Invalid features / features mask arrays combination: "
-                            + "features and features mask arrays must not be different lengths");
+                    + "features and features mask arrays must not be different lengths");
         }
         if (labels != null && labelsMaskArrays != null && labels.length != labelsMaskArrays.length) {
             throw new IllegalArgumentException("Invalid labels / labels mask arrays combination: "
-                            + "labels and labels mask arrays must not be different lengths");
+                    + "labels and labels mask arrays must not be different lengths");
         }
 
         this.features = features;
         this.labels = labels;
         this.featuresMaskArrays = featuresMaskArrays;
         this.labelsMaskArrays = labelsMaskArrays;
+        this.exampleMetaData = exampleMetaData;
 
         Nd4j.getExecutioner().commit();
     }

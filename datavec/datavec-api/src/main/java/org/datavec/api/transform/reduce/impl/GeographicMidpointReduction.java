@@ -24,7 +24,7 @@ import org.datavec.api.transform.reduce.AggregableColumnReduction;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collections;

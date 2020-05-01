@@ -23,11 +23,11 @@ import org.nd4j.autodiff.listeners.profiler.ProfilingListener;
 import org.nd4j.autodiff.listeners.profiler.data.Phase;
 import org.nd4j.autodiff.listeners.profiler.data.TraceEvent;
 import org.nd4j.autodiff.listeners.profiler.data.TraceEvents;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.list.NDArrayList;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 

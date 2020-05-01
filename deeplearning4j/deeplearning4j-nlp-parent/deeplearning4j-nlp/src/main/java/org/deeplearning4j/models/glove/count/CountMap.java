@@ -18,7 +18,7 @@ package org.deeplearning4j.models.glove.count;
 
 import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.Iterator;
 import java.util.Map;

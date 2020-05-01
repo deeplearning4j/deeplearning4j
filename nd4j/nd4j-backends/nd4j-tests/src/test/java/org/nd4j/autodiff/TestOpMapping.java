@@ -66,7 +66,6 @@ import org.nd4j.linalg.api.ops.util.PrintAffinity;
 import org.nd4j.linalg.api.ops.util.PrintVariable;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.resources.Resources;
 import org.reflections.Reflections;
 
 import java.io.File;

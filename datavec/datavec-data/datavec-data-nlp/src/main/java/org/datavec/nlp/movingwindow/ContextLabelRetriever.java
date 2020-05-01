@@ -18,9 +18,9 @@ package org.datavec.nlp.movingwindow;
 
 
 import org.apache.commons.lang3.StringUtils;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.collection.MultiDimensionalMap;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.collection.MultiDimensionalMap;
+import org.nd4j.common.primitives.Pair;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 

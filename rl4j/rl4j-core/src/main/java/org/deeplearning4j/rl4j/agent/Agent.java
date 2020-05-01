@@ -10,7 +10,7 @@ import org.deeplearning4j.rl4j.environment.StepResult;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.IPolicy;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 import java.util.Map;
 

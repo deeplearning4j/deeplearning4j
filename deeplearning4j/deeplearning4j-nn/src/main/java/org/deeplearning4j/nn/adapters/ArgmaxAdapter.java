@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.adapters;
 
 import lombok.val;
 import org.nd4j.adapters.OutputAdapter;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 

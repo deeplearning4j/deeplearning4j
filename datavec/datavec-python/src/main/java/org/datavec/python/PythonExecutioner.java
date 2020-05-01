@@ -22,10 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.cpython.global.python;
 import org.bytedeco.numpy.global.numpy;
-import org.nd4j.linalg.api.concurrency.AffinityManager;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;

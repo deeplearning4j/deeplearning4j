@@ -24,11 +24,10 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.function.Predicate;
+import org.nd4j.common.function.Predicate;
 
 import java.util.*;
 
@@ -249,16 +248,17 @@ public abstract class AbstractSession<T, O> {
          */
 
         Map<String, T> out = new HashMap<>();       //Outputs, returned to the user
+        Set<String> allExecuted = new HashSet<>();
         int step = 0;                               //Number of execution steps
         //Next 3: current execution frame
         String currentFrame = OUTER_FRAME;
         int currentFrameIter = 0;
         FrameIter currParentFrame = null;
         ExecStepPredicate predicate = new ExecStepPredicate();
-        while (out.size() < userRequestedUnique.size()) {
+        while (allExecuted.size() < allRequired.size()) {
             if (!dt.hasNewAllSatisfied()) {
                 //Haven't got all of the outputs the user requested, but there's nothing left that we can execute. Should not happen.
-                execFailed(userRequestedUnique, out, step);
+                execFailed(userRequestedUnique, out, allRequired, allExecuted, step);
             }
 
             //Get variable in the current frame/iteration and execute it's corresponding op
@@ -290,9 +290,12 @@ public abstract class AbstractSession<T, O> {
                 Preconditions.checkNotNull(arr, "Encountered null placeholder array for constant: %s", vid);
                 nodeOutputs.put(vid, arr);
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
-                if (allRequired.contains(es.getName())) {
+                if (userRequestedUnique.contains(es.getName())) {
                     //User requested const/variable as one of the outputs
                     out.put(es.getName(), arr);
+                }
+                if(allRequired.contains(es.getName())){
+                    allExecuted.add(es.getName());
                 }
             } else if (es.getType() == ExecType.PLACEHOLDER) {
                 VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
@@ -305,6 +308,9 @@ public abstract class AbstractSession<T, O> {
                             "No array was provided for the placeholder variable \"%s\" that is required for execution", es.getName());
                     //User requested placeholder value as one of the outputs
                     out.put(es.getName(), placeholderValues.get(es.getName()));
+                }
+                if(allRequired.contains(es.getName())){
+                    allExecuted.add(es.getName());
                 }
             } else if (es.getType() == ExecType.OP) {
                 String opName = es.getName();
@@ -400,8 +406,11 @@ public abstract class AbstractSession<T, O> {
                     VarId vid = new VarId(n, outFrameIter.getFrame(), outFrameIter.getIteration(), outFrameIter.getParentFrame());
                     nodeOutputs.put(vid, opOutputValues[i]);
 
-                    if (allRequired.contains(n)) {
+                    if (userRequestedUnique.contains(n)) {
                         out.put(n, opOutputValues[i]);
+                    }
+                    if(allRequired.contains(n)){
+                        allExecuted.add(n);
                     }
                 }
 
@@ -509,17 +518,19 @@ public abstract class AbstractSession<T, O> {
      * @param out                 Current outputs
      * @param step                Execution step
      */
-    protected void execFailed(Set<String> userRequestedUnique, Map<String, T> out, int step) {
+    protected void execFailed(Set<String> userRequestedUnique, Map<String, T> out, Set<String> allRequired, Set<String> allExecuted, int step) {
         int missingCount = userRequestedUnique.size() - out.size();
         StringBuilder sb = new StringBuilder();
         sb.append("No variable are available for execution at step ")
-                .append(step).append(": ").append(missingCount).append(" values remaining");
+                .append(step).append(": ").append(missingCount).append(" requested output values remaining, ")
+                .append(allExecuted.size() - allRequired.size()).append(" variables required to be executed remaining");
         Set<String> missing = new HashSet<>();
         for (String s : userRequestedUnique) {
             if (!out.containsKey(s)) {
                 missing.add(s);
             }
         }
+
         if (missingCount <= 10) {
             sb.append(". Missing variables: ");
             sb.append(missing);

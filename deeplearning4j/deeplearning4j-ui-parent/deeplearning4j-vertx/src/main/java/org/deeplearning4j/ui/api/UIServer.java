@@ -18,11 +18,12 @@
 package org.deeplearning4j.ui.api;
 
 import io.vertx.core.Promise;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.StatsStorage;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.ui.VertxUIServer;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 import java.util.List;
 
@@ -127,7 +128,7 @@ public interface UIServer {
 
     /**
      * Enable the remote listener functionality, storing all data in memory, and attaching the instance to the UI.
-     * Typically used with {@link org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter}, which will send information
+     * Typically used with {@link RemoteUIStatsStorageRouter}, which will send information
      * remotely to this UI instance
      *
      * @see #enableRemoteListener(StatsStorageRouter, boolean)

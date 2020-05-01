@@ -24,10 +24,8 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
-import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ModelSerializer;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.common.base.Preconditions;
 
 import java.io.*;
 import java.nio.charset.Charset;

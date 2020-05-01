@@ -20,7 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.nd4j.api.loader.Source;
+import org.nd4j.common.loader.Source;
 
 import java.io.IOException;
 import java.io.InputStream;

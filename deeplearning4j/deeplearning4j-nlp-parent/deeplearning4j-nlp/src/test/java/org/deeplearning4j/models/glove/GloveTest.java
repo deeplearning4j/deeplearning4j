@@ -17,7 +17,7 @@
 package org.deeplearning4j.models.glove;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
@@ -31,7 +31,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

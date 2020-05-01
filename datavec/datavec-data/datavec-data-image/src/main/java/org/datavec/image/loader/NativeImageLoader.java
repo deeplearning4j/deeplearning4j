@@ -24,7 +24,6 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
-import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,14 +31,14 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.io.*;
 import java.nio.ByteOrder;
 
 import org.bytedeco.leptonica.*;
 import org.bytedeco.opencv.opencv_core.*;
-import org.bytedeco.opencv.opencv_imgproc.*;
+
 import static org.bytedeco.leptonica.global.lept.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgcodecs.*;

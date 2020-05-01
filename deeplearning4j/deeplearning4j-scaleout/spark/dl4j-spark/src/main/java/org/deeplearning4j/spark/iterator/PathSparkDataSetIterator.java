@@ -21,7 +21,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.util.DefaultHadoopConfig;
 import org.datavec.spark.util.SerializableHadoopConfig;
-import org.deeplearning4j.api.loader.DataSetLoader;
+import org.deeplearning4j.core.loader.DataSetLoader;
 import org.deeplearning4j.spark.data.loader.RemoteFileSource;
 import org.nd4j.linalg.dataset.DataSet;
 

@@ -18,7 +18,7 @@ package org.nd4j.evaluation.curves;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**

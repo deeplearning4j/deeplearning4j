@@ -22,13 +22,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 
 /**

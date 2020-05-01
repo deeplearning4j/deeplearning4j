@@ -17,9 +17,8 @@
 package org.deeplearning4j.text.sentenceiterator;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.junit.Test;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import static org.junit.Assert.assertEquals;
 

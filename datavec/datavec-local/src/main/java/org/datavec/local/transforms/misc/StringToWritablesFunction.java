@@ -20,7 +20,7 @@ import lombok.AllArgsConstructor;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -17,13 +17,13 @@
 package org.deeplearning4j.ui.stats;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.ui.stats.api.*;
-import org.deeplearning4j.ui.stats.impl.SbeStatsInitializationReport;
-import org.deeplearning4j.ui.stats.impl.SbeStatsReport;
-import org.deeplearning4j.ui.stats.impl.java.JavaStatsInitializationReport;
+import org.deeplearning4j.ui.model.stats.api.*;
+import org.deeplearning4j.ui.model.stats.impl.SbeStatsInitializationReport;
+import org.deeplearning4j.ui.model.stats.impl.SbeStatsReport;
+import org.deeplearning4j.ui.model.stats.impl.java.JavaStatsInitializationReport;
 import org.junit.Assert;
 import org.junit.Test;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.*;
 import java.util.ArrayList;

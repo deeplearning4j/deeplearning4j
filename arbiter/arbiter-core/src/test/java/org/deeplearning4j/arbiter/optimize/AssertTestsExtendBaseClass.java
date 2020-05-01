@@ -17,7 +17,7 @@ package org.deeplearning4j.arbiter.optimize;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
-import org.nd4j.AbstractAssertTestsClass;
+import org.nd4j.common.tests.AbstractAssertTestsClass;
 import java.util.*;
 
 /**

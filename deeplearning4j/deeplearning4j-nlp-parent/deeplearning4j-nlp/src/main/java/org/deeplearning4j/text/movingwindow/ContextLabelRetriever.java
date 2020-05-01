@@ -19,9 +19,9 @@ package org.deeplearning4j.text.movingwindow;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.collection.MultiDimensionalMap;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.collection.MultiDimensionalMap;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;

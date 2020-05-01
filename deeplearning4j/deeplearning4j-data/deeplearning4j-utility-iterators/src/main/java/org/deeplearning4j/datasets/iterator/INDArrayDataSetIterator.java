@@ -18,7 +18,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * A simple utility iterator for creating a DataSetIterator from an {@code Iterable<Pair<INDArray,INDArray>>}.

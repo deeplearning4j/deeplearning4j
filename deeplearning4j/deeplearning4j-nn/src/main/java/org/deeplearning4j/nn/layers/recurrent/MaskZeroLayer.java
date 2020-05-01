@@ -22,15 +22,12 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import lombok.NonNull;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-import static org.deeplearning4j.nn.conf.RNNFormat.NCW;
 import static org.deeplearning4j.nn.conf.RNNFormat.NWC;
 
 /**

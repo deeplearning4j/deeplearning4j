@@ -17,12 +17,11 @@
 package org.datavec.nlp.vectorizer;
 
 import lombok.Getter;
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.vector.Vectorizer;
-import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.nlp.metadata.DefaultVocabCache;
 import org.datavec.nlp.metadata.VocabCache;
@@ -30,9 +29,6 @@ import org.datavec.nlp.stopwords.StopWords;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
 import java.util.Collection;
 
 /**

@@ -19,7 +19,7 @@ package org.deeplearning4j.arbiter.optimize.api;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.generator.util.SerializedSupplier;
-import org.nd4j.linalg.function.Supplier;
+import org.nd4j.common.function.Supplier;
 
 import java.io.Serializable;
 import java.util.Map;

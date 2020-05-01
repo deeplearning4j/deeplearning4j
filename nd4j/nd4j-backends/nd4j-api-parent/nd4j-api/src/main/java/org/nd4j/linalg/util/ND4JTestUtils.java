@@ -19,11 +19,11 @@ package org.nd4j.linalg.util;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.apache.commons.io.FileUtils;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.BiFunction;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.function.BiFunction;
+import org.nd4j.common.primitives.Triple;
 
 import java.io.File;
 import java.net.URI;

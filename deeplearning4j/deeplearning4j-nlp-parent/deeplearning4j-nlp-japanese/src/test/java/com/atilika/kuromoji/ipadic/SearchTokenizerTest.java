@@ -36,7 +36,7 @@ import com.atilika.kuromoji.TokenizerBase.Mode;
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.IOException;
 import java.io.InputStream;

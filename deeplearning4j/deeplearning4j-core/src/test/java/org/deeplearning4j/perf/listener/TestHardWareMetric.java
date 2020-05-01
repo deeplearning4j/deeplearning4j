@@ -17,6 +17,7 @@
 package org.deeplearning4j.perf.listener;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.core.listener.HardwareMetric;
 import org.junit.Ignore;
 import org.junit.Test;
 import oshi.json.SystemInfo;

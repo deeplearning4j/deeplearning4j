@@ -18,7 +18,7 @@ package org.deeplearning4j.arbiter.optimize.generator.genetic.culling;
 
 import org.deeplearning4j.arbiter.optimize.generator.genetic.Chromosome;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.population.PopulationModel;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 import java.util.List;
 

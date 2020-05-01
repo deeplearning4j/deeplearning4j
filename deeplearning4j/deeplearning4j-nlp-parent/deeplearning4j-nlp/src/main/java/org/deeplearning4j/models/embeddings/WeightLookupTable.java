@@ -19,7 +19,7 @@ package org.deeplearning4j.models.embeddings;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.plot.BarnesHutTsne;
-import org.deeplearning4j.ui.UiConnectionInfo;
+import org.deeplearning4j.core.ui.UiConnectionInfo;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;

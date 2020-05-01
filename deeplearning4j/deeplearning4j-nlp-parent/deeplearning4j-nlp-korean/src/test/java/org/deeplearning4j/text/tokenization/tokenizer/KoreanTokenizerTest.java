@@ -17,7 +17,7 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.KoreanTokenizerFactory;
+import org.deeplearning4j.nlp.korean.tokenization.tokenizerfactory.KoreanTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 

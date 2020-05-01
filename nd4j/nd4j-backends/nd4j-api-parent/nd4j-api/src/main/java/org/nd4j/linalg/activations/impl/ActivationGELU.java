@@ -25,7 +25,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.GELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * GELU activation function - Gaussian Error Linear Units

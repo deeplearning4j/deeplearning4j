@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.spark.time;
 
-import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.common.config.DL4JSystemProperties;
 
 import java.lang.reflect.Method;
 

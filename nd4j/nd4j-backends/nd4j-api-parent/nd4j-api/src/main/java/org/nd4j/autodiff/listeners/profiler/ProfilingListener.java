@@ -26,15 +26,11 @@ import org.nd4j.autodiff.listeners.profiler.data.Phase;
 import org.nd4j.autodiff.listeners.profiler.data.TraceEvent;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -42,10 +38,8 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 
 import java.io.*;
 import java.lang.management.ManagementFactory;
-import java.text.DecimalFormat;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
 /**

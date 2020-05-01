@@ -21,14 +21,13 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.split.StreamInputSplit;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.net.URI;

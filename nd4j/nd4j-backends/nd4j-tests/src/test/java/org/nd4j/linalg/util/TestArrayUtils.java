@@ -17,6 +17,7 @@
 package org.nd4j.linalg.util;
 
 import org.junit.Test;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.factory.Nd4jBackend;
 

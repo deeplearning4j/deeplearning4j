@@ -19,7 +19,7 @@ package org.datavec.local.transforms.join;
 import org.datavec.api.transform.join.Join;
 import org.datavec.api.writable.Writable;
 import org.datavec.local.transforms.BaseFlatMapFunctionAdaptee;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 

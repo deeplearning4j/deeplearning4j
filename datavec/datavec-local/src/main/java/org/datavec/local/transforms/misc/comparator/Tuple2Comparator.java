@@ -17,7 +17,7 @@
 package org.datavec.local.transforms.misc.comparator;
 
 import lombok.AllArgsConstructor;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.Serializable;
 import java.util.Comparator;

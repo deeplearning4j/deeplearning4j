@@ -1,7 +1,7 @@
 package org.deeplearning4j.nn.layers.samediff;
 
 import org.nd4j.autodiff.samediff.internal.memory.AbstractMemoryMgr;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;

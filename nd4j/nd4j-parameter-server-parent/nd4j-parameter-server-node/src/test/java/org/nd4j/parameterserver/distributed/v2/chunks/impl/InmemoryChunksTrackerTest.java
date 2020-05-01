@@ -18,7 +18,7 @@ package org.nd4j.parameterserver.distributed.v2.chunks.impl;
 
 import lombok.val;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.v2.chunks.VoidChunk;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.GradientsUpdateMessage;

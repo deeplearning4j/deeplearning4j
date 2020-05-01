@@ -33,7 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.common.util.SerializationUtils;
 
 import java.io.*;
 import java.util.Arrays;

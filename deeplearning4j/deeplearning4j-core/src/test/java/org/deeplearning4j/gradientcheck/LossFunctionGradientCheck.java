@@ -43,8 +43,8 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;

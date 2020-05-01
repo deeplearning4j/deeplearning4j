@@ -24,7 +24,7 @@ import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

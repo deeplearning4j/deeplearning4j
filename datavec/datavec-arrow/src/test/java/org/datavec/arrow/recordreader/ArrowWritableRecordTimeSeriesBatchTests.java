@@ -27,7 +27,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.arrow.ArrowConverter;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;

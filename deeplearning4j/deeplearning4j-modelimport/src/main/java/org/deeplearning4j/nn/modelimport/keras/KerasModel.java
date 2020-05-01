@@ -38,7 +38,7 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasOptimizerUtils;
 import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;
