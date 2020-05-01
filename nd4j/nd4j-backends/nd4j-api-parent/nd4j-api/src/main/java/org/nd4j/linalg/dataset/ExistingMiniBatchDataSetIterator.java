@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.dataset;
 
+import lombok.NonNull;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
@@ -43,7 +44,7 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
      * Create with the given root directory, using the default filename pattern {@link #DEFAULT_PATTERN}
      * @param rootDir the root directory to use
      */
-    public ExistingMiniBatchDataSetIterator(File rootDir) {
+    public ExistingMiniBatchDataSetIterator(@NonNull File rootDir) {
         this(rootDir, DEFAULT_PATTERN);
     }
 
@@ -53,7 +54,7 @@ public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
      * @param pattern    The filename pattern to use. Used with {@code String.format(pattern,idx)}, where idx is an
      *                   integer, starting at 0.
      */
-    public ExistingMiniBatchDataSetIterator(File rootDir, String pattern) {
+    public ExistingMiniBatchDataSetIterator(@NonNull File rootDir, String pattern) {
         this.rootDir = rootDir;
         totalBatches = rootDir.list().length;
         this.pattern = pattern;
