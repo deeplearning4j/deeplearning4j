@@ -27,8 +27,8 @@ import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostPro
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.residual.ResidualClippingPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
-import org.deeplearning4j.util.ThreadUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.ThreadUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;

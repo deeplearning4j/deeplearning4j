@@ -20,7 +20,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
-import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.common.util.ThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
