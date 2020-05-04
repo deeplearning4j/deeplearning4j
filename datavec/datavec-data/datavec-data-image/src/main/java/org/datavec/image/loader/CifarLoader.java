@@ -16,6 +16,7 @@
 
 package org.datavec.image.loader;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacv.OpenCVFrameConverter;
@@ -47,6 +48,7 @@ import static org.bytedeco.opencv.global.opencv_imgproc.*;
  * There is a special preProcessor used to normalize the dataset based on Sergey Zagoruyko example
  * <a href="https://github.com/szagoruyko/cifar.torch">https://github.com/szagoruyko/cifar.torch</a>
  */
+@Slf4j
 public class CifarLoader extends NativeImageLoader implements Serializable {
     public static final int NUM_TRAIN_IMAGES = 50000;
     public static final int NUM_TEST_IMAGES = 10000;

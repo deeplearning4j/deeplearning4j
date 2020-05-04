@@ -474,16 +474,18 @@ public class TestImageRecordReader {
     public void testNCHW_NCHW() throws Exception {
         //Idea: labels order should be consistent regardless of input file order
         File f0 = testDir.newFolder();
-        Resources.copyDirectory("datavec-data-image/testimages/", f0);
+        new ClassPathResource("datavec-data-image/testimages/").copyDirectory(f0);
 
-        FileSplit fs = new FileSplit(f0, new Random(12345));
-        assertEquals(6, fs.locations().length);
+        FileSplit fs0 = new FileSplit(f0, new Random(12345));
+        FileSplit fs1 = new FileSplit(f0, new Random(12345));
+        assertEquals(6, fs0.locations().length);
+        assertEquals(6, fs1.locations().length);
 
         ImageRecordReader nchw = new ImageRecordReader(32, 32, 3, true);
-        nchw.initialize(fs);
+        nchw.initialize(fs0);
 
         ImageRecordReader nhwc = new ImageRecordReader(32, 32, 3, false);
-        nhwc.initialize(fs);
+        nhwc.initialize(fs1);
 
         while(nchw.hasNext()){
             assertTrue(nhwc.hasNext());
@@ -533,7 +535,7 @@ public class TestImageRecordReader {
 
         //Test record(URI, DataInputStream)
 
-        URI u = fs.locations()[0];
+        URI u = fs0.locations()[0];
 
         try(DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(u))))) {
             List<Writable> l = nchw.record(u, dis);
