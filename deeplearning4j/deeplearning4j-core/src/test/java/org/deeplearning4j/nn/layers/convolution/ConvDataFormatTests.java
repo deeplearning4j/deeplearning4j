@@ -18,11 +18,9 @@ package org.deeplearning4j.nn.layers.convolution;
 import lombok.*;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
-import org.deeplearning4j.nn.conf.CNN2DFormat;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
@@ -35,6 +33,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -49,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class ConvDataFormatTests extends BaseDL4JTest {
@@ -970,5 +970,59 @@ public class ConvDataFormatTests extends BaseDL4JTest {
         public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState, int minibatchSize) {
             return null;
         }
+    }
+
+
+    @Test
+    public void testWrongFormatIn(){
+
+        for(CNN2DFormat df : CNN2DFormat.values()){
+
+
+            for(int i=0; i<4; i++ ){
+
+                NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
+                        .list();
+                switch (i){
+                    case 0:
+                        b.layer(new ConvolutionLayer.Builder().kernelSize(2,2).nIn(3).nOut(3).dataFormat(df).build());
+                        break;
+                    case 1:
+                        b.layer(new DepthwiseConvolution2D.Builder().kernelSize(2,2).nIn(3).nOut(3).dataFormat(df).build());
+                        break;
+                    case 2:
+                        b.layer(new Deconvolution2D.Builder().dataFormat(df).kernelSize(2,2).nIn(3).nOut(3).build());
+                        break;
+                    case 3:
+                        b.layer(new SeparableConvolution2D.Builder().dataFormat(df).kernelSize(2,2).nIn(3).nOut(3).build());
+                        break;
+                }
+
+                MultiLayerNetwork net = new MultiLayerNetwork(b.build());
+                net.init();
+
+                INDArray in;
+                INDArray wrongFormatIn;
+                if(df == CNN2DFormat.NCHW){
+                    in = Nd4j.create(DataType.FLOAT, 5, 3, 12, 12);
+                    wrongFormatIn = Nd4j.create(DataType.FLOAT, 5, 12, 12, 3);
+                } else {
+                    in = Nd4j.create(DataType.FLOAT, 5, 12, 12, 3);
+                    wrongFormatIn = Nd4j.create(DataType.FLOAT, 5, 3, 12, 12);
+                }
+
+                net.output(in);
+
+                try {
+                    net.output(wrongFormatIn);
+                } catch (DL4JInvalidInputException e){
+//                    e.printStackTrace();
+                    String msg = e.getMessage();
+                    assertTrue(msg, msg.contains(ConvolutionUtils.NCHW_NHWC_ERROR_MSG));
+                }
+            }
+        }
+
+
     }
 }
