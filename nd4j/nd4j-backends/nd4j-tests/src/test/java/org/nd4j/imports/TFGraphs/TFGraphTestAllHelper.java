@@ -851,6 +851,19 @@ public class TFGraphTestAllHelper {
             return (t, s) -> Nd4j.sort(t, true).equals(Nd4j.sort(s, true));
         }
 
+        // sum of all elements along dimesions before and after shuffle has to be the same
+        if(modelName.startsWith("random_shuffle")){
+            return (t, s) -> Nd4j.toFlattened(t).sum().equals(Nd4j.toFlattened(s).sum());
+        }
+
+        if(modelName.startsWith("random_normal")){
+            return (t, s) -> Nd4j.mean(t).equals(Nd4j.mean(s)) && Nd4j.std(t).equals(Nd4j.std(s)) ;
+        }
+
+        if(modelName.startsWith("random_gamma")|| modelName.startsWith("random_poisson") || modelName.equals("random_poisson_v2")){
+            return (t, s) -> Nd4j.shape(t).equals(Nd4j.shape(s)) ;
+        }
+
         if(modelName.startsWith("alpha_dropout") || modelName.startsWith("layers_dropout") || modelName.equals("dropout"))
             //We can't compare dropout using simple equality due to randomness
             return (t, s) -> {

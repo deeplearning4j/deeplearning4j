@@ -153,7 +153,11 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // PASSED on 2020/04/27 on CPU/Linux
 
 
-            "primitive_gru"
+            "primitive_gru",
+            "dropout",
+            "random_poisson/rank1_float16", "random_poisson/rank1_float32", "random_poisson_v2/rank1_float64",
+
+            "multiple_outs_a",
 
     };
 
