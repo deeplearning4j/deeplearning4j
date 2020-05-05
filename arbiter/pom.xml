@@ -89,7 +89,6 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>${maven-build-helper-plugin.version}</version>
             </plugin>
         </plugins>
 
@@ -128,7 +127,7 @@
                         <!--
                          By default: Surefire will set the classpath based on the manifest. Because tests are not included
                          in the JAR, any tests that rely on class path scanning for resources in the tests directory will not
-                         function correctly without this configuratino.
+                         function correctly without this configuration.
                          For example, tests for custom layers (where the custom layer is defined in the test directory)
                          will fail due to the custom layer not being found on the classpath.
                          http://maven.apache.org/surefire/maven-surefire-plugin/examples/class-loading.html
