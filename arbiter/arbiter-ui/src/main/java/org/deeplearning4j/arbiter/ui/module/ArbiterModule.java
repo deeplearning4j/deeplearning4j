@@ -141,9 +141,15 @@ public class ArbiterModule implements UIModule {
                 (path, rc) -> rc.response().end(multiSession ? "true" : "false")));
         if (multiSession) {
             r.add(new Route("/arbiter", HttpMethod.GET, (path, rc) -> this.listSessions(rc)));
-            r.add(new Route("/arbiter/:sessionId", HttpMethod.GET, (path, rc) -> rc.response()
-                    .putHeader("content-type", "text/html; charset=utf-8")
-                    .sendFile("templates/ArbiterUI.html")));
+            r.add(new Route("/arbiter/:sessionId", HttpMethod.GET, (path, rc) -> {
+                if (knownSessionIDs.containsKey(path.get(0))) {
+                    rc.response()
+                            .putHeader("content-type", "text/html; charset=utf-8")
+                            .sendFile("templates/ArbiterUI.html");
+                } else {
+                    sessionNotFound(path.get(0), rc.request().path(), rc);
+                }
+            }));
 
             r.add(new Route("/arbiter/:sessionId/lastUpdate", HttpMethod.GET, (path, rc) -> {
                 if (knownSessionIDs.containsKey(path.get(0))) {
@@ -243,7 +249,7 @@ public class ArbiterModule implements UIModule {
         if (!knownSessionIDs.isEmpty()) {
             sb.append("        <ul>");
             for (String sessionId : knownSessionIDs.keySet()) {
-                sb.append("            <li><a href=\"arbiter/")
+                sb.append("            <li><a href=\"/arbiter/")
                         .append(sessionId).append("\">")
                         .append(sessionId).append("</a></li>\n");
             }

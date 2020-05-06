@@ -246,7 +246,7 @@ public class TrainModule implements UIModule {
         if (!knownSessionIDs.isEmpty()) {
             sb.append("        <ul>");
             for (String sessionId : knownSessionIDs.keySet()) {
-                sb.append("            <li><a href=\"train/")
+                sb.append("            <li><a href=\"/train/")
                         .append(sessionId).append("\">")
                         .append(sessionId).append("</a></li>\n");
             }
