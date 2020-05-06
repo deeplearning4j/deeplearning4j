@@ -788,7 +788,6 @@ public class ArbiterModule implements UIModule {
 
         //TODO: I18N
 
-        //TODO don't use currentTimeMillis due to stored data??
         long bestTime;
         Double bestScore = null;
         String bestModelString = null;
@@ -805,7 +804,12 @@ public class ArbiterModule implements UIModule {
         String execTotalRuntimeStr = "";
         if(execStartTime > 0){
             execStartTimeStr = TIME_FORMATTER.print(execStartTime);
-            execTotalRuntimeStr = UIUtils.formatDuration(System.currentTimeMillis() - execStartTime);
+            // allModelInfo is sorted by Persistable::getTimeStamp
+            long lastCompleteTime = execStartTime;
+            if (!allModelInfo.isEmpty()) {
+                lastCompleteTime = allModelInfo.get(allModelInfo.size() - 1).getTimeStamp();
+            }
+            execTotalRuntimeStr = UIUtils.formatDuration(lastCompleteTime - execStartTime);
         }
 
 
