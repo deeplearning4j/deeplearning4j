@@ -197,9 +197,9 @@ public class TestVertxUIMultiSession extends BaseDL4JTest {
     }
 
     /**
-     * Get URL-encoded URL for training session on given server address
+     * Get URL for training session on given server address
      * @param serverAddress server address
-     * @param sessionId session ID
+     * @param sessionId session ID (will be URL-encoded)
      * @return URL
      * @throws UnsupportedEncodingException if the used encoding is not supported
      */
