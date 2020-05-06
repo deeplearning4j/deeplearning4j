@@ -34,47 +34,70 @@ import org.datavec.image.transform.ImageTransform;
 public class ImageRecordReader extends BaseImageRecordReader {
 
 
-    /** Loads images with height = 28, width = 28, and channels = 1, appending no labels. */
+    /** Loads images with height = 28, width = 28, and channels = 1, appending no labels.
+     * Output format is NCHW (channels first) - [numExamples, 1, 28, 28]*/
     public ImageRecordReader() {
         super();
     }
 
-    /** Loads images with given height, width, and channels, appending labels returned by the generator. */
+    /** Loads images with given height, width, and channels, appending labels returned by the generator.
+     * Output format is NCHW (channels first) - [numExamples, channels, height, width]
+     */
     public ImageRecordReader(long height, long width, long channels, PathLabelGenerator labelGenerator) {
         super(height, width, channels, labelGenerator);
     }
 
-    /** Loads images with given height, width, and channels, appending labels returned by the generator. */
+    /** Loads images with given height, width, and channels, appending labels returned by the generator.
+     * Output format is NCHW (channels first) - [numExamples, channels, height, width]
+     */
     public ImageRecordReader(long height, long width, long channels, PathMultiLabelGenerator labelGenerator) {
         super(height, width, channels, labelGenerator);
     }
 
-    /** Loads images with given height, width, and channels, appending no labels. */
+    /** Loads images with given height, width, and channels, appending no labels - in NCHW (channels first) format */
     public ImageRecordReader(long height, long width, long channels) {
         super(height, width, channels, (PathLabelGenerator) null);
     }
 
-    /** Loads images with given height, width, and channels, appending labels returned by the generator. */
+    /** Loads images with given height, width, and channels, appending no labels - in specified format<br>
+     * If {@code nchw_channels_first == true} output format is NCHW (channels first) - [numExamples, channels, height, width]<br>
+     * If {@code nchw_channels_first == false} output format is NHWC (channels last) - [numExamples, height, width, channels]<br>
+     */
+    public ImageRecordReader(long height, long width, long channels, boolean nchw_channels_first) {
+        super(height, width, channels, nchw_channels_first, null, null,  null);
+    }
+
+    /** Loads images with given height, width, and channels, appending labels returned by the generator.
+     * Output format is NCHW (channels first) - [numExamples, channels, height, width] */
     public ImageRecordReader(long height, long width, long channels, PathLabelGenerator labelGenerator,
                     ImageTransform imageTransform) {
         super(height, width, channels, labelGenerator, imageTransform);
     }
 
-    /** Loads images with given height, width, and channels, appending no labels. */
+    /** Loads images with given height, width, and channels, appending labels returned by the generator.<br>
+     * If {@code nchw_channels_first == true} output format is NCHW (channels first) - [numExamples, channels, height, width]<br>
+     * If {@code nchw_channels_first == false} output format is NHWC (channels last) - [numExamples, height, width, channels]<br>
+     */
+    public ImageRecordReader(long height, long width, long channels, boolean nchw_channels_first, PathLabelGenerator labelGenerator,
+                             ImageTransform imageTransform) {
+        super(height, width, channels, nchw_channels_first, labelGenerator, null, imageTransform);
+    }
+
+    /** Loads images with given height, width, and channels, appending no labels.
+     * Output format is NCHW (channels first) - [numExamples, channels, height, width]*/
     public ImageRecordReader(long height, long width, long channels, ImageTransform imageTransform) {
         super(height, width, channels, null, imageTransform);
     }
 
-    /** Loads images with given  height, width, and channels, appending labels returned by the generator. */
+    /** Loads images with given  height, width, and channels, appending labels returned by the generator
+     * Output format is NCHW (channels first) - [numExamples, channels, height, width]*/
     public ImageRecordReader(long height, long width, PathLabelGenerator labelGenerator) {
         super(height, width, 1, labelGenerator);
     }
 
-    /** Loads images with given height, width, and channels = 1, appending no labels. */
+    /** Loads images with given height, width, and channels = 1, appending no labels.
+     * Output format is NCHW (channels first) - [numExamples, channels, height, width]*/
     public ImageRecordReader(long height, long width) {
         super(height, width, 1, null, null);
     }
-
-
-
 }

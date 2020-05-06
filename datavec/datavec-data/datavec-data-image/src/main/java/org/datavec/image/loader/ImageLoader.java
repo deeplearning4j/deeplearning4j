@@ -249,7 +249,14 @@ public class ImageLoader extends BaseImageLoader {
      * @throws IOException
      */
     public INDArray asMatrix(File f) throws IOException {
-        return NDArrayUtil.toNDArray(fromFile(f));
+        return asMatrix(f, true);
+    }
+
+    @Override
+    public INDArray asMatrix(File f, boolean nchw) throws IOException {
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            return asMatrix(is, nchw);
+        }
     }
 
     /**
@@ -259,34 +266,68 @@ public class ImageLoader extends BaseImageLoader {
      * @return the input stream to convert
      */
     public INDArray asMatrix(InputStream inputStream) throws IOException {
-        if (channels == 3)
-            return toBgr(inputStream);
-        try {
-            BufferedImage image = ImageIO.read(inputStream);
-            return asMatrix(image);
-        } catch (IOException e) {
-            throw new IOException("Unable to load image", e);
+        return asMatrix(inputStream, true);
+    }
+
+    @Override
+    public INDArray asMatrix(InputStream inputStream, boolean nchw) throws IOException {
+        INDArray ret;
+        if (channels == 3) {
+            ret = toBgr(inputStream);
+        } else {
+            try {
+                BufferedImage image = ImageIO.read(inputStream);
+                ret = asMatrix(image);
+            } catch (IOException e) {
+                throw new IOException("Unable to load image", e);
+            }
         }
+        if(ret.rank() == 3){
+            ret = ret.reshape(1, ret.size(0), ret.size(1), ret.size(2));
+        }
+        if(!nchw)
+            ret = ret.permute(0,2,3,1);     //NCHW to NHWC
+        return ret;
     }
 
     @Override
     public org.datavec.image.data.Image asImageMatrix(File f) throws IOException {
+        return asImageMatrix(f, true);
+    }
+
+    @Override
+    public org.datavec.image.data.Image asImageMatrix(File f, boolean nchw) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
-            return asImageMatrix(bis);
+            return asImageMatrix(bis, nchw);
         }
     }
 
     @Override
     public org.datavec.image.data.Image asImageMatrix(InputStream inputStream) throws IOException {
-        if (channels == 3)
-            return toBgrImage(inputStream);
-        try {
-            BufferedImage image = ImageIO.read(inputStream);
-            INDArray asMatrix = asMatrix(image);
-            return new org.datavec.image.data.Image(asMatrix, image.getData().getNumBands(), image.getHeight(), image.getWidth());
-        } catch (IOException e) {
-            throw new IOException("Unable to load image", e);
+        return asImageMatrix(inputStream, true);
+    }
+
+    @Override
+    public org.datavec.image.data.Image asImageMatrix(InputStream inputStream, boolean nchw) throws IOException {
+        org.datavec.image.data.Image ret;
+        if (channels == 3) {
+            ret = toBgrImage(inputStream);
+        } else {
+            try {
+                BufferedImage image = ImageIO.read(inputStream);
+                INDArray asMatrix = asMatrix(image);
+                ret = new org.datavec.image.data.Image(asMatrix, image.getData().getNumBands(), image.getHeight(), image.getWidth());
+            } catch (IOException e) {
+                throw new IOException("Unable to load image", e);
+            }
         }
+        if(ret.getImage().rank() == 3){
+            INDArray a = ret.getImage();
+            ret.setImage(a.reshape(1, a.size(0), a.size(1), a.size(2)));
+        }
+        if(!nchw)
+            ret.setImage(ret.getImage().permute(0,2,3,1));  //NCHW to NHWC
+        return ret;
     }
 
     /**

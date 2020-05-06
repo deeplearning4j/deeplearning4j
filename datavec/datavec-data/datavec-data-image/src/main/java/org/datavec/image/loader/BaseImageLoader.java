@@ -16,6 +16,7 @@
 
 package org.datavec.image.loader;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.datavec.image.data.Image;
 import org.datavec.image.transform.ImageTransform;
@@ -35,9 +36,8 @@ import java.util.Random;
 /**
  * Created by nyghtowl on 12/17/15.
  */
+@Slf4j
 public abstract class BaseImageLoader implements Serializable {
-
-    protected static final Logger log = LoggerFactory.getLogger(BaseImageLoader.class);
 
     public enum MultiPageMode {
         MINIBATCH, FIRST //, CHANNELS,
@@ -62,13 +62,37 @@ public abstract class BaseImageLoader implements Serializable {
 
     public abstract INDArray asRowVector(InputStream inputStream) throws IOException;
 
+    /** As per {@link #asMatrix(File, boolean)} but NCHW/channels_first format */
     public abstract INDArray asMatrix(File f) throws IOException;
 
+    /**
+     * Load an image from a file to an INDArray
+     * @param f    File to load the image from
+     * @param nchw If true: return image in NCHW/channels_first [1, channels, height width] format; if false, return
+     *             in NHWC/channels_last [1, height, width, channels] format
+     * @return Image file as as INDArray
+     */
+    public abstract INDArray asMatrix(File f, boolean nchw) throws IOException;
+
     public abstract INDArray asMatrix(InputStream inputStream) throws IOException;
+    /**
+     * Load an image file from an input stream to an INDArray
+     * @param inputStream Input stream to load the image from
+     * @param nchw If true: return image in NCHW/channels_first [1, channels, height width] format; if false, return
+     *             in NHWC/channels_last [1, height, width, channels] format
+     * @return Image file stream as as INDArray
+     */
+    public abstract INDArray asMatrix(InputStream inputStream, boolean nchw) throws IOException;
 
+    /** As per {@link #asMatrix(File)} but as an {@link Image}*/
     public abstract Image asImageMatrix(File f) throws IOException;
+    /** As per {@link #asMatrix(File, boolean)} but as an {@link Image}*/
+    public abstract Image asImageMatrix(File f, boolean nchw) throws IOException;
 
+    /** As per {@link #asMatrix(InputStream)} but as an {@link Image}*/
     public abstract Image asImageMatrix(InputStream inputStream) throws IOException;
+    /** As per {@link #asMatrix(InputStream, boolean)} but as an {@link Image}*/
+    public abstract Image asImageMatrix(InputStream inputStream, boolean nchw) throws IOException;
 
 
     public static void downloadAndUntar(Map urlMap, File fullDir) {

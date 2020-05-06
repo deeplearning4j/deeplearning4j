@@ -48,6 +48,13 @@ import java.util.Arrays;
  */
 public class ConvolutionUtils {
 
+    public static final String NCHW_NHWC_ERROR_MSG = "Note: Convolution layers can be configured for either NCHW (channels first)" +
+            " or NHWC (channels last) format for input images and activations.\n" +
+            "Layers can be configured using .dataFormat(CNN2DFormat.NCHW/NHWC) when constructing the layer, or for the entire net using" +
+            " .setInputType(InputType.convolutional(height, width, depth, CNN2DForman.NCHW/NHWC)).\n" +
+            "ImageRecordReader and NativeImageLoader can also be configured to load image data in either NCHW or NHWC format which must match the network";
+
+
     private static final int[] ONES = new int[]{1, 1};
 
 

@@ -38,7 +38,7 @@ import java.util.Map;
  */
 public abstract class SameDiffLoss implements ILossFunction {
     protected transient SameDiff sd;
-    protected transient SDVariable scoreVariable;
+    protected transient SDVariable scorePerExampleVariable;
 
     protected SameDiffLoss() {
 
@@ -60,7 +60,8 @@ public abstract class SameDiffLoss implements ILossFunction {
         sd = SameDiff.create();
         SDVariable layerInput = sd.placeHolder("layerInput", dataType, -1);
         SDVariable labels = sd.placeHolder("labels", dataType, -1);
-        scoreVariable = this.defineLoss(sd, layerInput, labels);
+        scorePerExampleVariable = this.defineLoss(sd, layerInput, labels);
+        scorePerExampleVariable.markAsLoss();
         sd.createGradFunction("layerInput");
     }
 
@@ -112,7 +113,7 @@ public abstract class SameDiffLoss implements ILossFunction {
         m.put("labels", labels);
         m.put("layerInput", output);
 
-        INDArray scoreArr = sd.outputSingle(m,scoreVariable.name());
+        INDArray scoreArr = sd.outputSingle(m, scorePerExampleVariable.name());
 
         if (mask != null) {
             LossUtil.applyMask(scoreArr, mask);

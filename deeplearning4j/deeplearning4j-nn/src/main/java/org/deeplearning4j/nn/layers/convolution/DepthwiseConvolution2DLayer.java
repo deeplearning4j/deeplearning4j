@@ -183,13 +183,21 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
-            throw new DL4JInvalidInputException("Cannot do forward pass in DepthwiseConvolution2D layer " +
+
+            String s = "Cannot do forward pass in DepthwiseConvolution2D layer " +
                     "(layer name = " + layerName
                     + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
-                    + " (data input channels = " + input.size(1) + ", "
+                    + " (data format = " + format + ", data input channels = " + input.size(1) + ", "
                     + (nchw ? "[minibatch,inputDepth,height,width]=" : "[minibatch,height,width,inputDepth]=")
                     + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
-                    + layerId());
+                    + layerId();
+            int dimIfWrongFormat = format == CNN2DFormat.NHWC ? 1 : 3;
+            if(input.size(dimIfWrongFormat) == inDepth){
+                //User might have passed NCHW data to a NHWC net, or vice versa?
+                s += "\n" + ConvolutionUtils.NCHW_NHWC_ERROR_MSG;
+            }
+
+            throw new DL4JInvalidInputException(s);
         }
         int kH = (int) depthWiseWeights.size(0);
         int kW = (int) depthWiseWeights.size(1);

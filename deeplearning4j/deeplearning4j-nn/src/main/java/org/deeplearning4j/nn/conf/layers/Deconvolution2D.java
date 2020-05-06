@@ -63,6 +63,9 @@ public class Deconvolution2D extends ConvolutionLayer {
     protected Deconvolution2D(BaseConvBuilder<?> builder) {
         super(builder);
         initializeConstraints(builder);
+        if(builder instanceof Builder){
+            this.cnn2dDataFormat = ((Builder) builder).format;
+        }
     }
 
     public boolean hasBias() {
@@ -136,7 +139,7 @@ public class Deconvolution2D extends ConvolutionLayer {
 
         private CNN2DFormat format = CNN2DFormat.NCHW;
 
-        public Builder format(CNN2DFormat format){
+        public Builder dataFormat(CNN2DFormat format){
             this.format = format;
             return this;
         }

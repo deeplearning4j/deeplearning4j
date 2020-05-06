@@ -21,9 +21,9 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
-import org.deeplearning4j.core.util.ThreadUtils;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.common.util.ThreadUtils;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
