@@ -557,21 +557,26 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         fb.i_ = x[2];
         float threshold = fb.f_;
 
+        auto pPos = -1;
 
         auto func = PRAGMA_THREADS_FOR {
             for (auto e = start; e < stop; e++) {
+                const auto v = x[e];
                 for (int bitId = 0; bitId < 16; bitId++) {
-                    bool hasBit = (x[e] & 1 << (bitId)) != 0;
-                    bool hasSign = (x[e] & 1 << (bitId + 16)) != 0;
+                    bool hasBit = (v & 1 << (bitId)) != 0;
+                    bool hasSign = (v & 1 << (bitId + 16)) != 0;
+                    auto cPos = (e - 4) * 16 + bitId;
 
                     if (hasBit) {
                         if (hasSign)
-                            dz[(e - 4) * 16 + bitId] -= static_cast<T>(threshold);
+                            dz[cPos] -= static_cast<T>(threshold);
                         else
-                            dz[(e - 4) * 16 + bitId] += static_cast<T>(threshold);
+                            dz[cPos] += static_cast<T>(threshold);
                     } else if (hasSign) {
-                        dz[(e - 4) * 16 + bitId] -= static_cast<T>(threshold / 2);
+                        dz[cPos] -= static_cast<T>(threshold / 2);
                     }
+
+                    pPos = cPos;
                 }
             }
         };
@@ -582,17 +587,21 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
     template<typename T>
     Nd4jLong SpecialMethods<T>::encodeBitmapGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto dx = reinterpret_cast<T *>(vx);
+        const T two(2.0f);
+        const T zero(0.0f);
+        const T t(threshold);
+        const T thalf = t / two;
 
-//PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVal))
-        auto func = PRAGMA_REDUCE_LONG {
+        //auto func = PRAGMA_REDUCE_LONG {
             Nd4jLong retVal = 0L;
 
-            for (auto x = start; x < stop; x += increment) {
+            PRAGMA_OMP_PARALLEL_FOR_REDUCTION(+:retVal)
+            for (auto x = 0; x < N; x += 16) {
                 int byte = 0;
                 int byteId = x / 16 + 4;
 
                 for (int f = 0; f < 16; f++) {
-                    Nd4jLong e = x + f;
+                    auto e = x + f;
 
                     if (e >= N)
                         continue;
@@ -602,19 +611,19 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 
                     int bitId = e % 16;
 
-                    if (abs >= (T) threshold) {
+                    if (abs >= t) {
                         byte |= 1 << (bitId);
                         retVal++;
 
-                        if (val < (T) 0.0f) {
+                        if (val < zero) {
                             byte |= 1 << (bitId + 16);
-                            dx[e] += static_cast<T>(threshold);
+                            dx[e] += t;
                         } else {
-                            dx[e] -= static_cast<T>(threshold);
+                            dx[e] -= t;
                         }
-                    } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
+                    } else if (abs >= thalf && val < zero) {
                         byte |= 1 << (bitId + 16);
-                        dx[e] += static_cast<T>(threshold / 2);
+                        dx[e] += thalf;
 
                         retVal++;
                     }
@@ -624,8 +633,9 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
             }
 
             return retVal;
-        };
-        return samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
+        //};
+
+        //return samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
     }
 }
 

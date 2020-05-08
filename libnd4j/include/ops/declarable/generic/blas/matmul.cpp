@@ -138,9 +138,9 @@ DECLARE_SHAPE_FN(matmul) {
 //////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(matmul) {
     getOpDescriptor()
-            ->setAllowedInputTypes(0, {ALL_FLOATS})
-            ->setAllowedInputTypes(1, {ALL_FLOATS})
-            ->setAllowedOutputTypes(0, {ALL_FLOATS});
+            ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+            ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS})
+            ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
 }
 
 //////////////////////////////////////////////////////////////////////

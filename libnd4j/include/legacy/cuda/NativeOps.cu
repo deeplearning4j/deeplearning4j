@@ -2197,76 +2197,6 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *dZ, int *dX, int numElement
     sd::DebugHelper::checkErrorCode(stream, "prescanArray(...) failed");
 }
 
-
-void encodeThresholdP1(Nd4jPointer *extras, void *dx, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
-    try {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-
-        int blockSize = 1024;
-        int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
-
-        dim3 launchDims(numBlocks, blockSize, 1024);
-        auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-        BUILD_SINGLE_SELECTOR(xType, encoderKernelP1Generic, (launchDims, stream, dx, N, dz, threshold), LIBND4J_TYPES);
-
-        sd::DebugHelper::checkErrorCode(stream, "encodeThresholdP1Float(...) failed");
-    } catch (std::exception &e) {
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    }
-}
-
-
-
-void encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jLong N, int *dz) {
-    try {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-        //encoderKernelP2Float<<<numBlocks, blockSize , 1024 * sizeof(float), *stream>>>(dx, N, dz);
-        prescanArrayRecursive(extraPointers, dz, dx + 1, (int) N, 0);
-        sd::DebugHelper::checkErrorCode(stream, "encodeThresholdP2Int(...) failed");
-    } catch (std::exception &e) {
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    }
-}
-
-void encodeThresholdP3(Nd4jPointer *extraPointers, void *dx, Nd4jLong *hXShapeInfo, int *offsets, Nd4jLong N, int *dz){
-    try {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-
-        int blockSize = 1024;
-        int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
-
-        dim3 launchDims(numBlocks, blockSize, 4096);
-        auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-        BUILD_SINGLE_SELECTOR(xType, encoderKernelP3Generic, (launchDims, stream, dx, offsets, N, dz), LIBND4J_TYPES);
-
-        sd::DebugHelper::checkErrorCode(stream, "encodeThresholdP3Float(...) failed");
-    } catch (std::exception &e) {
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    }
-}
-
-void decodeThreshold(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo){
-    try {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-
-        // we probably want to have smaller blocks here, memory writes are misaligned anyway
-        int blockSize = 128;
-        int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
-
-        dim3 launchDims(numBlocks, blockSize, 1024);
-        auto zType = sd::ArrayOptions::dataType(zShapeInfo);
-        BUILD_SINGLE_SELECTOR(zType, decoderKernelGeneric, (launchDims, stream, dx, N, dz), LIBND4J_TYPES);
-
-        sd::DebugHelper::checkErrorCode(stream, "decodeThresholdFloat(...) failed");
-    } catch (std::exception &e) {
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////
 void execReduce3All(Nd4jPointer *extraPointers,
 									int opNum,
@@ -2601,55 +2531,6 @@ void sortTad(Nd4jPointer *extraPointers,
 
 void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
 	throw std::runtime_error("sortCooIndices:: Not implemented yet");
-}
-
-
-Nd4jLong encodeBitmap(Nd4jPointer *extraPointers,
-								void *dx, Nd4jLong *hXShapeInfo,
-								Nd4jLong N,
-								int *dz,
-								float threshold) {
-    try {
-
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-        int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
-        int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-        dim3 launchDims(512, 512, 32768);
-        auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-        BUILD_SINGLE_SELECTOR(xType, cudaEncodeBitmapGeneric,
-                              (launchDims, stream, dx, N, dz, resultPointer, reductionPointer, threshold),
-                              LIBND4J_TYPES);
-
-        sd::DebugHelper::checkErrorCode(stream, "encodeBitmapFloat(...) failed");
-
-        Nd4jLong dZ = (Nd4jLong) resultPointer[0];
-        resultPointer[0] = 0;
-
-        return dZ;
-    } catch (std::exception &e) {
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-        return 0;
-    }
-}
-
-
-void decodeBitmap(Nd4jPointer *extraPointers,
-							void *dx,
-							Nd4jLong N,
-							void *dz, Nd4jLong *zShapeInfo) {
-    try {
-        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-        dim3 launchDims(512, 512, 16384);
-        auto xType = sd::ArrayOptions::dataType(zShapeInfo);
-        BUILD_SINGLE_SELECTOR(xType, cudaDecodeBitmapGeneric, (launchDims, stream, dx, N, dz), LIBND4J_TYPES);
-
-        sd::DebugHelper::checkErrorCode(stream, "decodeBitmapFloat(...) failed");
-    } catch (std::exception &e) {
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    }
 }
 
 Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {

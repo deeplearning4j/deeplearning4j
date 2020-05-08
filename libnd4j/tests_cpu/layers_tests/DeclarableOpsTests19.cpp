@@ -25,6 +25,7 @@
 #include <ops/ops.h>
 #include <helpers/GradCheck.h>
 #include <array>
+#include <helpers/RandomLauncher.h>
 
 
 using namespace sd;
@@ -38,6 +39,195 @@ public:
         fflush(stdout);
     }
 };
+
+TEST_F(DeclarableOpsTests19, test_threshold_encode_1) {
+    auto x = NDArrayFactory::create<double>('c', {3}, {1.5, 2.5, -3.5});
+    auto exp_encoded = NDArrayFactory::create<int>('c', {7}, {3, 3, 1056964608, 0, 1, 2, -3});
+    auto exp_gradients = NDArrayFactory::create<double>('c', {3}, {1.0, 2.0, -3.0});
+
+    sd::ops::encode_threshold op;
+    auto result = op.evaluate({&x}, {0.5});
+
+    auto gradients = result.at(0);
+    auto encoded = result.at(1);
+
+    //encoded->printIndexedBuffer("ENC");
+
+    ASSERT_EQ(exp_encoded, *encoded);
+    ASSERT_EQ(exp_gradients, x);
+
+    // FIXME: we need to add a way to declare individual inplace outputs
+    //ASSERT_EQ(exp_gradients, *gradients);
+}
+
+TEST_F(DeclarableOpsTests19, test_threshold_encode_2) {
+    for (int length = 5; length < 35; length++) {
+        auto x = NDArrayFactory::create<double>('c', {10000});
+        auto exp_gradients = NDArrayFactory::create<double>('c', {10000});
+
+        for (int e = 0; e < length; e++) {
+            x.p(e, 2e-3);
+            exp_gradients.p(e, 1e-3);
+        }
+
+        sd::ops::encode_threshold op;
+        auto result = op.evaluate({&x}, {1e-3});
+
+        auto encoded = result.at(1);
+
+        ASSERT_EQ(length + 4, encoded->lengthOf());
+        ASSERT_EQ(exp_gradients, x);
+    }
+}
+
+TEST_F(DeclarableOpsTests19, test_threshold_encode_boundary_1) {
+    auto x = NDArrayFactory::create<float>('c', {6});
+    x = 1.0f;
+
+    sd::ops::encode_threshold op;
+    auto result = op.evaluate({&x}, {1.0}, {3});
+
+    auto gradients = result.at(0);
+    auto encoded = result.at(1);
+
+    ASSERT_EQ(7, encoded->lengthOf());
+    ASSERT_EQ(3, x.sumNumber().e<int>(0));
+}
+
+TEST_F(DeclarableOpsTests19, test_threshold_encode_boundary_2) {
+    auto x = NDArrayFactory::create<float>('c', {1000});
+    x = 1.0f;
+
+    sd::ops::encode_threshold op;
+    auto result = op.evaluate({&x}, {1.0}, {100});
+
+    auto gradients = result.at(0);
+    auto encoded = result.at(1);
+
+    ASSERT_EQ(104, encoded->lengthOf());
+
+    ASSERT_EQ(900, x.sumNumber().e<int>(0));
+}
+
+TEST_F(DeclarableOpsTests19, test_threshold_decode_1) {
+    auto x = NDArrayFactory::create<double>('c', {3}, {1.0, 2.0, -3.0});
+    auto y = NDArrayFactory::create<int>('c', {7}, {3, 3, 1056964608, 0, 1, 2, -3});
+    auto exp_gradients = NDArrayFactory::create<double>('c', {3}, {1.5, 2.5, -3.5});
+
+    sd::ops::decode_threshold op;
+    auto status = op.execute({&x, &y}, {&x});
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_EQ(exp_gradients, x);
+}
+
+TEST_F(DeclarableOpsTests19, test_bitmap_encode_1) {
+    auto initial = NDArrayFactory::create<float>('c', {6}, {0.0f, 0.0f, 1e-3f, -1e-3f, 0.0f, 0.0f});
+    auto exp_0 = initial.like();
+    auto exp_1 = initial.dup();
+    auto exp_c = NDArrayFactory::create<int>(2L);
+
+    sd::ops::encode_bitmap enc;
+    auto enc_result = enc.evaluate({&initial}, {1e-3f});
+    ASSERT_EQ(Status::OK(), enc_result.status());
+
+    //initial.printIndexedBuffer("initial");
+    ASSERT_EQ(exp_0, initial);
+
+    auto encoded = enc_result.at(1);
+    auto counter = enc_result.at(2);
+
+    //encoded->printIndexedBuffer("encoded");
+
+    ASSERT_EQ(exp_c, *counter);
+
+    sd::ops::decode_bitmap dec;
+    auto status = dec.execute({&initial, encoded}, {&initial});
+    ASSERT_EQ(Status::OK(), status);
+
+
+    //initial.printIndexedBuffer();
+
+    ASSERT_EQ(exp_1, initial);
+}
+
+TEST_F(DeclarableOpsTests19, test_bitmap_encode_decode) {
+    auto initial = NDArrayFactory::create<float>('c', {256000});
+    initial = 1.0f;
+    auto exp = initial.dup();
+    auto neg = initial.like();
+    neg = 0.5f;
+
+    sd::ops::encode_bitmap enc;
+    auto enc_result = enc.evaluate({&initial}, {0.5f});
+    auto encoded = enc_result.at(1);
+
+    // checking equality of all encoded bits
+    for (int e = 5; e < encoded->lengthOf() - 1; e++) {
+        if (encoded->e<int>(e) != encoded->e<int>(e - 1))
+            nd4j_printf("Non equal encoded values at E[%i]: %i;\n", e, encoded->e<int>(e));
+    }
+
+    ASSERT_NE(exp, initial);
+    ASSERT_EQ(neg, initial);
+
+    sd::ops::decode_bitmap dec;
+    auto status = dec.execute({&initial, encoded}, {&initial});
+    ASSERT_EQ(Status::OK(), status);
+
+    // checking equality of all dedoded bits
+    for (int e = 0; e < initial.lengthOf(); e++) {
+        auto f = initial.e<float>(e);
+        if (f != 1.0f)
+            nd4j_printf("initial[%i] = %f\n", e, f);
+    }
+
+
+    ASSERT_EQ(exp, initial);
+}
+
+TEST_F(DeclarableOpsTests19, test_threshold_encode_decode) {
+    auto initial = NDArrayFactory::create<float>('c', {256000});
+    initial = 1.0f;
+    auto exp = initial.dup();
+    auto neg = initial.like();
+    neg = 0.5f;
+
+    sd::ops::encode_threshold enc;
+    auto enc_result = enc.evaluate({&initial}, {0.5f});
+    auto encoded = enc_result.at(1);
+
+    ASSERT_EQ(256000 + 4, encoded->lengthOf());
+    ASSERT_NE(exp, initial);
+
+    for (int e = 0; e < initial.lengthOf(); e++) {
+        auto f = initial.e<float>(e);
+        if (f != 0.5f) {
+            nd4j_printf("initial[%i] = %f\n", e, f);
+            throw std::runtime_error("");
+        }
+    }
+    ASSERT_EQ(neg, initial);
+
+    // checking equality of all encoded bits
+    //for (int e = 5; e < encoded->lengthOf() - 1; e++) {
+        //if (encoded->e<int>(e) != encoded->e<int>(e - 1) + 1)
+            //nd4j_printf("Non equal encoded values at E[%i]: %i;\n", e, encoded->e<int>(e));
+    //}
+
+    sd::ops::decode_threshold dec;
+    auto status = dec.execute({&initial, encoded}, {&initial});
+    ASSERT_EQ(Status::OK(), status);
+
+    // checking equality of all dedoded bits
+    for (int e = 0; e < initial.lengthOf(); e++) {
+        auto f = initial.e<float>(e);
+        if (f != 1.0f)
+            nd4j_printf("initial[%i] = %f\n", e, f);
+    }
+
+    ASSERT_EQ(exp, initial);
+}
+
 
 TEST_F(DeclarableOpsTests19, test_matmul_ccc) {
     auto x = NDArrayFactory::create<float>('c', {10, 10});

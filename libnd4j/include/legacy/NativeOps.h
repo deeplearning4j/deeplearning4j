@@ -1432,18 +1432,6 @@ ND4J_EXPORT void tear(Nd4jPointer *extraPointers,
                         Nd4jLong *tadShapeInfo,
                         Nd4jLong *tadOffsets);
 
-ND4J_EXPORT Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);
-ND4J_EXPORT void decodeBitmap(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
-
-
-ND4J_EXPORT void encodeThresholdP1(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold);
-ND4J_EXPORT void encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jLong N, int *dz);
-ND4J_EXPORT void encodeThresholdP3(Nd4jPointer *extraPointers, void *dx, Nd4jLong *xShapeInfo, int *offsets, Nd4jLong N, int *dz);
-
-
-ND4J_EXPORT void decodeThreshold(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo);
-
-
 ND4J_EXPORT void sort(Nd4jPointer *extraPointers,
         void *x, Nd4jLong *xShapeInfo,
         void *dx, Nd4jLong *dxShapeInfo,

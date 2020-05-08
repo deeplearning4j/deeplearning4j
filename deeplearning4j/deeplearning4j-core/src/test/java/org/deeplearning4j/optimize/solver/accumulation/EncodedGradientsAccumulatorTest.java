@@ -23,9 +23,13 @@ import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumula
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.junit.Test;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.util.PrintAffinity;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -93,12 +97,13 @@ public class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
         }
 
 
-        EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, null, false);
+        EncodingHandler handler = new EncodingHandler(new FixedThresholdAlgorithm(1e-3), null, Integer.MAX_VALUE, false);
         for (int e = 10; e < numParams / 5; e++) {
 
-            INDArray encoded = handler.encodeUpdates(0, 0, getGradients(numParams, e, 2e-3));
+            val gradients = getGradients(numParams, e, 2e-3);
+            val encoded = handler.encodeUpdates(0, 0, gradients);
 
-            //  log.info("enc len: {}", encoded.data().length());
+            assertNotNull("Failed with e == " + e, encoded);
 
             int encFormat = encoded.data().getInt(3);
 

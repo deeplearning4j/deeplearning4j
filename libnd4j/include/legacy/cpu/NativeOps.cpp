@@ -1436,28 +1436,6 @@ void enableP2P(bool enable) {
     // no-op
 }
 
-
-
-void encodeThresholdP1(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
-    // TODO: to be implemented
-}
-
-
-void encodeThresholdP2Int(Nd4jPointer *extraPointers, int *hX, Nd4jLong N, int *dz) {
-    // TODO: to be implemented
-}
-
-
-void encodeThresholdP3(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, int *offsets, Nd4jLong N, int *dz){
-    // offsets won't be used here
-
-    // TODO: to be implemented
-}
-
-void decodeThreshold(Nd4jPointer *extraPointers, void *hX, Nd4jLong N, void *dz, Nd4jLong *hZShapeInfo){
-    // TODO: to be implemented
-}
-
 bool isP2PAvailable() {
     // always TRUE for cpu backend
     return true;
@@ -1465,10 +1443,6 @@ bool isP2PAvailable() {
 
 void checkP2P() {
     // no-op
-}
-
-void decodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong N, void *dz, Nd4jLong *hZShapeInfo) {
-    NativeOpExecutioner::decodeBitmap(hX, N, dz, hZShapeInfo);
 }
 
 template<typename T>
@@ -1858,12 +1832,6 @@ void sortCooIndices(Nd4jPointer *extraPointers,
         sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
 }
-
-Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
-    return NativeOpExecutioner::encodeBitmap(hX, hXShapeInfo, N, dz, threshold);
-}
-
-
 
 Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {
     auto hZ = new Nd4jLong[2];errno = 0;

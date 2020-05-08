@@ -69,7 +69,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     protected ThreadLocal<Integer> index = new ThreadLocal<>();
     protected long initialMemory = 100 * 1024 * 1024L;
     protected int queueSize = 5;
-    protected Double boundary = 1.0;
+    protected Integer boundary = Integer.MAX_VALUE;
     protected boolean encodingDebugMode;
 
     protected IndexedTail externalSource;
@@ -101,11 +101,11 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
     }
 
     public EncodedGradientsAccumulator(int parties, ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor, boolean encodingDebugMode) {
-        this(parties, new EncodingHandler(thresholdAlgorithm, residualPostProcessor, 1.0, encodingDebugMode), DEFAULT_INITIAL_MEMORY, 10, 1.0, encodingDebugMode);
+        this(parties, new EncodingHandler(thresholdAlgorithm, residualPostProcessor, Integer.MAX_VALUE, encodingDebugMode), DEFAULT_INITIAL_MEMORY, 10, Integer.MAX_VALUE, encodingDebugMode);
     }
 
     public EncodedGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory,
-                    int queueSize, Double boundary, boolean encodingDebugMode) {
+                    int queueSize, Integer boundary, boolean encodingDebugMode) {
         this.parties = parties;
         this.handler = handler;
         this.initialMemory = initialMemory;
@@ -551,7 +551,7 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         protected long initialMemory = DEFAULT_INITIAL_MEMORY;
         protected int queueSize = 5;
         protected MessageHandler handler;
-        protected Double boundary = null;
+        protected int boundary = Integer.MAX_VALUE;
         protected boolean encodingDebugMode;
 
         /**
@@ -598,15 +598,12 @@ public class EncodedGradientsAccumulator implements GradientsAccumulator, Regist
         /**
          * This method enables optional limit for max number of updates per message
          *
-         * Default value: 1.0 (no limit)
+         * Default value: Integer.MAX_VALUE (no limit)
          * @param boundary positive value in range 0..1
          * @return
          */
-        public Builder updatesBoundary(double boundary) {
-            if (boundary >= 1.0)
-                return this;
-
-            if (boundary <= 0.0)
+        public Builder updatesBoundary(int boundary) {
+            if (boundary <= 0)
                 throw new DL4JInvalidConfigException("Boundary should have positive value");
 
             this.boundary = boundary;

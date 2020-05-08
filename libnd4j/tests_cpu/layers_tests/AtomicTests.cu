@@ -57,7 +57,7 @@ static void multiplyLauncher(void *vbuffer, uint64_t length, void *vresult) {
     multiplyKernel<T><<<256, 256, 1024, *sd::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
     auto err = cudaStreamSynchronize(*sd::LaunchContext::defaultContext()->getCudaStream());
     if (err != 0)
-        sd::cuda_exception::build("multiply failed", err);
+        throw sd::cuda_exception::build("multiply failed", err);
 }
 
 template <typename T>
@@ -80,7 +80,7 @@ static void sumLauncher(void *vbuffer, uint64_t length, void *vresult) {
     sumKernel<T><<<256, 256, 1024, *sd::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
     auto err = cudaStreamSynchronize(*sd::LaunchContext::defaultContext()->getCudaStream());
     if (err != 0)
-        sd::cuda_exception::build("sum failed", err);
+        throw sd::cuda_exception::build("sum failed", err);
 }
 
 template <typename T>
@@ -103,7 +103,7 @@ static void subLauncher(void *vbuffer, uint64_t length, void *vresult) {
     subKernel<T><<<256, 256, 1024, *sd::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
     auto err = cudaStreamSynchronize(*sd::LaunchContext::defaultContext()->getCudaStream());
     if (err != 0)
-        sd::cuda_exception::build("sub failed", err);
+        throw sd::cuda_exception::build("sub failed", err);
 }
 
 template <typename T>
@@ -126,7 +126,7 @@ static void divLauncher(void *vbuffer, uint64_t length, void *vresult) {
     divKernel<T><<<256, 256, 1024, *sd::LaunchContext::defaultContext()->getCudaStream()>>>(vbuffer, length, vresult);
     auto err = cudaStreamSynchronize(*sd::LaunchContext::defaultContext()->getCudaStream());
     if (err != 0)
-        sd::cuda_exception::build("div failed", err);
+        throw sd::cuda_exception::build("div failed", err);
 }
 
 static void multiplyHost(NDArray &input, NDArray &output) {

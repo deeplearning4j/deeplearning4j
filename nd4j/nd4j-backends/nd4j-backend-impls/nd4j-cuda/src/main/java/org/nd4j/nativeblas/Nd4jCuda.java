@@ -2804,30 +2804,6 @@ public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         @Cast("Nd4jLong*") long[] tadShapeInfo,
                         @Cast("Nd4jLong*") long[] tadOffsets);
 
-public native @Cast("Nd4jLong") long encodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("Nd4jLong") long N, IntPointer dz, float threshold);
-public native @Cast("Nd4jLong") long encodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("Nd4jLong") long N, IntBuffer dz, float threshold);
-public native @Cast("Nd4jLong") long encodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") long[] xShapeInfo, @Cast("Nd4jLong") long N, int[] dz, float threshold);
-public native void decodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") LongPointer zShapeInfo);
-public native void decodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") LongBuffer zShapeInfo);
-public native void decodeBitmap(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") long[] zShapeInfo);
-
-
-public native void encodeThresholdP1(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("Nd4jLong") long N, IntPointer dz, float threshold);
-public native void encodeThresholdP1(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("Nd4jLong") long N, IntBuffer dz, float threshold);
-public native void encodeThresholdP1(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") long[] xShapeInfo, @Cast("Nd4jLong") long N, int[] dz, float threshold);
-public native void encodeThresholdP2Int(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntPointer dx, @Cast("Nd4jLong") long N, IntPointer dz);
-public native void encodeThresholdP2Int(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntBuffer dx, @Cast("Nd4jLong") long N, IntBuffer dz);
-public native void encodeThresholdP2Int(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] dx, @Cast("Nd4jLong") long N, int[] dz);
-public native void encodeThresholdP3(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongPointer xShapeInfo, IntPointer offsets, @Cast("Nd4jLong") long N, IntPointer dz);
-public native void encodeThresholdP3(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") LongBuffer xShapeInfo, IntBuffer offsets, @Cast("Nd4jLong") long N, IntBuffer dz);
-public native void encodeThresholdP3(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong*") long[] xShapeInfo, int[] offsets, @Cast("Nd4jLong") long N, int[] dz);
-
-
-public native void decodeThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") LongPointer zShapeInfo);
-public native void decodeThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") LongBuffer zShapeInfo);
-public native void decodeThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jLong") long N, Pointer dz, @Cast("Nd4jLong*") long[] zShapeInfo);
-
-
 public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
         Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
         Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
@@ -10712,6 +10688,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #include <ops/declarable/headers/boolean.h>
 // #include <ops/declarable/headers/broadcastable.h>
 // #include <ops/declarable/headers/convo.h>
+// #include <ops/declarable/headers/compression.h>
 // #include <ops/declarable/headers/list.h>
 // #include <ops/declarable/headers/recurrent.h>
 // #include <ops/declarable/headers/transforms.h>
